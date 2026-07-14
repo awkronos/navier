@@ -4,7 +4,7 @@
   "registry_version": "1.0.1",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
-  "generated_at": "2026-07-14T17:10:00Z",
+  "generated_at": "2026-07-14T22:26:23Z",
   "ssot": true,
   "campaign": {
     "id": "campaign.navier_clay",
@@ -483,6 +483,16 @@
       "reference_ids": ["ref.tao.averaged2016"],
       "supports": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
       "provenance": {"source_locator": "doi:10.1090/jams/838", "source_revision": "doi:10.1090/jams/838", "immutable": true, "observed_at": "2026-07-14T16:58:58Z", "artifact_sha256": null},
+      "receipt": null
+    },
+    {
+      "id": "evidence.falsification.averaged_wrong_operator",
+      "kind": "FALSIFICATION_WITNESS",
+      "claim_tier": "FALSIFICATION",
+      "summary": "The audited F-017 ledger witness keeps Tao's averaged bilinear operator distinct from the exact Navier-Stokes nonlinearity and therefore rejects direct endpoint transport.",
+      "reference_ids": ["ref.tao.averaged2016", "ref.clay.fefferman2000"],
+      "supports": ["breakdown.averaged_model_warning"],
+      "provenance": {"source_locator": "repo:docs/FALSIFICATION_LEDGER.md#F-017", "source_revision": "4aba62dcbcbc42c3507a0778a0ed6fbadbd0b80d", "immutable": true, "observed_at": "2026-07-14T22:26:23Z", "artifact_sha256": "49a51548e90f6028a22d6fc68c7ea9a363adc188c1195e218d0fc8c1d40f79a3"},
       "receipt": null
     }
   ],
@@ -995,7 +1005,7 @@
       "assumption_ids": [],
       "domain": {"equation": "AVERAGED_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "CRITICAL_MILD", "relation_to_endpoint": "ANALOGUE_ONLY", "endpoint_branch": "NONE"},
       "reference_ids": ["ref.tao.averaged2016", "ref.clay.fefferman2000"],
-      "evidence_links": [],
+      "evidence_links": [{"evidence_id": "evidence.falsification.averaged_wrong_operator", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.registry.strict"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
       "residual": {"statement": "Extract a precise exact-symbol property that prevents direct transport of the averaged cascade mechanism.", "smaller_than": "A model discriminator is narrower than either exact global regularity or exact breakdown.", "consumer_ids": ["meta.route_triage"], "falsifier": "An explicit equivalence of the averaged and exact bilinear operators on the construction would overturn this quarantine.", "next_action": "Compare the model interaction coefficients against exact divergence-free Fourier triads."}

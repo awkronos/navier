@@ -191,11 +191,6 @@ PINNED_OPEN_OBLIGATION_DISPOSITIONS = {
     "meta.route_triage": "DECOMPOSED",
 }
 
-# This canonical RED record predates witness-backed status transitions.  Keep
-# the exception explicit and verifier-owned until registry data can link a real
-# FALSIFICATION_WITNESS, then delete this compatibility set.
-LEGACY_UNWITNESSED_RED_OBLIGATIONS = {"breakdown.averaged_model_warning"}
-
 # Internal formal nodes are not closable merely because some Lean theorem can
 # be found.  Their exact realization declaration must be pinned here first.
 # Public endpoints use their separately pinned StatementA/StatementC targets.
@@ -1473,11 +1468,7 @@ def _validate_graph_and_epistemics(
                 for link, item in zip(links, linked, strict=False)
                 if link.get("role") == "FALSIFICATION" and item.get("kind") == "FALSIFICATION_WITNESS"
             ]
-            if (
-                disposition == "RED"
-                and node_id not in LEGACY_UNWITNESSED_RED_OBLIGATIONS
-                and not witnesses
-            ):
+            if disposition == "RED" and not witnesses:
                 errors.append(
                     f"$.obligations[{node_id}]: RED disposition requires a linked falsification witness"
                 )

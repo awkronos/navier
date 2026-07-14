@@ -34,7 +34,7 @@ REGISTRY_PATH = ROOT / "data" / "attack_registry.json"
 SCHEMA_PATH = ROOT / "schemas" / "attack_registry.schema.json"
 ATTACK_PATH = ROOT / "docs" / "ATTACK.md"
 MANIFEST_PATH = ROOT / "references" / "manifest.json"
-NOW = datetime(2026, 7, 14, 18, 0, tzinfo=UTC)
+NOW = datetime(2026, 7, 14, 23, 0, tzinfo=UTC)
 
 A_ID = "endpoint.fefferman_a"
 C_ID = "endpoint.fefferman_c"
