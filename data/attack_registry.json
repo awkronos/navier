@@ -1,10 +1,10 @@
 {
   "$schema": "../schemas/attack_registry.schema.json",
   "schema_version": "1.0.0",
-  "registry_version": "1.0.3",
+  "registry_version": "1.0.4",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
-  "generated_at": "2026-07-14T22:37:17Z",
+  "generated_at": "2026-07-14T22:58:16Z",
   "ssot": true,
   "campaign": {
     "id": "campaign.navier_clay",
@@ -520,6 +520,16 @@
       "receipt": null
     },
     {
+      "id": "evidence.surface.fefferman_a",
+      "kind": "FORMAL_SURFACE_SNAPSHOT",
+      "claim_tier": "SCAFFOLD",
+      "summary": "The committed Problem module defines the public Fefferman A proposition and all five statement-A representation residuals; this snapshot proves no inhabitant.",
+      "reference_ids": ["ref.clay.fefferman2000"],
+      "supports": ["semantics.exact_a_surface"],
+      "provenance": {"source_locator": "repo:Navier/Problem.lean", "source_revision": "bed41276801e8168ecc0ce377b6fbc93e25927ac", "immutable": true, "observed_at": "2026-07-14T22:58:16Z", "artifact_sha256": "99fd73931ef55812377ed7ba8348fbd86adb0132fa9c7de28dcb4d3ba73e913f"},
+      "receipt": null
+    },
+    {
       "id": "evidence.surface.fefferman_c",
       "kind": "FORMAL_SURFACE_SNAPSHOT",
       "claim_tier": "SCAFFOLD",
@@ -538,7 +548,7 @@
       "kind": "PAYLOAD",
       "claim_tier": "CONJECTURE",
       "disposition": "SCAFFOLDED",
-      "statement": "Relate Mathlib Schwartz and half-space within-smoothness conventions to Fefferman's coordinatewise rapid-decay and boundary-smoothness clauses.",
+      "statement": "Relate Mathlib Schwartz, half-space within-smoothness, Pi-norm, Frechet-PDE, and energy-integral conventions to Fefferman's coordinatewise datum, boundary, Euclidean-norm, equation, and clause-(7) wording.",
       "formal_declaration": null,
       "dependency_mode": "NONE",
       "dependencies": [],
@@ -548,7 +558,7 @@
       "evidence_links": [],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
-      "residual": {"statement": "Prove both named convention equivalences without strengthening or weakening Fefferman's data and boundary clauses.", "smaller_than": "Two representation equivalences are narrower than constructing a global Navier-Stokes solution.", "consumer_ids": ["semantics.exact_a_surface"], "falsifier": "A smooth function satisfying only one convention but not the other, or a boundary derivative mismatch, refutes the proposed equivalence.", "next_action": "State coordinatewise decay and boundary jets directly, then prove each direction against the current Mathlib predicates."}
+      "residual": {"statement": "Prove all five named statement-A representation equivalences without strengthening or weakening Fefferman's clauses.", "smaller_than": "Five representation equivalences are narrower than constructing a global Navier-Stokes solution.", "consumer_ids": ["semantics.exact_a_surface"], "falsifier": "A datum, boundary derivative, norm, coordinate PDE, or energy mismatch refutes the proposed equivalence.", "next_action": "State the official coordinatewise predicates directly, then prove each direction against the five current Mathlib conventions."}
     },
     {
       "id": "semantics.exact_a_surface",
@@ -564,10 +574,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_a", "role": "BACKGROUND"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Close the two convention bridges and add adversarial quantifier tests for the formal A surface.", "smaller_than": "Surface fidelity is a representation obligation and does not assert existence of its quantified solution.", "consumer_ids": ["endpoint.fefferman_a"], "falsifier": "Any datum, force, domain, derivative, or energy quantifier differing from official A invalidates the surface.", "next_action": "Formalize the official coordinatewise conventions and prove their connection to the current direct encoding."}
+      "residual": {"statement": "Close the five statement-A representation bridges while preserving the compiled signature and immutable source snapshot.", "smaller_than": "Surface fidelity is a representation obligation and does not assert existence of its quantified solution.", "consumer_ids": ["endpoint.fefferman_a"], "falsifier": "Any datum, force, domain, derivative, norm, PDE, or energy quantifier differing from official A invalidates the surface.", "next_action": "Discharge semantics.encoding_bridges without changing the signature or snapshot guards."}
     },
     {
       "id": "scaling.algebraic_critical_line",
@@ -912,6 +922,25 @@
       "residual": {"statement": "Construct a native theorem term inhabiting Navier.Clay.StatementA from the exact surface and global-continuation producers.", "smaller_than": "The named dependencies separate semantic fidelity, local wiring, and the genuinely open analytic payload.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "A term with sorryAx, a custom axiom, an endpoint assumption, or wrong-domain payload is not a Clay resolution.", "next_action": "Do not package the endpoint until every ALL dependency is closed with allowed-axiom native receipts."}
     },
     {
+      "id": "breakdown.c_encoding_bridges",
+      "approach_id": "approach.breakdown_construction",
+      "title": "Convention bridges for the formal Fefferman-C surface",
+      "kind": "PAYLOAD",
+      "claim_tier": "CONJECTURE",
+      "disposition": "SCAFFOLDED",
+      "statement": "Relate the six whole-space Mathlib datum, force, half-space, norm, PDE, and energy conventions used by StatementC to Fefferman's coordinatewise clauses.",
+      "formal_declaration": null,
+      "dependency_mode": "NONE",
+      "dependencies": [],
+      "assumption_ids": [],
+      "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_C"},
+      "reference_ids": ["ref.clay.fefferman2000"],
+      "evidence_links": [],
+      "verifier_ids": ["verifier.lean.native"],
+      "barrier_ids": ["barrier.endpoint_semantics"],
+      "residual": {"statement": "Define Fefferman's coordinatewise force derivatives and prove six round-trip representation theorems for the whole-space C surface.", "smaller_than": "Six representation bridges do not construct a breakdown datum or prove nonexistence.", "consumer_ids": ["breakdown.exact_c_surface"], "falsifier": "A mismatch in datum class, force decay, boundary jets, Euclidean norm, coordinate PDE, or clause-(7) energy invalidates the bridge.", "next_action": "Prove the six whole-space equivalences independently; the periodic quotient bridge is not a C dependency."}
+    },
+    {
       "id": "breakdown.exact_c_surface",
       "approach_id": "approach.breakdown_construction",
       "title": "Exact whole-space Fefferman-C surface",
@@ -920,15 +949,15 @@
       "disposition": "DECOMPOSED",
       "statement": "For every fixed positive viscosity, quantify admissible smooth rapidly decaying data and force for which no global physically reasonable R3 solution exists.",
       "formal_declaration": "Navier.Clay.StatementC",
-      "dependency_mode": "NONE",
-      "dependencies": [],
+      "dependency_mode": "ALL",
+      "dependencies": ["breakdown.c_encoding_bridges"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_c", "role": "BACKGROUND"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
-      "residual": {"statement": "Close the seven named representation bridges and add adversarial quantifier tests for the delivered StatementC surface.", "smaller_than": "Surface fidelity is a representation obligation and does not construct the required breakdown datum or force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, importing periodic or weak-solution semantics, or changing the no-global-pair quantifier invalidates the surface.", "next_action": "Prove the coordinatewise/Fréchet, boundary, norm, PDE, energy, and periodic-quotient convention bridges independently of any endpoint inhabitant."}
+      "residual": {"statement": "Close the six whole-space representation bridges while preserving the compiled StatementC signature and immutable source snapshot.", "smaller_than": "Surface fidelity is a representation obligation and does not construct the required breakdown datum or force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, importing periodic or weak-solution semantics, or changing the no-global-pair quantifier invalidates the surface.", "next_action": "Discharge breakdown.c_encoding_bridges; the periodic quotient bridge is intentionally not a C dependency."}
     },
     {
       "id": "breakdown.forced_c_payload",
@@ -1002,7 +1031,7 @@
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000"],
       "evidence_links": [],
-      "verifier_ids": ["verifier.registry.strict"],
+      "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
       "residual": {"statement": "Construct a native theorem term inhabiting the delivered Navier.Clay.StatementC from an exact admissible breakdown realization.", "smaller_than": "The public type is present; its construction dependency remains separate and genuinely open.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "Averaged blowup, weak nonuniqueness, existential viscosity, inadmissible force, or a proposition definition without an inhabitant cannot close C.", "next_action": "Require the exact construction dependency and a fresh native axiom receipt before endpoint promotion."}
     },

@@ -8,7 +8,9 @@ while the scientific registry grows new obligations.
 from __future__ import annotations
 
 import copy
+import hashlib
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -151,6 +153,63 @@ def _surface_snapshot(registry: dict[str, object]) -> dict[str, object]:
         },
         "receipt": None,
     }
+
+
+def _committed_surface_snapshot(registry: dict[str, object]) -> dict[str, object]:
+    return next(
+        evidence
+        for evidence in registry["evidence"]
+        if evidence["kind"] == "FORMAL_SURFACE_SNAPSHOT"
+    )
+
+
+def _prepare_snapshot_repository(
+    registry: dict[str, object], repo_root: Path
+) -> tuple[str, str]:
+    """Create a minimal clean Git history for live snapshot validation tests."""
+
+    files = {
+        "scripts/validate_registry.py": "# validator target\n",
+        "scripts/replay_experiment.py": "# replay target\n",
+        "tests/.keep": "",
+        "Navier/AxiomAudit.lean": "-- audit target\n",
+        "surface.lean": "def baseline : Nat := 0\n",
+    }
+    for relative, content in files.items():
+        target = repo_root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+
+    def git(*args: str) -> bytes:
+        return subprocess.run(
+            ["git", *args],
+            cwd=repo_root,
+            capture_output=True,
+            check=True,
+        ).stdout
+
+    git("init", "-q")
+    git("config", "user.name", "Registry Test")
+    git("config", "user.email", "registry-test@example.invalid")
+    git("config", "commit.gpgSign", "false")
+    git("add", ".")
+    git("commit", "-qm", "baseline")
+    baseline = git("rev-parse", "HEAD").decode().strip()
+    (repo_root / "surface.lean").write_text("def delivered : Nat := 1\n", encoding="utf-8")
+    git("add", "surface.lean")
+    git("commit", "-qm", "surface snapshot")
+    revision = git("rev-parse", "HEAD").decode().strip()
+    blob = git("cat-file", "blob", f"{revision}:surface.lean")
+
+    registry["base_revision"] = baseline
+    for evidence in registry["evidence"]:
+        if evidence["kind"] != "FORMAL_SURFACE_SNAPSHOT":
+            continue
+        provenance = evidence["provenance"]
+        provenance["source_locator"] = "repo:surface.lean"
+        provenance["source_revision"] = revision
+        provenance["artifact_sha256"] = hashlib.sha256(blob).hexdigest()
+    return baseline, revision
 
 
 def _falsification_witness(registry: dict[str, object]) -> dict[str, object]:
@@ -540,6 +599,116 @@ class EvidenceAndClosureTests(RegistryTestCase):
 
 
 class ProvenanceTests(RegistryTestCase):
+    def test_in_memory_snapshot_fixture_does_not_require_a_repo_locator(self) -> None:
+        self.registry["evidence"].append(_surface_snapshot(self.registry))
+        self.assertValid()
+
+    def test_git_backed_surface_snapshot_matches_exact_committed_blob(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _prepare_snapshot_repository(self.registry, root)
+            result = validate_registry(
+                self.registry, now=NOW, repo_root=root, check_git_revision=True
+            )
+        self.assertTrue(result.valid, "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_digest_mismatch_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _prepare_snapshot_repository(self.registry, root)
+            _committed_surface_snapshot(self.registry)["provenance"]["artifact_sha256"] = "0" * 64
+            result = validate_registry(
+                self.registry, now=NOW, repo_root=root, check_git_revision=True
+            )
+        self.assertIn("digest does not match the exact Git blob", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_rejects_unsafe_paths(self) -> None:
+        for locator in (
+            "artifact:surface.lean",
+            "repo:",
+            "repo:/surface.lean",
+            "repo:../surface.lean",
+            "repo:Navier//surface.lean",
+            "repo:Navier\\surface.lean",
+        ):
+            registry = copy.deepcopy(self.registry)
+            _committed_surface_snapshot(registry)["provenance"]["source_locator"] = locator
+            result = validate_registry(
+                registry, now=NOW, repo_root=ROOT, check_git_revision=True
+            )
+            with self.subTest(locator=locator):
+                self.assertIn("repo:<safe relative path>", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_missing_blob_is_rejected(self) -> None:
+        _committed_surface_snapshot(self.registry)["provenance"]["source_locator"] = (
+            "repo:Navier/DoesNotExist.lean"
+        )
+        result = validate_registry(
+            self.registry, now=NOW, repo_root=ROOT, check_git_revision=True
+        )
+        self.assertIn("missing or non-blob path", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_requires_a_commit_hash(self) -> None:
+        _committed_surface_snapshot(self.registry)["provenance"]["source_revision"] = "a" * 39
+        result = validate_registry(
+            self.registry, now=NOW, repo_root=ROOT, check_git_revision=True
+        )
+        self.assertIn("40-character Git revision", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_requires_an_existing_commit(self) -> None:
+        _committed_surface_snapshot(self.registry)["provenance"]["source_revision"] = "f" * 40
+        result = validate_registry(
+            self.registry, now=NOW, repo_root=ROOT, check_git_revision=True
+        )
+        self.assertIn("missing or unverifiable snapshot commit", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_rejects_committed_head_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _prepare_snapshot_repository(self.registry, root)
+            (root / "surface.lean").write_text("def changed : Nat := 2\n", encoding="utf-8")
+            subprocess.run(["git", "add", "surface.lean"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "drift"], cwd=root, check=True)
+            result = validate_registry(
+                self.registry, now=NOW, repo_root=root, check_git_revision=True
+            )
+        self.assertIn("differs between snapshot revision and HEAD", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_rejects_worktree_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _prepare_snapshot_repository(self.registry, root)
+            (root / "surface.lean").write_text("def dirty : Nat := 3\n", encoding="utf-8")
+            result = validate_registry(
+                self.registry, now=NOW, repo_root=root, check_git_revision=True
+            )
+        self.assertIn("tracked or untracked worktree changes", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_rejects_staged_deletion_and_untracked_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _prepare_snapshot_repository(self.registry, root)
+            subprocess.run(
+                ["git", "rm", "--cached", "--quiet", "surface.lean"], cwd=root, check=True
+            )
+            result = validate_registry(
+                self.registry, now=NOW, repo_root=root, check_git_revision=True
+            )
+        self.assertIn("tracked or untracked worktree changes", "\n".join(result.errors))
+
+    def test_git_backed_surface_snapshot_commit_must_reach_head(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            baseline, _ = _prepare_snapshot_repository(self.registry, root)
+            subprocess.run(["git", "checkout", "-q", "--detach", baseline], cwd=root, check=True)
+            (root / "diverged").write_text("branch\n", encoding="utf-8")
+            subprocess.run(["git", "add", "diverged"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "diverged head"], cwd=root, check=True)
+            result = validate_registry(
+                self.registry, now=NOW, repo_root=root, check_git_revision=True
+            )
+        self.assertIn("snapshot commit is not an ancestor of HEAD", "\n".join(result.errors))
+
     def test_mutable_evidence_provenance_is_rejected(self) -> None:
         evidence = _surface_snapshot(self.registry)
         evidence["provenance"]["source_revision"] = "refs/heads/main"
@@ -602,12 +771,12 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         status = derived_status(self.registry)
         self.assertEqual(
             status["dispositions"],
-            {"DECOMPOSED": 10, "RED": 1, "SCAFFOLDED": 17},
+            {"DECOMPOSED": 10, "RED": 1, "SCAFFOLDED": 18},
         )
         self.assertEqual(
             status["claim_tiers"],
             {
-                "CONJECTURE": 9,
+                "CONJECTURE": 10,
                 "EXPERIMENT": 1,
                 "FALSIFICATION": 1,
                 "SCAFFOLD": 3,
@@ -621,7 +790,7 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         status = derived_status(self.registry)
         self.assertEqual(
             status["dispositions"],
-            {"DECOMPOSED": 10, "RED": 2, "SCAFFOLDED": 16},
+            {"DECOMPOSED": 10, "RED": 2, "SCAFFOLDED": 17},
         )
         self.assertEqual(status["endpoints"][0]["disposition"], "RED")
 

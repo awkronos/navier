@@ -128,7 +128,7 @@ TOP_KEYS = {
 # data alone can never retag an open conjecture or substitute an unrelated
 # theorem and then claim closure.
 PINNED_OBLIGATION_CONTRACTS = {
-    "semantics.encoding_bridges": "a66461cc6e9fabff113dc74fdbb63d15be091656247cdcd864b89b1285b5dcd3",
+    "semantics.encoding_bridges": "a6bf7793f16530e10b44ff5fd4b3fce29831960dab27c98e228a61ba9463e621",
     "semantics.exact_a_surface": "8a9bee06b0dbc0318d83e0b0170909bea14f95725c601e6c955a8caa2291f637",
     "scaling.algebraic_critical_line": "44c07b56e7598ccadd22b47b9f19013f51c14b6779683fd1fa115ce2d1a586ca",
     "local.mild_solution": "276cbd009398413dcf722d6bbf18a9bd14d66b4600f0a1b18b8c28dec47ef7d8",
@@ -148,11 +148,12 @@ PINNED_OBLIGATION_CONTRACTS = {
     "regularity.any_positive_route": "0d1edf3b566e719eb16c3db2323020d7d62f4c29f001d0adf98c34498cd929e8",
     "local.global_continuation": "423db890357c0de62917cc11c8ccf456bd4ff3ecc78683444eaddb86c937da91",
     "endpoint.fefferman_a": "2cb551497700dd34b1f805248a227475279c90a0bddaca49310a7a6997b4cd39",
-    "breakdown.exact_c_surface": "ce51e8515006c87d6ac8b67661bc1472e0abab32f5f1bb7f8c06aaa326e9119b",
+    "breakdown.c_encoding_bridges": "15906cf0d27959c03846e416ab55fd4aeafa76fadb2e084ee153d03e57f8926c",
+    "breakdown.exact_c_surface": "e8a4a4a7e6099ef35c27c079eab29355af1cdff5c61abb5561f50c468195ef3d",
     "breakdown.forced_c_payload": "db897b8c7ee33ed5d394d522c85bdcfd814b86be29c1838ea008e531ef9c1cf9",
     "breakdown.zero_force_blowup_payload": "adef400d4f6f1666fc96204d1f9d2b386ec4263602bfc93fa757515c8bd25439",
     "breakdown.any_exact_realization": "b0459487fd369c5dc192b33f3127ef177e26a53f65b30096a5f542f51b8f2abd",
-    "endpoint.fefferman_c": "ae14fe729f616254d4abc4f1b2d24e008e9cbb1e58d93aea569fdbd316122f2e",
+    "endpoint.fefferman_c": "d9ecb0edb59b5d7d452f4d043ba91eec503d3fdc2676e5ff5462b29e0328c051",
     "computation.intermediate_falsification": "90978c574d5dc27b26d33815cb36544f6b062c00ad8094fec678a3e8219b3b93",
     "breakdown.averaged_model_warning": "b053771ac3318e04f16b24b42c50d1e167f1dc799695bfc78e814db91ecccde6",
     "meta.route_triage": "f2531c5b237be61eda38e1b57d09c7cdb566327271bd54ba9823e90087dd4907",
@@ -181,6 +182,7 @@ PINNED_OPEN_OBLIGATION_DISPOSITIONS = {
     "regularity.any_positive_route": "SCAFFOLDED",
     "local.global_continuation": "SCAFFOLDED",
     "endpoint.fefferman_a": "SCAFFOLDED",
+    "breakdown.c_encoding_bridges": "SCAFFOLDED",
     "breakdown.exact_c_surface": "DECOMPOSED",
     "breakdown.forced_c_payload": "SCAFFOLDED",
     "breakdown.zero_force_blowup_payload": "SCAFFOLDED",
@@ -254,6 +256,36 @@ def _git_result(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]
         check=False,
         timeout=10,
     )
+
+
+def _git_bytes_result(repo_root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+    """Run Git without text decoding so blob digests cover the exact bytes."""
+
+    return subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        capture_output=True,
+        check=False,
+        timeout=10,
+    )
+
+
+def _safe_repo_relative_path(locator: Any) -> str | None:
+    """Extract a normalized, non-traversing path from a ``repo:`` locator."""
+
+    if not isinstance(locator, str) or not locator.startswith("repo:"):
+        return None
+    relative = locator.removeprefix("repo:")
+    if (
+        not relative
+        or relative.startswith(("/", "\\"))
+        or "\\" in relative
+        or ":" in relative
+        or any(ord(character) < 32 or ord(character) == 127 for character in relative)
+        or any(part in {"", ".", ".."} for part in relative.split("/"))
+    ):
+        return None
+    return relative
 
 
 def _run_native_claim_check(
@@ -860,6 +892,104 @@ def _validate_receipt_shape(value: Any, path: str, errors: list[str]) -> dict[st
     return receipt
 
 
+def _validate_formal_surface_snapshot(
+    provenance: dict[str, Any],
+    path: str,
+    base_revision: str,
+    repo_root: Path,
+    errors: list[str],
+) -> None:
+    """Bind a formal-surface snapshot to its immutable blob and current path."""
+
+    locator_path = f"{path}.provenance.source_locator"
+    relative = _safe_repo_relative_path(provenance.get("source_locator"))
+    if relative is None:
+        errors.append(
+            f"{locator_path}: Git-checked formal snapshots require repo:<safe relative path>"
+        )
+        return
+
+    revision_path = f"{path}.provenance.source_revision"
+    revision = provenance.get("source_revision")
+    if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
+        errors.append(
+            f"{revision_path}: Git-checked formal snapshots require an immutable "
+            "40-character Git revision"
+        )
+        return
+
+    digest = provenance.get("artifact_sha256")
+    if (
+        provenance.get("immutable") is not True
+        or not isinstance(digest, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", digest)
+    ):
+        return
+
+    try:
+        exists = _git_result(repo_root, "cat-file", "-e", f"{revision}^{{commit}}")
+        if exists.returncode != 0:
+            errors.append(f"{revision_path}: missing or unverifiable snapshot commit")
+            return
+
+        if re.fullmatch(r"[0-9a-f]{40}", base_revision):
+            after_baseline = _git_result(
+                repo_root, "merge-base", "--is-ancestor", base_revision, revision
+            )
+            if after_baseline.returncode == 1:
+                errors.append(f"{revision_path}: snapshot commit predates the campaign baseline")
+            elif after_baseline.returncode != 0:
+                errors.append(f"{revision_path}: could not compare snapshot commit with baseline")
+
+        before_head = _git_result(
+            repo_root, "merge-base", "--is-ancestor", revision, "HEAD"
+        )
+        if before_head.returncode == 1:
+            errors.append(f"{revision_path}: snapshot commit is not an ancestor of HEAD")
+        elif before_head.returncode != 0:
+            errors.append(f"{revision_path}: could not compare snapshot commit with HEAD")
+
+        blob = _git_bytes_result(repo_root, "cat-file", "blob", f"{revision}:{relative}")
+        if blob.returncode != 0:
+            errors.append(
+                f"{locator_path}: missing or non-blob path at the snapshot revision"
+            )
+            return
+        if hashlib.sha256(blob.stdout).hexdigest() != digest:
+            errors.append(
+                f"{path}.provenance.artifact_sha256: digest does not match the exact Git blob"
+            )
+
+        literal_pathspec = f":(literal){relative}"
+        head_diff = _git_result(
+            repo_root, "diff", "--quiet", revision, "HEAD", "--", literal_pathspec
+        )
+        if head_diff.returncode == 1:
+            errors.append(
+                f"{locator_path}: pinned path differs between snapshot revision and HEAD"
+            )
+        elif head_diff.returncode != 0:
+            errors.append(f"{locator_path}: could not compare pinned path with HEAD")
+
+        worktree = _git_bytes_result(
+            repo_root,
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--",
+            literal_pathspec,
+        )
+        if worktree.returncode != 0:
+            errors.append(f"{locator_path}: could not inspect pinned path worktree state")
+        elif worktree.stdout:
+            errors.append(
+                f"{locator_path}: pinned path has tracked or untracked worktree changes"
+            )
+    except (OSError, subprocess.TimeoutExpired):
+        errors.append(f"{locator_path}: Git-backed snapshot verification failed to execute")
+
+
 def _validate_evidence(
     items: Any,
     references: dict[str, dict[str, Any]],
@@ -933,6 +1063,14 @@ def _validate_evidence(
             "FORMAL_SURFACE_SNAPSHOT",
         } and not provenance.get("artifact_sha256"):
             errors.append(f"{path}.provenance.artifact_sha256: artifact-backed evidence requires a digest")
+        if kind == "FORMAL_SURFACE_SNAPSHOT" and check_git_revision and repo_root is not None:
+            _validate_formal_surface_snapshot(
+                provenance,
+                path,
+                base_revision,
+                repo_root,
+                errors,
+            )
         if receipt is not None:
             verifier = verifiers.get(receipt.get("verifier_id"))
             if verifier is None:
