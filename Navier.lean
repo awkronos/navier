@@ -7,6 +7,7 @@ import Navier.EnergyObstruction
 import Navier.ConventionBridges
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
+import Navier.Routes.R7.ScaledTriad
 import Navier.Disposition
 import Navier.Frontier
 import Navier.ClayFrontier

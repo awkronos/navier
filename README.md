@@ -39,8 +39,10 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
   an exact Leray-symbol leaf plus a checked countermodel showing why energy
   cancellation alone is too weak. Its companion
   [`Navier/Routes/R7/Triad.lean`](Navier/Routes/R7/Triad.lean) proves collective
-  six-transfer cancellation and a nonzero individual-transfer witness; no
-  shell gain or regularity theorem is claimed.
+  six-transfer cancellation and a nonzero individual-transfer witness.
+  [`Navier/Routes/R7/ScaledTriad.lean`](Navier/Routes/R7/ScaledTriad.lean)
+  proves that this individual transfer grows linearly under common frequency
+  scaling; no weighted shell gain or regularity theorem is claimed.
 - [`docs/BARRIERS.md`](docs/BARRIERS.md) and
   [`docs/FALSIFICATION_LEDGER.md`](docs/FALSIFICATION_LEDGER.md): scaling,
   energy-only, weak/smooth, model-drift, compactness, and numerical-proof

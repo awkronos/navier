@@ -6,6 +6,7 @@ import Navier.EnergyObstruction
 import Navier.ConventionBridges
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
+import Navier.Routes.R7.ScaledTriad
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -62,6 +63,11 @@ finite-frontier facts.
 #print axioms Navier.Routes.R7.six_transfer_sum_zero
 #print axioms Navier.Routes.R7.witness_admissible
 #print axioms Navier.Routes.R7.witness_nontermwise_cancellation
+
+#print axioms Navier.Routes.R7.scaled_witness_admissible
+#print axioms Navier.Routes.R7.scaled_witness_orderedTransfer
+#print axioms Navier.Routes.R7.scaled_witness_sixTransferSum
+#print axioms Navier.Routes.R7.orderedTransfer_unbounded_across_scale
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified
