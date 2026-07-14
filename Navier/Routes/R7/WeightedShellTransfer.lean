@@ -22,10 +22,11 @@ noncomputable section
 
 namespace Navier.Routes.R7
 
-/-- Symmetrized rate paired with the `K`-mode polarization. -/
+/-- Symmetrized rate at the output `L + M = -K`, paired with the `K`-mode
+polarization and the Hermitian-table phase `+i` of the `-K` mode. -/
 def symWitnessRateK (s : ℝ) : ℝ :=
   phasedSymmetrizedOutputCoefficient
-    1 1 (-Complex.I)
+    1 1 Complex.I
     symWitnessB symWitnessC symWitnessA
     (scaledWitnessL s) (scaledWitnessM s)
     (scaledWitnessL s + scaledWitnessM s)
@@ -49,7 +50,7 @@ def symWitnessRateM (s : ℝ) : ℝ :=
 theorem symWitnessRateK_eq_zero (s : ℝ) : symWitnessRateK s = 0 := by
   rw [symWitnessRateK,
     phasedSymmetrizedOutputCoefficient_eq_ordered_sum
-      1 1 (-Complex.I) symWitnessB symWitnessC symWitnessA
+      1 1 Complex.I symWitnessB symWitnessC symWitnessA
       (scaledWitnessL s) (scaledWitnessM s)
       (scaledWitnessL s + scaledWitnessM s)
       (sym_scaled_witness_receiver_transverse_outputs s).2.2]
