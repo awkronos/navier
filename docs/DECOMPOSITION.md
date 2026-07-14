@@ -67,7 +67,7 @@ This prevents both endpoint-as-assumption and wrapper progress.
 | P0 | Official clauses for Fefferman data and alternatives A–D | [FEFFERMAN2000], `Navier/Problem.lean`, and `Navier/OfficialProblem.lean` | every route, A0/N0 | A–D proposition surfaces typed; seven convention/quotient bridges remain explicit and no endpoint is inhabited |
 | P1 | Vector calculus and Leray projection on \(\mathbb R^3\) | Mathlib plus `Navier/Analysis/VectorCalculus.lean` | all routes | product/coordinate leaves checked; curl, Leray, pressure recovery, and integration identities open |
 | P2 | Schwartz, Sobolev, mixed, critical, weak, and suitable spaces | Mathlib plus new definitions | all routes | open formal infrastructure |
-| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, and `Navier/Analysis/Covariance.lean` | R1, R4, R5, R9–R11 | exponent, separate power-integral rules, and spatial derivative/divergence covariance checked; actual mixed norm and full equation covariance open |
+| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, and `Navier/Analysis/Covariance.lean` | R1, R4, R5, R9–R11 | exponent, separate power-integral rules, and full forced pointwise-equation covariance checked; actual nested mixed norm and solution-contract covariance open |
 | P4 | maximal local smooth solution and restart | Kato/Koch–Tataru analytic theory | bridge K0, all routes | established analytic; Lean absent |
 | P5 | smooth energy identity and weak/local energy inequalities | Leray/CKN analytic theory | all routes | established analytic; Lean absent |
 | P6 | Serrin and endpoint \(L^3\) continuation | Serrin/ESS | bridge K0, R1/R4/R9 | established analytic; Lean absent |
@@ -75,7 +75,7 @@ This prevents both endpoint-as-assumption and wrapper progress.
 | P8 | exact-bilinear-symbol discriminator | `Navier/Routes/R7/ExactSymbol.lean`, `Navier/Routes/R7/Triad.lean`, `Navier/Routes/R7/ScaledTriad.lean`, plus new formulation | R5, R7, R11 | Leray/single-mode and collective triad-cancellation leaves checked; an individual transfer is proved frequency-unbounded, so a weighted collective shell gain distinguishing exact NS from generic energy cancellation remains open |
 
 The first formal milestone—P0's statement-A surface, part of P1, the algebraic
-and spatial-covariance part of P3, and the first P8 exact-symbol falsification
+and pointwise-equation-covariance part of P3, and the first P8 exact-symbol falsification
 leaf—is implemented. It is useful even before the analytic imports exist
 because it fixes exact consumer types and exposes domain or operator drift.
 

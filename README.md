@@ -31,8 +31,9 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
   energy clause from B/D.
 - [`Navier/Analysis/VectorCalculus.lean`](Navier/Analysis/VectorCalculus.lean)
   and [`Navier/Analysis/Covariance.lean`](Navier/Analysis/Covariance.lean):
-  checked product/coordinate identities and the spatial derivative/divergence
-  part of parabolic scaling.
+  checked product/coordinate identities and full covariance of the forced
+  pointwise momentum equation under positive parabolic scaling. Smoothness,
+  energy, initial-data, and actual mixed-norm transport remain separate.
 - [`Navier/Scaling.lean`](Navier/Scaling.lean): axiom-audited algebraic
   critical-line facts, without pretending the analytic norm theory exists.
 - [`Navier/Routes/R7/ExactSymbol.lean`](Navier/Routes/R7/ExactSymbol.lean):

@@ -50,6 +50,17 @@ finite-frontier facts.
 #print axioms Navier.Analysis.Covariance.zero_dilation_truth_check
 #print axioms Navier.Analysis.Covariance.scaledSchwartzVelocity_apply
 #print axioms Navier.Analysis.Covariance.divergenceFreeInitial_scaled
+#print axioms Navier.Analysis.Covariance.fderiv_amplitude_dilation
+#print axioms Navier.Analysis.Covariance.spatialDerivative_scaled
+#print axioms Navier.Analysis.Covariance.divergence_scaled
+#print axioms Navier.Analysis.Covariance.convection_scaled
+#print axioms Navier.Analysis.Covariance.pressureGradient_scaled
+#print axioms Navier.Analysis.Covariance.secondDirectionalDerivative_scaled
+#print axioms Navier.Analysis.Covariance.laplacian_scaled
+#print axioms Navier.Analysis.Covariance.timeDerivative_scaled
+#print axioms Navier.Analysis.Covariance.satisfiesNavierStokes_scaled
+#print axioms Navier.Analysis.Covariance.zero_scale_fields
+#print axioms Navier.Analysis.Covariance.one_scale_fields
 
 #print axioms Navier.Routes.R7.dot_lerayNumerator
 #print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero

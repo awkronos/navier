@@ -71,7 +71,7 @@ enumerated by `OfficialSurfaceEncodingResidual`.
 | F0 | `Navier/Problem.lean` and `Navier/OfficialProblem.lean` | Concrete \(\mathbb R^3\) fields, Fréchet/within derivatives, force/periodic predicates, whole-space and periodic solution contracts, and A–D proposition surfaces | targeted compile plus official-quantifier audit | all four surfaces implemented; seven representation bridges and every endpoint realization open |
 | F1 | `Navier/Problem.lean` and `Navier/Analysis/VectorCalculus.lean` | divergence, scalar gradient, convection, product rule, and coordinate expansion exist; curl, tensor divergence, Leray projection, and integration identities remain | identities on smooth compactly supported fields | partial |
 | F2 | `Navier/Problem.lean` now; proposed `Navier/Analysis/Spaces.lean` | Schwartz initial data and energy integrability exist; Sobolev, mixed, weak/suitable, and critical spaces remain | coercions, measurability, norm equality tests | partial |
-| F3 | `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, and `Navier/Analysis/Covariance.lean` | algebraic exponent \(1-3/p-2/q\), separate spatial/time power-integral rules, spatial derivative/divergence covariance, and finite/reciprocal examples | single-file compile and raw axiom audit | partial; full equation and actual mixed-norm covariance open |
+| F3 | `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, and `Navier/Analysis/Covariance.lean` | algebraic exponent \(1-3/p-2/q\), separate spatial/time power-integral rules, full forced pointwise-equation covariance, and finite/reciprocal examples | single-file compile and raw axiom audit | partial; actual nested mixed-norm and solution-contract covariance open |
 | F4 | proposed `Navier/Analysis/Energy.lean` | smooth energy identity; weak and local energy contracts | compact-support cutoff and limit assumptions explicit | open |
 | F5 | proposed `Navier/LocalTheory/Contract.lean` | maximal local solution, uniqueness, restart, blowup-alternative interfaces | no endpoint/global witness in input records | open analytic port |
 | F6 | proposed `Navier/Regularity/Criteria.lean` | Serrin and endpoint-\(L^3\) conditional continuation contracts | hypotheses and scaling match primary results | open analytic port |
@@ -233,10 +233,11 @@ audit.
   round-trip tests against the official force, pressure, periodicity, domain,
   decay, PDE, and energy clauses.
 - **F3 algebra milestone:** the exponent, separate space/time power-integral
-  identities, spatial derivative/divergence covariance, and critical-line
-  arithmetic compile and are axiom-audited. Full F3 exit still requires full
-  equation covariance and an actual nested mixed-norm theorem. The
-  energy-supercritical obstruction is already realized.
+  identities, forced pointwise-equation covariance, and critical-line
+  arithmetic compile and are axiom-audited. Full F3 exit still requires an
+  actual nested mixed-norm theorem and transport of the smoothness, energy,
+  and initial-data solution clauses. The energy-supercritical obstruction is
+  already realized.
 - **F5/F6 exit:** local and conditional results compile with no concealed
   endpoint hypothesis.
 - **F7 exit for A:** one of R1–R10 has a genuinely proved first residual,
