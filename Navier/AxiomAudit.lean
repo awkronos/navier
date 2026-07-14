@@ -1,6 +1,9 @@
 import Navier.ClayFrontier
+import Navier.Analysis.Covariance
+import Navier.Analysis.VectorCalculus
 import Navier.EnergyObstruction
 import Navier.ConventionBridges
+import Navier.Routes.R7.ExactSymbol
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -31,6 +34,22 @@ finite-frontier facts.
 
 #print axioms Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay
 #print axioms Navier.ConventionBridges.schwartzmap_satisfies_fefferman_smoothness
+
+#print axioms Navier.staticDivergence_smul
+#print axioms Navier.staticDivergence_const_smul
+#print axioms Navier.convection_eq_sum_coordinate_derivatives
+
+#print axioms Navier.Analysis.Covariance.fderiv_velocity_dilation
+#print axioms Navier.Analysis.Covariance.staticDivergence_dilation
+#print axioms Navier.Analysis.Covariance.zero_dilation_truth_check
+#print axioms Navier.Analysis.Covariance.scaledSchwartzVelocity_apply
+#print axioms Navier.Analysis.Covariance.divergenceFreeInitial_scaled
+
+#print axioms Navier.Routes.R7.dot_lerayNumerator
+#print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero
+#print axioms Navier.Routes.R7.countermodel_energyCancellation
+#print axioms Navier.Routes.R7.countermodel_witness_value
+#print axioms Navier.Routes.R7.countermodel_selfInteraction_ne_zero
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified

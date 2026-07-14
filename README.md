@@ -25,8 +25,16 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
   machine-readable status/dependency/evidence registry, checked fail-closed.
 - [`Navier/Problem.lean`](Navier/Problem.lean): concrete derivatives,
   equation, solution predicate, and the direct statement-A encoding.
+- [`Navier/Analysis/VectorCalculus.lean`](Navier/Analysis/VectorCalculus.lean)
+  and [`Navier/Analysis/Covariance.lean`](Navier/Analysis/Covariance.lean):
+  checked product/coordinate identities and the spatial derivative/divergence
+  part of parabolic scaling.
 - [`Navier/Scaling.lean`](Navier/Scaling.lean): axiom-audited algebraic
   critical-line facts, without pretending the analytic norm theory exists.
+- [`Navier/Routes/R7/ExactSymbol.lean`](Navier/Routes/R7/ExactSymbol.lean):
+  an exact Leray-symbol leaf plus a checked countermodel showing why energy
+  cancellation alone is too weak; no shell gain or regularity theorem is
+  claimed.
 - [`docs/BARRIERS.md`](docs/BARRIERS.md) and
   [`docs/FALSIFICATION_LEDGER.md`](docs/FALSIFICATION_LEDGER.md): scaling,
   energy-only, weak/smooth, model-drift, compactness, and numerical-proof

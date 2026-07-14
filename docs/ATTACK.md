@@ -141,14 +141,14 @@ These are reusable infrastructure, not route-specific discoveries.
 | ID | Prerequisite | Required deliverable | Current evidence |
 |---|---|---|---|
 | P0 | Exact target | Predicates for Fefferman data, solution, energy, and alternatives A–D | Official statement [FEFFERMAN2000] |
-| P1 | Differential operators | Divergence, gradient, Laplacian, curl, Helmholtz/Leray projection, pressure recovery | Standard analysis; formal payload absent |
+| P1 | Differential operators | Divergence, gradient, Laplacian, curl, Helmholtz/Leray projection, pressure recovery | Basic divergence/gradient/convection definitions, a product rule, and a coordinate convection expansion are checked; curl, Leray projection, pressure recovery, and integration identities remain |
 | P2 | Function spaces | Schwartz/smooth data, Sobolev and mixed norms, weak and suitable solutions, critical spaces | Definitions and embeddings must be formalized |
-| P3 | Scaling | Equation covariance and the exponent \(1-3/p-2/q\) | Exponent algebra and the critical-line equivalence are checked in `Navier/Scaling.lean`; analytic norm scaling and equation covariance remain open |
+| P3 | Scaling | Equation covariance and the exponent \(1-3/p-2/q\) | Exponent algebra, separate spatial/time power-integral identities, and spatial derivative/divergence covariance are checked; actual mixed-norm and full equation covariance remain open |
 | P4 | Local theory | Maximal smooth solution, uniqueness in its class, blowup alternative, restart theorem | Analytic precedent [KATO1984], [KOCH_TATARU2001] |
 | P5 | Energy interfaces | Smooth energy identity, Leray inequality, local energy inequality | Analytic precedent [LERAY1934], [CKN1982] |
 | P6 | Regularity bridges | Serrin mixed-norm and endpoint \(L_t^\infty L_x^3\) continuation | Established conditional results [SERRIN1962], [ESS2003] |
 | P7 | Compactness interfaces | Approximation, pressure bounds, strong/weak convergence, defect accounting | Required by routes R4/R9/R10 |
-| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | Required by R5/R7/R11 |
+| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | The Leray numerator and single-mode vanishing are checked, together with an energy-cancelling algebraic countermodel; a mixed-triad/shell discriminator remains open |
 
 P0–P8 may be developed in parallel, but no route reaches (A) without P0, P3,
 P4, and a checked bridge from its route certificate to global continuation.

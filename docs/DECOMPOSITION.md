@@ -65,18 +65,19 @@ This prevents both endpoint-as-assumption and wrapper progress.
 | Node | Proposition or structure | Producers | Consumers | Status |
 |---|---|---|---|---|
 | P0 | Official clauses for Fefferman data and alternatives A–D; current Lean encoding of A | [FEFFERMAN2000] plus `Navier/Problem.lean` | every route, A0 | A scaffolded with two convention residuals; B–D formal surfaces open |
-| P1 | Vector calculus and Leray projection on \(\mathbb R^3\) | Mathlib plus new definitions | all routes | open formal infrastructure |
+| P1 | Vector calculus and Leray projection on \(\mathbb R^3\) | Mathlib plus `Navier/Analysis/VectorCalculus.lean` | all routes | product/coordinate leaves checked; curl, Leray, pressure recovery, and integration identities open |
 | P2 | Schwartz, Sobolev, mixed, critical, weak, and suitable spaces | Mathlib plus new definitions | all routes | open formal infrastructure |
-| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean` | R1, R4, R5, R9–R11 | exponent arithmetic checked; equation and analytic norm scaling open |
+| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, and `Navier/Analysis/Covariance.lean` | R1, R4, R5, R9–R11 | exponent, separate power-integral rules, and spatial derivative/divergence covariance checked; actual mixed norm and full equation covariance open |
 | P4 | maximal local smooth solution and restart | Kato/Koch–Tataru analytic theory | bridge K0, all routes | established analytic; Lean absent |
 | P5 | smooth energy identity and weak/local energy inequalities | Leray/CKN analytic theory | all routes | established analytic; Lean absent |
 | P6 | Serrin and endpoint \(L^3\) continuation | Serrin/ESS | bridge K0, R1/R4/R9 | established analytic; Lean absent |
 | P7 | compactness with pressure/nonlinear-defect tracking | route-specific analysis | R4, R9, R10 | decomposed/open |
-| P8 | exact-bilinear-symbol discriminator | new formulation | R5, R7, R11 | open |
+| P8 | exact-bilinear-symbol discriminator | `Navier/Routes/R7/ExactSymbol.lean` plus new formulation | R5, R7, R11 | Leray numerator/single-mode leaf checked; mixed-triad gain distinguishing exact NS from generic energy cancellation open |
 
-The first formal milestone—P0's statement-A surface plus the algebraic half of
-P3—is implemented. It is useful even before the analytic imports exist because
-it fixes the exact consumer types and exposes domain drift.
+The first formal milestone—P0's statement-A surface, part of P1, the algebraic
+and spatial-covariance part of P3, and the first P8 exact-symbol falsification
+leaf—is implemented. It is useful even before the analytic imports exist
+because it fixes exact consumer types and exposes domain or operator drift.
 
 ## 4. Bridge decomposition
 
