@@ -143,12 +143,12 @@ These are reusable infrastructure, not route-specific discoveries.
 | P0 | Exact target | Predicates for Fefferman data, solution, energy, and alternatives A–D | A–D proposition surfaces are typed in `Navier/Problem.lean` and `Navier/OfficialProblem.lean`; seven convention/quotient bridges remain explicit against the official statement [FEFFERMAN2000] |
 | P1 | Differential operators | Divergence, gradient, Laplacian, curl, Helmholtz/Leray projection, pressure recovery | Basic divergence/gradient/convection definitions, a product rule, and a coordinate convection expansion are checked; curl, Leray projection, pressure recovery, and integration identities remain |
 | P2 | Function spaces | Schwartz/smooth data, Sobolev and mixed norms, weak and suitable solutions, critical spaces | Definitions and embeddings must be formalized |
-| P3 | Scaling | Equation covariance and the exponent \(1-3/p-2/q\) | Exponent algebra, separate spatial/time power-integral identities, and full forced pointwise-equation covariance are checked; actual nested mixed-norm and solution-contract covariance remain open |
-| P4 | Local theory | Maximal smooth solution, uniqueness in its class, blowup alternative, restart theorem | Analytic precedent [KATO1984], [KOCH_TATARU2001] |
+| P3 | Scaling | Equation covariance and the exponent \(1-3/p-2/q\) | Exponent algebra, spatial/time power-integral identities, pointwise parabolic covariance, finite-time critical `L3`-mass-bound covariance, and pointwise viscosity-one/arbitrary-viscosity transport are checked; general nested mixed norms and every admissibility clause remain open |
+| P4 | Local theory | Maximal smooth solution, uniqueness in its class, blowup alternative, restart theorem | A concrete `[0,T)` classical-solution record and a point-evaluation blowup consumer are checked: uniqueness plus fixed-point norm blowup excludes every official global pair because global smoothness gives a compact-time bound. Constructing the local/maximal solution and blowup remains open; analytic precedent [KATO1984], [KOCH_TATARU2001] |
 | P5 | Energy interfaces | Smooth energy identity, Leray inequality, local energy inequality | Analytic precedent [LERAY1934], [CKN1982] |
 | P6 | Regularity bridges | Serrin mixed-norm and endpoint \(L_t^\infty L_x^3\) continuation | Established conditional results [SERRIN1962], [ESS2003] |
 | P7 | Compactness interfaces | Approximation, pressure bounds, strong/weak convergence, defect accounting | Required by routes R4/R9/R10 |
-| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | Leray-numerator/single-mode identities and real six-coefficient cancellation are checked; a normalized phase-aware coefficient with fixed phases grows unboundedly across scale, while its Fourier-field realization and any weighted shell gain remain open |
+| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | Both convolution orderings are now explicit. The old growing term cancels with its exchanged ordering; a second polarization survives symmetrization with coefficient `s`, has a conjugate-symmetric divergence-free six-mode table, modal rates `(0,-s,s)`, and squared-frequency-weighted rate `s^3`. The same table has a proved nonzero off-support leakage mode, so an invariant network, exact PDE shell balance, and summability remain open |
 
 P0–P8 may be developed in parallel, but no route reaches (A) without P0, P3,
 P4, and a checked bridge from its route certificate to global continuation.
@@ -234,17 +234,21 @@ or logical kill test), and **observation-only** (computation).
 - **Dependencies:** P1–P5, P8; genuine Littlewood–Paley and paraproduct theory.
 - **Deliverable:** an endpoint-summable frequency-flux inequality preventing
   unbounded transfer to high frequencies.
-- **First strictly lower residual:** bound the exact high–high/low interaction
-  across shells with neither derivative loss nor logarithmic accumulation and
-  with a coefficient controlled below the endpoint.
+- **First strictly lower residual:** lift the checked finite triad rates to the
+  exact Fourier-series shell balance, enumerate and control the generated
+  off-support network, and only then bound the collective high–high/low flux
+  with neither derivative loss nor logarithmic accumulation.
 - **Kill criterion:** shell summation diverges, one derivative is lost, the
   estimate is shared by Tao's averaged operator, or the envelope bound is
   equivalent to a critical continuation norm.
 - **Pivot:** identify the offending triads and search for exact symbol
   cancellation in R7; if none exists, expose them as candidates for R11.
-- **Evidence:** quantitative frequency-localized control conditional on a
-  critical bound is established [TAO2019]; unconditional cascade exclusion is
-  **open-residual**, constrained by [TAO2016].
+- **Evidence:** the checked symmetrized witness proves that exact unequal-shell
+  transfer survives while constant-weight energy cancels, and the checked
+  leakage witness proves that its six-mode support is not invariant.
+  Quantitative frequency-localized control conditional on a critical bound is
+  established [TAO2019]; unconditional cascade exclusion is **open-residual**,
+  constrained by [TAO2016].
 
 ### R6 — Lagrangian deformation and vortex stretching
 
@@ -349,8 +353,10 @@ or logical kill test), and **observation-only** (computation).
   weak nonuniqueness rather than the required nonexistence statement.
 - **Pivot:** retain the model as a falsifier of overly generic positive
   estimates, extract the exact-symbol mismatch, and send it to R7.
-- **Evidence:** averaged blowup is an **obstruction** [TAO2016]; weak
-  nonuniqueness is a boundary result [BUCKMASTER_VICOL2019],
+- **Evidence:** one exact phase-correct unequal-shell interaction and its first
+  off-support leakage are now checked, but they do not form an invariant or
+  self-sustaining network. Averaged blowup is an **obstruction** [TAO2016];
+  weak nonuniqueness is a boundary result [BUCKMASTER_VICOL2019],
   [ALBRITTON_BRUE_COLOMBO2022]; exact C/D remain **open-residual**.
 
 ## 6. Route scheduling and promotion rule
