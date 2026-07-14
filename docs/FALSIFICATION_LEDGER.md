@@ -23,6 +23,12 @@ Statuses:
 | ID | Status | Claim tested | Falsifier or audit witness | Consequence | Permitted successor |
 |---|---|---|---|---|---|
 | F-001 | RED | The smooth energy identity alone controls a scale-critical norm | Under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\), energy scales as \(\lambda^{-1/2}\) while a critical norm scales as \(\lambda^0\) | No scale-uniform critical inequality can be obtained from energy size alone | Add a named exact-structure or geometric estimate and retest |
+
+> F-001 formal side REALIZED (2026-07-14, `c411f27`): `Navier.EnergyObstruction.energy_not_scale_coercive`
+> proves the obstruction kernel-clean — a rescaling whose `L²` energy is
+> arbitrarily small while its scale-critical `L³` mass stays fixed and positive.
+> The entry remains RED: it records that energy alone cannot control the
+> critical quantity, which the theorem now certifies rather than refutes.
 | F-002 | RED | Energy cancellation plus generic harmonic-analysis estimates suffice for global regularity | Tao's averaged bilinear equation preserves those coarse properties and admits finite-time blowup [TAO2016] | Any decisive positive estimate must distinguish the exact Navier–Stokes bilinear symbol | State the discriminator and show failure under Tao averaging |
 | F-003 | RED | A continuation criterion is itself an unconditional route payload | Logical normalization: “if \(N(u)<\infty\), then continue” does not prove \(N(u)<\infty\) | Serrin/ESS remain bridge results, not R1 closure | Prove the norm from strictly lower hypotheses |
 | F-004 | DECOMPOSED | Banach contraction gives arbitrary-large-data global existence | Kato/Koch–Tataru mechanisms obtain local large-data or global small-data control [KATO1984], [KOCH_TATARU2001] | FixedPointBanach may close local wiring only | Produce an interval-independent large-data gain not based on assumed smallness |

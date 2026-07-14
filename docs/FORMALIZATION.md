@@ -122,6 +122,17 @@ The remaining formal sequence is:
 Step 6 is an obstruction theorem, not a philosophical comment, and becomes a
 regression test against accidental energy-only promotions.
 
+**Status (step 6): REALIZED.** `Navier.EnergyObstruction.energy_not_scale_coercive`
+proves, for every nonzero `φ ∈ L² ∩ L³` on `ℝ³` with positive `L³` mass and every
+`ε > 0`, a rescaling `u_c(x) = c · φ(c · x)` whose `L²` energy is below `ε` while
+its scale-critical `L³` mass is unchanged and positive. The two scaling lemmas
+`l2_energy_dilation` (`L²` energy rescales by `c⁻¹`) and `l3_critical_dilation`
+(`L³` invariant) are proved by `MeasureTheory.Measure.integral_comp_smul` and
+`Module.finrank_fin_fun` (the change-of-variables on `ℝ³`). Kernel-clean; raw
+`#print axioms` ⊆ `{propext, Classical.choice, Quot.sound}`. This closes the
+formal side of falsification entry `F-001`. It does not advance the Clay
+endpoint.
+
 ## 5. Known-result ports versus frontier payloads
 
 Each analytic result is formalized in two layers:

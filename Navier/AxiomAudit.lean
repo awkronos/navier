@@ -1,4 +1,5 @@
 import Navier.ClayFrontier
+import Navier.EnergyObstruction
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -19,6 +20,11 @@ finite-frontier facts.
 #print axioms Navier.Scaling.reciprocalMixedNormExponent_eq_zero_iff
 #print axioms Navier.Scaling.reciprocalCriticalLine_three_infinity
 #print axioms Navier.Scaling.reciprocalCriticalLine_infinity_two
+
+#print axioms Navier.EnergyObstruction.space_finrank
+#print axioms Navier.EnergyObstruction.l2_energy_dilation
+#print axioms Navier.EnergyObstruction.l3_critical_dilation
+#print axioms Navier.EnergyObstruction.energy_not_scale_coercive
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified
