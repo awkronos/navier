@@ -23,12 +23,6 @@ Statuses:
 | ID | Status | Claim tested | Falsifier or audit witness | Consequence | Permitted successor |
 |---|---|---|---|---|---|
 | F-001 | RED | The smooth energy identity alone controls a scale-critical norm | Under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\), energy scales as \(\lambda^{-1/2}\) while a critical norm scales as \(\lambda^0\) | No scale-uniform critical inequality can be obtained from energy size alone | Add a named exact-structure or geometric estimate and retest |
-
-> F-001 formal side REALIZED (2026-07-14, `c411f27`): `Navier.EnergyObstruction.energy_not_scale_coercive`
-> proves the obstruction kernel-clean — a rescaling whose `L²` energy is
-> arbitrarily small while its scale-critical `L³` mass stays fixed and positive.
-> The entry remains RED: it records that energy alone cannot control the
-> critical quantity, which the theorem now certifies rather than refutes.
 | F-002 | RED | Energy cancellation plus generic harmonic-analysis estimates suffice for global regularity | Tao's averaged bilinear equation preserves those coarse properties and admits finite-time blowup [TAO2016] | Any decisive positive estimate must distinguish the exact Navier–Stokes bilinear symbol | State the discriminator and show failure under Tao averaging |
 | F-003 | RED | A continuation criterion is itself an unconditional route payload | Logical normalization: “if \(N(u)<\infty\), then continue” does not prove \(N(u)<\infty\) | Serrin/ESS remain bridge results, not R1 closure | Prove the norm from strictly lower hypotheses |
 | F-004 | DECOMPOSED | Banach contraction gives arbitrary-large-data global existence | Kato/Koch–Tataru mechanisms obtain local large-data or global small-data control [KATO1984], [KOCH_TATARU2001] | FixedPointBanach may close local wiring only | Produce an interval-independent large-data gain not based on assumed smallness |
@@ -49,11 +43,18 @@ Statuses:
 | F-019 | QUARANTINED | A two-dimensional, axisymmetric, bounded-domain, hyperdissipative, or Euler theorem can be reported as A | At least one load-bearing dimension/domain/dissipation/nonlinearity field differs | Model results remain benchmarks | Prove a field-by-field transfer theorem to the exact whole-space equation |
 | F-020 | RED | Source grep, status prose, or a registry boolean is sufficient proof evidence | Such text can be stale or disconnected from theorem dependencies; only native compiler/axiom output checks the formal artifact | Status cannot mint closure | Bind fresh native output to the exact revision and declaration |
 
+F-001's formal side was realized on 2026-07-14 at `d0a728f`:
+`Navier.EnergyObstruction.energy_not_scale_coercive` proves the obstruction by
+constructing rescalings whose `L²` energy is arbitrarily small while their
+scale-critical `L³` mass stays fixed and positive. The entry remains RED: the
+theorem certifies that energy alone cannot control the critical quantity.
+
 ## Integration audit additions
 
 | ID | Status | Claim tested | Falsifier or audit witness | Consequence | Permitted successor |
 |---|---|---|---|---|---|
 | F-021 | RED | A periodic B/D contract may constrain velocity but omit pressure periodicity | 2026-07-14 audit at formal-source revision `528ff6f4fa06d7ea4dcebbd308eaee2d5dfcb07f`; Fefferman's official erratum explicitly adds \(p(x+e_j,t)=p(x,t)\) | Any future B/D surface or validator must require periodicity of both fields | Add adversarial contract tests that reject a velocity-only periodic surface |
+| F-022 | RED | Separate spatial power-integral and scalar time-integral dilation identities realize the full \(L_t^qL_x^p\) scaling theorem | The checked signatures contain no nested mixed norm, outer \(q\)-power/root, link from the time observable to a spatial \(L^p\) norm, or combined covariance theorem | `lp_dilation_scaling` and `time_dilation_scaling` remain valid lower infrastructure, but full mixed-norm scaling stays open | Define the actual nested norm with its measurability/integrability domain and prove the combined identity |
 
 ## Route test queue
 

@@ -95,12 +95,13 @@ theorem energy_not_scale_coercive
   · exact l3_critical_dilation _ (by positivity) φ
   · rw [l3_critical_dilation _ (by positivity) φ]; exact hφ3pos
 
-/-- The general `L^p` mixed-norm dilation scaling: the `p`-th power integral of the
-rescaled field `c · u(c · ·)` is `c ^ (p - 3)` times the original (for any real
-`p`, any `c > 0`). This realizes the spatial part of the Navier–Stokes scaling:
-the `L^p` norm itself rescales by `c ^ (1 - 3 / p)`, matching the `1 - 3 / p`
-term of `Navier.Scaling.mixedNormExponent`. The `p = 2` and `p = 3` cases above
-are special cases. -/
+/-- Spatial power-integral dilation: the integral of the `p`-th norm power of
+`c · u(c · ·)` is `c ^ (p - 3)` times the original (for any real `p` and
+`c > 0`). The `p = 2` and `p = 3` cases above are special cases.
+
+This theorem does not construct an `L^p` norm or take its `p`-th root. In
+particular, it is one ingredient of a future mixed-norm theorem, not a theorem
+about `L_t^q L_x^p` itself. -/
 theorem lp_dilation_scaling (c p : ℝ) (hc : 0 < c) (u : Space → Space) :
     ∫ x, ‖c • u (c • x)‖^p ∂volume = c^(p - 3) • ∫ x, ‖u x‖^p ∂volume := by
   have hc0 : 0 ≤ c := le_of_lt hc
@@ -114,12 +115,14 @@ theorem lp_dilation_scaling (c p : ℝ) (hc : 0 < c) (u : Space → Space) :
   rw [smul_smul, ← Real.rpow_natCast, ← Real.rpow_neg hc0, ← Real.rpow_add hc]
   rfl
 
-/-- The temporal half of the Navier–Stokes parabolic scaling: the time integral of
-a time-dilated observable `h(a · t)` is `a⁻¹` times the original (`a > 0`). With
-`a = λ²` this is the `λ⁻²` time factor. Composed with the spatial
-`lp_dilation_scaling` (`λ^{p-3}` for the `p`-th power) it realizes the full
-Navier–Stokes mixed-norm exponent `1 - 3/p - 2/q`, matching
-`Navier.Scaling.mixedNormExponent` analytically. -/
+/-- Scalar time-integral dilation: the integral of a time-dilated observable
+`h(a · t)` is `a⁻¹` times the original (`a > 0`). With `a = λ²` this is the
+`λ⁻²` time factor.
+
+The observable `h` is an arbitrary real-valued function. This statement does
+not define the outer `L^q` norm, connect `h` to a spatial `L^p` norm, or compose
+the two layers. Those steps remain necessary for the actual mixed-norm
+exponent theorem. -/
 theorem time_dilation_scaling (a : ℝ) (ha : 0 < a) (h : ℝ → ℝ) :
     ∫ t, h (a • t) ∂volume = a⁻¹ • ∫ t, h t ∂volume := by
   rw [MeasureTheory.Measure.integral_comp_smul volume h a]
