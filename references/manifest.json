@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-07-14",
+  "scope": "Primary and official sources supporting the Navier-Stokes attack blueprint, its known bridges, and its barrier tests.",
+  "sources": [
+    {
+      "id": "FEFFERMAN2000",
+      "title": "Existence and Smoothness of the Navier-Stokes Equation",
+      "authors": [
+        "Charles L. Fefferman"
+      ],
+      "year": 2000,
+      "venue": "Clay Mathematics Institute Millennium Prize Problems",
+      "type": "official_problem_statement",
+      "url": "https://www.claymath.org/wp-content/uploads/2022/06/navierstokes.pdf",
+      "doi": null,
+      "roles": [
+        "exact equations and admissibility clauses",
+        "exact alternatives A-D",
+        "whole-space primary formal target"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "LERAY1934",
+      "title": "Sur le mouvement d'un liquide visqueux emplissant l'espace",
+      "authors": [
+        "Jean Leray"
+      ],
+      "year": 1934,
+      "venue": "Acta Mathematica 63, 193-248",
+      "type": "journal_article",
+      "url": "https://doi.org/10.1007/BF02547354",
+      "doi": "10.1007/BF02547354",
+      "roles": [
+        "global finite-energy weak-solution boundary",
+        "weak versus smooth solution distinction"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "SERRIN1962",
+      "title": "On the Interior Regularity of Weak Solutions of the Navier-Stokes Equations",
+      "authors": [
+        "James Serrin"
+      ],
+      "year": 1962,
+      "venue": "Archive for Rational Mechanics and Analysis 9, 187-195",
+      "type": "journal_article",
+      "url": "https://doi.org/10.1007/BF00253344",
+      "doi": "10.1007/BF00253344",
+      "roles": [
+        "mixed-norm regularity criterion",
+        "conditional continuation bridge"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "KATO1984",
+      "title": "Strong L^p-Solutions of the Navier-Stokes Equation in R^m, with Applications to Weak Solutions",
+      "authors": [
+        "Tosio Kato"
+      ],
+      "year": 1984,
+      "venue": "Mathematische Zeitschrift 187, 471-480",
+      "type": "journal_article",
+      "url": "https://doi.org/10.1007/BF01174182",
+      "doi": "10.1007/BF01174182",
+      "roles": [
+        "strong local solution theory",
+        "critical-space mild-solution precedent",
+        "R2 boundary"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "CKN1982",
+      "title": "Partial Regularity of Suitable Weak Solutions of the Navier-Stokes Equations",
+      "authors": [
+        "Luis Caffarelli",
+        "Robert V. Kohn",
+        "Louis Nirenberg"
+      ],
+      "year": 1982,
+      "venue": "Communications on Pure and Applied Mathematics 35, 771-831",
+      "type": "journal_article",
+      "url": "https://onlinelibrary.wiley.com/doi/pdf/10.1002/cpa.3160350604",
+      "doi": "10.1002/cpa.3160350604",
+      "roles": [
+        "suitable weak solutions",
+        "epsilon and partial regularity",
+        "R4 and R9 boundary"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "CONSTANTIN_FEFFERMAN1993",
+      "title": "Direction of Vorticity and the Problem of Global Regularity for the Navier-Stokes Equations",
+      "authors": [
+        "Peter Constantin",
+        "Charles Fefferman"
+      ],
+      "year": 1993,
+      "venue": "Indiana University Mathematics Journal 42(3), 775-789",
+      "type": "journal_article",
+      "url": "https://iumj.org/article/3627/",
+      "doi": null,
+      "roles": [
+        "vorticity-direction regularity criterion",
+        "R3 conditional boundary"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "KOCH_TATARU2001",
+      "title": "Well-Posedness for the Navier-Stokes Equations",
+      "authors": [
+        "Herbert Koch",
+        "Daniel Tataru"
+      ],
+      "year": 2001,
+      "venue": "Advances in Mathematics 157(1), 22-35",
+      "type": "journal_article",
+      "url": "https://math.berkeley.edu/~tataru/papers/nas.pdf",
+      "doi": "10.1006/aima.2000.1937",
+      "roles": [
+        "BMO-minus-one well-posedness",
+        "critical mild fixed-point route",
+        "small-data versus arbitrary-data boundary"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "ESS2003",
+      "title": "L_{3,∞}-Solutions of the Navier-Stokes Equations and Backward Uniqueness",
+      "authors": [
+        "Luis Escauriaza",
+        "Gregory A. Seregin",
+        "Vladimir Šverák"
+      ],
+      "year": 2003,
+      "venue": "Russian Mathematical Surveys 58(2), 211-250",
+      "type": "journal_article",
+      "url": "https://www.mathnet.ru/eng/rm609",
+      "doi": "10.1070/RM2003v058n02ABEH000609",
+      "roles": [
+        "endpoint L-infinity-time L3-space regularity",
+        "backward uniqueness",
+        "R1 and R4 conditional bridge"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "FOIAS_TEMAM1989",
+      "title": "Gevrey Class Regularity for the Solutions of the Navier-Stokes Equations",
+      "authors": [
+        "Ciprian Foias",
+        "Roger Temam"
+      ],
+      "year": 1989,
+      "venue": "Journal of Functional Analysis 87(2), 359-369",
+      "type": "journal_article",
+      "url": "https://doi.org/10.1016/0022-1236(89)90015-3",
+      "doi": "10.1016/0022-1236(89)90015-3",
+      "roles": [
+        "Gevrey regularity precedent",
+        "analyticity-radius route boundary"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "TAO2016",
+      "title": "Finite Time Blowup for an Averaged Three-Dimensional Navier-Stokes Equation",
+      "authors": [
+        "Terence Tao"
+      ],
+      "year": 2016,
+      "venue": "Journal of the American Mathematical Society 29(3), 601-674",
+      "type": "journal_article",
+      "url": "https://www.ams.org/jams/2016-29-03/S0894-0347-2015-00838-4/S0894-0347-2015-00838-4.pdf",
+      "doi": "10.1090/jams/838",
+      "roles": [
+        "averaged-operator blowup obstruction",
+        "energy-plus-generic-harmonic-analysis kill test",
+        "exact-bilinear-structure discriminator"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "BUCKMASTER_VICOL2019",
+      "title": "Nonuniqueness of Weak Solutions to the Navier-Stokes Equation",
+      "authors": [
+        "Tristan Buckmaster",
+        "Vlad Vicol"
+      ],
+      "year": 2019,
+      "venue": "Annals of Mathematics 189(1), 101-144",
+      "type": "journal_article",
+      "url": "https://annals.math.princeton.edu/2019/189-1/p03",
+      "doi": "10.4007/annals.2019.189.1.3",
+      "roles": [
+        "finite-energy weak nonuniqueness boundary",
+        "weak versus smooth category audit"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    },
+    {
+      "id": "ALBRITTON_BRUE_COLOMBO2022",
+      "title": "Non-Uniqueness of Leray Solutions of the Forced Navier-Stokes Equations",
+      "authors": [
+        "Dallas Albritton",
+        "Elia Brué",
+        "Maria Colombo"
+      ],
+      "year": 2022,
+      "venue": "Annals of Mathematics 196(1), 415-455",
+      "type": "journal_article",
+      "url": "https://projecteuclid.org/journals/annals-of-mathematics/volume-196/issue-1/Non-uniqueness-of-Leray-solutions-of-the-forced-Navier-Stokes/10.4007/annals.2022.196.1.3.full",
+      "doi": "10.4007/annals.2022.196.1.3",
+      "roles": [
+        "forced Leray nonuniqueness boundary",
+        "force and solution-class quarantine",
+        "R9 and R11 boundary"
+      ],
+      "primary": true,
+      "checked_at": "2026-07-14"
+    }
+  ]
+}
