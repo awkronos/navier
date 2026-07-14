@@ -1,10 +1,10 @@
 {
   "$schema": "../schemas/attack_registry.schema.json",
   "schema_version": "1.0.0",
-  "registry_version": "1.0.1",
+  "registry_version": "1.0.2",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
-  "generated_at": "2026-07-14T22:26:23Z",
+  "generated_at": "2026-07-14T22:33:14Z",
   "ssot": true,
   "campaign": {
     "id": "campaign.navier_clay",
@@ -120,11 +120,19 @@
       "relevance": "Provides a critical-space local mild-solution and continuation framework for the exact equation."
     },
     {
+      "id": "ref.koch.tataru2001",
+      "kind": "PRIMARY",
+      "citation": "Herbert Koch and Daniel Tataru, Well-Posedness for the Navier-Stokes Equations, Advances in Mathematics 157.",
+      "year": 2001,
+      "locator": "doi:10.1006/aima.2000.1937",
+      "relevance": "Establishes critical BMO-minus-one well-posedness and separates global small-data control from the unresolved arbitrary-data problem."
+    },
+    {
       "id": "ref.prodi.1959",
       "kind": "PRIMARY",
-      "citation": "Giovanni Prodi, Un teorema di unicita per le equazioni di Navier-Stokes, Annali di Matematica Pura ed Applicata 48.",
+      "citation": "Giovanni Prodi, Un teorema di unicità per le equazioni di Navier-Stokes, Annali di Matematica Pura ed Applicata 48, 173-182.",
       "year": 1959,
-      "locator": "journal:annali-matematica-prodi-1959-uniqueness",
+      "locator": "doi:10.1007/BF02410664",
       "relevance": "Introduces an integrability criterion separating conditional regularity from the unresolved unconditional bound."
     },
     {
@@ -154,9 +162,9 @@
     {
       "id": "ref.gallagher.koch.planchon2013",
       "kind": "PRIMARY",
-      "citation": "Isabelle Gallagher, Gabriel Koch, and Fabrice Planchon, A profile decomposition approach to the L3-infinity Navier-Stokes regularity criterion, Mathematische Annalen 355.",
+      "citation": "Isabelle Gallagher, Gabriel S. Koch, and Fabrice Planchon, A profile decomposition approach to the L^∞_t(L^3_x) Navier-Stokes regularity criterion, Mathematische Annalen 355.",
       "year": 2013,
-      "locator": "doi:10.1007/s00208-012-0800-0",
+      "locator": "doi:10.1007/s00208-012-0830-0",
       "relevance": "Develops profile decomposition and critical-element machinery for a Navier-Stokes regularity criterion."
     },
     {
@@ -176,12 +184,28 @@
       "relevance": "Relates geometric depletion of vortex stretching to conditional regularity without supplying unconditional alignment."
     },
     {
+      "id": "ref.foias.temam1989",
+      "kind": "PRIMARY",
+      "citation": "Ciprian Foias and Roger Temam, Gevrey Class Regularity for the Solutions of the Navier-Stokes Equations, Journal of Functional Analysis 87.",
+      "year": 1989,
+      "locator": "doi:10.1016/0022-1236(89)90015-3",
+      "relevance": "Provides the Gevrey regularity precedent while leaving a uniform arbitrary-data analyticity-radius bound open."
+    },
+    {
       "id": "ref.buckmaster.vicol2019",
       "kind": "PRIMARY",
       "citation": "Tristan Buckmaster and Vlad Vicol, Nonuniqueness of weak solutions to the Navier-Stokes equation, Annals of Mathematics 189.",
       "year": 2019,
       "locator": "doi:10.4007/annals.2019.189.1.3",
       "relevance": "Shows why weak-solution pathology is a different object from the exact smooth-data Fefferman C breakdown endpoint."
+    },
+    {
+      "id": "ref.albritton.brue.colombo2022",
+      "kind": "PRIMARY",
+      "citation": "Dallas Albritton, Elia Brué, and Maria Colombo, Non-Uniqueness of Leray Solutions of the Forced Navier-Stokes Equations, Annals of Mathematics 196.",
+      "year": 2022,
+      "locator": "doi:10.4007/annals.2022.196.1.3",
+      "relevance": "Marks the forced Leray nonuniqueness boundary and prevents transport of weak forced pathology to the smooth exact endpoint."
     },
     {
       "id": "ref.tao.averaged2016",
@@ -452,7 +476,7 @@
       "summary": "The profile-decomposition result supplies a literature target for organizing critical noncompactness.",
       "reference_ids": ["ref.gallagher.koch.planchon2013"],
       "supports": ["compact.profile_decomposition"],
-      "provenance": {"source_locator": "doi:10.1007/s00208-012-0800-0", "source_revision": "doi:10.1007/s00208-012-0800-0", "immutable": true, "observed_at": "2026-07-14T16:58:58Z", "artifact_sha256": null},
+      "provenance": {"source_locator": "doi:10.1007/s00208-012-0830-0", "source_revision": "doi:10.1007/s00208-012-0830-0", "immutable": true, "observed_at": "2026-07-14T22:33:14Z", "artifact_sha256": null},
       "receipt": null
     },
     {

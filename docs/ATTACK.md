@@ -175,7 +175,8 @@ or logical kill test), and **observation-only** (computation).
   finite-time estimate whose constant diverges at the maximal time.
 - **Pivot:** isolate the frequency or geometry responsible for failure and
   transfer that residual to R3, R5, or R7.
-- **Evidence:** continuation is established [SERRIN1962], [ESS2003]; the
+- **Evidence:** conditional continuation is established [PRODI1959],
+  [SERRIN1962], [ESS2003]; the
   unconditional bound is **open-residual**.
 
 ### R2 — Mild fixed point in a critical space
@@ -223,8 +224,10 @@ or logical kill test), and **observation-only** (computation).
   limit, or the rigidity hypothesis simply assumes the ancient solution's
   critical norm is bounded.
 - **Pivot:** quantify the defect and redirect its support/scale to R5 or R9.
-- **Evidence:** partial and epsilon regularity are **established** [CKN1982];
-  the universal compactness-rigidity closure is **open-residual**.
+- **Evidence:** partial and epsilon regularity are **established** [CKN1982],
+  and critical profile decomposition is established
+  [GALLAGHER_KOCH_PLANCHON2013]; the universal compactness-rigidity closure is
+  **open-residual**.
 
 ### R5 — Frequency envelope and cascade exclusion
 
@@ -239,8 +242,9 @@ or logical kill test), and **observation-only** (computation).
   equivalent to a critical continuation norm.
 - **Pivot:** identify the offending triads and search for exact symbol
   cancellation in R7; if none exists, expose them as candidates for R11.
-- **Evidence:** decomposition tools are analytic infrastructure; cascade
-  exclusion is **open-residual**, constrained by [TAO2016].
+- **Evidence:** quantitative frequency-localized control conditional on a
+  critical bound is established [TAO2019]; unconditional cascade exclusion is
+  **open-residual**, constrained by [TAO2016].
 
 ### R6 — Lagrangian deformation and vortex stretching
 

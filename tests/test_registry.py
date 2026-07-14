@@ -697,6 +697,28 @@ class SchemaDossierAndManifestTests(unittest.TestCase):
                 self.assertTrue(source["url"].startswith("https://"))
                 self.assertTrue(source["roles"])
 
+    def test_manifest_registry_ids_form_exact_bijection_with_registry_references(self) -> None:
+        manifest = load_json(MANIFEST_PATH)
+        registry = load_json(REGISTRY_PATH)
+        registry_ids = [source["registry_id"] for source in manifest["sources"]]
+        reference_ids = {reference["id"] for reference in registry["references"]}
+        self.assertEqual(len(registry_ids), len(set(registry_ids)))
+        self.assertEqual(set(registry_ids), reference_ids)
+
+    def test_manifest_years_and_dois_match_registry_reference_metadata(self) -> None:
+        manifest = load_json(MANIFEST_PATH)
+        registry = load_json(REGISTRY_PATH)
+        references = {reference["id"]: reference for reference in registry["references"]}
+        for source in manifest["sources"]:
+            with self.subTest(source=source["id"]):
+                reference = references[source["registry_id"]]
+                self.assertEqual(reference["year"], source["year"])
+                if source["doi"] is not None:
+                    self.assertEqual(
+                        reference["locator"],
+                        f"doi:{source['doi']}",
+                    )
+
     def test_dossier_citations_and_manifest_source_keys_have_exact_coverage(self) -> None:
         dossier = ATTACK_PATH.read_text(encoding="utf-8")
         manifest = load_json(MANIFEST_PATH)
