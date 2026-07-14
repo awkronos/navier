@@ -1,5 +1,6 @@
 import Navier.ClayFrontier
 import Navier.EnergyObstruction
+import Navier.ConventionBridges
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -25,6 +26,8 @@ finite-frontier facts.
 #print axioms Navier.EnergyObstruction.l2_energy_dilation
 #print axioms Navier.EnergyObstruction.l3_critical_dilation
 #print axioms Navier.EnergyObstruction.energy_not_scale_coercive
+
+#print axioms Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified

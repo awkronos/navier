@@ -1,6 +1,7 @@
 import Navier.Problem
 import Navier.Scaling
 import Navier.EnergyObstruction
+import Navier.ConventionBridges
 import Navier.Disposition
 import Navier.Frontier
 import Navier.ClayFrontier
