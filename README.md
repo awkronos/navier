@@ -25,6 +25,10 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
   machine-readable status/dependency/evidence registry, checked fail-closed.
 - [`Navier/Problem.lean`](Navier/Problem.lean): concrete derivatives,
   equation, solution predicate, and the direct statement-A encoding.
+- [`Navier/OfficialProblem.lean`](Navier/OfficialProblem.lean): typed sibling
+  surfaces for official alternatives B, C, and D, including force decay,
+  periodic velocity and pressure, and the deliberate absence of a whole-space
+  energy clause from B/D.
 - [`Navier/Analysis/VectorCalculus.lean`](Navier/Analysis/VectorCalculus.lean)
   and [`Navier/Analysis/Covariance.lean`](Navier/Analysis/Covariance.lean):
   checked product/coordinate identities and the spatial derivative/divergence
@@ -44,11 +48,11 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
 - [`references/manifest.json`](references/manifest.json): checked primary and
   official source locators.
 
-The formal encoding deliberately keeps two convention bridges open
-(`SchwartzMap` versus Fefferman's coordinatewise decay, and Mathlib
-half-space smoothness versus the official boundary convention). The decisive
-global critical estimate, rigidity theorem, or exact breakdown witness is
-also open.
+The formal encoding keeps its convention bridges explicit (`SchwartzMap`
+versus coordinatewise decay, total Fréchet versus mixed coordinate
+derivatives, half-space smoothness, norm/PDE/energy conventions, and periodic
+lifts versus the quotient). The decisive global critical estimate, rigidity
+theorem, or exact breakdown witness is also open.
 
 ## Verify
 

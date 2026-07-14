@@ -64,7 +64,7 @@ This prevents both endpoint-as-assumption and wrapper progress.
 
 | Node | Proposition or structure | Producers | Consumers | Status |
 |---|---|---|---|---|
-| P0 | Official clauses for Fefferman data and alternatives A–D; current Lean encoding of A | [FEFFERMAN2000] plus `Navier/Problem.lean` | every route, A0 | A scaffolded with two convention residuals; B–D formal surfaces open |
+| P0 | Official clauses for Fefferman data and alternatives A–D | [FEFFERMAN2000], `Navier/Problem.lean`, and `Navier/OfficialProblem.lean` | every route, A0/N0 | A–D proposition surfaces typed; seven convention/quotient bridges remain explicit and no endpoint is inhabited |
 | P1 | Vector calculus and Leray projection on \(\mathbb R^3\) | Mathlib plus `Navier/Analysis/VectorCalculus.lean` | all routes | product/coordinate leaves checked; curl, Leray, pressure recovery, and integration identities open |
 | P2 | Schwartz, Sobolev, mixed, critical, weak, and suitable spaces | Mathlib plus new definitions | all routes | open formal infrastructure |
 | P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, and `Navier/Analysis/Covariance.lean` | R1, R4, R5, R9–R11 | exponent, separate power-integral rules, and spatial derivative/divergence covariance checked; actual mixed norm and full equation covariance open |

@@ -1,4 +1,5 @@
 import Navier.Problem
+import Navier.OfficialProblem
 import Navier.Analysis.Covariance
 import Navier.Analysis.VectorCalculus
 import Navier.Scaling

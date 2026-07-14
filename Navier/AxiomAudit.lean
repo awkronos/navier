@@ -1,4 +1,5 @@
 import Navier.ClayFrontier
+import Navier.OfficialProblem
 import Navier.Analysis.Covariance
 import Navier.Analysis.VectorCalculus
 import Navier.EnergyObstruction
@@ -18,6 +19,9 @@ finite-frontier facts.
 -/
 
 #print axioms Navier.Clay.StatementA
+#print axioms Navier.Clay.StatementB
+#print axioms Navier.Clay.StatementC
+#print axioms Navier.Clay.StatementD
 
 #print axioms Navier.Scaling.mixedNormExponent_eq_zero_iff
 #print axioms Navier.Scaling.criticalLine_six_four

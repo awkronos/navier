@@ -140,7 +140,7 @@ These are reusable infrastructure, not route-specific discoveries.
 
 | ID | Prerequisite | Required deliverable | Current evidence |
 |---|---|---|---|
-| P0 | Exact target | Predicates for Fefferman data, solution, energy, and alternatives A–D | Official statement [FEFFERMAN2000] |
+| P0 | Exact target | Predicates for Fefferman data, solution, energy, and alternatives A–D | A–D proposition surfaces are typed in `Navier/Problem.lean` and `Navier/OfficialProblem.lean`; seven convention/quotient bridges remain explicit against the official statement [FEFFERMAN2000] |
 | P1 | Differential operators | Divergence, gradient, Laplacian, curl, Helmholtz/Leray projection, pressure recovery | Basic divergence/gradient/convection definitions, a product rule, and a coordinate convection expansion are checked; curl, Leray projection, pressure recovery, and integration identities remain |
 | P2 | Function spaces | Schwartz/smooth data, Sobolev and mixed norms, weak and suitable solutions, critical spaces | Definitions and embeddings must be formalized |
 | P3 | Scaling | Equation covariance and the exponent \(1-3/p-2/q\) | Exponent algebra, separate spatial/time power-integral identities, and spatial derivative/divergence covariance are checked; actual mixed-norm and full equation covariance remain open |
