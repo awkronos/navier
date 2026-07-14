@@ -27,6 +27,7 @@ finite-frontier facts.
 #print axioms Navier.EnergyObstruction.l3_critical_dilation
 #print axioms Navier.EnergyObstruction.energy_not_scale_coercive
 #print axioms Navier.EnergyObstruction.lp_dilation_scaling
+#print axioms Navier.EnergyObstruction.time_dilation_scaling
 
 #print axioms Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay
 

@@ -114,4 +114,15 @@ theorem lp_dilation_scaling (c p : ℝ) (hc : 0 < c) (u : Space → Space) :
   rw [smul_smul, ← Real.rpow_natCast, ← Real.rpow_neg hc0, ← Real.rpow_add hc]
   rfl
 
+/-- The temporal half of the Navier–Stokes parabolic scaling: the time integral of
+a time-dilated observable `h(a · t)` is `a⁻¹` times the original (`a > 0`). With
+`a = λ²` this is the `λ⁻²` time factor. Composed with the spatial
+`lp_dilation_scaling` (`λ^{p-3}` for the `p`-th power) it realizes the full
+Navier–Stokes mixed-norm exponent `1 - 3/p - 2/q`, matching
+`Navier.Scaling.mixedNormExponent` analytically. -/
+theorem time_dilation_scaling (a : ℝ) (ha : 0 < a) (h : ℝ → ℝ) :
+    ∫ t, h (a • t) ∂volume = a⁻¹ • ∫ t, h t ∂volume := by
+  rw [MeasureTheory.Measure.integral_comp_smul volume h a]
+  simp [abs_of_pos ha, smul_eq_mul]
+
 end Navier.EnergyObstruction
