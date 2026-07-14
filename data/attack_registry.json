@@ -1,10 +1,10 @@
 {
   "$schema": "../schemas/attack_registry.schema.json",
   "schema_version": "1.0.0",
-  "registry_version": "1.0.2",
+  "registry_version": "1.0.3",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
-  "generated_at": "2026-07-14T22:33:14Z",
+  "generated_at": "2026-07-14T22:37:17Z",
   "ssot": true,
   "campaign": {
     "id": "campaign.navier_clay",
@@ -36,8 +36,8 @@
           "forcing": "SMOOTH_RAPID_DECAY",
           "target": "NO_GLOBAL_PHYSICALLY_REASONABLE_SOLUTION",
           "obligation_id": "endpoint.fefferman_c",
-          "public_declaration": null,
-          "planned_formal_target": "Navier.Clay.StatementC"
+          "public_declaration": "Navier.Clay.StatementC",
+          "planned_formal_target": null
         }
       ]
     },
@@ -518,6 +518,16 @@
       "supports": ["breakdown.averaged_model_warning"],
       "provenance": {"source_locator": "repo:docs/FALSIFICATION_LEDGER.md#F-017", "source_revision": "4aba62dcbcbc42c3507a0778a0ed6fbadbd0b80d", "immutable": true, "observed_at": "2026-07-14T22:26:23Z", "artifact_sha256": "49a51548e90f6028a22d6fc68c7ea9a363adc188c1195e218d0fc8c1d40f79a3"},
       "receipt": null
+    },
+    {
+      "id": "evidence.surface.fefferman_c",
+      "kind": "FORMAL_SURFACE_SNAPSHOT",
+      "claim_tier": "SCAFFOLD",
+      "summary": "The committed OfficialProblem module defines the public Fefferman C proposition with admissible datum, force, and no-global-solution quantifiers; this snapshot proves no inhabitant.",
+      "reference_ids": ["ref.clay.fefferman2000"],
+      "supports": ["breakdown.exact_c_surface"],
+      "provenance": {"source_locator": "repo:Navier/OfficialProblem.lean", "source_revision": "bf8dbc7ae01a235f19a0fe4029f6e1013b7fab9d", "immutable": true, "observed_at": "2026-07-14T22:37:17Z", "artifact_sha256": "e0860458bab6263833147269526a99f56e410454d4f7e96f3cc229aa27993643"},
+      "receipt": null
     }
   ],
   "obligations": [
@@ -907,18 +917,18 @@
       "title": "Exact whole-space Fefferman-C surface",
       "kind": "DEFINITION",
       "claim_tier": "SCAFFOLD",
-      "disposition": "SCAFFOLDED",
+      "disposition": "DECOMPOSED",
       "statement": "For every fixed positive viscosity, quantify admissible smooth rapidly decaying data and force for which no global physically reasonable R3 solution exists.",
-      "formal_declaration": null,
+      "formal_declaration": "Navier.Clay.StatementC",
       "dependency_mode": "NONE",
       "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}],
-      "verifier_ids": ["verifier.registry.strict"],
+      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_c", "role": "BACKGROUND"}],
+      "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
-      "residual": {"statement": "Implement Navier.Clay.StatementC with the exact force decay, smoothness, energy, and no-global-solution quantifiers.", "smaller_than": "Defining the official negative endpoint does not construct its required datum and force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, or substituting weak nonuniqueness invalidates the surface.", "next_action": "Port clauses one through seven with force decay and adversarial quantifier examples."}
+      "residual": {"statement": "Close the seven named representation bridges and add adversarial quantifier tests for the delivered StatementC surface.", "smaller_than": "Surface fidelity is a representation obligation and does not construct the required breakdown datum or force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, importing periodic or weak-solution semantics, or changing the no-global-pair quantifier invalidates the surface.", "next_action": "Prove the coordinatewise/Fréchet, boundary, norm, PDE, energy, and periodic-quotient convention bridges independently of any endpoint inhabitant."}
     },
     {
       "id": "breakdown.forced_c_payload",
@@ -994,7 +1004,7 @@
       "evidence_links": [],
       "verifier_ids": ["verifier.registry.strict"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Deliver Navier.Clay.StatementC and a native theorem inhabiting it from an exact admissible breakdown realization.", "smaller_than": "The current split exposes the missing formal surface and construction rather than assuming either.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "Averaged blowup, weak nonuniqueness, existential viscosity, or inadmissible force cannot close C.", "next_action": "Implement the public C type, then require its exact construction dependency and native axiom receipt."}
+      "residual": {"statement": "Construct a native theorem term inhabiting the delivered Navier.Clay.StatementC from an exact admissible breakdown realization.", "smaller_than": "The public type is present; its construction dependency remains separate and genuinely open.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "Averaged blowup, weak nonuniqueness, existential viscosity, inadmissible force, or a proposition definition without an inhabitant cannot close C.", "next_action": "Require the exact construction dependency and a fresh native axiom receipt before endpoint promotion."}
     },
     {
       "id": "computation.intermediate_falsification",

@@ -292,12 +292,14 @@ class EndpointAndDomainTests(RegistryTestCase):
         self.registry["campaign"]["problem_surface"]["viscosity"] = "ZERO"
         self.assertInvalid("$.campaign.problem_surface.viscosity: expected 'POSITIVE'")
 
-    def test_fefferman_c_declaration_laundering_is_rejected(self) -> None:
+    def test_fefferman_c_delivered_declaration_cannot_be_demoted_to_planned(self) -> None:
         branch = self.registry["campaign"]["problem_surface"]["resolution_branches"][1]
-        branch["public_declaration"] = "Navier.Clay.StatementC"
-        branch["planned_formal_target"] = None
-        _find(self.registry["obligations"], C_ID)["formal_declaration"] = "Navier.Clay.StatementC"
-        self.assertInvalid("Fefferman C must remain an explicit planned target until delivered")
+        branch["public_declaration"] = None
+        branch["planned_formal_target"] = "Navier.Clay.StatementC"
+        _find(self.registry["obligations"], "breakdown.exact_c_surface")[
+            "formal_declaration"
+        ] = None
+        self.assertInvalid("Fefferman C must bind the delivered Navier.Clay.StatementC")
 
     def test_fefferman_a_delivered_declaration_cannot_be_demoted_to_planned(self) -> None:
         branch = self.registry["campaign"]["problem_surface"]["resolution_branches"][0]
@@ -600,7 +602,7 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         status = derived_status(self.registry)
         self.assertEqual(
             status["dispositions"],
-            {"DECOMPOSED": 9, "RED": 1, "SCAFFOLDED": 18},
+            {"DECOMPOSED": 10, "RED": 1, "SCAFFOLDED": 17},
         )
         self.assertEqual(
             status["claim_tiers"],
@@ -619,7 +621,7 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         status = derived_status(self.registry)
         self.assertEqual(
             status["dispositions"],
-            {"DECOMPOSED": 9, "RED": 2, "SCAFFOLDED": 17},
+            {"DECOMPOSED": 10, "RED": 2, "SCAFFOLDED": 16},
         )
         self.assertEqual(status["endpoints"][0]["disposition"], "RED")
 

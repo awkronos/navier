@@ -148,7 +148,7 @@ PINNED_OBLIGATION_CONTRACTS = {
     "regularity.any_positive_route": "0d1edf3b566e719eb16c3db2323020d7d62f4c29f001d0adf98c34498cd929e8",
     "local.global_continuation": "423db890357c0de62917cc11c8ccf456bd4ff3ecc78683444eaddb86c937da91",
     "endpoint.fefferman_a": "2cb551497700dd34b1f805248a227475279c90a0bddaca49310a7a6997b4cd39",
-    "breakdown.exact_c_surface": "e7f2441784ed334e127de621e10dd9a0cfb8ee3e16877ffbc98d6ec8c3352bc9",
+    "breakdown.exact_c_surface": "ce51e8515006c87d6ac8b67661bc1472e0abab32f5f1bb7f8c06aaa326e9119b",
     "breakdown.forced_c_payload": "db897b8c7ee33ed5d394d522c85bdcfd814b86be29c1838ea008e531ef9c1cf9",
     "breakdown.zero_force_blowup_payload": "adef400d4f6f1666fc96204d1f9d2b386ec4263602bfc93fa757515c8bd25439",
     "breakdown.any_exact_realization": "b0459487fd369c5dc192b33f3127ef177e26a53f65b30096a5f542f51b8f2abd",
@@ -181,7 +181,7 @@ PINNED_OPEN_OBLIGATION_DISPOSITIONS = {
     "regularity.any_positive_route": "SCAFFOLDED",
     "local.global_continuation": "SCAFFOLDED",
     "endpoint.fefferman_a": "SCAFFOLDED",
-    "breakdown.exact_c_surface": "SCAFFOLDED",
+    "breakdown.exact_c_surface": "DECOMPOSED",
     "breakdown.forced_c_payload": "SCAFFOLDED",
     "breakdown.zero_force_blowup_payload": "SCAFFOLDED",
     "breakdown.any_exact_realization": "SCAFFOLDED",
@@ -597,10 +597,10 @@ def _validate_campaign(data: Any, errors: list[str]) -> dict[str, Any]:
         errors.append("$.campaign.problem_surface: Fefferman A must bind the delivered Navier.Clay.StatementA")
     branch_c = by_branch.get("FEFFERMAN_C", {})
     if branch_c and (
-        branch_c.get("public_declaration") is not None
-        or branch_c.get("planned_formal_target") != "Navier.Clay.StatementC"
+        branch_c.get("public_declaration") != "Navier.Clay.StatementC"
+        or branch_c.get("planned_formal_target") is not None
     ):
-        errors.append("$.campaign.problem_surface: Fefferman C must remain an explicit planned target until delivered")
+        errors.append("$.campaign.problem_surface: Fefferman C must bind the delivered Navier.Clay.StatementC")
     return campaign
 
 
