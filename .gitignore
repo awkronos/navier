@@ -1,0 +1,9 @@
+.DS_Store
+.lake/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+artifacts/runs/*
+!artifacts/runs/.gitkeep
+
