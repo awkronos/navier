@@ -1,16 +1,20 @@
 import Navier.Routes.R7.ExactSymbol
 
 /-!
-# Exact divergence-free triad energy-transfer probe
+# Divergence-free triad symbol-coefficient probe
 
 This file proves a finite-dimensional algebraic identity for one three-wave
 interaction.  It does not construct Fourier series, prove convergence or shell
 summability, model Tao's averaged operator, or imply Navier--Stokes regularity.
 
-For wavevectors `k + l + m = 0` and amplitudes `a ⊥ k`, `b ⊥ l`,
-`c ⊥ m`, the six ordered convection energy-transfer scalars cancel in
-three pairs, one pair for each advecting mode.  A concrete triad shows that the
-individual ordered transfers need not vanish or have a fixed sign.
+For wavevectors `k + l + m = 0` and real polarizations `a ⊥ k`, `b ⊥ l`,
+`c ⊥ m`, six ordered real trilinear coefficients cancel in three pairs,
+one pair for each advecting mode.  A concrete triad shows that the individual
+coefficients need not vanish or have a fixed sign.
+
+These coefficients omit the Fourier derivative phase and receiver
+conjugation. `PhaseSymbol.lean` supplies the separate normalized, phase-aware
+symbol bridge; neither file constructs a Fourier field or physical shell flux.
 -/
 
 set_option autoImplicit false
@@ -22,10 +26,10 @@ open scoped Matrix
 
 namespace Navier.Routes.R7
 
-/-- The real scalar part of the ordered interaction in which `advector`
-advects `advected` at wavevector `advectedWave`, with the output paired against
-`receiver`.  For a divergence-free receiver at the output wavevector, the
-Leray projection drops out of this energy pairing. -/
+/-- The ordered real trilinear coefficient in which `advector` advects
+`advected` at wavevector `advectedWave`, with the output paired against
+`receiver`. The historical name is retained, but this definition alone is not
+a Fourier energy transfer: it has no complex phase, `i`, or conjugation. -/
 def orderedTransfer
     (advector advected receiver advectedWave : Space) : ℝ :=
   (advector ⬝ᵥ advectedWave) * (advected ⬝ᵥ receiver)
@@ -38,7 +42,7 @@ theorem receiver_dot_lerayNumerator
   simp only [lerayNumerator, dotProduct_sub, dotProduct_smul, smul_eq_mul]
   rw [hc, mul_zero, sub_zero, dotProduct_comm c b]
 
-/-- The two ordered transfers with a fixed advecting mode cancel. -/
+/-- The two ordered coefficients with a fixed advecting mode cancel. -/
 theorem advector_pair_cancels
     (p q r u v w : Space)
     (htriad : p + q + r = 0)
@@ -66,7 +70,7 @@ theorem advector_pair_cancels
           ring
     _ = 0 := by rw [huqr]; ring
 
-/-- The six ordered transfers cancel in three pairs, grouped by advecting
+/-- The six ordered coefficients cancel in three pairs, grouped by advecting
 mode `a`, then `b`, then `c`. -/
 theorem grouped_six_transfer_cancellation
     (k l m a b c : Space)
@@ -87,14 +91,14 @@ theorem grouped_six_transfer_cancellation
     advector_pair_cancels l k m b a c htriad_b hb,
     advector_pair_cancels m k l c a b htriad_c hc⟩
 
-/-- The sum of all six ordered convection energy transfers. -/
+/-- The sum of all six ordered real trilinear coefficients. -/
 def sixTransferSum (k l m a b c : Space) : ℝ :=
   (orderedTransfer a b c l + orderedTransfer a c b m) +
   (orderedTransfer b a c k + orderedTransfer b c a m) +
   (orderedTransfer c a b k + orderedTransfer c b a l)
 
-/-- Exact global energy cancellation for one divergence-free three-wave
-interaction. -/
+/-- Algebraic six-coefficient cancellation for one divergence-free
+three-wave configuration. -/
 theorem six_transfer_sum_zero
     (k l m a b c : Space)
     (htriad : k + l + m = 0)
@@ -127,8 +131,8 @@ theorem witness_admissible :
       Matrix.vec3_dotProduct, Matrix.cons_val_zero, Matrix.cons_val_one,
       Matrix.cons_val_two]
 
-/-- The first ordered transfer is `1`, while the full six-term sum is zero.
-Thus the cancellation is genuinely collective rather than termwise. -/
+/-- The first ordered coefficient is `1`, while the full six-term coefficient
+sum is zero. Thus the real algebraic cancellation is collective, not termwise. -/
 theorem witness_nontermwise_cancellation :
     orderedTransfer witnessA witnessB witnessC witnessL = 1 ∧
     sixTransferSum witnessK witnessL witnessM witnessA witnessB witnessC = 0 := by

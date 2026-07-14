@@ -1,16 +1,16 @@
 import Navier.Routes.R7.Triad
 
 /-!
-# Scale saturation for the exact triad witness
+# Scale saturation for the triad symbol coefficient
 
 This module scales the wavevectors in the concrete admissible triad from
-`Navier.Routes.R7.Triad` while leaving its amplitudes fixed.  The collective
-six-transfer cancellation survives, but the nonzero ordered transfer grows
-linearly with frequency scale.
+`Navier.Routes.R7.Triad` while leaving its real polarizations fixed.  The
+collective six-coefficient cancellation survives, but one nonzero ordered
+real coefficient grows linearly with frequency scale.
 
-This is a falsifier for an unweighted, frequency-uniform bound on individual
-transfers.  It does not rule out weighted or collective shell estimates and
-does not establish Fourier summability or Navier--Stokes regularity.
+This is a falsifier for an unweighted, frequency-uniform bound on these real
+coefficients. It does not by itself describe a Fourier energy transfer, rule
+out weighted or collective shell estimates, or establish regularity.
 -/
 
 set_option autoImplicit false
@@ -38,8 +38,8 @@ theorem scaled_witness_admissible (s : ℝ) :
   · simp only [scaledWitnessK, scaledWitnessL, scaledWitnessM,
       smul_dotProduct, smul_eq_mul, ha, hb, hc, mul_zero, and_self]
 
-/-- With amplitudes fixed, the concrete nonzero ordered transfer is exactly
-the frequency scale `s`. -/
+/-- With polarizations fixed, the concrete nonzero ordered coefficient is
+exactly the frequency scale `s`. -/
 theorem scaled_witness_orderedTransfer (s : ℝ) :
     orderedTransfer witnessA witnessB witnessC (scaledWitnessL s) = s := by
   simp only [orderedTransfer, scaledWitnessL, dotProduct_smul]
@@ -47,8 +47,8 @@ theorem scaled_witness_orderedTransfer (s : ℝ) :
     Matrix.vec3_dotProduct, Matrix.cons_val_zero, Matrix.cons_val_one,
     Matrix.cons_val_two]
 
-/-- Collective energy cancellation persists at every common frequency
-scale, even though an individual transfer need not vanish. -/
+/-- Collective six-coefficient cancellation persists at every common
+frequency scale, even though an individual coefficient need not vanish. -/
 theorem scaled_witness_sixTransferSum (s : ℝ) :
     sixTransferSum (scaledWitnessK s) (scaledWitnessL s) (scaledWitnessM s)
       witnessA witnessB witnessC = 0 := by
@@ -57,8 +57,8 @@ theorem scaled_witness_sixTransferSum (s : ℝ) :
     (scaledWitnessK s) (scaledWitnessL s) (scaledWitnessM s)
     witnessA witnessB witnessC htriad ha hb hc
 
-/-- Individual unweighted transfer is not uniformly bounded across frequency
-scale: for every proposed upper bound, a positive scale exceeds it. -/
+/-- The individual unweighted real coefficient is not uniformly bounded
+across frequency scale: every proposed upper bound is exceeded. -/
 theorem orderedTransfer_unbounded_across_scale (M : ℝ) :
     ∃ s : ℝ, 0 < s ∧
       M < orderedTransfer witnessA witnessB witnessC (scaledWitnessL s) := by

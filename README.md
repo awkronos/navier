@@ -37,13 +37,17 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
 - [`Navier/Scaling.lean`](Navier/Scaling.lean): axiom-audited algebraic
   critical-line facts, without pretending the analytic norm theory exists.
 - [`Navier/Routes/R7/ExactSymbol.lean`](Navier/Routes/R7/ExactSymbol.lean):
-  an exact Leray-symbol leaf plus a checked countermodel showing why energy
+  a Leray-numerator leaf plus a checked countermodel showing why energy
   cancellation alone is too weak. Its companion
   [`Navier/Routes/R7/Triad.lean`](Navier/Routes/R7/Triad.lean) proves collective
-  six-transfer cancellation and a nonzero individual-transfer witness.
+  cancellation of six real symbol coefficients and a nonzero coefficient.
   [`Navier/Routes/R7/ScaledTriad.lean`](Navier/Routes/R7/ScaledTriad.lean)
-  proves that this individual transfer grows linearly under common frequency
-  scaling; no weighted shell gain or regularity theorem is claimed.
+  proves linear frequency growth for that algebraic coefficient.
+  [`Navier/Routes/R7/PhaseSymbol.lean`](Navier/Routes/R7/PhaseSymbol.lean)
+  restores a normalized Leray symbol, Fourier `i`, complex phases, and receiver
+  conjugation for a fixed-polarization ansatz, and proves the corresponding
+  coefficient is unbounded across positive scale. No Fourier field, shell
+  flux, weighted gain, or regularity theorem is claimed.
 - [`docs/BARRIERS.md`](docs/BARRIERS.md) and
   [`docs/FALSIFICATION_LEDGER.md`](docs/FALSIFICATION_LEDGER.md): scaling,
   energy-only, weak/smooth, model-drift, compactness, and numerical-proof

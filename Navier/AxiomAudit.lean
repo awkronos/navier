@@ -8,6 +8,7 @@ import Navier.ConventionBridges
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
 import Navier.Routes.R7.ScaledTriad
+import Navier.Routes.R7.PhaseSymbol
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -87,6 +88,21 @@ finite-frontier facts.
 #print axioms Navier.Routes.R7.scaled_witness_orderedTransfer
 #print axioms Navier.Routes.R7.scaled_witness_sixTransferSum
 #print axioms Navier.Routes.R7.orderedTransfer_unbounded_across_scale
+
+#print axioms Navier.Routes.R7.normalizedLeraySymbol_zero
+#print axioms Navier.Routes.R7.receiver_dot_normalizedLeraySymbol
+#print axioms Navier.Routes.R7.normalizedProjectedOrderedCoefficient_eq_orderedTransfer
+#print axioms Navier.Routes.R7.receiver_orthogonal_output_of_triad
+#print axioms Navier.Routes.R7.phasedNormalizedProjectedCoefficient_eq_ordered
+#print axioms Navier.Routes.R7.unphased_witness_real_part_zero
+#print axioms Navier.Routes.R7.phased_witness_orderedCoefficient
+#print axioms Navier.Routes.R7.witness_phase_factors_have_unit_norm
+#print axioms Navier.Routes.R7.witness_receiver_orthogonal_output
+#print axioms Navier.Routes.R7.phased_normalized_witness_coefficient
+#print axioms Navier.Routes.R7.witness_opposite_orderedCoefficient
+#print axioms Navier.Routes.R7.scaled_witness_receiver_orthogonal_output
+#print axioms Navier.Routes.R7.phased_scaled_normalized_coefficient
+#print axioms Navier.Routes.R7.phased_normalized_coefficient_unbounded_across_positive_scale
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified

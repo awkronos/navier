@@ -72,11 +72,11 @@ This prevents both endpoint-as-assumption and wrapper progress.
 | P5 | smooth energy identity and weak/local energy inequalities | Leray/CKN analytic theory | all routes | established analytic; Lean absent |
 | P6 | Serrin and endpoint \(L^3\) continuation | Serrin/ESS | bridge K0, R1/R4/R9 | established analytic; Lean absent |
 | P7 | compactness with pressure/nonlinear-defect tracking | route-specific analysis | R4, R9, R10 | decomposed/open |
-| P8 | exact-bilinear-symbol discriminator | `Navier/Routes/R7/ExactSymbol.lean`, `Navier/Routes/R7/Triad.lean`, `Navier/Routes/R7/ScaledTriad.lean`, plus new formulation | R5, R7, R11 | Leray/single-mode and collective triad-cancellation leaves checked; an individual transfer is proved frequency-unbounded, so a weighted collective shell gain distinguishing exact NS from generic energy cancellation remains open |
+| P8 | exact-bilinear-symbol discriminator | `Navier/Routes/R7/ExactSymbol.lean`, `Navier/Routes/R7/Triad.lean`, `Navier/Routes/R7/ScaledTriad.lean`, `Navier/Routes/R7/PhaseSymbol.lean`, plus new formulation | R5, R7, R11 | real coefficient cancellation plus a normalized phase-aware coefficient are checked; fixed phases give frequency-unbounded growth, but a conjugate-symmetric Fourier-field realization and weighted collective shell gain remain open |
 
 The first formal milestone—P0's statement-A surface, part of P1, the algebraic
-and pointwise-equation-covariance part of P3, and the first P8 exact-symbol falsification
-leaf—is implemented. It is useful even before the analytic imports exist
+and pointwise-equation-covariance part of P3, and the first P8 finite-dimensional
+symbol falsification leaf—is implemented. It is useful before the analytic imports exist
 because it fixes exact consumer types and exposes domain or operator drift.
 
 ## 4. Bridge decomposition
@@ -112,7 +112,7 @@ and has a direct falsification test.
 | R4 | no nonzero minimal ancient blowup profile | strong compactness with zero nonlinear defect | it is a limit-passage statement |
 | R5 | summable high-frequency flux | no-loss exact shell interaction bound | it is a trilinear frequency estimate |
 | R6 | finite accumulated deformation/strain | derived bound for a weaker flow-control integral | it is an a priori integral inequality |
-| R7 | exact-symbol critical gain | one Fourier-triad cancellation estimate | it is algebraic/analytic at the symbol level |
+| R7 | exact-symbol critical gain | phase-aware normalized symbol estimate plus a Fourier-field realization | it is algebraic/analytic at the symbol level |
 | R8 | positive analytic radius on finite intervals | noncircular radius differential inequality | it is an inequality for one Gevrey functional |
 | R9 | absence of every singular cylinder | quantitative defect exclusion at one scale | it strengthens a local energy estimate |
 | R10 | universal finite certificate | compact covering plus analytic tail theorem | it is a reduction theorem, not a simulation |

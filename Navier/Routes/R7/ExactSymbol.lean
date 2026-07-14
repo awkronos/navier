@@ -1,7 +1,7 @@
 import Navier.Problem
 
 /-!
-# Exact-symbol R7 leaf
+# Leray-numerator R7 symbol leaf
 
 This file isolates two logically separate facts.
 
@@ -38,8 +38,9 @@ theorem dot_lerayNumerator (k v : Space) :
   rw [dotProduct_comm k v]
   ring
 
-/-- The real, denominator-free part of one exact projected convection-mode
-interaction. The omitted Fourier factor `i` is irrelevant to vanishing. -/
+/-- The real, denominator-free Leray-numerator coefficient of one convection
+mode interaction. The omitted Fourier factor `i` is irrelevant to this
+vanishing test, but must be restored for an energy-rate interpretation. -/
 def projectedConvectionInteraction (a b k l : Space) : Space :=
   (a ⬝ᵥ l) • lerayNumerator (k + l) b
 
