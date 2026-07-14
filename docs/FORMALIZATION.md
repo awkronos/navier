@@ -7,7 +7,7 @@ statement-A encoding; `Navier/Scaling.lean`, `Navier/Disposition.lean`, and
 `Navier/Frontier.lean` provide checked algebraic and status infrastructure.
 `Navier/ClayFrontier.lean` fixes the conjectural disposition, and
 `Navier/AxiomAudit.lean` emits the complete public trace. They do not realize
-the endpoint. Two convention-comparison residuals and the entire global
+the endpoint. Five statement-A representation residuals and the entire global
 analytic payload remain open. Alternative (A) on the whole space remains the
 first positive formal target. The sibling B/C/D proposition surfaces now exist
 in Lean, but none is inhabited.

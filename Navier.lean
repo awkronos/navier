@@ -1,5 +1,6 @@
 import Navier.Problem
 import Navier.OfficialProblem
+import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.VectorCalculus
 import Navier.Scaling

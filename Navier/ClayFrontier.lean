@@ -35,12 +35,13 @@ def statementADisposition : ScientificDisposition StatementA :=
 def statementAFrontier : Finset Frontier.FrontierNode :=
   Frontier.dependencies .statementA
 
-/-- The frontier keeps both encoding comparisons and the analytic global
-continuation branch visible. -/
+/-- The frontier keeps all five statement-A encoding comparisons and the
+analytic global-continuation branch visible. -/
 theorem statementAFrontier_eq :
     statementAFrontier =
       { .schwartzConventionBridge, .halfSpaceSmoothnessBridge,
-        .globalContinuation } :=
+        .currentSpaceNormBridge, .frechetCoordinatePDEBridge,
+        .wholeSpaceEnergyBridge, .globalContinuation } :=
   Frontier.statementA_dependencies
 
 /-- Statement A itself is not listed as its own immediate dependency. -/

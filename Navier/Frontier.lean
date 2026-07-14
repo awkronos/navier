@@ -10,7 +10,7 @@ surface.  The map is planning data: it does not assert that arbitrary proofs of
 the listed nodes compose to `Clay.StatementA`, and it intentionally defines no
 proof-program argument whose result is the Clay endpoint.
 
-The two representation-comparison residuals from `Problem.lean` occur as
+The five statement-A representation residuals from `Problem.lean` occur as
 explicit frontier nodes.  The global analytic obstruction remains the
 critical-control/global-continuation branch.
 -/
@@ -23,6 +23,9 @@ namespace Navier.Frontier
 inductive FrontierNode where
   | schwartzConventionBridge
   | halfSpaceSmoothnessBridge
+  | currentSpaceNormBridge
+  | frechetCoordinatePDEBridge
+  | wholeSpaceEnergyBridge
   | localClassicalExistence
   | continuationCriterion
   | aPrioriCriticalControl
@@ -36,6 +39,9 @@ been proved. -/
 def dependencies : FrontierNode → Finset FrontierNode
   | .schwartzConventionBridge => ∅
   | .halfSpaceSmoothnessBridge => ∅
+  | .currentSpaceNormBridge => ∅
+  | .frechetCoordinatePDEBridge => ∅
+  | .wholeSpaceEnergyBridge => ∅
   | .localClassicalExistence => ∅
   | .continuationCriterion => ∅
   | .aPrioriCriticalControl => ∅
@@ -44,13 +50,17 @@ def dependencies : FrontierNode → Finset FrontierNode
         .aPrioriCriticalControl }
   | .statementA =>
       { .schwartzConventionBridge, .halfSpaceSmoothnessBridge,
-        .globalContinuation }
+        .currentSpaceNormBridge, .frechetCoordinatePDEBridge,
+        .wholeSpaceEnergyBridge, .globalContinuation }
 
 /-- A rank used only to certify that the finite dependency graph points
 strictly downward. -/
 def rank : FrontierNode → Nat
   | .schwartzConventionBridge => 0
   | .halfSpaceSmoothnessBridge => 0
+  | .currentSpaceNormBridge => 0
+  | .frechetCoordinatePDEBridge => 0
+  | .wholeSpaceEnergyBridge => 0
   | .localClassicalExistence => 0
   | .continuationCriterion => 0
   | .aPrioriCriticalControl => 0
@@ -68,7 +78,13 @@ theorem dependency_rank_decreases {parent child : FrontierNode}
       decide
     · subst child
       decide
-  · rcases h with h | h | h
+  · rcases h with h | h | h | h | h | h
+    · subst child
+      decide
+    · subst child
+      decide
+    · subst child
+      decide
     · subst child
       decide
     · subst child
@@ -85,14 +101,17 @@ theorem not_mem_own_dependencies (node : FrontierNode) :
 /-- The complete finite node set. -/
 def nodes : Finset FrontierNode := Finset.univ
 
-/-- This overview currently has seven explicitly named nodes. -/
-theorem nodes_card : nodes.card = 7 := by
+/-- This overview currently has ten explicitly named nodes. -/
+theorem nodes_card : nodes.card = 10 := by
   decide
 
 /-- Embed each problem-encoding residual into the finite frontier. -/
 def nodeForEncodingResidual : ProblemEncodingResidual → FrontierNode
   | .schwartzConventionEquivalence => .schwartzConventionBridge
   | .halfSpaceSmoothnessEquivalence => .halfSpaceSmoothnessBridge
+  | .currentSpaceNormEuclideanNormEquivalence => .currentSpaceNormBridge
+  | .problemFrechetCoordinatePDEEquivalence => .frechetCoordinatePDEBridge
+  | .wholeSpaceEnergyClauseEquivalence => .wholeSpaceEnergyBridge
 
 /-- Every named problem-encoding residual is represented by a frontier node. -/
 theorem encodingResidual_is_tracked (residual : ProblemEncodingResidual) :
@@ -103,6 +122,7 @@ theorem encodingResidual_is_tracked (residual : ProblemEncodingResidual) :
 theorem statementA_dependencies :
     dependencies .statementA =
       { .schwartzConventionBridge, .halfSpaceSmoothnessBridge,
-        .globalContinuation } := rfl
+        .currentSpaceNormBridge, .frechetCoordinatePDEBridge,
+        .wholeSpaceEnergyBridge, .globalContinuation } := rfl
 
 end Navier.Frontier

@@ -1,5 +1,6 @@
 import Navier.ClayFrontier
 import Navier.OfficialProblem
+import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.VectorCalculus
 import Navier.EnergyObstruction
@@ -23,6 +24,13 @@ finite-frontier facts.
 #print axioms Navier.Clay.StatementB
 #print axioms Navier.Clay.StatementC
 #print axioms Navier.Clay.StatementD
+#print axioms Navier.problemEncodingResiduals_card
+#print axioms Navier.OfficialSurfaceSignatures.classicalSolution_signature
+#print axioms Navier.OfficialSurfaceSignatures.periodicClassicalSolution_signature
+#print axioms Navier.OfficialSurfaceSignatures.statementA_signature
+#print axioms Navier.OfficialSurfaceSignatures.statementB_signature
+#print axioms Navier.OfficialSurfaceSignatures.statementC_signature
+#print axioms Navier.OfficialSurfaceSignatures.statementD_signature
 
 #print axioms Navier.Scaling.mixedNormExponent_eq_zero_iff
 #print axioms Navier.Scaling.criticalLine_six_four

@@ -12,11 +12,11 @@ equations in (1)--(7) and statement (A) of Charles Fefferman's official Clay
 problem description.  It quantifies over every positive viscosity and every
 divergence-free Schwartz initial datum, and it fixes the force to zero.
 
-Scope caveat: `SchwartzMap` is used for Fefferman's coordinatewise rapid-decay
-condition (4), while `ContDiffOn` on the closed half-space is used for (6).
-The comparison of these Mathlib conventions with the official coordinatewise
-wording is deliberately retained in `ProblemEncodingResidual`; no equivalence
-between those conventions is asserted here.
+Scope caveat: `SchwartzMap`, `ContDiffOn`, the current norm on `Fin 3 → ℝ`,
+Fréchet derivatives, and a Lebesgue integral encode Fefferman's coordinatewise
+clauses.  Their comparison with the official derivative, Euclidean-norm, PDE,
+and energy wording is deliberately retained in `ProblemEncodingResidual`; no
+unproved representation equivalence is asserted here.
 -/
 
 set_option autoImplicit false
@@ -153,7 +153,7 @@ structure IsClassicalSolution (ν : ℝ) (f : ForceField)
     ∃ E : ℝ, 0 < E ∧ ∀ t : ℝ, 0 ≤ t → kineticEnergy u t < E
 
 /-- Named representation obligations left open when comparing the present
-Mathlib surface with Fefferman's coordinatewise conditions (4) and (6).
+Mathlib statement-A surface with Fefferman's coordinatewise clauses (1)--(7).
 
 These are metamathematical encoding residuals, not hypotheses of
 `Clay.StatementA`; consequently they cannot be used to project a proof of the
@@ -161,10 +161,18 @@ Clay endpoint. -/
 inductive ProblemEncodingResidual where
   | schwartzConventionEquivalence
   | halfSpaceSmoothnessEquivalence
+  | currentSpaceNormEuclideanNormEquivalence
+  | problemFrechetCoordinatePDEEquivalence
+  | wholeSpaceEnergyClauseEquivalence
   deriving DecidableEq, Repr, Fintype
 
-/-- Both convention-comparison obligations remain explicitly visible. -/
+/-- All five statement-A representation obligations remain explicitly visible. -/
 def problemEncodingResiduals : Finset ProblemEncodingResidual := Finset.univ
+
+/-- The statement-A surface currently exposes exactly five representation
+bridges, independently of its separate analytic existence frontier. -/
+theorem problemEncodingResiduals_card : problemEncodingResiduals.card = 5 := by
+  decide
 
 namespace Clay
 
@@ -177,8 +185,8 @@ incompressible, and have uniformly bounded finite kinetic energy.
 
 This is the repository's scientific-frontier surface.  It is a proposition,
 not a theorem and not a conclusion hidden in a payload or proof-program
-argument.  The `ProblemEncodingResidual` bridges above must close before this
-surface may be identified with the official textual conventions without a
+argument.  The five `ProblemEncodingResidual` bridges above must close before
+this surface may be identified with the official textual conventions without
 qualification. -/
 def StatementA : Prop :=
   ∀ ν : ℝ, 0 < ν →
