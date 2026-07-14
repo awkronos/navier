@@ -8,9 +8,7 @@ while the scientific registry grows new obligations.
 from __future__ import annotations
 
 import copy
-import json
 import re
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -24,7 +22,6 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from registry_core import (  # noqa: E402
-    clone_registry,
     derived_status,
     load_json,
     validate_registry,
@@ -75,6 +72,15 @@ def _endpoint(
     approach_id: str,
     declaration: str | None,
 ) -> dict[str, object]:
+    statement = (
+        "For every fixed positive viscosity and every smooth divergence-free rapidly "
+        "decaying initial velocity, the unforced R3 equation has a global smooth "
+        "uniformly finite-energy solution."
+        if branch == "FEFFERMAN_A"
+        else "For every fixed positive viscosity there exist admissible rapidly "
+        "decaying smooth data and force for which no global smooth uniformly "
+        "finite-energy R3 solution exists."
+    )
     return {
         "id": node_id,
         "approach_id": approach_id,
@@ -82,7 +88,7 @@ def _endpoint(
         "kind": "ENDPOINT",
         "claim_tier": "THEOREM",
         "disposition": "SCAFFOLDED",
-        "statement": f"Establish the exact official {branch} Navier-Stokes alternative.",
+        "statement": statement,
         "formal_declaration": declaration,
         "dependency_mode": "NONE",
         "dependencies": [],
@@ -140,7 +146,6 @@ def _native_evidence(
     node_id: str = A_ID,
     generated_at: datetime = NOW,
 ) -> dict[str, object]:
-    node = _find(registry["obligations"], node_id)
     verifier = _verifier(registry, "verifier.lean.native")
     digest = "a" * 64
     return {

@@ -1,7 +1,7 @@
 {
   "$schema": "../schemas/attack_registry.schema.json",
   "schema_version": "1.0.0",
-  "registry_version": "1.0.0",
+  "registry_version": "1.0.1",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
   "generated_at": "2026-07-14T17:10:00Z",
@@ -466,12 +466,22 @@
       "receipt": null
     },
     {
-      "id": "evidence.breakdown.object_warning",
+      "id": "evidence.breakdown.weak_nonuniqueness_warning",
       "kind": "PRIMARY_REFERENCE_EVIDENCE",
       "claim_tier": "REFERENCE",
-      "summary": "Weak nonuniqueness and averaged-equation blowup are preserved as wrong-object warnings, not exact C realizations.",
-      "reference_ids": ["ref.buckmaster.vicol2019", "ref.tao.averaged2016"],
-      "supports": ["breakdown.exact_c_surface", "breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
+      "summary": "Weak-solution nonuniqueness is preserved as a wrong-solution-class warning, not an exact Fefferman-C realization.",
+      "reference_ids": ["ref.buckmaster.vicol2019"],
+      "supports": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
+      "provenance": {"source_locator": "doi:10.4007/annals.2019.189.1.3", "source_revision": "doi:10.4007/annals.2019.189.1.3", "immutable": true, "observed_at": "2026-07-14T16:58:58Z", "artifact_sha256": null},
+      "receipt": null
+    },
+    {
+      "id": "evidence.breakdown.averaged_operator_warning",
+      "kind": "PRIMARY_REFERENCE_EVIDENCE",
+      "claim_tier": "REFERENCE",
+      "summary": "Averaged-equation blowup is preserved as a wrong-operator warning, not an exact Fefferman-C realization.",
+      "reference_ids": ["ref.tao.averaged2016"],
+      "supports": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
       "provenance": {"source_locator": "doi:10.1090/jams/838", "source_revision": "doi:10.1090/jams/838", "immutable": true, "observed_at": "2026-07-14T16:58:58Z", "artifact_sha256": null},
       "receipt": null
     }
@@ -890,7 +900,7 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"],
-      "evidence_links": [{"evidence_id": "evidence.breakdown.object_warning", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.weak_strong_gap", "barrier.endpoint_circularity"],
       "residual": {"statement": "Embed one self-sustaining concentrating cascade in the exact projected nonlinearity while preserving all force and data admissibility clauses.", "smaller_than": "One exact cascade-interaction and admissibility lemma is narrower than proving global nonexistence.", "consumer_ids": ["breakdown.any_exact_realization"], "falsifier": "If the construction uses an averaged operator, rough force, or only nonunique weak solutions, it is the wrong object.", "next_action": "Identify the exact-symbol mismatch in known model cascades and test whether a smooth forced realization survives it."}
@@ -909,7 +919,7 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "STRONGER_THAN_C", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000", "ref.tao.averaged2016"],
-      "evidence_links": [{"evidence_id": "evidence.breakdown.object_warning", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.supercritical_energy_gap"],
       "residual": {"statement": "Realize one exact zero-force cascade interaction absent from averaged or dyadic model substitutions.", "smaller_than": "A verified exact interaction is a construction component and not yet a nonexistence proof.", "consumer_ids": ["breakdown.any_exact_realization"], "falsifier": "Exact Fourier triads that destroy the proposed transfer or sign mechanism kill the construction.", "next_action": "Probe the candidate mechanism on exact divergence-free triads before attempting multiscale assembly."}

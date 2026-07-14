@@ -307,7 +307,7 @@ def validate_manifest(
     if len(command) > 64:
         raise ManifestError("$.run.command: too many arguments")
     driver_relative = _repo_relative(run["driver_path"], "$.run.driver_path", "experiments")
-    driver_path = _repo_path(run["driver_path"], "$.run.driver_path", repo_root, "experiments")
+    _repo_path(run["driver_path"], "$.run.driver_path", repo_root, "experiments")
     if command[0] != "python3" or command[1] != driver_relative:
         raise ManifestError("$.run.command: must invoke the declared driver as `python3 experiments/...`")
     for index, argument in enumerate(command[2:], start=2):

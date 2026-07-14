@@ -27,7 +27,8 @@ EXPERIMENT_DOMAIN = next(
     if obligation["id"] == "computation.intermediate_falsification"
 )
 SANDBOX_AVAILABLE = (
-    Path("/usr/bin/sandbox-exec").is_file()
+    sys.platform == "darwin"
+    and Path("/usr/bin/sandbox-exec").is_file()
     and not Path("/usr/bin/sandbox-exec").is_symlink()
 )
 

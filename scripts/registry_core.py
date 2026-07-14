@@ -107,6 +107,52 @@ TOP_KEYS = {
     "obligations",
 }
 
+# These hashes anchor the scientific identity of every canonical obligation in
+# verifier-owned code.  The fingerprint covers its approach, formal kind,
+# epistemic tier, statement, declared Lean realization, and exact PDE domain.
+# Endpoint realization declarations are normalized to null here because their
+# proof term is checked separately against the public branch target.  Changing
+# a contract therefore requires an explicit validator change; editing registry
+# data alone can never retag an open conjecture or substitute an unrelated
+# theorem and then claim closure.
+PINNED_OBLIGATION_CONTRACTS = {
+    "semantics.encoding_bridges": "e0e3ebe52fc6b6ab29507840a2c321fe869178b88ad898e2dc3d79dcd2304a27",
+    "semantics.exact_a_surface": "96fd0506fb5553297022caab783705d53a89a0bbb1956bad4d2f287761c3c647",
+    "scaling.algebraic_critical_line": "f2bad6b87ea0ef6f1bb5722291e4da9abf70f4619004edb0ca9c20838231e57c",
+    "local.mild_solution": "a6ea5d0c6894baac8a3dbcc42fca2e5fbe1df82cf8fc9aaf095f22637dee6e1d",
+    "local.continuation_alternative": "df558110a00170a1130d036bbbd833f949dda62136ef7d7ad97fbf9989868bf5",
+    "energy.smooth_identity": "7600a0c25cc75347220411696835e62c3728691b8bd70fbd7b9a2bf024b9dbfa",
+    "energy.global_weak_solution": "ec003aa956dc5f8e68c3ea00f8f4211b8f9d2c629a90c5b16ba0c10c0b71bfc4",
+    "energy.weak_to_strong_upgrade": "34d402552e71e8e9d2ca42ff067e8582a09e447715edac63eea32ba4bfb163a4",
+    "critical.unconditional_bound": "74621c54dfbc30040b4b08e9cf75ab9106a1e15fc94d4d658a6d9cc087e16b10",
+    "critical.global_regularity_bridge": "26269b9f9e935c6d83d8faed9b9256127647ec3d50785a927b38f6d02d7b1408",
+    "epsilon.local_regular_criterion": "cdf6daa8485c31b4f01e3889c66722f465c8d7ecfab7e637ce8b08801b1d8864",
+    "epsilon.global_singularity_exclusion": "80843c55f9115b0e5f4934569c18a633a9848110f52b21ec72d204963fba3513",
+    "compact.profile_decomposition": "ada9c27caa07a307c509f7603b3a51a089556c06205bcecac5c5733b613ae9bb",
+    "compact.rigidity_exclusion": "e571464255941f76b9419440b7039c1cadd5e9392c5227150b0e2fab7d955afd",
+    "frequency.cascade_exclusion": "35aa9c1c5a29dab950af7bc7f69c1df948204cd30f42eb4a0f132146308611fa",
+    "vorticity.alignment_criterion": "c116898d41834e21a88a9184de8c83546b596b418930493f93cf6155c808957b",
+    "vorticity.unconditional_depletion": "92a4bb86b12bfe196621df6a8ee623a34991f28fbb5911e3a29a0fea936da836",
+    "regularity.any_positive_route": "02aa8c4621a7a06b28dcb9d971312892907b0ade94f6cf29dc3159659ad74b69",
+    "local.global_continuation": "a6121361a690e0808bdca9ed4553fbb382c8a82f245869636cada1f57e962a97",
+    "endpoint.fefferman_a": "5421aa4e446b848c82243fde56462a4ec191c3eb5625dddc3ad8a9080a571bbb",
+    "breakdown.exact_c_surface": "0276fa7d922166b2bc2396d2718f6a77c31ca3a611812f43ffd90df9444f9f0a",
+    "breakdown.forced_c_payload": "634f8cbe6a46cbfd9f0ca115ea533539fd236a4276c7710a41bb8367e9eee671",
+    "breakdown.zero_force_blowup_payload": "dee5f9eb35f869e47aa96bd176f0df3503c1fb3ee44cd4cecf02e41f90d40f02",
+    "breakdown.any_exact_realization": "7acf25a847697c94b1328b9a63c840c78e37bf8937c6758c70663d61f0ea7501",
+    "endpoint.fefferman_c": "6f393663090a1c0929a9316638b313e06331d8488922340405119a2f65dd82a3",
+    "computation.intermediate_falsification": "b0e39cbec4f8f1455cff2f4ab93f3637d8ec795b11152a4c18b6ebc1a8964a4e",
+    "breakdown.averaged_model_warning": "cc9bc79a7b36e6a1bcc895ba44503d1c621c799274fab9b6900abee5e6a5df68",
+    "meta.route_triage": "f95d5afd82131d66779dda66017313ebd2ff98bcf0d8e0404a4b0d3e8b3c9ad9",
+}
+
+# Internal formal nodes are not closable merely because some Lean theorem can
+# be found.  Their exact realization declaration must be pinned here first.
+# Public endpoints use their separately pinned StatementA/StatementC targets.
+PINNED_INTERNAL_REALIZATIONS = {
+    "scaling.algebraic_critical_line": "Navier.Scaling.mixedNormExponent_eq_zero_iff",
+}
+
 
 @dataclass(frozen=True)
 class ValidationResult:
@@ -220,6 +266,46 @@ def _run_native_claim_check(
             output += "\nmissing raw #print axioms trace"
     digest = hashlib.sha256(output.encode("utf-8")).hexdigest()
     return NativeCheckResult(completed.returncode, axioms, digest, output)
+
+
+def _obligation_contract_digest(node: dict[str, Any]) -> str:
+    """Hash the immutable scientific/formal identity of one obligation."""
+
+    declaration = node.get("formal_declaration")
+    if node.get("kind") == "ENDPOINT":
+        declaration = None
+    payload = {
+        "approach_id": node.get("approach_id"),
+        "kind": node.get("kind"),
+        "claim_tier": node.get("claim_tier"),
+        "statement": node.get("statement"),
+        "formal_declaration": declaration,
+        "domain": node.get("domain"),
+    }
+    serialized = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+    return hashlib.sha256(serialized).hexdigest()
+
+
+def _validate_pinned_obligation_contracts(
+    nodes: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> None:
+    """Reject data-only drift in every known scientific obligation."""
+
+    for node_id, node in nodes.items():
+        expected = PINNED_OBLIGATION_CONTRACTS.get(node_id)
+        if expected is None:
+            continue
+        actual = _obligation_contract_digest(node)
+        if actual != expected:
+            errors.append(
+                f"$.obligations[{node_id}]: immutable semantic/formal contract mismatch"
+            )
 
 
 def _exact_object(
@@ -725,9 +811,23 @@ def _validate_evidence(
         if kind and tier not in allowed_tiers.get(kind, set()):
             errors.append(f"{path}.claim_tier: incompatible with evidence kind {kind}")
         _nonvacuous(evidence.get("summary"), f"{path}.summary", errors)
-        _reference_ids(evidence.get("reference_ids"), f"{path}.reference_ids", references, errors)
+        reference_ids = _reference_ids(
+            evidence.get("reference_ids"),
+            f"{path}.reference_ids",
+            references,
+            errors,
+        )
         _check_unique_strings(_list(evidence.get("supports"), f"{path}.supports", errors, nonempty=True), f"{path}.supports", errors)
         provenance = _validate_provenance(evidence.get("provenance"), f"{path}.provenance", errors)
+        if kind == "PRIMARY_REFERENCE_EVIDENCE":
+            if len(reference_ids) != 1:
+                errors.append(
+                    f"{path}.reference_ids: primary evidence requires exactly one source-specific provenance record"
+                )
+            elif references.get(reference_ids[0], {}).get("locator") != provenance.get("source_locator"):
+                errors.append(
+                    f"{path}.provenance.source_locator: must equal the referenced primary source locator"
+                )
         receipt_raw = evidence.get("receipt")
         receipt: dict[str, Any] | None = None
         if receipt_raw is not None:
@@ -846,7 +946,9 @@ def _validate_residual(value: Any, path: str, statement: str, errors: list[str])
     _check_unique_strings(_list(residual.get("consumer_ids"), f"{path}.consumer_ids", errors, nonempty=True), f"{path}.consumer_ids", errors)
     _nonvacuous(residual.get("falsifier"), f"{path}.falsifier", errors)
     _nonvacuous(residual.get("next_action"), f"{path}.next_action", errors)
-    normalize = lambda text: re.sub(r"\W+", "", text.casefold())
+    def normalize(text: str) -> str:
+        return re.sub(r"\W+", "", text.casefold())
+
     if residual_statement and statement and normalize(residual_statement) == normalize(statement):
         errors.append(f"{path}.statement: residual merely repeats the parent obligation")
     return residual
@@ -900,7 +1002,11 @@ def _validate_obligations_shape(
             errors.append(f"{path}.formal_declaration: expected string or null")
         mode = _enum(node.get("dependency_mode"), f"{path}.dependency_mode", {"ALL", "ANY", "NONE"}, errors)
         dependencies = _check_unique_strings(_list(node.get("dependencies"), f"{path}.dependencies", errors), f"{path}.dependencies", errors)
-        assumptions = _check_unique_strings(_list(node.get("assumption_ids"), f"{path}.assumption_ids", errors), f"{path}.assumption_ids", errors)
+        _check_unique_strings(
+            _list(node.get("assumption_ids"), f"{path}.assumption_ids", errors),
+            f"{path}.assumption_ids",
+            errors,
+        )
         if mode == "NONE" and dependencies:
             errors.append(f"{path}: dependency_mode NONE requires no dependencies")
         if mode in {"ALL", "ANY"} and not dependencies:
@@ -1181,6 +1287,16 @@ def _validate_graph_and_epistemics(
                     ),
                     None,
                 )
+            else:
+                pinned_realization = PINNED_INTERNAL_REALIZATIONS.get(node_id)
+                if pinned_realization is None:
+                    errors.append(
+                        f"$.obligations[{node_id}]: internal closure has no immutable formal realization contract"
+                    )
+                elif declaration != pinned_realization:
+                    errors.append(
+                        f"$.obligations[{node_id}].formal_declaration: does not match the immutable realization contract"
+                    )
             for receipt_evidence in native:
                 receipt = receipt_evidence.get("receipt") or {}
                 verifier = verifiers.get(receipt.get("verifier_id"), {})
@@ -1376,6 +1492,7 @@ def validate_registry(
     obligations = _validate_obligations_shape(
         top.get("obligations"), approaches, barriers, references, evidence, verifiers, errors
     )
+    _validate_pinned_obligation_contracts(obligations, errors)
 
     all_ids: list[str] = [
         item_id

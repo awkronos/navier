@@ -23,6 +23,23 @@ jobs:
       - name: Derive public status
         run: python3 scripts/render_status.py data/attack_registry.json
 
+  replay:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Require macOS replay confinement
+        run: |
+          test -x /usr/bin/sandbox-exec
+          test ! -L /usr/bin/sandbox-exec
+      - name: Exercise confined experiment replay
+        run: >-
+          python3 -m unittest -v
+          tests.test_experiment_replay
+          tests.test_audit_regressions.ReplayAuditRegressionTests
+
   lean:
     runs-on: ubuntu-latest
     steps:

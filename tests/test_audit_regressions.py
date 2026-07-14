@@ -31,6 +31,11 @@ from tests import test_registry as registry_fixtures  # noqa: E402
 
 
 EXPERIMENT_ID = "computation.intermediate_falsification"
+SANDBOX_AVAILABLE = (
+    sys.platform == "darwin"
+    and Path("/usr/bin/sandbox-exec").is_file()
+    and not Path("/usr/bin/sandbox-exec").is_symlink()
+)
 
 
 def _sha256(payload: bytes | str) -> str:
@@ -242,6 +247,59 @@ class RegistryAuditRegressionTests(unittest.TestCase):
 
         self.assertRejected("CLOSED approach requires every obligation CLOSED")
 
+    def test_unrelated_native_theorem_cannot_close_frequency_approach(self) -> None:
+        hostile = copy.deepcopy(self.canonical)
+        node = registry_fixtures._find(
+            hostile["obligations"], "frequency.cascade_exclusion"
+        )
+        node.update(
+            {
+                "claim_tier": "THEOREM",
+                "disposition": "CLOSED",
+                "formal_declaration": "Navier.Scaling.mixedNormExponent_eq_zero_iff",
+                "residual": None,
+            }
+        )
+        registry_fixtures._find(
+            hostile["approaches"], "approach.frequency_cascade"
+        )["status"] = "CLOSED"
+        evidence = registry_fixtures._native_evidence(
+            hostile,
+            node_id="frequency.cascade_exclusion",
+        )
+        evidence["receipt"]["declaration"] = node["formal_declaration"]
+        hostile["evidence"].append(evidence)
+        node["evidence_links"] = [
+            {"evidence_id": evidence["id"], "role": "REALIZATION"}
+        ]
+
+        result = validate_registry(
+            hostile,
+            now=registry_fixtures.NOW,
+            check_git_revision=False,
+            check_native_receipts=False,
+        )
+        rendered = "\n".join(result.errors)
+        self.assertFalse(result.valid, "unrelated theorem unexpectedly closed an approach")
+        self.assertIn("immutable semantic/formal contract mismatch", rendered)
+        self.assertIn("internal closure has no immutable formal realization contract", rendered)
+
+    def test_compound_primary_evidence_requires_source_specific_provenance(self) -> None:
+        hostile = copy.deepcopy(self.canonical)
+        evidence = registry_fixtures._find(
+            hostile["evidence"], "evidence.breakdown.weak_nonuniqueness_warning"
+        )
+        evidence["reference_ids"].append("ref.tao.averaged2016")
+
+        result = validate_registry(
+            hostile,
+            now=registry_fixtures.NOW,
+            check_git_revision=False,
+        )
+        rendered = "\n".join(result.errors)
+        self.assertFalse(result.valid, "compound provenance unexpectedly validated")
+        self.assertIn("requires exactly one source-specific provenance record", rendered)
+
     def test_cached_campaign_status_cannot_outrun_open_endpoints(self) -> None:
         self.registry["campaign"]["global_disposition"] = "DECOMPOSED"
         self.registry["campaign"]["scientific_status"] = "CONDITIONAL_FRONTIER"
@@ -401,6 +459,7 @@ class ReplayAuditRegressionTests(unittest.TestCase):
                 check_git=True,
             )
 
+    @unittest.skipUnless(SANDBOX_AVAILABLE, "sandbox-exec confinement is unavailable")
     def test_replay_rejects_undeclared_filesystem_output(self) -> None:
         driver_source = textwrap.dedent(
             """\
@@ -428,6 +487,7 @@ class ReplayAuditRegressionTests(unittest.TestCase):
                 str(raised.exception),
             )
 
+    @unittest.skipUnless(SANDBOX_AVAILABLE, "sandbox-exec confinement is unavailable")
     def test_noop_cannot_reuse_preexisting_declared_output(self) -> None:
         driver_source = "print('ok')\n"
         output = b"result\n"
