@@ -79,6 +79,18 @@ REQUIRED_APPROACH_IDS = {
     "approach.breakdown_construction",
 }
 
+PINNED_OPEN_APPROACH_DISPOSITIONS = {
+    "approach.exact_semantics_local_theory": "DECOMPOSED",
+    "approach.energy": "DECOMPOSED",
+    "approach.critical_norms": "SCAFFOLDED",
+    "approach.epsilon_regularity": "SCAFFOLDED",
+    "approach.concentration_compactness_rigidity": "SCAFFOLDED",
+    "approach.frequency_cascade": "SCAFFOLDED",
+    "approach.vorticity_geometry": "SCAFFOLDED",
+    "approach.computer_assisted_falsification": "SCAFFOLDED",
+    "approach.breakdown_construction": "SCAFFOLDED",
+}
+
 REQUIRED_BARRIER_IDS = {
     "barrier.endpoint_semantics",
     "barrier.scaling_criticality",
@@ -145,6 +157,44 @@ PINNED_OBLIGATION_CONTRACTS = {
     "breakdown.averaged_model_warning": "b053771ac3318e04f16b24b42c50d1e167f1dc799695bfc78e814db91ecccde6",
     "meta.route_triage": "f2531c5b237be61eda38e1b57d09c7cdb566327271bd54ba9823e90087dd4907",
 }
+
+OPEN_PROGRESS_DISPOSITIONS = {"SCAFFOLDED", "DECOMPOSED", "RED"}
+
+PINNED_OPEN_OBLIGATION_DISPOSITIONS = {
+    "semantics.encoding_bridges": "SCAFFOLDED",
+    "semantics.exact_a_surface": "DECOMPOSED",
+    "scaling.algebraic_critical_line": "DECOMPOSED",
+    "local.mild_solution": "SCAFFOLDED",
+    "local.continuation_alternative": "DECOMPOSED",
+    "energy.smooth_identity": "SCAFFOLDED",
+    "energy.global_weak_solution": "DECOMPOSED",
+    "energy.weak_to_strong_upgrade": "SCAFFOLDED",
+    "critical.unconditional_bound": "SCAFFOLDED",
+    "critical.global_regularity_bridge": "DECOMPOSED",
+    "epsilon.local_regular_criterion": "DECOMPOSED",
+    "epsilon.global_singularity_exclusion": "SCAFFOLDED",
+    "compact.profile_decomposition": "DECOMPOSED",
+    "compact.rigidity_exclusion": "SCAFFOLDED",
+    "frequency.cascade_exclusion": "SCAFFOLDED",
+    "vorticity.alignment_criterion": "DECOMPOSED",
+    "vorticity.unconditional_depletion": "SCAFFOLDED",
+    "regularity.any_positive_route": "SCAFFOLDED",
+    "local.global_continuation": "SCAFFOLDED",
+    "endpoint.fefferman_a": "SCAFFOLDED",
+    "breakdown.exact_c_surface": "SCAFFOLDED",
+    "breakdown.forced_c_payload": "SCAFFOLDED",
+    "breakdown.zero_force_blowup_payload": "SCAFFOLDED",
+    "breakdown.any_exact_realization": "SCAFFOLDED",
+    "endpoint.fefferman_c": "SCAFFOLDED",
+    "computation.intermediate_falsification": "SCAFFOLDED",
+    "breakdown.averaged_model_warning": "RED",
+    "meta.route_triage": "DECOMPOSED",
+}
+
+# This canonical RED record predates witness-backed status transitions.  Keep
+# the exception explicit and verifier-owned until registry data can link a real
+# FALSIFICATION_WITNESS, then delete this compatibility set.
+LEGACY_UNWITNESSED_RED_OBLIGATIONS = {"breakdown.averaged_model_warning"}
 
 # Internal formal nodes are not closable merely because some Lean theorem can
 # be found.  Their exact realization declaration must be pinned here first.
@@ -320,6 +370,16 @@ def _validate_pinned_obligation_contracts(
         if actual != expected:
             errors.append(
                 f"$.obligations[{node_id}]: immutable semantic/formal contract mismatch"
+            )
+        disposition = node.get("disposition")
+        expected_disposition = PINNED_OPEN_OBLIGATION_DISPOSITIONS[node_id]
+        if (
+            disposition in OPEN_PROGRESS_DISPOSITIONS
+            and disposition != expected_disposition
+        ):
+            errors.append(
+                f"$.obligations[{node_id}].disposition: canonical open disposition "
+                f"mismatch; expected {expected_disposition!r}"
             )
 
 
@@ -670,6 +730,14 @@ def _validate_approaches(
             "$.approaches: canonical attack lanes mismatch; "
             f"missing={sorted(REQUIRED_APPROACH_IDS - set(by_id))}, extra={sorted(set(by_id) - REQUIRED_APPROACH_IDS)}"
         )
+    for approach_id, approach in by_id.items():
+        expected = PINNED_OPEN_APPROACH_DISPOSITIONS.get(approach_id)
+        status = approach.get("status")
+        if expected is not None and status != "CLOSED" and status != expected:
+            errors.append(
+                f"$.approaches[{approach_id}].status: canonical nonclosed disposition "
+                f"mismatch; expected {expected!r}"
+            )
     return by_id
 
 
@@ -741,7 +809,12 @@ def _validate_verifiers(items: Any, errors: list[str]) -> dict[str, dict[str, An
     return by_id
 
 
-def _validate_provenance(value: Any, path: str, errors: list[str]) -> dict[str, Any]:
+def _validate_provenance(
+    value: Any,
+    path: str,
+    now: datetime,
+    errors: list[str],
+) -> dict[str, Any]:
     keys = {"source_locator", "source_revision", "immutable", "observed_at", "artifact_sha256"}
     provenance = _exact_object(value, path, keys, errors) or {}
     _string(provenance.get("source_locator"), f"{path}.source_locator", errors, minimum=5)
@@ -751,7 +824,9 @@ def _validate_provenance(value: Any, path: str, errors: list[str]) -> dict[str, 
         errors.append(f"{path}.source_revision: mutable provenance is forbidden")
     if provenance.get("immutable") is not True:
         errors.append(f"{path}.immutable: evidence provenance must be immutable")
-    _timestamp(provenance.get("observed_at"), f"{path}.observed_at", errors)
+    observed = _timestamp(provenance.get("observed_at"), f"{path}.observed_at", errors)
+    if observed is not None and observed > now:
+        errors.append(f"{path}.observed_at: provenance observation is from the future")
     digest = provenance.get("artifact_sha256")
     if digest is not None and (not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)):
         errors.append(f"{path}.artifact_sha256: expected lowercase SHA-256 or null")
@@ -833,7 +908,12 @@ def _validate_evidence(
             errors,
         )
         _check_unique_strings(_list(evidence.get("supports"), f"{path}.supports", errors, nonempty=True), f"{path}.supports", errors)
-        provenance = _validate_provenance(evidence.get("provenance"), f"{path}.provenance", errors)
+        provenance = _validate_provenance(
+            evidence.get("provenance"),
+            f"{path}.provenance",
+            now,
+            errors,
+        )
         if kind == "PRIMARY_REFERENCE_EVIDENCE":
             if len(reference_ids) != 1:
                 errors.append(
@@ -869,7 +949,7 @@ def _validate_evidence(
                 max_age = verifier.get("receipt_max_age_seconds")
                 if generated is not None and isinstance(max_age, int):
                     age = (now - generated).total_seconds()
-                    if age < -300:
+                    if age < 0:
                         errors.append(f"{path}.receipt.generated_at: receipt is from the future")
                     elif age > max_age:
                         errors.append(f"{path}.receipt.generated_at: stale receipt ({int(age)}s > {max_age}s)")
@@ -1387,13 +1467,21 @@ def _validate_graph_and_epistemics(
                 errors.append(f"$.obligations[{node_id}]: ALL-dependency closure requires every dependency CLOSED")
             if mode == "ANY" and not any(status == "CLOSED" for status in dependency_statuses):
                 errors.append(f"$.obligations[{node_id}]: ANY-dependency closure requires one CLOSED branch")
-        if disposition in {"FALSIFIED", "REVERTED"}:
+        if disposition in {"RED", "FALSIFIED", "REVERTED"}:
             witnesses = [
                 item
                 for link, item in zip(links, linked, strict=False)
                 if link.get("role") == "FALSIFICATION" and item.get("kind") == "FALSIFICATION_WITNESS"
             ]
-            if not witnesses:
+            if (
+                disposition == "RED"
+                and node_id not in LEGACY_UNWITNESSED_RED_OBLIGATIONS
+                and not witnesses
+            ):
+                errors.append(
+                    f"$.obligations[{node_id}]: RED disposition requires a linked falsification witness"
+                )
+            if disposition in {"FALSIFIED", "REVERTED"} and not witnesses:
                 errors.append(f"$.obligations[{node_id}]: falsified/reverted disposition requires a checked witness")
 
     closed_endpoints = [node_id for node_id in resolution_ids if nodes.get(node_id, {}).get("disposition") == "CLOSED"]
@@ -1433,6 +1521,7 @@ def validate_registry(
     """
 
     errors: list[str] = []
+    now_utc = (now or datetime.now(tz=UTC)).astimezone(UTC)
     top = _exact_object(data, "$", TOP_KEYS, errors)
     if top is None:
         return ValidationResult(tuple(errors))
@@ -1448,7 +1537,9 @@ def validate_registry(
     if not isinstance(base_revision, str) or not re.fullmatch(r"[0-9a-f]{40}", base_revision):
         errors.append("$.base_revision: expected immutable 40-character Git revision")
         base_revision = ""
-    _timestamp(top.get("generated_at"), "$.generated_at", errors)
+    generated_at = _timestamp(top.get("generated_at"), "$.generated_at", errors)
+    if generated_at is not None and generated_at > now_utc:
+        errors.append("$.generated_at: registry timestamp is from the future")
     if top.get("ssot") is not True:
         errors.append("$.ssot: must be true; status views are derived")
 
@@ -1480,7 +1571,6 @@ def validate_registry(
         except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             errors.append(f"$.base_revision: missing or unverifiable baseline commit: {exc}")
 
-    now_utc = (now or datetime.now(tz=UTC)).astimezone(UTC)
     campaign = _validate_campaign(top.get("campaign"), errors)
     references = _validate_references(top.get("references"), errors)
     barriers = _validate_barriers(top.get("barriers"), references, errors)

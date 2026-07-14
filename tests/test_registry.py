@@ -240,9 +240,13 @@ class PositiveAndClosedWorldTests(RegistryTestCase):
         del self.registry["ssot"]
         self.assertInvalid("$: missing fields ['ssot']")
 
-    def test_prompt_or_schema_version_drift_is_rejected(self) -> None:
+    def test_schema_version_drift_is_rejected(self) -> None:
         self.registry["schema_version"] = "1.1.0"
         self.assertInvalid("$.schema_version: expected '1.0.0'")
+
+    def test_future_registry_generated_at_is_rejected(self) -> None:
+        self.registry["generated_at"] = (NOW + timedelta(seconds=1)).isoformat()
+        self.assertInvalid("registry timestamp is from the future")
 
     def test_schema_reference_drift_is_rejected(self) -> None:
         self.registry["$schema"] = "../schemas/latest.json"
@@ -256,9 +260,23 @@ class PositiveAndClosedWorldTests(RegistryTestCase):
         self.registry["barriers"][0]["id"] = "barrier.renamed_endpoint_semantics"
         self.assertInvalid("canonical barrier set mismatch", "barrier.endpoint_semantics")
 
-    def test_orchestration_style_global_identifier_collision_is_rejected(self) -> None:
+    def test_global_identifier_collision_is_rejected(self) -> None:
         self.registry["verifiers"][0]["id"] = self.registry["references"][0]["id"]
         self.assertInvalid("identifiers must be globally unique")
+
+    def test_obligation_nonclosed_disposition_drift_is_rejected(self) -> None:
+        _find(self.registry["obligations"], "critical.unconditional_bound")[
+            "disposition"
+        ] = "DECOMPOSED"
+        self.assertInvalid("canonical open disposition mismatch; expected 'SCAFFOLDED'")
+
+    def test_approach_nonclosed_disposition_drift_is_rejected(self) -> None:
+        _find(self.registry["approaches"], "approach.critical_norms")["status"] = (
+            "DECOMPOSED"
+        )
+        self.assertInvalid(
+            "canonical nonclosed disposition mismatch; expected 'SCAFFOLDED'"
+        )
 
 
 class EndpointAndDomainTests(RegistryTestCase):
@@ -430,8 +448,9 @@ class EvidenceAndClosureTests(RegistryTestCase):
         _close_a(self.registry, evidence)
         self.assertInvalid("stale receipt")
 
-    def test_future_receipt_is_rejected_with_fixed_utc_clock(self) -> None:
-        evidence = _native_evidence(self.registry, generated_at=NOW + timedelta(hours=1))
+    def test_receipt_one_second_in_future_is_rejected(self) -> None:
+        evidence = _native_evidence(self.registry)
+        evidence["receipt"]["generated_at"] = (NOW + timedelta(seconds=1)).isoformat()
         _close_a(self.registry, evidence)
         self.assertInvalid("receipt is from the future")
 
@@ -472,6 +491,23 @@ class EvidenceAndClosureTests(RegistryTestCase):
         a["residual"] = None
         self.assertInvalid("falsified/reverted disposition requires a checked witness")
 
+    def test_red_disposition_without_linked_falsification_witness_is_rejected(self) -> None:
+        node = _find(self.registry["obligations"], "critical.unconditional_bound")
+        node["disposition"] = "RED"
+        self.assertInvalid("RED disposition requires a linked falsification witness")
+
+    def test_non_falsification_evidence_cannot_witness_red_disposition(self) -> None:
+        node_id = "critical.unconditional_bound"
+        snapshot = _surface_snapshot(self.registry)
+        snapshot["supports"] = [node_id]
+        self.registry["evidence"].append(snapshot)
+        node = _find(self.registry["obligations"], node_id)
+        node["disposition"] = "RED"
+        node["evidence_links"].append(
+            {"evidence_id": snapshot["id"], "role": "FALSIFICATION"}
+        )
+        self.assertInvalid("RED disposition requires a linked falsification witness")
+
     def test_checked_falsification_witness_is_accepted(self) -> None:
         witness = _falsification_witness(self.registry)
         self.registry["evidence"].append(witness)
@@ -508,11 +544,19 @@ class ProvenanceTests(RegistryTestCase):
         self.registry["evidence"].append(evidence)
         self.assertInvalid("mutable provenance is forbidden")
 
-    def test_returned_unfolded_working_tree_provenance_is_rejected(self) -> None:
+    def test_working_tree_provenance_revision_is_rejected(self) -> None:
         evidence = _surface_snapshot(self.registry)
         evidence["provenance"]["source_revision"] = "working-tree"
         self.registry["evidence"].append(evidence)
         self.assertInvalid("mutable provenance is forbidden")
+
+    def test_future_provenance_observed_at_is_rejected(self) -> None:
+        evidence = _surface_snapshot(self.registry)
+        evidence["provenance"]["observed_at"] = (
+            NOW + timedelta(seconds=1)
+        ).isoformat()
+        self.registry["evidence"].append(evidence)
+        self.assertInvalid("provenance observation is from the future")
 
     def test_evidence_must_claim_immutable_provenance(self) -> None:
         evidence = _surface_snapshot(self.registry)
