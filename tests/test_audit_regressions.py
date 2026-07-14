@@ -284,6 +284,44 @@ class RegistryAuditRegressionTests(unittest.TestCase):
         self.assertIn("immutable semantic/formal contract mismatch", rendered)
         self.assertIn("internal closure has no immutable formal realization contract", rendered)
 
+    def test_renamed_meta_alias_cannot_close_frequency_approach(self) -> None:
+        hostile = copy.deepcopy(self.canonical)
+        node = registry_fixtures._find(
+            hostile["obligations"], "frequency.cascade_exclusion"
+        )
+        node.update(
+            {
+                "id": "meta.frequency_closed_alias",
+                "kind": "META",
+                "claim_tier": "SCAFFOLD",
+                "disposition": "CLOSED",
+                "formal_declaration": None,
+                "evidence_links": [],
+                "residual": None,
+            }
+        )
+        consumer = registry_fixtures._find(
+            hostile["obligations"], "regularity.any_positive_route"
+        )
+        consumer["dependencies"].remove("frequency.cascade_exclusion")
+        registry_fixtures._find(
+            hostile["approaches"], "approach.frequency_cascade"
+        )["status"] = "CLOSED"
+
+        result = validate_registry(
+            hostile,
+            now=registry_fixtures.NOW,
+            check_git_revision=False,
+        )
+        rendered = "\n".join(result.errors)
+        self.assertFalse(result.valid, "renamed metadata alias unexpectedly closed an approach")
+        self.assertIn("canonical obligation set mismatch", rendered)
+        self.assertIn("immutable semantic/formal contract mismatch", rendered)
+        self.assertIn(
+            "only formal obligations with native realization evidence may use CLOSED",
+            rendered,
+        )
+
     def test_compound_primary_evidence_requires_source_specific_provenance(self) -> None:
         hostile = copy.deepcopy(self.canonical)
         evidence = registry_fixtures._find(

@@ -51,84 +51,11 @@ def _residual(branch: str) -> dict[str, object]:
     }
 
 
-def _domain(branch: str) -> dict[str, object]:
-    return {
-        "equation": "INCOMPRESSIBLE_NAVIER_STOKES",
-        "dimension": 3,
-        "geometry": "R3",
-        "boundary": "NONE",
-        "forcing": "ZERO" if branch == "FEFFERMAN_A" else "SMOOTH_RAPID_DECAY",
-        "viscosity": "POSITIVE",
-        "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE",
-        "solution_class": "EXACT_SMOOTH_FINITE_ENERGY",
-        "relation_to_endpoint": "EXACT",
-        "endpoint_branch": branch,
-    }
-
-
-def _endpoint(
-    node_id: str,
-    branch: str,
-    approach_id: str,
-    declaration: str | None,
-) -> dict[str, object]:
-    statement = (
-        "For every fixed positive viscosity and every smooth divergence-free rapidly "
-        "decaying initial velocity, the unforced R3 equation has a global smooth "
-        "uniformly finite-energy solution."
-        if branch == "FEFFERMAN_A"
-        else "For every fixed positive viscosity there exist admissible rapidly "
-        "decaying smooth data and force for which no global smooth uniformly "
-        "finite-energy R3 solution exists."
-    )
-    return {
-        "id": node_id,
-        "approach_id": approach_id,
-        "title": f"Exact public {branch} endpoint",
-        "kind": "ENDPOINT",
-        "claim_tier": "THEOREM",
-        "disposition": "SCAFFOLDED",
-        "statement": statement,
-        "formal_declaration": declaration,
-        "dependency_mode": "NONE",
-        "dependencies": [],
-        "assumption_ids": [],
-        "domain": _domain(branch),
-        "reference_ids": ["ref.clay.fefferman2000"],
-        "evidence_links": [],
-        "verifier_ids": ["verifier.lean.native"],
-        "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-        "residual": _residual(branch),
-    }
-
-
 def make_valid_fixture(canonical: dict[str, object]) -> dict[str, object]:
-    """Make a deterministic, independently valid registry from canonical metadata."""
+    """Make a deterministic valid copy of the exact canonical closed-world registry."""
 
     registry = copy.deepcopy(canonical)
     registry["generated_at"] = NOW.isoformat().replace("+00:00", "Z")
-    registry["evidence"] = []
-    registry["obligations"] = [
-        _endpoint(
-            A_ID,
-            "FEFFERMAN_A",
-            "approach.exact_semantics_local_theory",
-            None,
-        ),
-        _endpoint(
-            C_ID,
-            "FEFFERMAN_C",
-            "approach.breakdown_construction",
-            None,
-        ),
-    ]
-    campaign = registry["campaign"]
-    campaign["global_disposition"] = "SCAFFOLDED"
-    campaign["scientific_status"] = "SCIENTIFIC_FRONTIER"
-    campaign["resolution_obligation_ids"] = [A_ID, C_ID]
-    branches = campaign["problem_surface"]["resolution_branches"]
-    branches[0]["obligation_id"] = A_ID
-    branches[1]["obligation_id"] = C_ID
     return registry
 
 
@@ -627,14 +554,29 @@ class ProvenanceTests(RegistryTestCase):
 class DerivedStatusAndRendererTests(RegistryTestCase):
     def test_derived_status_counts_obligations_from_registry(self) -> None:
         status = derived_status(self.registry)
-        self.assertEqual(status["dispositions"], {"SCAFFOLDED": 2})
-        self.assertEqual(status["claim_tiers"], {"THEOREM": 2})
+        self.assertEqual(
+            status["dispositions"],
+            {"DECOMPOSED": 9, "RED": 1, "SCAFFOLDED": 18},
+        )
+        self.assertEqual(
+            status["claim_tiers"],
+            {
+                "CONJECTURE": 9,
+                "EXPERIMENT": 1,
+                "FALSIFICATION": 1,
+                "SCAFFOLD": 3,
+                "THEOREM": 14,
+            },
+        )
         self.assertEqual([row["branch"] for row in status["endpoints"]], ["FEFFERMAN_A", "FEFFERMAN_C"])
 
     def test_derived_status_reflects_mutated_disposition_without_cached_view(self) -> None:
         _find(self.registry["obligations"], A_ID)["disposition"] = "RED"
         status = derived_status(self.registry)
-        self.assertEqual(status["dispositions"], {"RED": 1, "SCAFFOLDED": 1})
+        self.assertEqual(
+            status["dispositions"],
+            {"DECOMPOSED": 9, "RED": 2, "SCAFFOLDED": 17},
+        )
         self.assertEqual(status["endpoints"][0]["disposition"], "RED")
 
     def test_text_renderer_names_ssot_global_status_and_residuals(self) -> None:
@@ -642,7 +584,11 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         self.assertIn("derived; registry is the SSOT", rendered)
         self.assertIn("global: SCAFFOLDED / SCIENTIFIC_FRONTIER", rendered)
         self.assertIn("FEFFERMAN_A: SCAFFOLDED", rendered)
-        self.assertIn("residual: Construct the missing exact FEFFERMAN_A realization", rendered)
+        self.assertIn(
+            "residual: Construct a native theorem term inhabiting "
+            "Navier.Clay.StatementA",
+            rendered,
+        )
 
     def test_text_renderer_reports_blocked_barriers_deterministically(self) -> None:
         rendered = _render_text(derived_status(self.registry))

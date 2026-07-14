@@ -116,34 +116,34 @@ TOP_KEYS = {
 # data alone can never retag an open conjecture or substitute an unrelated
 # theorem and then claim closure.
 PINNED_OBLIGATION_CONTRACTS = {
-    "semantics.encoding_bridges": "e0e3ebe52fc6b6ab29507840a2c321fe869178b88ad898e2dc3d79dcd2304a27",
-    "semantics.exact_a_surface": "96fd0506fb5553297022caab783705d53a89a0bbb1956bad4d2f287761c3c647",
-    "scaling.algebraic_critical_line": "f2bad6b87ea0ef6f1bb5722291e4da9abf70f4619004edb0ca9c20838231e57c",
-    "local.mild_solution": "a6ea5d0c6894baac8a3dbcc42fca2e5fbe1df82cf8fc9aaf095f22637dee6e1d",
-    "local.continuation_alternative": "df558110a00170a1130d036bbbd833f949dda62136ef7d7ad97fbf9989868bf5",
-    "energy.smooth_identity": "7600a0c25cc75347220411696835e62c3728691b8bd70fbd7b9a2bf024b9dbfa",
-    "energy.global_weak_solution": "ec003aa956dc5f8e68c3ea00f8f4211b8f9d2c629a90c5b16ba0c10c0b71bfc4",
-    "energy.weak_to_strong_upgrade": "34d402552e71e8e9d2ca42ff067e8582a09e447715edac63eea32ba4bfb163a4",
-    "critical.unconditional_bound": "74621c54dfbc30040b4b08e9cf75ab9106a1e15fc94d4d658a6d9cc087e16b10",
-    "critical.global_regularity_bridge": "26269b9f9e935c6d83d8faed9b9256127647ec3d50785a927b38f6d02d7b1408",
-    "epsilon.local_regular_criterion": "cdf6daa8485c31b4f01e3889c66722f465c8d7ecfab7e637ce8b08801b1d8864",
-    "epsilon.global_singularity_exclusion": "80843c55f9115b0e5f4934569c18a633a9848110f52b21ec72d204963fba3513",
-    "compact.profile_decomposition": "ada9c27caa07a307c509f7603b3a51a089556c06205bcecac5c5733b613ae9bb",
-    "compact.rigidity_exclusion": "e571464255941f76b9419440b7039c1cadd5e9392c5227150b0e2fab7d955afd",
-    "frequency.cascade_exclusion": "35aa9c1c5a29dab950af7bc7f69c1df948204cd30f42eb4a0f132146308611fa",
-    "vorticity.alignment_criterion": "c116898d41834e21a88a9184de8c83546b596b418930493f93cf6155c808957b",
-    "vorticity.unconditional_depletion": "92a4bb86b12bfe196621df6a8ee623a34991f28fbb5911e3a29a0fea936da836",
-    "regularity.any_positive_route": "02aa8c4621a7a06b28dcb9d971312892907b0ade94f6cf29dc3159659ad74b69",
-    "local.global_continuation": "a6121361a690e0808bdca9ed4553fbb382c8a82f245869636cada1f57e962a97",
-    "endpoint.fefferman_a": "5421aa4e446b848c82243fde56462a4ec191c3eb5625dddc3ad8a9080a571bbb",
-    "breakdown.exact_c_surface": "0276fa7d922166b2bc2396d2718f6a77c31ca3a611812f43ffd90df9444f9f0a",
-    "breakdown.forced_c_payload": "634f8cbe6a46cbfd9f0ca115ea533539fd236a4276c7710a41bb8367e9eee671",
-    "breakdown.zero_force_blowup_payload": "dee5f9eb35f869e47aa96bd176f0df3503c1fb3ee44cd4cecf02e41f90d40f02",
-    "breakdown.any_exact_realization": "7acf25a847697c94b1328b9a63c840c78e37bf8937c6758c70663d61f0ea7501",
-    "endpoint.fefferman_c": "6f393663090a1c0929a9316638b313e06331d8488922340405119a2f65dd82a3",
-    "computation.intermediate_falsification": "b0e39cbec4f8f1455cff2f4ab93f3637d8ec795b11152a4c18b6ebc1a8964a4e",
-    "breakdown.averaged_model_warning": "cc9bc79a7b36e6a1bcc895ba44503d1c621c799274fab9b6900abee5e6a5df68",
-    "meta.route_triage": "f95d5afd82131d66779dda66017313ebd2ff98bcf0d8e0404a4b0d3e8b3c9ad9",
+    "semantics.encoding_bridges": "a66461cc6e9fabff113dc74fdbb63d15be091656247cdcd864b89b1285b5dcd3",
+    "semantics.exact_a_surface": "8a9bee06b0dbc0318d83e0b0170909bea14f95725c601e6c955a8caa2291f637",
+    "scaling.algebraic_critical_line": "44c07b56e7598ccadd22b47b9f19013f51c14b6779683fd1fa115ce2d1a586ca",
+    "local.mild_solution": "276cbd009398413dcf722d6bbf18a9bd14d66b4600f0a1b18b8c28dec47ef7d8",
+    "local.continuation_alternative": "7770f2405a91f768fc4d29ec7c622561e3c36ff0473f9447ef43ac09a7b648da",
+    "energy.smooth_identity": "a1d8c000aced63c554e986618db32900f0adc2ae2522ff28a11664f7aa898f75",
+    "energy.global_weak_solution": "73ff765a666f7b0f3634709838bc7f05d60b25ddfeb3fa009c8b1f38cb8ceae7",
+    "energy.weak_to_strong_upgrade": "9b23dbf1df09d64b1cd8875ec8bf75ea4b024bf4bcbb1163afc7a5310aa9af16",
+    "critical.unconditional_bound": "29901196ef28e138e7905e728db9b4f8afb705487b5d3c40f5a2c8500d474d09",
+    "critical.global_regularity_bridge": "6b3c50ba6695cde36606bdd5f1b3456d1a7b96b525b1946f26712110c31e1676",
+    "epsilon.local_regular_criterion": "a85e7bb39488181fa3658b5b711ee635323b7c7465fd31b0a64732829916f4eb",
+    "epsilon.global_singularity_exclusion": "77dec003b389f96d69ace0a999fb887774ce393f5a43464a4decc9c0a1eca965",
+    "compact.profile_decomposition": "ef7b52fd9fe27cb06385dc0e7206739136ebee29218a5db800cbe5873171d077",
+    "compact.rigidity_exclusion": "6ec3b14afee9dc1dd29c88a2c0b718cd403d854f8dc30f7df84c9c080c08416f",
+    "frequency.cascade_exclusion": "9d3b9c3d220c77876e99d495fe7a08a0996d2ff14ecbb2f45b5e53e80fea8697",
+    "vorticity.alignment_criterion": "18a65f3bf37d5793375e85a924da1c06eaffdb7645b9dbed0b89d2abb2cb45fa",
+    "vorticity.unconditional_depletion": "34e4d7bec4a5261ad61dc7552312d4bea79273362dbb51b68f7a7decff6e4999",
+    "regularity.any_positive_route": "0d1edf3b566e719eb16c3db2323020d7d62f4c29f001d0adf98c34498cd929e8",
+    "local.global_continuation": "423db890357c0de62917cc11c8ccf456bd4ff3ecc78683444eaddb86c937da91",
+    "endpoint.fefferman_a": "2cb551497700dd34b1f805248a227475279c90a0bddaca49310a7a6997b4cd39",
+    "breakdown.exact_c_surface": "e7f2441784ed334e127de621e10dd9a0cfb8ee3e16877ffbc98d6ec8c3352bc9",
+    "breakdown.forced_c_payload": "db897b8c7ee33ed5d394d522c85bdcfd814b86be29c1838ea008e531ef9c1cf9",
+    "breakdown.zero_force_blowup_payload": "adef400d4f6f1666fc96204d1f9d2b386ec4263602bfc93fa757515c8bd25439",
+    "breakdown.any_exact_realization": "b0459487fd369c5dc192b33f3127ef177e26a53f65b30096a5f542f51b8f2abd",
+    "endpoint.fefferman_c": "ae14fe729f616254d4abc4f1b2d24e008e9cbb1e58d93aea569fdbd316122f2e",
+    "computation.intermediate_falsification": "90978c574d5dc27b26d33815cb36544f6b062c00ad8094fec678a3e8219b3b93",
+    "breakdown.averaged_model_warning": "b053771ac3318e04f16b24b42c50d1e167f1dc799695bfc78e814db91ecccde6",
+    "meta.route_triage": "f2531c5b237be61eda38e1b57d09c7cdb566327271bd54ba9823e90087dd4907",
 }
 
 # Internal formal nodes are not closable merely because some Lean theorem can
@@ -276,11 +276,18 @@ def _obligation_contract_digest(node: dict[str, Any]) -> str:
         declaration = None
     payload = {
         "approach_id": node.get("approach_id"),
+        "title": node.get("title"),
         "kind": node.get("kind"),
         "claim_tier": node.get("claim_tier"),
         "statement": node.get("statement"),
         "formal_declaration": declaration,
+        "dependency_mode": node.get("dependency_mode"),
+        "dependencies": node.get("dependencies"),
+        "assumption_ids": node.get("assumption_ids"),
         "domain": node.get("domain"),
+        "reference_ids": node.get("reference_ids"),
+        "verifier_ids": node.get("verifier_ids"),
+        "barrier_ids": node.get("barrier_ids"),
     }
     serialized = json.dumps(
         payload,
@@ -297,6 +304,14 @@ def _validate_pinned_obligation_contracts(
 ) -> None:
     """Reject data-only drift in every known scientific obligation."""
 
+    expected_ids = set(PINNED_OBLIGATION_CONTRACTS)
+    actual_ids = set(nodes)
+    if actual_ids != expected_ids:
+        errors.append(
+            "$.obligations: canonical obligation set mismatch; "
+            f"missing={sorted(expected_ids - actual_ids)}, "
+            f"extra={sorted(actual_ids - expected_ids)}"
+        )
     for node_id, node in nodes.items():
         expected = PINNED_OBLIGATION_CONTRACTS.get(node_id)
         if expected is None:
@@ -1055,6 +1070,10 @@ def _validate_obligations_shape(
             errors.append(f"{path}: EXPERIMENT tier cannot type a formal obligation")
         if kind == "FALSIFICATION" and tier != "FALSIFICATION":
             errors.append(f"{path}: FALSIFICATION kind requires FALSIFICATION claim tier")
+        if disposition == "CLOSED" and kind not in FORMAL_KINDS:
+            errors.append(
+                f"{path}: only formal obligations with native realization evidence may use CLOSED"
+            )
         if disposition == "CLOSED" and kind in FORMAL_KINDS and not declaration:
             errors.append(f"{path}.formal_declaration: closed formal obligations require a declaration")
         if kind == "ENDPOINT" and tier != "THEOREM":
