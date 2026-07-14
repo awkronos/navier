@@ -72,7 +72,7 @@ This prevents both endpoint-as-assumption and wrapper progress.
 | P5 | smooth energy identity and weak/local energy inequalities | Leray/CKN analytic theory | all routes | established analytic; Lean absent |
 | P6 | Serrin and endpoint \(L^3\) continuation | Serrin/ESS | bridge K0, R1/R4/R9 | established analytic; Lean absent |
 | P7 | compactness with pressure/nonlinear-defect tracking | route-specific analysis | R4, R9, R10 | decomposed/open |
-| P8 | exact-bilinear-symbol discriminator | `Navier/Routes/R7/ExactSymbol.lean` plus new formulation | R5, R7, R11 | Leray numerator/single-mode leaf checked; mixed-triad gain distinguishing exact NS from generic energy cancellation open |
+| P8 | exact-bilinear-symbol discriminator | `Navier/Routes/R7/ExactSymbol.lean`, `Navier/Routes/R7/Triad.lean`, plus new formulation | R5, R7, R11 | Leray/single-mode and collective triad-cancellation leaves checked; a weighted shell gain distinguishing exact NS from generic energy cancellation remains open |
 
 The first formal milestone—P0's statement-A surface, part of P1, the algebraic
 and spatial-covariance part of P3, and the first P8 exact-symbol falsification

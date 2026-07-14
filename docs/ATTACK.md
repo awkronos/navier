@@ -148,7 +148,7 @@ These are reusable infrastructure, not route-specific discoveries.
 | P5 | Energy interfaces | Smooth energy identity, Leray inequality, local energy inequality | Analytic precedent [LERAY1934], [CKN1982] |
 | P6 | Regularity bridges | Serrin mixed-norm and endpoint \(L_t^\infty L_x^3\) continuation | Established conditional results [SERRIN1962], [ESS2003] |
 | P7 | Compactness interfaces | Approximation, pressure bounds, strong/weak convergence, defect accounting | Required by routes R4/R9/R10 |
-| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | The Leray numerator and single-mode vanishing are checked, together with an energy-cancelling algebraic countermodel; a mixed-triad/shell discriminator remains open |
+| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | Leray orthogonality, single-mode vanishing, collective six-transfer triad cancellation, and a nonzero individual-transfer witness are checked; a weighted shell gain distinguishing exact NS from averaged models remains open |
 
 P0–P8 may be developed in parallel, but no route reaches (A) without P0, P3,
 P4, and a checked bridge from its route certificate to global continuation.
