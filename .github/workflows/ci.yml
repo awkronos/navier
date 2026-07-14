@@ -1,0 +1,40 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Exercise fail-closed registry checks
+        run: python3 -m unittest discover -s tests -v
+      - name: Validate canonical registry
+        run: python3 scripts/validate_registry.py data/attack_registry.json
+      - name: Derive public status
+        run: python3 scripts/render_status.py data/attack_registry.json
+
+  lean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: true
+          test: false
+          lint: false
+          leanchecker: true
+          nanoda: true
+          nanoda-allow-sorry: false
+      - name: Emit public axiom audit
+        run: lake env lean Navier/AxiomAudit.lean
