@@ -95,4 +95,23 @@ theorem energy_not_scale_coercive
   · exact l3_critical_dilation _ (by positivity) φ
   · rw [l3_critical_dilation _ (by positivity) φ]; exact hφ3pos
 
+/-- The general `L^p` mixed-norm dilation scaling: the `p`-th power integral of the
+rescaled field `c · u(c · ·)` is `c ^ (p - 3)` times the original (for any real
+`p`, any `c > 0`). This realizes the spatial part of the Navier–Stokes scaling:
+the `L^p` norm itself rescales by `c ^ (1 - 3 / p)`, matching the `1 - 3 / p`
+term of `Navier.Scaling.mixedNormExponent`. The `p = 2` and `p = 3` cases above
+are special cases. -/
+theorem lp_dilation_scaling (c p : ℝ) (hc : 0 < c) (u : Space → Space) :
+    ∫ x, ‖c • u (c • x)‖^p ∂volume = c^(p - 3) • ∫ x, ‖u x‖^p ∂volume := by
+  have hc0 : 0 ≤ c := le_of_lt hc
+  have hu : ∀ y, ‖c • u y‖^p = c^p • ‖u y‖^p := fun y => by
+    have h : ‖c • u y‖ = c * ‖u y‖ := by rw [norm_smul, Real.norm_eq_abs, abs_of_pos hc]
+    rw [h, Real.mul_rpow hc0 (norm_nonneg _), smul_eq_mul]
+  have hci : 0 < (c ^ 3)⁻¹ := by positivity
+  simp only [hu, integral_smul,
+    MeasureTheory.Measure.integral_comp_smul volume (fun x => ‖u x‖^p) c,
+    Module.finrank_fin_fun, abs_of_pos hci]
+  rw [smul_smul, ← Real.rpow_natCast, ← Real.rpow_neg hc0, ← Real.rpow_add hc]
+  rfl
+
 end Navier.EnergyObstruction
