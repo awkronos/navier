@@ -42,12 +42,14 @@ every multi-index \(\alpha\) and every \(K\), some constant
 **Status (rapid-decay direction): CLOSED.** `Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay`
 proves every Mathlib `SchwartzMap` on `ℝ³` satisfies Fefferman's coordinatewise
 rapid-decay bound (the safety-relevant half of clause (4): the carrier admits
-only rapidly-decaying data), kernel-clean. The companion smoothness half
-(`ContDiff ℝ ⊤` ↔ `SchwartzMap.smooth'`) is mathematically trivial but held
-back by a Lean-elaboration quirk (Mathlib states `ContDiff ℝ (↑⊤)`, which is
-propositionally but not definitionally equal to `⊤` and resists `rw`/`convert`
-at the `SchwartzMap.mk` field). It remains a documented encoding residual, not
-a scientific gap. The global solution domain includes
+only rapidly-decaying data), kernel-clean. The companion smoothness direction
+is now explicit as
+`Navier.ConventionBridges.schwartzmap_satisfies_fefferman_smoothness` at
+Mathlib's `∞` regularity. This distinction matters: `∞` is ordinary C∞,
+whereas Mathlib's larger `ω` index is analytic regularity. The
+converse representation from Fefferman's coordinatewise smooth rapid-decay
+class to a bundled `SchwartzMap` remains open, so the named convention
+equivalence is not closed. The global solution domain includes
 \(t=0\), the initial trace is explicit, viscosity is positive, forcing is
 identically zero, and pressure and velocity are `ContDiffOn` the closed
 half-space. Equivalence of that within-derivative convention to Fefferman's

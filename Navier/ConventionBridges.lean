@@ -18,14 +18,11 @@ nonnegative constant. This is `SchwartzMap.decay'` restated with an explicit
 nonnegative constant. It establishes that the carrier admits only
 rapidly-decaying data, which is the safety-relevant half of the bridge.
 
-**Open residual (smoothness half).** The companion smoothness statement
-`ContDiff ℝ ⊤ f` is, by Mathlib's own `SchwartzMap.smooth'`, available for the
-carrier; bridging it into a user-stated `ContDiff ℝ ⊤` predicate is held back
-only by a Lean-elaboration quirk (Mathlib states `ContDiff ℝ (↑⊤)`; the coerced
-form is propositionally-but-not-definitionally equal to `⊤`, and resists
-`rw`/`convert`/`▸` at the `SchwartzMap.mk` field). The mathematics is trivial —
-a SchwartzMap is smooth by definition — so this is an encoding residual, not a
-scientific gap. Recorded as `schwartzConventionEquivalence`.
+**Closed here (smoothness direction).** The companion `C^infinity` statement
+is Mathlib's `SchwartzMap.smooth'`.  Its regularity index is `∞`, the coerced
+top element of `ℕ∞`; Mathlib's distinct `ω` index denotes analytic regularity.
+The converse representation from Fefferman's coordinatewise conditions to a
+bundled `SchwartzMap` remains part of `schwartzConventionEquivalence`.
 -/
 
 set_option autoImplicit false
@@ -34,6 +31,7 @@ noncomputable section
 namespace Navier.ConventionBridges
 
 open Navier
+open scoped ContDiff
 
 /-- Fefferman clause (4) rapid-decay bound: every spatial derivative of `f`
 decays faster than every prescribed polynomial. -/
@@ -48,5 +46,15 @@ theorem schwartzmap_satisfies_fefferman_rapid_decay (s : SchwartzMap Space Space
   obtain ⟨C, hC⟩ := s.decay' k n
   refine ⟨max C 0, le_max_right _ _, ?_⟩
   exact fun x => le_trans (hC x) (le_max_left _ _)
+
+/-- Every Mathlib `SchwartzMap` on `ℝ³` is smooth as an ordinary function.
+
+This is the smoothness direction of Fefferman clause (4).  It does not prove
+the converse representation theorem from coordinatewise smooth rapid decay to
+Mathlib's bundled `SchwartzMap`, so `schwartzConventionEquivalence` remains an
+explicit encoding residual. -/
+theorem schwartzmap_satisfies_fefferman_smoothness (s : SchwartzMap Space Space) :
+    ContDiff ℝ ∞ s.toFun := by
+  exact s.smooth'
 
 end Navier.ConventionBridges

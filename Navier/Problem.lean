@@ -23,7 +23,7 @@ set_option autoImplicit false
 
 noncomputable section
 
-open scoped BigOperators
+open scoped BigOperators ContDiff
 open MeasureTheory
 
 namespace Navier
@@ -91,15 +91,21 @@ def laplacian (u : VelocityEvolution) (t : ℝ) (x : Space) : Space :=
 /-- The identically zero body force used in Fefferman statement A. -/
 def zeroForce : ForceField := fun _ _ => 0
 
-/-- Smoothness on `R^3 x [0,infinity)`, expressed using Mathlib's
-within-derivative convention on the closed nonnegative-time half-space. -/
+/-- `C^infinity` smoothness on `R^3 x [0,infinity)`, expressed using
+Mathlib's within-derivative convention on the closed nonnegative-time
+half-space.
+
+The `∞` regularity is the coerced top element of `ℕ∞`.  It is deliberately
+not `ω`, the top element of `WithTop ℕ∞`, which Mathlib reserves for analytic
+regularity. -/
 def SmoothVelocityOnNonnegativeTime (u : VelocityEvolution) : Prop :=
-  ContDiffOn ℝ ⊤ (fun z : ℝ × Space => u z.1 z.2)
+  ContDiffOn ℝ ∞ (fun z : ℝ × Space => u z.1 z.2)
     ((Set.Ici (0 : ℝ)) ×ˢ (Set.univ : Set Space))
 
-/-- Pressure smoothness on the same nonnegative-time half-space. -/
+/-- `C^infinity` pressure smoothness on the same nonnegative-time
+half-space. -/
 def SmoothPressureOnNonnegativeTime (p : PressureEvolution) : Prop :=
-  ContDiffOn ℝ ⊤ (fun z : ℝ × Space => p z.1 z.2)
+  ContDiffOn ℝ ∞ (fun z : ℝ × Space => p z.1 z.2)
     ((Set.Ici (0 : ℝ)) ×ˢ (Set.univ : Set Space))
 
 /-- The Lebesgue kinetic-energy integral at time `t`. -/

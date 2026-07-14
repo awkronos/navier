@@ -30,6 +30,7 @@ finite-frontier facts.
 #print axioms Navier.EnergyObstruction.time_dilation_scaling
 
 #print axioms Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay
+#print axioms Navier.ConventionBridges.schwartzmap_satisfies_fefferman_smoothness
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified
