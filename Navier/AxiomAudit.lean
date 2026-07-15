@@ -1,4 +1,5 @@
 import Navier.ClayFrontier
+import Navier.ResumedAxiomAudit
 import Navier.OfficialProblem
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
@@ -43,7 +44,9 @@ import Navier.Routes.R7.FullSixModeBalance
 # Raw axiom audit for the public formal infrastructure
 
 Each command below asks Lean for the transitive axioms of a named declaration.
-The audit of `Clay.StatementA` concerns only the canonical proposition's
+The imported resumed audit covers every public theorem added by the local,
+energy, CKN-scaling, and generated-frequency attack leaves.  The audit of
+`Clay.StatementA` concerns only the canonical proposition's
 definition and its imported foundations; it does not construct an inhabitant
 and is not evidence that the conjectural endpoint is proved.  The proved
 declarations audited below are scaling arithmetic, disposition guards, and
