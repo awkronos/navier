@@ -18,6 +18,10 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
 
 ## What is here
 
+- [`docs/FULL_MAP_RESUMED_ATTACK.md`](docs/FULL_MAP_RESUMED_ATTACK.md): the
+  commit-bound resumed proof map, exact twelve-lane residuals, best next
+  techniques, and kill tests after the local, energy, CKN, and generated-mode
+  follow-up wave.
 - [`docs/ATTACK.md`](docs/ATTACK.md): 11 parallel positive, rigidity,
   computational, and breakdown routes, each with a lower residual, kill test,
   and pivot.

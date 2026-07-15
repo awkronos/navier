@@ -9,6 +9,11 @@ positive endpoint nor an official breakdown endpoint has an inhabitant.  A
 compiled surface, conditional consumer, experiment, or representation bridge
 is not an endpoint proof.
 
+The later resumed wave is recorded in
+[`FULL_MAP_RESUMED_ATTACK.md`](FULL_MAP_RESUMED_ATTACK.md).  Its updated L01,
+L04, L06, L07, and L11 residuals supersede the corresponding rows below; the
+endpoint verdict remains unchanged.
+
 The runtime permits three workers plus the integrating agent.  The twelve
 logical lanes therefore execute in four fold-and-refill waves.  Each lane must
 return one of:
