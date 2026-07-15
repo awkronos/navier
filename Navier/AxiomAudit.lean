@@ -2,13 +2,24 @@ import Navier.ClayFrontier
 import Navier.OfficialProblem
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
+import Navier.Analysis.CriticalL3
 import Navier.Analysis.VectorCalculus
+import Navier.Analysis.ViscosityTransport
+import Navier.Analysis.ViscosityAdmissibility
+import Navier.Analysis.ViscosityForceDecay
+import Navier.Analysis.ViscosityEndpoints
 import Navier.EnergyObstruction
 import Navier.ConventionBridges
+import Navier.Breakdown.MaximalNonextension
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
 import Navier.Routes.R7.ScaledTriad
 import Navier.Routes.R7.PhaseSymbol
+import Navier.Routes.R7.SymmetrizedPhase
+import Navier.Routes.R7.SymmetrizedWitness
+import Navier.Routes.R7.WeightedShellTransfer
+import Navier.Routes.R7.FieldLeakage
+import Navier.Routes.R7.FullFieldLeakage
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -71,6 +82,39 @@ finite-frontier facts.
 #print axioms Navier.Analysis.Covariance.zero_scale_fields
 #print axioms Navier.Analysis.Covariance.one_scale_fields
 
+#print axioms Navier.Analysis.CriticalL3.criticalL3Mass_parabolicScaled
+#print axioms Navier.Analysis.CriticalL3.criticalL3BoundOn_parabolicScaled_iff
+#print axioms Navier.Analysis.CriticalL3.criticalL3BoundBefore_parabolicScaled_iff
+
+#print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_viscosityScaled_mul
+#print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_one_to_viscosity
+#print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_viscosity_to_one
+#print axioms Navier.Analysis.ViscosityTransport.viscosityScaledForce_zero
+#print axioms Navier.Analysis.ViscosityTransport.viscosityScaledVelocity_inv
+#print axioms Navier.Analysis.ViscosityTransport.viscosityScaledForce_inv
+
+#print axioms Navier.Analysis.ViscosityAdmissibility.isPeriodicClassicalSolution_viscosityScaled_mul
+#print axioms Navier.Analysis.ViscosityAdmissibility.isClassicalSolution_viscosityScaled_mul
+#print axioms Navier.Analysis.ViscosityAdmissibility.kineticEnergy_viscosityScaled
+#print axioms Navier.Analysis.ViscosityAdmissibility.forcedDataRapidDecay_zeroForce
+#print axioms Navier.Analysis.ViscosityAdmissibility.periodicForcedDataRapidDecay_zeroForce
+
+#print axioms Navier.Analysis.ViscosityForceDecay.iteratedFDerivWithin_viscosityScaledForce
+#print axioms Navier.Analysis.ViscosityForceDecay.forcedDataRapidDecay_viscosityScaled
+#print axioms Navier.Analysis.ViscosityForceDecay.periodicForcedDataRapidDecay_viscosityScaled
+
+#print axioms Navier.Analysis.ViscosityEndpoints.statementA_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.statementB_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.statementC_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.statementD_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.statementC_of_zeroForceAtViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.statementD_of_zeroForceAtViscosityOne
+
+#print axioms Navier.Breakdown.bounded_pointEvaluation_of_smooth
+#print axioms Navier.Breakdown.noGlobal_of_pointEvaluationBreakdown
+#print axioms Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown
+#print axioms Navier.Breakdown.noPeriodicGlobal_of_pointEvaluationBreakdown
+
 #print axioms Navier.Routes.R7.dot_lerayNumerator
 #print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero
 #print axioms Navier.Routes.R7.countermodel_energyCancellation
@@ -103,6 +147,30 @@ finite-frontier facts.
 #print axioms Navier.Routes.R7.scaled_witness_receiver_orthogonal_output
 #print axioms Navier.Routes.R7.phased_scaled_normalized_coefficient
 #print axioms Navier.Routes.R7.phased_normalized_coefficient_unbounded_across_positive_scale
+
+#print axioms Navier.Routes.R7.phased_symmetrized_scaled_witness_cancels
+#print axioms Navier.Routes.R7.no_scaled_witness_nonzero_symmetrized_output
+
+#print axioms Navier.Routes.R7.sym_scaled_witness_admissible
+#print axioms Navier.Routes.R7.phased_symmetrized_scaled_witness_coefficient
+#print axioms Navier.Routes.R7.phased_symmetrized_coefficient_unbounded_across_positive_scale
+#print axioms Navier.Routes.R7.symWitnessModeCoefficient_conjugate
+#print axioms Navier.Routes.R7.symWitnessMode_divergence_free
+
+#print axioms Navier.Routes.R7.symWitnessRateK_eq_zero
+#print axioms Navier.Routes.R7.symWitnessRateL_eq_neg
+#print axioms Navier.Routes.R7.symWitnessRateM_eq
+#print axioms Navier.Routes.R7.symWitness_constantWeight_cancels
+#print axioms Navier.Routes.R7.symWitnessSquaredFrequencyRate_eq_cube
+#print axioms Navier.Routes.R7.symWitnessSquaredFrequencyRate_pos
+
+#print axioms Navier.Routes.R7.phased_symmetrized_scaled_leak_coefficient
+#print axioms Navier.Routes.R7.leakOutputWave_not_in_six_mode_support
+#print axioms Navier.Routes.R7.six_mode_support_has_nonzero_off_support_interaction
+
+#print axioms Navier.Routes.R7.pairProducesLeakOutput_iff
+#print axioms Navier.Routes.R7.fullSixModeProjectedLeakCoefficient_eq_scale
+#print axioms Navier.Routes.R7.fullSixMode_has_nonzero_off_support_coefficient
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified

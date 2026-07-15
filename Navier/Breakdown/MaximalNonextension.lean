@@ -214,12 +214,4 @@ theorem noPeriodicGlobal_of_pointEvaluationBreakdown
   noGlobal_of_pointEvaluationBreakdown w
     (fun _ _ hglobal => hglobal.velocity_smooth)
 
-#print axioms bounded_pointEvaluation_of_smooth
-#print axioms noGlobal_of_observableBreakdown
-#print axioms noWholeSpaceGlobal_of_observableBreakdown
-#print axioms noPeriodicGlobal_of_observableBreakdown
-#print axioms noGlobal_of_pointEvaluationBreakdown
-#print axioms noWholeSpaceGlobal_of_pointEvaluationBreakdown
-#print axioms noPeriodicGlobal_of_pointEvaluationBreakdown
-
 end Navier.Breakdown
