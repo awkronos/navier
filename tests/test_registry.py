@@ -36,7 +36,7 @@ REGISTRY_PATH = ROOT / "data" / "attack_registry.json"
 SCHEMA_PATH = ROOT / "schemas" / "attack_registry.schema.json"
 ATTACK_PATH = ROOT / "docs" / "ATTACK.md"
 MANIFEST_PATH = ROOT / "references" / "manifest.json"
-NOW = datetime(2026, 7, 15, 1, 8, tzinfo=UTC)
+NOW = datetime(2026, 7, 15, 1, 22, tzinfo=UTC)
 
 A_ID = "endpoint.fefferman_a"
 C_ID = "endpoint.fefferman_c"
@@ -779,7 +779,7 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         status = derived_status(self.registry)
         self.assertEqual(
             status["dispositions"],
-            {"DECOMPOSED": 10, "RED": 1, "SCAFFOLDED": 18},
+            {"DECOMPOSED": 10, "RED": 1, "SCAFFOLDED": 19},
         )
         self.assertEqual(
             status["claim_tiers"],
@@ -788,7 +788,7 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
                 "EXPERIMENT": 1,
                 "FALSIFICATION": 1,
                 "SCAFFOLD": 3,
-                "THEOREM": 14,
+                "THEOREM": 15,
             },
         )
         self.assertEqual([row["branch"] for row in status["endpoints"]], ["FEFFERMAN_A", "FEFFERMAN_C"])
@@ -798,7 +798,7 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         status = derived_status(self.registry)
         self.assertEqual(
             status["dispositions"],
-            {"DECOMPOSED": 10, "RED": 2, "SCAFFOLDED": 17},
+            {"DECOMPOSED": 10, "RED": 2, "SCAFFOLDED": 18},
         )
         self.assertEqual(status["endpoints"][0]["disposition"], "RED")
 

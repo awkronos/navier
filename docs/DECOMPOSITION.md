@@ -100,11 +100,11 @@ B7 cannot be marked ahead of B3. B3 itself cannot be marked ahead of a
 payload Q0. In particular, proving B7 conditionally is useful wiring but is
 not mathematical progress on the frontier.
 
-The current canonical registry still compresses the R1 payload and its
-conditional ESS bridge by making `critical.global_regularity_bridge` depend on
-`critical.unconditional_bound`. That graph must be split into an independent
-conditional bridge and a separate ALL-composition node before either can be
-promoted.
+Registry v1.0.7 separates the R1 payload and its conditional ESS bridge.
+`critical.unconditional_bound` and `critical.global_regularity_bridge` are
+independent producers; `critical.bound_to_regularity_composition` is the
+separate `ALL` node consumed by `regularity.any_positive_route`.  Neither
+producer can now be promoted by evidence for the other.
 
 ## 5. Route payload interfaces and lower residuals
 

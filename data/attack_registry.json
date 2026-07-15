@@ -1,10 +1,10 @@
 {
   "$schema": "../schemas/attack_registry.schema.json",
   "schema_version": "1.0.0",
-  "registry_version": "1.0.6",
+  "registry_version": "1.0.7",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
-  "generated_at": "2026-07-15T01:07:20Z",
+  "generated_at": "2026-07-15T01:21:07Z",
   "ssot": true,
   "campaign": {
     "id": "campaign.navier_clay",
@@ -830,7 +830,7 @@
       "evidence_links": [],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.scaling_criticality", "barrier.supercritical_energy_gap", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Prove a localized exact-equation flux estimate that closes a faithful critical norm without assuming any continuation criterion.", "smaller_than": "One scale-local nonlinear estimate is narrower than global existence and has a direct counterexample search surface.", "consumer_ids": ["critical.global_regularity_bridge"], "falsifier": "A rescaled exact divergence-free packet or generated Fourier network for which the proposed constant grows with scale rejects the estimate.", "next_action": "State the collective inequality on the recursively generated exact Fourier network or one parabolic cylinder, then test endpoint summability and scale-uniformity."}
+      "residual": {"statement": "Prove a localized exact-equation flux estimate that closes a faithful critical norm without assuming any continuation criterion.", "smaller_than": "One scale-local nonlinear estimate is narrower than global existence and has a direct counterexample search surface.", "consumer_ids": ["critical.bound_to_regularity_composition"], "falsifier": "A rescaled exact divergence-free packet or generated Fourier network for which the proposed constant grows with scale rejects the estimate.", "next_action": "State the collective inequality on the recursively generated exact Fourier network or one parabolic cylinder, then test endpoint summability and scale-uniformity."}
     },
     {
       "id": "critical.global_regularity_bridge",
@@ -839,17 +839,36 @@
       "kind": "BRIDGE",
       "claim_tier": "THEOREM",
       "disposition": "DECOMPOSED",
-      "statement": "Convert an actually realized bounded critical norm into continuation and smoothness for the exact zero-force solution.",
+      "statement": "Given an exact zero-force solution and an explicit faithful bounded critical-norm hypothesis on its maximal interval, derive continuation and smoothness without supplying that bound.",
       "formal_declaration": null,
-      "dependency_mode": "ALL",
-      "dependencies": ["critical.unconditional_bound"],
+      "dependency_mode": "NONE",
+      "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.prodi.1959", "ref.serrin.1962", "ref.ess.2003"],
       "evidence_links": [{"evidence_id": "evidence.ess.criterion", "role": "BACKGROUND"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.weak_strong_gap", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Port the conditional endpoint theorem with all pressure, solution-class, and interval hypotheses explicit, and repair the canonical graph so this bridge is independent of the unconditional-bound payload.", "smaller_than": "The conditional bridge consumes but does not manufacture the missing critical bound; a separate ALL-composition must join them.", "consumer_ids": ["regularity.any_positive_route"], "falsifier": "A hidden assumption of the bound, global smoothness, or a mismatched weak solution makes the bridge circular.", "next_action": "Formalize ESS independently, then add or repurpose a canonical composition node joining that theorem with critical.unconditional_bound before route promotion."}
+      "residual": {"statement": "Port the conditional endpoint theorem with all pressure, solution-class, interval, and critical-bound hypotheses explicit.", "smaller_than": "The conditional bridge consumes but does not manufacture the missing critical bound; the separate ALL-composition joins them.", "consumer_ids": ["critical.bound_to_regularity_composition"], "falsifier": "A hidden assumption of global smoothness, an implicit production of the bound, or a mismatched weak solution makes the bridge circular.", "next_action": "Formalize ESS independently, leaving the unconditional bound entirely to critical.unconditional_bound."}
+    },
+    {
+      "id": "critical.bound_to_regularity_composition",
+      "approach_id": "approach.critical_norms",
+      "title": "Critical bound and conditional regularity composition",
+      "kind": "BRIDGE",
+      "claim_tier": "THEOREM",
+      "disposition": "SCAFFOLDED",
+      "statement": "Combine an independently realized unconditional critical bound with the independently proved conditional critical regularity theorem to obtain the critical no-blowup route.",
+      "formal_declaration": null,
+      "dependency_mode": "ALL",
+      "dependencies": ["critical.unconditional_bound", "critical.global_regularity_bridge"],
+      "assumption_ids": [],
+      "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
+      "reference_ids": ["ref.serrin.1962", "ref.ess.2003"],
+      "evidence_links": [],
+      "verifier_ids": ["verifier.lean.native"],
+      "barrier_ids": ["barrier.scaling_criticality", "barrier.endpoint_circularity"],
+      "residual": {"statement": "Supply native realizations of both independent dependencies, then prove the thin composition without adding assumptions.", "smaller_than": "This node exposes conjunction wiring and cannot manufacture either the bound or the conditional theorem.", "consumer_ids": ["regularity.any_positive_route"], "falsifier": "A composition term that projects the conclusion from either dependency alone or adds an endpoint-equivalent assumption is invalid.", "next_action": "Keep this node open until both dependencies carry native realization receipts."}
     },
     {
       "id": "epsilon.local_regular_criterion",
@@ -994,7 +1013,7 @@
       "statement": "Accept one independently realized critical, epsilon, rigidity, frequency, vorticity, or weak-to-strong payload as the analytic no-blowup producer.",
       "formal_declaration": null,
       "dependency_mode": "ANY",
-      "dependencies": ["critical.global_regularity_bridge", "epsilon.global_singularity_exclusion", "compact.rigidity_exclusion", "frequency.cascade_exclusion", "vorticity.unconditional_depletion", "energy.weak_to_strong_upgrade"],
+      "dependencies": ["critical.bound_to_regularity_composition", "epsilon.global_singularity_exclusion", "compact.rigidity_exclusion", "frequency.cascade_exclusion", "vorticity.unconditional_depletion", "energy.weak_to_strong_upgrade"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.ess.2003", "ref.ckn.1982", "ref.gallagher.koch.planchon2013", "ref.constantin.fefferman1993"],
