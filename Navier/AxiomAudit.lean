@@ -5,7 +5,9 @@ import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
 import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.CriticalLp
+import Navier.Analysis.CriticalProfileAction
 import Navier.Analysis.OfficialABEncoding
+import Navier.Analysis.LerayProjection
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.EnergyPressureCancellation
 import Navier.Analysis.ViscosityTransport
@@ -112,6 +114,12 @@ finite-frontier facts.
 #print axioms Navier.Analysis.CriticalLp.criticalL3MemLpBoundOn_parabolicScaled_iff
 #print axioms Navier.Analysis.CriticalLp.criticalL3MemLpBoundBefore_parabolicScaled_iff
 
+#print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_one_zero
+#print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_comp
+#print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_inverse_left
+#print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_inverse_right
+#print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_relative
+
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanPoint_apply
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_nonneg
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_eq_sqrt_sum_sq
@@ -119,6 +127,16 @@ finite-frontier facts.
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_le
 #print axioms Navier.Analysis.OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight
 #print axioms Navier.Analysis.OfficialABEncoding.schwartzmap_satisfies_fefferman_euclidean_weight_rapid_decay
+
+#print axioms Navier.Analysis.LerayProjection.euclideanLeray_mem
+#print axioms Navier.Analysis.LerayProjection.inner_euclideanLeray
+#print axioms Navier.Analysis.LerayProjection.euclideanLeray_norm_le
+#print axioms Navier.Analysis.LerayProjection.euclideanLeray_idempotent
+#print axioms Navier.Analysis.LerayProjection.euclideanLeray_formula
+#print axioms Navier.Analysis.LerayProjection.officialPoint_inner_eq_dotProduct
+#print axioms Navier.Analysis.LerayProjection.officialPoint_norm_sq_eq_dotProduct
+#print axioms Navier.Analysis.LerayProjection.officialPoint_normalizedLeray
+#print axioms Navier.Analysis.LerayProjection.officialEuclideanNorm_normalizedLeray_le
 
 #print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_viscosityScaled_mul
 #print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_one_to_viscosity
