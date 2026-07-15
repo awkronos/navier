@@ -6,10 +6,12 @@ import Navier.Analysis.CriticalL3
 import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.CriticalLp
 import Navier.Analysis.CriticalProfileAction
+import Navier.Analysis.ESSInputs
 import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.EnergyPressureCancellation
+import Navier.Analysis.Vorticity
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
 import Navier.Analysis.ViscosityForceDecay

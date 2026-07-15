@@ -6,10 +6,12 @@ import Navier.Analysis.CriticalL3
 import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.CriticalLp
 import Navier.Analysis.CriticalProfileAction
+import Navier.Analysis.ESSInputs
 import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.EnergyPressureCancellation
+import Navier.Analysis.Vorticity
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
 import Navier.Analysis.ViscosityForceDecay
@@ -75,6 +77,12 @@ finite-frontier facts.
 #print axioms Navier.convection_eq_sum_coordinate_derivatives
 #print axioms Navier.pressure_work_eq_staticDivergence
 
+#print axioms Navier.Analysis.Vorticity.staticCurl_dilation
+#print axioms Navier.Analysis.Vorticity.vorticity_scaled
+#print axioms Navier.Analysis.Vorticity.officialEuclideanNorm_eq_zero_iff
+#print axioms Navier.Analysis.Vorticity.officialEuclideanNorm_smul
+#print axioms Navier.Analysis.Vorticity.vorticityDirection_euclideanNorm
+
 #print axioms Navier.Analysis.Covariance.fderiv_velocity_dilation
 #print axioms Navier.Analysis.Covariance.staticDivergence_dilation
 #print axioms Navier.Analysis.Covariance.zero_dilation_truth_check
@@ -119,6 +127,17 @@ finite-frontier facts.
 #print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_inverse_left
 #print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_inverse_right
 #print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_relative
+#print axioms Navier.Analysis.CriticalProfileAction.criticalProfileAction_eq_scale_translate
+#print axioms Navier.Analysis.CriticalProfileAction.memLp_criticalProfileTranslate_iff
+#print axioms Navier.Analysis.CriticalProfileAction.eLpNorm_criticalProfileTranslate
+#print axioms Navier.Analysis.CriticalProfileAction.memLp_three_criticalProfileAction_iff
+#print axioms Navier.Analysis.CriticalProfileAction.eLpNorm_three_criticalProfileAction
+
+#print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_continuous
+#print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.pressure_slice_continuous
+#print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_aestronglyMeasurable
+#print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.pressure_slice_aestronglyMeasurable
+#print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_memLp_three_iff
 
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanPoint_apply
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_nonneg
