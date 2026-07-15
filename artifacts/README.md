@@ -25,5 +25,11 @@ Replay a delivered manifest with:
 python3 scripts/replay_experiment.py artifacts/runs/experiment.json
 ```
 
-No experiment has been delivered at repository initialization. The retained
-`.gitkeep` is not evidence of a run.
+The first delivered run is [`runs/experiment.json`](runs/experiment.json),
+with exact output in
+[`runs/exact_symmetrized_triad_scan.json`](runs/exact_symmetrized_triad_scan.json).
+It replays the finite symmetrized-triad scan using integer/rational arithmetic,
+records both the cancelled old witness and the surviving unequal-shell/leakage
+observations, and declares `closes=false` with outcome
+`FALSIFICATION_WITNESS`. It is not numerical evidence for regularity or
+breakdown.

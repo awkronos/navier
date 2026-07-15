@@ -32,8 +32,17 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
 - [`Navier/Analysis/VectorCalculus.lean`](Navier/Analysis/VectorCalculus.lean)
   and [`Navier/Analysis/Covariance.lean`](Navier/Analysis/Covariance.lean):
   checked product/coordinate identities and full covariance of the forced
-  pointwise momentum equation under positive parabolic scaling. Smoothness,
-  energy, initial-data, and actual mixed-norm transport remain separate.
+  pointwise momentum equation under positive parabolic scaling.
+- [`Navier/Analysis/CriticalL3.lean`](Navier/Analysis/CriticalL3.lean) and the
+  `ViscosityTransport`, `ViscosityAdmissibility`, `ViscosityForceDecay`, and
+  `ViscosityEndpoints` modules: finite-time critical-`L3` covariance, exact
+  transport of the full official solution/admissibility contracts, and
+  kernel-checked equivalences between every A--D surface and its
+  viscosity-one form. None of those equivalences inhabits an endpoint.
+- [`Navier/Breakdown/MaximalNonextension.lean`](Navier/Breakdown/MaximalNonextension.lean):
+  a conditional point-evaluation consumer that converts a genuine local
+  blowup witness plus agreement into official whole-space or periodic
+  nonexistence. It does not construct the local solution or blowup.
 - [`Navier/Scaling.lean`](Navier/Scaling.lean): axiom-audited algebraic
   critical-line facts, without pretending the analytic norm theory exists.
 - [`Navier/Routes/R7/ExactSymbol.lean`](Navier/Routes/R7/ExactSymbol.lean):
@@ -45,9 +54,15 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
   proves linear frequency growth for that algebraic coefficient.
   [`Navier/Routes/R7/PhaseSymbol.lean`](Navier/Routes/R7/PhaseSymbol.lean)
   restores a normalized Leray symbol, Fourier `i`, complex phases, and receiver
-  conjugation for a fixed-polarization ansatz, and proves the corresponding
-  coefficient is unbounded across positive scale. No Fourier field, shell
-  flux, weighted gain, or regularity theorem is claimed.
+  conjugation. The `SymmetrizedPhase`, `SymmetrizedWitness`,
+  `WeightedShellTransfer`, `FieldLeakage`, and `FullFieldLeakage` modules then
+  expose one cancellation regression, one surviving conjugate-symmetric
+  six-mode witness, unequal-shell weighted transfer, and an exhaustive
+  36-pair off-support coefficient equal to the scale. This finite table is
+  not an invariant Fourier network or a PDE solution.
+- [`artifacts/runs/experiment.json`](artifacts/runs/experiment.json): a pinned,
+  exact-integer/rational replay of the symmetrized triad scan. It is explicitly
+  falsification evidence, never theorem or endpoint evidence.
 - [`docs/BARRIERS.md`](docs/BARRIERS.md) and
   [`docs/FALSIFICATION_LEDGER.md`](docs/FALSIFICATION_LEDGER.md): scaling,
   energy-only, weak/smooth, model-drift, compactness, and numerical-proof
