@@ -20,6 +20,7 @@ set_option autoImplicit false
 noncomputable section
 
 open MeasureTheory
+open scoped BigOperators
 
 namespace Navier.Analysis.EnergyOfficialClause
 
@@ -40,6 +41,40 @@ def OfficialWholeSpaceEnergyClause (u : VelocityEvolution) : Prop :=
     Integrable (fun x : Space => officialEuclideanNorm (u t x) ^ 2)) ∧
     ∃ E : ℝ, 0 < E ∧
       ∀ t : ℝ, 0 ≤ t → officialKineticEnergy u t < E
+
+/-- The squared official Euclidean norm is literally the sum of the three
+coordinate squares appearing in Fefferman's clause (7). -/
+theorem officialEuclideanNorm_sq_eq_sum_sq (x : Space) :
+    officialEuclideanNorm x ^ 2 = ∑ i : Fin 3, x i ^ 2 := by
+  rw [officialEuclideanNorm_eq_sqrt_sum_sq,
+    Real.sq_sqrt (Finset.sum_nonneg fun i _ => sq_nonneg |x i|)]
+  apply Finset.sum_congr rfl
+  intro i _
+  exact sq_abs (x i)
+
+/-- The literal coordinate-sum kinetic energy from the official statement. -/
+def coordinateKineticEnergy (u : VelocityEvolution) (t : ℝ) : ℝ :=
+  ∫ x : Space, ∑ i : Fin 3, u t x i ^ 2
+
+theorem officialKineticEnergy_eq_coordinateKineticEnergy
+    (u : VelocityEvolution) (t : ℝ) :
+    officialKineticEnergy u t = coordinateKineticEnergy u t := by
+  simp only [officialKineticEnergy, coordinateKineticEnergy,
+    officialEuclideanNorm_sq_eq_sum_sq]
+
+/-- Fefferman's energy clause written literally as a coordinate sum. -/
+def CoordinateWholeSpaceEnergyClause (u : VelocityEvolution) : Prop :=
+  (∀ t : ℝ, 0 ≤ t →
+    Integrable (fun x : Space => ∑ i : Fin 3, u t x i ^ 2)) ∧
+    ∃ E : ℝ, 0 < E ∧
+      ∀ t : ℝ, 0 ≤ t → coordinateKineticEnergy u t < E
+
+theorem officialWholeSpaceEnergyClause_iff_coordinate
+    (u : VelocityEvolution) :
+    OfficialWholeSpaceEnergyClause u ↔ CoordinateWholeSpaceEnergyClause u := by
+  simp only [OfficialWholeSpaceEnergyClause, CoordinateWholeSpaceEnergyClause,
+    officialEuclideanNorm_sq_eq_sum_sq,
+    officialKineticEnergy_eq_coordinateKineticEnergy]
 
 /-- Under slice measurability, the current and official whole-space energy
 clauses are equivalent. -/
@@ -102,5 +137,16 @@ theorem IsClassicalSolution.officialWholeSpaceEnergyClause
       Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.velocity_slice_aestronglyMeasurable
         sol ht)).1
   exact ⟨sol.finite_energy, sol.uniformly_bounded_energy⟩
+
+/-- Every project classical solution also satisfies the literal coordinate-
+sum formulation of Fefferman's energy clause. -/
+theorem IsClassicalSolution.coordinateWholeSpaceEnergyClause
+    {ν : ℝ} {f : ForceField} {u₀ : SchwartzVelocity}
+    {u : VelocityEvolution} {p : PressureEvolution}
+    (sol : IsClassicalSolution ν f u₀ u p) :
+    CoordinateWholeSpaceEnergyClause u :=
+  (officialWholeSpaceEnergyClause_iff_coordinate u).1
+    (Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause
+      sol)
 
 end Navier.Analysis.EnergyOfficialClause
