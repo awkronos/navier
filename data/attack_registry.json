@@ -1009,7 +1009,7 @@
       "evidence_links": [{"evidence_id": "evidence.native.viscosity_a_reduction", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Construct a native theorem term inhabiting the exact viscosity-one Statement A surface from semantic, local-continuation, and unconditional analytic producers; transport then supplies every positive viscosity.", "smaller_than": "Viscosity normalization removes one quantifier but leaves the genuinely open global-regularity payload untouched.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "A term with sorryAx, a custom axiom, an endpoint assumption, or wrong-domain payload is not a Clay resolution.", "next_action": "Do not package the endpoint until every ALL dependency is closed and the viscosity-one surface is inhabited with an allowed-axiom native receipt."}
+      "residual": {"statement": "Construct a native theorem term inhabiting Navier.Clay.StatementA by inhabiting its exact viscosity-one surface from semantic, local-continuation, and unconditional analytic producers.", "smaller_than": "Viscosity normalization removes one quantifier but leaves the genuinely open global-regularity payload untouched.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "A term with sorryAx, a custom axiom, an endpoint assumption, or wrong-domain payload is not a Clay resolution.", "next_action": "Do not package the endpoint until every ALL dependency is closed and the viscosity-one surface is inhabited with an allowed-axiom native receipt."}
     },
     {
       "id": "breakdown.c_encoding_bridges",
@@ -1123,7 +1123,7 @@
       "evidence_links": [{"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Construct a native theorem term inhabiting the exact viscosity-one Statement C surface from an admissible breakdown realization; transport then supplies every positive viscosity.", "smaller_than": "Viscosity normalization is complete, but the construction dependency remains separate and genuinely open.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "Averaged blowup, weak nonuniqueness, inadmissible force, or a proposition definition without an inhabitant cannot close C.", "next_action": "Require the exact viscosity-one construction dependency and a fresh allowed-axiom receipt before endpoint promotion."}
+      "residual": {"statement": "Construct a native theorem term inhabiting Navier.Clay.StatementC by inhabiting its exact viscosity-one surface from an admissible breakdown realization.", "smaller_than": "Viscosity normalization is complete, but the construction dependency remains separate and genuinely open.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "Averaged blowup, weak nonuniqueness, inadmissible force, or a proposition definition without an inhabitant cannot close C.", "next_action": "Require the exact viscosity-one construction dependency and a fresh allowed-axiom receipt before endpoint promotion."}
     },
     {
       "id": "computation.intermediate_falsification",

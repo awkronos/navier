@@ -36,7 +36,7 @@ REGISTRY_PATH = ROOT / "data" / "attack_registry.json"
 SCHEMA_PATH = ROOT / "schemas" / "attack_registry.schema.json"
 ATTACK_PATH = ROOT / "docs" / "ATTACK.md"
 MANIFEST_PATH = ROOT / "references" / "manifest.json"
-NOW = datetime(2026, 7, 14, 23, 0, tzinfo=UTC)
+NOW = datetime(2026, 7, 15, 1, 0, tzinfo=UTC)
 
 A_ID = "endpoint.fefferman_a"
 C_ID = "endpoint.fefferman_c"
@@ -203,12 +203,15 @@ def _prepare_snapshot_repository(
 
     registry["base_revision"] = baseline
     for evidence in registry["evidence"]:
-        if evidence["kind"] != "FORMAL_SURFACE_SNAPSHOT":
-            continue
-        provenance = evidence["provenance"]
-        provenance["source_locator"] = "repo:surface.lean"
-        provenance["source_revision"] = revision
-        provenance["artifact_sha256"] = hashlib.sha256(blob).hexdigest()
+        if evidence["kind"] == "FORMAL_SURFACE_SNAPSHOT":
+            provenance = evidence["provenance"]
+            provenance["source_locator"] = "repo:surface.lean"
+            provenance["source_revision"] = revision
+            provenance["artifact_sha256"] = hashlib.sha256(blob).hexdigest()
+        receipt = evidence.get("receipt")
+        if receipt is not None:
+            evidence["provenance"]["source_revision"] = revision
+            receipt["repository_revision"] = revision
     return baseline, revision
 
 
@@ -469,7 +472,12 @@ class EvidenceAndClosureTests(RegistryTestCase):
     def test_background_native_receipt_cannot_close_claim(self) -> None:
         evidence = _native_evidence(self.registry)
         _close_a(self.registry, evidence)
-        _find(self.registry["obligations"], A_ID)["evidence_links"][0]["role"] = "BACKGROUND"
+        link = next(
+            item
+            for item in _find(self.registry["obligations"], A_ID)["evidence_links"]
+            if item["evidence_id"] == evidence["id"]
+        )
+        link["role"] = "BACKGROUND"
         self.assertInvalid("false closure claim; fresh native receipt required")
 
     def test_false_closure_without_native_receipt_is_rejected(self) -> None:
