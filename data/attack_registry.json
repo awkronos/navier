@@ -1,10 +1,10 @@
 {
   "$schema": "../schemas/attack_registry.schema.json",
   "schema_version": "1.0.0",
-  "registry_version": "1.0.5",
+  "registry_version": "1.0.6",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
-  "generated_at": "2026-07-15T00:35:50Z",
+  "generated_at": "2026-07-15T01:07:20Z",
   "ssot": true,
   "campaign": {
     "id": "campaign.navier_clay",
@@ -628,6 +628,36 @@
       "supports": ["scaling.algebraic_critical_line", "meta.route_triage"],
       "provenance": {"source_locator": "repo:docs/FALSIFICATION_LEDGER.md#F-034", "source_revision": "7b3b52f52502c14e04606b22bd23520a438a0ee5", "immutable": true, "observed_at": "2026-07-15T00:35:50Z", "artifact_sha256": "411afaf2c383f011710ddbf3473d0912914ed0832345a9a47160d6f9e2e03b26"},
       "receipt": null
+    },
+    {
+      "id": "evidence.native.critical_l3_memlp_covariance",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of the faithful MemLp/eLpNorm critical-L3 interface, including exact spatial, slice, and finite-time parabolic covariance.",
+      "reference_ids": ["ref.serrin.1962", "ref.ess.2003"],
+      "supports": ["scaling.algebraic_critical_line"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-critical-l3-memlp", "source_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "immutable": true, "observed_at": "2026-07-15T01:05:40Z", "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T01:05:40Z", "repository_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "declaration": "Navier.Analysis.CriticalLp.criticalL3MemLpBoundBefore_parabolicScaled_iff", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"}
+    },
+    {
+      "id": "evidence.native.official_ab_norm_transport",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of the exact Euclidean-versus-Pi spatial norm comparison and the resulting rapid-decay representation equivalence for the official A/B datum surface.",
+      "reference_ids": ["ref.clay.fefferman2000"],
+      "supports": ["semantics.encoding_bridges", "semantics.exact_a_surface"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-official-ab-norm-transport", "source_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "immutable": true, "observed_at": "2026-07-15T01:05:40Z", "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T01:05:40Z", "repository_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "declaration": "Navier.Analysis.OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"}
+    },
+    {
+      "id": "evidence.native.official_cd_force_transport",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit that the whole-space force Frechet-derivative decay contract implies every official coordinate directional derivative bound with Euclidean spatial weights, with the periodic no-weight analogue separated.",
+      "reference_ids": ["ref.clay.fefferman2000"],
+      "supports": ["breakdown.c_encoding_bridges", "breakdown.exact_c_surface"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-official-cd-force-transport", "source_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "immutable": true, "observed_at": "2026-07-15T01:05:40Z", "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T01:05:40Z", "repository_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "declaration": "Navier.Breakdown.OfficialCDEncoding.forcedDataRapidDecay_implies_coordinatewise", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"}
     }
   ],
   "obligations": [
@@ -645,10 +675,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [],
+      "evidence_links": [{"evidence_id": "evidence.native.official_ab_norm_transport", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
-      "residual": {"statement": "Prove all five named statement-A representation equivalences without strengthening or weakening Fefferman's clauses.", "smaller_than": "Five representation equivalences are narrower than constructing a global Navier-Stokes solution.", "consumer_ids": ["semantics.exact_a_surface"], "falsifier": "A datum, boundary derivative, norm, coordinate PDE, or energy mismatch refutes the proposed equivalence.", "next_action": "State the official coordinatewise predicates directly, then prove each direction against the five current Mathlib conventions."}
+      "residual": {"statement": "The Euclidean-versus-Pi spatial-weight bridge and datum rapid-decay equivalence are checked; literal coordinate multi-index derivatives, half-space smoothness, coordinate PDE, output/energy norm, and periodic quotient conventions remain open.", "smaller_than": "The remaining representation equivalences are narrower than constructing a global Navier-Stokes solution.", "consumer_ids": ["semantics.exact_a_surface"], "falsifier": "A datum, boundary derivative, output norm, coordinate PDE, energy, or quotient mismatch refutes the proposed equivalence.", "next_action": "Formalize the literal multi-index coordinate predicates and close each remaining convention bridge independently."}
     },
     {
       "id": "semantics.exact_a_surface",
@@ -664,10 +694,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_a", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_a_reduction", "role": "OBSERVATION"}],
+      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_a", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_a_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.official_ab_norm_transport", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Close the five statement-A representation bridges while preserving the compiled signature; the all-positive-viscosity quantifier is already equivalent to the exact viscosity-one surface.", "smaller_than": "Surface fidelity and viscosity normalization are representation obligations and do not assert existence of a quantified solution.", "consumer_ids": ["endpoint.fefferman_a"], "falsifier": "Any datum, force, domain, derivative, norm, PDE, or energy quantifier differing from official A invalidates the surface.", "next_action": "Discharge semantics.encoding_bridges against the viscosity-one surface without changing the public signature or snapshot guards."}
+      "residual": {"statement": "Close the remaining statement-A representation bridges while preserving the compiled signature; viscosity normalization and the Euclidean spatial-weight datum bridge are checked.", "smaller_than": "Surface fidelity and viscosity normalization are representation obligations and do not assert existence of a quantified solution.", "consumer_ids": ["endpoint.fefferman_a"], "falsifier": "Any datum, force, domain, derivative, norm, PDE, or energy quantifier differing from official A invalidates the surface.", "next_action": "Discharge the literal derivative, half-space, equation, output/energy, and periodic bridges without changing the public signature or snapshot guards."}
     },
     {
       "id": "scaling.algebraic_critical_line",
@@ -683,10 +713,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "CRITICAL_MILD", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.serrin.1962", "ref.ess.2003"],
-      "evidence_links": [{"evidence_id": "evidence.native.critical_l3_integrable_covariance", "role": "OBSERVATION"}, {"evidence_id": "evidence.falsification.critical_l3_raw_contract", "role": "FALSIFICATION"}],
+      "evidence_links": [{"evidence_id": "evidence.native.critical_l3_integrable_covariance", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.critical_l3_memlp_covariance", "role": "OBSERVATION"}, {"evidence_id": "evidence.falsification.critical_l3_raw_contract", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.scaling_criticality"],
-      "residual": {"statement": "The integrability-faithful finite-time L3-mass contract and its covariance are checked; construct a canonical MemLp/snorm interface and the actual nested mixed spacetime norms with covariance.", "smaller_than": "Faithful norm covariance is analytic infrastructure rather than an a priori global bound.", "consumer_ids": ["critical.unconditional_bound"], "falsifier": "A nonintegrable slice accepted as finite, or a dilation exponent different from 1 - 3/p - 2/q, rejects the proposed norm definition.", "next_action": "Relate the repaired cubic-density contract to MemLp/eLpNorm, then build the outer time norm and change-of-variables theorem."}
+      "residual": {"statement": "The integrability-faithful cubic-density and canonical MemLp/eLpNorm critical-L3 interfaces, including finite-time covariance, are checked; actual nested outer-time mixed norms and an unconditional Navier-Stokes bound remain open.", "smaller_than": "Faithful norm covariance is analytic infrastructure rather than an a priori global bound.", "consumer_ids": ["critical.unconditional_bound"], "falsifier": "A nonintegrable slice accepted as finite, a dilation exponent different from 1 - 3/p - 2/q, or an outer norm that loses covariance rejects the proposed interface.", "next_action": "Build the outer time MemLp/eLpNorm and change-of-variables theorem, keeping the unconditional estimate as a separate producer."}
     },
     {
       "id": "local.mild_solution",
@@ -1025,10 +1055,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [],
+      "evidence_links": [{"evidence_id": "evidence.native.official_cd_force_transport", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
-      "residual": {"statement": "Define Fefferman's coordinatewise force derivatives and prove six round-trip representation theorems for the whole-space C surface.", "smaller_than": "Six representation bridges do not construct a breakdown datum or prove nonexistence.", "consumer_ids": ["breakdown.exact_c_surface"], "falsifier": "A mismatch in datum class, force decay, boundary jets, Euclidean norm, coordinate PDE, or clause-(7) energy invalidates the bridge.", "next_action": "Prove the six whole-space equivalences independently; the periodic quotient bridge is not a C dependency."}
+      "residual": {"statement": "The forward Frechet-to-coordinate force derivative transport and Euclidean spatial-weight bounds are checked; converse operator-norm reconstruction, datum, boundary-jet, coordinate-PDE, and clause-(7) bridges remain open.", "smaller_than": "The remaining representation bridges do not construct a breakdown datum or prove nonexistence.", "consumer_ids": ["breakdown.exact_c_surface"], "falsifier": "A mismatch in datum class, force decay, boundary jets, Euclidean norm, coordinate PDE, or clause-(7) energy invalidates the bridge.", "next_action": "Prove the converse force norm reconstruction, then close the other whole-space equivalences independently; periodic quotient semantics stay separate."}
     },
     {
       "id": "breakdown.exact_c_surface",
@@ -1044,10 +1074,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_c", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}],
+      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_c", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.official_cd_force_transport", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
-      "residual": {"statement": "Close the six whole-space representation bridges while preserving the compiled StatementC signature; arbitrary-force admissibility and all-positive viscosity are already transported exactly from viscosity one.", "smaller_than": "Surface fidelity and viscosity normalization do not construct the required breakdown datum or force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, importing periodic or weak-solution semantics, or changing the no-global-pair quantifier invalidates the surface.", "next_action": "Discharge breakdown.c_encoding_bridges on the viscosity-one surface; the periodic quotient bridge is intentionally not a C dependency."}
+      "residual": {"statement": "Close the remaining whole-space representation bridges while preserving the compiled StatementC signature; forward coordinate force decay, arbitrary-force admissibility, and all-positive viscosity transport are checked.", "smaller_than": "Surface fidelity and viscosity normalization do not construct the required breakdown datum or force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, importing periodic or weak-solution semantics, or changing the no-global-pair quantifier invalidates the surface.", "next_action": "Discharge the converse force, datum, boundary-jet, coordinate-PDE, and energy bridges on the viscosity-one surface; periodic quotient semantics stay separate."}
     },
     {
       "id": "breakdown.forced_c_payload",
