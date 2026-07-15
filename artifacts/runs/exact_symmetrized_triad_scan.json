@@ -1,0 +1,573 @@
+{
+  "arithmetic": "exact integers and rational normalized projections; no floats",
+  "closes_clay_endpoint": false,
+  "old_selected_output_cancellation": {
+    "configuration": {
+      "a": [
+        0,
+        1,
+        0
+      ],
+      "b": [
+        1,
+        0,
+        0
+      ],
+      "c": [
+        1,
+        -1,
+        0
+      ],
+      "k": [
+        1,
+        0,
+        0
+      ],
+      "l": [
+        0,
+        1,
+        0
+      ],
+      "m": [
+        -1,
+        -1,
+        0
+      ]
+    },
+    "constant_weight_sum": 0,
+    "rates_k_l_m": [
+      1,
+      -1,
+      0
+    ],
+    "squared_frequency_weighted_sum": 0
+  },
+  "scan": {
+    "examples": [
+      {
+        "configuration": {
+          "a": [
+            -1,
+            0,
+            1
+          ],
+          "b": [
+            -1,
+            -1,
+            0
+          ],
+          "c": [
+            -1,
+            1,
+            -1
+          ],
+          "k": [
+            -1,
+            -1,
+            -1
+          ],
+          "l": [
+            0,
+            0,
+            1
+          ],
+          "m": [
+            1,
+            1,
+            0
+          ]
+        },
+        "constant_weight_sum": 0,
+        "rates_k_l_m": [
+          -1,
+          1,
+          0
+        ],
+        "shells": [
+          3,
+          1,
+          2
+        ],
+        "squared_frequency_weighted_sum": -2
+      },
+      {
+        "configuration": {
+          "a": [
+            -1,
+            0,
+            1
+          ],
+          "b": [
+            -1,
+            -1,
+            0
+          ],
+          "c": [
+            -1,
+            1,
+            0
+          ],
+          "k": [
+            -1,
+            -1,
+            -1
+          ],
+          "l": [
+            0,
+            0,
+            1
+          ],
+          "m": [
+            1,
+            1,
+            0
+          ]
+        },
+        "constant_weight_sum": 0,
+        "rates_k_l_m": [
+          -2,
+          0,
+          2
+        ],
+        "shells": [
+          3,
+          1,
+          2
+        ],
+        "squared_frequency_weighted_sum": -2
+      },
+      {
+        "configuration": {
+          "a": [
+            -1,
+            0,
+            1
+          ],
+          "b": [
+            -1,
+            -1,
+            0
+          ],
+          "c": [
+            -1,
+            1,
+            1
+          ],
+          "k": [
+            -1,
+            -1,
+            -1
+          ],
+          "l": [
+            0,
+            0,
+            1
+          ],
+          "m": [
+            1,
+            1,
+            0
+          ]
+        },
+        "constant_weight_sum": 0,
+        "rates_k_l_m": [
+          -3,
+          -1,
+          4
+        ],
+        "shells": [
+          3,
+          1,
+          2
+        ],
+        "squared_frequency_weighted_sum": -2
+      },
+      {
+        "configuration": {
+          "a": [
+            -1,
+            0,
+            1
+          ],
+          "b": [
+            -1,
+            -1,
+            0
+          ],
+          "c": [
+            1,
+            -1,
+            -1
+          ],
+          "k": [
+            -1,
+            -1,
+            -1
+          ],
+          "l": [
+            0,
+            0,
+            1
+          ],
+          "m": [
+            1,
+            1,
+            0
+          ]
+        },
+        "constant_weight_sum": 0,
+        "rates_k_l_m": [
+          3,
+          1,
+          -4
+        ],
+        "shells": [
+          3,
+          1,
+          2
+        ],
+        "squared_frequency_weighted_sum": 2
+      },
+      {
+        "configuration": {
+          "a": [
+            -1,
+            0,
+            1
+          ],
+          "b": [
+            -1,
+            -1,
+            0
+          ],
+          "c": [
+            1,
+            -1,
+            0
+          ],
+          "k": [
+            -1,
+            -1,
+            -1
+          ],
+          "l": [
+            0,
+            0,
+            1
+          ],
+          "m": [
+            1,
+            1,
+            0
+          ]
+        },
+        "constant_weight_sum": 0,
+        "rates_k_l_m": [
+          2,
+          0,
+          -2
+        ],
+        "shells": [
+          3,
+          1,
+          2
+        ],
+        "squared_frequency_weighted_sum": 2
+      }
+    ],
+    "nonzero_rate_configurations": 18240,
+    "polarization_configurations": 19456,
+    "polarization_radius": 1,
+    "triad_count": 44,
+    "unequal_shell_weighted_transfer_count": 10752,
+    "wave_radius": 1
+  },
+  "scope": "finite exact algebraic falsification; not a Navier--Stokes solution, closed Galerkin model, or Clay proof",
+  "six_mode_leakage": {
+    "closed_under_projected_convolution": false,
+    "examples": [
+      {
+        "coefficient": [
+          {
+            "imag": "0",
+            "real": "1/5"
+          },
+          {
+            "imag": "0",
+            "real": "-2/5"
+          },
+          {
+            "imag": "0",
+            "real": "2"
+          }
+        ],
+        "ordered_pairs": [
+          [
+            [
+              -1,
+              -1,
+              0
+            ],
+            [
+              -1,
+              0,
+              0
+            ]
+          ],
+          [
+            [
+              -1,
+              0,
+              0
+            ],
+            [
+              -1,
+              -1,
+              0
+            ]
+          ]
+        ],
+        "output": [
+          -2,
+          -1,
+          0
+        ]
+      },
+      {
+        "coefficient": [
+          {
+            "imag": "-2/5",
+            "real": "0"
+          },
+          {
+            "imag": "1/5",
+            "real": "0"
+          },
+          {
+            "imag": "-1",
+            "real": "0"
+          }
+        ],
+        "ordered_pairs": [
+          [
+            [
+              -1,
+              -1,
+              0
+            ],
+            [
+              0,
+              -1,
+              0
+            ]
+          ],
+          [
+            [
+              0,
+              -1,
+              0
+            ],
+            [
+              -1,
+              -1,
+              0
+            ]
+          ]
+        ],
+        "output": [
+          -1,
+          -2,
+          0
+        ]
+      },
+      {
+        "coefficient": [
+          {
+            "imag": "0",
+            "real": "0"
+          },
+          {
+            "imag": "0",
+            "real": "0"
+          },
+          {
+            "imag": "0",
+            "real": "1"
+          }
+        ],
+        "ordered_pairs": [
+          [
+            [
+              -1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ]
+          ],
+          [
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              -1,
+              0,
+              0
+            ]
+          ]
+        ],
+        "output": [
+          -1,
+          1,
+          0
+        ]
+      },
+      {
+        "coefficient": [
+          {
+            "imag": "0",
+            "real": "0"
+          },
+          {
+            "imag": "0",
+            "real": "0"
+          },
+          {
+            "imag": "0",
+            "real": "1"
+          }
+        ],
+        "ordered_pairs": [
+          [
+            [
+              0,
+              -1,
+              0
+            ],
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              -1,
+              0
+            ]
+          ]
+        ],
+        "output": [
+          1,
+          -1,
+          0
+        ]
+      },
+      {
+        "coefficient": [
+          {
+            "imag": "2/5",
+            "real": "0"
+          },
+          {
+            "imag": "-1/5",
+            "real": "0"
+          },
+          {
+            "imag": "1",
+            "real": "0"
+          }
+        ],
+        "ordered_pairs": [
+          [
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ]
+          ],
+          [
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ]
+          ]
+        ],
+        "output": [
+          1,
+          2,
+          0
+        ]
+      }
+    ],
+    "nonzero_output_count": 6,
+    "off_support_ordered_pairs": 24,
+    "off_support_outputs": 13,
+    "phase_convention": "+k:-i, +l:1, +m:1; opposite coefficients conjugated",
+    "projection": "normalized Leray projection; identity at zero output"
+  },
+  "status": "FALSIFICATION_ONLY",
+  "unequal_radius_witness": {
+    "configuration": {
+      "a": [
+        0,
+        1,
+        1
+      ],
+      "b": [
+        1,
+        0,
+        0
+      ],
+      "c": [
+        1,
+        -1,
+        1
+      ],
+      "k": [
+        1,
+        0,
+        0
+      ],
+      "l": [
+        0,
+        1,
+        0
+      ],
+      "m": [
+        -1,
+        -1,
+        0
+      ]
+    },
+    "constant_weight_sum": 0,
+    "rates_k_l_m": [
+      0,
+      -1,
+      1
+    ],
+    "squared_frequency_weighted_sum": 1
+  }
+}
