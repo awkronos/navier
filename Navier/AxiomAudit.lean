@@ -7,6 +7,7 @@ import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.CriticalLp
 import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.VectorCalculus
+import Navier.Analysis.EnergyPressureCancellation
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
 import Navier.Analysis.ViscosityForceDecay
@@ -14,6 +15,8 @@ import Navier.Analysis.ViscosityEndpoints
 import Navier.EnergyObstruction
 import Navier.ConventionBridges
 import Navier.Breakdown.MaximalNonextension
+import Navier.Breakdown.Restriction
+import Navier.Breakdown.ForceRecovery
 import Navier.Breakdown.OfficialCDEncoding
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
@@ -68,6 +71,7 @@ finite-frontier facts.
 #print axioms Navier.staticDivergence_smul
 #print axioms Navier.staticDivergence_const_smul
 #print axioms Navier.convection_eq_sum_coordinate_derivatives
+#print axioms Navier.pressure_work_eq_staticDivergence
 
 #print axioms Navier.Analysis.Covariance.fderiv_velocity_dilation
 #print axioms Navier.Analysis.Covariance.staticDivergence_dilation
@@ -144,6 +148,23 @@ finite-frontier facts.
 #print axioms Navier.Breakdown.noGlobal_of_pointEvaluationBreakdown
 #print axioms Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown
 #print axioms Navier.Breakdown.noPeriodicGlobal_of_pointEvaluationBreakdown
+
+#print axioms Navier.Breakdown.spacetimeBefore_mono
+#print axioms Navier.Breakdown.PartialClassicalSolution.restrict
+#print axioms Navier.Breakdown.PartialClassicalSolution.restrict_velocity
+#print axioms Navier.Breakdown.PartialClassicalSolution.restrict_pressure
+#print axioms Navier.Breakdown.PartialClassicalSolution.restrict_restrict
+#print axioms Navier.Breakdown.velocityAgreesBefore_refl
+#print axioms Navier.Breakdown.velocityAgreesBefore_symm
+#print axioms Navier.Breakdown.velocityAgreesBefore_trans
+#print axioms Navier.Breakdown.velocityAgreesBefore_mono
+
+#print axioms Navier.Breakdown.ForceRecovery.recoveredForce
+#print axioms Navier.Breakdown.ForceRecovery.satisfiesNavierStokes_iff_force_eq_recoveredForce
+#print axioms Navier.Breakdown.ForceRecovery.satisfiesNavierStokesBefore_iff_force_eq_recoveredForce
+#print axioms Navier.Breakdown.PartialClassicalSolution.ofClassical
+#print axioms Navier.Breakdown.zeroPartialClassicalSolution
+#print axioms Navier.Breakdown.zeroPartial_not_pointNormUnbounded
 
 #print axioms Navier.Breakdown.OfficialCDEncoding.norm_le_euclideanNorm
 #print axioms Navier.Breakdown.OfficialCDEncoding.euclideanNorm_le_sqrt_three_mul_norm
