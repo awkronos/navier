@@ -1,10 +1,10 @@
 {
   "$schema": "../schemas/attack_registry.schema.json",
   "schema_version": "1.0.0",
-  "registry_version": "1.0.7",
+  "registry_version": "1.0.8",
   "registry_id": "navier.attack_registry",
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
-  "generated_at": "2026-07-15T01:21:07Z",
+  "generated_at": "2026-07-15T02:07:37Z",
   "ssot": true,
   "campaign": {
     "id": "campaign.navier_clay",
@@ -658,6 +658,116 @@
       "supports": ["breakdown.c_encoding_bridges", "breakdown.exact_c_surface"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-official-cd-force-transport", "source_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "immutable": true, "observed_at": "2026-07-15T01:05:40Z", "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T01:05:40Z", "repository_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "declaration": "Navier.Breakdown.OfficialCDEncoding.forcedDataRapidDecay_implies_coordinatewise", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"}
+    },
+    {
+      "id": "evidence.native.leray_projection_interface",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of the exact Euclidean frequency-plane projection, including transversality, contraction, idempotence, and agreement with the existing normalized Leray symbol; this is pointwise projection infrastructure, not a heat-semigroup or mild-solution theorem.",
+      "reference_ids": ["ref.kato.1984"],
+      "supports": ["local.mild_solution"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-leray-projection-interface", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Analysis.LerayProjection.officialEuclideanNorm_normalizedLeray_le", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.partial_restriction_laws",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of partial-classical-solution restriction transitivity and velocity-agreement algebra; these are coherence prerequisites and do not construct, restart, maximize, or glue a local solution.",
+      "reference_ids": ["ref.kato.1984", "ref.clay.fefferman2000"],
+      "supports": ["local.continuation_alternative", "breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-partial-restriction-laws", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Breakdown.PartialClassicalSolution.restrict_restrict", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.energy_pressure_integral",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit that pressure work is a static divergence and integrates to zero under explicit coordinatewise flux and derivative integrability hypotheses; no boundary term or official-class integrability hypothesis is silently discarded.",
+      "reference_ids": ["ref.leray.1934", "ref.ckn.1982"],
+      "supports": ["energy.smooth_identity"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-energy-pressure-integral", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Analysis.EnergyPressureIntegral.integral_pressure_work_eq_zero", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.ess_slice_inputs",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of continuous and strongly measurable velocity/pressure slices for a partial classical solution and the exact velocity-L3 MemLp/cubic-integrability equivalence; this supplies no endpoint trace, critical bound, suitable-weak upgrade, or ESS theorem.",
+      "reference_ids": ["ref.ess.2003"],
+      "supports": ["critical.global_regularity_bridge"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-ess-slice-inputs", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_memLp_three_iff", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.critical_profile_action",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of the critical affine scaling-translation action, its composition/inverses/relative parameters, and exact L3 MemLp/eLpNorm invariance; it extracts no profile and proves no orthogonality, decoupling, or rigidity.",
+      "reference_ids": ["ref.gallagher.koch.planchon2013"],
+      "supports": ["compact.profile_decomposition"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-critical-profile-action", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Analysis.CriticalProfileAction.eLpNorm_three_criticalProfileAction", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.vorticity_scaling_direction",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of coordinate-curl/vorticity scaling and a unit Euclidean vorticity direction defined only on the nonzero subtype; it proves neither the vorticity PDE nor conditional or unconditional stretching depletion.",
+      "reference_ids": ["ref.constantin.fefferman1993"],
+      "supports": ["vorticity.alignment_criterion"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-vorticity-scaling-direction", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Analysis.Vorticity.vorticityDirection_euclideanNorm", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.force_recovery_interface",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of exact recovered-force characterizations for global and partial Navier-Stokes equations and restriction of an official global solution to a partial one; this constructs no admissible force, agreement theorem, or breakdown evolution.",
+      "reference_ids": ["ref.clay.fefferman2000"],
+      "supports": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-force-recovery-interface", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Breakdown.ForceRecovery.satisfiesNavierStokesBefore_iff_force_eq_recoveredForce", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.zero_partial_obstruction",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit that the zero partial classical solution cannot satisfy the point-norm-unbounded predicate; this rejects a vacuous witness but supplies no nontrivial solution or blowup mechanism.",
+      "reference_ids": ["ref.clay.fefferman2000"],
+      "supports": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-zero-partial-obstruction", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Breakdown.zeroPartial_not_pointNormUnbounded", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.r7_full_six_mode_balance",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of the exhaustive occupied-pair classification and full six-mode receiver table (0,-s,s,0,-s,s), with zero constant-weight rate, squared-frequency rate 2*s^3, and simultaneous off-support leakage coefficient s; this is instantaneous finite algebra, not a closed evolution.",
+      "reference_ids": ["ref.tao.2019", "ref.tao.averaged2016"],
+      "supports": ["frequency.cascade_exclusion", "breakdown.zero_force_blowup_payload"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-r7-full-six-mode-balance", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Routes.R7.fullSixModeBalance", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.native.ckn_density_transport",
+      "kind": "NATIVE_RECEIPT",
+      "claim_tier": "THEOREM",
+      "summary": "Kernel and raw-axiom audit of exact positive parabolic image/preimage laws for official-Euclidean backward cylinders, IntegrableOn transport, and weight-three velocity, pressure, and combined CKN density scaling; no suitable weak solution, local energy inequality, normalized smallness functional, or epsilon theorem is supplied.",
+      "reference_ids": ["ref.ckn.1982"],
+      "supports": ["epsilon.local_regular_criterion"],
+      "provenance": {"source_locator": "artifact:lean-axiom-audit-output-ckn-density-transport", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
+      "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Analysis.CKNCylinder.cknDensityIntegrableOn_parabolicScaled_iff", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
+    },
+    {
+      "id": "evidence.falsification.r7_finite_support_nonclosure",
+      "kind": "FALSIFICATION_WITNESS",
+      "claim_tier": "FALSIFICATION",
+      "summary": "The checked fullSixModeBalance theorem combines the exact occupied rates and positive squared-frequency transfer with a nonzero coefficient at an output outside the six-mode support, falsifying any promotion of that finite support to a convolution-closed dynamics or exact PDE solution.",
+      "reference_ids": ["ref.tao.2019", "ref.tao.averaged2016"],
+      "supports": ["frequency.cascade_exclusion", "breakdown.zero_force_blowup_payload", "meta.route_triage"],
+      "provenance": {"source_locator": "repo:Navier/Routes/R7/FullSixModeBalance.lean#fullSixModeBalance", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "95b47d4359a36a67cd5475e1732d664b074bb55292e4c1ff971885df53715bba"},
+      "receipt": null
     }
   ],
   "obligations": [
@@ -732,10 +842,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "CRITICAL_MILD", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.kato.1984"],
-      "evidence_links": [{"evidence_id": "evidence.kato.local", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.kato.local", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.leray_projection_interface", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.nonlocal_pressure"],
-      "residual": {"statement": "Port the critical heat-semigroup and bilinear estimates with exact Leray projection and restart-compatible uniqueness.", "smaller_than": "Local fixed-point estimates do not imply control for all nonnegative times.", "consumer_ids": ["local.continuation_alternative"], "falsifier": "A contraction estimate requiring an unstated small-data hypothesis or a different projected operator invalidates the port.", "next_action": "Define the critical mild space and prove the local Duhamel map is a contraction on a datum-dependent interval."}
+      "residual": {"statement": "The exact Euclidean frequency-plane projection, transversality, contraction, idempotence, and bridge to the existing normalized Leray symbol are checked; the complex Fourier multiplier, heat semigroup, Duhamel estimates, local construction, and restart-compatible uniqueness remain open.", "smaller_than": "The checked pointwise projection algebra is one prerequisite for the local fixed-point map and does not construct a solution on any time interval.", "consumer_ids": ["local.continuation_alternative"], "falsifier": "A Fourier realization that fails to agree with the checked Euclidean projection, or a contraction estimate requiring an unstated small-data hypothesis, invalidates the port.", "next_action": "Lift the checked projection to the complex Fourier multiplier, then prove the critical heat and bilinear estimates before defining the local Duhamel contraction."}
     },
     {
       "id": "local.continuation_alternative",
@@ -751,10 +861,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "CRITICAL_MILD", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.kato.1984", "ref.ess.2003"],
-      "evidence_links": [{"evidence_id": "evidence.kato.local", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.kato.local", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.partial_restriction_laws", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.scaling_criticality", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Construct the local/maximal solution, prove restart-compatible uniqueness, and derive a faithful critical blowup alternative in the selected exact solution class.", "smaller_than": "Local construction and conditional continuation do not supply the unconditional critical control they consume.", "consumer_ids": ["local.global_continuation"], "falsifier": "A continuation proof that assumes global smoothness or changes solution classes is circular.", "next_action": "Package compatible local intervals and show bounded faithful critical control yields a uniform restart interval."}
+      "residual": {"statement": "Restriction transitivity and reflexive, symmetric, transitive, and time-monotone velocity-agreement laws are checked for partial classical solutions; local construction, time shift, restart uniqueness, maximal gluing, and a faithful critical blowup alternative remain open.", "smaller_than": "Restriction and agreement algebra supplies only the coherence layer for restart and does not construct a maximal solution or bound a critical norm.", "consumer_ids": ["local.global_continuation"], "falsifier": "A restart theorem that cannot recover the checked restriction laws, a maximal object defined by assuming global existence, or a weaker nonfaithful blowup norm invalidates the bridge.", "next_action": "Define time-shifted partial solutions, prove local uniqueness across overlaps, and glue compatible intervals before deriving the bounded-critical-control restart estimate."}
     },
     {
       "id": "energy.smooth_identity",
@@ -770,10 +880,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.leray.1934"],
-      "evidence_links": [],
+      "evidence_links": [{"evidence_id": "evidence.native.energy_pressure_integral", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.supercritical_energy_gap", "barrier.nonlocal_pressure"],
-      "residual": {"statement": "Formalize integration by parts, pressure cancellation, decay cutoffs, and the limit that removes the spatial boundary term.", "smaller_than": "The energy identity supplies the endpoint energy field only after a global smooth solution has been constructed.", "consumer_ids": ["local.global_continuation"], "falsifier": "A surviving pressure or boundary contribution, or missing integrability, refutes the stated identity.", "next_action": "Prove the identity first for compact support, then pass to rapidly decaying data with explicit domination."}
+      "residual": {"statement": "Pressure work is identified pointwise with a static divergence, and its whole-space integral is proved zero under explicit coordinatewise flux and derivative integrability hypotheses; deriving those hypotheses from the official solution class and proving the time, convection, and viscosity terms remain open.", "smaller_than": "The pressure cancellation is one rigorously guarded term of the energy identity and neither drops a boundary term nor constructs a global smooth solution.", "consumer_ids": ["local.global_continuation"], "falsifier": "Failure to derive the stated flux integrability from official decay, a surviving boundary contribution, or an unjustified time-integral interchange refutes the identity.", "next_action": "Derive the pressure-flux hypotheses from explicit rapid decay, then formalize convection cancellation, viscosity dissipation, and differentiation of kinetic energy."}
     },
     {
       "id": "energy.global_weak_solution",
@@ -846,10 +956,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.prodi.1959", "ref.serrin.1962", "ref.ess.2003"],
-      "evidence_links": [{"evidence_id": "evidence.ess.criterion", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.ess.criterion", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.ess_slice_inputs", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.weak_strong_gap", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Port the conditional endpoint theorem with all pressure, solution-class, interval, and critical-bound hypotheses explicit.", "smaller_than": "The conditional bridge consumes but does not manufacture the missing critical bound; the separate ALL-composition joins them.", "consumer_ids": ["critical.bound_to_regularity_composition"], "falsifier": "A hidden assumption of global smoothness, an implicit production of the bound, or a mismatched weak solution makes the bridge circular.", "next_action": "Formalize ESS independently, leaving the unconditional bound entirely to critical.unconditional_bound."}
+      "residual": {"statement": "Velocity and pressure spatial slices of a partial classical solution are continuous and strongly measurable, and velocity L3 MemLp is exactly related to cubic integrability; endpoint time traces, the suitable-weak/local-energy interface, pressure control, and the ESS backward-uniqueness argument remain open.", "smaller_than": "These are faithful analytic inputs to the conditional theorem and neither supply its critical bound nor prove continuation.", "consumer_ids": ["critical.bound_to_regularity_composition"], "falsifier": "A hidden assumption of global smoothness, an implicit production of the bound, a missing endpoint trace, or a mismatched weak solution makes the bridge circular.", "next_action": "Formalize the suitable-weak and endpoint-trace hypotheses, then port ESS backward uniqueness while leaving critical.unconditional_bound entirely independent."}
     },
     {
       "id": "critical.bound_to_regularity_composition",
@@ -884,10 +994,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "SUITABLE_WEAK", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.ckn.1982"],
-      "evidence_links": [{"evidence_id": "evidence.ckn.local", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.ckn.local", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.ckn_density_transport", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.compactness_defect", "barrier.nonlocal_pressure"],
-      "residual": {"statement": "Port the pressure-aware local energy inequality and epsilon-regularity iteration on parabolic cylinders.", "smaller_than": "A conditional one-cylinder theorem does not show smallness at every possible singular point.", "consumer_ids": ["epsilon.global_singularity_exclusion"], "falsifier": "Dropping pressure or changing the scale-invariant quantity invalidates the local criterion.", "next_action": "Define suitable weak solutions and reproduce the compactness contradiction with explicit pressure control."}
+      "residual": {"statement": "Official-Euclidean backward cylinders have exact positive parabolic image/preimage identities, IntegrableOn is transported across them, and the velocity-cubic, pressure-three-halves, and combined CKN densities have exact weight-three scaling and integrability equivalences; the determinant factor, normalized integral functional, suitable weak solutions, local energy inequality, and epsilon-regularity iteration remain open.", "smaller_than": "The checked cylinder geometry, pointwise density scaling, and integrability transport are analytic prerequisites and prove neither scale-normalized smallness nor regularity on one cylinder.", "consumer_ids": ["epsilon.global_singularity_exclusion"], "falsifier": "Dropping pressure, using a mismatched measure or cylinder scaling, or changing the scale-invariant quantity invalidates the local criterion.", "next_action": "Compute the parabolic volume factor and normalized CKN integral functional, then define suitable weak solutions and the pressure-aware local energy inequality before the compactness iteration."}
     },
     {
       "id": "epsilon.global_singularity_exclusion",
@@ -922,10 +1032,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "CRITICAL_MILD", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.gallagher.koch.planchon2013"],
-      "evidence_links": [{"evidence_id": "evidence.profile.decomposition", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.profile.decomposition", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.critical_profile_action", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.compactness_defect"],
-      "residual": {"statement": "Formalize parameter orthogonality, remainder smallness, and nonlinear profile stability in the selected critical space.", "smaller_than": "A decomposition theorem organizes noncompactness but does not rule out the minimal profile.", "consumer_ids": ["compact.rigidity_exclusion"], "falsifier": "A bounded sequence with untracked frequency or translation mass invalidates the claimed remainder topology.", "next_action": "Begin with the linear decomposition and state the exact nonlinear perturbation estimate separately."}
+      "residual": {"statement": "The critical affine scaling-translation action, composition, inverses, relative parameters, translation invariance, and exact L3 MemLp/eLpNorm invariance are checked; profile extraction, parameter orthogonality, remainder smallness, decoupling, and nonlinear stability remain open.", "smaller_than": "The checked symmetry action supplies the parameter algebra for a decomposition but extracts no profile and rules out no critical element.", "consumer_ids": ["compact.rigidity_exclusion"], "falsifier": "Failure of orthogonality or norm decoupling, a remainder not small in the consumer norm, or profiles on incompatible domains invalidates the decomposition.", "next_action": "Use the checked relative-parameter action to state the linear extraction and orthogonality theorem, keeping nonlinear perturbation and ancient-profile rigidity separate."}
     },
     {
       "id": "compact.rigidity_exclusion",
@@ -960,10 +1070,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "CRITICAL_MILD", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.tao.2019", "ref.tao.averaged2016"],
-      "evidence_links": [{"evidence_id": "evidence.native.r7_weighted_transfer", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.r7_full_leakage", "role": "OBSERVATION"}, {"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}],
+      "evidence_links": [{"evidence_id": "evidence.native.r7_weighted_transfer", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.r7_full_leakage", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.r7_full_six_mode_balance", "role": "OBSERVATION"}, {"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.r7_finite_support_nonclosure", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.scaling_criticality", "barrier.compactness_defect", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Lift the checked phase-correct six-mode transfer and exhaustive coefficient at one off-support output to the complete recursively generated Fourier network and an exact PDE shell balance, then prove endpoint-summable control without derivative or logarithmic loss.", "smaller_than": "A closed-network shell estimate is a route payload rather than the global regularity endpoint.", "consumer_ids": ["regularity.any_positive_route"], "falsifier": "Divergence of the generated support, a derivative loss, or an exact triad reversing the proposed collective gain rejects the estimate.", "next_action": "Enumerate every generated output beyond the first leak and derive the Fourier-series energy identity before proposing a summable collective weight."}
+      "residual": {"statement": "All occupied receiver pairs and projected rates are classified exactly: in constructor order the rates are (0,-s,s,0,-s,s), their constant-weight sum is zero, their squared-frequency sum is 2*s^3, and the simultaneous off-support coefficient is s. The finite support is therefore not invariant; recursive generated support, amplitude dynamics, an exact PDE shell identity, and endpoint summability remain open.", "smaller_than": "The complete instantaneous six-mode algebra exposes both transfer and leakage but is not a convolution-closed evolution or a global frequency estimate.", "consumer_ids": ["regularity.any_positive_route"], "falsifier": "Uncontrolled generated support, a derivative or logarithmic loss, or a later exact triad reversing any proposed collective gain rejects the cascade estimate.", "next_action": "Enumerate the first recursively generated shell beyond the certified leak, derive its amplitude equations, and test a predeclared collective weight before attempting an endpoint-summable bound."}
     },
     {
       "id": "vorticity.alignment_criterion",
@@ -979,10 +1089,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
       "reference_ids": ["ref.constantin.fefferman1993"],
-      "evidence_links": [{"evidence_id": "evidence.vorticity.geometry", "role": "BACKGROUND"}],
+      "evidence_links": [{"evidence_id": "evidence.vorticity.geometry", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.vorticity_scaling_direction", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.scaling_criticality", "barrier.nonlocal_pressure"],
-      "residual": {"statement": "Port the geometric depletion theorem with its exact high-vorticity set and coherence hypotheses.", "smaller_than": "The criterion is conditional and does not show that arbitrary evolution generates alignment.", "consumer_ids": ["vorticity.unconditional_depletion"], "falsifier": "A theorem that omits the nonlocal velocity recovery or weakens the coherence scale does not match the cited criterion.", "next_action": "Define vorticity direction away from zeros and formalize the singular-integral stretching estimate."}
+      "residual": {"statement": "Coordinate curl scaling, vorticity scaling, Euclidean norm-zero and scalar laws, and a unit vorticity direction on the nonzero subtype are checked; curl-gradient/div-curl identities, the vorticity PDE, Biot-Savart recovery, and the singular-integral stretching estimate remain open.", "smaller_than": "The checked direction field is only the faithful geometric input to the conditional criterion and proves no depletion along an evolution.", "consumer_ids": ["vorticity.unconditional_depletion"], "falsifier": "A criterion that is undefined at zeros, omits nonlocal velocity recovery, or weakens the coherence scale does not match the cited theorem.", "next_action": "Derive the exact vorticity equation and Biot-Savart stretching representation before formalizing the high-vorticity coherence criterion."}
     },
     {
       "id": "vorticity.unconditional_depletion",
@@ -1112,10 +1222,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"],
-      "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}],
+      "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.partial_restriction_laws", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.force_recovery_interface", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.zero_partial_obstruction", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.weak_strong_gap", "barrier.endpoint_circularity"],
-      "residual": {"statement": "At viscosity one, construct admissible smooth rapidly decaying data and force, a genuine partial solution, agreement with every official global solution, and finite-time point-norm blowup or another exact nonexistence mechanism.", "smaller_than": "Viscosity transport reduces packaging but does not produce the breakdown witness.", "consumer_ids": ["breakdown.any_exact_realization"], "falsifier": "An averaged operator, rough force, weak nonuniqueness, or a partial solution without official-class agreement is the wrong object.", "next_action": "Build the viscosity-one local/maximal witness and prove uniqueness/agreement before invoking the checked point-evaluation consumer."}
+      "residual": {"statement": "The recovered force is characterized exactly by the global and partial Navier-Stokes equations, official global solutions restrict to partial ones, and the zero partial solution cannot satisfy the point-norm blowup predicate; admissible data/force, a nontrivial partial solution, official-class agreement, and finite-time blowup or another exact nonexistence mechanism remain open.", "smaller_than": "Force recovery and restriction certify equation bookkeeping and reject the vacuous zero witness, but produce no admissible breakdown evolution.", "consumer_ids": ["breakdown.any_exact_realization"], "falsifier": "An averaged operator, rough force, weak nonuniqueness, zero witness, or partial solution without official-class agreement is the wrong object.", "next_action": "Construct a nontrivial viscosity-one local/maximal witness, prove recovered-force admissibility and uniqueness/agreement, then invoke the checked point-evaluation consumer."}
     },
     {
       "id": "breakdown.zero_force_blowup_payload",
@@ -1131,10 +1241,10 @@
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "STRONGER_THAN_C", "endpoint_branch": "FEFFERMAN_C"},
       "reference_ids": ["ref.clay.fefferman2000", "ref.tao.averaged2016"],
-      "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.r7_weighted_transfer", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.r7_full_leakage", "role": "BACKGROUND"}, {"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}],
+      "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.r7_weighted_transfer", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.r7_full_leakage", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.partial_restriction_laws", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.force_recovery_interface", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.zero_partial_obstruction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.r7_full_six_mode_balance", "role": "OBSERVATION"}, {"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.r7_finite_support_nonclosure", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.supercritical_energy_gap"],
-      "residual": {"statement": "Extend the checked non-invariant six-mode interaction to an exact zero-force R3 evolution with convolution-closed or controlled generated support and admissible smooth data, then prove local/global agreement and finite-time nonextension.", "smaller_than": "Finite exact transfer and one-output leakage are background construction components, not a self-sustaining cascade or nonexistence proof.", "consumer_ids": ["breakdown.any_exact_realization"], "falsifier": "Generated modes that disperse the transfer, loss of Schwartz summability, or failure of exact-solution agreement kills the construction.", "next_action": "Compute every recursively generated output and derive exact amplitude evolution before attempting a localized R3 multiscale assembly."}
+      "residual": {"statement": "The exact six occupied rates conserve their constant-weight sum while producing squared-frequency rate 2*s^3, but the same checked identity has nonzero off-support coefficient s; force recovery also proves the zero partial solution cannot be the blowup witness. A recursively controlled exact zero-force R3 evolution, admissible smooth data, local/global agreement, and finite-time nonextension remain open.", "smaller_than": "The finite calculation is instantaneous and explicitly non-invariant, so it is neither a self-sustaining cascade nor a solution/nonexistence proof.", "consumer_ids": ["breakdown.any_exact_realization"], "falsifier": "Generated modes that disperse the transfer, loss of Schwartz summability, failure of exact-solution agreement, or a zero/trivial witness kills the construction.", "next_action": "Compute the recursively generated modes and exact amplitude equations forced by the certified leak before attempting a localized R3 multiscale assembly."}
     },
     {
       "id": "breakdown.any_exact_realization",
@@ -1226,7 +1336,7 @@
       "assumption_ids": [],
       "domain": {"equation": "DISCRETE_NAVIER_STOKES", "dimension": 3, "geometry": "DISCRETE_GRID", "boundary": "DISCRETE", "forcing": "DISCRETE", "viscosity": "DISCRETE_POSITIVE", "viscosity_quantifier": "FIXED_DISCRETE_POSITIVE", "solution_class": "DISCRETE_APPROXIMATION", "relation_to_endpoint": "APPROXIMATION_ONLY", "endpoint_branch": "NONE"},
       "reference_ids": ["ref.clay.fefferman2000", "ref.tao.averaged2016"],
-      "evidence_links": [{"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.critical_l3_raw_contract", "role": "FALSIFICATION"}],
+      "evidence_links": [{"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.r7_finite_support_nonclosure", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.critical_l3_raw_contract", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.registry.strict", "verifier.tests.hostile"],
       "barrier_ids": ["barrier.numerical_nonproof", "barrier.endpoint_semantics"],
       "residual": {"statement": "Attach every future negative witness to a named obligation and narrower successor, and repair the canonical meta domain and literature-only DECOMPOSED statuses without creating a proof dependency.", "smaller_than": "Triage changes research priority and never realizes a formal endpoint.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "An experiment on an endpoint path, a discrete-only domain applied to formal/source falsifications, or a deleted failed route violates this interface.", "next_action": "Extend the canonical validator contract for shared falsification evidence and separate literature targets from native lower-theorem decomposition before changing pinned statuses."}

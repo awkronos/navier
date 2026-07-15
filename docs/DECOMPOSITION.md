@@ -1,7 +1,7 @@
 # Dependency and residual decomposition
 
 Status: **DECOMPOSED / SCIENTIFIC_FRONTIER**
-Target: Fefferman alternative (A) on \(\mathbb R^3\)
+Targets: Fefferman alternatives (A) and (C) on \(\mathbb R^3\)
 
 The purpose of this decomposition is to make circularity mechanically visible.
 The endpoint proposition is a consumer only. No record named “solution,”
@@ -65,20 +65,21 @@ This prevents both endpoint-as-assumption and wrapper progress.
 | Node | Proposition or structure | Producers | Consumers | Status |
 |---|---|---|---|---|
 | P0 | Official clauses for Fefferman data and alternatives A–D | [FEFFERMAN2000], `Navier/Problem.lean`, and `Navier/OfficialProblem.lean` | every route, A0/N0 | A–D proposition surfaces typed; seven convention/quotient bridges remain explicit and no endpoint is inhabited |
-| P1 | Vector calculus and Leray projection on \(\mathbb R^3\) | Mathlib plus `Navier/Analysis/VectorCalculus.lean` | all routes | product/coordinate leaves checked; curl, Leray, pressure recovery, and integration identities open |
-| P2 | Schwartz, Sobolev, mixed, critical, weak, and suitable spaces | Mathlib plus new definitions | all routes | open formal infrastructure |
-| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, `Navier/Analysis/Covariance.lean`, `Navier/Analysis/CriticalL3Integrable.lean`, and the viscosity modules | R1, R4, R5, R9–R11 | exponent, separate power-integral rules, full forced pointwise-equation covariance, integrability-faithful finite-time `L3`-mass covariance, complete official solution/admissibility transport, and A--D viscosity-one equivalences checked; `MemLp`/nested mixed norms remain open |
-| P4 | maximal local smooth solution and restart | Kato/Koch–Tataru analytic theory plus `Navier/Breakdown/MaximalNonextension.lean` | bridge K0, all routes | a typed partial classical solution and conditional point-evaluation nonextension consumer are checked; local construction, maximality, restart, and uniqueness/agreement remain Lean-absent |
-| P5 | smooth energy identity and weak/local energy inequalities | Leray/CKN analytic theory | all routes | established analytic; Lean absent |
-| P6 | Serrin and endpoint \(L^3\) continuation | Serrin/ESS | bridge K0, R1/R4/R9 | established analytic; Lean absent |
-| P7 | compactness with pressure/nonlinear-defect tracking | route-specific analysis | R4, R9, R10 | decomposed/open |
-| P8 | exact-bilinear-symbol discriminator | the `Navier/Routes/R7` exact-symbol, triad, phase, symmetrized-witness, weighted-transfer, and leakage modules | R5, R7, R11 | the old ordered growth cancels after symmetrization; a second conjugate-symmetric six-mode table has rates `(0,-s,s)`, positive squared-frequency rate `s^3`, and a full 36-pair coefficient `s` at one selected off-support output. Complete vector convolution, generated-network dynamics, exact PDE shell balance, and summability remain open |
+| P1 | Vector calculus and Leray projection on \(\mathbb R^3\) | Mathlib plus the `Navier/Analysis` vector-calculus, Leray, pressure, and vorticity modules | all routes | exact Euclidean Leray projection algebra, pressure-work divergence, guarded integral pressure cancellation, curl scaling, and nonzero vorticity direction checked; complex Fourier realization, full integration-by-parts package, vorticity PDE, and Biot–Savart recovery remain open |
+| P2 | Schwartz, Sobolev, mixed, critical, weak, and suitable spaces | Mathlib plus the critical-`Lp`, ESS-input, and CKN-interface modules | all routes | faithful spatial `MemLp`/`eLpNorm`, continuous/measurable partial-solution slices, official-Euclidean backward-cylinder covariance, `IntegrableOn` transport, and exact weight-three CKN-density scaling checked; outer mixed norms, endpoint traces, normalized CKN integrals, suitable weak solutions, and local energy inequalities remain open |
+| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, the covariance/critical-`Lp` modules, and the viscosity modules | R1, R4, R5, R9–R11 | exponent, full forced pointwise-equation covariance, faithful finite-time critical-`L3` covariance, official solution/admissibility transport, and A--D viscosity-one equivalences checked; nested outer-time mixed norms and every unconditional bound remain open |
+| P4 | maximal local smooth solution and restart | Kato/Koch–Tataru analytic theory plus the `Navier/Breakdown` partial-solution modules | bridge K0, all routes | typed partial solutions, restriction transitivity, velocity-agreement algebra, exact force recovery, and the conditional point-evaluation nonextension consumer are checked; local construction, time shift, maximal gluing, restart uniqueness/agreement, and blowup production remain open |
+| P5 | smooth energy identity and weak/local energy inequalities | Leray/CKN analytic theory plus the pressure-cancellation modules | all routes | the pressure term cancels globally under explicit coordinatewise flux/derivative integrability; deriving those hypotheses from official decay and the time, convection, viscosity, weak, and local-energy arguments remain open |
+| P6 | Serrin and endpoint \(L^3\) continuation | Serrin/ESS plus `Navier/Analysis/ESSInputs.lean` | bridge K0, R1/R4/R9 | continuous/measurable slices and the velocity-`L3` MemLp/cubic-integrability equivalence are checked; endpoint trace, suitable-weak pressure control, ESS backward uniqueness, and continuation remain open |
+| P7 | compactness with pressure/nonlinear-defect tracking | route-specific analysis plus `Navier/Analysis/CriticalProfileAction.lean` | R4, R9, R10 | exact affine action laws, relative parameters, translation invariance, and critical-`L3` invariance checked; extraction, orthogonality, decoupling, remainder smallness, nonlinear stability, ancient profile, and rigidity remain open |
+| P8 | exact-bilinear-symbol discriminator | the `Navier/Routes/R7` exact-symbol, symmetrized, leakage, and exhaustive six-mode modules | R5, R7, R11 | every occupied pair and receiver rate is classified: `(0,-s,s,0,-s,s)`, constant-weight sum `0`, squared-frequency rate `2*s^3`, and simultaneous off-support coefficient `s`. The finite support is therefore certified non-invariant; recursively generated support, amplitude dynamics, an exact PDE shell identity, and summability remain open |
 
-The formal milestone now includes all A--D surfaces, part of P1, faithful
-finite-time critical-`L3` scaling, all official viscosity transports and
-viscosity-one reductions, a negative nonextension consumer, and the finite R7
-falsification leaves. It remains lower infrastructure: no local theory, global
-analytic payload, or endpoint inhabitant has been produced.
+The formal milestone now includes all A--D surfaces, faithful critical-`L3`
+scaling and symmetry actions, Euclidean Leray/curl/pressure prerequisites,
+restriction and force-recovery interfaces, all official viscosity transports,
+and the exhaustive finite R7 balance with its nonclosure witness. It remains
+lower infrastructure: no local theory, unconditional analytic payload, exact
+breakdown evolution, or endpoint inhabitant has been produced.
 
 ## 4. Bridge decomposition
 
@@ -100,7 +101,8 @@ B7 cannot be marked ahead of B3. B3 itself cannot be marked ahead of a
 payload Q0. In particular, proving B7 conditionally is useful wiring but is
 not mathematical progress on the frontier.
 
-Registry v1.0.7 separates the R1 payload and its conditional ESS bridge.
+Registry v1.0.8 preserves the v1.0.7 separation of the R1 payload and its
+conditional ESS bridge while attaching the twelve-lane lower-theorem evidence.
 `critical.unconditional_bound` and `critical.global_regularity_bridge` are
 independent producers; `critical.bound_to_regularity_composition` is the
 separate `ALL` node consumed by `regularity.any_positive_route`.  Neither
