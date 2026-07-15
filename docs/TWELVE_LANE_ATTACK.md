@@ -78,3 +78,24 @@ The Kimina configuration file contains a `navier` project entry, but the live
 Kimina server's project map did not expose it at campaign start.  Local Lean
 LSP remains available.  This is recorded as stale live verifier state; it is
 not permission to restart a service or modify shared verifier infrastructure.
+
+## Fold log
+
+### Wave 1
+
+- L01 (`representationTransport`) proved the finite-dimensional norm bounds
+  `‖x‖∞ ≤ ‖x‖₂ ≤ √3‖x‖∞`, transported the existing rapid-decay predicate to
+  Euclidean spatial weights, and supplied the Schwartz-map consumer.  The
+  literal multi-index derivative and energy clauses remain open.
+- L02 (`representationTransport`) proved that the current total Fréchet force
+  bound controls every mixed unit time/space coordinate direction and output
+  component, with the correct Euclidean whole-space weight and no spurious
+  periodic spatial weight.  The converse and derivative-convention identity
+  remain open.
+- L03 (`dataContract`) proved genuine `MemLp` membership transport and exact
+  `eLpNorm`/`lpNorm` invariance under positive critical scaling, plus faithful
+  finite-time bound covariance.  Outer mixed norms and the unconditional
+  Navier--Stokes bound remain open.
+
+All three files passed targeted Lean compilation, empty LSP diagnostics, and
+per-theorem allowed-axiom audits before their path-scoped commits.

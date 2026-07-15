@@ -4,6 +4,8 @@ import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
 import Navier.Analysis.CriticalL3Integrable
+import Navier.Analysis.CriticalLp
+import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
@@ -12,6 +14,7 @@ import Navier.Analysis.ViscosityEndpoints
 import Navier.EnergyObstruction
 import Navier.ConventionBridges
 import Navier.Breakdown.MaximalNonextension
+import Navier.Breakdown.OfficialCDEncoding
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
 import Navier.Routes.R7.ScaledTriad
@@ -92,6 +95,27 @@ finite-frontier facts.
 #print axioms Navier.Analysis.CriticalL3Integrable.integrableCriticalL3BoundOn_parabolicScaled_iff
 #print axioms Navier.Analysis.CriticalL3Integrable.integrableCriticalL3BoundBefore_parabolicScaled_iff
 
+#print axioms Navier.Analysis.CriticalLp.memLp_three_iff_integrable_norm_cube
+#print axioms Navier.Analysis.CriticalLp.aestronglyMeasurable_criticalL3SpatialScale_iff
+#print axioms Navier.Analysis.CriticalLp.integrable_norm_cube_criticalL3SpatialScale_iff
+#print axioms Navier.Analysis.CriticalLp.memLp_three_criticalL3SpatialScale_iff
+#print axioms Navier.Analysis.CriticalLp.eLpNorm_three_criticalL3SpatialScale
+#print axioms Navier.Analysis.CriticalLp.lpNorm_three_criticalL3SpatialScale
+#print axioms Navier.Analysis.CriticalLp.memLp_three_iff_l3SliceIntegrable
+#print axioms Navier.Analysis.CriticalLp.memLp_three_parabolicScaled_iff
+#print axioms Navier.Analysis.CriticalLp.eLpNorm_three_parabolicScaled
+#print axioms Navier.Analysis.CriticalLp.lpNorm_three_parabolicScaled
+#print axioms Navier.Analysis.CriticalLp.criticalL3MemLpBoundOn_parabolicScaled_iff
+#print axioms Navier.Analysis.CriticalLp.criticalL3MemLpBoundBefore_parabolicScaled_iff
+
+#print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanPoint_apply
+#print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_nonneg
+#print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_eq_sqrt_sum_sq
+#print axioms Navier.Analysis.OfficialABEncoding.norm_le_officialEuclideanNorm
+#print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_le
+#print axioms Navier.Analysis.OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight
+#print axioms Navier.Analysis.OfficialABEncoding.schwartzmap_satisfies_fefferman_euclidean_weight_rapid_decay
+
 #print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_viscosityScaled_mul
 #print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_one_to_viscosity
 #print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_viscosity_to_one
@@ -120,6 +144,12 @@ finite-frontier facts.
 #print axioms Navier.Breakdown.noGlobal_of_pointEvaluationBreakdown
 #print axioms Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown
 #print axioms Navier.Breakdown.noPeriodicGlobal_of_pointEvaluationBreakdown
+
+#print axioms Navier.Breakdown.OfficialCDEncoding.norm_le_euclideanNorm
+#print axioms Navier.Breakdown.OfficialCDEncoding.euclideanNorm_le_sqrt_three_mul_norm
+#print axioms Navier.Breakdown.OfficialCDEncoding.abs_coordinateForceDerivativeWithin_le
+#print axioms Navier.Breakdown.OfficialCDEncoding.forcedDataRapidDecay_implies_coordinatewise
+#print axioms Navier.Breakdown.OfficialCDEncoding.periodicForcedDataRapidDecay_implies_coordinatewise
 
 #print axioms Navier.Routes.R7.dot_lerayNumerator
 #print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero
