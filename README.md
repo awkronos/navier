@@ -33,12 +33,16 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
   and [`Navier/Analysis/Covariance.lean`](Navier/Analysis/Covariance.lean):
   checked product/coordinate identities and full covariance of the forced
   pointwise momentum equation under positive parabolic scaling.
-- [`Navier/Analysis/CriticalL3.lean`](Navier/Analysis/CriticalL3.lean) and the
-  `ViscosityTransport`, `ViscosityAdmissibility`, `ViscosityForceDecay`, and
-  `ViscosityEndpoints` modules: finite-time critical-`L3` covariance, exact
-  transport of the full official solution/admissibility contracts, and
-  kernel-checked equivalences between every A--D surface and its
-  viscosity-one form. None of those equivalences inhabits an endpoint.
+- [`Navier/Analysis/CriticalL3.lean`](Navier/Analysis/CriticalL3.lean) and
+  [`Navier/Analysis/CriticalL3Integrable.lean`](Navier/Analysis/CriticalL3Integrable.lean):
+  raw critical-mass transport plus a repaired contract that explicitly
+  requires every selected slice to have integrable cubic norm density. The
+  repaired finite-time bound is exactly scaling covariant; it does not produce
+  an unconditional bound. The `ViscosityTransport`,
+  `ViscosityAdmissibility`, `ViscosityForceDecay`, and `ViscosityEndpoints`
+  modules exactly transport the full official solution/admissibility contracts
+  and prove equivalences between every A--D surface and its viscosity-one form.
+  None of those equivalences inhabits an endpoint.
 - [`Navier/Breakdown/MaximalNonextension.lean`](Navier/Breakdown/MaximalNonextension.lean):
   a conditional point-evaluation consumer that converts a genuine local
   blowup witness plus agreement into official whole-space or periodic

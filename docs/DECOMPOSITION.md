@@ -67,17 +67,18 @@ This prevents both endpoint-as-assumption and wrapper progress.
 | P0 | Official clauses for Fefferman data and alternatives A–D | [FEFFERMAN2000], `Navier/Problem.lean`, and `Navier/OfficialProblem.lean` | every route, A0/N0 | A–D proposition surfaces typed; seven convention/quotient bridges remain explicit and no endpoint is inhabited |
 | P1 | Vector calculus and Leray projection on \(\mathbb R^3\) | Mathlib plus `Navier/Analysis/VectorCalculus.lean` | all routes | product/coordinate leaves checked; curl, Leray, pressure recovery, and integration identities open |
 | P2 | Schwartz, Sobolev, mixed, critical, weak, and suitable spaces | Mathlib plus new definitions | all routes | open formal infrastructure |
-| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, and `Navier/Analysis/Covariance.lean` | R1, R4, R5, R9–R11 | exponent, separate power-integral rules, and full forced pointwise-equation covariance checked; actual nested mixed norm and solution-contract covariance open |
-| P4 | maximal local smooth solution and restart | Kato/Koch–Tataru analytic theory | bridge K0, all routes | established analytic; Lean absent |
+| P3 | Navier–Stokes scaling and norm exponent \(1-3/p-2/q\) | direct calculation plus `Navier/Scaling.lean`, `Navier/EnergyObstruction.lean`, `Navier/Analysis/Covariance.lean`, `Navier/Analysis/CriticalL3Integrable.lean`, and the viscosity modules | R1, R4, R5, R9–R11 | exponent, separate power-integral rules, full forced pointwise-equation covariance, integrability-faithful finite-time `L3`-mass covariance, complete official solution/admissibility transport, and A--D viscosity-one equivalences checked; `MemLp`/nested mixed norms remain open |
+| P4 | maximal local smooth solution and restart | Kato/Koch–Tataru analytic theory plus `Navier/Breakdown/MaximalNonextension.lean` | bridge K0, all routes | a typed partial classical solution and conditional point-evaluation nonextension consumer are checked; local construction, maximality, restart, and uniqueness/agreement remain Lean-absent |
 | P5 | smooth energy identity and weak/local energy inequalities | Leray/CKN analytic theory | all routes | established analytic; Lean absent |
 | P6 | Serrin and endpoint \(L^3\) continuation | Serrin/ESS | bridge K0, R1/R4/R9 | established analytic; Lean absent |
 | P7 | compactness with pressure/nonlinear-defect tracking | route-specific analysis | R4, R9, R10 | decomposed/open |
-| P8 | exact-bilinear-symbol discriminator | `Navier/Routes/R7/ExactSymbol.lean`, `Navier/Routes/R7/Triad.lean`, `Navier/Routes/R7/ScaledTriad.lean`, `Navier/Routes/R7/PhaseSymbol.lean`, plus new formulation | R5, R7, R11 | real coefficient cancellation plus a normalized phase-aware coefficient are checked; fixed phases give frequency-unbounded growth, but a conjugate-symmetric Fourier-field realization and weighted collective shell gain remain open |
+| P8 | exact-bilinear-symbol discriminator | the `Navier/Routes/R7` exact-symbol, triad, phase, symmetrized-witness, weighted-transfer, and leakage modules | R5, R7, R11 | the old ordered growth cancels after symmetrization; a second conjugate-symmetric six-mode table has rates `(0,-s,s)`, positive squared-frequency rate `s^3`, and a full 36-pair coefficient `s` at one selected off-support output. Complete vector convolution, generated-network dynamics, exact PDE shell balance, and summability remain open |
 
-The first formal milestone—P0's statement-A surface, part of P1, the algebraic
-and pointwise-equation-covariance part of P3, and the first P8 finite-dimensional
-symbol falsification leaf—is implemented. It is useful before the analytic imports exist
-because it fixes exact consumer types and exposes domain or operator drift.
+The formal milestone now includes all A--D surfaces, part of P1, faithful
+finite-time critical-`L3` scaling, all official viscosity transports and
+viscosity-one reductions, a negative nonextension consumer, and the finite R7
+falsification leaves. It remains lower infrastructure: no local theory, global
+analytic payload, or endpoint inhabitant has been produced.
 
 ## 4. Bridge decomposition
 
@@ -99,6 +100,12 @@ B7 cannot be marked ahead of B3. B3 itself cannot be marked ahead of a
 payload Q0. In particular, proving B7 conditionally is useful wiring but is
 not mathematical progress on the frontier.
 
+The current canonical registry still compresses the R1 payload and its
+conditional ESS bridge by making `critical.global_regularity_bridge` depend on
+`critical.unconditional_bound`. That graph must be split into an independent
+conditional bridge and a separate ALL-composition node before either can be
+promoted.
+
 ## 5. Route payload interfaces and lower residuals
 
 Each route output is narrower than (A). Each first residual is narrower still,
@@ -110,13 +117,13 @@ and has a direct falsification test.
 | R2 | restartable global critical mild norm | large-data interval-independent contraction gain | it concerns the Duhamel map only |
 | R3 | integrable vortex-stretching depletion | dynamically generated high-vorticity direction coherence | it is a geometric bound on one term |
 | R4 | no nonzero minimal ancient blowup profile | strong compactness with zero nonlinear defect | it is a limit-passage statement |
-| R5 | summable high-frequency flux | no-loss exact shell interaction bound | it is a trilinear frequency estimate |
+| R5 | summable high-frequency flux | complete generated-network shell balance plus an endpoint-summable collective weight | it is a trilinear frequency estimate |
 | R6 | finite accumulated deformation/strain | derived bound for a weaker flow-control integral | it is an a priori integral inequality |
-| R7 | exact-symbol critical gain | phase-aware normalized symbol estimate plus a Fourier-field realization | it is algebraic/analytic at the symbol level |
+| R7 | exact-symbol critical gain | extend the finite phase-correct witness from one selected output to complete generated convolution and a no-loss shell estimate | it is algebraic/analytic at the symbol level |
 | R8 | positive analytic radius on finite intervals | noncircular radius differential inequality | it is an inequality for one Gevrey functional |
 | R9 | absence of every singular cylinder | quantitative defect exclusion at one scale | it strengthens a local energy estimate |
 | R10 | universal finite certificate | compact covering plus analytic tail theorem | it is a reduction theorem, not a simulation |
-| R11 | Q11 exact C/D datum/force with breakdown, consumed by N0 rather than B3 | exact cascade interaction and admissibility lemma | it is a construction component, not nonexistence |
+| R11 | Q11 exact C/D datum/force with breakdown, consumed by N0 rather than B3 | at viscosity one, construct an admissible partial solution, local/global agreement, and point-norm blowup or another exact nonexistence mechanism | it is a construction component, not the endpoint packaging |
 
 A residual is rejected as “not lower” if its statement contains A0, G0, C0,
 or an equivalent universal critical bound in its assumptions.
