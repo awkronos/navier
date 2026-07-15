@@ -7,6 +7,9 @@ import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.CriticalLp
 import Navier.Analysis.CriticalProfileAction
 import Navier.Analysis.ESSInputs
+import Navier.Analysis.CKNCylinderGeometry
+import Navier.Analysis.CKNMeasureTransport
+import Navier.Analysis.CKNDensity
 import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.VectorCalculus
@@ -144,6 +147,20 @@ finite-frontier facts.
 #print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_aestronglyMeasurable
 #print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.pressure_slice_aestronglyMeasurable
 #print axioms Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_memLp_three_iff
+
+#print axioms Navier.Analysis.CKNCylinder.parabolicPointEquiv_apply
+#print axioms Navier.Analysis.CKNCylinder.parabolicPointMap_preimage_backwardEuclideanCylinder
+#print axioms Navier.Analysis.CKNCylinder.parabolicPointMap_surjective
+#print axioms Navier.Analysis.CKNCylinder.parabolicPointMap_image_backwardEuclideanCylinder
+#print axioms Navier.Analysis.CKNCylinder.integrableOn_comp_parabolicPointMap_iff
+#print axioms Navier.Analysis.CKNCylinder.integrableOn_const_mul_comp_backwardEuclideanCylinder_iff
+#print axioms Navier.Analysis.CKNCylinder.velocityCubicDensity_parabolicScaled
+#print axioms Navier.Analysis.CKNCylinder.sq_rpow_three_halves
+#print axioms Navier.Analysis.CKNCylinder.pressureThreeHalvesDensity_parabolicScaled
+#print axioms Navier.Analysis.CKNCylinder.cknDensity_parabolicScaled
+#print axioms Navier.Analysis.CKNCylinder.velocityCubicIntegrableOn_parabolicScaled_iff
+#print axioms Navier.Analysis.CKNCylinder.pressureThreeHalvesIntegrableOn_parabolicScaled_iff
+#print axioms Navier.Analysis.CKNCylinder.cknDensityIntegrableOn_parabolicScaled_iff
 
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanPoint_apply
 #print axioms Navier.Analysis.OfficialABEncoding.officialEuclideanNorm_nonneg

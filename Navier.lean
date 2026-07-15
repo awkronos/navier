@@ -7,6 +7,9 @@ import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.CriticalLp
 import Navier.Analysis.CriticalProfileAction
 import Navier.Analysis.ESSInputs
+import Navier.Analysis.CKNCylinderGeometry
+import Navier.Analysis.CKNMeasureTransport
+import Navier.Analysis.CKNDensity
 import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.VectorCalculus
