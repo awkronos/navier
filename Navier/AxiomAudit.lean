@@ -3,6 +3,7 @@ import Navier.OfficialProblem
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
+import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
@@ -85,6 +86,11 @@ finite-frontier facts.
 #print axioms Navier.Analysis.CriticalL3.criticalL3Mass_parabolicScaled
 #print axioms Navier.Analysis.CriticalL3.criticalL3BoundOn_parabolicScaled_iff
 #print axioms Navier.Analysis.CriticalL3.criticalL3BoundBefore_parabolicScaled_iff
+
+#print axioms Navier.Analysis.CriticalL3Integrable.integrableCriticalL3BoundOn_to_raw
+#print axioms Navier.Analysis.CriticalL3Integrable.l3SliceIntegrable_parabolicScaled_iff
+#print axioms Navier.Analysis.CriticalL3Integrable.integrableCriticalL3BoundOn_parabolicScaled_iff
+#print axioms Navier.Analysis.CriticalL3Integrable.integrableCriticalL3BoundBefore_parabolicScaled_iff
 
 #print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_viscosityScaled_mul
 #print axioms Navier.Analysis.ViscosityTransport.satisfiesNavierStokes_one_to_viscosity

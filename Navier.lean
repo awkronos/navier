@@ -3,6 +3,7 @@ import Navier.OfficialProblem
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
+import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
