@@ -11,6 +11,7 @@ import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.EnergyPressureCancellation
+import Navier.Analysis.EnergyPressureIntegral
 import Navier.Analysis.Vorticity
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
@@ -31,6 +32,9 @@ import Navier.Routes.R7.SymmetrizedWitness
 import Navier.Routes.R7.WeightedShellTransfer
 import Navier.Routes.R7.FieldLeakage
 import Navier.Routes.R7.FullFieldLeakage
+import Navier.Routes.R7.FullSixModePairClassification
+import Navier.Routes.R7.FullSixModeReceiverRates
+import Navier.Routes.R7.FullSixModeBalance
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -76,6 +80,8 @@ finite-frontier facts.
 #print axioms Navier.staticDivergence_const_smul
 #print axioms Navier.convection_eq_sum_coordinate_derivatives
 #print axioms Navier.pressure_work_eq_staticDivergence
+#print axioms Navier.Analysis.EnergyPressureIntegral.integral_staticDivergence_eq_zero
+#print axioms Navier.Analysis.EnergyPressureIntegral.integral_pressure_work_eq_zero
 
 #print axioms Navier.Analysis.Vorticity.staticCurl_dilation
 #print axioms Navier.Analysis.Vorticity.vorticity_scaled
@@ -265,6 +271,16 @@ finite-frontier facts.
 #print axioms Navier.Routes.R7.pairProducesLeakOutput_iff
 #print axioms Navier.Routes.R7.fullSixModeProjectedLeakCoefficient_eq_scale
 #print axioms Navier.Routes.R7.fullSixMode_has_nonzero_off_support_coefficient
+
+#print axioms Navier.Routes.R7.pairProducesModeOutput_iff
+#print axioms Navier.Routes.R7.sum_symWitnessMode
+#print axioms Navier.Routes.R7.symWitnessModeAmplitude_transverse_scaled
+#print axioms Navier.Routes.R7.fullSixModeReceiverRate_eq_orderedRate
+#print axioms Navier.Routes.R7.fullSixModeReceiverRate_eq
+#print axioms Navier.Routes.R7.fullSixModeEnergyRate_eq_zero
+#print axioms Navier.Routes.R7.fullSixModeSquaredFrequencyRate_eq_two_cubes
+#print axioms Navier.Routes.R7.fullSixModeSquaredFrequencyRate_pos
+#print axioms Navier.Routes.R7.fullSixModeBalance
 
 #print axioms Navier.ScientificDisposition.readiness_realized
 #print axioms Navier.ScientificDisposition.readiness_falsified

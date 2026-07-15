@@ -11,6 +11,7 @@ import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.EnergyPressureCancellation
+import Navier.Analysis.EnergyPressureIntegral
 import Navier.Analysis.Vorticity
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
@@ -32,6 +33,9 @@ import Navier.Routes.R7.SymmetrizedWitness
 import Navier.Routes.R7.WeightedShellTransfer
 import Navier.Routes.R7.FieldLeakage
 import Navier.Routes.R7.FullFieldLeakage
+import Navier.Routes.R7.FullSixModePairClassification
+import Navier.Routes.R7.FullSixModeReceiverRates
+import Navier.Routes.R7.FullSixModeBalance
 import Navier.Disposition
 import Navier.Frontier
 import Navier.ClayFrontier
