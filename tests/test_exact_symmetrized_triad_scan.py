@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from fractions import Fraction
 from pathlib import Path
@@ -155,6 +156,34 @@ class ExactSymmetrizedTriadTests(unittest.TestCase):
         self.assertFalse(report["closes_clay_endpoint"])
         self.assertFalse(report["six_mode_leakage"]["closed_under_projected_convolution"])
         self.assertNotIn("PROVED", completed.stdout)
+
+    def test_cli_freshly_writes_the_declared_replay_artifact(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="navier-triad-scan-") as directory:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(EXPERIMENTS / "exact_symmetrized_triad_scan.py"),
+                    "--max-examples",
+                    "1",
+                    "--output-artifact",
+                ],
+                cwd=directory,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            artifact = (
+                Path(directory)
+                / "artifacts"
+                / "runs"
+                / "exact_symmetrized_triad_scan.json"
+            )
+            self.assertTrue(artifact.is_file())
+            self.assertEqual(artifact.read_text(encoding="utf-8"), completed.stdout)
+            self.assertEqual(
+                json.loads(artifact.read_text(encoding="utf-8"))["status"],
+                "FALSIFICATION_ONLY",
+            )
 
 
 if __name__ == "__main__":

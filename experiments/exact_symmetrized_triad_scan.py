@@ -15,6 +15,7 @@ import itertools
 import json
 from dataclasses import dataclass
 from fractions import Fraction
+from pathlib import Path
 from typing import Iterable, Iterator
 
 
@@ -420,6 +421,14 @@ def parse_args(arguments: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--wave-radius", type=int, default=1)
     parser.add_argument("--polarization-radius", type=int, default=1)
     parser.add_argument("--max-examples", type=int, default=5)
+    parser.add_argument(
+        "--output-artifact",
+        action="store_true",
+        help=(
+            "also write the canonical replay artifact under artifacts/runs; "
+            "stdout remains identical"
+        ),
+    )
     return parser.parse_args(arguments)
 
 
@@ -428,7 +437,12 @@ def main(arguments: Iterable[str] | None = None) -> int:
     if args.max_examples < 0:
         raise SystemExit("--max-examples must be nonnegative")
     report = build_report(args.wave_radius, args.polarization_radius, args.max_examples)
-    print(json.dumps(report, indent=2, sort_keys=True))
+    rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
+    if args.output_artifact:
+        artifact = Path("artifacts/runs/exact_symmetrized_triad_scan.json")
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.write_text(rendered, encoding="utf-8")
+    print(rendered, end="")
     return 0
 
 
