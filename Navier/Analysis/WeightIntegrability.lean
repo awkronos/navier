@@ -111,6 +111,26 @@ The remaining formalization step is the Fubini/product-measure assembly on
 product measure. -/
 theorem sobWeight_integrable :
     Integrable sobWeight volume := by
-  sorry
+  -- Each 1D factor `(1+t²)⁻¹` is integrable on `ℝ`.
+  have hg : ∀ _ : Fin 3, Integrable (fun t : ℝ => (1 + t ^ 2)⁻¹) volume :=
+    fun _ => integrable_inv_one_add_sq
+  -- The product `∏ᵢ (1+ξᵢ²)⁻¹` is integrable w.r.t. the product measure on `Fin 3 → ℝ`
+  -- (the Fubini/product-measure assembly).
+  have hprod : Integrable (fun ξ : Space => ∏ i : Fin 3, (1 + ξ i ^ 2)⁻¹)
+      (Measure.pi (fun _ : Fin 3 => (volume : Measure ℝ))) :=
+    Integrable.fintype_prod hg
+  -- `volume` on `Fin 3 → ℝ` is the product Lebesgue measure.
+  rw [volume_pi]
+  -- `sobWeight` is continuous (denominator ≥ 1 > 0), hence a.e.-strongly-measurable.
+  have hcont : Continuous sobWeight := by
+    have hd : Continuous (fun ξ : Space => 1 + ξ 0 ^ 2 + ξ 1 ^ 2 + ξ 2 ^ 2) := by fun_prop
+    exact (hd.inv₀ (fun ξ => by positivity)).pow 3
+  -- Dominate `sobWeight` by the integrable product via the pointwise AM-GM bound.
+  refine hprod.mono' hcont.aestronglyMeasurable ?_
+  filter_upwards with ξ
+  rw [Real.norm_eq_abs, abs_of_nonneg (sobWeight_nonneg ξ), Fin.prod_univ_three]
+  have h := sobWeight_le_prod_inv ξ
+  rw [← mul_assoc] at h
+  exact h
 
 end Navier.Analysis.WeightIntegrability
