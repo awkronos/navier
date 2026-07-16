@@ -241,4 +241,27 @@ theorem exists_fourierMajorant_intermediate :
     obtain ⟨_, _, _, hplanch⟩ := Classical.choose_spec (hdata u)
     exact hplanch
 
+
+/-- **The `H³(ℝ³) ↪ L^∞` embedding conclusion, reduced to the single Fourier
+residual.**  Composing the intermediate assembly with monotonicity of `√` yields
+`‖u x‖ ≤ C·√Ms` for any `H³`-majorant `Ms ≥ ‖u‖²_{H³}`.  This is the same statement
+as `SobolevEmbedding.sobolevEmbeddingDomination_H3`; here the Cauchy–Schwarz half is
+kernel-clean and the sole `sorryAx` enters through `exists_fourierSpectralData`
+(Fourier inversion + Plancherel).  Self-contained (√-monotonicity assembly inlined;
+no dependence on the SobolevEmbedding olean). -/
+theorem fourierMajorant_embedding :
+    ∃ C : ℝ, 0 < C ∧
+      ∀ (u : SchwartzVelocity) (Ms : ℝ), sobolevH3NormSq u ≤ Ms →
+        ∀ x : Space, ‖(⇑u) x‖ ≤ C * Real.sqrt Ms := by
+  obtain ⟨Q, C₁, C₂, hC₁, hC₂, h1, h2⟩ := exists_fourierMajorant_intermediate
+  refine ⟨C₁ * Real.sqrt C₂, mul_pos hC₁ (Real.sqrt_pos.mpr hC₂), ?_⟩
+  intro u Ms hMs x
+  have hQMs : Q u ≤ C₂ * Ms :=
+    le_trans (h2 u) (mul_le_mul_of_nonneg_left hMs (le_of_lt hC₂))
+  calc ‖(⇑u) x‖ ≤ C₁ * Real.sqrt (Q u) := h1 u x
+    _ ≤ C₁ * Real.sqrt (C₂ * Ms) :=
+        mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt hQMs) (le_of_lt hC₁)
+    _ = C₁ * Real.sqrt C₂ * Real.sqrt Ms := by
+        rw [Real.sqrt_mul (le_of_lt hC₂), mul_assoc]
+
 end Navier.Analysis.FourierMajorant
