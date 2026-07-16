@@ -182,4 +182,63 @@ theorem supBound_of_spectralData {u : SchwartzVelocity} {F : Space → ℝ}
     ∀ x : Space, ‖(⇑u) x‖ ≤ fourierSupConst * Real.sqrt (spectralMajorant F) :=
   fun x => le_trans (hdom x) (cauchySchwarz_supMajorant hF hmem)
 
+
+/-!
+## The Fourier residual and the intermediate-majorant assembly
+-/
+
+/-- **[RESIDUAL — the Fourier/Plancherel core; Stein *Singular Integrals* III.2
+(inversion); Majda–Bertozzi Lemma 3.2 + L² Plancherel (`fourierIntegral`
+isometry); est ~250 LOC.]**  For every Schwartz velocity field `u` there is a
+nonnegative spectral density `F` (classically `F ξ = ‖û(ξ)‖`) with:
+
+* **finite weighted `L²` mass** — `F·(sobWeight)^{-1/2} ∈ L²`, i.e. the Fourier
+  majorant `spectralMajorant F = ∫‖û‖²(1+|ξ|²)³` is finite (Schwartz decay);
+* **Fourier-inversion domination** — `‖u x‖ ≤ ∫ F` for all `x`, from
+  `u(x) = ∫ û(ξ)·e^{2πi⟨ξ,x⟩} dξ` (`SchwartzMap.fourier_inversion`) and
+  `|u(x)| ≤ ∫‖û‖` (`norm_integral_le_integral_norm`);
+* **Plancherel bound** — `spectralMajorant F ≤ C₂·‖u‖²_{H³}` uniformly in `u`,
+  from `∫‖û‖²|ξ|^{2n} = c·∫‖D^n u‖²` (Plancherel + differentiation-multiplier) and
+  the binomial expansion of `(1+|ξ|²)³`.
+
+Mathlib-absent piece: the vector-valued Schwartz Fourier–Plancherel identity for
+the sup-normed domain/codomain `Space = Fin 3 → ℝ` (Mathlib's
+`SchwartzMap.fourierTransformCLM` needs an inner-product domain; the coordinatewise
+`EuclideanSpace`/`fourierIntegral` reduction is the ~250-LOC construction).  The
+Cauchy–Schwarz half is already discharged kernel-cleanly by
+`cauchySchwarz_supMajorant`, so this is the *sole* remaining analytic content. -/
+theorem exists_fourierSpectralData :
+    ∃ C₂ : ℝ, 0 < C₂ ∧ ∀ u : SchwartzVelocity,
+      ∃ F : Space → ℝ, (∀ ξ, 0 ≤ F ξ) ∧
+        MemLp (fun ξ => F ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume ∧
+        (∀ x : Space, ‖(⇑u) x‖ ≤ ∫ ξ : Space, F ξ) ∧
+        spectralMajorant F ≤ C₂ * sobolevH3NormSq u := by
+  sorry
+
+/-- **The intermediate-majorant assembly for the Fourier route.**  Packages a
+concrete Fourier-side majorant `Q u` with both analytic bounds required by
+`SobolevEmbedding.sobolev_domination_of_intermediate`:
+
+* the sup bound `‖u x‖ ≤ C₁·√(Q u)` (Fourier inversion + the kernel-clean
+  Cauchy–Schwarz `supBound_of_spectralData`), and
+* the physical bound `Q u ≤ C₂·‖u‖²_{H³}` (Plancherel).
+
+This has exactly the type of the `SobolevEmbedding.exists_sobolev_intermediate`
+residual: the Cauchy–Schwarz half is kernel-clean here, and the only `sorryAx`
+enters through `exists_fourierSpectralData` (Fourier inversion + Plancherel). -/
+theorem exists_fourierMajorant_intermediate :
+    ∃ (Q : SchwartzVelocity → ℝ) (C₁ C₂ : ℝ),
+      0 < C₁ ∧ 0 < C₂ ∧
+      (∀ (u : SchwartzVelocity) (x : Space), ‖(⇑u) x‖ ≤ C₁ * Real.sqrt (Q u)) ∧
+      (∀ u : SchwartzVelocity, Q u ≤ C₂ * sobolevH3NormSq u) := by
+  obtain ⟨C₂, hC₂, hdata⟩ := exists_fourierSpectralData
+  refine ⟨fun u => spectralMajorant (Classical.choose (hdata u)),
+          fourierSupConst, C₂, fourierSupConst_pos, hC₂, ?_, ?_⟩
+  · intro u x
+    obtain ⟨hF, hmem, hdom, _⟩ := Classical.choose_spec (hdata u)
+    exact supBound_of_spectralData hF hmem hdom x
+  · intro u
+    obtain ⟨_, _, _, hplanch⟩ := Classical.choose_spec (hdata u)
+    exact hplanch
+
 end Navier.Analysis.FourierMajorant
