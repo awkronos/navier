@@ -176,19 +176,11 @@ theorem staticCurl_staticGradient_eq_zero
 
 /-!
 ## Identity 2: `∇ · (∇ × u) = 0`
-
-Reference: the divergence of a curl vanishes by antisymmetry of the
-Levi-Civita symbol against the symmetric tensor of mixed second partials.
-OPEN — the proof requires the vector-valued Pi-fderiv translation and the
-componentwise symmetry hypothesis.  Reference: Majda–Bertozzi,
-*Vorticity and Incompressible Flow*, §1.2 equation (1.8).  Estimated ~40 LOC
-of coordinate computation once the Pi-fderiv bridge is in place.
 -/
 
 /-- **Algebraic core for `div(curl u) = 0`.**  If `T : Fin 3 → Fin 3 → Space`
-is symmetric in its first two arguments (`T k i = T i k`), then
-`∑ k, ∑ i, (basisVector i ⨯₃ T k i) k = 0`.  This is the double contraction
-of the antisymmetric Levi-Civita symbol with a symmetric rank-2 tensor. -/
+is symmetric in its first two arguments, then the double Levi-Civita
+contraction vanishes. -/
 private lemma div_curl_symmetric_eq_zero
     (T : Fin 3 → Fin 3 → Space) (hsymm : ∀ k i : Fin 3, T k i = T i k) :
     ∑ k : Fin 3, ∑ i : Fin 3, (basisVector i ⨯₃ T k i) k = 0 := by
@@ -198,22 +190,85 @@ private lemma div_curl_symmetric_eq_zero
   rw [hsymm 0 1, hsymm 0 2, hsymm 1 2]
   ring
 
+/-- Chain-rule lemma: the derivative of the `i`-th cross-product summand of
+`staticCurl` factors through the linear cross-product and the eval-CLM bridge. -/
+private lemma fderiv_cross_basisVector_apply
+    (u : VelocityField) (x h : Space) (i : Fin 3)
+    (hu : DifferentiableAt ℝ (fderiv ℝ u) x) :
+    fderiv ℝ (fun y => basisVector i ⨯₃ fderiv ℝ u y (basisVector i)) x h =
+      basisVector i ⨯₃ ((fderiv ℝ (fderiv ℝ u) x h) (basisVector i)) := by
+  let L : Space →ₗ[ℝ] Space := crossProduct (basisVector i)
+  have hg : fderiv ℝ (fun y => fderiv ℝ u y (basisVector i)) x h =
+      (fderiv ℝ (fderiv ℝ u) x h) (basisVector i) := by
+    let T : (Space →L[ℝ] Space) →L[ℝ] Space :=
+      ContinuousLinearMap.apply ℝ Space (basisVector i)
+    have hcomp := (HasFDerivAt.comp x T.hasFDerivAt hu.hasFDerivAt).fderiv
+    change (fderiv ℝ (⇑T ∘ fderiv ℝ u) x) h = ((fderiv ℝ (fderiv ℝ u) x) h) (basisVector i)
+    rw [hcomp]
+    rfl
+  have hdg : DifferentiableAt ℝ (fun y => fderiv ℝ u y (basisVector i)) x := by
+    have heq : (fun y => fderiv ℝ u y (basisVector i)) =
+      (ContinuousLinearMap.apply ℝ Space (basisVector i) ∘ fderiv ℝ u) := rfl
+    rw [heq]
+    exact (ContinuousLinearMap.apply ℝ Space (basisVector i)).differentiableAt.comp x hu
+  have hL : HasFDerivAt (fun w => L w) L.toContinuousLinearMap
+      (fderiv ℝ u x (basisVector i)) :=
+    L.toContinuousLinearMap.hasFDerivAt
+  have hcomp := (HasFDerivAt.comp x hL hdg.hasFDerivAt).fderiv
+  change (fderiv ℝ ((fun w => L w) ∘ (fun y => fderiv ℝ u y (basisVector i))) x) h = _
+  rw [hcomp]
+  change L ((fderiv ℝ (fun y => fderiv ℝ u y (basisVector i)) x) h) = _
+  rw [hg]
+
+/-- Each summand of `staticCurl u` is differentiable at `x` when `fderiv u` is. -/
+private lemma DifferentiableAt.staticCurl_summand
+    (u : VelocityField) (x : Space) (i : Fin 3)
+    (hu : DifferentiableAt ℝ (fderiv ℝ u) x) :
+    DifferentiableAt ℝ (fun y => basisVector i ⨯₃ fderiv ℝ u y (basisVector i)) x := by
+  let L : Space →ₗ[ℝ] Space := crossProduct (basisVector i)
+  have hdg : DifferentiableAt ℝ (fun y => fderiv ℝ u y (basisVector i)) x := by
+    have heq : (fun y => fderiv ℝ u y (basisVector i)) =
+      (ContinuousLinearMap.apply ℝ Space (basisVector i) ∘ fderiv ℝ u) := rfl
+    rw [heq]
+    exact (ContinuousLinearMap.apply ℝ Space (basisVector i)).differentiableAt.comp x hu
+  have heq : (fun y => basisVector i ⨯₃ fderiv ℝ u y (basisVector i)) =
+    (L.toContinuousLinearMap ∘ (fun y => fderiv ℝ u y (basisVector i))) := rfl
+  rw [heq]
+  exact L.toContinuousLinearMap.differentiableAt.comp x hdg
+
 /-- **Identity 2 (divergence of curl).**  The divergence of the curl of `u`
 vanishes at `x`, under the `C²` hypothesis on `u`.  Reference: Majda–Bertozzi,
-*Vorticity and Incompressible Flow*, §1.2 equation (1.8).
-
-The algebraic core `div_curl_symmetric_eq_zero` (the antisymmetric-times-symmetric
-double contraction) is proved above.  The remaining step is the pointwise expansion
-of `fderiv (staticCurl u)` through the cross-product structure, which reduces
-`staticDivergence (staticCurl u) x` to the algebraic core's input `∑ k i, (e_i ⨯₃ T k i) k`
-with `T k i = (fderiv (fderiv u) x (basisVector k)) (basisVector i)`, symmetric by
-`IsSymmSndFDerivAt`.  OPEN residual, ~30 LOC of fderiv-cross-product chain rule. -/
+*Vorticity and Incompressible Flow*, §1.2 equation (1.8). -/
 theorem staticDivergence_staticCurl_eq_zero
     (u : VelocityField) (x : Space) (hu : ContDiffAt ℝ 2 u x) :
     staticDivergence (fun y => staticCurl u y) x = 0 := by
-  sorry
+  have hsymm_u : IsSymmSndFDerivAt ℝ u x :=
+    hu.isSymmSndFDerivAt (by simp [minSmoothness])
+  have hdiff_u : DifferentiableAt ℝ (fderiv ℝ u) x := by
+    have h2 : ContDiffAt ℝ 1 (fderiv ℝ u) x := hu.fderiv_right le_rfl
+    exact h2.differentiableAt (by norm_num : (1 : WithTop ℕ∞) ≠ 0)
+  set T : Fin 3 → Fin 3 → Space :=
+    fun k i => (fderiv ℝ (fderiv ℝ u) x (basisVector k)) (basisVector i)
+  have hTsymm : ∀ k i, T k i = T i k := by
+    intro k i; simp only [T]; exact hsymm_u _ _
+  -- fderiv (staticCurl u) x (basisVector k) = ∑ i, basisVector i ⨯₃ T k i
+  have hkey : ∀ k : Fin 3,
+      (fderiv ℝ (fun y => staticCurl u y) x (basisVector k)) =
+        (∑ i, basisVector i ⨯₃ T k i) := by
+    intro k
+    change (fderiv ℝ
+      (∑ i, (fun y => basisVector i ⨯₃ fderiv ℝ u y (basisVector i))) x) (basisVector k) = _
+    rw [fderiv_sum (fun i _ => DifferentiableAt.staticCurl_summand u x i hdiff_u)]
+    change (∑ i, (fderiv ℝ (fun y => basisVector i ⨯₃ fderiv ℝ u y (basisVector i)) x)
+        (basisVector k)) = (∑ i, basisVector i ⨯₃ T k i)
+    exact Finset.sum_congr rfl (fun i _ =>
+      fderiv_cross_basisVector_apply u x (basisVector k) i hdiff_u)
+  rw [staticDivergence]
+  simp only [hkey]
+  exact div_curl_symmetric_eq_zero T hTsymm
 
-/-- **Identity 3 (scalar-vector curl product rule).**  The curl of a
+set_option maxHeartbeats 2000000 in
+/- **Identity 3 (scalar-vector curl product rule).**  The curl of a
 scalar-times-vector field `f • u` decomposes as the cross product of the
 gradient of `f` with `u` plus `f` times the curl of `u`.  Biot–Savart
 vorticity transport step. -/
@@ -222,11 +277,35 @@ theorem staticCurl_smul
     (hf : DifferentiableAt ℝ f x) (hu : DifferentiableAt ℝ u x) :
     staticCurl (fun y => f y • u y) x =
       staticGradient f x ⨯₃ u x + f x • staticCurl u x := by
-  sorry
+  have hfu : ∀ i : Fin 3,
+      fderiv ℝ (fun y => f y • u y) x (Pi.single i (1:ℝ)) =
+        f x • fderiv ℝ u x (Pi.single i (1:ℝ)) +
+          fderiv ℝ f x (Pi.single i (1:ℝ)) • u x := by
+    intro i
+    have h := fderiv_fun_smul hf hu
+    rw [h]
+    rfl
+  unfold staticCurl staticGradient
+  ext k
+  fin_cases k
+  all_goals simp [hfu, cross_apply, basisVector, Finset.sum_apply,
+    Fin.sum_univ_three, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.cons_val_two, Pi.smul_apply, Pi.add_apply, smul_eq_mul]
+  all_goals try ring
+
 
 /-- **Identity 4 (cross-product divergence).**  The divergence of the cross
 product `u × v` equals `u · curl(v) − v · curl(u)`, the scalar triple
-product rearrangement underlying the Biot–Savart energy estimate. -/
+product rearrangement underlying the Biot–Savart energy estimate.
+
+The scalar identity reduces to the antisymmetric contraction of first
+derivatives, closeable by `ring` once `fderiv (u ⨯₃ v)` is expanded via the
+bilinear product rule
+  `fderiv (fun y => u y ⨯₃ v y) x h = fderiv u x h ⨯₃ v x + u x ⨯₃ fderiv v x h`.
+OPEN residual (~25 LOC): the bilinear fderiv expansion via
+`ContinuousLinearMap.fderiv_of_bilinear` applied to `crossProduct`, or
+componentwise via `fderiv_pi` + `fderiv_mul` + `fderiv_sub`.  Reference:
+Majda–Bertozzi, *Vorticity and Incompressible Flow*, §1.2. -/
 theorem staticDivergence_cross
     (u v : VelocityField) (x : Space)
     (hu : DifferentiableAt ℝ u x) (hv : DifferentiableAt ℝ v x) :
