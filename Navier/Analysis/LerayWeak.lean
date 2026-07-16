@@ -408,6 +408,39 @@ theorem zero_isLerayHopfWeak (ν : ℝ) :
     simp [officialInner_zero_left]
 
 /-!
+## Energy and inner-product algebra (kernel-clean, reusable by the assembly)
+-/
+
+/-- Kinetic energy is nonnegative (Bochner integral of a nonnegative density).
+Used for the uniform-bound bookkeeping of the Galerkin assembly below. -/
+theorem kineticEnergy_nonneg (u : VelocityEvolution) (t : ℝ) :
+    0 ≤ kineticEnergy u t := by
+  unfold kineticEnergy
+  exact integral_nonneg (fun x => by positivity)
+
+/-- Coordinate formula for Fefferman's official inner product on `Space`. -/
+theorem officialInner_eq_sum (x y : Space) :
+    officialInner x y = ∑ i : Fin 3, x i * y i := by
+  simp only [officialInner]
+  rw [PiLp.inner_apply]
+  simp only [officialEuclideanPoint_apply, RCLike.inner_apply, conj_trivial]
+  exact Finset.sum_congr rfl (fun i _ => mul_comm _ _)
+
+/-- The official inner product is additive in its right argument (bilinearity,
+used when splitting the weak-form pairing into its time/convection/viscous
+summands). -/
+theorem officialInner_add_right (x y z : Space) :
+    officialInner x (y + z) = officialInner x y + officialInner x z := by
+  simp only [officialInner_eq_sum, Pi.add_apply, mul_add, Finset.sum_add_distrib]
+
+/-- The official inner product is `ℝ`-homogeneous in its right argument
+(pulls the viscosity scalar `ν` out of the viscous pairing term). -/
+theorem officialInner_smul_right (c : ℝ) (x y : Space) :
+    officialInner x (c • y) = c * officialInner x y := by
+  simp only [officialInner_eq_sum, Pi.smul_apply, smul_eq_mul, Finset.mul_sum]
+  exact Finset.sum_congr rfl (fun i _ => by ring)
+
+/-!
 ## Existence skeleton
 -/
 
