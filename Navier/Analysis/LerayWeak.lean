@@ -501,6 +501,56 @@ theorem galerkin_apriori_bound
   simp only [conj_trivial, add_zero]
   nlinarith [hpos]
 
+/-- **Forward a-priori confinement (squared).**  If a curve `u` on `[0,∞)` has
+right-within-derivative `u'` with `⟨u'(t), u(t)⟩ ≤ 0`, then `‖u(t)‖² ≤ ‖u(0)‖²`
+for all `t ≥ 0`.  This is the forward-time (`Set.Ici 0`) confinement engine —
+the "no forward blow-up" heart of `finiteDim_dissipative_ode_global`: it keeps
+a dissipative flow inside the initial ball, so the finite-mode Galerkin ODE has
+no finite-time escape and extends to all of `[0,∞)`.  (Backward in time the
+bound is false — see the `finiteDim_dissipative_ode_global` docstring.) -/
+theorem norm_sq_le_initial_forward
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (u u' : ℝ → E)
+    (hu : ∀ t : ℝ, 0 ≤ t → HasDerivWithinAt u (u' t) (Set.Ici 0) t)
+    (hip : ∀ t : ℝ, 0 ≤ t → inner ℝ (u' t) (u t) ≤ 0)
+    {t : ℝ} (ht : 0 ≤ t) : ‖u t‖ ^ 2 ≤ ‖u 0‖ ^ 2 := by
+  have hcont : ContinuousOn (fun s => ‖u s‖ ^ 2) (Set.Ici 0) := fun s hs =>
+    (((hu s hs).continuousWithinAt).norm).pow 2
+  have hanti : AntitoneOn (fun s => ‖u s‖ ^ 2) (Set.Ici 0) := by
+    apply antitoneOn_of_hasDerivWithinAt_nonpos
+      (f' := fun x => 2 * inner ℝ (u' x) (u x)) (convex_Ici 0) hcont
+    · intro x hx
+      rw [interior_Ici] at hx
+      have hd : HasDerivWithinAt u (u' x) (Set.Ioi 0) x :=
+        (hu x (le_of_lt hx)).mono Set.Ioi_subset_Ici_self
+      have hi := hd.inner ℝ hd
+      have hrw : (fun s => ‖u s‖ ^ 2) = (fun s => (inner ℝ (u s) (u s) : ℝ)) := by
+        funext r; rw [real_inner_self_eq_norm_sq]
+      have hcomm : (inner ℝ (u x) (u' x) : ℝ) + inner ℝ (u' x) (u x)
+          = 2 * inner ℝ (u' x) (u x) := by rw [real_inner_comm (u x) (u' x)]; ring
+      rw [hrw, interior_Ici, ← hcomm]; exact hi
+    · intro x hx
+      rw [interior_Ici] at hx
+      show 2 * inner ℝ (u' x) (u x) ≤ 0
+      linarith [hip x (le_of_lt hx)]
+  exact hanti Set.self_mem_Ici (Set.mem_Ici.mpr ht) ht
+
+/-- **Forward a-priori confinement (dissipative field form).**  A forward
+solution `u' = F ∘ u` of a dissipative field (`⟨F x, x⟩ ≤ 0`) stays inside the
+initial ball: `‖u(t)‖ ≤ ‖u(0)‖` for `t ≥ 0`.  This is exactly the confinement
+`finiteDim_dissipative_ode_global` uses to rule out finite-time escape of the
+Galerkin ODE and extend the local Picard–Lindelöf solution to all of `[0,∞)`. -/
+theorem norm_le_initial_of_forward_dissipative
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (F : E → E) (u : ℝ → E)
+    (hu : ∀ t : ℝ, 0 ≤ t → HasDerivWithinAt u (F (u t)) (Set.Ici 0) t)
+    (hdiss : ∀ x : E, inner ℝ (F x) x ≤ 0)
+    {t : ℝ} (ht : 0 ≤ t) : ‖u t‖ ≤ ‖u 0‖ := by
+  have h2 : ‖u t‖ ^ 2 ≤ ‖u 0‖ ^ 2 :=
+    norm_sq_le_initial_forward u (fun s => F (u s)) hu (fun s _ => hdiss (u s)) ht
+  have hs := Real.sqrt_le_sqrt h2
+  rwa [Real.sqrt_sq (norm_nonneg (u t)), Real.sqrt_sq (norm_nonneg (u 0))] at hs
+
 /-!
 ## Galerkin / energy assembly (decomposition of the existence skeleton)
 
