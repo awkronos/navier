@@ -440,6 +440,42 @@ theorem officialInner_smul_right (c : ℝ) (x y : Space) :
   simp only [officialInner_eq_sum, Pi.smul_apply, smul_eq_mul, Finset.mul_sum]
   exact Finset.sum_congr rfl (fun i _ => by ring)
 
+/-- **Energy-decay engine.**  In a real inner-product space, if a curve `u` has
+derivative `u'` with `⟨u'(t), u(t)⟩ ≤ 0` for every `t`, then `‖u(t)‖²` is
+antitone.  This is the a-priori-bound core of the Galerkin construction: for a
+finite-mode solution `u'ₘ = −ν A uₘ + Pₘ B(uₘ)` with `A` dissipative and the
+projected nonlinearity skew (`⟨Pₘ B(uₘ), uₘ⟩ = 0`), one has
+`⟨u'ₘ, uₘ⟩ = −ν⟨A uₘ, uₘ⟩ ≤ 0`, so this lemma delivers `‖uₘ(t)‖² ≤ ‖uₘ(0)‖²`. -/
+theorem norm_sq_antitone_of_inner_deriv_nonpos
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (u u' : ℝ → E)
+    (hu : ∀ t : ℝ, HasDerivAt u (u' t) t)
+    (hip : ∀ t : ℝ, inner ℝ (u' t) (u t) ≤ 0) :
+    Antitone (fun t => ‖u t‖ ^ 2) := by
+  apply antitone_of_hasDerivAt_nonpos (f' := fun t => 2 * inner ℝ (u' t) (u t))
+  · intro t
+    have h := (hu t).inner ℝ (hu t)
+    have hrw : (fun t => ‖u t‖ ^ 2) = (fun t => (inner ℝ (u t) (u t) : ℝ)) := by
+      funext s; rw [real_inner_self_eq_norm_sq]
+    rw [hrw]
+    have hcomm : (inner ℝ (u t) (u' t) : ℝ) + inner ℝ (u' t) (u t)
+        = 2 * inner ℝ (u' t) (u t) := by
+      rw [real_inner_comm (u t) (u' t)]; ring
+    rw [← hcomm]; exact h
+  · intro t; simp only [Pi.zero_apply]; linarith [hip t]
+
+/-- **A-priori energy bound.**  A nonpositive inner-derivative keeps the squared
+norm below its initial value for all nonnegative times (`UniformKineticBound`
+shape at the abstract level). -/
+theorem norm_sq_le_initial_of_inner_deriv_nonpos
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (u u' : ℝ → E)
+    (hu : ∀ t : ℝ, HasDerivAt u (u' t) t)
+    (hip : ∀ t : ℝ, inner ℝ (u' t) (u t) ≤ 0)
+    {t : ℝ} (ht : 0 ≤ t) :
+    ‖u t‖ ^ 2 ≤ ‖u 0‖ ^ 2 :=
+  norm_sq_antitone_of_inner_deriv_nonpos u u' hu hip ht
+
 /-!
 ## Galerkin / energy assembly (decomposition of the existence skeleton)
 
