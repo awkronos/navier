@@ -476,6 +476,31 @@ theorem norm_sq_le_initial_of_inner_deriv_nonpos
     ‖u t‖ ^ 2 ≤ ‖u 0‖ ^ 2 :=
   norm_sq_antitone_of_inner_deriv_nonpos u u' hu hip ht
 
+/-- **Galerkin a-priori bound (complete).**  If `u` solves the abstract
+projected system `u' = −(ν • A u) + B u` with `A` dissipative
+(`0 ≤ ⟨A x, x⟩`), the nonlinearity `B` skew (`⟨B x, x⟩ = 0`), and `ν ≥ 0`, then
+the energy never exceeds its initial value: `‖u(t)‖² ≤ ‖u(0)‖²` for `t ≥ 0`.
+This is exactly the mechanism producing the `UniformKineticBound` field of a
+`GalerkinApproximation` — the skew nonlinearity contributes nothing to the
+energy balance and the dissipative term only removes energy.  Kernel-clean;
+the only Galerkin-specific inputs (skew-symmetry of `Pₘ B`, dissipativity of
+the Stokes operator) enter as the two hypotheses. -/
+theorem galerkin_apriori_bound
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (ν : ℝ) (hν : 0 ≤ ν) (A B : E → E) (u u' : ℝ → E)
+    (hu : ∀ t : ℝ, HasDerivAt u (u' t) t)
+    (hode : ∀ t : ℝ, u' t = -(ν • A (u t)) + B (u t))
+    (hA : ∀ t : ℝ, 0 ≤ inner ℝ (A (u t)) (u t))
+    (hB : ∀ t : ℝ, inner ℝ (B (u t)) (u t) = 0)
+    {t : ℝ} (ht : 0 ≤ t) :
+    ‖u t‖ ^ 2 ≤ ‖u 0‖ ^ 2 := by
+  apply norm_sq_le_initial_of_inner_deriv_nonpos u u' hu _ ht
+  intro s
+  rw [hode s, inner_add_left, inner_neg_left, inner_smul_left, hB s]
+  have hpos : (0:ℝ) ≤ (ν : ℝ) * inner ℝ (A (u s)) (u s) := mul_nonneg hν (hA s)
+  simp only [conj_trivial, add_zero]
+  nlinarith [hpos]
+
 /-!
 ## Galerkin / energy assembly (decomposition of the existence skeleton)
 
