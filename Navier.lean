@@ -32,6 +32,8 @@ import Navier.Analysis.EnergyPointwiseBalance
 import Navier.Analysis.EnergyInstantaneousIntegralBalance
 import Navier.Analysis.EnergyDerivativeUnderIntegral
 import Navier.Analysis.Vorticity
+import Navier.Analysis.BiotSavartKernel
+import Navier.Analysis.SingularIntegralPrelims
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.Enstrophy
