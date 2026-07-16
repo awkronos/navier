@@ -23,6 +23,7 @@ import Navier.Routes.R7.GeneratedSupportStrictGrowth
 import Navier.OfficialProblem
 import Navier.Analysis.SchwartzConventionEquivalence
 import Navier.Analysis.CoordinatePDEBridge
+import Navier.Analysis.HalfSpaceSmoothnessBridge
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
@@ -584,3 +585,10 @@ These are support theorems, not inhabitants of an official Clay endpoint.
 #print axioms Navier.Analysis.CoordinatePDEBridge.divergenceFreeInitial_iff_official
 #print axioms Navier.Analysis.CoordinatePDEBridge.IsClassicalSolution.officialCoordinateEquations
 #print axioms Navier.Analysis.CoordinatePDEBridge.IsClassicalSolution.officialCoordinateDivergenceFree
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.smoothVelocityOnNonnegativeTime_iff_halfSpaceSmooth
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.halfSpaceSmooth_of_contDiff
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.halfSpaceSmooth_of_extension
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.contDiffAt_of_halfSpaceSmooth_of_pos
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.uniqueDiffOn_halfSpace
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.continuousOn_iteratedFDerivWithin_of_halfSpaceSmooth
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.halfSpaceSmooth_iff_extension_of_seeley
