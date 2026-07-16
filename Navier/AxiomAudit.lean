@@ -24,6 +24,7 @@ import Navier.OfficialProblem
 import Navier.Analysis.SchwartzConventionEquivalence
 import Navier.Analysis.CoordinatePDEBridge
 import Navier.Analysis.HalfSpaceSmoothnessBridge
+import Navier.Analysis.FrequencyDuhamel
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
@@ -592,3 +593,16 @@ These are support theorems, not inhabitants of an official Clay endpoint.
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.uniqueDiffOn_halfSpace
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.continuousOn_iteratedFDerivWithin_of_halfSpaceSmooth
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.halfSpaceSmooth_iff_extension_of_seeley
+#print axioms Navier.Analysis.FrequencyDuhamel.heatDecay_factor
+#print axioms Navier.Analysis.FrequencyDuhamel.frequencyHeatLeray_bilinear_norm_le
+#print axioms Navier.Analysis.FrequencyDuhamel.bilinear_diff_norm_le
+#print axioms Navier.Analysis.FrequencyDuhamel.duhamelFun_eq_kernel
+#print axioms Navier.Analysis.FrequencyDuhamel.norm_duhamelFun_le
+#print axioms Navier.Analysis.FrequencyDuhamel.duhamelMap_mapsTo
+#print axioms Navier.Analysis.FrequencyDuhamel.dist_duhamelMap_le
+#print axioms Navier.Analysis.FrequencyDuhamel.duhamelMap_contracting
+#print axioms Navier.Analysis.FrequencyDuhamel.exists_isMildSolutionOn
+#print axioms Navier.Analysis.FrequencyDuhamel.isMildSolutionOn_restrict_isFixedPt
+#print axioms Navier.Analysis.FrequencyDuhamel.isMildSolutionOn_unique
+#print axioms Navier.Analysis.FrequencyDuhamel.IsMildSolutionOn.apply_zero
+#print axioms Navier.Analysis.FrequencyDuhamel.IsMildSolutionOn.inner_frequency_eq_zero
