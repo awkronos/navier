@@ -38,6 +38,7 @@ import Navier.Analysis.ViscosityEndpoints
 import Navier.Scaling
 import Navier.EnergyObstruction
 import Navier.ConventionBridges
+import Navier.Analysis.SchwartzConventionEquivalence
 import Navier.Breakdown.MaximalNonextension
 import Navier.Breakdown.Restriction
 import Navier.Breakdown.ForceRecovery

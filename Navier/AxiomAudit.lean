@@ -21,6 +21,7 @@ import Navier.Routes.R7.FiniteReality
 import Navier.Routes.R7.FiniteSupportClosureObstruction
 import Navier.Routes.R7.GeneratedSupportStrictGrowth
 import Navier.OfficialProblem
+import Navier.Analysis.SchwartzConventionEquivalence
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
@@ -566,3 +567,8 @@ These are support theorems, not inhabitants of an official Clay endpoint.
 #print axioms Navier.Routes.R7.generation_le_generatedSupport_card
 #print axioms Navier.Routes.R7.generatedSupport_card_unbounded
 #print axioms Navier.Routes.R7.generatedSupport_not_eventually_constant
+#print axioms Navier.Analysis.SchwartzConventionEquivalence.schwartzOfFeffermanData
+#print axioms Navier.Analysis.SchwartzConventionEquivalence.schwartzOfFeffermanData_apply
+#print axioms Navier.Analysis.SchwartzConventionEquivalence.fefferman_clause_four_iff_schwartz
+#print axioms Navier.Analysis.SchwartzConventionEquivalence.divergenceFreeInitial_schwartzOfFeffermanData
+#print axioms Navier.Analysis.SchwartzConventionEquivalence.statementA_covers_fefferman_data
