@@ -590,6 +590,48 @@ theorem isMultiMildSolutionOn_unique
   funext k
   exact sub_eq_zero.1 (norm_eq_zero.1 (hz k (Finset.mem_univ k)))
 
+/-- **Transversality is automatic.**  Every multi-frequency mild solution is
+per-mode transverse to its own frequency at every time of its horizon — no
+hypothesis on the data is needed, because both the heat–Leray propagator and
+the Duhamel integrand carry the Leray projection
+(`frequencyHeatLeray_transverse`), and the inner product commutes with the
+Duhamel integral.  This generalizes
+`FrequencyDuhamel.IsMildSolutionOn.inner_frequency_eq_zero` to the truncated
+multi-frequency layer. -/
+theorem multiMild_inner_frequency_eq_zero
+    {ν T : ℝ} {n : ℕ} {q : Fin n → E3} {u₀ : Fin n → E3}
+    {u : ℝ → Fin n → E3}
+    (hu : IsMultiMildSolutionOn ν q u₀ T u) :
+    ∀ k : Fin n, ∀ t ∈ Set.Icc (0:ℝ) T,
+      (inner ℝ (q k) (u t k) : ℝ) = 0 := by
+  intro k t ht
+  rw [hu.2 k t ht, inner_add_right,
+    frequencyHeatLeray_transverse, zero_add]
+  by_cases hInt : IntervalIntegrable
+    (fun s => frequencyHeatLeray ν (t - s) (q k)
+      (truncatedConvectionSymbol q (u s) (u s) k)) volume 0 t
+  · have hcomm := ContinuousLinearMap.intervalIntegral_comp_comm
+      (innerSL ℝ (q k)) hInt
+    have hpt : ∀ s : ℝ,
+        (innerSL ℝ (q k))
+          (frequencyHeatLeray ν (t - s) (q k)
+            (truncatedConvectionSymbol q (u s) (u s) k)) = 0 := by
+      intro s
+      simpa using frequencyHeatLeray_transverse ν (t - s) (q k)
+        (truncatedConvectionSymbol q (u s) (u s) k)
+    calc (inner ℝ (q k)
+          (∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k)
+            (truncatedConvectionSymbol q (u s) (u s) k)) : ℝ)
+        = (innerSL ℝ (q k))
+            (∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k)
+              (truncatedConvectionSymbol q (u s) (u s) k)) := rfl
+      _ = ∫ s in (0:ℝ)..t, (innerSL ℝ (q k))
+            (frequencyHeatLeray ν (t - s) (q k)
+              (truncatedConvectionSymbol q (u s) (u s) k)) := hcomm.symm
+      _ = ∫ s in (0:ℝ)..t, (0:ℝ) := by simp only [hpt]
+      _ = 0 := intervalIntegral.integral_zero
+  · rw [intervalIntegral.integral_undef hInt, inner_zero_right]
+
 /-- **[SKELETON — finite-mode continuation criterion; standard ODE
 continuation; est ~300 LOC.]**  A multi-frequency mild solution uniformly
 bounded on every sub-horizon of `[0,T)` extends to the closed horizon `[0,T]`.
