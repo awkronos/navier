@@ -656,10 +656,18 @@ for `t ≥ 0`; backward in time `‖u‖` may grow and blow up in finite time �
 is existence on `Set.Ici 0` (`HasDerivWithinAt … (Set.Ici 0)`), NOT on all of
 `ℝ`; this is exactly what the Galerkin fields (all imposed on `t ≥ 0`) need.
 
-This is the finite-mode Galerkin ODE existence (`F = −ν A + P_m B`); basis-free
-and genuinely attackable — Mathlib supplies local existence on `Icc`, and the
-`galerkin_apriori_bound` confinement extends it to `[0,∞)` by continuation.
-Mathlib-absent: only the forward local-to-global continuation gluing. -/
+This is the finite-mode Galerkin ODE existence (`F = −ν A + P_m B`); basis-free.
+**Confinement half — CLOSED**: `norm_le_initial_of_forward_dissipative` (above)
+proves any forward solution stays in the initial ball `‖u(t)‖ ≤ ‖u(0)‖`, ruling
+out finite-time escape.  **Existence half — residual (~200 LOC)**: (a) local
+existence on each `Icc 0 T` via `IsPicardLindelof` (its `a,r,L,K` come from the
+`C¹` (hence locally-Lipschitz) `F` on the compact ball `B̄(0,‖x₀‖)`); (b)
+extend to `[0,∞)` — either glue the confined local pieces, or take a smooth
+cutoff `F̃ = χ(‖·‖)·F` (compactly-supported `C¹`, still dissipative since
+`χ ≥ 0`, hence globally Lipschitz), get an all-`ℝ` integral curve for `F̃`
+(`Mathlib.Geometry.Manifold.IntegralCurve.UniformTime`), and use the confinement
+to keep it in `B̄(0,‖x₀‖)` where `F̃ = F`.  Mathlib-absent: the local→global
+extension bookkeeping (manifold-instance plumbing or the `Icc` gluing). -/
 theorem finiteDim_dissipative_ode_global
     {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
     (F : E → E) (hF : ContDiff ℝ 1 F) (hdiss : ∀ x : E, inner ℝ (F x) x ≤ 0)
