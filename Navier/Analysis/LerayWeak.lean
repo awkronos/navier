@@ -591,17 +591,44 @@ structure GalerkinApproximation (ν : ℝ) (u₀ : SchwartzVelocity) where
       Filter.Tendsto (fun m => weakFormResidual ν u₀ (approx m) φ)
         Filter.atTop (nhds 0)
 
+/-- **[NAMED RESIDUAL — finite-dim dissipative ODE global existence; Hartman
+*ODE* Ch. II–III; Mathlib `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀`
+(bounded-interval) + a-priori-bound continuation; est ~300 LOC.]**  On a
+finite-dimensional real inner-product space, a `C¹` vector field `F` with
+`⟨F x, x⟩ ≤ 0` (so `‖·‖` is non-increasing along solutions, ruling out blow-up)
+admits a global solution `u : ℝ → E`, `u(0) = x₀`, `u' = F ∘ u`.  This is the
+finite-mode Galerkin ODE existence (with `F = −ν A + P_m B`); it is basis-free
+and genuinely attackable — Mathlib supplies local existence on `Icc`, and the
+`galerkin_apriori_bound` confinement extends it to all of `ℝ` by continuation.
+Mathlib-absent: only the local-to-global continuation gluing. -/
+theorem finiteDim_dissipative_ode_global
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+    (F : E → E) (hF : ContDiff ℝ 1 F) (hdiss : ∀ x : E, inner ℝ (F x) x ≤ 0)
+    (x₀ : E) :
+    ∃ u : ℝ → E, u 0 = x₀ ∧ ∀ t : ℝ, HasDerivAt u (F (u t)) t := by
+  sorry
+
 /-- **[NAMED RESIDUAL — Galerkin construction + a-priori bounds; Temam, *NSE*
-III.3; Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20;
-est ~650 LOC.]**  Projecting NSE onto the first `m` divergence-free modes
-gives a locally-Lipschitz ODE on a finite subspace (Mathlib Cauchy–Lipschitz,
-`ODE_solution_unique` / `IsPicardLindelof`); skew-symmetry of the projected
-nonlinearity `⟨(u_m·∇)u_m, u_m⟩ = 0` yields the energy identity, hence global
-existence and the uniform `L²` bound `‖u_m(t)‖² ≤ ‖u₀‖²`, the dissipation
-bound `∫ ν‖∇u_m‖² ≤ ½‖u₀‖²`, the time-derivative bound giving equicontinuity,
-`L²` initial consistency, and weak-form consistency.  Genuinely Mathlib-absent:
-the finite-mode divergence-free (Leray) projection setup + the energy-identity
-assembly over the repo's `Space` objects. -/
+III.3; Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20.]**
+Projecting NSE onto the first `m` divergence-free modes gives a `C¹` ODE on a
+finite subspace whose field `F_m = −ν A_m + P_m B` is dissipative-plus-skew,
+so `⟨F_m x, x⟩ ≤ 0`; `finiteDim_dissipative_ode_global` then yields a global
+finite-mode solution and `galerkin_apriori_bound` (now BANKED, above) gives the
+uniform `L²` bound `‖u_m(t)‖² ≤ ‖u_m(0)‖² ≤ ‖u₀‖²` — the `kinetic_bounded`
+field.  The a-priori engine is therefore closed; the two genuinely-remaining
+Mathlib-absent sub-residuals are:
+
+* the **finite-mode divergence-free (Leray) projection** `P_m` on the repo's
+  `Space` objects — a Stokes/Hodge/Fourier divergence-free ON basis and the
+  orthogonal projection onto its first `m` modes, with `P_m u₀ →_{L²} u₀`
+  (`initial_converges`) and skew-symmetry `⟨P_m B(u_m), u_m⟩ = 0` (est ~250 LOC;
+  Mathlib has no divergence-free spectral basis on `ℝ³`); and
+* the **enstrophy/dissipation + time-derivative bookkeeping** giving
+  `enstrophy_bounded`, `time_equicontinuous`, and `weak_consistent` from the
+  finite-mode energy identity (est ~150 LOC).
+
+Assembling the `GalerkinApproximation` record is blocked only on the first
+(basis) residual, which is needed even to STATE the per-mode objects. -/
 theorem galerkin_approximation_exists (ν : ℝ) (hν : 0 < ν)
     (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀) :
     Nonempty (GalerkinApproximation ν u₀) := by
