@@ -252,6 +252,14 @@ Concrete attack map (Mathlib tools verified present, 2026-07-16):
   `Real.fourierIntegral_fderiv` (`𝓕(fderiv f) = fourierSMulRight (-innerSL ℝ) (𝓕f)`)
   to get `∫‖𝓕f‖²|ξ|^{2n} = c·∫‖D^n f‖²` (n ≤ 3), then `sobWeightInv_eq`'s binomial
   `(1+|ξ|²)³ = 1+3|ξ|²+3|ξ|⁴+|ξ|⁶` sums the four terms into `C₂·sobolevH3NormSq`.
+* **[substep-3 OBSTRUCTION, found 2026-07-16]** the pointwise multiplier norm is
+  assembleable — `‖𝗕(fderiv g) ξ‖ = 2π‖ξ‖‖𝗕g ξ‖` from `Real.fourierIntegral_fderiv`
+  + `VectorFourier.norm_fourierSMulRight` (`‖fourierSMulRight L f v‖ = 2π‖L v‖‖f v‖`)
+  + `innerSL_apply_norm` (`‖innerSL ℝ ξ‖ = ‖ξ‖`).  But `SchwartzMap.integral_norm_sq_fourier`
+  needs a `ℂ`-inner-product codomain, and `fderiv g : ES →L[ℝ] ℂ` has none canonically;
+  workaround = scalar partials `∂ⱼg : ES→ℂ` (`fderiv g · eⱼ`, `spacePlancherel` per `j`, sum
+  over `j` with HS-vs-operator norm equivalence) + `Integrable (fderiv g)` via
+  `SchwartzMap.fderivCLM`.  This is the genuine dedicated-session core.
 * **[inversion, ~90 LOC]** `SchwartzMap.fourier_inversion` + `norm_integral_le_integral_norm`
   give `‖u x‖ ≤ ∫‖û‖ = ∫ F`; `MemLp` of `F·(sobWeight)^{-1/2}` from Schwartz decay of `û`.
 
