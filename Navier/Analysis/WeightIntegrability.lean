@@ -16,14 +16,12 @@ converges because `3 > 3/2 = n/2`.
 * `sobWeight_le_prod_inv` — the pointwise weight bound:
   `(1+|ξ|²)^{-3} ≤ (1+ξ₀²)^{-1}·(1+ξ₁²)^{-1}·(1+ξ₂²)^{-1}`.
 * `sobWeight_nonneg`, `sobWeight_pos` — sign properties.
-
-## Honest residual
-
-* `sobWeight_integrable` — full integrability on `ℝ³`.  Closure route: the
-  pointwise bound reduces to the product of three copies of
-  `integrable_inv_one_add_sq : Integrable (fun t => (1+t²)^{-1})`, which is
-  integrable by Fubini on `ℝ³ = ℝ × ℝ × ℝ`.  The product-measure / Fubini
-  assembly on `Fin 3 → ℝ` is the remaining formalization step.
+* `sobWeight_integrable` — full integrability on `ℝ³`.  The pointwise bound
+  `sobWeight_le_prod_inv` dominates the weight by `∏ᵢ (1+ξᵢ²)^{-1}`; each factor
+  is integrable via `integrable_inv_one_add_sq`, the product is integrable w.r.t.
+  the product measure via `Integrable.fintype_prod`, `volume_pi` identifies
+  `volume` on `Fin 3 → ℝ` with that product measure, and `Integrable.mono'`
+  closes it (Fubini/product-measure assembly).
 
 Axiom set: `⊆ {propext, Classical.choice, Quot.sound}` for certified decls.
 -/
