@@ -33,6 +33,7 @@ import Navier.Analysis.EnergyInstantaneousIntegralBalance
 import Navier.Analysis.EnergyDerivativeUnderIntegral
 import Navier.Analysis.Vorticity
 import Navier.Analysis.BealeKatoMajda
+import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.FrequencyCascadeObstruction
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
