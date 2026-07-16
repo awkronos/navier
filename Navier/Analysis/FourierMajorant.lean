@@ -192,6 +192,42 @@ theorem supBound_of_spectralData {u : SchwartzVelocity} {F : Space → ℝ}
 
 
 /-!
+## Plancherel on the sup-normed domain `Space = Fin 3 → ℝ` (substeps 1–2)
+
+Mathlib's Fourier/Plancherel API (`SchwartzMap.integral_norm_sq_fourier`) needs an
+*inner-product* domain, but `Space = Fin 3 → ℝ` carries the sup norm.  The transport
+below reinterprets a Schwartz map over the L²-normed `EuclideanSpace ℝ (Fin 3)` via
+the CLE `EuclideanSpace.equiv`, so Plancherel becomes available for this project's
+domain — the exact "Mathlib-absent for the sup-normed domain" blocker of the residual.
+-/
+
+/-- **Transport a scalar Schwartz map to the inner-product (Euclidean) domain.**
+Precomposition with the CLE `EuclideanSpace ℝ (Fin 3) ≃L[ℝ] (Fin 3 → ℝ)` via
+`SchwartzMap.compCLMOfContinuousLinearEquiv`; the underlying function is unchanged
+(`EuclideanSpace.equiv` is the identity on the shared carrier). -/
+noncomputable def toEuclid (f : SchwartzMap Space ℂ) :
+    SchwartzMap (EuclideanSpace ℝ (Fin 3)) ℂ :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℝ (EuclideanSpace.equiv (Fin 3) ℝ) f
+
+/-- **Plancherel `∫‖𝓕f‖² = ∫‖f‖²` on the sup-normed `Space` domain** (substeps 1–2 of
+the residual).  For a scalar `ℂ`-valued Schwartz map on `Space`, the `L²` mass of its
+Fourier transform (taken on the Euclidean model) equals the `L²` mass of `f` over
+`Space`.  Kernel-clean; consumes Mathlib's `SchwartzMap.integral_norm_sq_fourier`
+Plancherel and the measure-preserving `PiLp.volume_preserving_toLp` transfer.
+
+Citation: Mathlib `SchwartzMap.integral_norm_sq_fourier`; Stein III.2 (Plancherel). -/
+theorem spacePlancherel (f : SchwartzMap Space ℂ) :
+    ∫ x : EuclideanSpace ℝ (Fin 3), ‖(FourierTransform.fourier (toEuclid f)) x‖ ^ 2
+      = ∫ ξ : Space, ‖f ξ‖ ^ 2 := by
+  rw [SchwartzMap.integral_norm_sq_fourier (toEuclid f),
+      ← (PiLp.volume_preserving_toLp (Fin 3)).integral_comp
+        (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).measurableEmbedding]
+  apply integral_congr_ae
+  filter_upwards with x
+  rw [toEuclid, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+  rfl
+
+/-!
 ## The Fourier residual and the intermediate-majorant assembly
 -/
 
