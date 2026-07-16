@@ -37,6 +37,7 @@ import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.FrequencyCascadeObstruction
 import Navier.Analysis.MultiFrequencyMild
+import Navier.Analysis.LerayWeak
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
 import Navier.Analysis.ViscosityForceDecay
