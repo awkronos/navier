@@ -278,59 +278,317 @@ theorem exists_isMultiMildSolutionOn_local
       IsMultiMildSolutionOn ν q u₀ T u := by
   sorry
 
+/-- **Bilinear Lipschitz bound for the honest Galerkin nonlinearity.**  The
+truncated convection symbol is quadratic, hence locally Lipschitz on the
+product frequency fiber: summed over output modes, the difference of two
+truncated nonlinearities with inputs bounded by `R` is controlled by the total
+input difference `∑ ‖a m - b m‖`.  This is the Kato-type quadratic estimate that
+drives mild-solution uniqueness (Kato, Math. Z. 187 (1984)); no measure theory
+is involved. -/
+theorem truncatedConvection_diff_sum_norm_le {n : ℕ} (q a b : Fin n → E3)
+    {R : ℝ} (hR : 0 ≤ R) (ha : ∀ m, ‖a m‖ ≤ R) (hb : ∀ m, ‖b m‖ ≤ R) :
+    ∑ k, ‖truncatedConvectionSymbol q a a k -
+        truncatedConvectionSymbol q b b k‖ ≤
+      2 * (n : ℝ) ^ 2 * R * (∑ j, ‖q j‖) * (∑ m, ‖a m - b m‖) := by
+  classical
+  set Δ : ℝ := ∑ m, ‖a m - b m‖ with hΔ
+  have hΔnn : 0 ≤ Δ := Finset.sum_nonneg fun m _ => norm_nonneg _
+  have hsingle : ∀ m : Fin n, ‖a m - b m‖ ≤ Δ := by
+    intro m
+    have := Finset.single_le_sum (f := fun m : Fin n => ‖a m - b m‖)
+      (fun i _ => norm_nonneg _) (Finset.mem_univ m)
+    simpa only [hΔ] using this
+  set Q : ℝ := ∑ j, ‖q j‖ with hQ
+  have hQnn : 0 ≤ Q := Finset.sum_nonneg fun j _ => norm_nonneg _
+  -- pointwise bilinear estimate of a single (i,j) term
+  have hX : ∀ i j : Fin n,
+      ‖(inner ℝ (q j) (a i) : ℝ) • a j -
+          (inner ℝ (q j) (b i) : ℝ) • b j‖ ≤
+        ‖q j‖ * R * (‖a i - b i‖ + ‖a j - b j‖) := by
+    intro i j
+    have hsplit :
+        (inner ℝ (q j) (a i) : ℝ) • a j - (inner ℝ (q j) (b i) : ℝ) • b j =
+          (inner ℝ (q j) (a i - b i) : ℝ) • a j +
+            (inner ℝ (q j) (b i) : ℝ) • (a j - b j) := by
+      rw [inner_sub_right, sub_smul, smul_sub]; abel
+    have c1 : |(inner ℝ (q j) (a i - b i) : ℝ)| ≤ ‖q j‖ * ‖a i - b i‖ :=
+      abs_real_inner_le_norm _ _
+    have c2 : |(inner ℝ (q j) (b i) : ℝ)| ≤ ‖q j‖ * ‖b i‖ :=
+      abs_real_inner_le_norm _ _
+    rw [hsplit]
+    calc ‖(inner ℝ (q j) (a i - b i) : ℝ) • a j +
+            (inner ℝ (q j) (b i) : ℝ) • (a j - b j)‖
+        ≤ ‖(inner ℝ (q j) (a i - b i) : ℝ) • a j‖ +
+            ‖(inner ℝ (q j) (b i) : ℝ) • (a j - b j)‖ := norm_add_le _ _
+      _ = |(inner ℝ (q j) (a i - b i) : ℝ)| * ‖a j‖ +
+            |(inner ℝ (q j) (b i) : ℝ)| * ‖a j - b j‖ := by
+          rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs]
+      _ ≤ (‖q j‖ * ‖a i - b i‖) * R + (‖q j‖ * R) * ‖a j - b j‖ := by
+          apply add_le_add
+          · exact mul_le_mul c1 (ha j) (norm_nonneg _)
+              (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+          · refine mul_le_mul_of_nonneg_right ?_ (norm_nonneg _)
+            exact le_trans c2 (mul_le_mul_of_nonneg_left (hb i) (norm_nonneg _))
+      _ = ‖q j‖ * R * (‖a i - b i‖ + ‖a j - b j‖) := by ring
+  -- per-output-mode bound
+  have hk : ∀ k : Fin n,
+      ‖truncatedConvectionSymbol q a a k -
+          truncatedConvectionSymbol q b b k‖ ≤
+        2 * (n : ℝ) * R * Q * Δ := by
+    intro k
+    have hdiff :
+        truncatedConvectionSymbol q a a k -
+            truncatedConvectionSymbol q b b k =
+          ∑ i : Fin n, ∑ j : Fin n,
+            (if q i + q j = q k then
+              (inner ℝ (q j) (a i) : ℝ) • a j -
+                (inner ℝ (q j) (b i) : ℝ) • b j
+             else 0) := by
+      unfold truncatedConvectionSymbol
+      rw [← Finset.sum_sub_distrib]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [← Finset.sum_sub_distrib]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      by_cases h : q i + q j = q k <;> simp [h]
+    rw [hdiff]
+    calc ‖∑ i : Fin n, ∑ j : Fin n,
+            (if q i + q j = q k then
+              (inner ℝ (q j) (a i) : ℝ) • a j -
+                (inner ℝ (q j) (b i) : ℝ) • b j else 0)‖
+        ≤ ∑ i : Fin n, ∑ j : Fin n,
+            ‖(if q i + q j = q k then
+              (inner ℝ (q j) (a i) : ℝ) • a j -
+                (inner ℝ (q j) (b i) : ℝ) • b j else 0)‖ :=
+          le_trans (norm_sum_le _ _)
+            (Finset.sum_le_sum fun i _ => norm_sum_le _ _)
+      _ ≤ ∑ i : Fin n, ∑ j : Fin n, ‖q j‖ * R * (2 * Δ) := by
+          refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
+          have hterm : ‖(if q i + q j = q k then
+              (inner ℝ (q j) (a i) : ℝ) • a j -
+                (inner ℝ (q j) (b i) : ℝ) • b j else 0)‖ ≤
+              ‖q j‖ * R * (‖a i - b i‖ + ‖a j - b j‖) := by
+            by_cases h : q i + q j = q k
+            · rw [if_pos h]; exact hX i j
+            · rw [if_neg h, norm_zero]
+              positivity
+          refine le_trans hterm ?_
+          have h2 : ‖a i - b i‖ + ‖a j - b j‖ ≤ 2 * Δ := by
+            have := hsingle i; have := hsingle j; linarith
+          exact mul_le_mul_of_nonneg_left h2
+            (mul_nonneg (norm_nonneg _) hR)
+      _ = 2 * (n : ℝ) * R * Q * Δ := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+          simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+            nsmul_eq_mul]
+          rw [← Finset.sum_mul, ← Finset.sum_mul]
+          simp only [hQ]
+          ring
+  calc ∑ k, ‖truncatedConvectionSymbol q a a k -
+          truncatedConvectionSymbol q b b k‖
+      ≤ ∑ _k : Fin n, 2 * (n : ℝ) * R * Q * Δ :=
+        Finset.sum_le_sum fun k _ => hk k
+    _ = 2 * (n : ℝ) ^ 2 * R * Q * Δ := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+        ring
+
 /-- **[SKELETON — uniqueness; Grönwall/contraction as in
 `FrequencyDuhamel.isMildSolutionOn_unique`; est ~150 LOC.]**  Two
 multi-frequency mild solutions with the same data agree on their common
 horizon. -/
 theorem isMultiMildSolutionOn_unique
-    {ν T : ℝ} (hT : 0 ≤ T) {n : ℕ} {q : Fin n → E3} {u₀ : Fin n → E3}
-    {u v : ℝ → Fin n → E3}
+    {ν T : ℝ} (hν : 0 ≤ ν) (hT : 0 ≤ T) {n : ℕ} {q : Fin n → E3}
+    {u₀ : Fin n → E3} {u v : ℝ → Fin n → E3}
     (hu : IsMultiMildSolutionOn ν q u₀ T u)
     (hv : IsMultiMildSolutionOn ν q u₀ T v) :
     ∀ t ∈ Set.Icc (0:ℝ) T, u t = v t := by
-  sorry
-
-/-- **Transversality is automatic.**  Every multi-frequency mild solution is
-per-mode transverse to its own frequency at every time of its horizon — no
-hypothesis on the data is needed, because both the heat–Leray propagator and
-the Duhamel integrand carry the Leray projection
-(`frequencyHeatLeray_transverse`), and the inner product commutes with the
-Duhamel integral.  This generalizes
-`FrequencyDuhamel.IsMildSolutionOn.inner_frequency_eq_zero` to the truncated
-multi-frequency layer. -/
-theorem multiMild_inner_frequency_eq_zero
-    {ν T : ℝ} {n : ℕ} {q : Fin n → E3} {u₀ : Fin n → E3}
-    {u : ℝ → Fin n → E3}
-    (hu : IsMultiMildSolutionOn ν q u₀ T u) :
-    ∀ k : Fin n, ∀ t ∈ Set.Icc (0:ℝ) T,
-      (inner ℝ (q k) (u t k) : ℝ) = 0 := by
-  intro k t ht
-  rw [hu.2 k t ht, inner_add_right,
-    frequencyHeatLeray_transverse, zero_add]
-  by_cases hInt : IntervalIntegrable
-    (fun s => frequencyHeatLeray ν (t - s) (q k)
-      (truncatedConvectionSymbol q (u s) (u s) k)) volume 0 t
-  · have hcomm := ContinuousLinearMap.intervalIntegral_comp_comm
-      (innerSL ℝ (q k)) hInt
-    have hpt : ∀ s : ℝ,
-        (innerSL ℝ (q k))
-          (frequencyHeatLeray ν (t - s) (q k)
-            (truncatedConvectionSymbol q (u s) (u s) k)) = 0 := by
-      intro s
-      simpa using frequencyHeatLeray_transverse ν (t - s) (q k)
-        (truncatedConvectionSymbol q (u s) (u s) k)
-    calc (inner ℝ (q k)
-          (∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k)
-            (truncatedConvectionSymbol q (u s) (u s) k)) : ℝ)
-        = (innerSL ℝ (q k))
-            (∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k)
-              (truncatedConvectionSymbol q (u s) (u s) k)) := rfl
-      _ = ∫ s in (0:ℝ)..t, (innerSL ℝ (q k))
-            (frequencyHeatLeray ν (t - s) (q k)
-              (truncatedConvectionSymbol q (u s) (u s) k)) := hcomm.symm
-      _ = ∫ s in (0:ℝ)..t, (0:ℝ) := by simp only [hpt]
-      _ = 0 := intervalIntegral.integral_zero
-  · rw [intervalIntegral.integral_undef hInt, inner_zero_right]
+  classical
+  obtain ⟨huc, hueq⟩ := hu
+  obtain ⟨hvc, hveq⟩ := hv
+  have hcompact : IsCompact (Set.Icc (0:ℝ) T) := isCompact_Icc
+  have h0mem : (0:ℝ) ∈ Set.Icc (0:ℝ) T := ⟨le_rfl, hT⟩
+  -- uniform per-mode bound R on both solutions over the compact horizon
+  have hbnd : ∀ k : Fin n, ∃ Rk : ℝ, 0 ≤ Rk ∧
+      ∀ t ∈ Set.Icc (0:ℝ) T, ‖u t k‖ ≤ Rk ∧ ‖v t k‖ ≤ Rk := by
+    intro k
+    obtain ⟨Cu, hCu⟩ := hcompact.exists_bound_of_continuousOn (huc k)
+    obtain ⟨Cv, hCv⟩ := hcompact.exists_bound_of_continuousOn (hvc k)
+    refine ⟨max Cu Cv,
+      le_trans (norm_nonneg _) (le_trans (hCu 0 h0mem) (le_max_left _ _)), ?_⟩
+    intro t ht
+    exact ⟨le_trans (hCu t ht) (le_max_left _ _),
+      le_trans (hCv t ht) (le_max_right _ _)⟩
+  choose Rk hRknn hRk using hbnd
+  set R : ℝ := ∑ k, Rk k with hRdef
+  have hRnn : 0 ≤ R := Finset.sum_nonneg fun k _ => hRknn k
+  have hRkle : ∀ k, Rk k ≤ R := fun k =>
+    Finset.single_le_sum (fun i _ => hRknn i) (Finset.mem_univ k)
+  have huR : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ‖u t k‖ ≤ R :=
+    fun t ht k => le_trans (hRk k t ht).1 (hRkle k)
+  have hvR : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ‖v t k‖ ≤ R :=
+    fun t ht k => le_trans (hRk k t ht).2 (hRkle k)
+  set Q : ℝ := ∑ j, ‖q j‖ with hQdef
+  have hQnn : 0 ≤ Q := Finset.sum_nonneg fun j _ => norm_nonneg _
+  set L : ℝ := 2 * (n : ℝ) ^ 2 * R * Q with hLdef
+  have hLnn : 0 ≤ L :=
+    mul_nonneg (mul_nonneg (by positivity) hRnn) hQnn
+  set Δ : ℝ → ℝ := fun s => ∑ k, ‖u s k - v s k‖ with hΔdef
+  have hΔnn : ∀ s, 0 ≤ Δ s := fun s => Finset.sum_nonneg fun k _ => norm_nonneg _
+  have hΔcont : ContinuousOn Δ (Set.Icc 0 T) := by
+    apply continuousOn_finsetSum
+    intro k _
+    exact ((huc k).sub (hvc k)).norm
+  -- continuity of the truncated symbol along a componentwise-continuous field
+  have symCont : ∀ (w : ℝ → Fin n → E3),
+      (∀ k, ContinuousOn (fun s => w s k) (Set.Icc 0 T)) → ∀ k : Fin n,
+      ContinuousOn (fun s => truncatedConvectionSymbol q (w s) (w s) k)
+        (Set.Icc 0 T) := by
+    intro w hwc k
+    unfold truncatedConvectionSymbol
+    apply continuousOn_finsetSum; intro i _
+    apply continuousOn_finsetSum; intro j _
+    by_cases h : q i + q j = q k
+    · simp only [if_pos h]; exact (continuousOn_const.inner (hwc i)).smul (hwc j)
+    · simp only [if_neg h]; exact continuousOn_const
+  -- continuity of the Duhamel integrand
+  have contHD : ∀ (w : ℝ → Fin n → E3),
+      (∀ k, ContinuousOn (fun s => w s k) (Set.Icc 0 T)) → ∀ (t' : ℝ) (k : Fin n),
+      ContinuousOn (fun s => frequencyHeatLeray ν (t' - s) (q k)
+        (truncatedConvectionSymbol q (w s) (w s) k)) (Set.Icc 0 T) := by
+    intro w hwc t' k
+    have hheat : ContinuousOn (fun s => heatDecay ν (t' - s) (q k))
+        (Set.Icc 0 T) := by
+      apply Continuous.continuousOn; unfold heatDecay; fun_prop
+    have hshape : (fun s => frequencyHeatLeray ν (t' - s) (q k)
+          (truncatedConvectionSymbol q (w s) (w s) k)) =
+        fun s => heatDecay ν (t' - s) (q k) • euclideanLeray (q k)
+          (truncatedConvectionSymbol q (w s) (w s) k) := by
+      funext s; exact frequencyHeatLeray_apply _ _ _ _
+    rw [hshape]
+    exact hheat.smul
+      ((euclideanLeray (q k)).continuous.comp_continuousOn (symCont w hwc k))
+  -- restrict Icc-0-T continuity to a sub-horizon
+  have subT : ∀ t ∈ Set.Icc (0:ℝ) T, Set.uIcc (0:ℝ) t ⊆ Set.Icc 0 T := by
+    intro t ht; rw [Set.uIcc_of_le ht.1]; exact Set.Icc_subset_Icc le_rfl ht.2
+  -- interval integrability of the norm-difference integrand
+  have hintnorm : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k : Fin n,
+      IntervalIntegrable (fun s => ‖truncatedConvectionSymbol q (u s) (u s) k -
+        truncatedConvectionSymbol q (v s) (v s) k‖) MeasureTheory.volume 0 t := by
+    intro t ht k
+    apply ContinuousOn.intervalIntegrable
+    exact (((symCont u huc k).sub (symCont v hvc k)).norm).mono (subT t ht)
+  -- Δ is interval-integrable on every sub-horizon
+  have hΔII : ∀ t ∈ Set.Icc (0:ℝ) T,
+      IntervalIntegrable Δ MeasureTheory.volume 0 t := fun t ht =>
+    (hΔcont.mono (subT t ht)).intervalIntegrable
+  -- the Lipschitz integral inequality  Δ t ≤ L ∫₀ᵗ Δ
+  have key : ∀ t ∈ Set.Icc (0:ℝ) T, Δ t ≤ L * ∫ s in (0:ℝ)..t, Δ s := by
+    intro t ht
+    have hdiffk : ∀ k, u t k - v t k =
+        ∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k)
+          (truncatedConvectionSymbol q (u s) (u s) k -
+            truncatedConvectionSymbol q (v s) (v s) k) := by
+      intro k
+      have hIu : IntervalIntegrable (fun s => frequencyHeatLeray ν (t - s) (q k)
+          (truncatedConvectionSymbol q (u s) (u s) k)) MeasureTheory.volume 0 t :=
+        ((contHD u huc t k).mono (subT t ht)).intervalIntegrable
+      have hIv : IntervalIntegrable (fun s => frequencyHeatLeray ν (t - s) (q k)
+          (truncatedConvectionSymbol q (v s) (v s) k)) MeasureTheory.volume 0 t :=
+        ((contHD v hvc t k).mono (subT t ht)).intervalIntegrable
+      rw [hueq k t ht, hveq k t ht, add_sub_add_left_eq_sub,
+        ← intervalIntegral.integral_sub hIu hIv]
+      refine intervalIntegral.integral_congr fun s _ => ?_
+      rw [← map_sub]
+    have hnormk : ∀ k, ‖u t k - v t k‖ ≤
+        ∫ s in (0:ℝ)..t, ‖truncatedConvectionSymbol q (u s) (u s) k -
+          truncatedConvectionSymbol q (v s) (v s) k‖ := by
+      intro k
+      have hHDcont : ContinuousOn (fun s => frequencyHeatLeray ν (t - s) (q k)
+          (truncatedConvectionSymbol q (u s) (u s) k -
+            truncatedConvectionSymbol q (v s) (v s) k)) (Set.Icc 0 T) := by
+        have hheat : ContinuousOn (fun s => heatDecay ν (t - s) (q k))
+            (Set.Icc 0 T) := by apply Continuous.continuousOn; unfold heatDecay; fun_prop
+        have hshape : (fun s => frequencyHeatLeray ν (t - s) (q k)
+              (truncatedConvectionSymbol q (u s) (u s) k -
+                truncatedConvectionSymbol q (v s) (v s) k)) =
+            fun s => heatDecay ν (t - s) (q k) • euclideanLeray (q k)
+              (truncatedConvectionSymbol q (u s) (u s) k -
+                truncatedConvectionSymbol q (v s) (v s) k) := by
+          funext s; exact frequencyHeatLeray_apply _ _ _ _
+        rw [hshape]
+        exact hheat.smul ((euclideanLeray (q k)).continuous.comp_continuousOn
+          ((symCont u huc k).sub (symCont v hvc k)))
+      rw [hdiffk k]
+      refine le_trans (intervalIntegral.norm_integral_le_integral_norm ht.1) ?_
+      refine intervalIntegral.integral_mono_on ht.1
+        ((hHDcont.norm.mono (subT t ht)).intervalIntegrable) (hintnorm t ht k)
+        (fun s hs => ?_)
+      have hts : (0:ℝ) ≤ t - s := by linarith [hs.2]
+      exact frequencyHeatLeray_norm_le hν hts (q k) _
+    calc Δ t = ∑ k, ‖u t k - v t k‖ := rfl
+      _ ≤ ∑ k, ∫ s in (0:ℝ)..t, ‖truncatedConvectionSymbol q (u s) (u s) k -
+            truncatedConvectionSymbol q (v s) (v s) k‖ :=
+          Finset.sum_le_sum fun k _ => hnormk k
+      _ = ∫ s in (0:ℝ)..t, ∑ k, ‖truncatedConvectionSymbol q (u s) (u s) k -
+            truncatedConvectionSymbol q (v s) (v s) k‖ :=
+          (intervalIntegral.integral_finsetSum (s := Finset.univ)
+            (fun k _ => hintnorm t ht k)).symm
+      _ ≤ ∫ s in (0:ℝ)..t, L * Δ s := by
+          have hsumcont : ContinuousOn (fun s => ∑ k,
+              ‖truncatedConvectionSymbol q (u s) (u s) k -
+                truncatedConvectionSymbol q (v s) (v s) k‖) (Set.Icc 0 T) := by
+            apply continuousOn_finsetSum; intro k _
+            exact ((symCont u huc k).sub (symCont v hvc k)).norm
+          refine intervalIntegral.integral_mono_on ht.1
+            ((hsumcont.mono (subT t ht)).intervalIntegrable)
+            ((hΔII t ht).const_mul L) (fun s hs => ?_)
+          have hsIcc : s ∈ Set.Icc (0:ℝ) T := ⟨hs.1, le_trans hs.2 ht.2⟩
+          have hsub := truncatedConvection_diff_sum_norm_le q (u s) (v s) hRnn
+            (huR s hsIcc) (hvR s hsIcc)
+          calc ∑ k, ‖truncatedConvectionSymbol q (u s) (u s) k -
+                truncatedConvectionSymbol q (v s) (v s) k‖
+              ≤ 2 * (n : ℝ) ^ 2 * R * (∑ j, ‖q j‖) *
+                  (∑ m, ‖u s m - v s m‖) := hsub
+            _ = L * Δ s := by rw [hLdef, hQdef, hΔdef]
+      _ = L * ∫ s in (0:ℝ)..t, Δ s := intervalIntegral.integral_const_mul L Δ
+  -- FTC engine: extend Δ continuously, g = ∫₀ᵗ Δ' has g' = Δ' ≤ L·g,
+  -- Grönwall with δ=ε=0 forces g ≡ 0, hence Δ ≡ 0, hence u = v.
+  have hΔzero : ∀ t ∈ Set.Icc (0:ℝ) T, Δ t = 0 := by
+    set Δ' : ℝ → ℝ := Set.IccExtend hT (Set.restrict (Set.Icc 0 T) Δ) with hΔ'
+    have hΔ'cont : Continuous Δ' := hΔcont.restrict.Icc_extend'
+    have hΔ'eq : ∀ x ∈ Set.Icc (0:ℝ) T, Δ' x = Δ x :=
+      fun x hx => Set.IccExtend_of_mem hT _ hx
+    set g : ℝ → ℝ := fun t => ∫ s in (0:ℝ)..t, Δ' s with hg
+    have hgderiv : ∀ t : ℝ, HasDerivAt g (Δ' t) t := fun t =>
+      intervalIntegral.integral_hasDerivAt_right (hΔ'cont.intervalIntegrable 0 t)
+        (hΔ'cont.stronglyMeasurableAtFilter _ _) hΔ'cont.continuousAt
+    have hgcont : Continuous g :=
+      continuous_iff_continuousAt.2 fun t => (hgderiv t).continuousAt
+    have hgeq : ∀ t ∈ Set.Icc (0:ℝ) T, g t = ∫ s in (0:ℝ)..t, Δ s := by
+      intro t ht
+      refine intervalIntegral.integral_congr fun s hs => ?_
+      exact hΔ'eq s ⟨(Set.uIcc_of_le ht.1 ▸ hs).1,
+        le_trans (Set.uIcc_of_le ht.1 ▸ hs).2 ht.2⟩
+    have hgnn : ∀ t ∈ Set.Icc (0:ℝ) T, 0 ≤ g t := fun t ht => by
+      rw [hgeq t ht]; exact intervalIntegral.integral_nonneg ht.1 fun s _ => hΔnn s
+    have hgr : ∀ t ∈ Set.Icc (0:ℝ) T, ‖g t‖ ≤ gronwallBound 0 L 0 (t - 0) := by
+      refine norm_le_gronwallBound_of_norm_deriv_right_le hgcont.continuousOn
+        (fun x _ => (hgderiv x).hasDerivWithinAt) (by simp [hg]) (fun x hx => ?_)
+      have hxIcc : x ∈ Set.Icc (0:ℝ) T := ⟨hx.1, le_of_lt hx.2⟩
+      have hΔ'x : 0 ≤ Δ' x := by rw [hΔ'eq x hxIcc]; exact hΔnn x
+      rw [Real.norm_of_nonneg hΔ'x, Real.norm_of_nonneg (hgnn x hxIcc), add_zero,
+        hΔ'eq x hxIcc, hgeq x hxIcc]
+      exact key x hxIcc
+    intro t ht
+    have h0 : g t = 0 :=
+      norm_le_zero_iff.1 (by simpa [gronwallBound_ε0_δ0] using hgr t ht)
+    have hk := key t ht
+    rw [← hgeq t ht, h0, mul_zero] at hk
+    exact le_antisymm hk (hΔnn t)
+  intro t ht
+  have hz := (Finset.sum_eq_zero_iff_of_nonneg
+    fun k _ => norm_nonneg (u t k - v t k)).1 (hΔzero t ht)
+  funext k
+  exact sub_eq_zero.1 (norm_eq_zero.1 (hz k (Finset.mem_univ k)))
 
 /-- **[SKELETON — finite-mode continuation criterion; standard ODE
 continuation; est ~300 LOC.]**  A multi-frequency mild solution uniformly
