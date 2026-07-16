@@ -22,6 +22,7 @@ import Navier.Routes.R7.FiniteSupportClosureObstruction
 import Navier.Routes.R7.GeneratedSupportStrictGrowth
 import Navier.OfficialProblem
 import Navier.Analysis.SchwartzConventionEquivalence
+import Navier.Analysis.CoordinatePDEBridge
 import Navier.OfficialSurfaceSignatures
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
@@ -572,3 +573,14 @@ These are support theorems, not inhabitants of an official Clay endpoint.
 #print axioms Navier.Analysis.SchwartzConventionEquivalence.fefferman_clause_four_iff_schwartz
 #print axioms Navier.Analysis.SchwartzConventionEquivalence.divergenceFreeInitial_schwartzOfFeffermanData
 #print axioms Navier.Analysis.SchwartzConventionEquivalence.statementA_covers_fefferman_data
+#print axioms Navier.Analysis.CoordinatePDEBridge.spatialPartial_slice_eq
+#print axioms Navier.Analysis.CoordinatePDEBridge.timePartial_eq_timeDerivative
+#print axioms Navier.Analysis.CoordinatePDEBridge.convection_eq_official_sum
+#print axioms Navier.Analysis.CoordinatePDEBridge.laplacian_eq_official_sum
+#print axioms Navier.Analysis.CoordinatePDEBridge.pressureGradient_eq_official
+#print axioms Navier.Analysis.CoordinatePDEBridge.divergence_eq_official_sum
+#print axioms Navier.Analysis.CoordinatePDEBridge.satisfiesNavierStokes_iff_officialCoordinateEquations
+#print axioms Navier.Analysis.CoordinatePDEBridge.incompressible_iff_officialCoordinateDivergenceFree
+#print axioms Navier.Analysis.CoordinatePDEBridge.divergenceFreeInitial_iff_official
+#print axioms Navier.Analysis.CoordinatePDEBridge.IsClassicalSolution.officialCoordinateEquations
+#print axioms Navier.Analysis.CoordinatePDEBridge.IsClassicalSolution.officialCoordinateDivergenceFree
