@@ -61,3 +61,47 @@ Next R2 routes not yet attempted (est LOC): Prodi–Serrin critical-norm bridge
 control hypothesis); vorticity-direction Constantin–Fefferman geometric
 regularity (`vorticityDirection` already in `Vorticity.lean`, ~300 LOC);
 enstrophy energy inequality `d/dt‖ω‖₂² ≤ ‖∇u‖_∞‖ω‖₂²` (~250 LOC, feeds BKM).
+
+## Sorry-first tower campaign (2026-07-16, `fable/clay-navier-20260716` cont.)
+
+Full-proof skeleton towers laid per Tim's mission shift; umbrella `lake build
+Navier` GREEN, 13 compiler-confirmed sorried obligations (opened 15, closed 2
+same-wave). Tractability-ordered inventory (file : decl [ref; est LOC]):
+
+| # | obligation | file | ref / route | est LOC |
+|---|---|---|---|---|
+| 1 | `isMultiMildSolutionOn_unique` | MultiFrequencyMild | Grönwall/contraction as FrequencyDuhamel | ~150 |
+| 2 | `vorticityTransportEquation` | Enstrophy | curl of NS, Clairaut bookkeeping; M–B (1.33) | ~250 |
+| 3 | `sobolevEmbeddingDomination` | BKMLogBootstrap | H³↪L∞ Fourier/Cauchy–Schwarz; M–B Lemma 3.2 | ~250 |
+| 4 | `multiMild_extends_of_apriori_bound` | MultiFrequencyMild | finite-mode BKM, ODE continuation | ~300 |
+| 5 | `sobolevControlContinuity` | BKMLogBootstrap | dominated convergence over slices; M–B §3.2.3 | ~300 |
+| 6 | `enstrophyDifferentialInequality` | Enstrophy | diff-under-integral + parts; M–B §3.3 | ~350 |
+| 7 | `exists_isMultiMildSolutionOn_local` | MultiFrequencyMild | product Duhamel contraction; Kato 1984 | ~400 |
+| 8 | `biotSavartLogInequality` | BKMLogBootstrap | Biot–Savart + CZ + log interp; BKM 1984 Lemma 1 | ~400 |
+| 9 | `katoCommutatorEstimate` | BKMLogBootstrap | H³ energy commutator; Kato–Ponce 1988 | ~600 |
+| 10 | `seeleyExtensionProperty_holds` | SeeleyExtension | reflection series; Seeley PAMS 15 (1964) | ~600 |
+| 11 | `constantinFefferman_velocity_bounded` | ConditionalRegularity | geometric depletion; CF 1993 | ~600 |
+| 12 | `prodiSerrin_velocity_bounded` | ConditionalRegularity | critical-norm bootstrap; Prodi/Serrin/ESŠ | ~800 |
+| 13 | `leray_weak_existence` | LerayWeak | Galerkin + Aubin–Lions; Leray 1934, Temam Ch III | ~1500 |
+
+PROVED this campaign (all `#print axioms ⊆ {propext, Classical.choice,
+Quot.sound}`): `gronwall_loglinear_apriori` (log-transform bootstrap — the
+verifier-flagged BKM mechanism) + `LogBKMControl` layer (velocity_bounded,
+breakdown exclusion, non-vacuity); `stretching_pointwise_bound` +
+`officialInner` CS layer + `enstrophy` defs; the honest Galerkin
+`truncatedConvectionSymbol` + resonant-triple = crossInteraction identity +
+`truncated_cascade_witness` + one-frequency heat-flow consistency;
+`multiMild_inner_frequency_eq_zero` (transversality automatic — CLOSED,
+strengthened, hypothesis dropped); Leray weak layer structure + zero smoke +
+`exists_nonzero_testFunction` (CLOSED: curl-of-bump construction, Clairaut
+div-free, line-constancy nonzero, smoothTransition envelope).
+
+DERIVED conditional on skeletons (sorryAx disclosed):
+`logBKMControl_of_schwartzSliced` (the tower composes end-to-end: solutions +
+4 analytic inputs ⟹ LogBKMControl ⟹ uniform bound);
+`enstrophy_apriori_bound` (Grönwall wiring, produces the M₂ majorant the BKM
+wiring consumes); `halfSpaceSmooth_iff_extension`.
+
+Assembly line once #3, #6, #8, #9 close: ∫‖ω‖_∞ < ∞ → biotSavart gradient
+majorant → enstrophy M₂ → LogBKMControl → velocity bounded → no pointwise
+breakdown. That is the full BKM theorem for this repo's classical solutions.
