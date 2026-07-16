@@ -63,6 +63,9 @@ import Navier.Routes.R7.FullFieldLeakage
 import Navier.Routes.R7.FullSixModePairClassification
 import Navier.Routes.R7.FullSixModeReceiverRates
 import Navier.Routes.R7.FullSixModeBalance
+import Navier.Analysis.MultiFrequencyMild
+import Navier.Analysis.Enstrophy
+import Navier.Analysis.LerayWeak
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -606,3 +609,33 @@ These are support theorems, not inhabitants of an official Clay endpoint.
 #print axioms Navier.Analysis.FrequencyDuhamel.isMildSolutionOn_unique
 #print axioms Navier.Analysis.FrequencyDuhamel.IsMildSolutionOn.apply_zero
 #print axioms Navier.Analysis.FrequencyDuhamel.IsMildSolutionOn.inner_frequency_eq_zero
+
+/-!
+## Wave-2 BKM assembly-line unconditional layer
+
+The sorry-first tower campaign (`fable/clay-navier-20260716`) added the
+Beale–Kato–Majda log-bootstrap engine, the enstrophy vortex-stretching layer,
+the honest Galerkin multi-frequency mild layer, and the Leray–Hopf weak
+structure.  Every declaration audited below is an UNCONDITIONAL theorem of that
+campaign — each `#print axioms` receipt is a strict subset of
+`{propext, Classical.choice, Quot.sound}` (verified 2026-07-16).  The
+conditional tower theorems that consume the four analytic skeletons
+(`logBKMControl_of_schwartzSliced`, `enstrophy_apriori_bound`,
+`halfSpaceSmooth_iff_extension`) are deliberately EXCLUDED — they carry a
+disclosed `sorryAx` until the skeletons close and are not unconditional.
+-/
+
+#print axioms Navier.Analysis.BealeKatoMajda.gronwall_loglinear_apriori
+#print axioms Navier.Analysis.BealeKatoMajda.LogBKMControl.velocity_bounded
+#print axioms Navier.Analysis.BealeKatoMajda.LogBKMControl.excludes_pointEvaluationBreakdown
+#print axioms Navier.Analysis.BealeKatoMajda.sobolevH3NormSq_nonneg
+#print axioms Navier.Analysis.Enstrophy.stretching_pointwise_bound
+#print axioms Navier.Analysis.Enstrophy.enstrophy_nonneg
+#print axioms Navier.Analysis.Enstrophy.enstrophy_zero_velocity
+#print axioms Navier.Analysis.MultiFrequencyMild.truncatedSymbol_eq_zero_of_no_resonance
+#print axioms Navier.Analysis.MultiFrequencyMild.truncatedSymbol_resonantTriple
+#print axioms Navier.Analysis.MultiFrequencyMild.multiMild_oneFrequency_heatFlow
+#print axioms Navier.Analysis.MultiFrequencyMild.truncated_cascade_witness
+#print axioms Navier.Analysis.MultiFrequencyMild.multiMild_inner_frequency_eq_zero
+#print axioms Navier.Analysis.FrequencyCascadeObstruction.crossInteraction_survives_transversality
+#print axioms Navier.Analysis.LerayWeak.exists_nonzero_testFunction
