@@ -34,6 +34,7 @@ import Navier.Analysis.EnergyDerivativeUnderIntegral
 import Navier.Analysis.Vorticity
 import Navier.Analysis.BiotSavartKernel
 import Navier.Analysis.SingularIntegralPrelims
+import Navier.Analysis.SobolevEmbedding
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.Enstrophy
