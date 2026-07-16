@@ -641,6 +641,40 @@ structure GalerkinApproximation (ν : ℝ) (u₀ : SchwartzVelocity) where
       Filter.Tendsto (fun m => weakFormResidual ν u₀ (approx m) φ)
         Filter.atTop (nhds 0)
 
+/-- **Cutoff construction (compactly-supported dissipative extension).**  Given
+a `C¹` dissipative field `F` (`⟨F x, x⟩ ≤ 0`) and a radius `R ≥ 0`, produces a
+`C¹`, **compactly-supported**, still-dissipative field `G` that agrees with `F`
+on the closed ball `B̄(0, R)`.  Concretely `G = χ(‖·‖²) • F` with the smooth
+cutoff `χ = Real.smoothTransition ((R+1)² − ·)` (`= 1` on `[0, R²]`, `= 0`
+beyond `(R+1)²`, `∈ [0,1]`), so `‖·‖²` smoothness (`contDiff_norm_sq`) gives
+`C¹`, the cutoff's outer vanishing gives compact support in `B̄(0, R+1)`, and
+`χ ≥ 0` preserves dissipativity.  This is the globally-Lipschitz replacement of
+`F` used by `finiteDim_dissipative_ode_global`: a compactly-supported `C¹` field
+has uniform local existence time, so an all-`ℝ` integral curve exists, and the
+forward confinement keeps it inside `B̄(0, ‖x₀‖) ⊆ B̄(0,R)` where `G = F`. -/
+theorem exists_compactSupport_dissipative_extension
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+    (F : E → E) (hF : ContDiff ℝ 1 F) (hdiss : ∀ x : E, inner ℝ (F x) x ≤ 0)
+    (R : ℝ) (hR : 0 ≤ R) :
+    ∃ G : E → E, ContDiff ℝ 1 G ∧ HasCompactSupport G ∧
+      (∀ x : E, inner ℝ (G x) x ≤ 0) ∧ (∀ x : E, ‖x‖ ≤ R → G x = F x) := by
+  refine ⟨fun x => Real.smoothTransition ((R+1)^2 - ‖x‖^2) • F x, ?_, ?_, ?_, ?_⟩
+  · have hns : ContDiff ℝ 1 (fun x : E => (R+1)^2 - ‖x‖^2) :=
+      contDiff_const.sub (contDiff_norm_sq ℝ)
+    exact ((Real.smoothTransition.contDiff.of_le (by exact_mod_cast le_top)).comp hns).smul hF
+  · apply HasCompactSupport.intro (isCompact_closedBall (0:E) (R+1))
+    intro x hx
+    rw [Metric.mem_closedBall, dist_zero_right, not_le] at hx
+    have hle : (R+1)^2 - ‖x‖^2 ≤ 0 := by nlinarith [norm_nonneg x, hx, hR]
+    simp only [Real.smoothTransition.zero_of_nonpos hle, zero_smul]
+  · intro x
+    rw [inner_smul_left]
+    simp only [conj_trivial]
+    exact mul_nonpos_of_nonneg_of_nonpos (Real.smoothTransition.nonneg _) (hdiss x)
+  · intro x hx
+    have hge : (1:ℝ) ≤ (R+1)^2 - ‖x‖^2 := by nlinarith [norm_nonneg x, hx, hR]
+    simp only [Real.smoothTransition.one_of_one_le hge, one_smul]
+
 /-- **[NAMED RESIDUAL — finite-dim dissipative ODE **forward**-global existence;
 Hartman *ODE* Ch. II–III; Mathlib
 `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀` (bounded-interval)
