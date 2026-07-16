@@ -591,21 +591,31 @@ structure GalerkinApproximation (ν : ℝ) (u₀ : SchwartzVelocity) where
       Filter.Tendsto (fun m => weakFormResidual ν u₀ (approx m) φ)
         Filter.atTop (nhds 0)
 
-/-- **[NAMED RESIDUAL — finite-dim dissipative ODE global existence; Hartman
-*ODE* Ch. II–III; Mathlib `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀`
-(bounded-interval) + a-priori-bound continuation; est ~300 LOC.]**  On a
-finite-dimensional real inner-product space, a `C¹` vector field `F` with
-`⟨F x, x⟩ ≤ 0` (so `‖·‖` is non-increasing along solutions, ruling out blow-up)
-admits a global solution `u : ℝ → E`, `u(0) = x₀`, `u' = F ∘ u`.  This is the
-finite-mode Galerkin ODE existence (with `F = −ν A + P_m B`); it is basis-free
+/-- **[NAMED RESIDUAL — finite-dim dissipative ODE **forward**-global existence;
+Hartman *ODE* Ch. II–III; Mathlib
+`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀` (bounded-interval)
++ a-priori-bound continuation; est ~300 LOC.]**  On a finite-dimensional real
+inner-product space, a `C¹` vector field `F` with `⟨F x, x⟩ ≤ 0` (so `‖·‖` is
+non-increasing along **forward** solutions, ruling out forward blow-up) admits a
+solution `u : [0,∞) → E`, `u(0) = x₀`, `u' = F ∘ u` on all of `[0,∞)`.
+
+**Forward-time only (Step-0e).**  The dissipative bound confines the flow only
+for `t ≥ 0`; backward in time `‖u‖` may grow and blow up in finite time — e.g.
+`E = ℝ`, `F x = -x³` (so `⟨F x, x⟩ = -x⁴ ≤ 0`), `x₀ = 1` gives
+`u(t) = (2t+1)^{-1/2}`, which blows up as `t → -1/2⁺`.  So the honest statement
+is existence on `Set.Ici 0` (`HasDerivWithinAt … (Set.Ici 0)`), NOT on all of
+`ℝ`; this is exactly what the Galerkin fields (all imposed on `t ≥ 0`) need.
+
+This is the finite-mode Galerkin ODE existence (`F = −ν A + P_m B`); basis-free
 and genuinely attackable — Mathlib supplies local existence on `Icc`, and the
-`galerkin_apriori_bound` confinement extends it to all of `ℝ` by continuation.
-Mathlib-absent: only the local-to-global continuation gluing. -/
+`galerkin_apriori_bound` confinement extends it to `[0,∞)` by continuation.
+Mathlib-absent: only the forward local-to-global continuation gluing. -/
 theorem finiteDim_dissipative_ode_global
     {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
     (F : E → E) (hF : ContDiff ℝ 1 F) (hdiss : ∀ x : E, inner ℝ (F x) x ≤ 0)
     (x₀ : E) :
-    ∃ u : ℝ → E, u 0 = x₀ ∧ ∀ t : ℝ, HasDerivAt u (F (u t)) t := by
+    ∃ u : ℝ → E, u 0 = x₀ ∧
+      ∀ t : ℝ, 0 ≤ t → HasDerivWithinAt u (F (u t)) (Set.Ici (0:ℝ)) t := by
   sorry
 
 /-- **[NAMED RESIDUAL — Galerkin construction + a-priori bounds; Temam, *NSE*
