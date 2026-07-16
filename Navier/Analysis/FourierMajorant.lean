@@ -99,6 +99,14 @@ theorem spectralMajorant_nonneg (F : Space → ℝ) : 0 ≤ spectralMajorant F :
   integral_nonneg fun ξ =>
     mul_nonneg (sq_nonneg _) (inv_nonneg.mpr (sobWeight_nonneg ξ))
 
+
+/-- **The reciprocal Sobolev weight is the degree-3 Bessel polynomial:**
+`(sobWeight ξ)⁻¹ = (1+|ξ|²)³` with `|ξ|² = ξ₀²+ξ₁²+ξ₂²`.  Lets a consumer see the
+majorant weight as a polynomial in the frequency variable. -/
+theorem sobWeightInv_eq (ξ : Space) :
+    (sobWeight ξ)⁻¹ = (1 + ξ 0 ^ 2 + ξ 1 ^ 2 + ξ 2 ^ 2) ^ 3 := by
+  rw [sobWeight, inv_pow, inv_inv]
+
 /-!
 ## The Cauchy–Schwarz sup-majorant (the analytic engine)
 -/
@@ -187,26 +195,33 @@ theorem supBound_of_spectralData {u : SchwartzVelocity} {F : Space → ℝ}
 ## The Fourier residual and the intermediate-majorant assembly
 -/
 
-/-- **[RESIDUAL — the Fourier/Plancherel core; Stein *Singular Integrals* III.2
-(inversion); Majda–Bertozzi Lemma 3.2 + L² Plancherel (`fourierIntegral`
-isometry); est ~250 LOC.]**  For every Schwartz velocity field `u` there is a
-nonnegative spectral density `F` (classically `F ξ = ‖û(ξ)‖`) with:
+/-- **[RESIDUAL — the vector-valued Schwartz Fourier–Plancherel bundle; the sole
+Mathlib-absent piece of the `H³↪L^∞` embedding.  Total est ~300–450 LOC across the
+four sub-steps below.]**  For every Schwartz velocity `u` there is a nonnegative
+spectral density `F` (classically `F ξ = ‖û(ξ)‖`) with (i) `F·(sobWeight)^{-1/2} ∈ L²`,
+(ii) Fourier-inversion domination `‖u x‖ ≤ ∫ F`, and (iii) the Plancherel bound
+`spectralMajorant F ≤ C₂·‖u‖²_{H³}` uniformly in `u`.
 
-* **finite weighted `L²` mass** — `F·(sobWeight)^{-1/2} ∈ L²`, i.e. the Fourier
-  majorant `spectralMajorant F = ∫‖û‖²(1+|ξ|²)³` is finite (Schwartz decay);
-* **Fourier-inversion domination** — `‖u x‖ ≤ ∫ F` for all `x`, from
-  `u(x) = ∫ û(ξ)·e^{2πi⟨ξ,x⟩} dξ` (`SchwartzMap.fourier_inversion`) and
-  `|u(x)| ≤ ∫‖û‖` (`norm_integral_le_integral_norm`);
-* **Plancherel bound** — `spectralMajorant F ≤ C₂·‖u‖²_{H³}` uniformly in `u`,
-  from `∫‖û‖²|ξ|^{2n} = c·∫‖D^n u‖²` (Plancherel + differentiation-multiplier) and
-  the binomial expansion of `(1+|ξ|²)³`.
+Concrete attack map (Mathlib tools verified present, 2026-07-16):
 
-Mathlib-absent piece: the vector-valued Schwartz Fourier–Plancherel identity for
-the sup-normed domain/codomain `Space = Fin 3 → ℝ` (Mathlib's
-`SchwartzMap.fourierTransformCLM` needs an inner-product domain; the coordinatewise
-`EuclideanSpace`/`fourierIntegral` reduction is the ~250-LOC construction).  The
-Cauchy–Schwarz half is already discharged kernel-cleanly by
-`cauchySchwarz_supMajorant`, so this is the *sole* remaining analytic content. -/
+* **[transport, ~60 LOC]** `Space = Fin 3 → ℝ` is sup-normed, but the Fourier /
+  Plancherel API needs an inner-product domain.  Transport via the CLE
+  `EuclideanSpace ℝ (Fin 3) ≃L[ℝ] (Fin 3 → ℝ)` and
+  `SchwartzMap.compCLMOfContinuousLinearEquiv` (`⇑(compCLMOfCLE 𝕜 g f) = ⇑f ∘ ⇑g`),
+  reducing `u` to `SchwartzMap (EuclideanSpace ℝ (Fin 3)) ℂ` componentwise (embed the
+  3 real components `ℝ ↪ ℂ`).  Lebesgue `volume` agrees across the equiv.
+* **[Plancherel, in Mathlib]** `SchwartzMap.integral_norm_sq_fourier` :
+  `∫‖𝓕f‖² = ∫‖f‖²` — the `n=0` (L²) term directly.
+* **[weighted Plancherel, ~200 LOC]** iterate the multiplier identity
+  `Real.fourierIntegral_fderiv` (`𝓕(fderiv f) = fourierSMulRight (-innerSL ℝ) (𝓕f)`)
+  to get `∫‖𝓕f‖²|ξ|^{2n} = c·∫‖D^n f‖²` (n ≤ 3), then `sobWeightInv_eq`'s binomial
+  `(1+|ξ|²)³ = 1+3|ξ|²+3|ξ|⁴+|ξ|⁶` sums the four terms into `C₂·sobolevH3NormSq`.
+* **[inversion, ~90 LOC]** `SchwartzMap.fourier_inversion` + `norm_integral_le_integral_norm`
+  give `‖u x‖ ≤ ∫‖û‖ = ∫ F`; `MemLp` of `F·(sobWeight)^{-1/2}` from Schwartz decay of `û`.
+
+The Cauchy–Schwarz half is already discharged kernel-cleanly by
+`cauchySchwarz_supMajorant`; `sobWeightInv_eq` supplies the weight-polynomial for the
+weighted-Plancherel step.  TRUE-as-stated for Schwartz `u` (take `F = ‖û‖`). -/
 theorem exists_fourierSpectralData :
     ∃ C₂ : ℝ, 0 < C₂ ∧ ∀ u : SchwartzVelocity,
       ∃ F : Space → ℝ, (∀ ξ, 0 ≤ F ξ) ∧
