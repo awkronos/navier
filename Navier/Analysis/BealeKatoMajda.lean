@@ -227,6 +227,26 @@ theorem excludes_pointEvaluationBreakdown
   obtain ⟨t, ht0, htT, hlarge⟩ := w.point_norm_unbounded M
   exact (not_lt_of_ge (hM t ⟨ht0, htT⟩ w.point)) hlarge
 
+/-- **Step-0e non-vacuity.**  The zero velocity carries a `BKMControl` on every
+positive horizon (control `≡ 1`, rate `≡ 0`), so the criterion's hypotheses are
+jointly satisfiable and `velocity_bounded` / `excludes_pointEvaluationBreakdown`
+are not vacuously about an uninhabited structure. -/
+def controlZero (T : ℝ) : BKMControl (fun _ _ => 0) T where
+  control := fun _ => 1
+  controlDeriv := fun _ => 0
+  rate := fun _ => 0
+  rate_continuousOn := continuousOn_const
+  control_continuousOn := continuousOn_const
+  control_hasDerivAt := fun t _ => hasDerivAt_const t 1
+  control_pos := fun t _ => one_pos
+  gronwall_inequality := fun t _ => by norm_num
+  rate_dominates_vorticity := fun t _ x => by
+    have hv : vorticity (fun _ _ => 0) t x = 0 := by
+      simp [vorticity, staticCurl]
+    rw [hv, (officialEuclideanNorm_eq_zero_iff 0).mpr rfl]
+  control_dominates_velocity := fun t _ x => by norm_num
+  finite_vorticity_integral := ⟨0, fun t _ => by simp⟩
+
 end BKMControl
 
 /-!
