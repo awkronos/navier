@@ -1,4 +1,5 @@
 import Navier.Analysis.Enstrophy
+import Navier.Analysis.DissipativeODEGlobal
 
 /-!
 # Leray–Hopf weak solutions (rung 4 skeleton tower)
@@ -675,10 +676,10 @@ theorem exists_compactSupport_dissipative_extension
     have hge : (1:ℝ) ≤ (R+1)^2 - ‖x‖^2 := by nlinarith [norm_nonneg x, hx, hR]
     simp only [Real.smoothTransition.one_of_one_le hge, one_smul]
 
-/-- **[NAMED RESIDUAL — finite-dim dissipative ODE **forward**-global existence;
-Hartman *ODE* Ch. II–III; Mathlib
-`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀` (bounded-interval)
-+ a-priori-bound continuation; est ~300 LOC.]**  On a finite-dimensional real
+/-- **Finite-dim dissipative ODE forward-global existence** [ESTABLISHED 2026-07-17;
+Hartman *ODE* Ch. II–III; Temam III §3; via Picard–Lindelöf
+`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀` on `Icc 0 (n+1)`
+glued by `ODE_solution_unique`].  On a finite-dimensional real
 inner-product space, a `C¹` vector field `F` with `⟨F x, x⟩ ≤ 0` (so `‖·‖` is
 non-increasing along **forward** solutions, ruling out forward blow-up) admits a
 solution `u : [0,∞) → E`, `u(0) = x₀`, `u' = F ∘ u` on all of `[0,∞)`.
@@ -693,22 +694,35 @@ is existence on `Set.Ici 0` (`HasDerivWithinAt … (Set.Ici 0)`), NOT on all of
 This is the finite-mode Galerkin ODE existence (`F = −ν A + P_m B`); basis-free.
 **Confinement half — CLOSED**: `norm_le_initial_of_forward_dissipative` (above)
 proves any forward solution stays in the initial ball `‖u(t)‖ ≤ ‖u(0)‖`, ruling
-out finite-time escape.  **Existence half — residual (~200 LOC)**: (a) local
-existence on each `Icc 0 T` via `IsPicardLindelof` (its `a,r,L,K` come from the
-`C¹` (hence locally-Lipschitz) `F` on the compact ball `B̄(0,‖x₀‖)`); (b)
-extend to `[0,∞)` — either glue the confined local pieces, or take a smooth
-cutoff `F̃ = χ(‖·‖)·F` (compactly-supported `C¹`, still dissipative since
-`χ ≥ 0`, hence globally Lipschitz), get an all-`ℝ` integral curve for `F̃`
-(`Mathlib.Geometry.Manifold.IntegralCurve.UniformTime`), and use the confinement
-to keep it in `B̄(0,‖x₀‖)` where `F̃ = F`.  Mathlib-absent: the local→global
-extension bookkeeping (manifold-instance plumbing or the `Icc` gluing). -/
+out finite-time escape.  **Existence half — ESTABLISHED** (2026-07-17,
+`DissipativeODEGlobal.exists_forward_global_of_contDiff_compactSupport`): the
+smooth cutoff `exists_compactSupport_dissipative_extension F … ‖x₀‖` produces a
+compactly-supported `C¹` dissipative `G` agreeing with `F` on `B̄(0,‖x₀‖)`;
+`G` is then globally Lipschitz + bounded, so it has a global forward solution `u`
+(Picard–Lindelöf on each `Icc 0 (n+1)` glued by `ODE_solution_unique`); and the
+confinement `norm_le_initial_of_forward_dissipative` keeps `u` inside
+`B̄(0,‖x₀‖)` where `G = F`, so `u` solves the original ODE forward. -/
 theorem finiteDim_dissipative_ode_global
     {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
     (F : E → E) (hF : ContDiff ℝ 1 F) (hdiss : ∀ x : E, inner ℝ (F x) x ≤ 0)
     (x₀ : E) :
     ∃ u : ℝ → E, u 0 = x₀ ∧
       ∀ t : ℝ, 0 ≤ t → HasDerivWithinAt u (F (u t)) (Set.Ici (0:ℝ)) t := by
-  sorry
+  -- cutoff `F` to a compactly-supported dissipative field `G` agreeing with `F`
+  -- on `B̄(0, ‖x₀‖)`
+  obtain ⟨G, hG_C1, hG_supp, hG_diss, hG_eq⟩ :=
+    exists_compactSupport_dissipative_extension F hF hdiss ‖x₀‖ (norm_nonneg x₀)
+  -- global forward solution for the (globally-Lipschitz, bounded) cutoff `G`
+  obtain ⟨u, hu0, hu_deriv⟩ :=
+    Navier.Analysis.DissipativeODEGlobal.exists_forward_global_of_contDiff_compactSupport
+      G hG_C1 hG_supp x₀
+  refine ⟨u, hu0, fun t ht => ?_⟩
+  -- confinement: the dissipative flow stays in `B̄(0, ‖x₀‖)`, where `G = F`
+  have hconf : ‖u t‖ ≤ ‖x₀‖ := by
+    have h := norm_le_initial_of_forward_dissipative G u hu_deriv hG_diss ht
+    rwa [hu0] at h
+  rw [← hG_eq (u t) hconf]
+  exact hu_deriv t ht
 
 /-- **[NAMED RESIDUAL — Galerkin construction + a-priori bounds; Temam, *NSE*
 III.3; Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20.]**
