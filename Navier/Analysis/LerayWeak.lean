@@ -739,9 +739,13 @@ Mathlib-absent sub-residuals are:
   orthogonal projection onto its first `m` modes, with `P_m u₀ →_{L²} u₀`
   (`initial_converges`) and skew-symmetry `⟨P_m B(u_m), u_m⟩ = 0` (est ~250 LOC;
   Mathlib has no divergence-free spectral basis on `ℝ³`); and
-* the **enstrophy/dissipation + time-derivative bookkeeping** giving
-  `enstrophy_bounded`, `time_equicontinuous`, and `weak_consistent` from the
-  finite-mode energy identity (est ~150 LOC).
+* the **time-derivative bookkeeping** giving `time_equicontinuous` and
+  `weak_consistent` from the finite-mode energy identity (est ~100 LOC).  The
+  `enstrophy_bounded` engine is now BANKED:
+  `Navier.Analysis.EnergyDissipation.dissipation_integral_le_forward` turns any
+  forward solution of `u' = −ν A_m u + P_m B u` into the `Set.Ioc`-integral
+  dissipation bound `∫_{(0,T]} ⟨A_m u, u⟩ ≤ ‖u(0)‖²/(2ν)` — exactly the
+  `UniformEnstrophyBound` shape with `C = ‖u₀‖²_{L²}/(2ν)`, uniform in `m`.
 
 Assembling the `GalerkinApproximation` record is blocked only on the first
 (basis) residual, which is needed even to STATE the per-mode objects. -/
