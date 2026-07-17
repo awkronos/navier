@@ -48,6 +48,9 @@ This file lays that layer over the repo's own objects:
   `initial_converges` field of `GalerkinApproximation`.
 * `divergenceFreeInitial_sum_smul` — **finite `ℝ`-combinations of divergence-free
   fields are divergence-free** (the div-free preservation Gram–Schmidt needs).
+* `gramSchmidt_residual_inner` / `schwartzL2Inner_normalize_self` — the **banked
+  algebraic cores of Gram–Schmidt** (residual `⊥` orthonormal prefix; unit-seminorm
+  normalization), consumed by `rawDivFree_orthonormalize`.
 * `exists_galerkinBasisFamily` — now a **composition** of the two named leaves
   below (raw dense family ∘ Gram–Schmidt), no longer a monolithic sorry.
 
@@ -347,6 +350,46 @@ and their finite combinations are `L²`-dense in the divergence-free class. -/
 theorem exists_rawDivFreeFamily : Nonempty RawDivFreeFamily := by
   sorry
 
+/-!
+### Gram–Schmidt building blocks (banked)
+
+The two algebraic cores of the orthonormalization recursion `w_n =
+normalize(v_n − ∑_{k<n} ⟨v_n, w_k⟩ w_k)`, closed on the bilinearity toolkit —
+independent of the recursion itself, so they are certified here and consumed by
+`rawDivFree_orthonormalize` below [RRS Ch. 4; Temam III §3].
+-/
+
+/-- **Gram–Schmidt residual orthogonality.**  Against any orthonormal prefix
+`w_0, …, w_{n−1}` (`⟨w_i, w_k⟩ = δ_ik` for `i, k < n`), the residual
+`x − ∑_{k<n} ⟨x, w_k⟩ w_k` is `L²`-orthogonal to every `w_j`, `j < n` — the
+orthogonality step of Gram–Schmidt. -/
+theorem gramSchmidt_residual_inner (w : ℕ → SchwartzVelocity) (n : ℕ)
+    (horth : ∀ i k, i < n → k < n → schwartzL2Inner (w i) (w k) = if i = k then 1 else 0)
+    (x : SchwartzVelocity) {j : ℕ} (hj : j < n) :
+    schwartzL2Inner (x - ∑ k ∈ Finset.range n, schwartzL2Inner x (w k) • w k) (w j) = 0 := by
+  rw [schwartzL2Inner_sub_left, schwartzL2Inner_sum_left,
+    Finset.sum_eq_single j
+      (fun k _ hkj => by
+        rw [schwartzL2Inner_smul_left, horth k j (Finset.mem_range.mp ‹_›) hj, if_neg hkj,
+          mul_zero])
+      (fun hjn => absurd (Finset.mem_range.mpr hj) hjn),
+    schwartzL2Inner_smul_left, horth j j hj hj, if_pos rfl, mul_one, sub_self]
+
+/-- **Gram–Schmidt normalization.**  A field with strictly positive `L²`
+seminorm normalizes to unit seminorm: `⟨(1/√⟨x,x⟩)•x, (1/√⟨x,x⟩)•x⟩ = 1` — the
+normalization step of Gram–Schmidt (well-defined precisely because
+`RawDivFreeFamily.independent` forces each residual's seminorm positive). -/
+theorem schwartzL2Inner_normalize_self (x : SchwartzVelocity)
+    (hx : 0 < schwartzL2Inner x x) :
+    schwartzL2Inner ((1 / Real.sqrt (schwartzL2Inner x x)) • x)
+      ((1 / Real.sqrt (schwartzL2Inner x x)) • x) = 1 := by
+  rw [schwartzL2Inner_smul_left, schwartzL2Inner_smul_right]
+  have hsq : Real.sqrt (schwartzL2Inner x x) * Real.sqrt (schwartzL2Inner x x)
+      = schwartzL2Inner x x := Real.mul_self_sqrt hx.le
+  have hs : Real.sqrt (schwartzL2Inner x x) ≠ 0 := ne_of_gt (Real.sqrt_pos.mpr hx)
+  field_simp
+  nlinarith [hsq]
+
 /-- **[NAMED RESIDUAL — Gram–Schmidt orthonormalization in the `L²` seminorm;
 Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; est ~220 LOC, Mathlib-absent for
 the seminorm (non-`InnerProductSpace`) setting.]**  A raw dense
@@ -355,8 +398,11 @@ recursion `w_n = normalize(v_n − ∑_{k<n} ⟨v_n, w_k⟩ w_k)` (`normalize x 
 (1/√⟨x,x⟩) • x`) (i) preserves divergence-free — each `w_n` is a finite
 `ℝ`-combination of the `v_j` (`divergenceFreeInitial_sum_smul`, banked); (ii)
 yields `⟨w_i, w_j⟩ = δ_ij` by strong induction (the `independent` field forces
-`‖u_n‖ ≠ 0`); and (iii) preserves the finite spans, so `dense_span` transfers
-verbatim from `R`. -/
+`‖u_n‖ ≠ 0`; the per-step orthogonality is `gramSchmidt_residual_inner` and the
+unit-seminorm normalization is `schwartzL2Inner_normalize_self`, both banked
+above); and (iii) preserves the finite spans, so `dense_span` transfers verbatim
+from `R`.  Remaining: the strong-recursion definition of `w` plus the induction
+assembling those two blocks into the full `δ_ij` table. -/
 theorem rawDivFree_orthonormalize (R : RawDivFreeFamily) : Nonempty GalerkinBasisFamily := by
   sorry
 
