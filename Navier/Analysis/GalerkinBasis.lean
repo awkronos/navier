@@ -31,14 +31,13 @@ This file lays that layer over the repo's own objects:
     class** (finite linear combinations of divergence-free fields are
     divergence-free; Clairaut-free, pure linearity);
   - `proj_zero` — non-degeneracy smoke.
+* `schwartzPairing_integrable` — **integrability of the pairing density**
+  (pointwise Cauchy–Schwarz + `‖·‖₂ ≤ √3‖·‖∞` + Schwartz boundedness of `g` +
+  `SchwartzMap.integrable`), the load-bearing fact upgrading `schwartzL2Inner`
+  to a bilinear form.
 
 ## Skeletons (honest `sorry`, strictly-lower named leaves)
 
-* `schwartzPairing_integrable` — integrability of the pairing density
-  [Schwartz decay + pointwise Cauchy–Schwarz; Mathlib `SchwartzMap.integrable`
-  route; est ~60 LOC].  Unlocks bilinearity of `schwartzL2Inner` (hence
-  projection self-adjointness and the skew-transfer `⟨P_m B u, u⟩ = 0` on the
-  span).
 * `exists_galerkinBasisFamily` — existence of the family [countable `L²`-dense
   subfamily of divergence-free Schwartz fields + Gram–Schmidt;
   Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; est ~400 LOC].  This is the
@@ -67,6 +66,7 @@ namespace Navier.Analysis.GalerkinBasis
 open Navier
 open Navier.Analysis.Enstrophy
 open Navier.Analysis.LerayWeak
+open Navier.Analysis.OfficialABEncoding
 
 /-!
 ## The `L²` pairing of Schwartz velocity fields
@@ -94,17 +94,51 @@ theorem schwartzL2Inner_self_nonneg (f : SchwartzVelocity) :
   integral_nonneg fun x => by
     rw [officialInner_self]; positivity
 
-/-- **[NAMED RESIDUAL — pairing integrability; Schwartz decay + pointwise
-Cauchy–Schwarz `|⟨f x, g x⟩| ≤ |f x|·|g x|` and Mathlib's
-`SchwartzMap.integrable` machinery; est ~60 LOC.]**  The pairing density of two
-Schwartz fields is integrable.  This is the load-bearing fact that upgrades
-`schwartzL2Inner` from a raw Bochner integral to a bilinear form
-(`∫ (a+b)·c = ∫ a·c + ∫ b·c` needs integrability of each part), unlocking
-projection self-adjointness and the skew transfer `⟨P_m B u, u⟩ = 0` on the
-span. -/
+/-- **The pairing density of two Schwartz fields is integrable** (Leray weak
+theory, Temam III §3).  Pointwise Cauchy–Schwarz `|⟨f x, g x⟩| ≤ ‖f x‖₂·‖g x‖₂`
+(`abs_officialInner_le`), the coordinate-norm comparison `‖·‖₂ ≤ √3·‖·‖∞`
+(`officialEuclideanNorm_le`), the uniform bound on the Schwartz field `g`, and
+`SchwartzMap.integrable` (integrability of `‖f ·‖`) dominate the density by
+`(3·Cg)·‖f x‖`.  This upgrades `schwartzL2Inner` from a raw Bochner integral to
+a bilinear form (`∫ (a+b)·c = ∫ a·c + ∫ b·c` needs integrability of each part),
+unlocking projection self-adjointness and the skew transfer `⟨P_m B u, u⟩ = 0`
+on the span. -/
 theorem schwartzPairing_integrable (f g : SchwartzVelocity) :
     Integrable (fun x : Space => officialInner (f x) (g x)) := by
-  sorry
+  -- Uniform bound `Cg` on `‖g x‖` (Schwartz `k=0,n=0` decay).
+  obtain ⟨Cg, hCg0, hCgraw⟩ :=
+    (schwartzmap_satisfies_fefferman_euclidean_weight_rapid_decay g) 0 0
+  have hCg : ∀ x : Space, ‖g x‖ ≤ Cg := by
+    intro x
+    have h := hCgraw x
+    rw [pow_zero, one_mul, norm_iteratedFDeriv_zero] at h
+    exact h
+  -- `x ↦ ‖f x‖` is integrable (`SchwartzMap.integrable`).
+  have hfint : Integrable (fun x : Space => ‖f x‖) volume := (SchwartzMap.integrable f).norm
+  -- Dominate the pairing density by `(3·Cg)·‖f x‖`.
+  refine Integrable.mono' (hfint.const_mul (3 * Cg)) ?_ ?_
+  · -- Continuity ⇒ a.e.-strong-measurability (coordinate sum of products).
+    apply Continuous.aestronglyMeasurable
+    simp only [officialInner_eq_sum]
+    exact continuous_finsetSum _ (fun i _ =>
+      ((continuous_apply i).comp f.continuous).mul ((continuous_apply i).comp g.continuous))
+  · -- Pointwise Cauchy–Schwarz + `‖·‖₂ ≤ √3‖·‖∞` + the uniform bound on `g`.
+    refine Filter.Eventually.of_forall (fun x => ?_)
+    rw [Real.norm_eq_abs]
+    calc |officialInner (f x) (g x)|
+        ≤ officialEuclideanNorm (f x) * officialEuclideanNorm (g x) := abs_officialInner_le _ _
+      _ ≤ (Real.sqrt 3 * ‖f x‖) * (Real.sqrt 3 * ‖g x‖) := by
+          refine mul_le_mul (officialEuclideanNorm_le _) (officialEuclideanNorm_le _)
+            (officialEuclideanNorm_nonneg _) ?_
+          positivity
+      _ = 3 * (‖f x‖ * ‖g x‖) := by
+          rw [show Real.sqrt 3 * ‖f x‖ * (Real.sqrt 3 * ‖g x‖)
+                = (Real.sqrt 3 * Real.sqrt 3) * (‖f x‖ * ‖g x‖) by ring,
+             Real.mul_self_sqrt (by norm_num)]
+      _ ≤ 3 * (‖f x‖ * Cg) := by
+          apply mul_le_mul_of_nonneg_left _ (by norm_num)
+          exact mul_le_mul_of_nonneg_left (hCg x) (norm_nonneg _)
+      _ = (3 * Cg) * ‖f x‖ := by ring
 
 /-!
 ## Divergence linearity toolkit
