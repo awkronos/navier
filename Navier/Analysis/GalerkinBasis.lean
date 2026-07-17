@@ -41,6 +41,11 @@ This file lays that layer over the repo's own objects:
   bilinearity), and `proj_skew_transfer` — `⟨P_m B u, u⟩ = 0` on the span,
   reducing the projected nonlinearity's energy diagonal to the divergence-free
   transport identity `∫ (u·∇)u·u = 0` (`hB` input of `galerkin_apriori_bound`).
+* `proj_best_approx` / `proj_error_antitone` / `proj_tendsto_self` — the **Bessel
+  best-approximation tower**: `P_m u` minimizes the `L²`-seminorm error over the
+  retained span (residual orthogonality + Pythagoras), the error is antitone in
+  the mode count, and `dense_span` drives `‖u₀ − P_m u₀‖²_{L²} → 0` — the
+  `initial_converges` field of `GalerkinApproximation`.
 
 ## Skeletons (honest `sorry`, strictly-lower named leaves)
 
@@ -48,11 +53,6 @@ This file lays that layer over the repo's own objects:
   subfamily of divergence-free Schwartz fields + Gram–Schmidt;
   Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; est ~400 LOC].  This is the
   non-vacuity witness for every `(W : GalerkinBasisFamily)`-consumer here.
-* `proj_tendsto_self` — `P_m u₀ → u₀` in the `L²` seminorm [Bessel
-  best-approximation on nested spans + `dense_span`; Temam III §3; est ~150
-  LOC].  This is exactly the `initial_converges` field of
-  `GalerkinApproximation` (up to the official-vs-sup coordinate-norm
-  equivalence bookkeeping on `Fin 3 → ℝ`).
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -215,6 +215,25 @@ theorem schwartzL2Inner_sum_right (s : Finset ℕ) (f : SchwartzVelocity)
   rw [schwartzL2Inner_comm, schwartzL2Inner_sum_left]
   exact Finset.sum_congr rfl (fun j _ => schwartzL2Inner_comm _ _)
 
+/-- **Left-negation of the `L²` pairing.** -/
+theorem schwartzL2Inner_neg_left (f g : SchwartzVelocity) :
+    schwartzL2Inner (-f) g = - schwartzL2Inner f g := by
+  have h : (-f : SchwartzVelocity) = (-1 : ℝ) • f := by rw [neg_one_smul]
+  rw [h, schwartzL2Inner_smul_left]; ring
+
+/-- **Left-subtractivity of the `L²` pairing.** -/
+theorem schwartzL2Inner_sub_left (f g h : SchwartzVelocity) :
+    schwartzL2Inner (f - g) h = schwartzL2Inner f h - schwartzL2Inner g h := by
+  rw [sub_eq_add_neg, schwartzL2Inner_add_left, schwartzL2Inner_neg_left, ← sub_eq_add_neg]
+
+/-- **Pythagoras for the `L²` seminorm**: orthogonal parts add in the squared
+seminorm, `Q(a+b) = Q a + Q b` when `⟨a,b⟩ = 0`. -/
+theorem schwartzL2Inner_self_add_of_orthogonal (a b : SchwartzVelocity)
+    (h : schwartzL2Inner a b = 0) :
+    schwartzL2Inner (a + b) (a + b) = schwartzL2Inner a a + schwartzL2Inner b b := by
+  rw [schwartzL2Inner_add_left, schwartzL2Inner_add_right, schwartzL2Inner_add_right,
+      schwartzL2Inner_comm b a, h]; ring
+
 /-!
 ## Divergence linearity toolkit
 -/
@@ -367,20 +386,100 @@ theorem proj_skew_transfer (W : GalerkinBasisFamily) (m : ℕ) (b u : SchwartzVe
     schwartzL2Inner (W.proj m b) u = 0 := by
   rw [proj_self_adjoint, hu]; exact hskew
 
-/-- **[NAMED RESIDUAL — projection convergence; Bessel best-approximation over
-the nested spans + `dense_span`; Temam III §3; Robinson–Rodrigo–Sadowski
-Ch. 4; est ~150 LOC.]**  The `m`-mode projections converge to the datum in the
-`L²` seminorm: `‖u₀ − P_m u₀‖²_{L²} → 0`.  Bessel: `P_m u₀` minimizes the
-`L²` error over `span{w_0, …, w_{m−1}}` (orthonormality + bilinearity via
-`schwartzPairing_integrable`), the spans are nested, and `dense_span` drives
-the infimum to `0`.  This is the `initial_converges` field of
-`GalerkinApproximation` up to the coordinate-norm equivalence bookkeeping on
-`Fin 3 → ℝ`. -/
+/-- **The projection reproduces the datum's coefficients on the basis**:
+`⟨P_m u, w_k⟩ = ⟨u, w_k⟩` for `k < m` (orthonormality). -/
+theorem proj_inner_basis (W : GalerkinBasisFamily) {m k : ℕ} (hk : k < m)
+    (u : SchwartzVelocity) :
+    schwartzL2Inner (W.proj m u) (W.w k) = schwartzL2Inner u (W.w k) := by
+  unfold GalerkinBasisFamily.proj
+  rw [schwartzL2Inner_sum_left, Finset.sum_eq_single k]
+  · rw [schwartzL2Inner_smul_left, W.orthonormal k k, if_pos rfl, mul_one]; rfl
+  · intro j _ hjk
+    rw [schwartzL2Inner_smul_left, W.orthonormal j k, if_neg hjk, mul_zero]
+  · intro hkr; exact absurd (Finset.mem_range.mpr hk) hkr
+
+/-- **The projection residual is orthogonal to every retained basis field**:
+`⟨u − P_m u, w_k⟩ = 0` for `k < m`. -/
+theorem residual_inner_basis (W : GalerkinBasisFamily) {m k : ℕ} (hk : k < m)
+    (u : SchwartzVelocity) :
+    schwartzL2Inner (u - W.proj m u) (W.w k) = 0 := by
+  rw [schwartzL2Inner_sub_left, proj_inner_basis W hk u, sub_self]
+
+/-- **The residual is orthogonal to the whole retained span**: `⟨u − P_m u, v⟩ = 0`
+for any `v = ∑_{k<m} c_k w_k`. -/
+theorem residual_inner_span (W : GalerkinBasisFamily) (m : ℕ) (u : SchwartzVelocity)
+    (c : ℕ → ℝ) :
+    schwartzL2Inner (u - W.proj m u) (∑ k ∈ Finset.range m, c k • W.w k) = 0 := by
+  rw [schwartzL2Inner_sum_right]
+  apply Finset.sum_eq_zero
+  intro k hk
+  rw [schwartzL2Inner_smul_right, residual_inner_basis W (Finset.mem_range.mp hk) u, mul_zero]
+
+/-- **Best-approximation property** (Bessel).  Among all combinations
+`v = ∑_{k<m} c_k w_k` of the first `m` modes, the projection `P_m u` minimizes
+the `L²` seminorm error: `Q(u − P_m u) ≤ Q(u − v)`.  Pythagoras on the
+orthogonal split `u − v = (u − P_m u) + (P_m u − v)` with the residual `⊥` the
+span [Temam III §3; Robinson–Rodrigo–Sadowski Ch. 4]. -/
+theorem proj_best_approx (W : GalerkinBasisFamily) (m : ℕ) (u : SchwartzVelocity)
+    (c : ℕ → ℝ) :
+    schwartzL2Inner (u - W.proj m u) (u - W.proj m u)
+      ≤ schwartzL2Inner (u - ∑ k ∈ Finset.range m, c k • W.w k)
+                        (u - ∑ k ∈ Finset.range m, c k • W.w k) := by
+  have hPv : W.proj m u - (∑ k ∈ Finset.range m, c k • W.w k)
+      = ∑ k ∈ Finset.range m, (W.coeff u k - c k) • W.w k := by
+    unfold GalerkinBasisFamily.proj
+    rw [← Finset.sum_sub_distrib]
+    exact Finset.sum_congr rfl (fun k _ => (sub_smul _ _ _).symm)
+  have horth : schwartzL2Inner (u - W.proj m u)
+      (W.proj m u - ∑ k ∈ Finset.range m, c k • W.w k) = 0 := by
+    rw [hPv]; exact residual_inner_span W m u (fun k => W.coeff u k - c k)
+  have hsplit : u - (∑ k ∈ Finset.range m, c k • W.w k)
+      = (u - W.proj m u) + (W.proj m u - ∑ k ∈ Finset.range m, c k • W.w k) := by abel
+  rw [hsplit, schwartzL2Inner_self_add_of_orthogonal _ _ horth]
+  have := schwartzL2Inner_self_nonneg (W.proj m u - ∑ k ∈ Finset.range m, c k • W.w k)
+  linarith
+
+/-- **The projection error is antitone in the mode count**: nested spans give
+`Q(u − P_{m+1} u) ≤ Q(u − P_m u)` (best-approximation applied at level `m+1`
+against `P_m u ∈ span{w_0,…,w_{m−1}} ⊆ span{w_0,…,w_m}`). -/
+theorem proj_error_antitone (W : GalerkinBasisFamily) (u : SchwartzVelocity) :
+    Antitone (fun m => schwartzL2Inner (u - W.proj m u) (u - W.proj m u)) := by
+  apply antitone_nat_of_succ_le
+  intro m
+  have hkey := proj_best_approx W (m+1) u (fun k => if k < m then W.coeff u k else 0)
+  have heq : (∑ k ∈ Finset.range (m+1), (if k < m then W.coeff u k else 0) • W.w k)
+      = W.proj m u := by
+    rw [Finset.sum_range_succ, if_neg (lt_irrefl m), zero_smul, add_zero]
+    unfold GalerkinBasisFamily.proj
+    exact Finset.sum_congr rfl (fun k hk => by rw [if_pos (Finset.mem_range.mp hk)])
+  rw [heq] at hkey
+  exact hkey
+
+/-- **Projection convergence (Bessel).**  The `m`-mode projections converge to
+the datum in the `L²` seminorm: `‖u₀ − P_m u₀‖²_{L²} → 0` [Temam III §3;
+Robinson–Rodrigo–Sadowski Ch. 4; Leray 1934].  The error is nonnegative
+(`schwartzL2Inner_self_nonneg`) and antitone (`proj_error_antitone`, nested
+spans + best approximation); `dense_span` drives it below every `ε` via the
+best-approximation bound `proj_best_approx`.  This is the `initial_converges`
+field of `GalerkinApproximation` up to the coordinate-norm equivalence
+bookkeeping on `Fin 3 → ℝ`. -/
 theorem proj_tendsto_self (W : GalerkinBasisFamily) (u₀ : SchwartzVelocity)
     (hu₀ : DivergenceFreeInitial u₀) :
     Filter.Tendsto
       (fun m => schwartzL2Inner (u₀ - W.proj m u₀) (u₀ - W.proj m u₀))
       Filter.atTop (nhds 0) := by
-  sorry
+  have hEnn : ∀ m, 0 ≤ schwartzL2Inner (u₀ - W.proj m u₀) (u₀ - W.proj m u₀) :=
+    fun m => schwartzL2Inner_self_nonneg _
+  have hanti := proj_error_antitone W u₀
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  obtain ⟨m, c, hmc⟩ := W.dense_span u₀ hu₀ ε hε
+  refine ⟨m, fun n hn => ?_⟩
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (hEnn n)]
+  calc schwartzL2Inner (u₀ - W.proj n u₀) (u₀ - W.proj n u₀)
+      ≤ schwartzL2Inner (u₀ - W.proj m u₀) (u₀ - W.proj m u₀) := hanti hn
+    _ ≤ schwartzL2Inner (u₀ - ∑ k ∈ Finset.range m, c k • W.w k)
+                        (u₀ - ∑ k ∈ Finset.range m, c k • W.w k) := proj_best_approx W m u₀ c
+    _ < ε := hmc
 
 end Navier.Analysis.GalerkinBasis
