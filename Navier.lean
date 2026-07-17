@@ -44,6 +44,7 @@ import Navier.Analysis.FrequencyCascadeObstruction
 import Navier.Analysis.MultiFrequencyMild
 import Navier.Analysis.DissipativeODEGlobal
 import Navier.Analysis.EnergyDissipation
+import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.LerayWeak
 import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.SeeleyExtension
