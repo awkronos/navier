@@ -35,6 +35,12 @@ This file lays that layer over the repo's own objects:
   (pointwise Cauchy–Schwarz + `‖·‖₂ ≤ √3‖·‖∞` + Schwartz boundedness of `g` +
   `SchwartzMap.integrable`), the load-bearing fact upgrading `schwartzL2Inner`
   to a bilinear form.
+* `schwartzL2Inner_{add,smul,sum}_{left,right}` — **full bilinearity of the
+  `L²` pairing** (via `schwartzPairing_integrable` + `integral_add`).
+* `proj_self_adjoint` — **`⟨P_m u, v⟩ = ⟨u, P_m v⟩`** (orthonormality +
+  bilinearity), and `proj_skew_transfer` — `⟨P_m B u, u⟩ = 0` on the span,
+  reducing the projected nonlinearity's energy diagonal to the divergence-free
+  transport identity `∫ (u·∇)u·u = 0` (`hB` input of `galerkin_apriori_bound`).
 
 ## Skeletons (honest `sorry`, strictly-lower named leaves)
 
@@ -139,6 +145,75 @@ theorem schwartzPairing_integrable (f g : SchwartzVelocity) :
           apply mul_le_mul_of_nonneg_left _ (by norm_num)
           exact mul_le_mul_of_nonneg_left (hCg x) (norm_nonneg _)
       _ = (3 * Cg) * ‖f x‖ := by ring
+
+/-!
+## Bilinearity of the `L²` pairing
+
+With `schwartzPairing_integrable` in hand, `schwartzL2Inner` is a genuine
+bilinear form: `∫ (a + b)·c = ∫ a·c + ∫ b·c` uses integrability of each part.
+This is the algebra behind projection self-adjointness (Temam III §3).
+-/
+
+/-- Additivity of the official pointwise inner product in its left argument. -/
+theorem officialInner_add_left (x y z : Space) :
+    officialInner (x + y) z = officialInner x z + officialInner y z := by
+  rw [officialInner_comm, officialInner_add_right, officialInner_comm z x, officialInner_comm z y]
+
+/-- `ℝ`-homogeneity of the official pointwise inner product in its left argument. -/
+theorem officialInner_smul_left (c : ℝ) (x y : Space) :
+    officialInner (c • x) y = c * officialInner x y := by
+  rw [officialInner_comm, officialInner_smul_right, officialInner_comm y x]
+
+/-- The `L²` pairing of the zero field with anything vanishes. -/
+theorem schwartzL2Inner_zero_left (g : SchwartzVelocity) : schwartzL2Inner 0 g = 0 := by
+  unfold schwartzL2Inner
+  have hz : (fun x : Space => officialInner ((0 : SchwartzVelocity) x) (g x)) = fun _ => 0 := by
+    funext x; simp [officialInner_zero_left]
+  rw [hz, integral_zero]
+
+/-- **Left-additivity of the `L²` pairing** (needs `schwartzPairing_integrable`). -/
+theorem schwartzL2Inner_add_left (f g h : SchwartzVelocity) :
+    schwartzL2Inner (f + g) h = schwartzL2Inner f h + schwartzL2Inner g h := by
+  unfold schwartzL2Inner
+  rw [← integral_add (schwartzPairing_integrable f h) (schwartzPairing_integrable g h)]
+  congr 1; funext x
+  rw [SchwartzMap.add_apply, officialInner_add_left]
+
+/-- **Right-additivity of the `L²` pairing.** -/
+theorem schwartzL2Inner_add_right (f g h : SchwartzVelocity) :
+    schwartzL2Inner f (g + h) = schwartzL2Inner f g + schwartzL2Inner f h := by
+  rw [schwartzL2Inner_comm, schwartzL2Inner_add_left, schwartzL2Inner_comm g f,
+    schwartzL2Inner_comm h f]
+
+/-- **Left-homogeneity of the `L²` pairing.** -/
+theorem schwartzL2Inner_smul_left (c : ℝ) (f g : SchwartzVelocity) :
+    schwartzL2Inner (c • f) g = c * schwartzL2Inner f g := by
+  unfold schwartzL2Inner
+  rw [← integral_const_mul]
+  congr 1; funext x
+  rw [SchwartzMap.smul_apply, officialInner_smul_left]
+
+/-- **Right-homogeneity of the `L²` pairing.** -/
+theorem schwartzL2Inner_smul_right (c : ℝ) (f g : SchwartzVelocity) :
+    schwartzL2Inner f (c • g) = c * schwartzL2Inner f g := by
+  rw [schwartzL2Inner_comm, schwartzL2Inner_smul_left, schwartzL2Inner_comm g f]
+
+/-- **Finite-sum left-linearity**: pulls a finite linear combination out of the
+left slot (the algebra the projection's self-adjointness rides on). -/
+theorem schwartzL2Inner_sum_left (s : Finset ℕ) (F : ℕ → SchwartzVelocity)
+    (g : SchwartzVelocity) :
+    schwartzL2Inner (∑ j ∈ s, F j) g = ∑ j ∈ s, schwartzL2Inner (F j) g := by
+  induction s using Finset.induction_on with
+  | empty => simp only [Finset.sum_empty, schwartzL2Inner_zero_left]
+  | insert a s ha ih =>
+    rw [Finset.sum_insert ha, schwartzL2Inner_add_left, ih, Finset.sum_insert ha]
+
+/-- **Finite-sum right-linearity.** -/
+theorem schwartzL2Inner_sum_right (s : Finset ℕ) (f : SchwartzVelocity)
+    (F : ℕ → SchwartzVelocity) :
+    schwartzL2Inner f (∑ j ∈ s, F j) = ∑ j ∈ s, schwartzL2Inner f (F j) := by
+  rw [schwartzL2Inner_comm, schwartzL2Inner_sum_left]
+  exact Finset.sum_congr rfl (fun j _ => schwartzL2Inner_comm _ _)
 
 /-!
 ## Divergence linearity toolkit
@@ -258,6 +333,39 @@ theorem proj_zero (W : GalerkinBasisFamily) (m : ℕ) : W.proj m 0 = 0 := by
       funext x; simp [officialInner_zero_left]
     rw [hz, integral_zero]
   rw [h0, zero_smul]
+
+/-- **The `m`-mode Galerkin projection is `L²`-self-adjoint**:
+`⟨P_m u, v⟩ = ⟨u, P_m v⟩` (orthonormality algebra + bilinearity of
+`schwartzL2Inner`).  Self-adjointness converts the *projected* nonlinearity
+pairing `⟨P_m B u, u⟩` into the *bare* transport pairing `⟨B u, u⟩` on the span
+— the mechanism behind the skew transfer below [Temam III §3;
+Constantin–Foias II]. -/
+theorem proj_self_adjoint (W : GalerkinBasisFamily) (m : ℕ) (u v : SchwartzVelocity) :
+    schwartzL2Inner (W.proj m u) v = schwartzL2Inner u (W.proj m v) := by
+  unfold GalerkinBasisFamily.proj
+  rw [schwartzL2Inner_sum_left, schwartzL2Inner_sum_right]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [schwartzL2Inner_smul_left, schwartzL2Inner_smul_right]
+  unfold GalerkinBasisFamily.coeff
+  rw [schwartzL2Inner_comm (W.w j) v]
+  ring
+
+/-- **Skew transfer of the projected nonlinearity** `⟨P_m B u, u⟩ = 0`.  For a
+finite-mode state `u` in the span (`P_m u = u`), self-adjointness of `P_m` turns
+the projected pairing into the bare transport pairing `⟨B u, u⟩` (here `b = B u`),
+which vanishes by the divergence-free transport energy identity
+`∫ ((u·∇)u)·u = 0` — the whole-space integral of
+`Navier.Analysis.EnergyConvectionCancellation.convection_work_eq_staticDivergence_of_incompressible`
+[Temam III §3; Leray 1934].  This supplies the `hB` hypothesis of
+`galerkin_apriori_bound` at the concrete `schwartzL2Inner` level: the Leray
+projection kills the nonlinear transport term's diagonal, so it contributes
+nothing to the energy balance.  The transport identity enters as `hskew`, a
+strictly-different fact from the conclusion (which carries the projection). -/
+theorem proj_skew_transfer (W : GalerkinBasisFamily) (m : ℕ) (b u : SchwartzVelocity)
+    (hu : W.proj m u = u) (hskew : schwartzL2Inner b u = 0) :
+    schwartzL2Inner (W.proj m b) u = 0 := by
+  rw [proj_self_adjoint, hu]; exact hskew
 
 /-- **[NAMED RESIDUAL — projection convergence; Bessel best-approximation over
 the nested spans + `dense_span`; Temam III §3; Robinson–Rodrigo–Sadowski
