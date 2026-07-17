@@ -46,13 +46,21 @@ This file lays that layer over the repo's own objects:
   retained span (residual orthogonality + Pythagoras), the error is antitone in
   the mode count, and `dense_span` drives `‖u₀ − P_m u₀‖²_{L²} → 0` — the
   `initial_converges` field of `GalerkinApproximation`.
+* `divergenceFreeInitial_sum_smul` — **finite `ℝ`-combinations of divergence-free
+  fields are divergence-free** (the div-free preservation Gram–Schmidt needs).
+* `exists_galerkinBasisFamily` — now a **composition** of the two named leaves
+  below (raw dense family ∘ Gram–Schmidt), no longer a monolithic sorry.
 
 ## Skeletons (honest `sorry`, strictly-lower named leaves)
 
-* `exists_galerkinBasisFamily` — existence of the family [countable `L²`-dense
-  subfamily of divergence-free Schwartz fields + Gram–Schmidt;
-  Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; est ~400 LOC].  This is the
-  non-vacuity witness for every `(W : GalerkinBasisFamily)`-consumer here.
+* `exists_rawDivFreeFamily` — **density core**: a countable `L²`-dense
+  linearly-independent family of divergence-free Schwartz fields (curls of bump
+  towers) [RRS Ch. 4; Temam III §3; Leray 1934 §§18–20; ~250 LOC, Mathlib-absent
+  div-free-constrained density].
+* `rawDivFree_orthonormalize` — **Gram–Schmidt** of a raw dense family into a
+  `GalerkinBasisFamily` (div-free preserved via `divergenceFreeInitial_sum_smul`;
+  orthonormality by strong induction using `L²`-independence) [RRS Ch. 4;
+  Temam III §3; ~220 LOC, seminorm/non-`InnerProductSpace` setting].
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -253,6 +261,31 @@ theorem staticDivergence_add (f g : VelocityField) (x : Space)
   rw [show (fun y => f y + g y) = f + g from rfl, fderiv_add hf hg]
   simp
 
+/-- **Finite `ℝ`-linear combinations of divergence-free fields are
+divergence-free.**  The structural fact letting every Galerkin/Gram–Schmidt
+combination stay inside the divergence-free constraint manifold (pure
+linearity of the divergence; Clairaut-free). -/
+theorem divergenceFreeInitial_sum_smul (s : Finset ℕ) (c : ℕ → ℝ)
+    (v : ℕ → SchwartzVelocity) (hv : ∀ j, DivergenceFreeInitial (v j)) :
+    DivergenceFreeInitial (∑ j ∈ s, c j • v j) := by
+  intro x
+  induction s using Finset.induction_on with
+  | empty => simp [staticDivergence]
+  | insert a s ha ih =>
+    rw [Finset.sum_insert ha]
+    have hcoe : (fun y => (c a • v a + ∑ j ∈ s, c j • v j : SchwartzVelocity) y) =
+        fun y => (c a • v a : SchwartzVelocity) y +
+          (∑ j ∈ s, c j • v j : SchwartzVelocity) y := by
+      funext y; simp
+    rw [hcoe, staticDivergence_add _ _ x
+      (schwartz_differentiableAt _ x) (schwartz_differentiableAt _ x)]
+    have h1 : staticDivergence (fun y => (c a • v a : SchwartzVelocity) y) x = 0 := by
+      have hcoe2 : (fun y => (c a • v a : SchwartzVelocity) y) =
+          fun y => c a • (v a) y := by funext y; simp
+      rw [hcoe2, staticDivergence_const_smul _ _ _ (schwartz_differentiableAt _ x),
+        hv a x, mul_zero]
+    rw [h1, ih, add_zero]
+
 /-!
 ## The Galerkin family and its finite-mode projection
 -/
@@ -278,17 +311,65 @@ structure GalerkinBasisFamily where
       schwartzL2Inner (u - ∑ j ∈ Finset.range m, c j • w j)
         (u - ∑ j ∈ Finset.range m, c j • w j) < ε
 
-/-- **[NAMED RESIDUAL — basis existence; countable `L²`-dense family of
-divergence-free Schwartz fields (e.g. curls of bump towers) + Gram–Schmidt
-orthonormalization; Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; Leray 1934
-§§18–20; est ~400 LOC.]**  The divergence-free Schwartz class is an
-infinite-dimensional separable pre-Hilbert space under `schwartzL2Inner`
-(`exists_nonzero_testFunction`'s curl-of-bump construction generates
-infinitely many independent members at disjoint supports), so a Gram–Schmidt
-pass over a countable dense subfamily produces the family.  Mathlib-absent:
-the divergence-free-constrained density argument. -/
-theorem exists_galerkinBasisFamily : Nonempty GalerkinBasisFamily := by
+/-- A **raw countable divergence-free family** whose finite spans are
+`L²`-dense in the divergence-free Schwartz class and which is
+`L²`-linearly-independent (no nonzero finite combination has zero `L²`
+seminorm).  This is the pre-orthonormalization input to Gram–Schmidt
+[Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3].  It carries the same
+`dense_span` obligation as `GalerkinBasisFamily` but drops orthonormality,
+replacing it by linear independence — exactly what Gram–Schmidt consumes. -/
+structure RawDivFreeFamily where
+  /-- The raw (non-orthonormal) fields. -/
+  v : ℕ → SchwartzVelocity
+  /-- Every raw mode is divergence-free. -/
+  divergence_free : ∀ j : ℕ, DivergenceFreeInitial (v j)
+  /-- `L²`-linear independence: a null finite combination has all-zero
+  coefficients (continuity of Schwartz fields makes `L²`-independence ordinary
+  linear independence).  This is what forces each Gram–Schmidt residual
+  `u_n ≠ 0`, so the normalization `w_n = u_n / ‖u_n‖` is well-defined. -/
+  independent : ∀ (n : ℕ) (c : ℕ → ℝ),
+    schwartzL2Inner (∑ j ∈ Finset.range n, c j • v j)
+      (∑ j ∈ Finset.range n, c j • v j) = 0 → ∀ j ∈ Finset.range n, c j = 0
+  /-- Finite spans `L²`-approximate every divergence-free Schwartz field. -/
+  dense_span : ∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+    ∃ (m : ℕ) (c : ℕ → ℝ),
+      schwartzL2Inner (u - ∑ j ∈ Finset.range m, c j • v j)
+        (u - ∑ j ∈ Finset.range m, c j • v j) < ε
+
+/-- **[NAMED RESIDUAL — density core; the divergence-free Schwartz class on
+`ℝ³` admits a countable `L²`-dense linearly-independent family of divergence-free
+Schwartz fields (curls of bump towers at growing supports); Robinson–Rodrigo–
+Sadowski Ch. 4; Temam III §3; Leray 1934 §§18–20; est ~250 LOC, Mathlib-absent
+divergence-free-constrained density argument.]**  Non-vacuity of
+`RawDivFreeFamily`.  TRUE: curls of compactly-supported bump towers are
+divergence-free (`div ∘ curl = 0`), linearly independent at disjoint supports,
+and their finite combinations are `L²`-dense in the divergence-free class. -/
+theorem exists_rawDivFreeFamily : Nonempty RawDivFreeFamily := by
   sorry
+
+/-- **[NAMED RESIDUAL — Gram–Schmidt orthonormalization in the `L²` seminorm;
+Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; est ~220 LOC, Mathlib-absent for
+the seminorm (non-`InnerProductSpace`) setting.]**  A raw dense
+divergence-free family orthonormalizes into a `GalerkinBasisFamily`.  The
+recursion `w_n = normalize(v_n − ∑_{k<n} ⟨v_n, w_k⟩ w_k)` (`normalize x =
+(1/√⟨x,x⟩) • x`) (i) preserves divergence-free — each `w_n` is a finite
+`ℝ`-combination of the `v_j` (`divergenceFreeInitial_sum_smul`, banked); (ii)
+yields `⟨w_i, w_j⟩ = δ_ij` by strong induction (the `independent` field forces
+`‖u_n‖ ≠ 0`); and (iii) preserves the finite spans, so `dense_span` transfers
+verbatim from `R`. -/
+theorem rawDivFree_orthonormalize (R : RawDivFreeFamily) : Nonempty GalerkinBasisFamily := by
+  sorry
+
+/-- **Existence of the Galerkin basis family**, reduced to the two named leaves:
+a raw dense divergence-free family (`exists_rawDivFreeFamily`, the density core)
+orthonormalized by Gram–Schmidt (`rawDivFree_orthonormalize`).  The divergence-
+free preservation under the orthonormalization is already banked
+(`divergenceFreeInitial_sum_smul`); the self-adjointness, skew transfer, and
+`initial_converges` (Bessel) consumers of `GalerkinBasisFamily` are all
+established above, so this witness is the last gate on the whole Galerkin
+layer [Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; Leray 1934]. -/
+theorem exists_galerkinBasisFamily : Nonempty GalerkinBasisFamily :=
+  rawDivFree_orthonormalize exists_rawDivFreeFamily.some
 
 /-- The `j`-th Galerkin coefficient `⟨u, w_j⟩_{L²}`. -/
 def GalerkinBasisFamily.coeff (W : GalerkinBasisFamily) (u : SchwartzVelocity) (j : ℕ) : ℝ :=
@@ -318,27 +399,8 @@ finite-mode ODE of `galerkin_approximation_exists` never leaves the
 divergence-free modes. -/
 theorem proj_divergence_free (W : GalerkinBasisFamily) (m : ℕ) (u : SchwartzVelocity) :
     DivergenceFreeInitial (W.proj m u) := by
-  intro x
-  suffices h : ∀ (s : Finset ℕ) (c : ℕ → ℝ),
-      staticDivergence (fun y => (∑ j ∈ s, c j • W.w j : SchwartzVelocity) y) x = 0 by
-    exact h (Finset.range m) (W.coeff u)
-  intro s c
-  induction s using Finset.induction_on with
-  | empty => simp [staticDivergence]
-  | insert a s ha ih =>
-    rw [Finset.sum_insert ha]
-    have hcoe : (fun y => (c a • W.w a + ∑ j ∈ s, c j • W.w j : SchwartzVelocity) y) =
-        fun y => (c a • W.w a : SchwartzVelocity) y +
-          (∑ j ∈ s, c j • W.w j : SchwartzVelocity) y := by
-      funext y; simp
-    rw [hcoe, staticDivergence_add _ _ x
-      (schwartz_differentiableAt _ x) (schwartz_differentiableAt _ x)]
-    have h1 : staticDivergence (fun y => (c a • W.w a : SchwartzVelocity) y) x = 0 := by
-      have hcoe2 : (fun y => (c a • W.w a : SchwartzVelocity) y) =
-          fun y => c a • (W.w a) y := by funext y; simp
-      rw [hcoe2, staticDivergence_const_smul _ _ _ (schwartz_differentiableAt _ x),
-        W.divergence_free a x, mul_zero]
-    rw [h1, ih, add_zero]
+  unfold GalerkinBasisFamily.proj
+  exact divergenceFreeInitial_sum_smul _ (W.coeff u) W.w W.divergence_free
 
 /-- Non-degeneracy smoke: the projection of the zero field is zero. -/
 theorem proj_zero (W : GalerkinBasisFamily) (m : ℕ) : W.proj m 0 = 0 := by
