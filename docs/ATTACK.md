@@ -140,15 +140,15 @@ These are reusable infrastructure, not route-specific discoveries.
 
 | ID | Prerequisite | Required deliverable | Current evidence |
 |---|---|---|---|
-| P0 | Exact target | Predicates for Fefferman data, solution, energy, and alternatives A–D | A–D proposition surfaces are typed in `Navier/Problem.lean` and `Navier/OfficialProblem.lean`; seven convention/quotient bridges remain explicit against the official statement [FEFFERMAN2000] |
-| P1 | Differential operators | Divergence, gradient, Laplacian, curl, Helmholtz/Leray projection, pressure recovery | Basic divergence/gradient/convection definitions, a product rule, and a coordinate convection expansion are checked; curl, Leray projection, pressure recovery, and integration identities remain |
+| P0 | Exact target | Predicates for Fefferman data, solution, energy, and alternatives A–D | Official statement [FEFFERMAN2000] |
+| P1 | Differential operators | Divergence, gradient, Laplacian, curl, Helmholtz/Leray projection, pressure recovery | Standard analysis; formal payload absent |
 | P2 | Function spaces | Schwartz/smooth data, Sobolev and mixed norms, weak and suitable solutions, critical spaces | Definitions and embeddings must be formalized |
-| P3 | Scaling | Equation covariance and the exponent \(1-3/p-2/q\) | Exponent algebra, spatial/time power-integral identities, pointwise parabolic covariance, and finite-time integrability-faithful critical `L3`-mass-bound covariance are checked. The older raw-integral bound is retained only as a lossy transport leaf. Exact positive-viscosity transport preserves the PDE, initial datum, whole-space energy contract, periodic velocity and pressure, zero force, and arbitrary-force rapid decay; consequently each official A--D surface is equivalent to its exact viscosity-one surface. General `MemLp`/`snorm` and nested mixed norms, plus the five coordinatewise/Mathlib representation bridges, remain open |
-| P4 | Local theory | Maximal smooth solution, uniqueness in its class, blowup alternative, restart theorem | A concrete `[0,T)` classical-solution record and a point-evaluation blowup consumer are checked: uniqueness plus fixed-point norm blowup excludes every official global pair because global smoothness gives a compact-time bound. Constructing the local/maximal solution and blowup remains open; analytic precedent [KATO1984], [KOCH_TATARU2001] |
+| P3 | Scaling | Equation covariance and the exponent \(1-3/p-2/q\) | Exponent algebra and the critical-line equivalence are checked in `Navier/Scaling.lean`; analytic norm scaling and equation covariance remain open |
+| P4 | Local theory | Maximal smooth solution, uniqueness in its class, blowup alternative, restart theorem | Analytic precedent [KATO1984], [KOCH_TATARU2001] |
 | P5 | Energy interfaces | Smooth energy identity, Leray inequality, local energy inequality | Analytic precedent [LERAY1934], [CKN1982] |
 | P6 | Regularity bridges | Serrin mixed-norm and endpoint \(L_t^\infty L_x^3\) continuation | Established conditional results [SERRIN1962], [ESS2003] |
 | P7 | Compactness interfaces | Approximation, pressure bounds, strong/weak convergence, defect accounting | Required by routes R4/R9/R10 |
-| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | Both convolution orderings are now explicit. The old growing term cancels with its exchanged ordering; a second polarization survives symmetrization with coefficient `s`, has a conjugate-symmetric divergence-free six-mode table, modal rates `(0,-s,s)`, and squared-frequency-weighted rate `s^3`. An exhaustive `6 x 6` ordered-pair classification proves that the complete coefficient at one off-support output is exactly `s`, not merely that one pair is nonzero. An invariant generated network, exact PDE shell balance, and summability remain open |
+| P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | Required by R5/R7/R11 |
 
 P0–P8 may be developed in parallel, but no route reaches (A) without P0, P3,
 P4, and a checked bridge from its route certificate to global continuation.
@@ -175,8 +175,7 @@ or logical kill test), and **observation-only** (computation).
   finite-time estimate whose constant diverges at the maximal time.
 - **Pivot:** isolate the frequency or geometry responsible for failure and
   transfer that residual to R3, R5, or R7.
-- **Evidence:** conditional continuation is established [PRODI1959],
-  [SERRIN1962], [ESS2003]; the
+- **Evidence:** continuation is established [SERRIN1962], [ESS2003]; the
   unconditional bound is **open-residual**.
 
 ### R2 — Mild fixed point in a critical space
@@ -224,33 +223,24 @@ or logical kill test), and **observation-only** (computation).
   limit, or the rigidity hypothesis simply assumes the ancient solution's
   critical norm is bounded.
 - **Pivot:** quantify the defect and redirect its support/scale to R5 or R9.
-- **Evidence:** partial and epsilon regularity are **established** [CKN1982],
-  and critical profile decomposition is established
-  [GALLAGHER_KOCH_PLANCHON2013]; the universal compactness-rigidity closure is
-  **open-residual**.
+- **Evidence:** partial and epsilon regularity are **established** [CKN1982];
+  the universal compactness-rigidity closure is **open-residual**.
 
 ### R5 — Frequency envelope and cascade exclusion
 
 - **Dependencies:** P1–P5, P8; genuine Littlewood–Paley and paraproduct theory.
 - **Deliverable:** an endpoint-summable frequency-flux inequality preventing
   unbounded transfer to high frequencies.
-- **First strictly lower residual:** lift the checked finite triad rates to the
-  exact Fourier-series shell balance, close and control the recursively
-  generated off-support network, and only then bound the collective
-  high–high/low flux with neither derivative loss nor logarithmic accumulation.
+- **First strictly lower residual:** bound the exact high–high/low interaction
+  across shells with neither derivative loss nor logarithmic accumulation and
+  with a coefficient controlled below the endpoint.
 - **Kill criterion:** shell summation diverges, one derivative is lost, the
   estimate is shared by Tao's averaged operator, or the envelope bound is
   equivalent to a critical continuation norm.
 - **Pivot:** identify the offending triads and search for exact symbol
   cancellation in R7; if none exists, expose them as candidates for R11.
-- **Evidence:** the checked symmetrized witness proves that exact unequal-shell
-  transfer survives while constant-weight energy cancels. The complete
-  `6 x 6` coefficient sum at a selected off-support wave is exactly `s`, so
-  the six-mode support is rigorously non-invariant without a hidden
-  pair-cancellation loophole.
-  Quantitative frequency-localized control conditional on a critical bound is
-  established [TAO2019]; unconditional cascade exclusion is **open-residual**,
-  constrained by [TAO2016].
+- **Evidence:** decomposition tools are analytic infrastructure; cascade
+  exclusion is **open-residual**, constrained by [TAO2016].
 
 ### R6 — Lagrangian deformation and vortex stretching
 
@@ -347,24 +337,16 @@ or logical kill test), and **observation-only** (computation).
   \(f=0\) or prescribe “finite-time blowup” as the form of nonexistence. A
   zero-force singular construction would be a strictly stronger speculative
   subroute, not the definition of C/D.
-- **First strictly lower residual:** construct an admissible viscosity-one
-  partial solution, prove agreement with every official global solution, and
-  establish finite-time point-norm blowup; alternatively embed a
-  self-sustaining cascade in the exact Leray-projected nonlinearity while
-  preserving incompressibility and the precise smooth/decay conditions.
+- **First strictly lower residual:** embed a self-sustaining cascade in the
+  exact Leray-projected nonlinearity while preserving incompressibility and the
+  precise smooth/decay conditions.
 - **Kill criterion:** the construction is only for an averaged, dyadic,
   hyperdissipative, Euler, axisymmetric, or weak formulation; or it establishes
   weak nonuniqueness rather than the required nonexistence statement.
 - **Pivot:** retain the model as a falsifier of overly generic positive
   estimates, extract the exact-symbol mismatch, and send it to R7.
-- **Evidence:** a checked point-evaluation consumer turns local agreement and
-  point-norm blowup into nonexistence of an official whole-space or periodic
-  global solution. Exact transport reduces all four official viscosity
-  quantifiers to viscosity one. One phase-correct unequal-shell interaction
-  and its full `6 x 6` off-support coefficient are also checked, but they do
-  not form an invariant or self-sustaining network. Averaged blowup is an
-  **obstruction** [TAO2016];
-  weak nonuniqueness is a boundary result [BUCKMASTER_VICOL2019],
+- **Evidence:** averaged blowup is an **obstruction** [TAO2016]; weak
+  nonuniqueness is a boundary result [BUCKMASTER_VICOL2019],
   [ALBRITTON_BRUE_COLOMBO2022]; exact C/D remain **open-residual**.
 
 ## 6. Route scheduling and promotion rule

@@ -18,7 +18,7 @@ status-json:
 	$(PYTHON) scripts/render_status.py --json data/attack_registry.json
 
 lean:
-	lake build Navier
+	lake env lean Navier.lean
 
 axioms:
 	lake env lean Navier/AxiomAudit.lean

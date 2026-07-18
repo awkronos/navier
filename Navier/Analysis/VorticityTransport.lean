@@ -397,4 +397,412 @@ theorem staticCurl_laplacian_evolution_comm (u : VelocityEvolution)
         (basisVector i) from rfl]
   exact hmain
 
+/-!
+### Time–space Clairaut: the curl commutes with `∂ₜ`
+
+`timeDerivative` is one-sided (`fderivWithin` on `Set.Ici 0`), so
+`∇ × ∂ₜu = ∂ₜ(∇ × u)` is a boundary-layer statement.  Both mixed
+partials are directional evaluations of the joint second
+within-derivative of `z ↦ u z.1 z.2` on `Set.Ici 0 ×ˢ Set.univ`, and
+they agree by `ContDiffWithinAt.isSymmSndFDerivWithinAt`.  The slice
+embeddings `s ↦ (s, y)` and `y ↦ (t, y)` transport within-derivatives
+of the joint function to the one-sided time derivative and the full
+spatial derivative respectively; the spatial direction is interior,
+the time direction sits at the unique-differentiability point of
+`Set.Ici 0`.
+-/
+
+/-- **Time-slice bridge.**  The one-sided time derivative of a jointly
+smooth evolution equals the joint within-derivative along `(1, 0)`.
+Generic in the codomain so scalar components and full vectors share one
+proof. -/
+private theorem fderivWithin_time_slice_apply {β : Type*} [NormedAddCommGroup β]
+    [NormedSpace ℝ β] {F : ℝ → Space → β}
+    (hF : ContDiffOn ℝ ∞ (fun z : ℝ × Space => F z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ))
+    {t : ℝ} (ht : 0 ≤ t) (y : Space) :
+    fderivWithin ℝ (fun s => F s y) (Set.Ici 0) t 1 =
+      fderivWithin ℝ (fun z : ℝ × Space => F z.1 z.2)
+        (Set.Ici (0 : ℝ) ×ˢ Set.univ) (t, y) (1, 0) := by
+  have hmem : (t, y) ∈ Set.Ici (0 : ℝ) ×ˢ Set.univ :=
+    Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht, Set.mem_univ y⟩
+  have hG : HasFDerivWithinAt (fun z : ℝ × Space => F z.1 z.2)
+      (fderivWithin ℝ (fun z : ℝ × Space => F z.1 z.2)
+        (Set.Ici (0 : ℝ) ×ˢ Set.univ) (t, y))
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) (t, y) :=
+    ((hF (t, y) hmem).differentiableWithinAt
+      (by decide : (∞ : ℕ∞ω) ≠ 0)).hasFDerivWithinAt
+  have hι : HasFDerivAt (fun s : ℝ => (s, y))
+      (ContinuousLinearMap.inl ℝ ℝ Space) t := hasFDerivAt_prodMk_left t y
+  have hmaps : Set.MapsTo (fun s : ℝ => (s, y)) (Set.Ici 0)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := fun s hs =>
+    Set.mem_prod.mpr ⟨hs, Set.mem_univ y⟩
+  have hcomp := HasFDerivWithinAt.comp t hG hι.hasFDerivWithinAt hmaps
+  rw [show ((fun z : ℝ × Space => F z.1 z.2) ∘ (fun s : ℝ => (s, y))) =
+      (fun s => F s y) from rfl] at hcomp
+  rw [hcomp.fderivWithin ((uniqueDiffOn_Ici 0) t (Set.mem_Ici.mpr ht)),
+    ContinuousLinearMap.comp_apply, ContinuousLinearMap.inl_apply]
+
+/-- **Space-slice bridge.**  The full spatial derivative of a
+nonnegative-time slice equals the joint within-derivative along
+`(0, v)`. -/
+private theorem fderiv_space_slice_apply {β : Type*} [NormedAddCommGroup β]
+    [NormedSpace ℝ β] {F : ℝ → Space → β}
+    (hF : ContDiffOn ℝ ∞ (fun z : ℝ × Space => F z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ))
+    {s : ℝ} (hs : 0 ≤ s) (x v : Space) :
+    fderiv ℝ (F s) x v =
+      fderivWithin ℝ (fun z : ℝ × Space => F z.1 z.2)
+        (Set.Ici (0 : ℝ) ×ˢ Set.univ) (s, x) (0, v) := by
+  have hmem : (s, x) ∈ Set.Ici (0 : ℝ) ×ˢ Set.univ :=
+    Set.mem_prod.mpr ⟨Set.mem_Ici.mpr hs, Set.mem_univ x⟩
+  have hG : HasFDerivWithinAt (fun z : ℝ × Space => F z.1 z.2)
+      (fderivWithin ℝ (fun z : ℝ × Space => F z.1 z.2)
+        (Set.Ici (0 : ℝ) ×ˢ Set.univ) (s, x))
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) (s, x) :=
+    ((hF (s, x) hmem).differentiableWithinAt
+      (by decide : (∞ : ℕ∞ω) ≠ 0)).hasFDerivWithinAt
+  have hκ : HasFDerivAt (fun y : Space => (s, y))
+      (ContinuousLinearMap.inr ℝ ℝ Space) x := hasFDerivAt_prodMk_right s x
+  have hmaps : Set.MapsTo (fun y : Space => (s, y)) Set.univ
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := fun y _ =>
+    Set.mem_prod.mpr ⟨Set.mem_Ici.mpr hs, Set.mem_univ y⟩
+  have hcomp := HasFDerivWithinAt.comp x hG hκ.hasFDerivWithinAt hmaps
+  rw [show ((fun z : ℝ × Space => F z.1 z.2) ∘ (fun y : Space => (s, y))) =
+      F s from rfl] at hcomp
+  have hAt : HasFDerivAt (F s)
+      ((fderivWithin ℝ (fun z : ℝ × Space => F z.1 z.2)
+        (Set.Ici (0 : ℝ) ×ˢ Set.univ) (s, x)).comp
+        (ContinuousLinearMap.inr ℝ ℝ Space)) x :=
+    hcomp.hasFDerivAt Filter.univ_mem
+  rw [hAt.fderiv, ContinuousLinearMap.comp_apply, ContinuousLinearMap.inr_apply]
+
+/-- **Eval bridge.**  The within-derivative of an evaluated
+within-derivative field is the second within-derivative evaluated in
+the other order: `D(Dg(v))(w) = D²g(w)(v)`. -/
+private theorem fderivWithin_eval_apply {β : Type*} [NormedAddCommGroup β]
+    [NormedSpace ℝ β] {g : ℝ × Space → β} {S : Set (ℝ × Space)}
+    {z : ℝ × Space}
+    (hg : DifferentiableWithinAt ℝ (fderivWithin ℝ g S) S z)
+    (hs : UniqueDiffWithinAt ℝ S z) (v w : ℝ × Space) :
+    fderivWithin ℝ (fun z' => fderivWithin ℝ g S z' v) S z w =
+      fderivWithin ℝ (fderivWithin ℝ g S) S z w v := by
+  let T : ((ℝ × Space) →L[ℝ] β) →L[ℝ] β :=
+    ContinuousLinearMap.apply ℝ β v
+  have hT : HasFDerivWithinAt
+      (fun z' => fderivWithin ℝ g S z' v)
+      (T.comp (fderivWithin ℝ (fderivWithin ℝ g S) S z)) S z := by
+    have hcomp := HasFDerivWithinAt.comp z T.hasFDerivWithinAt
+      hg.hasFDerivWithinAt (fun z' _ => Set.mem_univ _)
+    rw [show (T ∘ (fderivWithin ℝ g S)) =
+        (fun z' => fderivWithin ℝ g S z' v) from rfl] at hcomp
+    exact hcomp
+  have hfw := hT.fderivWithin hs
+  calc fderivWithin ℝ (fun z' => fderivWithin ℝ g S z' v) S z w
+      = (T.comp (fderivWithin ℝ (fderivWithin ℝ g S) S z)) w := by rw [hfw]
+    _ = fderivWithin ℝ (fderivWithin ℝ g S) S z w v := rfl
+
+/-- The time curve `s ↦ u s y` is differentiable within `Set.Ici 0` at
+every `t ≥ 0`. -/
+private theorem differentiableWithinAt_time_curve (u : VelocityEvolution)
+    (hu : SmoothVelocityOnNonnegativeTime u) {t : ℝ} (ht : 0 ≤ t) (y : Space) :
+    DifferentiableWithinAt ℝ (fun s => u s y) (Set.Ici 0) t := by
+  have hmem : (t, y) ∈ Set.Ici (0 : ℝ) ×ˢ Set.univ :=
+    Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht, Set.mem_univ y⟩
+  have hG : DifferentiableWithinAt ℝ (fun z : ℝ × Space => u z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) (t, y) :=
+    (hu (t, y) hmem).differentiableWithinAt (by decide : (∞ : ℕ∞ω) ≠ 0)
+  have hmaps : Set.MapsTo (fun s : ℝ => (s, y)) (Set.Ici 0)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := fun s hs =>
+    Set.mem_prod.mpr ⟨hs, Set.mem_univ y⟩
+  have hcomp := hG.comp t
+    (hasFDerivAt_prodMk_left t y).hasFDerivWithinAt.differentiableWithinAt hmaps
+  rw [show ((fun z : ℝ × Space => u z.1 z.2) ∘ (fun s : ℝ => (s, y))) =
+      (fun s => u s y) from rfl] at hcomp
+  exact hcomp
+
+/-- **Component bridge within.**  The `k`-th component of the one-sided
+time derivative of a vector curve is the one-sided time derivative of
+the `k`-th component. -/
+private theorem fderivWithin_component_apply (w : ℝ → Space) (t : ℝ)
+    (ht : 0 ≤ t) (hw : DifferentiableWithinAt ℝ w (Set.Ici 0) t) (k : Fin 3) :
+    (fderivWithin ℝ w (Set.Ici 0) t 1) k =
+      fderivWithin ℝ (fun s => w s k) (Set.Ici 0) t 1 := by
+  have h := fderivWithin_apply hw ((uniqueDiffOn_Ici 0) t (Set.mem_Ici.mpr ht)) k
+  rw [h, ContinuousLinearMap.comp_apply, ContinuousLinearMap.proj_apply]
+
+/-- The spatial derivative field `s ↦ fderiv ℝ (u s) x (eᵢ)` is
+differentiable within `Set.Ici 0` at `t ≥ 0`: on the half-line it
+agrees with the joint within-derivative along `(0, eᵢ)` pulled back
+along the time curve. -/
+private theorem differentiableWithinAt_spaceDeriv_curve (u : VelocityEvolution)
+    (hu : SmoothVelocityOnNonnegativeTime u) {t : ℝ} (ht : 0 ≤ t) (x : Space)
+    (i : Fin 3) :
+    DifferentiableWithinAt ℝ (fun s => fderiv ℝ (u s) x (basisVector i))
+      (Set.Ici 0) t := by
+  set S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ with hSdef
+  set G : ℝ × Space → Space := fun z => u z.1 z.2 with hGdef
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hz : (t, x) ∈ S := Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht, Set.mem_univ x⟩
+  have hg2 : ContDiffWithinAt ℝ ∞ G S (t, x) := hu (t, x) hz
+  have hDg : DifferentiableWithinAt ℝ (fderivWithin ℝ G S) S (t, x) :=
+    (hg2.fderivWithin_right hUD (by decide) hz).differentiableWithinAt one_ne_zero
+  have hH : DifferentiableWithinAt ℝ
+      (fun z' => fderivWithin ℝ G S z' ((0, basisVector i) : ℝ × Space))
+      S (t, x) := by
+    let T : ((ℝ × Space) →L[ℝ] Space) →L[ℝ] Space :=
+      ContinuousLinearMap.apply ℝ Space ((0, basisVector i) : ℝ × Space)
+    have hcomp := DifferentiableWithinAt.comp (t, x)
+      (T.differentiableAt).differentiableWithinAt hDg (fun z' _ => Set.mem_univ _)
+    rw [show (T ∘ (fderivWithin ℝ G S)) =
+        (fun z' => fderivWithin ℝ G S z' ((0, basisVector i) : ℝ × Space))
+        from rfl] at hcomp
+    exact hcomp
+  have hmaps : Set.MapsTo (fun s : ℝ => (s, x)) (Set.Ici 0) S := fun s hs =>
+    Set.mem_prod.mpr ⟨hs, Set.mem_univ x⟩
+  have hcomp := hH.comp t
+    (hasFDerivAt_prodMk_left t x).hasFDerivWithinAt.differentiableWithinAt hmaps
+  rw [show ((fun z' => fderivWithin ℝ G S z' (0, basisVector i)) ∘
+      (fun s : ℝ => (s, x))) =
+      (fun s => fderivWithin ℝ G S (s, x) (0, basisVector i)) from rfl] at hcomp
+  refine hcomp.congr (fun s hs => ?_) ?_
+  · exact fderiv_space_slice_apply hu (Set.mem_Ici.mp hs) x (basisVector i)
+  · exact fderiv_space_slice_apply hu ht x (basisVector i)
+
+/-- Each component of the (one-sided) time-derivative field is spatially
+differentiable: it is the joint within-derivative along `(1, 0)` pulled
+back along the space curve, an interior direction. -/
+private theorem differentiableAt_timeDeriv_component (u : VelocityEvolution)
+    (hu : SmoothVelocityOnNonnegativeTime u) {t : ℝ} (ht : 0 ≤ t) (x : Space)
+    (k : Fin 3) :
+    DifferentiableAt ℝ (fun y => fderivWithin ℝ (fun s => u s y k)
+      (Set.Ici 0) t 1) x := by
+  set S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ with hSdef
+  set g : ℝ × Space → ℝ := fun z => u z.1 z.2 k with hgdef
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hz : (t, x) ∈ S := Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht, Set.mem_univ x⟩
+  have hgc : ContDiffOn ℝ ∞ g S := contDiffOn_pi.mp hu k
+  have hg2 : ContDiffWithinAt ℝ ∞ g S (t, x) := hgc (t, x) hz
+  have hDg : DifferentiableWithinAt ℝ (fderivWithin ℝ g S) S (t, x) :=
+    (hg2.fderivWithin_right hUD (by decide) hz).differentiableWithinAt one_ne_zero
+  have hH : DifferentiableWithinAt ℝ
+      (fun z' => fderivWithin ℝ g S z' ((1, 0) : ℝ × Space)) S (t, x) := by
+    let T : ((ℝ × Space) →L[ℝ] ℝ) →L[ℝ] ℝ :=
+      ContinuousLinearMap.apply ℝ ℝ ((1, 0) : ℝ × Space)
+    have hcomp := DifferentiableWithinAt.comp (t, x)
+      (T.differentiableAt).differentiableWithinAt hDg (fun z' _ => Set.mem_univ _)
+    rw [show (T ∘ (fderivWithin ℝ g S)) =
+        (fun z' => fderivWithin ℝ g S z' ((1, 0) : ℝ × Space)) from rfl] at hcomp
+    exact hcomp
+  have hmaps : Set.MapsTo (fun y : Space => (t, y)) Set.univ S := fun y _ =>
+    Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht, Set.mem_univ y⟩
+  have hcomp := hH.comp x
+    (hasFDerivAt_prodMk_right t x).hasFDerivWithinAt.differentiableWithinAt hmaps
+  rw [show ((fun z' => fderivWithin ℝ g S z' (1, 0)) ∘
+      (fun y : Space => (t, y))) =
+      (fun y => fderivWithin ℝ g S (t, y) (1, 0)) from rfl] at hcomp
+  have hAt : DifferentiableAt ℝ (fun y => fderivWithin ℝ g S (t, y) (1, 0)) x :=
+    hcomp.differentiableAt Filter.univ_mem
+  have heq : (fun y => fderivWithin ℝ (fun s => u s y k) (Set.Ici 0) t 1)
+      = (fun y => fderivWithin ℝ g S (t, y) (1, 0)) :=
+    funext fun y =>
+      fderivWithin_time_slice_apply (F := fun s y => u s y k) hgc ht y
+  rw [heq]; exact hAt
+
+/-- **Time–space Clairaut (scalar).**  For a smooth velocity evolution,
+the spatial derivative of the (one-sided) time derivative equals the
+(one-sided) time derivative of the spatial derivative, componentwise.
+Both sides are the joint second within-derivative of the component
+function `z ↦ u z.1 z.2 k` on the half-space, evaluated along
+`((0, v), (1, 0))` in the two orders; they agree by symmetry of the
+second within-derivative on a unique-differentiability domain. -/
+private theorem timeDeriv_spaceDeriv_comm_scalar (u : VelocityEvolution)
+    (hu : SmoothVelocityOnNonnegativeTime u) {t : ℝ} (ht : 0 ≤ t) (x v : Space)
+    (k : Fin 3) :
+    fderiv ℝ (fun y => fderivWithin ℝ (fun s => u s y k) (Set.Ici 0) t 1) x v =
+      fderivWithin ℝ (fun s => fderiv ℝ (fun y => u s y k) x v)
+        (Set.Ici 0) t 1 := by
+  set S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ with hSdef
+  set g : ℝ × Space → ℝ := fun z => u z.1 z.2 k with hgdef
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hz : (t, x) ∈ S := Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht, Set.mem_univ x⟩
+  have hgc : ContDiffOn ℝ ∞ g S := contDiffOn_pi.mp hu k
+  have hg2 : ContDiffWithinAt ℝ ∞ g S (t, x) := hgc (t, x) hz
+  have hcl : (t, x) ∈ closure (interior S) := by
+    have hint : interior S = Set.Ioi (0 : ℝ) ×ˢ Set.univ := by
+      rw [hSdef, interior_prod_eq, interior_Ici, interior_univ]
+    rw [hint, closure_prod_eq, closure_Ioi, closure_univ]
+    exact hz
+  have hSymm : IsSymmSndFDerivWithinAt ℝ g S (t, x) :=
+    hg2.isSymmSndFDerivWithinAt
+      (by simp only [minSmoothness_of_isRCLikeNormedField]; decide) hUD hcl hz
+  have hDg : DifferentiableWithinAt ℝ (fderivWithin ℝ g S) S (t, x) :=
+    (hg2.fderivWithin_right hUD (by decide) hz).differentiableWithinAt one_ne_zero
+  have hT : ∀ w : ℝ × Space, DifferentiableWithinAt ℝ
+      (fun z' => fderivWithin ℝ g S z' w) S (t, x) := by
+    intro w
+    let T : ((ℝ × Space) →L[ℝ] ℝ) →L[ℝ] ℝ :=
+      ContinuousLinearMap.apply ℝ ℝ w
+    have hcomp := DifferentiableWithinAt.comp (t, x)
+      (T.differentiableAt).differentiableWithinAt hDg (fun z' _ => Set.mem_univ _)
+    rw [show (T ∘ (fderivWithin ℝ g S)) =
+        (fun z' => fderivWithin ℝ g S z' w) from rfl] at hcomp
+    exact hcomp
+  have hLHSfun : (fun y => fderivWithin ℝ (fun s => u s y k) (Set.Ici 0) t 1)
+      = (fun y => fderivWithin ℝ g S (t, y) (1, 0)) :=
+    funext fun y =>
+      fderivWithin_time_slice_apply (F := fun s y => u s y k) hgc ht y
+  have hLchain : HasFDerivAt (fun y => fderivWithin ℝ g S (t, y) (1, 0))
+      ((fderivWithin ℝ (fun z' => fderivWithin ℝ g S z' (1, 0)) S (t, x)).comp
+        (ContinuousLinearMap.inr ℝ ℝ Space)) x := by
+    have hκ : HasFDerivAt (fun y : Space => (t, y))
+        (ContinuousLinearMap.inr ℝ ℝ Space) x := hasFDerivAt_prodMk_right t x
+    have hmaps : Set.MapsTo (fun y : Space => (t, y)) Set.univ S := fun y _ =>
+      Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht, Set.mem_univ y⟩
+    have hcomp := HasFDerivWithinAt.comp x (hT ((1, 0) : ℝ × Space)).hasFDerivWithinAt
+      hκ.hasFDerivWithinAt hmaps
+    rw [show ((fun z' => fderivWithin ℝ g S z' ((1, 0) : ℝ × Space)) ∘
+        (fun y : Space => (t, y))) =
+        (fun y => fderivWithin ℝ g S (t, y) ((1, 0) : ℝ × Space)) from rfl] at hcomp
+    exact hcomp.hasFDerivAt Filter.univ_mem
+  have hLHS : fderiv ℝ (fun y => fderivWithin ℝ (fun s => u s y k)
+        (Set.Ici 0) t 1) x v
+      = fderivWithin ℝ (fderivWithin ℝ g S) S (t, x) (0, v) (1, 0) := by
+    rw [hLHSfun, hLchain.fderiv, ContinuousLinearMap.comp_apply,
+      ContinuousLinearMap.inr_apply]
+    exact fderivWithin_eval_apply hDg (hUD (t, x) hz) (1, 0) (0, v)
+  have hRinner : ∀ s : ℝ, 0 ≤ s → fderiv ℝ (fun y => u s y k) x v
+      = fderivWithin ℝ g S (s, x) (0, v) := fun s hs =>
+    fderiv_space_slice_apply (F := fun s y => u s y k) hgc hs x v
+  have hRHSfun : Set.EqOn (fun s => fderiv ℝ (fun y => u s y k) x v)
+      (fun s => fderivWithin ℝ g S (s, x) (0, v)) (Set.Ici 0) :=
+    fun s hs => hRinner s (Set.mem_Ici.mp hs)
+  have hRchain : HasFDerivWithinAt
+      (fun s => fderivWithin ℝ g S (s, x) (0, v))
+      ((fderivWithin ℝ (fun z' => fderivWithin ℝ g S z' (0, v)) S (t, x)).comp
+        (ContinuousLinearMap.inl ℝ ℝ Space)) (Set.Ici 0) t := by
+    have hι : HasFDerivAt (fun s : ℝ => (s, x))
+        (ContinuousLinearMap.inl ℝ ℝ Space) t := hasFDerivAt_prodMk_left t x
+    have hmaps : Set.MapsTo (fun s : ℝ => (s, x)) (Set.Ici 0) S := fun s hs =>
+      Set.mem_prod.mpr ⟨hs, Set.mem_univ x⟩
+    have hcomp := HasFDerivWithinAt.comp t (hT ((0, v) : ℝ × Space)).hasFDerivWithinAt
+      hι.hasFDerivWithinAt hmaps
+    rw [show ((fun z' => fderivWithin ℝ g S z' ((0, v) : ℝ × Space)) ∘
+        (fun s : ℝ => (s, x))) =
+        (fun s => fderivWithin ℝ g S (s, x) ((0, v) : ℝ × Space)) from rfl] at hcomp
+    exact hcomp
+  have hRHS : fderivWithin ℝ (fun s => fderiv ℝ (fun y => u s y k) x v)
+        (Set.Ici 0) t 1
+      = fderivWithin ℝ (fderivWithin ℝ g S) S (t, x) (1, 0) (0, v) := by
+    rw [fderivWithin_congr hRHSfun (hRinner t ht)]
+    rw [(hRchain.fderivWithin ((uniqueDiffOn_Ici 0) t (Set.mem_Ici.mpr ht))),
+      ContinuousLinearMap.comp_apply, ContinuousLinearMap.inl_apply]
+    exact fderivWithin_eval_apply hDg (hUD (t, x) hz) (0, v) (1, 0)
+  rw [hLHS, hRHS]
+  exact hSymm (0, v) (1, 0)
+
+/-- **Within cross-const.**  The one-sided time derivative of
+`s ↦ a ⨯₃ G s` is `a ⨯₃` the one-sided time derivative of `G`. -/
+private theorem fderivWithin_cross_const_apply (a : Space) (G : ℝ → Space)
+    {t : ℝ} (ht : 0 ≤ t) (hG : DifferentiableWithinAt ℝ G (Set.Ici 0) t) :
+    fderivWithin ℝ (fun s => a ⨯₃ G s) (Set.Ici 0) t 1 =
+      a ⨯₃ (fderivWithin ℝ G (Set.Ici 0) t 1) := by
+  let L : Space →ₗ[ℝ] Space := crossProduct a
+  have key : fderivWithin ℝ (fun s => a ⨯₃ G s) (Set.Ici 0) t =
+      L.toContinuousLinearMap.comp (fderivWithin ℝ G (Set.Ici 0) t) := by
+    have hcomp : HasFDerivWithinAt ((fun w => L w) ∘ G)
+        (L.toContinuousLinearMap.comp (fderivWithin ℝ G (Set.Ici 0) t))
+        (Set.Ici 0) t :=
+      HasFDerivWithinAt.comp t L.toContinuousLinearMap.hasFDerivWithinAt
+        hG.hasFDerivWithinAt (fun s _ => Set.mem_univ _)
+    rw [show ((fun w => L w) ∘ G) = (fun s => a ⨯₃ G s) from rfl] at hcomp
+    exact hcomp.fderivWithin ((uniqueDiffOn_Ici 0) t (Set.mem_Ici.mpr ht))
+  rw [key, ContinuousLinearMap.comp_apply]
+  rfl
+
+/-- **Time leaf.**  The curl commutes with the (one-sided) time
+derivative on the nonnegative-time half-space: `∇ × ∂ₜu = ∂ₜω`.  Both
+sides expand to sums of `eᵢ ⨯₃` applied to mixed time–space derivatives
+of the components, which agree by the scalar Clairaut leaf
+`timeDeriv_spaceDeriv_comm_scalar`. -/
+theorem staticCurl_timeDerivative_comm (u : VelocityEvolution)
+    (hu : SmoothVelocityOnNonnegativeTime u) {t : ℝ} (ht : 0 ≤ t) (x : Space) :
+    staticCurl (fun y => timeDerivative u t y) x =
+      timeDerivative (fun s => vorticity u s) t x := by
+  have hsum : ∀ w : VelocityField, staticCurl w x =
+      ∑ i, basisVector i ⨯₃ (fderiv ℝ w x (basisVector i)) := fun w => rfl
+  rw [hsum]
+  show (∑ i, basisVector i ⨯₃ (fderiv ℝ (fun y => timeDerivative u t y) x
+      (basisVector i))) =
+      fderivWithin ℝ (fun s => staticCurl (u s) x) (Set.Ici 0) t 1
+  rw [show (fun s => staticCurl (u s) x) =
+      (fun s => ∑ i, basisVector i ⨯₃ (fderiv ℝ (u s) x (basisVector i)))
+      from funext fun s => hsum (u s)]
+  have hD : ∀ i : Fin 3, DifferentiableWithinAt ℝ
+      (fun s => fderiv ℝ (u s) x (basisVector i)) (Set.Ici 0) t :=
+    fun i => differentiableWithinAt_spaceDeriv_curve u hu ht x i
+  have hsumD : ∀ i : Fin 3, DifferentiableWithinAt ℝ
+      (fun s => basisVector i ⨯₃ (fderiv ℝ (u s) x (basisVector i)))
+      (Set.Ici 0) t := by
+    intro i
+    have hc := DifferentiableAt.comp_differentiableWithinAt t
+      ((crossProduct (basisVector i)).toContinuousLinearMap).differentiableAt (hD i)
+    rw [show ((crossProduct (basisVector i)).toContinuousLinearMap ∘
+        (fun s => fderiv ℝ (u s) x (basisVector i))) =
+        (fun s => basisVector i ⨯₃ (fderiv ℝ (u s) x (basisVector i)))
+        from rfl] at hc
+    exact hc
+  rw [fderivWithin_fun_sum ((uniqueDiffOn_Ici 0) t (Set.mem_Ici.mpr ht))
+    (fun i _ => hsumD i), sum_apply]
+  rw [show (∑ i, fderivWithin ℝ (fun s =>
+        basisVector i ⨯₃ (fderiv ℝ (u s) x (basisVector i))) (Set.Ici 0) t 1) =
+      (∑ i, basisVector i ⨯₃ (fderivWithin ℝ (fun s =>
+        fderiv ℝ (u s) x (basisVector i)) (Set.Ici 0) t 1)) from
+    Finset.sum_congr rfl fun i _ =>
+      fderivWithin_cross_const_apply (basisVector i)
+        (fun s => fderiv ℝ (u s) x (basisVector i)) ht (hD i)]
+  have hDd : ∀ k : Fin 3, DifferentiableAt ℝ
+      (fun y => (fderivWithin ℝ (fun s => u s y) (Set.Ici 0) t 1) k) x := by
+    intro k
+    have heq : (fun y => (fderivWithin ℝ (fun s => u s y) (Set.Ici 0) t 1) k) =
+        (fun y => fderivWithin ℝ (fun s => u s y k) (Set.Ici 0) t 1) :=
+      funext fun y => fderivWithin_component_apply _ t ht
+        (differentiableWithinAt_time_curve u hu ht y) k
+    rw [heq]
+    exact differentiableAt_timeDeriv_component u hu ht x k
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 1
+  funext k
+  have hcomp1 : (fderiv ℝ (fun y => timeDerivative u t y) x (basisVector i)) k
+      = fderiv ℝ (fun y => timeDerivative u t y k) x (basisVector i) :=
+    fderiv_apply_component _ x (fun k' => hDd k') _ k
+  have hFeq : (fun y => timeDerivative u t y k) =
+      (fun y => fderivWithin ℝ (fun s => u s y k) (Set.Ici 0) t 1) :=
+    funext fun y => fderivWithin_component_apply _ t ht
+      (differentiableWithinAt_time_curve u hu ht y) k
+  have hcomp2 : fderiv ℝ (fun y => timeDerivative u t y k) x (basisVector i)
+      = fderivWithin ℝ (fun s => fderiv ℝ (fun y => u s y k) x
+          (basisVector i)) (Set.Ici 0) t 1 := by
+    rw [hFeq]
+    exact timeDeriv_spaceDeriv_comm_scalar u hu ht x (basisVector i) k
+  have hcomp3 : (fderivWithin ℝ (fun s => fderiv ℝ (u s) x (basisVector i))
+        (Set.Ici 0) t 1) k
+      = fderivWithin ℝ (fun s => fderiv ℝ (fun y => u s y k) x
+          (basisVector i)) (Set.Ici 0) t 1 := by
+    rw [fderivWithin_component_apply _ t ht (hD i) k]
+    have hfun : fderivWithin ℝ (fun s => (fderiv ℝ (u s) x (basisVector i)) k)
+          (Set.Ici 0) t =
+        fderivWithin ℝ (fun s => fderiv ℝ (fun y => u s y k) x (basisVector i))
+          (Set.Ici 0) t := by
+      apply fderivWithin_congr
+      · intro s hs
+        exact fderiv_apply_component _ x (fun k' =>
+          differentiableAt_pi.mp ((contDiffAt_spatial_slice hu
+            (Set.mem_Ici.mp hs) x).differentiableAt (by decide)) k') _ k
+      · exact fderiv_apply_component _ x (fun k' =>
+          differentiableAt_pi.mp ((contDiffAt_spatial_slice hu ht
+            x).differentiableAt (by decide)) k') _ k
+    rw [hfun]
+  rw [hcomp1, hcomp2, hcomp3]
+
 end Navier.Analysis.VorticityTransport

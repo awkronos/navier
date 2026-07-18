@@ -21,14 +21,12 @@ lake update
 lake exe cache get
 python3 -m unittest discover -s tests -v
 python3 scripts/validate_registry.py data/attack_registry.json
-lake build Navier
+lake env lean Navier.lean
 lake env lean Navier/AxiomAudit.lean
 ```
 
 After dependencies are present, `make check` runs the focused Python,
-registry, derived-status, full `Navier` module build, and source-level axiom
-commands in that serial order. Building the module graph first prevents a
-later audit from importing stale `.olean` files after a dependency edit.
+registry, derived-status, Lean, and axiom commands in that serial order.
 
 Run Lean commands one at a time. The final file emits raw `#print axioms`
 results for the named public declarations; keep that stdout with any closure
