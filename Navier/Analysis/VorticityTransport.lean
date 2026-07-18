@@ -84,4 +84,38 @@ theorem staticCurl_zero (x : Space) :
     staticCurl (fun _ : Space => (0 : Space)) x = 0 := by
   simp [staticCurl]
 
+/-- **Third-order Clairaut swap (scalar core).**  For a `C^3` scalar field
+the coordinate third derivative `∂ⱼ∂ᵢ∂ᵢ g` equals `∂ᵢ∂ᵢ∂ⱼ g`: first swap the
+outer `∂ⱼ` past the adjacent `∂ᵢ` (second-order Clairaut on the `C^2` field
+`∂ᵢ g`), then swap the remaining adjacent pair `∂ⱼ∂ᵢ` pointwise everywhere
+(second-order Clairaut on `g`) and differentiate the resulting function
+equality.  This is the analytic core of `curl ∘ Δ = Δ ∘ curl` and of the
+viscous term of the vorticity transport equation. -/
+theorem thirdDeriv_swap (g : Space → ℝ) (hg : ContDiff ℝ 3 g)
+    (x : Space) (i j : Fin 3) :
+    fderiv ℝ (fun y => fderiv ℝ (fun z => fderiv ℝ g z (basisVector i)) y
+        (basisVector i)) x (basisVector j) =
+      fderiv ℝ (fun y => fderiv ℝ (fun z => fderiv ℝ g z (basisVector j)) y
+        (basisVector i)) x (basisVector i) := by
+  have hG2 : ContDiffAt ℝ 2 (fun z => fderiv ℝ g z (basisVector i)) x := by
+    have h2 : ContDiffAt ℝ 2 (fderiv ℝ g) x :=
+      (hg.contDiffAt).fderiv_right (by norm_num)
+    exact ((ContinuousLinearMap.apply ℝ ℝ
+      (basisVector i)).contDiff).contDiffAt.comp x h2
+  have hstep1 : fderiv ℝ (fun y => fderiv ℝ (fun z => fderiv ℝ g z
+        (basisVector i)) y (basisVector j)) x (basisVector i) =
+      fderiv ℝ (fun y => fderiv ℝ (fun z => fderiv ℝ g z (basisVector i)) y
+        (basisVector i)) x (basisVector j) :=
+    ContDiffAt.hasSymmetricMixedPartialAt hG2 i j
+  rw [← hstep1]
+  have hswap : ∀ y : Space,
+      fderiv ℝ (fun z => fderiv ℝ g z (basisVector i)) y (basisVector j) =
+        fderiv ℝ (fun z => fderiv ℝ g z (basisVector j)) y (basisVector i) :=
+    fun y => ContDiffAt.hasSymmetricMixedPartialAt
+      ((hg.contDiffAt).of_le (by norm_num)) j i
+  rw [show (fun y => fderiv ℝ (fun z => fderiv ℝ g z (basisVector i)) y
+        (basisVector j)) =
+      (fun y => fderiv ℝ (fun z => fderiv ℝ g z (basisVector j)) y
+        (basisVector i)) from funext hswap]
+
 end Navier.Analysis.VorticityTransport
