@@ -21,6 +21,7 @@ import Navier.Analysis.ComplexLerayProjection
 import Navier.Analysis.ComplexLerayNorm
 import Navier.Analysis.ComplexFrequencyHeatLeray
 import Navier.Analysis.VectorCalculus
+import Navier.Analysis.CurlIdentities
 import Navier.Analysis.EnergyPressureCancellation
 import Navier.Analysis.EnergyPressureIntegral
 import Navier.Analysis.EnergyConvectionCancellation
@@ -32,16 +33,19 @@ import Navier.Analysis.EnergyPointwiseBalance
 import Navier.Analysis.EnergyInstantaneousIntegralBalance
 import Navier.Analysis.EnergyDerivativeUnderIntegral
 import Navier.Analysis.Vorticity
+import Navier.Analysis.VorticityTransport
 import Navier.Analysis.BiotSavartKernel
 import Navier.Analysis.SingularIntegralPrelims
 import Navier.Analysis.WeightIntegrability
 import Navier.Analysis.SobolevEmbedding
 import Navier.Analysis.FourierMajorant
+import Navier.Analysis.FourierBridge
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.FrequencyCascadeObstruction
 import Navier.Analysis.MultiFrequencyMild
+import Navier.Analysis.FrequencyMildGlobal
 import Navier.Analysis.DissipativeODEGlobal
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.GalerkinBasis
