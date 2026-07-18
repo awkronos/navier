@@ -30,18 +30,18 @@ Certified here (no sorry):
 * `truncated_cascade_witness` — a concrete resonant triple with per-mode
   transverse (divergence-free) data whose truncated nonlinearity is nonzero:
   the cascade survives the honest truncation, as the obstruction predicted.
+* `truncatedConvection_diff_sum_norm_le` — bilinear (Kato-type quadratic)
+  Lipschitz bound for the honest Galerkin nonlinearity.
+* `isMultiMildSolutionOn_unique` — uniqueness on a common horizon
+  (Grönwall/contraction: `Δ t ≤ L ∫₀ᵗ Δ` forces `Δ ≡ 0`).
+* `multiMild_inner_frequency_eq_zero` — per-mode transversality is automatic
+  (the Duhamel integrand is Leray-projected, hence pointwise transverse).
 
 ## Skeletons (honest `sorry`, truth-checked signatures)
 
 * `exists_isMultiMildSolutionOn_local` — local existence via the Duhamel
   contraction on the product path space [Kato 1984; product generalization of
   `FrequencyDuhamel`; est ~400 LOC].
-* `isMultiMildSolutionOn_unique` — uniqueness on a common horizon
-  [Grönwall/contraction as in `FrequencyDuhamel`; est ~150 LOC].
-* `multiMild_inner_frequency_eq_zero` — per-mode transversality propagates
-  (the Duhamel integrand is Leray-projected, hence pointwise transverse)
-  [route: `ContinuousLinearMap.intervalIntegral_comp_comm` +
-  `frequencyHeatLeray_transverse`; est ~200 LOC].
 * `multiMild_extends_of_apriori_bound` — the finite-dimensional continuation
   criterion: a uniformly bounded mild solution on `[0,T)` extends to `[0,T]`
   (the finite-mode analogue of Beale–Kato–Majda) [standard ODE continuation;
@@ -378,8 +378,7 @@ theorem truncatedConvection_diff_sum_norm_le {n : ℕ} (q a b : Fin n → E3)
             (mul_nonneg (norm_nonneg _) hR)
       _ = 2 * (n : ℝ) * R * Q * Δ := by
           rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
-          simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
-            nsmul_eq_mul]
+          simp only [nsmul_eq_mul]
           rw [← Finset.sum_mul, ← Finset.sum_mul]
           simp only [hQ]
           ring
@@ -391,10 +390,15 @@ theorem truncatedConvection_diff_sum_norm_le {n : ℕ} (q a b : Fin n → E3)
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
         ring
 
-/-- **[SKELETON — uniqueness; Grönwall/contraction as in
-`FrequencyDuhamel.isMildSolutionOn_unique`; est ~150 LOC.]**  Two
-multi-frequency mild solutions with the same data agree on their common
-horizon. -/
+/-- **Uniqueness of multi-frequency mild solutions.**  Two multi-frequency
+mild solutions with the same data agree on their common horizon: compactness
+of the horizon gives a uniform amplitude bound `R` on both solutions, the
+bilinear Lipschitz estimate (`truncatedConvection_diff_sum_norm_le`) turns
+the Duhamel difference into `Δ t ≤ L ∫₀ᵗ Δ`, and the time-dependent Grönwall
+bound (`gronwallBound` with `δ = ε = 0`) forces `Δ ≡ 0`.  Product-space
+generalization of `FrequencyDuhamel.isMildSolutionOn_unique`.
+Reference: Kato, Math. Z. 187 (1984); Fujita–Kato, Arch. Rational Mech.
+Anal. 16 (1964) — mild-solution uniqueness by Grönwall/contraction. -/
 theorem isMultiMildSolutionOn_unique
     {ν T : ℝ} (hν : 0 ≤ ν) (hT : 0 ≤ T) {n : ℕ} {q : Fin n → E3}
     {u₀ : Fin n → E3} {u v : ℝ → Fin n → E3}

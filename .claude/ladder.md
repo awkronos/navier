@@ -70,7 +70,7 @@ same-wave). Tractability-ordered inventory (file : decl [ref; est LOC]):
 
 | # | obligation | file | ref / route | est LOC |
 |---|---|---|---|---|
-| 1 | `isMultiMildSolutionOn_unique` | MultiFrequencyMild | Grönwall/contraction as FrequencyDuhamel | ~150 |
+| 1 | `isMultiMildSolutionOn_unique` ✅ ESTABLISHED (`c75263f`+`ed9080f`; axioms [propext, Classical.choice, Quot.sound] re-verified fresh) | MultiFrequencyMild | Grönwall/contraction as FrequencyDuhamel | ~150 |
 | 2 | `vorticityTransportEquation` | Enstrophy | curl of NS, Clairaut bookkeeping; M–B (1.33) | ~250 |
 | 3 | `sobolevEmbeddingDomination` | BKMLogBootstrap | H³↪L∞ Fourier/Cauchy–Schwarz; M–B Lemma 3.2 | ~250 |
 | 4 | `multiMild_extends_of_apriori_bound` | MultiFrequencyMild | finite-mode BKM, ODE continuation | ~300 |
