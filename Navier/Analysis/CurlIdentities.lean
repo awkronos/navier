@@ -294,23 +294,146 @@ theorem staticCurl_smul
   all_goals try ring
 
 
+/-- Component bridge: the `j`-th component of the Fréchet derivative of a
+velocity field equals the Fréchet derivative of the `j`-th scalar component
+function (Pi-rule on the eta-identified field). -/
+private lemma fderiv_apply_component
+    (w : VelocityField) (x : Space)
+    (hw : ∀ k : Fin 3, DifferentiableAt ℝ (fun y => w y k) x)
+    (h : Space) (j : Fin 3) :
+    (fderiv ℝ w x h) j = fderiv ℝ (fun y => w y j) x h := by
+  have hpi' := fderiv_pi (𝕜 := ℝ) (E := Space) (x := x)
+    (φ := fun k : Fin 3 => fun y : Space => w y k) hw
+  rw [show (fun y : Space => fun k : Fin 3 => w y k) = w from rfl] at hpi'
+  rw [hpi']
+  rfl
+
+/-- Componentwise differentiability of a differentiable velocity field. -/
+private lemma differentiableAt_component
+    (w : VelocityField) (x : Space) (hw : DifferentiableAt ℝ w x) (k : Fin 3) :
+    DifferentiableAt ℝ (fun y => w y k) x :=
+  differentiableAt_pi.mp hw k
+
+/-- **Bilinear product rule for the cross product**, evaluated on the `k`-th
+divergence summand: the derivative of `y ↦ u y ⨯₃ v y` splits into the
+`v`-derivative cross term plus the `u`-derivative cross term. -/
+private lemma fderiv_cross_apply
+    (u v : VelocityField) (x : Space)
+    (hu : ∀ k : Fin 3, DifferentiableAt ℝ (fun y => u y k) x)
+    (hv : ∀ k : Fin 3, DifferentiableAt ℝ (fun y => v y k) x)
+    (k : Fin 3) :
+    (fderiv ℝ (fun y => u y ⨯₃ v y) x (basisVector k)) k =
+      (u x ⨯₃ (fderiv ℝ v x (basisVector k))) k +
+        ((fderiv ℝ u x (basisVector k)) ⨯₃ v x) k := by
+  have hdiff : ∀ j : Fin 3, DifferentiableAt ℝ (fun y => (u y ⨯₃ v y) j) x := by
+    intro j
+    fin_cases j
+    · simp [cross_apply]
+      exact ((hu 1).mul (hv 2)).sub ((hu 2).mul (hv 1))
+    · simp [cross_apply]
+      exact ((hu 2).mul (hv 0)).sub ((hu 0).mul (hv 2))
+    · simp [cross_apply]
+      exact ((hu 0).mul (hv 1)).sub ((hu 1).mul (hv 0))
+  have hpi : ∀ (h : Space) (j : Fin 3),
+      (fderiv ℝ (fun y => u y ⨯₃ v y) x h) j =
+        fderiv ℝ (fun y => (u y ⨯₃ v y) j) x h := by
+    intro h j
+    have hpi' := fderiv_pi (𝕜 := ℝ) (E := Space) (x := x)
+      (φ := fun j : Fin 3 => fun y : Space => (u y ⨯₃ v y) j) hdiff
+    rw [show (fun y : Space => fun j : Fin 3 => (u y ⨯₃ v y) j) =
+        (fun y => u y ⨯₃ v y) from rfl] at hpi'
+    rw [hpi']
+    rfl
+  fin_cases k
+  · rw [hpi _ _]
+    simp [cross_apply]
+    have hm1 : DifferentiableAt ℝ (fun y => u y 1 * v y 2) x := (hu 1).mul (hv 2)
+    have hm2 : DifferentiableAt ℝ (fun y => u y 2 * v y 1) x := (hu 2).mul (hv 1)
+    rw [fderiv_fun_sub hm1 hm2, fderiv_fun_mul (hu 1) (hv 2),
+      fderiv_fun_mul (hu 2) (hv 1)]
+    simp only [sub_apply, add_apply,
+      smul_apply, smul_eq_mul,
+      fderiv_apply_component v x hv, fderiv_apply_component u x hu]
+    ring
+  · rw [hpi _ _]
+    simp [cross_apply]
+    have hm1 : DifferentiableAt ℝ (fun y => u y 2 * v y 0) x := (hu 2).mul (hv 0)
+    have hm2 : DifferentiableAt ℝ (fun y => u y 0 * v y 2) x := (hu 0).mul (hv 2)
+    rw [fderiv_fun_sub hm1 hm2, fderiv_fun_mul (hu 2) (hv 0),
+      fderiv_fun_mul (hu 0) (hv 2)]
+    simp only [sub_apply, add_apply,
+      smul_apply, smul_eq_mul,
+      fderiv_apply_component v x hv, fderiv_apply_component u x hu]
+    ring
+  · rw [hpi _ _]
+    simp [cross_apply]
+    have hm1 : DifferentiableAt ℝ (fun y => u y 0 * v y 1) x := (hu 0).mul (hv 1)
+    have hm2 : DifferentiableAt ℝ (fun y => u y 1 * v y 0) x := (hu 1).mul (hv 0)
+    rw [fderiv_fun_sub hm1 hm2, fderiv_fun_mul (hu 0) (hv 1),
+      fderiv_fun_mul (hu 1) (hv 0)]
+    simp only [sub_apply, add_apply,
+      smul_apply, smul_eq_mul,
+      fderiv_apply_component v x hv, fderiv_apply_component u x hu]
+    ring
+
+/-- **Falsification witness (Step-0e).**  The sign-flipped triple-product
+rearrangement `∑ₖ (a ⨯₃ Vₖ)ₖ + (Uₖ × b)ₖ = a ⬝ᵥ (∑ eᵢ ⨯₃ Vᵢ) − b ⬝ᵥ (∑ eᵢ ⨯₃ Uᵢ)`
+is FALSE: at `a = e₀`, `b = 0`, `U = 0`, `V = ![0, e₂, 0]` the left side
+evaluates to `−1` while the right side evaluates to `1`.  This kernel-checked
+counterexample corrected the original statement of Identity 4; the true
+rearrangement is `div_cross_algebra` below. -/
+theorem div_cross_algebra_sign_flipped_false :
+    ¬ (∀ (a b : Space) (U V : Fin 3 → Space),
+        (∑ k : Fin 3, (a ⨯₃ V k) k) + (∑ k : Fin 3, (U k ⨯₃ b) k) =
+          a ⬝ᵥ (∑ i : Fin 3, basisVector i ⨯₃ V i) -
+            b ⬝ᵥ (∑ i : Fin 3, basisVector i ⨯₃ U i)) := by
+  intro h
+  have hw := h (basisVector 0) 0 0 ![0, basisVector 2, 0]
+  simp [Fin.sum_univ_three, Finset.sum_apply, dotProduct, basisVector,
+    cross_apply, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+    Matrix.head_cons] at hw
+  norm_num at hw
+
+/-- **Algebraic core for Identity 4.**  For any vectors `a b` and derivative
+families `U V`, the expanded divergence-of-cross sum equals the scalar triple
+product rearrangement `b ⬝ᵥ (∑ eᵢ ⨯₃ Uᵢ) − a ⬝ᵥ (∑ eᵢ ⨯₃ Vᵢ)`.
+Pure `Fin 3` component algebra. -/
+private lemma div_cross_algebra
+    (a b : Space) (U V : Fin 3 → Space) :
+    (∑ k : Fin 3, (a ⨯₃ V k) k) + (∑ k : Fin 3, (U k ⨯₃ b) k) =
+      b ⬝ᵥ (∑ i : Fin 3, basisVector i ⨯₃ U i) -
+        a ⬝ᵥ (∑ i : Fin 3, basisVector i ⨯₃ V i) := by
+  simp [dotProduct, basisVector, Fin.sum_univ_three, Finset.sum_apply,
+    cross_apply, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+    Matrix.head_cons]
+  ring
+
 /-- **Identity 4 (cross-product divergence).**  The divergence of the cross
-product `u × v` equals `u · curl(v) − v · curl(u)`, the scalar triple
+product `u × v` equals `v · curl(u) − u · curl(v)`, the scalar triple
 product rearrangement underlying the Biot–Savart energy estimate.
 
-The scalar identity reduces to the antisymmetric contraction of first
-derivatives, closeable by `ring` once `fderiv (u ⨯₃ v)` is expanded via the
-bilinear product rule
-  `fderiv (fun y => u y ⨯₃ v y) x h = fderiv u x h ⨯₃ v x + u x ⨯₃ fderiv v x h`.
-OPEN residual (~25 LOC): the bilinear fderiv expansion via
-`ContinuousLinearMap.fderiv_of_bilinear` applied to `crossProduct`, or
-componentwise via `fderiv_pi` + `fderiv_mul` + `fderiv_sub`.  Reference:
-Majda–Bertozzi, *Vorticity and Incompressible Flow*, §1.2. -/
+The sign-flipped form `u · curl(v) − v · curl(u)` is FALSE — see the
+kernel-checked counterexample `div_cross_algebra_sign_flipped_false` (caught
+by Step-0e: the algebraic core of the flipped form does not close, and
+`u₀ = y₁, v₁ = y₂` gives `∇·(u×v) = y₁` against the flipped claim `−y₁`).
+
+Route: the `k`-th divergence summand expands by the bilinear product rule
+(`fderiv_cross_apply`, componentwise via `fderiv_pi` + `fderiv_fun_mul` +
+`fderiv_fun_sub`), and the resulting finite contraction is `div_cross_algebra`.
+Reference: Majda–Bertozzi, *Vorticity and Incompressible Flow*, §1.2. -/
 theorem staticDivergence_cross
     (u v : VelocityField) (x : Space)
     (hu : DifferentiableAt ℝ u x) (hv : DifferentiableAt ℝ v x) :
     staticDivergence (fun y => u y ⨯₃ v y) x =
-      u x ⬝ᵥ staticCurl v x - v x ⬝ᵥ staticCurl u x := by
-  sorry
+      v x ⬝ᵥ staticCurl u x - u x ⬝ᵥ staticCurl v x := by
+  have hu' : ∀ k : Fin 3, DifferentiableAt ℝ (fun y => u y k) x :=
+    fun k => differentiableAt_component u x hu k
+  have hv' : ∀ k : Fin 3, DifferentiableAt ℝ (fun y => v y k) x :=
+    fun k => differentiableAt_component v x hv k
+  rw [staticDivergence,
+    Finset.sum_congr rfl (fun k _ => fderiv_cross_apply u v x hu' hv' k),
+    Finset.sum_add_distrib]
+  exact div_cross_algebra (u x) (v x)
+    (fun k => fderiv ℝ u x (basisVector k)) (fun k => fderiv ℝ v x (basisVector k))
 
 end Navier.Analysis.CurlIdentities
