@@ -29,6 +29,23 @@ important than optimistic status.
 - Ban custom axioms, `True`-like targets, zero/PUnit/empty-domain witnesses,
   result-as-hypothesis wrappers, domain swaps, and source-grep proof counts.
 
+## Frontier discipline
+
+- Target selection: `.claude/ladder.md` is the ordering authority. Take the
+  lowest open rung; priority R0 ≥ R1 > R2 > R3 > R4
+  (`~/.claude/rules/orchestration.md` §Frontier-rung prioritization). Every
+  wave carries at least one R0/R1 target; an R3+R4-only wave is scaffolding
+  and does not count toward the headline.
+- Concurrency: sense `~/.claude/scripts/stigmergy.sh list`, git status, and
+  file mtimes before touching shared files. Claim before shared writes,
+  heartbeat during long compiles, release at fold.
+- Residuals: every DECOMPOSED/RED/FALSIFIED outcome gets a row in
+  `~/.claude/todos/math-open-velocity-loop.md` before its lane is refilled.
+- Agent lanes: construction register in prompts and commit messages
+  (`~/.claude/rules/prompting.md` §Agent lanes #6), ≤20-line structured
+  returns, an independent verifier lane paired with every closure claim, and
+  raw `#print axioms` output in the commit body.
+
 ## Architecture
 
 - `Navier/`: exact problem, scaling, epistemic dispositions, and frontier map.
