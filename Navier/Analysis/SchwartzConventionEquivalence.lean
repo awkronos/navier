@@ -55,13 +55,29 @@ theorem fefferman_clause_four_iff_schwartz (f : Space → Space) :
     · exact hfun ▸ schwartzmap_satisfies_fefferman_smoothness s
     · exact hfun ▸ schwartzmap_satisfies_fefferman_rapid_decay s
 
-/-- Divergence freedom transports along the clause-(4) realization. -/
+/-- **Divergence-freedom depends only on the pointwise values**: it holds for
+ANY Schwartz realization of a divergence-free field, not merely the
+definitional bundling.  This is the content-bearing transport lemma — the
+realization `s` is an arbitrary Schwartz velocity agreeing with `f`
+pointwise, so the derivative-level predicate `staticDivergence` must be
+transported through the function-level identification. -/
+theorem divergenceFreeInitial_of_realizes {f : Space → Space}
+    {s : SchwartzVelocity} (hsf : ∀ x : Space, s x = f x)
+    (hdiv : ∀ x : Space, staticDivergence f x = 0) :
+    DivergenceFreeInitial s := by
+  intro x
+  rw [show (fun y => s y) = f from funext hsf]
+  exact hdiv x
+
+/-- Divergence freedom transports along the clause-(4) realization.
+Specialization of `divergenceFreeInitial_of_realizes` to the definitional
+realization `schwartzOfFeffermanData` (whose coercion is `f` by `rfl`). -/
 theorem divergenceFreeInitial_schwartzOfFeffermanData
     {f : Space → Space}
     (hs : ContDiff ℝ ∞ f) (hd : FeffermanRapidDecayBound f)
     (hdiv : ∀ x : Space, staticDivergence f x = 0) :
     DivergenceFreeInitial (schwartzOfFeffermanData f hs hd) :=
-  hdiv
+  divergenceFreeInitial_of_realizes (fun _ => rfl) hdiv
 
 /-- Statement-A coverage of the official clause-(4) class: if the formal
 statement-A surface holds, then every smooth, rapidly decaying,
