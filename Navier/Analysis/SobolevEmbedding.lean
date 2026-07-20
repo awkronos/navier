@@ -1,6 +1,7 @@
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.SingularIntegralPrelims
+import Navier.Analysis.FourierMajorant
 
 /-!
 # Sobolev embedding `H³(ℝ³) ↪ L^∞` for the BKM assembly
@@ -24,11 +25,12 @@ pointwise, which is the `control_dominates_velocity` field of `LogBKMControl`.
 
 ## Honest residual
 
-* `exists_sobolev_intermediate` — the analytic core: existence of the Fourier
-  majorant with both bounds (Fourier inversion + Cauchy–Schwarz against the
-  integrable weight `(1+4π²|ξ|²)^{-3}` + Plancherel).
-  `sobolevEmbeddingDomination_H3` is then assembled from it kernel-cleanly
-  (ProvedModulo this one named leaf)
+* `exists_sobolev_intermediate` — now DERIVED from the sibling
+  `FourierMajorant.exists_fourierMajorant_intermediate`; the whole embedding
+  cluster routes through the single named core
+  `FourierMajorant.exists_fourierSpectralData` (Fourier inversion +
+  Plancherel), whose disclosed `sorryAx` the assembly carries
+  (ProvedModulo that one named leaf)
 
 Axiom set: `⊆ {propext, Classical.choice, Quot.sound}` for certified decls.
 -/
@@ -107,32 +109,23 @@ theorem sobolev_domination_of_intermediate
     _ = C₁ * Real.sqrt C₂ * Real.sqrt Ms := by
         rw [Real.sqrt_mul (le_of_lt hC₂), mul_assoc]
 
-/-- **[RESIDUAL — analytic core of the Sobolev embedding `H³(ℝ³) ↪ L^∞`;
-Agmon; Stein III.2; Majda–Bertozzi Lemma 3.2; est ~250 LOC.]**  There is a
-Fourier-side majorant functional `Q` (classically the Bessel-potential norm
-`Q u = ∫ ‖û(ξ)‖²·(1+4π²|ξ|²)³ dξ`) together with positive constants `C₁, C₂`
-for which two analytic bounds hold:
-
-* **(sup ≤ Fourier-L²)** `‖u x‖ ≤ C₁·√(Q u)` — Fourier inversion
-  (`SchwartzMap.fourier_inversion`) writes `u(x) = ∫ û(ξ)·e^{2πi⟨ξ,x⟩} dξ`, so
-  `|u(x)| ≤ ∫‖û‖`; Cauchy–Schwarz against the weight `(1+4π²|ξ|²)^{-3}`
-  (integrable on `ℝ³` for `s = 3 > 3/2`; sibling `sobWeight_integrable`) gives
-  `∫‖û‖ ≤ √(∫weight)·√(Q u)`, so `C₁ = √(∫weight)`.
-* **(Fourier-L² ≤ physical H³)** `Q u ≤ C₂·sobolevH3NormSq u` — Plancherel
-  identifies `∫‖û(ξ)‖²·|ξ|^{2n} dξ` with `∫‖D^n u‖²` up to constants, so the
-  binomial-weighted Fourier norm is controlled by `∑_{n≤3}∫‖D^n u‖²`.
-
-Mathlib-absent pieces: (i) the vector-valued Schwartz Fourier–Plancherel
-identity relating `iteratedFDeriv` operator norms to Fourier multipliers, and
-(ii) the weight integrability (sibling `WeightIntegrability.sobWeight_integrable`).
-Feeding this residual through `sobolev_domination_of_intermediate` closes the
-embedding. -/
+/-- **The Fourier-majorant intermediate, derived from the sibling Fourier
+layer.**  There is a Fourier-side majorant functional `Q` together with
+positive constants `C₁, C₂` with the sup bound `‖u x‖ ≤ C₁·√(Q u)` and the
+physical bound `Q u ≤ C₂·sobolevH3NormSq u`.  Realized by
+`FourierMajorant.exists_fourierMajorant_intermediate`: the Cauchy–Schwarz
+half (`supBound_of_spectralData` against the integrable weight
+`sobWeight⁻¹`) is kernel-certified there, and the sole remaining analytic
+content of the whole embedding cluster is the single named core
+`FourierMajorant.exists_fourierSpectralData` (Fourier inversion +
+Plancherel; Agmon; Stein III.2; Majda–Bertozzi Lemma 3.2), whose disclosed
+`sorryAx` this derivation carries. -/
 theorem exists_sobolev_intermediate :
     ∃ (Q : SchwartzVelocity → ℝ) (C₁ C₂ : ℝ),
       0 < C₁ ∧ 0 < C₂ ∧
       (∀ (u : SchwartzVelocity) (x : Space), ‖(⇑u) x‖ ≤ C₁ * Real.sqrt (Q u)) ∧
-      (∀ u : SchwartzVelocity, Q u ≤ C₂ * sobolevH3NormSq u) := by
-  sorry
+      (∀ u : SchwartzVelocity, Q u ≤ C₂ * sobolevH3NormSq u) :=
+  Navier.Analysis.FourierMajorant.exists_fourierMajorant_intermediate
 
 /-- **Sobolev embedding `H³(ℝ³) ↪ L^∞` for the BKM assembly.**  The sup norm of
 a Schwartz velocity field is dominated by the square root of its `H³` Sobolev
