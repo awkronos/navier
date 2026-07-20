@@ -52,6 +52,10 @@ import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.LerayWeak
 import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.SeeleyExtension
+import Navier.Analysis.SeeleyMoments
+import Navier.Analysis.SeeleyReflection
+import Navier.Analysis.SeeleyGlue
+import Navier.Analysis.SeeleySynthesis
 import Navier.Analysis.ViscosityTransport
 import Navier.Analysis.ViscosityAdmissibility
 import Navier.Analysis.ViscosityForceDecay

@@ -447,22 +447,12 @@ theorem finite_moment (N j : ℕ) (hj : j ≤ N) :
 
 end SeeleyCoeff
 
-/-- **[SKELETON — Seeley 1964; est ~600 LOC; route in the module docstring.]**
-The Seeley extension property holds: within-smooth fields on the closed
-half-space extend to globally smooth fields.  Together with
-`halfSpaceSmooth_iff_extension_of_seeley` this closes the open direction of
-the `halfSpaceSmoothnessEquivalence` encoding residual. -/
-theorem seeleyExtensionProperty_holds : SeeleyExtensionProperty := by
-  sorry
-
-/-- With the Seeley skeleton in place, the half-space equivalence is available
-as a consumable (conditional on the skeleton's `sorryAx`, disclosed): a field
-is within-smooth on the closed half-space iff it is the restriction of a
-globally smooth spacetime field. -/
-theorem halfSpaceSmooth_iff_extension
-    {E' : Type} [NormedAddCommGroup E'] [NormedSpace ℝ E']
-    (g : ℝ → Space → E') :
-    HalfSpaceSmooth g ↔ Nonempty (HalfSpaceSmoothExtension g) :=
-  halfSpaceSmooth_iff_extension_of_seeley seeleyExtensionProperty_holds g
+/-!
+`seeleyExtensionProperty_holds` and `halfSpaceSmooth_iff_extension` are
+established downstream in `Navier.Analysis.SeeleySynthesis`, assembled from
+the reflection-series machinery (`SeeleyReflection`), the infinite moment
+identities (`SeeleyMoments`, built on the finite Vandermonde system above),
+and the cutoff/glueing layer (`SeeleyGlue`).
+-/
 
 end Navier.Analysis.HalfSpaceSmoothnessBridge
