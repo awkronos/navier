@@ -390,21 +390,245 @@ theorem schwartzL2Inner_normalize_self (x : SchwartzVelocity)
   field_simp
   nlinarith [hsq]
 
-/-- **[NAMED RESIDUAL — Gram–Schmidt orthonormalization in the `L²` seminorm;
-Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; est ~220 LOC, Mathlib-absent for
-the seminorm (non-`InnerProductSpace`) setting.]**  A raw dense
-divergence-free family orthonormalizes into a `GalerkinBasisFamily`.  The
-recursion `w_n = normalize(v_n − ∑_{k<n} ⟨v_n, w_k⟩ w_k)` (`normalize x =
-(1/√⟨x,x⟩) • x`) (i) preserves divergence-free — each `w_n` is a finite
-`ℝ`-combination of the `v_j` (`divergenceFreeInitial_sum_smul`, banked); (ii)
-yields `⟨w_i, w_j⟩ = δ_ij` by strong induction (the `independent` field forces
-`‖u_n‖ ≠ 0`; the per-step orthogonality is `gramSchmidt_residual_inner` and the
-unit-seminorm normalization is `schwartzL2Inner_normalize_self`, both banked
-above); and (iii) preserves the finite spans, so `dense_span` transfers verbatim
-from `R`.  Remaining: the strong-recursion definition of `w` plus the induction
-assembling those two blocks into the full `δ_ij` table. -/
-theorem rawDivFree_orthonormalize (R : RawDivFreeFamily) : Nonempty GalerkinBasisFamily := by
-  sorry
+/-!
+### The Gram–Schmidt recursion, realized
+
+`w n = normalize (v n − ∑_{k<n} ⟨v n, w k⟩ w k)` by strong recursion, with the
+span bookkeeping (`FinComb`) that feeds the `independent` field (residual
+positivity), the divergence-free constraint, and the `dense_span` transfer
+[Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3].
+-/
+
+/-- The Gram–Schmidt orthonormalized field family of a raw divergence-free
+family, by strong recursion: `w n = normalize (v n − ∑_{k<n} ⟨v n, w k⟩ w k)`
+with `normalize x = (1/√⟨x,x⟩) • x`. -/
+noncomputable def gramSchmidtField (R : RawDivFreeFamily) (n : ℕ) : SchwartzVelocity :=
+  let r := R.v n - ∑ k ∈ (Finset.range n).attach,
+    schwartzL2Inner (R.v n) (gramSchmidtField R k.1) • gramSchmidtField R k.1
+  (1 / Real.sqrt (schwartzL2Inner r r)) • r
+termination_by n
+decreasing_by all_goals exact Finset.mem_range.mp k.2
+
+/-- The Gram–Schmidt residual at stage `n` (pre-normalization). -/
+noncomputable def gsResidual (R : RawDivFreeFamily) (n : ℕ) : SchwartzVelocity :=
+  R.v n - ∑ k ∈ Finset.range n,
+    schwartzL2Inner (R.v n) (gramSchmidtField R k) • gramSchmidtField R k
+
+/-- Unfolding: the field is the normalized residual. -/
+theorem gramSchmidtField_eq (R : RawDivFreeFamily) (n : ℕ) :
+    gramSchmidtField R n =
+      (1 / Real.sqrt (schwartzL2Inner (gsResidual R n) (gsResidual R n))) •
+        gsResidual R n := by
+  rw [gramSchmidtField, Finset.sum_attach (Finset.range n)
+    (fun k => schwartzL2Inner (R.v n) (gramSchmidtField R k) • gramSchmidtField R k)]
+  rfl
+
+/-- Membership in the finite-combination span of the first `m` members of a
+field family. -/
+def FinComb (f : ℕ → SchwartzVelocity) (m : ℕ) (x : SchwartzVelocity) : Prop :=
+  ∃ c : ℕ → ℝ, x = ∑ j ∈ Finset.range m, c j • f j
+
+theorem finComb_zero (f : ℕ → SchwartzVelocity) (m : ℕ) : FinComb f m 0 :=
+  ⟨fun _ => 0, by simp⟩
+
+theorem finComb_add {f : ℕ → SchwartzVelocity} {m : ℕ} {x y : SchwartzVelocity}
+    (hx : FinComb f m x) (hy : FinComb f m y) : FinComb f m (x + y) := by
+  obtain ⟨c, hc⟩ := hx
+  obtain ⟨d, hd⟩ := hy
+  refine ⟨fun j => c j + d j, ?_⟩
+  rw [hc, hd, ← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun j _ => by simp [add_smul]
+
+theorem finComb_smul {f : ℕ → SchwartzVelocity} {m : ℕ} {x : SchwartzVelocity}
+    (a : ℝ) (hx : FinComb f m x) : FinComb f m (a • x) := by
+  obtain ⟨c, hc⟩ := hx
+  refine ⟨fun j => a * c j, ?_⟩
+  rw [hc, Finset.smul_sum]
+  exact Finset.sum_congr rfl fun j _ => by simp [smul_smul]
+
+theorem finComb_mono {f : ℕ → SchwartzVelocity} {m m' : ℕ} (h : m ≤ m')
+    {x : SchwartzVelocity} (hx : FinComb f m x) : FinComb f m' x := by
+  obtain ⟨c, hc⟩ := hx
+  refine ⟨fun j => if j < m then c j else 0, ?_⟩
+  rw [hc, ← Finset.sum_subset
+      (fun j hj => Finset.mem_range.mpr (lt_of_lt_of_le (Finset.mem_range.mp hj) h))
+      (fun j _ hj => by
+        simp only []
+        rw [if_neg (fun hlt => hj (Finset.mem_range.mpr hlt)), zero_smul])]
+  exact Finset.sum_congr rfl fun j hj => by
+    simp only []
+    rw [if_pos (Finset.mem_range.mp hj)]
+
+theorem finComb_self (f : ℕ → SchwartzVelocity) {m j : ℕ} (hj : j < m) :
+    FinComb f m (f j) := by
+  classical
+  refine ⟨fun i => if i = j then 1 else 0, ?_⟩
+  rw [Finset.sum_eq_single j
+    (fun i _ hij => by simp [hij])
+    (fun hjm => absurd (Finset.mem_range.mpr hj) hjm)]
+  simp
+
+theorem finComb_sum_smul {f : ℕ → SchwartzVelocity} {m : ℕ} (s : Finset ℕ)
+    (a : ℕ → ℝ) (g : ℕ → SchwartzVelocity) (hg : ∀ k ∈ s, FinComb f m (g k)) :
+    FinComb f m (∑ k ∈ s, a k • g k) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using finComb_zero f m
+  | insert i s hi ih =>
+    rw [Finset.sum_insert hi]
+    exact finComb_add (finComb_smul _ (hg i (Finset.mem_insert_self i s)))
+      (ih fun k hk => hg k (Finset.mem_insert_of_mem hk))
+
+/-- **Residual representation**: the stage-`n` residual is a combination of
+`v 0, …, v n` whose `v n`-coefficient is `1` — the input to the independence
+argument. -/
+theorem gsResidual_repr (R : RawDivFreeFamily) : ∀ n : ℕ,
+    ∃ c : ℕ → ℝ, gsResidual R n = ∑ j ∈ Finset.range (n + 1), c j • R.v j ∧ c n = 1 := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    have hw : ∀ k, k < n → FinComb R.v n (gramSchmidtField R k) := by
+      intro k hk
+      obtain ⟨c, hc, -⟩ := ih k hk
+      have hres : FinComb R.v n (gsResidual R k) := finComb_mono hk ⟨c, hc⟩
+      rw [gramSchmidtField_eq]
+      exact finComb_smul _ hres
+    have hsum : FinComb R.v n (∑ k ∈ Finset.range n,
+        schwartzL2Inner (R.v n) (gramSchmidtField R k) • gramSchmidtField R k) :=
+      finComb_sum_smul _ _ _ (fun k hk => hw k (Finset.mem_range.mp hk))
+    obtain ⟨e, he⟩ := hsum
+    refine ⟨fun j => if j = n then 1 else -(e j), ?_, if_pos rfl⟩
+    rw [Finset.sum_range_succ]
+    have h1 : ∑ j ∈ Finset.range n, (if j = n then (1:ℝ) else -(e j)) • R.v j
+        = ∑ j ∈ Finset.range n, (-(e j)) • R.v j :=
+      Finset.sum_congr rfl fun j hj => by
+        rw [if_neg (Nat.ne_of_lt (Finset.mem_range.mp hj))]
+    simp only []
+    rw [h1, if_true, one_smul]
+    show R.v n - ∑ k ∈ Finset.range n,
+        schwartzL2Inner (R.v n) (gramSchmidtField R k) • gramSchmidtField R k
+      = ∑ j ∈ Finset.range n, -(e j) • R.v j + R.v n
+    rw [he]
+    simp only [neg_smul, Finset.sum_neg_distrib]
+    exact sub_eq_neg_add _ _
+
+/-- **Residual positivity**: `L²`-linear independence of the raw family forces
+every Gram–Schmidt residual to have strictly positive `L²` seminorm — the
+well-definedness of the normalization. -/
+theorem gsResidual_inner_pos (R : RawDivFreeFamily) (n : ℕ) :
+    0 < schwartzL2Inner (gsResidual R n) (gsResidual R n) := by
+  rcases lt_or_eq_of_le (schwartzL2Inner_self_nonneg (gsResidual R n)) with h | h
+  · exact h
+  · exfalso
+    obtain ⟨c, hc, hcn⟩ := gsResidual_repr R n
+    have h0 : schwartzL2Inner (∑ j ∈ Finset.range (n+1), c j • R.v j)
+        (∑ j ∈ Finset.range (n+1), c j • R.v j) = 0 := by rw [← hc, ← h]
+    have hz := R.independent (n+1) c h0 n (Finset.self_mem_range_succ n)
+    rw [hcn] at hz
+    exact one_ne_zero hz
+
+/-- **The orthonormality table**, by induction: below every horizon `n` the
+Gram–Schmidt fields satisfy `⟨w i, w k⟩ = δ_ik`.  The inductive step is the
+banked residual orthogonality (`gramSchmidt_residual_inner`) plus the banked
+normalization identity (`schwartzL2Inner_normalize_self`). -/
+theorem gramSchmidtField_orthonormal_table (R : RawDivFreeFamily) :
+    ∀ n : ℕ, ∀ i k : ℕ, i < n → k < n →
+      schwartzL2Inner (gramSchmidtField R i) (gramSchmidtField R k) =
+        if i = k then 1 else 0 := by
+  intro n
+  induction n with
+  | zero => intro i k hi _; exact absurd hi (Nat.not_lt_zero i)
+  | succ n ih =>
+    have hwnj : ∀ j : ℕ, j < n →
+        schwartzL2Inner (gramSchmidtField R n) (gramSchmidtField R j) = 0 := by
+      intro j hj
+      rw [gramSchmidtField_eq, schwartzL2Inner_smul_left]
+      have hres : schwartzL2Inner (gsResidual R n) (gramSchmidtField R j) = 0 :=
+        gramSchmidt_residual_inner (gramSchmidtField R) n ih (R.v n) hj
+      rw [hres, mul_zero]
+    intro i k hi hk
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi' | hie
+    · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk' | hke
+      · exact ih i k hi' hk'
+      · rw [hke, if_neg (ne_of_lt hi'), schwartzL2Inner_comm]
+        exact hwnj i hi'
+    · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk' | hke
+      · rw [hie, if_neg (ne_of_gt hk')]
+        exact hwnj k hk'
+      · rw [hie, hke, if_pos rfl, gramSchmidtField_eq]
+        exact schwartzL2Inner_normalize_self (gsResidual R n) (gsResidual_inner_pos R n)
+
+/-- Full orthonormality of the Gram–Schmidt family. -/
+theorem gramSchmidtField_orthonormal (R : RawDivFreeFamily) (i j : ℕ) :
+    schwartzL2Inner (gramSchmidtField R i) (gramSchmidtField R j) =
+      if i = j then 1 else 0 :=
+  gramSchmidtField_orthonormal_table R (max i j + 1) i j
+    (Nat.lt_succ_of_le (le_max_left i j)) (Nat.lt_succ_of_le (le_max_right i j))
+
+/-- Each Gram–Schmidt field lies in the span of the first `n + 1` raw
+fields. -/
+theorem gramSchmidtField_inSpan (R : RawDivFreeFamily) (n : ℕ) :
+    FinComb R.v (n + 1) (gramSchmidtField R n) := by
+  obtain ⟨c, hc, -⟩ := gsResidual_repr R n
+  rw [gramSchmidtField_eq]
+  exact finComb_smul _ ⟨c, hc⟩
+
+/-- The Gram–Schmidt fields stay inside the divergence-free constraint
+manifold (pure linearity of the divergence). -/
+theorem gramSchmidtField_divergenceFree (R : RawDivFreeFamily) (n : ℕ) :
+    DivergenceFreeInitial (gramSchmidtField R n) := by
+  obtain ⟨c, hc⟩ := gramSchmidtField_inSpan R n
+  rw [hc]
+  exact divergenceFreeInitial_sum_smul _ _ _ R.divergence_free
+
+/-- **Span recovery**: each raw field lies in the span of the first `j + 1`
+Gram–Schmidt fields (the normalization scalar is invertible by residual
+positivity), so finite raw spans transfer to Gram–Schmidt spans. -/
+theorem raw_inSpanW (R : RawDivFreeFamily) (j : ℕ) :
+    FinComb (gramSchmidtField R) (j + 1) (R.v j) := by
+  have hpos := gsResidual_inner_pos R j
+  have hsq : Real.sqrt (schwartzL2Inner (gsResidual R j) (gsResidual R j)) ≠ 0 :=
+    ne_of_gt (Real.sqrt_pos.mpr hpos)
+  have hres : gsResidual R j =
+      Real.sqrt (schwartzL2Inner (gsResidual R j) (gsResidual R j)) • gramSchmidtField R j := by
+    rw [gramSchmidtField_eq, smul_smul, mul_one_div, div_self hsq, one_smul]
+  have hv : R.v j = gsResidual R j + ∑ k ∈ Finset.range j,
+      schwartzL2Inner (R.v j) (gramSchmidtField R k) • gramSchmidtField R k :=
+    (sub_add_cancel _ _).symm
+  rw [hv, hres]
+  exact finComb_add (finComb_smul _ (finComb_self _ (Nat.lt_succ_self j)))
+    (finComb_sum_smul _ _ _ fun k hk => finComb_self _
+      (Nat.lt_succ_of_lt (Finset.mem_range.mp hk)))
+
+/-- **Density transfer**: the raw family's `L²`-dense finite spans transfer
+verbatim to the Gram–Schmidt family (the same approximant, re-expressed). -/
+theorem gramSchmidtField_dense_span (R : RawDivFreeFamily) :
+    ∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+    ∃ (m : ℕ) (c : ℕ → ℝ),
+      schwartzL2Inner (u - ∑ j ∈ Finset.range m, c j • gramSchmidtField R j)
+        (u - ∑ j ∈ Finset.range m, c j • gramSchmidtField R j) < ε := by
+  intro u hu ε hε
+  obtain ⟨m, c, hc⟩ := R.dense_span u hu ε hε
+  obtain ⟨d, hd⟩ : FinComb (gramSchmidtField R) m (∑ j ∈ Finset.range m, c j • R.v j) :=
+    finComb_sum_smul _ _ _ fun j hj =>
+      finComb_mono (Finset.mem_range.mp hj) (raw_inSpanW R j)
+  exact ⟨m, d, by rw [← hd]; exact hc⟩
+
+/-- **Gram–Schmidt orthonormalization in the `L²` seminorm** [Robinson–
+Rodrigo–Sadowski Ch. 4; Temam III §3].  A raw dense divergence-free family
+orthonormalizes into a `GalerkinBasisFamily`: the recursion
+`w_n = normalize(v_n − ∑_{k<n} ⟨v_n, w_k⟩ w_k)` (realized as
+`gramSchmidtField`) (i) preserves divergence-free — each `w_n` is a finite
+`ℝ`-combination of the `v_j` (`gramSchmidtField_divergenceFree`); (ii) yields
+`⟨w_i, w_j⟩ = δ_ij` (`gramSchmidtField_orthonormal`; the `independent` field
+forces residual positivity via `gsResidual_repr`); and (iii) preserves the
+finite spans, so `dense_span` transfers verbatim
+(`gramSchmidtField_dense_span`). -/
+theorem rawDivFree_orthonormalize (R : RawDivFreeFamily) : Nonempty GalerkinBasisFamily :=
+  ⟨{ w := gramSchmidtField R
+     divergence_free := gramSchmidtField_divergenceFree R
+     orthonormal := gramSchmidtField_orthonormal R
+     dense_span := gramSchmidtField_dense_span R }⟩
 
 /-- **Existence of the Galerkin basis family**, reduced to the two named leaves:
 a raw dense divergence-free family (`exists_rawDivFreeFamily`, the density core)
