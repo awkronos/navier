@@ -805,4 +805,139 @@ theorem staticCurl_timeDerivative_comm (u : VelocityEvolution)
     rw [hfun]
   rw [hcomp1, hcomp2, hcomp3]
 
+
+
+/-!
+### Curl linearity and the partial vorticity transport identity
+
+Curl is linear on pointwise sums / differences / scalar multiples at a point
+of joint differentiability.  Combined with the three commutation leaves above,
+the curl of the (unforced) Navier–Stokes momentum equation reduces to
+`∂ₜω + curl(convection u t) = ν • Δω` pointwise: the pressure-gradient term
+dies (`curl ∘ ∇ = 0`), `∂ₜ` commutes past `curl`, and `Δ` commutes past `curl`.
+The remaining leaf for the full Majda–Bertozzi (1.33) transport PDE
+`∂ₜω + (u·∇)ω = (ω·∇)u + νΔω` is the convection–curl identity
+`curl((u·∇)u) = (u·∇)ω − (ω·∇)u`, valid under `div u = div ω = 0`.
+-/
+
+/-- Curl of a pointwise sum at a joint-differentiability point. -/
+private theorem staticCurl_add_field (a b : VelocityField) (x : Space)
+    (ha : DifferentiableAt ℝ a x) (hb : DifferentiableAt ℝ b x) :
+    staticCurl (fun y => a y + b y) x = staticCurl a x + staticCurl b x := by
+  unfold staticCurl
+  rw [show (fun y => a y + b y) = (a + b) from rfl, fderiv_add ha hb]
+  simp only [add_apply, Finset.sum_add_distrib, LinearMap.map_add]
+
+/-- Curl of a pointwise difference at a joint-differentiability point. -/
+private theorem staticCurl_sub_field (a b : VelocityField) (x : Space)
+    (ha : DifferentiableAt ℝ a x) (hb : DifferentiableAt ℝ b x) :
+    staticCurl (fun y => a y - b y) x = staticCurl a x - staticCurl b x := by
+  unfold staticCurl
+  rw [show (fun y => a y - b y) = (a - b) from rfl, fderiv_sub ha hb]
+  simp only [sub_apply, Finset.sum_sub_distrib, LinearMap.map_sub]
+
+/-- Curl of a pointwise scalar multiple at a differentiability point. -/
+private theorem staticCurl_smul_field (c : ℝ) (a : VelocityField) (x : Space)
+    (ha : DifferentiableAt ℝ a x) :
+    staticCurl (fun y => c • a y) x = c • staticCurl a x := by
+  unfold staticCurl
+  rw [show (fun y => c • a y) = (c • a) from rfl, fderiv_const_smul ha]
+  simp only [smul_apply, LinearMap.map_smul, Finset.smul_sum]
+
+/- **Curl of the unforced momentum equation = partial vorticity transport.**
+At every nonnegative time `t` and every spatial point `x` along a classical
+solution, taking the spatial curl of the momentum equation
+`∂ₜu + (u·∇)u = νΔu − ∇p`, killing the pressure-gradient term by
+`staticCurl_pressureGradient_eq_zero`, commuting `∂ₜ` past `curl` via
+`staticCurl_timeDerivative_comm`, and commuting `Δ` past `curl` via
+`staticCurl_laplacian_evolution_comm` gives
+
+  `∂ₜω + curl((u·∇)u) = ν • Δω`.
+
+The remaining leaf for the full Majda–Bertozzi (1.33) transport PDE
+`∂ₜω + (u·∇)ω = (ω·∇)u + νΔω` is the convection–curl identity
+`curl((u·∇)u) = (u·∇)ω − (ω·∇)u`, valid under `div u = div ω = 0`.
+Reference: Majda–Bertozzi, *Vorticity and Incompressible Flow*, §1.3, (1.33). -/
+theorem curl_of_momentum_eq_partial_vorticity_transport
+    {ν : ℝ} {u₀ : SchwartzVelocity} {u : VelocityEvolution} {p : PressureEvolution}
+    (hsol : IsClassicalSolution ν zeroForce u₀ u p)
+    {t : ℝ} (ht : 0 ≤ t) (x : Space) :
+    timeDerivative (fun s => vorticity u s) t x +
+      staticCurl (fun y => convection u t y) x =
+      ν • laplacian (fun s => vorticity u s) t x := by
+  -- Spatial slices are C^∞ at x
+  have huA : ContDiffAt ℝ ∞ (u t) x :=
+    contDiffAt_spatial_slice hsol.velocity_smooth ht x
+  have hpA : ContDiffAt ℝ ∞ (p t) x :=
+    contDiffAt_spatial_slice hsol.pressure_smooth ht x
+  have huAfd : ContDiffAt ℝ ∞ (fderiv ℝ (u t)) x := huA.fderiv_right (by simp)
+  -- Differentiability of the four Fréchet-smooth component fields at x
+  have hD_time : DifferentiableAt ℝ (fun y => timeDerivative u t y) x := by
+    apply differentiableAt_pi.mpr
+    intro k
+    have heq : (fun y => timeDerivative u t y k) =
+        (fun y => fderivWithin ℝ (fun s => u s y k) (Set.Ici 0) t 1) := by
+      funext y
+      exact fderivWithin_component_apply (fun s => u s y) t ht
+        (differentiableWithinAt_time_curve u hsol.velocity_smooth ht y) k
+    rw [heq]
+    exact differentiableAt_timeDeriv_component u hsol.velocity_smooth ht x k
+  have hD_conv : DifferentiableAt ℝ (fun y => convection u t y) x :=
+    (huAfd.clm_apply huA).differentiableAt (by decide)
+  have hD_pg : DifferentiableAt ℝ (fun y => pressureGradient p t y) x := by
+    have hpfd : ContDiffAt ℝ ∞ (fderiv ℝ (p t)) x := hpA.fderiv_right (by simp)
+    rw [show (fun y => pressureGradient p t y) =
+        (fun y i => fderiv ℝ (p t) y (basisVector i)) from rfl]
+    apply differentiableAt_pi.mpr
+    intro i
+    exact ((ContinuousLinearMap.apply ℝ ℝ (basisVector i)).contDiff.contDiffAt).comp x hpfd |>.differentiableAt
+      (by decide)
+  have hD_lap : DifferentiableAt ℝ (laplacian u t) x := by
+    rw [show (laplacian u t : VelocityField) =
+        (∑ i : Fin 3, fun y =>
+          fderiv ℝ (fun z => fderiv ℝ (u t) z (basisVector i)) y (basisVector i))
+      from by ext y; simp only [laplacian, Finset.sum_apply]]
+    apply DifferentiableAt.sum
+    intro i hi
+    have hg : ContDiffAt ℝ ∞
+        (fun z => fderiv ℝ (u t) z (basisVector i)) x :=
+      ((ContinuousLinearMap.apply ℝ Space (basisVector i)).contDiff.contDiffAt).comp x huAfd
+    have hg' : ContDiffAt ℝ ∞
+        (fderiv ℝ (fun z => fderiv ℝ (u t) z (basisVector i))) x :=
+      hg.fderiv_right (by simp)
+    have hg'eval : ContDiffAt ℝ ∞
+        (fun y => fderiv ℝ (fun z => fderiv ℝ (u t) z (basisVector i)) y
+          (basisVector i)) x :=
+      ((ContinuousLinearMap.apply ℝ Space (basisVector i)).contDiff.contDiffAt).comp x hg'
+    exact hg'eval.differentiableAt (by decide)
+  -- Momentum equation (unforced: zeroForce = 0)
+  have hMom : ∀ y : Space,
+      timeDerivative u t y + convection u t y =
+        ν • laplacian u t y - pressureGradient p t y := by
+    intro y
+    have h := hsol.equation t ht y
+    simp only [zeroForce, add_zero] at h
+    exact h
+  -- Apply staticCurl to both sides of the momentum equation at x
+  have hCurl : staticCurl (fun y => timeDerivative u t y + convection u t y) x =
+      staticCurl (fun y => ν • laplacian u t y - pressureGradient p t y) x := by
+    congr 1
+    funext y
+    exact hMom y
+  -- Split LHS via curl linearity, then commute ∂ₜ past curl
+  rw [staticCurl_add_field _ _ _ hD_time hD_conv] at hCurl
+  rw [staticCurl_timeDerivative_comm u hsol.velocity_smooth ht x] at hCurl
+  -- Split RHS via curl linearity on the smul-and-sub
+  have hD_smul_lap : DifferentiableAt ℝ (fun y => ν • laplacian u t y) x := by
+    rw [show (fun y => ν • laplacian u t y) = (ν • laplacian u t) from rfl]
+    exact hD_lap.const_smul ν
+  rw [staticCurl_sub_field (fun y => ν • laplacian u t y)
+        (fun y => pressureGradient p t y) x hD_smul_lap hD_pg] at hCurl
+  rw [staticCurl_smul_field ν (laplacian u t) x hD_lap] at hCurl
+  -- Apply the three commutation leaves
+  rw [staticCurl_laplacian_evolution_comm u hsol.velocity_smooth ht x] at hCurl
+  rw [staticCurl_pressureGradient_eq_zero p hsol.pressure_smooth ht x] at hCurl
+  rw [sub_zero] at hCurl
+  exact hCurl
+
 end Navier.Analysis.VorticityTransport
