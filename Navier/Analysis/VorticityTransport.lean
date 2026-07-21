@@ -940,4 +940,46 @@ theorem curl_of_momentum_eq_partial_vorticity_transport
   rw [sub_zero] at hCurl
   exact hCurl
 
+
+
+/-- **Reduction of the full vorticity transport PDE to the convection–curl
+identity.**  Given the partial transport identity
+`curl_of_momentum_eq_partial_vorticity_transport` (the curl of the momentum
+equation, with all three Clairaut commutations applied), the full Majda–Bertozzi
+(1.33) pointwise vorticity transport PDE
+  `∂ₜω + (u·∇)ω = (ω·∇)u + νΔω`
+holds at `(t, x)` iff the convection–curl identity
+  `curl((u·∇)u) = (u·∇)ω − (ω·∇)u`
+holds at `(t, x)`.  The latter is a pure vector-calculus identity under
+`div u = div ω = 0` (the `div ω = 0` half is `staticDivergence_staticCurl_eq_zero`;
+the `div u = 0` half is the classical-solution incompressibility hypothesis).
+The convection–curl identity is the named residual for the full
+`Navier.Analysis.Enstrophy.vorticityTransportEquation`. -/
+theorem vorticityTransport_eq_partial_and_convection_curl
+    {ν : ℝ} {u₀ : SchwartzVelocity} {u : VelocityEvolution} {p : PressureEvolution}
+    (hsol : IsClassicalSolution ν zeroForce u₀ u p)
+    {t : ℝ} (ht : 0 ≤ t) (x : Space) :
+    (timeDerivative (fun s => vorticity u s) t x +
+        spatialDerivative (fun s => vorticity u s) t x (u t x) =
+      spatialDerivative u t x (vorticity u t x) +
+        ν • laplacian (fun s => vorticity u s) t x)
+    ↔
+    (staticCurl (fun y => convection u t y) x =
+      spatialDerivative (fun s => vorticity u s) t x (u t x) -
+        spatialDerivative u t x (vorticity u t x)) := by
+  have hPart := curl_of_momentum_eq_partial_vorticity_transport hsol ht x
+  -- hPart : ∂ₜω + staticCurl(convection) = ν • Δω
+  -- Target ↔ : (∂ₜω + (u·∇)ω = (ω·∇)u + νΔω) ↔ (staticCurl(conv) = (u·∇)ω - (ω·∇)u)
+  -- Substitute ν • Δω = ∂ₜω + staticCurl(conv) from hPart into the target LHS.
+  constructor
+  · intro h
+    have hD : ν • laplacian (fun s => vorticity u s) t x =
+        timeDerivative (fun s => vorticity u s) t x +
+          staticCurl (fun y => convection u t y) x := hPart.symm
+    rw [hD] at h
+    linear_combination -h
+  · intro h
+    rw [h] at hPart
+    linear_combination hPart
+
 end Navier.Analysis.VorticityTransport
