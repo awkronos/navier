@@ -248,10 +248,18 @@ Concrete attack map (Mathlib tools verified present, 2026-07-16):
   3 real components `ℝ ↪ ℂ`).  Lebesgue `volume` agrees across the equiv.
 * **[Plancherel, in Mathlib]** `SchwartzMap.integral_norm_sq_fourier` :
   `∫‖𝓕f‖² = ∫‖f‖²` — the `n=0` (L²) term directly.
-* **[weighted Plancherel, ~200 LOC]** iterate the multiplier identity
-  `Real.fourierIntegral_fderiv` (`𝓕(fderiv f) = fourierSMulRight (-innerSL ℝ) (𝓕f)`)
-  to get `∫‖𝓕f‖²|ξ|^{2n} = c·∫‖D^n f‖²` (n ≤ 3), then `sobWeightInv_eq`'s binomial
-  `(1+|ξ|²)³ = 1+3|ξ|²+3|ξ|⁴+|ξ|⁶` sums the four terms into `C₂·sobolevH3NormSq`.
+* **[weighted Plancherel, ~200 LOC; n = 1 rung ESTABLISHED 2026-07-22]**
+  iterate the Schwartz-level multiplier identity
+  `SchwartzMap.fourier_lineDerivOp_eq` (`𝓕(∂ₘf) = 2πi⟨ξ,m⟩·𝓕f`) to get
+  `∫‖𝓕f‖²|ξ|^{2n} = c·∫‖D^n f‖²` (n ≤ 3).  The n = 1 rung is
+  `FourierWeightedPlancherel.sum_integral_normSq_lineDeriv_eq`
+  (`∑ⱼ∫‖∂ⱼf‖² = (2π)²∫‖ξ‖²‖𝓕f‖²`, kernel-clean); n = 2, 3 iterate it on
+  `∂ⱼf`; then `sobWeightInv_eq`'s binomial
+  `(1+|ξ|²)³ = 1+3|ξ|²+3|ξ|⁴+|ξ|⁶` sums the four terms into
+  `C₂·sobolevH3NormSq`.  Mathlib recon 2026-07-22: `Distribution/Sobolev.lean`
+  (Bessel-potential spaces) now ships `MemSobolev.fourier_memL1` — the
+  qualitative `𝓕f ∈ L¹` half for `2s > d` — and `SchwartzMap.memSobolev`;
+  the quantitative physical↔spectral bridge remains this ladder.
 * **[substep-3 OBSTRUCTION, found 2026-07-16]** the pointwise multiplier norm is
   assembleable — `‖𝗕(fderiv g) ξ‖ = 2π‖ξ‖‖𝗕g ξ‖` from `Real.fourierIntegral_fderiv`
   + `VectorFourier.norm_fourierSMulRight` (`‖fourierSMulRight L f v‖ = 2π‖L v‖‖f v‖`)

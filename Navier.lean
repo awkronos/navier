@@ -40,6 +40,7 @@ import Navier.Analysis.SingularIntegralPrelims
 import Navier.Analysis.WeightIntegrability
 import Navier.Analysis.SobolevEmbedding
 import Navier.Analysis.FourierMajorant
+import Navier.Analysis.FourierWeightedPlancherel
 import Navier.Analysis.FourierBridge
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogBootstrap
