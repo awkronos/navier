@@ -148,3 +148,53 @@ theorem local_enstrophy_balance
     officialInner_smul_right, hconv, hLapEq, htransport]
   -- Everything is now scalar; close with the Bochner identity
   linear_combination -ν * hbochner
+
+/-!
+## The pointwise enstrophy differential-inequality integrand
+-/
+
+/-- **Pointwise enstrophy differential inequality (integrand form).**  Along a
+classical solution with `0 ≤ ν`, at a point where the stretching deformation
+`(ω·∇)u` is dominated by `G·|ω|` in official coordinates,
+
+  `2⟨ω, ∂ₜω⟩ ≤ 2G|ω|² − (u·∇)|ω|² + ν Δ(|ω|²)`.
+
+Obtained from `local_enstrophy_balance` by bounding the stretching production
+`2⟨ω,(ω·∇)u⟩ ≤ 2G|ω|²` (`stretching_pointwise_bound`) and dropping the
+sign-definite dissipation `−2ν|∇ω|² ≤ 0`.  This is the pointwise integrand
+whose cutoff integral gives the enstrophy differential inequality
+`E' ≤ 2G·E`: the transport term `(u·∇)|ω|²` is a divergence killed by the
+cutoff at `R → ∞`, and `∫ χ_R Δ(|ω|²) = ∫ (Δχ_R)|ω|² → 0`.  The remaining
+integral layer (differentiation under the integral over `χ_R` and the
+`R → ∞` interchange) is the named residual of
+`Navier.Analysis.Enstrophy.enstrophyDifferentialInequality`; it requires a
+local-uniform-in-time domination hypothesis (a Pattern-A strengthening
+automatic for `H^m`/Schwartz-regular solutions but not carried by
+`IsClassicalSolution`). -/
+theorem pointwise_enstrophy_differential_inequality
+    {ν : ℝ} {u₀ : SchwartzVelocity} {u : VelocityEvolution} {p : PressureEvolution}
+    (hsol : IsClassicalSolution ν zeroForce u₀ u p) {t : ℝ} (ht : 0 ≤ t)
+    (x : Space) {G : ℝ} (hν : 0 ≤ ν)
+    (hG : officialEuclideanNorm (spatialDerivative u t x (vorticity u t x)) ≤
+      G * officialEuclideanNorm (vorticity u t x)) :
+    2 * officialInner (vorticity u t x)
+        (timeDerivative (fun s => vorticity u s) t x) ≤
+      2 * G * officialEuclideanNorm (vorticity u t x) ^ 2
+      - fderiv ℝ (fun y => officialEuclideanNorm (vorticity u t y) ^ 2) x (u t x)
+      + ν * (∑ i : Fin 3,
+          fderiv ℝ (fun z =>
+            fderiv ℝ (fun y => officialEuclideanNorm (vorticity u t y) ^ 2) z
+              (basisVector i)) x (basisVector i)) := by
+  have hbal := local_enstrophy_balance hsol ht x
+  have hstretch : officialInner (vorticity u t x)
+      (spatialDerivative u t x (vorticity u t x)) ≤
+      G * officialEuclideanNorm (vorticity u t x) ^ 2 :=
+    stretching_pointwise_bound (vorticity u t x)
+      (spatialDerivative u t x (vorticity u t x)) hG
+  have hgrad : 0 ≤ ∑ i : Fin 3,
+      officialEuclideanNorm (fderiv ℝ (vorticity u t) x (basisVector i)) ^ 2 :=
+    Finset.sum_nonneg fun i _ => sq_nonneg _
+  rw [hbal]
+  nlinarith [hstretch, hgrad, hν, mul_nonneg hν hgrad]
+
+end Navier.Analysis.LocalEnstrophyBalance
