@@ -79,6 +79,18 @@ REQUIRED_APPROACH_IDS = {
     "approach.breakdown_construction",
 }
 
+PINNED_OPEN_APPROACH_DISPOSITIONS = {
+    "approach.breakdown_construction": "SCAFFOLDED",
+    "approach.computer_assisted_falsification": "SCAFFOLDED",
+    "approach.concentration_compactness_rigidity": "SCAFFOLDED",
+    "approach.critical_norms": "SCAFFOLDED",
+    "approach.energy": "DECOMPOSED",
+    "approach.epsilon_regularity": "SCAFFOLDED",
+    "approach.exact_semantics_local_theory": "DECOMPOSED",
+    "approach.frequency_cascade": "SCAFFOLDED",
+    "approach.vorticity_geometry": "SCAFFOLDED",
+}
+
 REQUIRED_BARRIER_IDS = {
     "barrier.endpoint_semantics",
     "barrier.scaling_criticality",
@@ -116,34 +128,71 @@ TOP_KEYS = {
 # data alone can never retag an open conjecture or substitute an unrelated
 # theorem and then claim closure.
 PINNED_OBLIGATION_CONTRACTS = {
-    "semantics.encoding_bridges": "a66461cc6e9fabff113dc74fdbb63d15be091656247cdcd864b89b1285b5dcd3",
-    "semantics.exact_a_surface": "8a9bee06b0dbc0318d83e0b0170909bea14f95725c601e6c955a8caa2291f637",
-    "scaling.algebraic_critical_line": "44c07b56e7598ccadd22b47b9f19013f51c14b6779683fd1fa115ce2d1a586ca",
-    "local.mild_solution": "276cbd009398413dcf722d6bbf18a9bd14d66b4600f0a1b18b8c28dec47ef7d8",
-    "local.continuation_alternative": "7770f2405a91f768fc4d29ec7c622561e3c36ff0473f9447ef43ac09a7b648da",
-    "energy.smooth_identity": "a1d8c000aced63c554e986618db32900f0adc2ae2522ff28a11664f7aa898f75",
-    "energy.global_weak_solution": "73ff765a666f7b0f3634709838bc7f05d60b25ddfeb3fa009c8b1f38cb8ceae7",
-    "energy.weak_to_strong_upgrade": "9b23dbf1df09d64b1cd8875ec8bf75ea4b024bf4bcbb1163afc7a5310aa9af16",
-    "critical.unconditional_bound": "29901196ef28e138e7905e728db9b4f8afb705487b5d3c40f5a2c8500d474d09",
-    "critical.global_regularity_bridge": "6b3c50ba6695cde36606bdd5f1b3456d1a7b96b525b1946f26712110c31e1676",
-    "epsilon.local_regular_criterion": "a85e7bb39488181fa3658b5b711ee635323b7c7465fd31b0a64732829916f4eb",
-    "epsilon.global_singularity_exclusion": "77dec003b389f96d69ace0a999fb887774ce393f5a43464a4decc9c0a1eca965",
-    "compact.profile_decomposition": "ef7b52fd9fe27cb06385dc0e7206739136ebee29218a5db800cbe5873171d077",
-    "compact.rigidity_exclusion": "6ec3b14afee9dc1dd29c88a2c0b718cd403d854f8dc30f7df84c9c080c08416f",
-    "frequency.cascade_exclusion": "9d3b9c3d220c77876e99d495fe7a08a0996d2ff14ecbb2f45b5e53e80fea8697",
-    "vorticity.alignment_criterion": "18a65f3bf37d5793375e85a924da1c06eaffdb7645b9dbed0b89d2abb2cb45fa",
-    "vorticity.unconditional_depletion": "34e4d7bec4a5261ad61dc7552312d4bea79273362dbb51b68f7a7decff6e4999",
-    "regularity.any_positive_route": "0d1edf3b566e719eb16c3db2323020d7d62f4c29f001d0adf98c34498cd929e8",
-    "local.global_continuation": "423db890357c0de62917cc11c8ccf456bd4ff3ecc78683444eaddb86c937da91",
-    "endpoint.fefferman_a": "2cb551497700dd34b1f805248a227475279c90a0bddaca49310a7a6997b4cd39",
-    "breakdown.exact_c_surface": "e7f2441784ed334e127de621e10dd9a0cfb8ee3e16877ffbc98d6ec8c3352bc9",
+    "breakdown.any_exact_realization": "b0459487fd369c5dc192b33f3127ef177e26a53f65b30096a5f542f51b8f2abd",
+    "breakdown.averaged_model_warning": "b053771ac3318e04f16b24b42c50d1e167f1dc799695bfc78e814db91ecccde6",
+    "breakdown.c_encoding_bridges": "15906cf0d27959c03846e416ab55fd4aeafa76fadb2e084ee153d03e57f8926c",
+    "breakdown.exact_c_surface": "e8a4a4a7e6099ef35c27c079eab29355af1cdff5c61abb5561f50c468195ef3d",
     "breakdown.forced_c_payload": "db897b8c7ee33ed5d394d522c85bdcfd814b86be29c1838ea008e531ef9c1cf9",
     "breakdown.zero_force_blowup_payload": "adef400d4f6f1666fc96204d1f9d2b386ec4263602bfc93fa757515c8bd25439",
-    "breakdown.any_exact_realization": "b0459487fd369c5dc192b33f3127ef177e26a53f65b30096a5f542f51b8f2abd",
-    "endpoint.fefferman_c": "ae14fe729f616254d4abc4f1b2d24e008e9cbb1e58d93aea569fdbd316122f2e",
+    "compact.profile_decomposition": "ef7b52fd9fe27cb06385dc0e7206739136ebee29218a5db800cbe5873171d077",
+    "compact.rigidity_exclusion": "6ec3b14afee9dc1dd29c88a2c0b718cd403d854f8dc30f7df84c9c080c08416f",
     "computation.intermediate_falsification": "90978c574d5dc27b26d33815cb36544f6b062c00ad8094fec678a3e8219b3b93",
-    "breakdown.averaged_model_warning": "b053771ac3318e04f16b24b42c50d1e167f1dc799695bfc78e814db91ecccde6",
+    "critical.bound_to_regularity_composition": "7832b8cea0afc3aee3956a73dc6400e26218dbb6c6c075f3cd7574e08bfc04dc",
+    "critical.global_regularity_bridge": "6bbac7349868e68e97ca94b1d53103309f911d74796f0ca13efc2d1d1a7f6ba0",
+    "critical.unconditional_bound": "29901196ef28e138e7905e728db9b4f8afb705487b5d3c40f5a2c8500d474d09",
+    "endpoint.fefferman_a": "2cb551497700dd34b1f805248a227475279c90a0bddaca49310a7a6997b4cd39",
+    "endpoint.fefferman_c": "d9ecb0edb59b5d7d452f4d043ba91eec503d3fdc2676e5ff5462b29e0328c051",
+    "energy.global_weak_solution": "73ff765a666f7b0f3634709838bc7f05d60b25ddfeb3fa009c8b1f38cb8ceae7",
+    "energy.smooth_identity": "a1d8c000aced63c554e986618db32900f0adc2ae2522ff28a11664f7aa898f75",
+    "energy.weak_to_strong_upgrade": "9b23dbf1df09d64b1cd8875ec8bf75ea4b024bf4bcbb1163afc7a5310aa9af16",
+    "epsilon.global_singularity_exclusion": "77dec003b389f96d69ace0a999fb887774ce393f5a43464a4decc9c0a1eca965",
+    "epsilon.local_regular_criterion": "a85e7bb39488181fa3658b5b711ee635323b7c7465fd31b0a64732829916f4eb",
+    "frequency.cascade_exclusion": "9d3b9c3d220c77876e99d495fe7a08a0996d2ff14ecbb2f45b5e53e80fea8697",
+    "local.continuation_alternative": "7770f2405a91f768fc4d29ec7c622561e3c36ff0473f9447ef43ac09a7b648da",
+    "local.global_continuation": "423db890357c0de62917cc11c8ccf456bd4ff3ecc78683444eaddb86c937da91",
+    "local.mild_solution": "276cbd009398413dcf722d6bbf18a9bd14d66b4600f0a1b18b8c28dec47ef7d8",
     "meta.route_triage": "f2531c5b237be61eda38e1b57d09c7cdb566327271bd54ba9823e90087dd4907",
+    "regularity.any_positive_route": "d86ca459e22054c1f4a313b201e351f971ef1b1074af4bdecf02fc0c544e607e",
+    "scaling.algebraic_critical_line": "44c07b56e7598ccadd22b47b9f19013f51c14b6779683fd1fa115ce2d1a586ca",
+    "semantics.encoding_bridges": "a6bf7793f16530e10b44ff5fd4b3fce29831960dab27c98e228a61ba9463e621",
+    "semantics.exact_a_surface": "8a9bee06b0dbc0318d83e0b0170909bea14f95725c601e6c955a8caa2291f637",
+    "vorticity.alignment_criterion": "18a65f3bf37d5793375e85a924da1c06eaffdb7645b9dbed0b89d2abb2cb45fa",
+    "vorticity.unconditional_depletion": "34e4d7bec4a5261ad61dc7552312d4bea79273362dbb51b68f7a7decff6e4999",
+}
+
+OPEN_PROGRESS_DISPOSITIONS = {"SCAFFOLDED", "DECOMPOSED", "RED"}
+
+PINNED_OPEN_OBLIGATION_DISPOSITIONS = {
+    "breakdown.any_exact_realization": "SCAFFOLDED",
+    "breakdown.averaged_model_warning": "RED",
+    "breakdown.c_encoding_bridges": "SCAFFOLDED",
+    "breakdown.exact_c_surface": "DECOMPOSED",
+    "breakdown.forced_c_payload": "SCAFFOLDED",
+    "breakdown.zero_force_blowup_payload": "SCAFFOLDED",
+    "compact.profile_decomposition": "DECOMPOSED",
+    "compact.rigidity_exclusion": "SCAFFOLDED",
+    "computation.intermediate_falsification": "SCAFFOLDED",
+    "critical.bound_to_regularity_composition": "SCAFFOLDED",
+    "critical.global_regularity_bridge": "DECOMPOSED",
+    "critical.unconditional_bound": "SCAFFOLDED",
+    "endpoint.fefferman_a": "SCAFFOLDED",
+    "endpoint.fefferman_c": "SCAFFOLDED",
+    "energy.global_weak_solution": "DECOMPOSED",
+    "energy.smooth_identity": "SCAFFOLDED",
+    "energy.weak_to_strong_upgrade": "SCAFFOLDED",
+    "epsilon.global_singularity_exclusion": "SCAFFOLDED",
+    "epsilon.local_regular_criterion": "DECOMPOSED",
+    "frequency.cascade_exclusion": "SCAFFOLDED",
+    "local.continuation_alternative": "DECOMPOSED",
+    "local.global_continuation": "SCAFFOLDED",
+    "local.mild_solution": "SCAFFOLDED",
+    "meta.route_triage": "DECOMPOSED",
+    "regularity.any_positive_route": "SCAFFOLDED",
+    "scaling.algebraic_critical_line": "DECOMPOSED",
+    "semantics.encoding_bridges": "SCAFFOLDED",
+    "semantics.exact_a_surface": "DECOMPOSED",
+    "vorticity.alignment_criterion": "DECOMPOSED",
+    "vorticity.unconditional_depletion": "SCAFFOLDED",
 }
 
 # Internal formal nodes are not closable merely because some Lean theorem can
@@ -209,6 +258,36 @@ def _git_result(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]
         check=False,
         timeout=10,
     )
+
+
+def _git_bytes_result(repo_root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+    """Run Git without text decoding so blob digests cover the exact bytes."""
+
+    return subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        capture_output=True,
+        check=False,
+        timeout=10,
+    )
+
+
+def _safe_repo_relative_path(locator: Any) -> str | None:
+    """Extract a normalized, non-traversing path from a ``repo:`` locator."""
+
+    if not isinstance(locator, str) or not locator.startswith("repo:"):
+        return None
+    relative = locator.removeprefix("repo:")
+    if (
+        not relative
+        or relative.startswith(("/", "\\"))
+        or "\\" in relative
+        or ":" in relative
+        or any(ord(character) < 32 or ord(character) == 127 for character in relative)
+        or any(part in {"", ".", ".."} for part in relative.split("/"))
+    ):
+        return None
+    return relative
 
 
 def _run_native_claim_check(
@@ -320,6 +399,16 @@ def _validate_pinned_obligation_contracts(
         if actual != expected:
             errors.append(
                 f"$.obligations[{node_id}]: immutable semantic/formal contract mismatch"
+            )
+        disposition = node.get("disposition")
+        expected_disposition = PINNED_OPEN_OBLIGATION_DISPOSITIONS[node_id]
+        if (
+            disposition in OPEN_PROGRESS_DISPOSITIONS
+            and disposition != expected_disposition
+        ):
+            errors.append(
+                f"$.obligations[{node_id}].disposition: canonical open disposition "
+                f"mismatch; expected {expected_disposition!r}"
             )
 
 
@@ -542,10 +631,10 @@ def _validate_campaign(data: Any, errors: list[str]) -> dict[str, Any]:
         errors.append("$.campaign.problem_surface: Fefferman A must bind the delivered Navier.Clay.StatementA")
     branch_c = by_branch.get("FEFFERMAN_C", {})
     if branch_c and (
-        branch_c.get("public_declaration") is not None
-        or branch_c.get("planned_formal_target") != "Navier.Clay.StatementC"
+        branch_c.get("public_declaration") != "Navier.Clay.StatementC"
+        or branch_c.get("planned_formal_target") is not None
     ):
-        errors.append("$.campaign.problem_surface: Fefferman C must remain an explicit planned target until delivered")
+        errors.append("$.campaign.problem_surface: Fefferman C must bind the delivered Navier.Clay.StatementC")
     return campaign
 
 
@@ -670,6 +759,14 @@ def _validate_approaches(
             "$.approaches: canonical attack lanes mismatch; "
             f"missing={sorted(REQUIRED_APPROACH_IDS - set(by_id))}, extra={sorted(set(by_id) - REQUIRED_APPROACH_IDS)}"
         )
+    for approach_id, approach in by_id.items():
+        expected = PINNED_OPEN_APPROACH_DISPOSITIONS.get(approach_id)
+        status = approach.get("status")
+        if expected is not None and status != "CLOSED" and status != expected:
+            errors.append(
+                f"$.approaches[{approach_id}].status: canonical nonclosed disposition "
+                f"mismatch; expected {expected!r}"
+            )
     return by_id
 
 
@@ -741,7 +838,12 @@ def _validate_verifiers(items: Any, errors: list[str]) -> dict[str, dict[str, An
     return by_id
 
 
-def _validate_provenance(value: Any, path: str, errors: list[str]) -> dict[str, Any]:
+def _validate_provenance(
+    value: Any,
+    path: str,
+    now: datetime,
+    errors: list[str],
+) -> dict[str, Any]:
     keys = {"source_locator", "source_revision", "immutable", "observed_at", "artifact_sha256"}
     provenance = _exact_object(value, path, keys, errors) or {}
     _string(provenance.get("source_locator"), f"{path}.source_locator", errors, minimum=5)
@@ -751,7 +853,9 @@ def _validate_provenance(value: Any, path: str, errors: list[str]) -> dict[str, 
         errors.append(f"{path}.source_revision: mutable provenance is forbidden")
     if provenance.get("immutable") is not True:
         errors.append(f"{path}.immutable: evidence provenance must be immutable")
-    _timestamp(provenance.get("observed_at"), f"{path}.observed_at", errors)
+    observed = _timestamp(provenance.get("observed_at"), f"{path}.observed_at", errors)
+    if observed is not None and observed > now:
+        errors.append(f"{path}.observed_at: provenance observation is from the future")
     digest = provenance.get("artifact_sha256")
     if digest is not None and (not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)):
         errors.append(f"{path}.artifact_sha256: expected lowercase SHA-256 or null")
@@ -788,6 +892,104 @@ def _validate_receipt_shape(value: Any, path: str, errors: list[str]) -> dict[st
     if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
         errors.append(f"{path}.artifact_sha256: expected lowercase SHA-256")
     return receipt
+
+
+def _validate_formal_surface_snapshot(
+    provenance: dict[str, Any],
+    path: str,
+    base_revision: str,
+    repo_root: Path,
+    errors: list[str],
+) -> None:
+    """Bind a formal-surface snapshot to its immutable blob and current path."""
+
+    locator_path = f"{path}.provenance.source_locator"
+    relative = _safe_repo_relative_path(provenance.get("source_locator"))
+    if relative is None:
+        errors.append(
+            f"{locator_path}: Git-checked formal snapshots require repo:<safe relative path>"
+        )
+        return
+
+    revision_path = f"{path}.provenance.source_revision"
+    revision = provenance.get("source_revision")
+    if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
+        errors.append(
+            f"{revision_path}: Git-checked formal snapshots require an immutable "
+            "40-character Git revision"
+        )
+        return
+
+    digest = provenance.get("artifact_sha256")
+    if (
+        provenance.get("immutable") is not True
+        or not isinstance(digest, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", digest)
+    ):
+        return
+
+    try:
+        exists = _git_result(repo_root, "cat-file", "-e", f"{revision}^{{commit}}")
+        if exists.returncode != 0:
+            errors.append(f"{revision_path}: missing or unverifiable snapshot commit")
+            return
+
+        if re.fullmatch(r"[0-9a-f]{40}", base_revision):
+            after_baseline = _git_result(
+                repo_root, "merge-base", "--is-ancestor", base_revision, revision
+            )
+            if after_baseline.returncode == 1:
+                errors.append(f"{revision_path}: snapshot commit predates the campaign baseline")
+            elif after_baseline.returncode != 0:
+                errors.append(f"{revision_path}: could not compare snapshot commit with baseline")
+
+        before_head = _git_result(
+            repo_root, "merge-base", "--is-ancestor", revision, "HEAD"
+        )
+        if before_head.returncode == 1:
+            errors.append(f"{revision_path}: snapshot commit is not an ancestor of HEAD")
+        elif before_head.returncode != 0:
+            errors.append(f"{revision_path}: could not compare snapshot commit with HEAD")
+
+        blob = _git_bytes_result(repo_root, "cat-file", "blob", f"{revision}:{relative}")
+        if blob.returncode != 0:
+            errors.append(
+                f"{locator_path}: missing or non-blob path at the snapshot revision"
+            )
+            return
+        if hashlib.sha256(blob.stdout).hexdigest() != digest:
+            errors.append(
+                f"{path}.provenance.artifact_sha256: digest does not match the exact Git blob"
+            )
+
+        literal_pathspec = f":(literal){relative}"
+        head_diff = _git_result(
+            repo_root, "diff", "--quiet", revision, "HEAD", "--", literal_pathspec
+        )
+        if head_diff.returncode == 1:
+            errors.append(
+                f"{locator_path}: pinned path differs between snapshot revision and HEAD"
+            )
+        elif head_diff.returncode != 0:
+            errors.append(f"{locator_path}: could not compare pinned path with HEAD")
+
+        worktree = _git_bytes_result(
+            repo_root,
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--",
+            literal_pathspec,
+        )
+        if worktree.returncode != 0:
+            errors.append(f"{locator_path}: could not inspect pinned path worktree state")
+        elif worktree.stdout:
+            errors.append(
+                f"{locator_path}: pinned path has tracked or untracked worktree changes"
+            )
+    except (OSError, subprocess.TimeoutExpired):
+        errors.append(f"{locator_path}: Git-backed snapshot verification failed to execute")
 
 
 def _validate_evidence(
@@ -833,7 +1035,12 @@ def _validate_evidence(
             errors,
         )
         _check_unique_strings(_list(evidence.get("supports"), f"{path}.supports", errors, nonempty=True), f"{path}.supports", errors)
-        provenance = _validate_provenance(evidence.get("provenance"), f"{path}.provenance", errors)
+        provenance = _validate_provenance(
+            evidence.get("provenance"),
+            f"{path}.provenance",
+            now,
+            errors,
+        )
         if kind == "PRIMARY_REFERENCE_EVIDENCE":
             if len(reference_ids) != 1:
                 errors.append(
@@ -858,6 +1065,14 @@ def _validate_evidence(
             "FORMAL_SURFACE_SNAPSHOT",
         } and not provenance.get("artifact_sha256"):
             errors.append(f"{path}.provenance.artifact_sha256: artifact-backed evidence requires a digest")
+        if kind == "FORMAL_SURFACE_SNAPSHOT" and check_git_revision and repo_root is not None:
+            _validate_formal_surface_snapshot(
+                provenance,
+                path,
+                base_revision,
+                repo_root,
+                errors,
+            )
         if receipt is not None:
             verifier = verifiers.get(receipt.get("verifier_id"))
             if verifier is None:
@@ -869,7 +1084,7 @@ def _validate_evidence(
                 max_age = verifier.get("receipt_max_age_seconds")
                 if generated is not None and isinstance(max_age, int):
                     age = (now - generated).total_seconds()
-                    if age < -300:
+                    if age < 0:
                         errors.append(f"{path}.receipt.generated_at: receipt is from the future")
                     elif age > max_age:
                         errors.append(f"{path}.receipt.generated_at: stale receipt ({int(age)}s > {max_age}s)")
@@ -1387,13 +1602,17 @@ def _validate_graph_and_epistemics(
                 errors.append(f"$.obligations[{node_id}]: ALL-dependency closure requires every dependency CLOSED")
             if mode == "ANY" and not any(status == "CLOSED" for status in dependency_statuses):
                 errors.append(f"$.obligations[{node_id}]: ANY-dependency closure requires one CLOSED branch")
-        if disposition in {"FALSIFIED", "REVERTED"}:
+        if disposition in {"RED", "FALSIFIED", "REVERTED"}:
             witnesses = [
                 item
                 for link, item in zip(links, linked, strict=False)
                 if link.get("role") == "FALSIFICATION" and item.get("kind") == "FALSIFICATION_WITNESS"
             ]
-            if not witnesses:
+            if disposition == "RED" and not witnesses:
+                errors.append(
+                    f"$.obligations[{node_id}]: RED disposition requires a linked falsification witness"
+                )
+            if disposition in {"FALSIFIED", "REVERTED"} and not witnesses:
                 errors.append(f"$.obligations[{node_id}]: falsified/reverted disposition requires a checked witness")
 
     closed_endpoints = [node_id for node_id in resolution_ids if nodes.get(node_id, {}).get("disposition") == "CLOSED"]
@@ -1433,6 +1652,7 @@ def validate_registry(
     """
 
     errors: list[str] = []
+    now_utc = (now or datetime.now(tz=UTC)).astimezone(UTC)
     top = _exact_object(data, "$", TOP_KEYS, errors)
     if top is None:
         return ValidationResult(tuple(errors))
@@ -1448,7 +1668,9 @@ def validate_registry(
     if not isinstance(base_revision, str) or not re.fullmatch(r"[0-9a-f]{40}", base_revision):
         errors.append("$.base_revision: expected immutable 40-character Git revision")
         base_revision = ""
-    _timestamp(top.get("generated_at"), "$.generated_at", errors)
+    generated_at = _timestamp(top.get("generated_at"), "$.generated_at", errors)
+    if generated_at is not None and generated_at > now_utc:
+        errors.append("$.generated_at: registry timestamp is from the future")
     if top.get("ssot") is not True:
         errors.append("$.ssot: must be true; status views are derived")
 
@@ -1480,7 +1702,6 @@ def validate_registry(
         except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             errors.append(f"$.base_revision: missing or unverifiable baseline commit: {exc}")
 
-    now_utc = (now or datetime.now(tz=UTC)).astimezone(UTC)
     campaign = _validate_campaign(top.get("campaign"), errors)
     references = _validate_references(top.get("references"), errors)
     barriers = _validate_barriers(top.get("barriers"), references, errors)
