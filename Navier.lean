@@ -45,6 +45,7 @@ import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.EnstrophyPointwise
+import Navier.Analysis.LocalEnstrophyBalance
 import Navier.Analysis.FrequencyCascadeObstruction
 import Navier.Analysis.MultiFrequencyMild
 import Navier.Analysis.FrequencyMildGlobal
