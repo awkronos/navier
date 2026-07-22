@@ -75,7 +75,7 @@ same-wave). Tractability-ordered inventory (file : decl [ref; est LOC]):
 | 3 | `sobolevEmbeddingDomination` | BKMLogBootstrap | H³↪L∞ Fourier/Cauchy–Schwarz; M–B Lemma 3.2 | ~250 |
 | 4 | `multiMild_extends_of_apriori_bound` | MultiFrequencyMild | finite-mode BKM, ODE continuation | ~300 |
 | 5 | `sobolevControlContinuity` | BKMLogBootstrap | dominated convergence over slices; M–B §3.2.3 | ~300 |
-| 6 | `enstrophyDifferentialInequality` | Enstrophy | M–B §3.3. **Pointwise tower COMPLETE** (`e856148`,`917525d`,`8b72a4b`) and **integral layer (a)+(b) ESTABLISHED** (`3f82fc0`,`08b9257`, axioms [propext, Classical.choice, Quot.sound] fresh-printed): CutoffEnstrophy — `cutoffEnstrophy`, the NAMED Pattern-A hypothesis `LocallyDominatedEnstrophy` (∃ g∈L¹ dominating |ω(t,·)|² and ∂ₜ|ω(t,·)|²=2⟨ω,∂ₜω⟩ uniformly on each compact ⊂[0,T); zero-solution non-vacuity), `vorticity_hasDerivAt_time` (one-sided timeDerivative = two-sided derivative at interior t), `cutoffEnstrophy_hasDerivAt{_balance}` (E_χ'=∫χ·(balance RHS) via `hasDerivAt_integral_of_dominated_loc_of_deriv_le`); CutoffIntegrationByParts — `integral_cutoff_{directional,transport,laplacian}_ibp` (∫χ(u·∇)|ω|²=−∫(u·∇χ)|ω|² under div u=0; ∫χΔ|ω|²=∫(Δχ)|ω|²; Haar-volume IBP, boundary terms killed by compact support) → capstone `cutoffEnstrophy_hasDerivAt_ibp`: E_χ'(t₀)=∫χ·2⟨ω,(ω·∇)u⟩+∫(u·∇χ)|ω|²+ν∫(Δχ)|ω|²−2ν∫χ|∇ω|². Also landed: `enstrophy_hasDerivAt` (`6408080`, χ≡1 instance — FULL enstrophy differentiable with E'=∫2⟨ω,∂ₜω⟩, closing the derivative-existence clause) and `ScaledCutoff` (`bab78da`: χ_R=standardBump(·/R) with chain-rule decay ∂χ_R=O(R⁻¹), ∂²χ_R=O(R⁻²), eventually-1 pointwise — the (c) input package). RESIDUAL = (c) assembly only: along χ_R (c1) the ∇χ_R/Δχ_R remainders vanish under `LocallyDominatedEnstrophy` + a locally uniform velocity bound on the support annuli, (c2) E_{χ_R}→E and the stretching/dissipation integrals converge (dominated convergence under the same g), (c3) the limit of the capstone identity + `stretching_pointwise_bound` + dropping dissipation delivers E'≤2G·E and the ContinuousOn clause — exactly the statement `enstrophy_apriori_bound` consumes. | (c) R→∞ layer ~200 |
+| 6 | `enstrophyDifferentialInequality` ✅ ESTABLISHED (`EnstrophyLimit`, commits `3f82fc0`+`08b9257`+`bab78da`+`6408080`+`54d40aa`+`752c298`; axioms [propext, Classical.choice, Quot.sound] fresh post-rebuild) — E'≤2G·E + ContinuousOn derived END-TO-END under the two NAMED Pattern-A hypotheses `LocallyDominatedEnstrophy` + `TransportDominatedEnstrophy` (both automatic for H^m/Schwartz solutions, both zero-solution-anchored; the old bare-integrability skeleton was RETIRED in `752c298` — it could not support the derivative interchange). Chain: pointwise tower → cutoff rate (dominated diff-under-integral) → IBP remainders (Haar-volume IBP, div-free cancellation) → scaled family χ_R with R⁻¹/R⁻² decay → R→∞ limit (HasDerivAt.unique finite-R identity + dominated convergence + ge_of_tendsto dissipation sign + stretching bound). `EnstrophyLimit.enstrophy_apriori_bound` E(t)≤(1+E(0))exp(2∫G)−1 now UNCONDITIONAL — the M₂ majorant for the BKM assembly. | Enstrophy | M–B §3.3 | — |
 | 7 | `exists_isMultiMildSolutionOn_local` | MultiFrequencyMild | product Duhamel contraction; Kato 1984 | ~400 |
 | 8 | `biotSavartLogInequality` | BKMLogBootstrap | Biot–Savart + CZ + log interp; BKM 1984 Lemma 1 | ~400 |
 | 9 | `katoCommutatorEstimate` | BKMLogBootstrap | H³ energy commutator; Kato–Ponce 1988 | ~600 |
@@ -99,9 +99,11 @@ div-free, line-constancy nonzero, smoothTransition envelope).
 DERIVED conditional on skeletons (sorryAx disclosed):
 `logBKMControl_of_schwartzSliced` (the tower composes end-to-end: solutions +
 4 analytic inputs ⟹ LogBKMControl ⟹ uniform bound);
-`enstrophy_apriori_bound` (Grönwall wiring, produces the M₂ majorant the BKM
-wiring consumes); `halfSpaceSmooth_iff_extension`.
+`halfSpaceSmooth_iff_extension`.  (`enstrophy_apriori_bound` PROMOTED: now
+the unconditional `EnstrophyLimit.enstrophy_apriori_bound`, `752c298`.)
 
-Assembly line once #3, #6, #8, #9 close: ∫‖ω‖_∞ < ∞ → biotSavart gradient
-majorant → enstrophy M₂ → LogBKMControl → velocity bounded → no pointwise
-breakdown. That is the full BKM theorem for this repo's classical solutions.
+Assembly line (#6 CLOSED 2026-07-22; remaining #3, #8, #9): ∫‖ω‖_∞ < ∞ →
+biotSavart gradient majorant → enstrophy M₂ (`EnstrophyLimit.
+enstrophy_apriori_bound`, UNCONDITIONAL under the named domination
+hypotheses) → LogBKMControl → velocity bounded → no pointwise breakdown.
+That is the full BKM theorem for this repo's classical solutions.
