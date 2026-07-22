@@ -164,13 +164,13 @@ Obtained from `local_enstrophy_balance` by bounding the stretching production
 sign-definite dissipation `−2ν|∇ω|² ≤ 0`.  This is the pointwise integrand
 whose cutoff integral gives the enstrophy differential inequality
 `E' ≤ 2G·E`: the transport term `(u·∇)|ω|²` is a divergence killed by the
-cutoff at `R → ∞`, and `∫ χ_R Δ(|ω|²) = ∫ (Δχ_R)|ω|² → 0`.  The remaining
-integral layer (differentiation under the integral over `χ_R` and the
-`R → ∞` interchange) is the named residual of
-`Navier.Analysis.Enstrophy.enstrophyDifferentialInequality`; it requires a
-local-uniform-in-time domination hypothesis (a Pattern-A strengthening
-automatic for `H^m`/Schwartz-regular solutions but not carried by
-`IsClassicalSolution`). -/
+cutoff at `R → ∞`, and `∫ χ_R Δ(|ω|²) = ∫ (Δχ_R)|ω|² → 0`.  The integral
+layer (differentiation under the integral, the cutoff integration by parts,
+and the `R → ∞` interchange) is established in `CutoffEnstrophy`,
+`CutoffIntegrationByParts`, `ScaledCutoff`, and `EnstrophyLimit`,
+culminating in `EnstrophyLimit.enstrophyDifferentialInequality` under the
+named Pattern-A domination hypotheses (automatic for `H^m`/Schwartz-regular
+solutions but not carried by `IsClassicalSolution`). -/
 theorem pointwise_enstrophy_differential_inequality
     {ν : ℝ} {u₀ : SchwartzVelocity} {u : VelocityEvolution} {p : PressureEvolution}
     (hsol : IsClassicalSolution ν zeroForce u₀ u p) {t : ℝ} (ht : 0 ≤ t)

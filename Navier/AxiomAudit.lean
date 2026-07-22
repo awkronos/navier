@@ -65,6 +65,7 @@ import Navier.Routes.R7.FullSixModeReceiverRates
 import Navier.Routes.R7.FullSixModeBalance
 import Navier.Analysis.MultiFrequencyMild
 import Navier.Analysis.Enstrophy
+import Navier.Analysis.EnstrophyLimit
 import Navier.Analysis.LerayWeak
 
 /-!
@@ -619,10 +620,13 @@ the honest Galerkin multi-frequency mild layer, and the Leray–Hopf weak
 structure.  Every declaration audited below is an UNCONDITIONAL theorem of that
 campaign — each `#print axioms` receipt is a strict subset of
 `{propext, Classical.choice, Quot.sound}` (verified 2026-07-16).  The
-conditional tower theorems that consume the four analytic skeletons
-(`logBKMControl_of_schwartzSliced`, `enstrophy_apriori_bound`,
-`halfSpaceSmooth_iff_extension`) are deliberately EXCLUDED — they carry a
-disclosed `sorryAx` until the skeletons close and are not unconditional.
+conditional tower theorems that consume the remaining analytic skeletons
+(`logBKMControl_of_schwartzSliced`, `halfSpaceSmooth_iff_extension`) are
+deliberately EXCLUDED — they carry a disclosed `sorryAx` until the skeletons
+close and are not unconditional.  The enstrophy chain is no longer among
+them: `EnstrophyLimit.enstrophyDifferentialInequality` and
+`EnstrophyLimit.enstrophy_apriori_bound` are UNCONDITIONAL under the two
+named Pattern-A domination hypotheses (audited below).
 -/
 
 #print axioms Navier.Analysis.BealeKatoMajda.gronwall_loglinear_apriori
@@ -632,6 +636,15 @@ disclosed `sorryAx` until the skeletons close and are not unconditional.
 #print axioms Navier.Analysis.Enstrophy.stretching_pointwise_bound
 #print axioms Navier.Analysis.Enstrophy.enstrophy_nonneg
 #print axioms Navier.Analysis.Enstrophy.enstrophy_zero_velocity
+
+-- Cutoff-enstrophy integral layer (2026-07-22): the enstrophy differential
+-- inequality and a-priori bound, unconditional under the named Pattern-A
+-- domination hypotheses.
+#print axioms Navier.Analysis.CutoffEnstrophy.cutoffEnstrophy_hasDerivAt_balance
+#print axioms Navier.Analysis.CutoffEnstrophy.enstrophy_hasDerivAt
+#print axioms Navier.Analysis.CutoffIntegrationByParts.cutoffEnstrophy_hasDerivAt_ibp
+#print axioms Navier.Analysis.EnstrophyLimit.enstrophyDifferentialInequality
+#print axioms Navier.Analysis.EnstrophyLimit.enstrophy_apriori_bound
 #print axioms Navier.Analysis.MultiFrequencyMild.truncatedSymbol_eq_zero_of_no_resonance
 #print axioms Navier.Analysis.MultiFrequencyMild.truncatedSymbol_resonantTriple
 #print axioms Navier.Analysis.MultiFrequencyMild.multiMild_oneFrequency_heatFlow
