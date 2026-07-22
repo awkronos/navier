@@ -49,6 +49,7 @@ import Navier.Analysis.LocalEnstrophyBalance
 import Navier.Analysis.CutoffEnstrophy
 import Navier.Analysis.CutoffIntegrationByParts
 import Navier.Analysis.ScaledCutoff
+import Navier.Analysis.EnstrophyLimit
 import Navier.Analysis.FrequencyCascadeObstruction
 import Navier.Analysis.MultiFrequencyMild
 import Navier.Analysis.FrequencyMildGlobal
