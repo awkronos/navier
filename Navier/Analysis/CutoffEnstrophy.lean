@@ -475,4 +475,41 @@ theorem cutoffEnstrophy_hasDerivAt_balance
   rw [hint] at h
   exact h
 
+/-- **Full enstrophy rate** (the `χ ≡ 1` instance of the cutoff rate): under
+the domination hypothesis the full enstrophy is differentiable at interior
+times with
+
+  `E'(t₀) = ∫ 2⟨ω, ∂ₜω⟩`.
+
+The constant multiplier is continuous and bounded by `1`, so no compact
+support is needed for the differentiation step; the cutoff family enters only
+in the integration-by-parts layer (`CutoffIntegrationByParts`), where the
+transport and viscous terms individually need the `∇χ`/`Δχ` remainders. -/
+theorem enstrophy_hasDerivAt
+    {ν : ℝ} {u₀ : SchwartzVelocity} {u : VelocityEvolution}
+    {p : PressureEvolution}
+    (hsol : IsClassicalSolution ν zeroForce u₀ u p)
+    {T : ℝ} (hdom : LocallyDominatedEnstrophy u T)
+    {t₀ : ℝ} (ht₀ : t₀ ∈ Set.Ioo 0 T) :
+    HasDerivAt (enstrophy u)
+      (∫ x : Space, 2 * officialInner (vorticity u t₀ x)
+        (timeDerivative (fun s => vorticity u s) t₀ x)) t₀ := by
+  have h := cutoffEnstrophy_hasDerivAt hsol hdom (χ := fun _ => 1)
+    continuous_const (C := 1) (fun x => by norm_num) ht₀
+  have hEeq : cutoffEnstrophy (fun _ => 1) u = enstrophy u := by
+    funext t
+    unfold cutoffEnstrophy enstrophy
+    congr 1
+    funext x
+    rw [one_mul]
+  have hval : (∫ x : Space, (1:ℝ) * (2 * officialInner (vorticity u t₀ x)
+      (timeDerivative (fun s => vorticity u s) t₀ x))) =
+      ∫ x : Space, 2 * officialInner (vorticity u t₀ x)
+        (timeDerivative (fun s => vorticity u s) t₀ x) := by
+    congr 1
+    funext x
+    rw [one_mul]
+  rw [hEeq, hval] at h
+  exact h
+
 end Navier.Analysis.CutoffEnstrophy
