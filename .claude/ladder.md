@@ -71,11 +71,11 @@ same-wave). Tractability-ordered inventory (file : decl [ref; est LOC]):
 | # | obligation | file | ref / route | est LOC |
 |---|---|---|---|---|
 | 1 | `isMultiMildSolutionOn_unique` ✅ ESTABLISHED (`c75263f`+`ed9080f`; axioms [propext, Classical.choice, Quot.sound] re-verified fresh) | MultiFrequencyMild | Grönwall/contraction as FrequencyDuhamel | ~150 |
-| 2 | `vorticityTransportEquation` | Enstrophy | curl of NS, Clairaut bookkeeping; M–B (1.33) | ~250 |
+| 2 | `vorticityTransportEquation` ✅ ESTABLISHED (`ce9edf5`+`fea63b8`; axioms [propext, Classical.choice, Quot.sound] fresh-printed) | Enstrophy | transport iff (`d35c359`) ∘ convection–curl identity (ConvectionCurl.lean: product rule + Clairaut + gradient-square cross identity under div u = 0) | — |
 | 3 | `sobolevEmbeddingDomination` | BKMLogBootstrap | H³↪L∞ Fourier/Cauchy–Schwarz; M–B Lemma 3.2 | ~250 |
 | 4 | `multiMild_extends_of_apriori_bound` | MultiFrequencyMild | finite-mode BKM, ODE continuation | ~300 |
 | 5 | `sobolevControlContinuity` | BKMLogBootstrap | dominated convergence over slices; M–B §3.2.3 | ~300 |
-| 6 | `enstrophyDifferentialInequality` | Enstrophy | diff-under-integral + parts; M–B §3.3 | ~350 |
+| 6 | `enstrophyDifferentialInequality` | Enstrophy | diff-under-integral + parts; M–B §3.3. ⚠ Truth-check (2026-07-22): the ≤ mechanism is sound Kato-style (transport/viscous cutoff boundary terms are tail-enstrophy-controlled; the uncontrolled −2ν∫|∇ω|² has a sign), but the `HasDerivAt`-at-every-t claim under only per-slice ω∈L² is where M–B uses H^m machinery this statement lacks — closure route is the cutoff identity + interchange, or a Pattern-A hypothesis strengthening (local-uniform domination / ∇ω ∈ L²_loc). Pointwise integrand layer ESTABLISHED axiom-clean in EnstrophyPointwise.lean (`e856148`): ∂_v|w|²=2⟨w,∂_v w⟩, Bochner Δ|w|²=2⟨w,Δw⟩+2∑|∂ᵢw|², 2ν⟨w,Δw⟩≤νΔ|w|². | ~350 |
 | 7 | `exists_isMultiMildSolutionOn_local` | MultiFrequencyMild | product Duhamel contraction; Kato 1984 | ~400 |
 | 8 | `biotSavartLogInequality` | BKMLogBootstrap | Biot–Savart + CZ + log interp; BKM 1984 Lemma 1 | ~400 |
 | 9 | `katoCommutatorEstimate` | BKMLogBootstrap | H³ energy commutator; Kato–Ponce 1988 | ~600 |
