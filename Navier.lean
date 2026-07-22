@@ -34,6 +34,7 @@ import Navier.Analysis.EnergyInstantaneousIntegralBalance
 import Navier.Analysis.EnergyDerivativeUnderIntegral
 import Navier.Analysis.Vorticity
 import Navier.Analysis.VorticityTransport
+import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.BiotSavartKernel
 import Navier.Analysis.SingularIntegralPrelims
 import Navier.Analysis.WeightIntegrability
