@@ -1,4 +1,5 @@
 import Navier.Analysis.BKMLogBootstrap
+import Navier.Analysis.ConvectionCurl
 
 /-!
 # Enstrophy: the vortex-stretching energy layer
@@ -26,11 +27,13 @@ gradient sup — the exact `M₂` (vorticity-`L²`) majorant that
   inequality (skeleton below), `E(t) ≤ (1+E(0))·exp(2∫₀ᵗ G) − 1` on `[0,T)`.
   (Inherits the skeleton's `sorryAx`; the Grönwall application, derivative
   extraction, and bound algebra are fully derived.)
+* `vorticityTransportEquation` — `∂ₜω + (u·∇)ω = (ω·∇)u + νΔω`
+  [curl of Navier–Stokes; Majda–Bertozzi (1.33) / §1.6]: the curl of the
+  momentum equation (`VorticityTransport`) composed with the convection–curl
+  identity (`ConvectionCurl`).
 
 ## Skeletons (honest `sorry`, truth-checked signatures)
 
-* `vorticityTransportEquation` — `∂ₜω + (u·∇)ω = (ω·∇)u + νΔω`
-  [curl of Navier–Stokes; Majda–Bertozzi (1.33) / §1.6; est ~250 LOC].
 * `enstrophyDifferentialInequality` — continuity + derivative existence +
   `E' ≤ 2·G·E` under a gradient majorant and **explicit integrability
   hypotheses** (without which the Bochner integral degenerates to `0` and the
@@ -118,16 +121,15 @@ theorem enstrophy_zero_velocity (t : ℝ) :
 ## Skeletons
 -/
 
-/-- **[SKELETON — vorticity transport; curl of Navier–Stokes;
-Majda–Bertozzi (1.33)/§1.6; est ~250 LOC.]**  Along a classical solution the
-vorticity satisfies `∂ₜω + (u·∇)ω = (ω·∇)u + νΔω` pointwise on nonnegative
-time: taking the coordinate curl of the momentum equation kills the pressure
-gradient (`curl ∘ grad = 0`), commutes with `∂ₜ` and `Δ` by joint smoothness
-(Clairaut), and turns the convection term into transport minus stretching via
-`div u = 0` and `div ω = 0`.
-
-Closure route: componentwise Clairaut symmetry bookkeeping on the repo's
-Fréchet operators; no measure theory involved. -/
+/-- **Vorticity transport equation** (Majda–Bertozzi (1.33)/§1.6).  Along a
+classical solution the vorticity satisfies `∂ₜω + (u·∇)ω = (ω·∇)u + νΔω`
+pointwise on nonnegative time.  The curl of the momentum equation kills the
+pressure gradient and commutes with `∂ₜ` and `Δ`
+(`curl_of_momentum_eq_partial_vorticity_transport`), reducing the PDE to the
+convection–curl identity `curl((u·∇)u) = (u·∇)ω − (ω·∇)u`
+(`vorticityTransport_eq_partial_and_convection_curl`), which
+`staticCurl_convection_evolution` derives from the bilinear product rule,
+Clairaut symmetry, and the gradient-square cross identity under `div u = 0`. -/
 theorem vorticityTransportEquation
     {ν : ℝ} {u₀ : SchwartzVelocity} {u : VelocityEvolution}
     {p : PressureEvolution}
@@ -137,7 +139,10 @@ theorem vorticityTransportEquation
         spatialDerivative (fun s => vorticity u s) t x (u t x) =
       spatialDerivative u t x (vorticity u t x) +
         ν • laplacian (fun s => vorticity u s) t x := by
-  sorry
+  intro t ht x
+  exact (VorticityTransport.vorticityTransport_eq_partial_and_convection_curl
+      hsol ht x).mpr
+    (ConvectionCurl.staticCurl_convection_evolution hsol ht x)
 
 /-- **[SKELETON — enstrophy differential inequality; Majda–Bertozzi §3.3;
 est ~350 LOC.]**  Along a classical solution with a gradient majorant `G`
