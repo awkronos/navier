@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "file": "Navier/ClayFrontier.lean",
+      "declaration": "statementADisposition",
+      "kind": "scientific_disposition",
+      "resolution": "conjectural",
+      "evidence_class": "none_declared",
+      "domain": "navier_stokes_clay",
+      "note": "Statement A (global regularity) disposition for the Clay Navier-Stokes frontier; conjecture-tier, tracked separately from bridge/payload/opaque scientific opens."
+    }
+  ]
+}
