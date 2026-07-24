@@ -21,6 +21,9 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
 - [`docs/ATTACK.md`](docs/ATTACK.md): 11 parallel positive, rigidity,
   computational, and breakdown routes, each with a lower residual, kill test,
   and pivot.
+- [`docs/OPEN_FRONTIER_MAP.md`](docs/OPEN_FRONTIER_MAP.md): the checked support
+  layer, the twelve-lane open-obligation map, and the endpoint dependency
+  picture.
 - [`data/attack_registry.json`](data/attack_registry.json): the sole
   machine-readable status/dependency/evidence registry, checked fail-closed.
 - [`Navier/Problem.lean`](Navier/Problem.lean): concrete derivatives,

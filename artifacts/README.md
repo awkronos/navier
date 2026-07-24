@@ -25,5 +25,10 @@ Replay a delivered manifest with:
 python3 scripts/replay_experiment.py artifacts/runs/experiment.json
 ```
 
-No experiment has been delivered at repository initialization. The retained
-`.gitkeep` is not evidence of a run.
+One experiment is currently delivered:
+[`runs/experiment.json`](runs/experiment.json)
+(`experiment.r7_exact_symmetrized_triad_scan`, repository revision
+`64600448b8a3f2ddc251e32ccb67d7e2b86cd1ee`, epistemic status
+`FALSIFICATION_WITNESS`, `closes_clay_endpoint=false`). It is observation
+evidence only, replayable through the gate above. The retained `.gitkeep` is
+not evidence of a run.
