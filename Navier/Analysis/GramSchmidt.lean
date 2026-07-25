@@ -26,16 +26,20 @@ Equations*, Ch. 4; Temam, *Navier–Stokes Equations*, Ch. III §3].
   nested induction, from the banked `gramSchmidt_residual_inner` and
   `schwartzL2Inner_normalize_self`, conditional on residual positivity.
 
-## Honest sorries (strictly-lower named leaves)
+## Derived here (recursion bridge, no sorry)
 
-* `gsU_pos` — residual positivity from `R.independent` (span-coefficient
-  tracking; est ~70 LOC).
-* `gsVec_dense_span` — density transfer through the triangular
-  change-of-basis (span equality; est ~60 LOC).
+* `gsVec_eq_gramSchmidtField` — this file's `gsVec`/`gsU` recursion coincides
+  with the banked `gramSchmidtField`/`gsResidual` recursion of
+  `GalerkinBasis.lean` (strong induction; same normalization recursion, only
+  the sum presentation differs).
+* `gsU_pos` — residual positivity, derived from `gsResidual_inner_pos`
+  (`GalerkinBasis.lean`, `L²`-independence ⇒ positive residual seminorm)
+  through the bridge.
+* `gsVec_dense_span` — density transfer, derived from
+  `gramSchmidtField_dense_span` (`GalerkinBasis.lean`) through the bridge.
 
 `rawDivFree_orthonormalize'` assembles the `GalerkinBasisFamily` from those
-facts and is ProvedModulo the two named leaves above — nothing else in its
-axiom footprint.
+facts with no remaining sorry.
 -/
 
 set_option autoImplicit false
@@ -159,33 +163,56 @@ theorem gsVec_orthonormal_of_pos (v : ℕ → SchwartzVelocity)
       · rw [hi', if_neg (show ¬ n = j by omega)]; exact hnb j hj'
       · rw [hi', hj', if_pos rfl]; exact hnn
 
-/-- **[NAMED RESIDUAL — positivity of the Gram–Schmidt residual from
-`L²`-linear independence; Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3;
-est ~70 LOC.]**  Missing argument: `gsU R.v n` equals `R.v n` plus a finite
-`ℝ`-combination of `R.v 0, …, R.v (n−1)` — triangular span-coefficient
-tracking: each `gsVec R.v k` with `k < n` is itself a finite combination of
-`R.v 0, …, R.v k` (induction through `gsVec_eq` and `gsU`).  If
-`⟨gsU, gsU⟩ = 0`, that combination has zero seminorm with coefficient `1`
-on `R.v n`, contradicting `R.independent`; combined with
-`schwartzL2Inner_self_nonneg` this yields strict positivity. -/
+/-- **Recursion bridge**: the `gsVec`/`gsU` recursion of this file coincides
+with the banked `gramSchmidtField`/`gsResidual` recursion of
+`GalerkinBasis.lean` — the same normalization recursion
+`w_n = normalize(v_n − ∑_{k<n} ⟨v_n, w_k⟩ w_k)`, differing only in the sum
+presentation (`Fin n` vs `Finset.range n`).  Strong induction on `n`: the
+residuals agree termwise from the induction hypothesis on the earlier modes
+(`gsVec R.v k = gramSchmidtField R k` for `k < n`), hence the normalized fields
+agree. -/
+theorem gsVec_eq_gramSchmidtField (R : RawDivFreeFamily) (n : ℕ) :
+    gsVec R.v n = gramSchmidtField R n ∧ gsU R.v n = gsResidual R n := by
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    have hU : gsU R.v n = gsResidual R n := by
+      rw [gsU_range]
+      calc R.v n - ∑ k ∈ Finset.range n,
+              schwartzL2Inner (R.v n) (gsVec R.v k) • gsVec R.v k
+          = R.v n - ∑ k ∈ Finset.range n,
+              schwartzL2Inner (R.v n) (gramSchmidtField R k) • gramSchmidtField R k := by
+            congr 1
+            exact Finset.sum_congr rfl fun k hk => by
+              rw [(ih k (Finset.mem_range.mp hk)).1]
+        _ = gsResidual R n := rfl
+    exact ⟨by rw [gsVec_eq, hU, ← gramSchmidtField_eq], hU⟩
+
+/-- **Positivity of the Gram–Schmidt residual** [Robinson–Rodrigo–Sadowski
+Ch. 4; Temam III §3].  `L²`-linear independence of the raw family forces every
+residual to have strictly positive `L²` seminorm — the well-definedness of the
+normalization.  Derived through `gsVec_eq_gramSchmidtField` from the banked
+`gsResidual_inner_pos` (`GalerkinBasis.lean`), whose proof runs the
+span-representation contradiction (`gsResidual_repr` + `R.independent`). -/
 theorem gsU_pos (R : RawDivFreeFamily) (n : ℕ) :
     0 < schwartzL2Inner (gsU R.v n) (gsU R.v n) := by
-  sorry
+  rw [(gsVec_eq_gramSchmidtField R n).2]
+  exact gsResidual_inner_pos R n
 
-/-- **[NAMED RESIDUAL — dense-span transfer through Gram–Schmidt;
-Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; est ~60 LOC.]**  Missing
-argument: span equality — the change-of-basis between
-`{R.v 0, …, R.v (m−1)}` and `{gsVec R.v 0, …, gsVec R.v (m−1)}` is
-triangular with diagonal entries `1/√⟨gsU, gsU⟩ > 0` (positivity from
-`gsU_pos`), hence invertible: every finite `v`-combination rewrites as a
-finite `gsVec`-combination over the same range (Finset sum algebra).  Then
-`R.dense_span u hu ε hε` transfers verbatim. -/
+/-- **Dense-span transfer through Gram–Schmidt** [Robinson–Rodrigo–Sadowski
+Ch. 4; Temam III §3].  The raw family's `L²`-dense finite spans transfer to the
+Gram–Schmidt family (invertible triangular change-of-basis).  Derived through
+`gsVec_eq_gramSchmidtField` from the banked `gramSchmidtField_dense_span`
+(`GalerkinBasis.lean`), whose proof re-expresses each raw approximant in the
+Gram–Schmidt span via `raw_inSpanW`. -/
 theorem gsVec_dense_span (R : RawDivFreeFamily) :
     ∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
       ∃ (m : ℕ) (c : ℕ → ℝ),
         schwartzL2Inner (u - ∑ j ∈ Finset.range m, c j • gsVec R.v j)
           (u - ∑ j ∈ Finset.range m, c j • gsVec R.v j) < ε := by
-  sorry
+  have hfun : gsVec R.v = gramSchmidtField R :=
+    funext fun n => (gsVec_eq_gramSchmidtField R n).1
+  rw [hfun]
+  exact gramSchmidtField_dense_span R
 
 /-- **Assembly: a raw dense divergence-free family orthonormalizes into a
 `GalerkinBasisFamily`** [Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3] —
