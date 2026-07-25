@@ -390,6 +390,38 @@ theorem truncatedConvection_diff_sum_norm_le {n : ℕ} (q a b : Fin n → E3)
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
         ring
 
+/-- **Quadratic a-priori self-bound for the truncated nonlinearity**
+[Kato, Math. Z. 187 (1984); Fujita–Kato, Arch. Rational Mech. Anal. 16 (1964)].
+Ball-invariance companion to `truncatedConvection_diff_sum_norm_le`: on a
+frequency fiber bounded by `R`, the summed norm of the truncated convection
+symbol is controlled by `2n²·R·(∑‖q‖)·(∑‖a‖)` (quadratic in the amplitudes).
+Derived from the difference bound at `b = 0` (the symbol is bilinear, so
+`truncatedConvectionSymbol q 0 0 = 0`).  This is the ball-invariance ingredient
+of the mild-solution Banach fixed point (`exists_isMultiMildSolutionOn_local`),
+the companion of the contraction ingredient already supplied by the difference
+bound. -/
+theorem truncatedConvection_sum_norm_le {n : ℕ} (q a : Fin n → E3)
+    {R : ℝ} (hR : 0 ≤ R) (ha : ∀ m, ‖a m‖ ≤ R) :
+    ∑ k, ‖truncatedConvectionSymbol q a a k‖ ≤
+      2 * (n : ℝ) ^ 2 * R * (∑ j, ‖q j‖) * (∑ m, ‖a m‖) := by
+  have hzero : ∀ k : Fin n,
+      truncatedConvectionSymbol q (0 : Fin n → E3) (0 : Fin n → E3) k = 0 := by
+    intro k
+    unfold truncatedConvectionSymbol
+    refine Finset.sum_eq_zero fun i _ => Finset.sum_eq_zero fun j _ => ?_
+    simp
+  have hb : ∀ m : Fin n, ‖(0 : Fin n → E3) m‖ ≤ R := by
+    intro m; simp only [Pi.zero_apply, norm_zero]; exact hR
+  have hdiff := truncatedConvection_diff_sum_norm_le q a (0 : Fin n → E3) hR ha hb
+  have hL : ∑ k, ‖truncatedConvectionSymbol q a a k -
+        truncatedConvectionSymbol q (0 : Fin n → E3) (0 : Fin n → E3) k‖
+      = ∑ k, ‖truncatedConvectionSymbol q a a k‖ :=
+    Finset.sum_congr rfl fun k _ => by rw [hzero k, sub_zero]
+  have hRHS : ∑ m, ‖a m - (0 : Fin n → E3) m‖ = ∑ m, ‖a m‖ :=
+    Finset.sum_congr rfl fun m _ => by rw [Pi.zero_apply, sub_zero]
+  rw [hL, hRHS] at hdiff
+  exact hdiff
+
 /-- **Uniqueness of multi-frequency mild solutions.**  Two multi-frequency
 mild solutions with the same data agree on their common horizon: compactness
 of the horizon gives a uniform amplitude bound `R` on both solutions, the
