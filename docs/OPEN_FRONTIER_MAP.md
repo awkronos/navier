@@ -1,9 +1,9 @@
-# Resumed full-map attack: proved leaves and exact open frontier
+# Open frontier map: checked leaves and exact open obligations
 
 ## Verdict
 
-This wave materially advances the formal support graph but does **not** solve
-the three-dimensional Navier--Stokes Clay problem.  There is still no term
+The formal support graph has advanced materially, but the three-dimensional
+Navier--Stokes Clay problem is not solved.  There is still no term
 inhabiting `Navier.Clay.StatementA`, `StatementB`, `StatementC`, or
 `StatementD`.  The repository therefore remains
 `SCAFFOLDED / SCIENTIFIC_FRONTIER`.
@@ -14,13 +14,12 @@ At source commit `ca6d3b3d6954988541b45aef0bfb7ea2de1113e2`, the canonical comma
 lake env lean Navier/AxiomAudit.lean
 ```
 
-emits 448 raw declaration audits.  All 213 public theorems introduced by the
-resumed wave are included directly in that canonical surface; every emitted
-dependency is restricted to `propext`, `Classical.choice`, and `Quot.sound`.
-This establishes the named lower theorems only.  It is not an endpoint
-certificate.
+emits 448 raw declaration audits, each restricted to `propext`,
+`Classical.choice`, and `Quot.sound`.  Later commits extend the tree and name
+their own receipts.  The audits establish the named lower theorems only.  They
+are not an endpoint certificate.
 
-## What the resumed wave actually proves
+## What the checked layer proves
 
 ### Official energy representation
 
@@ -171,7 +170,7 @@ recovery without admissibility and agreement realizes none of these stages.
 
 ## Scientific boundary
 
-The resumed wave proves substantial lower mathematics and sharply reduces
+The checked layer proves substantial lower mathematics and sharply reduces
 several formalization residuals.  It does not establish global regularity,
 finite-time singularity, or either side of the Clay alternative.  Any future
 claim of closure must provide an actual A/B/C/D inhabitant, a fresh canonical
