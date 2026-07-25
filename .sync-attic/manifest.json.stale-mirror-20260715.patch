@@ -1,0 +1,177 @@
+diff --git a/references/manifest.json b/references/manifest.json
+index 47fe695..a965b8d 100644
+--- a/references/manifest.json
++++ b/references/manifest.json
+@@ -5,7 +5,6 @@
+   "sources": [
+     {
+       "id": "FEFFERMAN2000",
+-      "registry_id": "ref.clay.fefferman2000",
+       "title": "Existence and Smoothness of the Navier-Stokes Equation",
+       "authors": [
+         "Charles L. Fefferman"
+@@ -25,7 +24,6 @@
+     },
+     {
+       "id": "LERAY1934",
+-      "registry_id": "ref.leray.1934",
+       "title": "Sur le mouvement d'un liquide visqueux emplissant l'espace",
+       "authors": [
+         "Jean Leray"
+@@ -42,29 +40,8 @@
+       "primary": true,
+       "checked_at": "2026-07-14"
+     },
+-    {
+-      "id": "PRODI1959",
+-      "registry_id": "ref.prodi.1959",
+-      "title": "Un teorema di unicità per le equazioni di Navier-Stokes",
+-      "authors": [
+-        "Giovanni Prodi"
+-      ],
+-      "year": 1959,
+-      "venue": "Annali di Matematica Pura ed Applicata 48(1), 173-182",
+-      "type": "journal_article",
+-      "url": "https://doi.org/10.1007/BF02410664",
+-      "doi": "10.1007/BF02410664",
+-      "roles": [
+-        "Prodi integrability and uniqueness criterion",
+-        "critical mixed-norm continuation boundary",
+-        "R1 boundary"
+-      ],
+-      "primary": true,
+-      "checked_at": "2026-07-14"
+-    },
+     {
+       "id": "SERRIN1962",
+-      "registry_id": "ref.serrin.1962",
+       "title": "On the Interior Regularity of Weak Solutions of the Navier-Stokes Equations",
+       "authors": [
+         "James Serrin"
+@@ -83,7 +60,6 @@
+     },
+     {
+       "id": "KATO1984",
+-      "registry_id": "ref.kato.1984",
+       "title": "Strong L^p-Solutions of the Navier-Stokes Equation in R^m, with Applications to Weak Solutions",
+       "authors": [
+         "Tosio Kato"
+@@ -103,7 +79,6 @@
+     },
+     {
+       "id": "CKN1982",
+-      "registry_id": "ref.ckn.1982",
+       "title": "Partial Regularity of Suitable Weak Solutions of the Navier-Stokes Equations",
+       "authors": [
+         "Luis Caffarelli",
+@@ -125,7 +100,6 @@
+     },
+     {
+       "id": "CONSTANTIN_FEFFERMAN1993",
+-      "registry_id": "ref.constantin.fefferman1993",
+       "title": "Direction of Vorticity and the Problem of Global Regularity for the Navier-Stokes Equations",
+       "authors": [
+         "Peter Constantin",
+@@ -145,7 +119,6 @@
+     },
+     {
+       "id": "KOCH_TATARU2001",
+-      "registry_id": "ref.koch.tataru2001",
+       "title": "Well-Posedness for the Navier-Stokes Equations",
+       "authors": [
+         "Herbert Koch",
+@@ -154,7 +127,7 @@
+       "year": 2001,
+       "venue": "Advances in Mathematics 157(1), 22-35",
+       "type": "journal_article",
+-      "url": "https://doi.org/10.1006/aima.2000.1937",
++      "url": "https://math.berkeley.edu/~tataru/papers/nas.pdf",
+       "doi": "10.1006/aima.2000.1937",
+       "roles": [
+         "BMO-minus-one well-posedness",
+@@ -166,7 +139,6 @@
+     },
+     {
+       "id": "ESS2003",
+-      "registry_id": "ref.ess.2003",
+       "title": "L_{3,∞}-Solutions of the Navier-Stokes Equations and Backward Uniqueness",
+       "authors": [
+         "Luis Escauriaza",
+@@ -186,31 +158,8 @@
+       "primary": true,
+       "checked_at": "2026-07-14"
+     },
+-    {
+-      "id": "GALLAGHER_KOCH_PLANCHON2013",
+-      "registry_id": "ref.gallagher.koch.planchon2013",
+-      "title": "A profile decomposition approach to the L^∞_t(L^3_x) Navier–Stokes regularity criterion",
+-      "authors": [
+-        "Isabelle Gallagher",
+-        "Gabriel S. Koch",
+-        "Fabrice Planchon"
+-      ],
+-      "year": 2013,
+-      "venue": "Mathematische Annalen 355(4), 1527-1559",
+-      "type": "journal_article",
+-      "url": "https://doi.org/10.1007/s00208-012-0830-0",
+-      "doi": "10.1007/s00208-012-0830-0",
+-      "roles": [
+-        "critical profile decomposition",
+-        "critical-element regularity machinery",
+-        "R4 compactness boundary"
+-      ],
+-      "primary": true,
+-      "checked_at": "2026-07-14"
+-    },
+     {
+       "id": "FOIAS_TEMAM1989",
+-      "registry_id": "ref.foias.temam1989",
+       "title": "Gevrey Class Regularity for the Solutions of the Navier-Stokes Equations",
+       "authors": [
+         "Ciprian Foias",
+@@ -230,7 +179,6 @@
+     },
+     {
+       "id": "TAO2016",
+-      "registry_id": "ref.tao.averaged2016",
+       "title": "Finite Time Blowup for an Averaged Three-Dimensional Navier-Stokes Equation",
+       "authors": [
+         "Terence Tao"
+@@ -248,29 +196,8 @@
+       "primary": true,
+       "checked_at": "2026-07-14"
+     },
+-    {
+-      "id": "TAO2019",
+-      "registry_id": "ref.tao.2019",
+-      "title": "Quantitative Bounds for Critically Bounded Solutions to the Navier-Stokes Equations",
+-      "authors": [
+-        "Terence Tao"
+-      ],
+-      "year": 2019,
+-      "venue": "arXiv:1908.04958v2",
+-      "type": "preprint",
+-      "url": "https://arxiv.org/abs/1908.04958v2",
+-      "doi": null,
+-      "roles": [
+-        "quantitative critical-norm regularity bounds",
+-        "frequency-localized cascade constraints",
+-        "R5 conditional boundary"
+-      ],
+-      "primary": true,
+-      "checked_at": "2026-07-14"
+-    },
+     {
+       "id": "BUCKMASTER_VICOL2019",
+-      "registry_id": "ref.buckmaster.vicol2019",
+       "title": "Nonuniqueness of Weak Solutions to the Navier-Stokes Equation",
+       "authors": [
+         "Tristan Buckmaster",
+@@ -290,7 +217,6 @@
+     },
+     {
+       "id": "ALBRITTON_BRUE_COLOMBO2022",
+-      "registry_id": "ref.albritton.brue.colombo2022",
+       "title": "Non-Uniqueness of Leray Solutions of the Forced Navier-Stokes Equations",
+       "authors": [
+         "Dallas Albritton",
