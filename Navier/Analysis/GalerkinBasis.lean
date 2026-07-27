@@ -341,12 +341,30 @@ structure RawDivFreeFamily where
 
 /-- **[NAMED RESIDUAL — density core; the divergence-free Schwartz class on
 `ℝ³` admits a countable `L²`-dense linearly-independent family of divergence-free
-Schwartz fields (curls of bump towers at growing supports); Robinson–Rodrigo–
-Sadowski Ch. 4; Temam III §3; Leray 1934 §§18–20; est ~250 LOC, Mathlib-absent
-divergence-free-constrained density argument.]**  Non-vacuity of
-`RawDivFreeFamily`.  TRUE: curls of compactly-supported bump towers are
-divergence-free (`div ∘ curl = 0`), linearly independent at disjoint supports,
-and their finite combinations are `L²`-dense in the divergence-free class. -/
+Schwartz fields; Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; Leray 1934
+§§18–20.]**  Non-vacuity of `RawDivFreeFamily`.
+
+**Two of three fields are now CLOSED** (`Navier.Analysis.GalerkinRawFamily`,
+`exists_countable_independent_divFree_family`): pairwise-disjoint-support
+translates of the certified curl-of-bump field `phiSchwartz` are
+divergence-free (translation invariance of the Clairaut cancellation) and
+`L²`-linearly-independent (disjoint supports force cross terms to vanish, so
+`schwartzL2Inner` collapses to a sum of positive squares).
+
+**The sole remaining obstruction is `dense_span`** (est ~150-250 LOC,
+genuinely Mathlib-absent), and the disjoint-translate family used for the
+first two fields provably does NOT supply it: a finite combination of
+disjoint-support translates of ONE fixed shape has support confined to a
+bounded union of disjoint balls, so it cannot `L²`-approximate a
+divergence-free Schwartz datum whose mass sits outside every one of those
+balls. Density needs a strictly richer construction — EITHER (a) a translate
+family at a DENSE set of centres plus a Wiener-type theorem ("the closed span
+of translates of `φ` is all of `L²` iff `φ`'s Fourier transform is a.e.
+nonzero"), or (b) a Helmholtz/Leray vector-potential representation
+(`u = curl A`) driven by an `H¹`-dense (not merely `L²`-dense) scalar
+potential family, since `L²`-density of potentials does not transfer through
+the derivative in `curl` without a stronger topology. Both routes are
+individually deep, unformalized functional analysis. -/
 theorem exists_rawDivFreeFamily : Nonempty RawDivFreeFamily := by
   sorry
 
