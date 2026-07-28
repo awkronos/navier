@@ -219,6 +219,74 @@ theorem norm_sub_sq_le_segment_opNorm {G F : Type*} [NormedAddCommGroup G]
     norm_nonneg (fderiv ℝ f (x + s • y))]
 
 /-!
+## Translation-invariance: a cell integral becomes a displacement integral
+
+The middle step of the dyadic route converts the cell-oscillation sum into the
+translation modulus.  Its per-cell half is the change of variables `y = x + k`:
+because Haar measure is translation-invariant, integrating over the cell `A` at
+base point `x` is the same as integrating over the displacement set `A − x`.  The
+*partition* is not translation-covariant — a translate of a cell straddles its
+neighbours — which is exactly why the resulting bound is stated against the full
+displacement ball rather than against a single cell, and where the `2^d` overshoot
+comes from.  `experiments/riesz_kolmogorov_dyadic_core.py` part (C) measured that
+overshoot as safe rather than tight (worst ratios `0.45 / 0.29` against `2¹`,
+`0.31 / 0.16` against `2²`), so the simple bookkeeping below is taken in
+preference to the sharp one.
+-/
+
+/-- **Cell integral ≤ displacement-ball integral.**  If every point of `A` is
+within `h` of the base point `x`, then a nonnegative integrand's integral over the
+cell is at most its integral over the ball of displacements of radius `h`, after
+the change of variables `y = x + k`.
+
+Translation-invariance enters exactly once, as `integral_add_left_eq_self`; the
+rest is the pointwise indicator comparison, which is where the non-covariance of
+the partition is absorbed. -/
+theorem setIntegral_le_translate_ball {G : Type*} [MeasurableSpace G]
+    [NormedAddCommGroup G] [MeasurableAdd G] [OpensMeasurableSpace G]
+    {ν : Measure G} [ν.IsAddLeftInvariant]
+    (A : Set G) (hA : MeasurableSet A) (h : ℝ) (x : G)
+    (hAx : ∀ y ∈ A, ‖y - x‖ ≤ h)
+    (g : G → ℝ) (hg : ∀ z, 0 ≤ g z)
+    (hiA : Integrable (Set.indicator A g) ν)
+    (hiB : Integrable (Set.indicator (Metric.closedBall (0:G) h) fun k => g (x + k)) ν) :
+    ∫ y in A, g y ∂ν ≤ ∫ k in Metric.closedBall (0:G) h, g (x + k) ∂ν := by
+  have hiA' : Integrable (fun k => Set.indicator A g (x + k)) ν := hiA.comp_add_left x
+  calc ∫ y in A, g y ∂ν
+      = ∫ y, Set.indicator A g y ∂ν := (integral_indicator hA).symm
+    _ = ∫ k, Set.indicator A g (x + k) ∂ν := (integral_add_left_eq_self _ x).symm
+    _ ≤ ∫ k, Set.indicator (Metric.closedBall (0:G) h) (fun k => g (x + k)) k ∂ν := by
+        refine integral_mono hiA' hiB fun k => ?_
+        by_cases hk : x + k ∈ A
+        · have hmem : k ∈ Metric.closedBall (0:G) h := by
+            have hb := hAx (x + k) hk
+            simpa [Metric.mem_closedBall, dist_zero_right, add_sub_cancel_left] using hb
+          simp [Set.indicator_of_mem hk, Set.indicator_of_mem hmem]
+        · simp only [Set.indicator_of_notMem hk]
+          exact Set.indicator_nonneg (fun z _ => hg _) k
+    _ = ∫ k in Metric.closedBall (0:G) h, g (x + k) ∂ν :=
+        integral_indicator measurableSet_closedBall
+
+/-- **The per-cell oscillation bound against the translation modulus.**  Combining
+the previous lemma with the cell-average bound: on a cell of radius `h` about `x`,
+the mean-square oscillation of `f` is controlled by the displacement integral of
+`‖f(x+k) − f(x)‖²` over the ball `‖k‖ ≤ h`.  Summing this over the cells of a
+partition and bounding each displacement integral by `‖τ_k f − f‖²_{L²}` is the
+remaining step of the criterion. -/
+theorem setIntegral_oscillation_le_translate_ball {G : Type*} [MeasurableSpace G]
+    [NormedAddCommGroup G] [MeasurableAdd G] [OpensMeasurableSpace G]
+    {ν : Measure G} [ν.IsAddLeftInvariant]
+    {F : Type*} [NormedAddCommGroup F]
+    (A : Set G) (hA : MeasurableSet A) (h : ℝ) (x : G)
+    (hAx : ∀ y ∈ A, ‖y - x‖ ≤ h) (f : G → F)
+    (hiA : Integrable (Set.indicator A fun y => ‖f y - f x‖ ^ 2) ν)
+    (hiB : Integrable
+      (Set.indicator (Metric.closedBall (0:G) h) fun k => ‖f (x + k) - f x‖ ^ 2) ν) :
+    ∫ y in A, ‖f y - f x‖ ^ 2 ∂ν
+      ≤ ∫ k in Metric.closedBall (0:G) h, ‖f (x + k) - f x‖ ^ 2 ∂ν :=
+  setIntegral_le_translate_ball A hA h x hAx _ (fun _ => by positivity) hiA hiB
+
+/-!
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
 
@@ -243,6 +311,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
