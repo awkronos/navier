@@ -144,6 +144,80 @@ theorem setIntegral_norm_sub_setAverage_sq_le {s : Set α} (hsm : MeasurableSet 
   rw [show ‖f x - ⨍ y in s, f y ∂μ‖ = ‖(⨍ y in s, f y ∂μ) - f x‖ from norm_sub_rev _ _]
   exact norm_setAverage_sub_apply_sq_le h0 hs f x hfi (hslice x)
 
+/-- Cauchy–Schwarz on a **unit-measure** set, where the averaging constant
+disappears: `‖∫_s f‖² ≤ ∫_s ‖f‖²`.  This is the form the segment estimate below
+needs, the segment `[0,1]` having measure one. -/
+theorem norm_setIntegral_sq_le_of_measure_one {s : Set α} (h1 : μ s = 1) (f : α → E)
+    (hfi : IntegrableOn f s μ) (hsq : IntegrableOn (fun y => ‖f y‖ ^ 2) s μ) :
+    ‖∫ y in s, f y ∂μ‖ ^ 2 ≤ ∫ y in s, ‖f y‖ ^ 2 ∂μ := by
+  have hr : μ.real s = 1 := by simp [Measure.real, h1]
+  have hA : ∀ g : α → E, (⨍ y in s, g y ∂μ) = ∫ y in s, g y ∂μ := by
+    intro g; rw [setAverage_eq, hr]; simp
+  have hA' : (⨍ y in s, ‖f y‖ ^ 2 ∂μ) = ∫ y in s, ‖f y‖ ^ 2 ∂μ := by
+    rw [setAverage_eq, hr]; simp
+  have h0 : μ s ≠ 0 := by rw [h1]; exact one_ne_zero
+  have ht : μ s ≠ ⊤ := by rw [h1]; exact ENNReal.one_ne_top
+  have hmain := norm_setAverage_sub_sq_le h0 ht f 0 hfi (by simpa using hsq)
+  simpa [hA, hA', sub_zero] using hmain
+
+/-!
+## The translation modulus from a derivative bound (Brezis Prop. 9.3, pointwise)
+
+`‖τ_y f − f‖_{L²} ≤ ‖y‖ · ‖∇f‖_{L²}` is how a family with a uniform `H¹` bound is
+shown to satisfy the spatial-translation equicontinuity that
+Riesz–Fréchet–Kolmogorov requires — and it is also how the Galerkin approximants
+discharge `SpaceEquicontinuous`.  Its pointwise half is established here.
+
+The route deliberately avoids Minkowski's integral inequality (absent from
+Mathlib in the needed form): apply Cauchy–Schwarz on the unit segment *first*,
+so only `norm_setIntegral_sq_le_of_measure_one` above and the fundamental theorem
+of calculus are needed.  What remains for the `L²` statement is integrating in
+`x` and using Fubini plus translation-invariance of Lebesgue measure.
+-/
+
+/-- **Segment estimate.**  Along the segment from `x` to `x + y`, the squared
+increment of `f` is at most the mean-square of the directional derivative:
+`‖f(x+y) − f(x)‖² ≤ ∫₀¹ ‖Df(x+sy)·y‖² ds`.  Fundamental theorem of calculus for
+`s ↦ f(x + s·y)`, then Cauchy–Schwarz on the unit-measure segment. -/
+theorem norm_sub_sq_le_segment {G F : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+    (f : G → F) (hf : Differentiable ℝ f) (x y : G)
+    (hi : IntervalIntegrable (fun s : ℝ => fderiv ℝ f (x + s • y) y) volume 0 1)
+    (hsq : IntervalIntegrable (fun s : ℝ => ‖fderiv ℝ f (x + s • y) y‖ ^ 2) volume 0 1) :
+    ‖f (x + y) - f x‖ ^ 2 ≤ ∫ s in (0:ℝ)..1, ‖fderiv ℝ f (x + s • y) y‖ ^ 2 := by
+  have hd : ∀ s ∈ Set.uIcc (0:ℝ) 1,
+      HasDerivAt (fun r : ℝ => f (x + r • y)) (fderiv ℝ f (x + s • y) y) s := by
+    intro s _
+    have hline : HasDerivAt (fun r : ℝ => x + r • y) y s := by
+      simpa using ((hasDerivAt_id s).smul_const y).const_add x
+    exact (hf (x + s • y)).hasFDerivAt.comp_hasDerivAt s hline
+  have hftc : (∫ s in (0:ℝ)..1, fderiv ℝ f (x + s • y) y) = f (x + y) - f x := by
+    simpa using intervalIntegral.integral_eq_sub_of_hasDerivAt hd hi
+  rw [← hftc, intervalIntegral.integral_of_le zero_le_one,
+    intervalIntegral.integral_of_le zero_le_one]
+  exact norm_setIntegral_sq_le_of_measure_one (by simp) _
+    ((intervalIntegrable_iff_integrableOn_Ioc_of_le zero_le_one).mp hi)
+    ((intervalIntegrable_iff_integrableOn_Ioc_of_le zero_le_one).mp hsq)
+
+/-- **Brezis Prop. 9.3, pointwise form.**  Replacing the directional derivative by
+the operator norm: `‖f(x+y) − f(x)‖² ≤ ‖y‖² ∫₀¹ ‖Df(x+sy)‖² ds`.  Integrating this
+in `x` and using translation-invariance gives
+`‖τ_y f − f‖_{L²} ≤ ‖y‖ · ‖∇f‖_{L²}`. -/
+theorem norm_sub_sq_le_segment_opNorm {G F : Type*} [NormedAddCommGroup G]
+    [NormedSpace ℝ G] [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+    (f : G → F) (hf : Differentiable ℝ f) (x y : G)
+    (hi : IntervalIntegrable (fun s : ℝ => fderiv ℝ f (x + s • y) y) volume 0 1)
+    (hsq : IntervalIntegrable (fun s : ℝ => ‖fderiv ℝ f (x + s • y) y‖ ^ 2) volume 0 1)
+    (hop : IntervalIntegrable (fun s : ℝ => ‖fderiv ℝ f (x + s • y)‖ ^ 2) volume 0 1) :
+    ‖f (x + y) - f x‖ ^ 2 ≤ ‖y‖ ^ 2 * ∫ s in (0:ℝ)..1, ‖fderiv ℝ f (x + s • y)‖ ^ 2 := by
+  refine le_trans (norm_sub_sq_le_segment f hf x y hi hsq) ?_
+  rw [← intervalIntegral.integral_const_mul]
+  refine intervalIntegral.integral_mono_on zero_le_one hsq (hop.const_mul _) fun s _ => ?_
+  have hle : ‖fderiv ℝ f (x + s • y) y‖ ≤ ‖fderiv ℝ f (x + s • y)‖ * ‖y‖ :=
+    (fderiv ℝ f (x + s • y)).le_opNorm y
+  nlinarith [norm_nonneg (fderiv ℝ f (x + s • y) y), norm_nonneg y,
+    norm_nonneg (fderiv ℝ f (x + s • y))]
+
 /-!
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
@@ -169,5 +243,6 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
