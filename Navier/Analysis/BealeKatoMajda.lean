@@ -27,7 +27,10 @@ PDE quantity.  This is a fully unconditional real-analysis theorem (`propext`,
 `Classical.choice`, `Quot.sound` only).
 
 `BKMControl` packages the criterion in this repository's classical-solution
-framework: a regularity control `Y(t)` that dominates the velocity, driven by a
+framework, with the two Pattern-A fields `velocity_differentiable` and
+`incompressible` added this wave (see the structure docstring and
+`Navier.Analysis.VacuityAudit`, which falsifies the previous field list): a
+regularity control `Y(t)` that dominates the velocity, driven by a
 vorticity supremum majorant `g(t)`, under the **explicit** finite-integral
 hypothesis `∃ B, ∀ t < T, ∫₀ᵗ g ≤ B` (the improper vorticity integral
 converges — a genuine restriction, *not* forced by continuity, so the criterion
@@ -151,7 +154,22 @@ The rate is only continuous on the half-open `[0,T)`, so it may blow up as
 `t → T`; the finite-integral field is therefore a genuine restriction, not a
 consequence of continuity.  A `BKMControl` is *constructed*, so nothing here is
 assumed; the two Mathlib-absent PDE inputs that build one from a Navier–Stokes
-solution are named in `BKMAnalyticResidual`. -/
+solution are named in `BKMAnalyticResidual`.
+
+## Pattern-A repair: the previous field list said nothing about the vorticity
+
+`velocity_differentiable` and `incompressible` are added, never a weakening of
+the conclusion.  Before them, `Navier.Analysis.VacuityAudit`
+(`preRepairBKMFields_vacuous_of_curlFree`, kernel-clean) shows that *every*
+uniformly bounded field with identically vanishing repository curl satisfied the
+whole eight-field list at `rate ≡ 0`, `control ≡ B + 1`, discharging the
+criterion's own hypothesis `∃ B, ∀ t < T, ∫₀ᵗ rate ≤ B` at `B = 0`.  Two
+disjoint families exploited it: the nowhere-differentiable fields, whose
+`vorticity` is Mathlib's `fderiv` junk value (witness `ballStep`, a bounded
+field discontinuous across the unit sphere), and the smooth gradient fields
+`∇φ`, curl-free by Clairaut but not divergence-free.  On that list the two
+vorticity fields did no work and the criterion degenerated to a statement about
+the abstract control `Y`. -/
 structure BKMControl (u : VelocityEvolution) (T : ℝ) where
   /-- The positive regularity control `Y(t)`. -/
   control : ℝ → ℝ
@@ -165,6 +183,25 @@ structure BKMControl (u : VelocityEvolution) (T : ℝ) where
   control_pos : ∀ t ∈ Set.Ico 0 T, 0 < control t
   /-- The Beale–Kato–Majda a-priori differential inequality. -/
   gronwall_inequality : ∀ t ∈ Set.Ioo 0 T, controlDeriv t ≤ rate t * control t
+  /-- **(H-diff), Pattern-A.**  Each spatial slice is genuinely differentiable.
+  Without it `vorticity u t x = staticCurl (u t) x` is the `fderiv` **junk value**
+  `0` wherever `u t` fails to be differentiable, and `rate_dominates_vorticity`
+  below is satisfied at `rate ≡ 0` by fields that are not even continuous:
+  `VacuityAudit.preRepairBKMFields_vacuous_of_ballStep` exhibits the indicator of
+  the unit ball in direction `e₀` doing exactly that, and
+  `VacuityAudit.ballStep_not_differentiable` certifies that this field is the one
+  excluded here. -/
+  velocity_differentiable :
+    ∀ t ∈ Set.Ico 0 T, ∀ x : Space, DifferentiableAt ℝ (u t) x
+  /-- **(H-div), Pattern-A.**  Incompressibility.  Differentiability alone does
+  not repair the criterion: by Clairaut every smooth gradient field `∇φ` has
+  `staticCurl (∇φ) ≡ 0`, so it too satisfies `rate_dominates_vorticity` at
+  `rate ≡ 0` while having divergence `Δφ ≠ 0` — it is not a Navier–Stokes
+  velocity at all.  This is the same blind spot that
+  `LerayWeak.SpaceEquicontinuous` was added to repair.  With both fields present
+  the bounded inhabitants with `rate ≡ 0` are, by Liouville, the constants. -/
+  incompressible :
+    ∀ t ∈ Set.Ico 0 T, ∀ x : Space, staticDivergence (u t) x = 0
   /-- `rate t` dominates the vorticity supremum at time `t`. -/
   rate_dominates_vorticity :
     ∀ t ∈ Set.Ico 0 T, ∀ x : Space,
@@ -240,6 +277,8 @@ def controlZero (T : ℝ) : BKMControl (fun _ _ => 0) T where
   control_hasDerivAt := fun t _ => hasDerivAt_const t 1
   control_pos := fun t _ => one_pos
   gronwall_inequality := fun t _ => by norm_num
+  velocity_differentiable := fun _ _ _ => differentiableAt_const _
+  incompressible := fun _ _ _ => by simp [staticDivergence]
   rate_dominates_vorticity := fun t _ x => by
     have hv : vorticity (fun _ _ => 0) t x = 0 := by
       simp [vorticity, staticCurl]
