@@ -1,5 +1,6 @@
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.DissipativeODEGlobal
+import Navier.Analysis.RieszKolmogorov
 
 /-!
 # Leray–Hopf weak solutions (rung 4 skeleton tower)
@@ -1457,7 +1458,22 @@ the tightness clause of Cor 4.27 is automatic; `JointlyMeasurable` is what makes
 the members elements of `L²(Q)` at all.  Mathlib has no Riesz–Kolmogorov
 criterion (only Arzelà–Ascoli for `C(K)`), so the mollify-and-Arzelà–Ascoli
 argument — or the equivalent finite-dimensional dyadic-average projection
-`‖E_h f − f‖_{L²} ≤ sup_{|k| ≤ diam} ‖τ_k f − f‖_{L²}` — has to be built. -/
+`‖E_h f − f‖_{L²} ≤ sup_{|k| ≤ diam} ‖τ_k f − f‖_{L²}` — has to be built.
+
+**Route taken, and what is already built.**  The dyadic-average projection, not
+mollify-and-Arzelà–Ascoli: `Navier.Analysis.RieszKolmogorov` carries its two
+engines, both certified.  Engine 1 is `norm_setAverage_sub_sq_le` with its
+oscillation form `norm_setAverage_sub_apply_sq_le`, the Jensen/Cauchy–Schwarz
+bound `‖(⨍_Q f) − f x‖² ≤ ⨍_Q ‖f y − f x‖²` that makes the cell-average close to
+`f` uniformly over the family.  Engine 2 is `exists_subseq_cauchy_of_bounded_pi`,
+Bolzano–Weierstrass on the cell-average vector — legitimate because `E_h f` lives
+in the finite-dimensional span of the finitely many cell indicators, so no
+infinite-dimensional compactness is invoked anywhere.  What is left is the middle
+step: summing the cell-oscillation bound over a partition of `(0,n] × B̄(0,n)`
+into cells of side `h` and converting it by Fubini plus translation-invariance of
+Lebesgue measure into `2⁴ · sup_{|k|_∞ ≤ h} ‖τ_k f − f‖²_{L²}`, then feeding the
+two supplied moduli.  The `2^d` constant is checked numerically in
+`experiments/riesz_kolmogorov_dyadic_core.py`. -/
 theorem exists_subseq_windowCauchy
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C)
