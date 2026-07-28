@@ -51,6 +51,14 @@ Galerkin/compactness tower has a home with no floating restatement.
 * `StrongL2LocLimit.comp_strictMono`, `strongL2LocLimit_const`,
   `aubinLions_zero_instance` — subsequence bookkeeping for the Aubin–Lions
   diagonal extraction and the hypothesis/conclusion non-vacuity smoke.
+* **Aubin–Lions assembly** — `aubin_lions_l2loc_compactness` is now a
+  composition with no `sorry` of its own, on the Pattern-A repaired hypothesis
+  list.  Three certified pieces carry it: `exists_diagonal_subseq` /
+  `exists_subseq_forall_windowCauchy` (nested Cantor diagonal over the countable
+  exhaustion, via `WindowCauchy.comp_strictMono` and `WindowCauchy.of_tail`);
+  `strongL2LocLimit_of_natWindows` (integer windows ⇒ real windows, the step
+  `JointlyMeasurable` unlocks) with its leaf `integrable_norm_sub_sq`; and the
+  two named textbook residuals below.
 * **Initial-slice patch** — `patchInitial`, `setIntegral_Ici_congr_off_zero`
   (the time integral over `Set.Ici 0` ignores the null set `{0}`), and
   `isLerayHopfWeakSolution_patchInitial`: `LerayLimitData` (Leray–Hopf clauses
@@ -67,14 +75,16 @@ Galerkin/compactness tower has a home with no floating restatement.
   first `m` divergence-free modes + time-regularity bookkeeping); depends on
   `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily` [Temam III.3;
   Constantin–Foias II; Leray 1934 §§18–20; est ~350 LOC].
-* `aubin_lions_l2loc_compactness` — the compact-embedding core, on the
-  **Pattern-A repaired** hypothesis list (the earlier one was FALSE as stated:
-  no divergence-freeness, hence no spatial control, and no joint measurability;
-  see the docstring for the checked curl-free witness).  What remains is
-  Riesz–Fréchet–Kolmogorov on one window plus Riesz–Fischer
-  [Brezis Thm 4.26/4.27 + Thm 4.8; Simon 1987 Thm 1; Temam III.2.3;
-  est ~550 LOC]; the diagonal extraction and the real-window reduction are
-  certified here.
+* `exists_subseq_windowCauchy` — Riesz–Fréchet–Kolmogorov total boundedness on
+  the single bounded window `(0,n] × B̄(0,n)` [Brezis 2011 Thm 4.26 + Cor 4.27;
+  Simon 1987 Thm 1; est ~400 LOC].  This and the next leaf replace the former
+  monolithic `aubin_lions_l2loc_compactness` residual, whose hypothesis list was
+  FALSE as stated — no divergence-freeness, hence no spatial control, and no
+  joint measurability; the checked curl-free witness is in that theorem's
+  docstring and in `experiments/aubin_lions_curlfree_witness.py`.
+* `exists_limit_of_forall_windowCauchy` — Fischer–Riesz limit extraction from
+  window-Cauchy, with the pointwise-limit-or-zero representative that makes the
+  slicewise clauses true at **every** `t ≥ 0` [Brezis 2011 Thm 4.8; est ~150 LOC].
 * `exists_lerayLimitData` — limit passage in the weak form, stated for `t > 0`
   [Leray 1934 §§21–23; Temam III.3.3; est ~700 LOC].
 -/
@@ -1369,6 +1379,113 @@ theorem strongL2LocLimit_of_natWindows
               setIntegral_nonneg measurableSet_closedBall fun x _ => hFnn k t x)
             (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc_right hTn))
 
+/-!
+### Window-Cauchy bookkeeping and the diagonal (certified)
+
+The compactness core factors through the *Cauchy* condition on a single integer
+window, which mentions no limit and is therefore the object the diagonal
+extraction can iterate over.  `WindowCauchy` is stable under passing to a
+further subsequence and under dropping a finite head — exactly the two closure
+properties `exists_diagonal_subseq` consumes.
+-/
+
+/-- The squared `L²` error of two velocity evolutions over the integer window
+`(0,n] × B̄(0,n)`. -/
+def windowError (v w : VelocityEvolution) (n : ℕ) : ℝ :=
+  ∫ t in Set.Ioc (0:ℝ) (n:ℝ), ∫ x in Metric.closedBall (0:Space) (n:ℝ), ‖v t x - w t x‖ ^ 2
+
+/-- The subsequence `τ` is `L²`-Cauchy on the integer window `(0,n] × B̄(0,n)`. -/
+def WindowCauchy (uSeq : ℕ → VelocityEvolution) (n : ℕ) (τ : ℕ → ℕ) : Prop :=
+  ∀ ε : ℝ, 0 < ε → ∃ N : ℕ, ∀ j k : ℕ, N ≤ j → N ≤ k →
+    windowError (uSeq (τ j)) (uSeq (τ k)) n < ε
+
+/-- Window-Cauchy passes to further subsequences (`hsub` for the diagonal). -/
+theorem WindowCauchy.comp_strictMono {uSeq : ℕ → VelocityEvolution} {n : ℕ} {τ : ℕ → ℕ}
+    (h : WindowCauchy uSeq n τ) {ρ : ℕ → ℕ} (hρ : StrictMono ρ) :
+    WindowCauchy uSeq n (τ ∘ ρ) := by
+  intro ε hε
+  obtain ⟨N, hN⟩ := h ε hε
+  exact ⟨N, fun j k hj hk =>
+    hN (ρ j) (ρ k) (le_trans hj hρ.le_apply) (le_trans hk hρ.le_apply)⟩
+
+/-- Window-Cauchy is a tail condition (`htail` for the diagonal). -/
+theorem WindowCauchy.of_tail {uSeq : ℕ → VelocityEvolution} {n : ℕ} (N : ℕ) {τ : ℕ → ℕ}
+    (h : WindowCauchy uSeq n fun k => τ (k + N)) : WindowCauchy uSeq n τ := by
+  intro ε hε
+  obtain ⟨M, hM⟩ := h ε hε
+  refine ⟨M + N, fun j k hj hk => ?_⟩
+  have hjN : N ≤ j := le_trans (Nat.le_add_left N M) hj
+  have hkN : N ≤ k := le_trans (Nat.le_add_left N M) hk
+  have hres := hM (j - N) (k - N) (by omega) (by omega)
+  simp only [Nat.sub_add_cancel hjN, Nat.sub_add_cancel hkN] at hres
+  exact hres
+
+/-- **One subsequence Cauchy on every window**, by the nested Cantor diagonal
+`exists_diagonal_subseq` applied to `WindowCauchy`. -/
+theorem exists_subseq_forall_windowCauchy (uSeq : ℕ → VelocityEvolution)
+    (hstep : ∀ (n : ℕ) (τ : ℕ → ℕ), StrictMono τ →
+      ∃ ρ : ℕ → ℕ, StrictMono ρ ∧ WindowCauchy uSeq n (τ ∘ ρ)) :
+    ∃ σ : ℕ → ℕ, StrictMono σ ∧ ∀ n : ℕ, WindowCauchy uSeq n σ :=
+  exists_diagonal_subseq (WindowCauchy uSeq)
+    (fun _ _ _ hQ hρ => hQ.comp_strictMono hρ)
+    (fun _ N _ hQ => WindowCauchy.of_tail N hQ)
+    hstep
+
+/-- **[NAMED RESIDUAL — Riesz–Fréchet–Kolmogorov compactness on one window;
+Brezis, *Functional Analysis, Sobolev Spaces and PDE*, Springer 2011, Thm 4.26
++ Cor 4.27; Simon, *Ann. Mat. Pura Appl.* **146** (1987) 65–96, Thm 1; est ~400
+LOC.]**  On the single bounded window `Q = (0,n] × B̄(0,n) ⊂ ℝ × ℝ³`, a family
+that is `L²(Q)`-bounded and uniformly equicontinuous under translations in *both*
+variables is totally bounded in `L²(Q)`, so any subsequence has an `L²(Q)`-Cauchy
+refinement.
+
+The `(t,x)`-translation modulus is the composite of the two supplied ones:
+`‖τ_{(h,y)}f − f‖ ≤ ‖τ_{(h,0)}f − f‖ + ‖τ_{(0,y)}f − f‖`, controlled by
+`TimeEquicontinuous` and `SpaceEquicontinuous` respectively; `Q` is bounded so
+the tightness clause of Cor 4.27 is automatic; `JointlyMeasurable` is what makes
+the members elements of `L²(Q)` at all.  Mathlib has no Riesz–Kolmogorov
+criterion (only Arzelà–Ascoli for `C(K)`), so the mollify-and-Arzelà–Ascoli
+argument — or the equivalent finite-dimensional dyadic-average projection
+`‖E_h f − f‖_{L²} ≤ sup_{|k| ≤ diam} ‖τ_k f − f‖_{L²}` — has to be built. -/
+theorem exists_subseq_windowCauchy
+    (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
+    (hkin : UniformKineticBound uSeq C)
+    (htime : TimeEquicontinuous uSeq) (hspace : SpaceEquicontinuous uSeq)
+    (hmeas : JointlyMeasurable uSeq)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (n : ℕ) (τ : ℕ → ℕ) (hτ : StrictMono τ) :
+    ∃ ρ : ℕ → ℕ, StrictMono ρ ∧ WindowCauchy uSeq n (τ ∘ ρ) := by
+  sorry
+
+/-- **[NAMED RESIDUAL — Fischer–Riesz limit extraction; Brezis, *Functional
+Analysis*, Springer 2011, Thm 4.8; est ~150 LOC.]**  A sequence of jointly
+measurable velocity evolutions that is `L²`-Cauchy on every integer window has
+an `L²`-limit on every window, realized by a genuine `VelocityEvolution`.
+
+**Step-0e: the `∀ t` clauses are TRUE for the constructed representative, not
+merely a.e.**  An `L²` limit is pinned only off `(t,x)`-null sets, so a bare
+"some limit" would leave the slicewise clauses false on a null set of times.
+They are recovered by *choosing* the representative
+`u t x = lim_k v_{k_j} t x` on the measurable set where a fast subsequence
+converges pointwise and `u t x = 0` off it (`measurableSet_exists_tendsto`,
+`measurable_limUnder`, which is why `JointlyMeasurable` is needed here too).
+With that choice every slice is a pointwise-limit-or-zero, so Fatou gives
+`∫ ‖u t‖² ≤ liminf ∫ ‖v_k t‖² ≤ C` and hence integrability **at every `t ≥ 0`**,
+the bad times contributing the zero field.  The full sequence — not just the
+fast subsequence — converges to that `u` on each window, by completeness. -/
+theorem exists_limit_of_forall_windowCauchy
+    (vSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
+    (hkin : UniformKineticBound vSeq C)
+    (hmeas : JointlyMeasurable vSeq)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖vSeq m t x‖ ^ 2))
+    (hcauchy : ∀ n : ℕ, WindowCauchy vSeq n id) :
+    ∃ u : VelocityEvolution,
+      Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
+      (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
+      (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C) ∧
+      (∀ n : ℕ, Filter.Tendsto (fun k => windowError (vSeq k) u n) Filter.atTop (nhds 0)) := by
+  sorry
+
 /-- **[NAMED RESIDUAL — Aubin–Lions–Simon compactness, PATTERN-A REPAIRED
 STATEMENT; Aubin (*C. R. Acad. Sci.* **256**, 1963); Lions (*Quelques méthodes de
 résolution des problèmes aux limites non linéaires*, Dunod 1969, Ch. 1 §5);
@@ -1412,7 +1529,12 @@ here by *adding* a hypothesis, never by weakening the conclusion.
 
 Adding these two hypotheses is the *correct* repair rather than a weakening: the
 old statement was false, so any proof of it would have been a proof of a
-falsehood.  The conclusion is simultaneously **strengthened** with joint
+falsehood.  Note the binder `_hens`: the enstrophy bound is kept for signature
+continuity with the classical statement and with
+`GalerkinApproximation.enstrophy_bounded`, but the repaired assembly never
+consumes it, and neither does Riesz–Fréchet–Kolmogorov on a bounded window.
+That unused binder *is* the falsification, made visible in the signature: on
+this hypothesis bundle `enstrophy` does no compactness work at all.  The conclusion is simultaneously **strengthened** with joint
 measurability of the limit, which the Riesz–Fischer construction supplies for
 free and which every downstream consumer needs in order to integrate against the
 limit at all.  A second, earlier strengthening is retained: the limit is
@@ -1444,7 +1566,7 @@ Fatou [Brezis Thm 4.8; est ~150 LOC]; then `strongL2LocLimit_of_natWindows`
 (CERTIFIED above) turns the integer windows into the real ones. -/
 theorem aubin_lions_l2loc_compactness
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
-    (hkin : UniformKineticBound uSeq C) (hens : UniformEnstrophyBound uSeq C)
+    (hkin : UniformKineticBound uSeq C) (_hens : UniformEnstrophyBound uSeq C)
     (htime : TimeEquicontinuous uSeq) (hspace : SpaceEquicontinuous uSeq)
     (hmeas : JointlyMeasurable uSeq)
     (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2)) :
@@ -1452,7 +1574,18 @@ theorem aubin_lions_l2loc_compactness
       Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
       StrongL2LocLimit (fun k => uSeq (σ k)) u := by
-  sorry
+  obtain ⟨σ, hσ, hσC⟩ := exists_subseq_forall_windowCauchy uSeq
+    fun n τ hτ => exists_subseq_windowCauchy uSeq C hC hkin htime hspace hmeas hint n τ hτ
+  have hmeas' : JointlyMeasurable (fun k => uSeq (σ k)) := fun k => hmeas (σ k)
+  have hint' : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable (fun x : Space => ‖uSeq (σ m) t x‖ ^ 2) := fun m t ht => hint (σ m) t ht
+  have hkin' : UniformKineticBound (fun k => uSeq (σ k)) C := fun m t ht => hkin (σ m) t ht
+  obtain ⟨u, humeas, huint, hukin, huwin⟩ :=
+    exists_limit_of_forall_windowCauchy (fun k => uSeq (σ k)) C hC hkin' hmeas' hint'
+      fun n => hσC n
+  exact ⟨u, σ, hσ, humeas, huint,
+    strongL2LocLimit_of_natWindows (fun k => uSeq (σ k)) u C hmeas' humeas hint' huint
+      hkin' hukin huwin⟩
 
 /-!
 ### Initial-slice patching (certified)
@@ -1607,9 +1740,11 @@ def zeroLerayLimitData (ν : ℝ) : LerayLimitData ν (0 : SchwartzVelocity) whe
 /-- **[NAMED RESIDUAL — Galerkin limit passage; Leray, Acta Math. 63 (1934)
 §§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a
 Galerkin approximation, `aubin_lions_l2loc_compactness` (invoked on the
-`kinetic_bounded`, `enstrophy_bounded`, `time_equicontinuous`, `sq_integrable`
-fields) extracts a strong `L²_loc` limit `u` with slicewise square-integrable
-slices.  The linear weak-form terms pass by weak-* convergence in `L^∞_t L²_x`,
+`kinetic_bounded`, `enstrophy_bounded`, `time_equicontinuous`,
+`space_equicontinuous`, `jointly_measurable` and `sq_integrable` fields — the
+last two being the Pattern-A additions without which that theorem is FALSE)
+extracts a strong `L²_loc` limit `u` that is jointly measurable with slicewise
+square-integrable slices.  The linear weak-form terms pass by weak-* convergence in `L^∞_t L²_x`,
 the quadratic convection term by the strong `L²_loc` convergence (weak × strong
 on the test's compact support), and weak lower-semicontinuity of the norm gives
 `energy_le`.  `datum_sq_integrable` is `integrable_norm_sq_schwartz` (BANKED).
@@ -1645,8 +1780,8 @@ divergence-free Schwartz datum there is a global Leray–Hopf weak solution.
 This is now a genuine composition of the Galerkin decomposition above:
 `galerkin_approximation_exists` builds the uniformly-bounded approximants and
 `leray_of_galerkinApproximation` (via `aubin_lions_l2loc_compactness`) passes
-to the limit.  The remaining `sorry`s live in those three named,
-reference-grounded, strictly-lower leaves — not here. -/
+to the limit.  The remaining `sorry`s live in named, reference-grounded,
+strictly-lower leaves — not here. -/
 theorem leray_weak_existence :
     ∀ ν : ℝ, 0 < ν →
     ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
@@ -1656,4 +1791,6 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
+
+
 
