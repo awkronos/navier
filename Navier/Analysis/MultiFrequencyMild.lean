@@ -50,13 +50,21 @@ Certified here (no sorry):
 * `multiDuhamelImage`, `truncatedSymbol_diff_norm_le_sup`,
   `continuousOn_multiDuhamelImage`, `norm_multiDuhamelImage_sub_heat_le` — the
   self-map, sup-norm Lipschitz and ball-invariance inputs to the Banach fixed point.
-* `exists_isMultiMildSolutionOn_local` — local existence on the CLOSED horizon,
-  derived from the half-open-horizon residual plus the continuation criterion.
-
-## Residual (honest `sorry`, truth-checked signature)
-
+* `multiPicard`, `multiPicard_norm_le`, `multiPicard_continuousOn`,
+  `norm_multiDuhamelImage_sub_le`, `continuousOn_duhamelIntegrand`,
+  `intervalIntegrable_duhamelIntegrand` — the explicit Picard iteration: ball
+  invariance, continuity of every iterate, and the sup-norm Lipschitz estimate that
+  makes the Duhamel map a strict contraction for a short horizon.
+* `exists_multiMild_fixedPoint_of_smallHorizon` — the contraction core: under
+  `M + K·T ≤ R` and `L·T ≤ 1/2` the Picard iterates converge uniformly on `[0,T]` to a
+  continuous, `R`-bounded fixed point of `multiDuhamelImage`.
 * `exists_multiMild_shortHorizon` — the product Duhamel contraction itself
-  [Kato, Math. Z. 187 (1984) §2; est ~250 LOC].
+  [Kato, Math. Z. 187 (1984) §2], instantiating the core at
+  `R = ∑ₘ‖u₀ ₘ‖ + 1` and `T = 1/(2(K+L+1))`.
+* `exists_isMultiMildSolutionOn_local` — local existence on the CLOSED horizon,
+  derived from the short-horizon contraction plus the continuation criterion.
+
+This file carries no `sorry`.
 -/
 
 set_option autoImplicit false
@@ -980,6 +988,305 @@ theorem norm_multiDuhamelImage_sub_heat_le {ν T : ℝ} (hν : 0 ≤ ν) {n : �
   have h := intervalIntegral.norm_integral_le_of_norm_le_const hbound
   simpa [abs_of_nonneg ht0] using h
 
+/-!
+### Picard iteration for the product Duhamel map
+
+The Duhamel map is a contraction on the sup-normed product path space once the horizon
+is short compared with the quadratic symbol bound.  Rather than bundle
+`C(Icc 0 T, Fin n → E3)` and invoke `ContractingWith.exists_fixedPoint'`, the iteration
+is run explicitly: the iterates are continuous and uniformly bounded on the *closed*
+horizon, their successive differences decay geometrically, and the uniform limit is the
+mild solution.  Running it by hand keeps every estimate in the repo's own
+`frequencyHeatLeray`/`truncatedConvectionSymbol` vocabulary.
+
+Reference: T. Kato, *Strong `L^p` solutions of the Navier–Stokes equation in `R^m`*,
+Math. Z. **187** (1984) 471–480, §2; H. Fujita and T. Kato, *On the Navier–Stokes initial
+value problem I*, Arch. Rational Mech. Anal. **16** (1964) 269–315.
+-/
+
+/-- **The free heat–Leray flow is continuous on the closed horizon.** -/
+theorem continuousOn_freeFlow (ν : ℝ) (q₀ v : E3) (T : ℝ) :
+    ContinuousOn (fun t : ℝ => frequencyHeatLeray ν t q₀ v) (Set.Icc 0 T) := by
+  have hrw : (fun t : ℝ => frequencyHeatLeray ν t q₀ v)
+      = fun t : ℝ => heatDecay ν t q₀ • euclideanLeray q₀ v := by
+    funext t; exact frequencyHeatLeray_apply ν t q₀ v
+  rw [hrw]
+  refine ContinuousOn.smul ?_ continuousOn_const
+  unfold heatDecay; fun_prop
+
+/-- **The Duhamel integrand is continuous on the closed horizon.**  Continuity — rather
+than the `integrableOn_heatWeighted` route through the half-open horizon — is what makes
+the Duhamel integral interval-integrable, hence splittable across a difference of two
+amplitude fields (`intervalIntegral.integral_sub`). -/
+theorem continuousOn_duhamelIntegrand {T : ℝ} (ν : ℝ) {n : ℕ} {q : Fin n → E3}
+    {f : ℝ → Fin n → E3} (hfc : ∀ m : Fin n, ContinuousOn (fun t => f t m) (Set.Icc 0 T))
+    (t : ℝ) (k : Fin n) :
+    ContinuousOn (fun s => frequencyHeatLeray ν (t - s) (q k)
+      (truncatedConvectionSymbol q (f s) (f s) k)) (Set.Icc 0 T) := by
+  have hsym : ContinuousOn (fun s => truncatedConvectionSymbol q (f s) (f s) k)
+      (Set.Icc 0 T) := continuousOn_truncatedSymbol hfc k
+  have hrw : (fun s => frequencyHeatLeray ν (t - s) (q k)
+        (truncatedConvectionSymbol q (f s) (f s) k))
+      = fun s => heatDecay ν (t - s) (q k) •
+          euclideanLeray (q k) (truncatedConvectionSymbol q (f s) (f s) k) := by
+    funext s; exact frequencyHeatLeray_apply _ _ _ _
+  rw [hrw]
+  refine ContinuousOn.smul ?_ ?_
+  · unfold heatDecay; fun_prop
+  · exact (euclideanLeray (q k)).continuous.comp_continuousOn hsym
+
+/-- **Interval integrability of the Duhamel integrand** on every sub-interval of the
+closed horizon, for a continuous amplitude field. -/
+theorem intervalIntegrable_duhamelIntegrand {T : ℝ} (ν : ℝ) {n : ℕ} {q : Fin n → E3}
+    {f : ℝ → Fin n → E3} (hfc : ∀ m : Fin n, ContinuousOn (fun t => f t m) (Set.Icc 0 T))
+    {t : ℝ} (ht : t ∈ Set.Icc (0:ℝ) T) (k : Fin n) :
+    IntervalIntegrable (fun s => frequencyHeatLeray ν (t - s) (q k)
+      (truncatedConvectionSymbol q (f s) (f s) k)) volume 0 t := by
+  obtain ⟨ht0, htT⟩ := ht
+  refine ContinuousOn.intervalIntegrable ?_
+  rw [Set.uIcc_of_le ht0]
+  exact (continuousOn_duhamelIntegrand ν hfc t k).mono (Set.Icc_subset_Icc le_rfl htT)
+
+/-- **Lipschitz estimate for the product Duhamel map.**  Two amplitude fields that are
+continuous, bounded by `R` and within sup-distance `D` on the closed horizon have Duhamel
+images within `L·D·t`, with `L = 2n²R(∑ⱼ‖qⱼ‖)n` the sup-norm Lipschitz constant of the
+truncated symbol.  This is the contraction hypothesis of the Banach fixed-point argument:
+for `L·T < 1` the map is a strict contraction of the path space. -/
+theorem norm_multiDuhamelImage_sub_le {ν T : ℝ} (hν : 0 ≤ ν) {n : ℕ}
+    {q : Fin n → E3} {u₀ : Fin n → E3} {f g : ℝ → Fin n → E3} {R D : ℝ} (hR : 0 ≤ R)
+    (hfc : ∀ m : Fin n, ContinuousOn (fun t => f t m) (Set.Icc 0 T))
+    (hgc : ∀ m : Fin n, ContinuousOn (fun t => g t m) (Set.Icc 0 T))
+    (hfb : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ m, ‖f t m‖ ≤ R)
+    (hgb : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ m, ‖g t m‖ ≤ R)
+    (hD : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ m, ‖f t m - g t m‖ ≤ D)
+    {t : ℝ} (ht : t ∈ Set.Icc (0:ℝ) T) (k : Fin n) :
+    ‖multiDuhamelImage ν q u₀ f t k - multiDuhamelImage ν q u₀ g t k‖
+      ≤ (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * D)) * t := by
+  obtain ⟨ht0, htT⟩ := ht
+  have hIf := intervalIntegrable_duhamelIntegrand (q := q) ν hfc ⟨ht0, htT⟩ k
+  have hIg := intervalIntegrable_duhamelIntegrand (q := q) ν hgc ⟨ht0, htT⟩ k
+  have hcancel : ∀ A X Y : E3, (A + X) - (A + Y) = X - Y := by intro A X Y; abel
+  unfold multiDuhamelImage
+  rw [hcancel, ← intervalIntegral.integral_sub hIf hIg]
+  have hbound : ∀ s ∈ Set.uIoc (0:ℝ) t,
+      ‖frequencyHeatLeray ν (t - s) (q k) (truncatedConvectionSymbol q (f s) (f s) k)
+        - frequencyHeatLeray ν (t - s) (q k) (truncatedConvectionSymbol q (g s) (g s) k)‖
+        ≤ 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * D) := by
+    intro s hs
+    rw [Set.uIoc_of_le ht0] at hs
+    have hs0 : (0:ℝ) ≤ s := le_of_lt hs.1
+    have hsT : s ≤ T := le_trans hs.2 htT
+    rw [← map_sub]
+    refine le_trans (frequencyHeatLeray_norm_le hν (by linarith [hs.2]) _ _) ?_
+    exact truncatedSymbol_diff_norm_le_sup q (f s) (g s) hR (hfb s ⟨hs0, hsT⟩)
+      (hgb s ⟨hs0, hsT⟩) (hD s ⟨hs0, hsT⟩) k
+  have h := intervalIntegral.norm_integral_le_of_norm_le_const hbound
+  simpa [abs_of_nonneg ht0] using h
+
+/-- **The Picard iterates of the product Duhamel map**, launched from the free
+heat–Leray flow. -/
+noncomputable def multiPicard (ν : ℝ) {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3) :
+    ℕ → ℝ → Fin n → E3
+  | 0 => fun t k => frequencyHeatLeray ν t (q k) (u₀ k)
+  | m + 1 => multiDuhamelImage ν q u₀ (multiPicard ν q u₀ m)
+
+@[simp] theorem multiPicard_zero (ν : ℝ) {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3) :
+    multiPicard ν q u₀ 0 = fun t k => frequencyHeatLeray ν t (q k) (u₀ k) := rfl
+
+@[simp] theorem multiPicard_succ (ν : ℝ) {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3) (m : ℕ) :
+    multiPicard ν q u₀ (m + 1) = multiDuhamelImage ν q u₀ (multiPicard ν q u₀ m) := rfl
+
+/-- **Uniform ball invariance for the Picard iterates.**  If the free flow is bounded by
+`M` and the horizon is short enough that `M + K·T ≤ R` with `K` the quadratic symbol
+bound at radius `R`, every iterate stays in the ball of radius `R` on `[0,T]`. -/
+theorem multiPicard_norm_le {ν T : ℝ} (hν : 0 ≤ ν) {n : ℕ}
+    (q : Fin n → E3) (u₀ : Fin n → E3) {M R : ℝ}
+    (hM : ∀ k : Fin n, ‖u₀ k‖ ≤ M) (hR0 : 0 ≤ R) (hT : (0:ℝ) ≤ T)
+    (hstep : M + (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * T ≤ R) :
+    ∀ m : ℕ, ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ‖multiPicard ν q u₀ m t k‖ ≤ R := by
+  have hS : (0:ℝ) ≤ ∑ j, ‖q j‖ := Finset.sum_nonneg fun j _ => norm_nonneg _
+  have hK : (0:ℝ) ≤ 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R) := by positivity
+  intro m
+  induction m with
+  | zero =>
+      intro t ht k
+      have h0 : ‖frequencyHeatLeray ν t (q k) (u₀ k)‖ ≤ M :=
+        le_trans (frequencyHeatLeray_norm_le hν ht.1 _ _) (hM k)
+      have : (0:ℝ) ≤ (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * T :=
+        mul_nonneg hK hT
+      simpa using h0.trans (by linarith)
+  | succ m ih =>
+      intro t ht k
+      have hsub := norm_multiDuhamelImage_sub_heat_le (q := q) (u₀ := u₀) hν hR0
+        (fun s hs j => ih s hs j) ht k
+      have hfree : ‖frequencyHeatLeray ν t (q k) (u₀ k)‖ ≤ M :=
+        le_trans (frequencyHeatLeray_norm_le hν ht.1 _ _) (hM k)
+      have hKt : (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * t
+          ≤ (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * T :=
+        mul_le_mul_of_nonneg_left ht.2 hK
+      rw [multiPicard_succ]
+      calc ‖multiDuhamelImage ν q u₀ (multiPicard ν q u₀ m) t k‖
+          ≤ ‖multiDuhamelImage ν q u₀ (multiPicard ν q u₀ m) t k
+              - frequencyHeatLeray ν t (q k) (u₀ k)‖
+            + ‖frequencyHeatLeray ν t (q k) (u₀ k)‖ := by
+              simpa using norm_le_norm_sub_add
+                (multiDuhamelImage ν q u₀ (multiPicard ν q u₀ m) t k)
+                (frequencyHeatLeray ν t (q k) (u₀ k))
+        _ ≤ (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * T + M := by
+              exact add_le_add (hsub.trans hKt) hfree
+        _ ≤ R := by linarith
+
+/-- **Continuity of every Picard iterate on the closed horizon.** -/
+theorem multiPicard_continuousOn {ν T : ℝ} (hν : 0 ≤ ν) (hT : (0:ℝ) ≤ T) {n : ℕ}
+    (q : Fin n → E3) (u₀ : Fin n → E3) {R : ℝ} (hR : 0 ≤ R)
+    (hbd : ∀ m : ℕ, ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ‖multiPicard ν q u₀ m t k‖ ≤ R) :
+    ∀ (m : ℕ) (k : Fin n),
+      ContinuousOn (fun t => multiPicard ν q u₀ m t k) (Set.Icc 0 T) := by
+  intro m
+  induction m with
+  | zero => intro k; exact continuousOn_freeFlow ν (q k) (u₀ k) T
+  | succ m ih =>
+      intro k
+      rw [multiPicard_succ]
+      exact continuousOn_multiDuhamelImage hν hT hR
+        (fun j => (ih j).mono Set.Ico_subset_Icc_self)
+        (fun t ht j => hbd m t (Set.Ico_subset_Icc_self ht) j) k
+
+/-- **The contraction core: a bounded continuous fixed point of the product Duhamel map
+on a short closed horizon.**  Given a ball radius `R` that absorbs the free flow plus the
+quadratic Duhamel correction (`hstep`) and a horizon short enough that the sup-norm
+Lipschitz constant satisfies `L·T ≤ 1/2` (`hLip`), the Picard iterates `multiPicard`
+converge uniformly on `[0,T]` to a continuous field bounded by `R` which is a fixed point
+of `multiDuhamelImage`.  This is the Banach fixed-point argument for the Galerkin-truncated
+mild equation, run explicitly rather than through `ContractingWith.exists_fixedPoint'` so
+that every estimate stays in the repo's `frequencyHeatLeray`/`truncatedConvectionSymbol`
+vocabulary.
+
+Reference: T. Kato, *Strong `L^p` solutions of the Navier–Stokes equation in `R^m`*,
+Math. Z. **187** (1984) 471–480, §2; H. Fujita and T. Kato, *On the Navier–Stokes initial
+value problem I*, Arch. Rational Mech. Anal. **16** (1964) 269–315, §4. -/
+theorem exists_multiMild_fixedPoint_of_smallHorizon {ν T : ℝ} (hν : 0 ≤ ν) (hT : 0 < T)
+    {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3) {M R : ℝ}
+    (hM : ∀ k : Fin n, ‖u₀ k‖ ≤ M) (hR0 : 0 ≤ R)
+    (hstep : M + (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * T ≤ R)
+    (hLip : (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * T ≤ 1/2) :
+    ∃ u : ℝ → Fin n → E3,
+      (∀ k : Fin n, ContinuousOn (fun t => u t k) (Set.Icc 0 T)) ∧
+      (∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ‖u t k‖ ≤ R) ∧
+      (∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, u t k = multiDuhamelImage ν q u₀ u t k) := by
+  classical
+  have hS : (0:ℝ) ≤ ∑ j, ‖q j‖ := Finset.sum_nonneg fun j _ => norm_nonneg _
+  have hK0 : (0:ℝ) ≤ 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R) := by positivity
+  have hL0 : (0:ℝ) ≤ 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ) := by positivity
+  have hbd := multiPicard_norm_le hν q u₀ hM hR0 hT.le hstep
+  have hcont := multiPicard_continuousOn hν hT.le q u₀ hR0 hbd
+  obtain ⟨C₀, hC₀⟩ : ∃ C : ℝ,
+      C = (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * T := ⟨_, rfl⟩
+  have hC₀0 : (0:ℝ) ≤ C₀ := by rw [hC₀]; exact mul_nonneg hK0 hT.le
+  -- Geometric decay of successive Picard differences.
+  have hdiff : ∀ m : ℕ, ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k,
+      ‖multiPicard ν q u₀ (m + 1) t k - multiPicard ν q u₀ m t k‖ ≤ C₀ * (1/2)^m := by
+    intro m
+    induction m with
+    | zero =>
+        intro t ht k
+        have h := norm_multiDuhamelImage_sub_heat_le (q := q) (u₀ := u₀) hν hR0
+          (fun s hs j => hbd 0 s hs j) ht k
+        refine le_trans h ?_
+        rw [hC₀, pow_zero, mul_one]
+        exact mul_le_mul_of_nonneg_left ht.2 hK0
+    | succ m ih =>
+        intro t ht k
+        have h := norm_multiDuhamelImage_sub_le (q := q) (u₀ := u₀) hν hR0
+          (hcont (m + 1)) (hcont m)
+          (fun s hs j => hbd (m + 1) s hs j) (fun s hs j => hbd m s hs j)
+          (fun s hs j => ih s hs j) ht k
+        refine le_trans h ?_
+        have hCn : (0:ℝ) ≤ C₀ * (1/2:ℝ)^m := mul_nonneg hC₀0 (by positivity)
+        have h1 : (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * (C₀ * (1/2)^m))) * t
+            = ((2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * t) * (C₀ * (1/2)^m) := by ring
+        rw [h1]
+        have h2 : (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * t ≤ 1/2 :=
+          le_trans (mul_le_mul_of_nonneg_left ht.2 hL0) hLip
+        calc ((2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * t) * (C₀ * (1/2)^m)
+            ≤ (1/2) * (C₀ * (1/2)^m) := mul_le_mul_of_nonneg_right h2 hCn
+          _ = C₀ * (1/2)^(m + 1) := by ring
+  -- Cauchy, hence convergent, pointwise on the horizon.
+  have hgeo : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ∀ m : ℕ,
+      dist (multiPicard ν q u₀ m t k) (multiPicard ν q u₀ (m + 1) t k) ≤ C₀ * (1/2)^m := by
+    intro t ht k m
+    rw [dist_eq_norm, norm_sub_rev]
+    exact hdiff m t ht k
+  have hcauchy : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k,
+      CauchySeq (fun m => multiPicard ν q u₀ m t k) := fun t ht k =>
+    cauchySeq_of_le_geometric (1/2) C₀ (by norm_num) (hgeo t ht k)
+  obtain ⟨u, hudef⟩ : ∃ u : ℝ → Fin n → E3,
+      u = fun t k => Filter.limUnder Filter.atTop
+        (fun m => multiPicard ν q u₀ m t k) := ⟨_, rfl⟩
+  have htend : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k,
+      Filter.Tendsto (fun m => multiPicard ν q u₀ m t k) Filter.atTop (nhds (u t k)) := by
+    intro t ht k
+    rw [hudef]
+    exact (hcauchy t ht k).tendsto_limUnder
+  have hrate : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ∀ m : ℕ,
+      ‖multiPicard ν q u₀ m t k - u t k‖ ≤ 2 * C₀ * (1/2)^m := by
+    intro t ht k m
+    have h := dist_le_of_le_geometric_of_tendsto (1/2) C₀ (by norm_num)
+      (hgeo t ht k) (htend t ht k) m
+    rw [← dist_eq_norm]
+    refine le_trans h (le_of_eq ?_)
+    ring
+  have hubd : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, ‖u t k‖ ≤ R := by
+    intro t ht k
+    exact le_of_tendsto (htend t ht k).norm
+      (Filter.Eventually.of_forall fun m => hbd m t ht k)
+  have hpow : Filter.Tendsto (fun m : ℕ => C₀ * (1/2:ℝ)^m) Filter.atTop (nhds 0) := by
+    have hp := tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1/2:ℝ)) (by norm_num) (by norm_num)
+    simpa using hp.const_mul C₀
+  have hpow2 : Filter.Tendsto (fun m : ℕ => 2 * C₀ * (1/2:ℝ)^m) Filter.atTop (nhds 0) := by
+    have hp := tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1/2:ℝ)) (by norm_num) (by norm_num)
+    simpa [mul_assoc] using hp.const_mul (2 * C₀)
+  -- Uniform convergence gives continuity of the limit.
+  have hucont : ∀ k : Fin n, ContinuousOn (fun t => u t k) (Set.Icc 0 T) := by
+    intro k
+    have hunif : TendstoUniformlyOn (fun m t => multiPicard ν q u₀ m t k)
+        (fun t => u t k) Filter.atTop (Set.Icc 0 T) := by
+      rw [Metric.tendstoUniformlyOn_iff]
+      intro ε hε
+      filter_upwards [hpow2.eventually (gt_mem_nhds hε)] with m hm t ht
+      have := hrate t ht k m
+      rw [dist_comm, dist_eq_norm]
+      exact lt_of_le_of_lt this hm
+    exact hunif.continuousOn
+      (Filter.Eventually.frequently (Filter.Eventually.of_forall fun m => hcont m k))
+  -- The limit is a fixed point of the Duhamel map.
+  have hfix : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ k, u t k = multiDuhamelImage ν q u₀ u t k := by
+    intro t ht k
+    have h1 : Filter.Tendsto (fun m => multiPicard ν q u₀ (m + 1) t k) Filter.atTop
+        (nhds (u t k)) :=
+      (htend t ht k).comp (Filter.tendsto_add_atTop_nat 1)
+    have h2 : Filter.Tendsto (fun m => multiPicard ν q u₀ (m + 1) t k) Filter.atTop
+        (nhds (multiDuhamelImage ν q u₀ u t k)) := by
+      rw [← tendsto_sub_nhds_zero_iff]
+      refine squeeze_zero_norm ?_ hpow
+      intro m
+      have h := norm_multiDuhamelImage_sub_le (q := q) (u₀ := u₀) hν hR0
+        (hcont m) hucont
+        (fun s hs j => hbd m s hs j) (fun s hs j => hubd s hs j)
+        (fun s hs j => hrate s hs j m) ht k
+      refine le_trans h ?_
+      have hCn : (0:ℝ) ≤ 2 * C₀ * (1/2:ℝ)^m := by positivity
+      have h1' : (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * (2 * C₀ * (1/2)^m))) * t
+          = ((2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * t) * (2 * C₀ * (1/2)^m) := by ring
+      rw [h1']
+      have h2' : (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * t ≤ 1/2 :=
+        le_trans (mul_le_mul_of_nonneg_left ht.2 hL0) hLip
+      calc ((2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * t) * (2 * C₀ * (1/2)^m)
+          ≤ (1/2) * (2 * C₀ * (1/2)^m) := mul_le_mul_of_nonneg_right h2' hCn
+        _ = C₀ * (1/2)^m := by ring
+    exact tendsto_nhds_unique h1 h2
+  exact ⟨u, hucont, hubd, hfix⟩
+
 /-- **[RESIDUAL — the product Duhamel contraction on the half-open horizon.
 Reference: Kato, *Strong L^p solutions of the Navier–Stokes equation*, Math. Z. 187
 (1984) 471–480 §2; Fujita–Kato, Arch. Rational Mech. Anal. 16 (1964) 269–315.
@@ -1003,7 +1310,49 @@ theorem exists_multiMild_shortHorizon
     ∃ T : ℝ, 0 < T ∧ ∃ (u : ℝ → Fin n → E3) (R : ℝ),
       (∀ T' : ℝ, 0 ≤ T' → T' < T → IsMultiMildSolutionOn ν q u₀ T' u) ∧
       (∀ t : ℝ, 0 ≤ t → t < T → ∀ k : Fin n, ‖u t k‖ ≤ R) := by
-  sorry
+  classical
+  have hS : (0:ℝ) ≤ ∑ j, ‖q j‖ := Finset.sum_nonneg fun j _ => norm_nonneg _
+  have hM0 : (0:ℝ) ≤ ∑ m, ‖u₀ m‖ := Finset.sum_nonneg fun j _ => norm_nonneg _
+  obtain ⟨R, hRdef⟩ : ∃ R : ℝ, R = (∑ m, ‖u₀ m‖) + 1 := ⟨_, rfl⟩
+  have hR0 : (0:ℝ) ≤ R := by rw [hRdef]; linarith
+  obtain ⟨K, hKdef⟩ : ∃ K : ℝ,
+      K = 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R) := ⟨_, rfl⟩
+  obtain ⟨L, hLdef⟩ : ∃ L : ℝ,
+      L = 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ) := ⟨_, rfl⟩
+  have hK0 : (0:ℝ) ≤ K := by rw [hKdef]; positivity
+  have hL0 : (0:ℝ) ≤ L := by rw [hLdef]; positivity
+  have hP : (0:ℝ) < K + L + 1 := by linarith
+  obtain ⟨T, hTdef⟩ : ∃ T : ℝ, T = 1 / (2 * (K + L + 1)) := ⟨_, rfl⟩
+  have hT0 : 0 < T := by rw [hTdef]; positivity
+  have hprod : (K + L + 1) * T = 1/2 := by
+    rw [hTdef]
+    field_simp
+  have hKT : K * T ≤ 1/2 := by
+    have h1 : K * T ≤ (K + L + 1) * T :=
+      mul_le_mul_of_nonneg_right (by linarith) hT0.le
+    linarith
+  have hLT : L * T ≤ 1/2 := by
+    have h1 : L * T ≤ (K + L + 1) * T :=
+      mul_le_mul_of_nonneg_right (by linarith) hT0.le
+    linarith
+  have hstep : (∑ m, ‖u₀ m‖)
+      + (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * T ≤ R := by
+    rw [← hKdef, hRdef]
+    linarith
+  have hLip : (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * (n:ℝ)) * T ≤ 1/2 := by
+    rw [← hLdef]; exact hLT
+  have hMle : ∀ k : Fin n, ‖u₀ k‖ ≤ ∑ m, ‖u₀ m‖ := fun k =>
+    Finset.single_le_sum (f := fun m : Fin n => ‖u₀ m‖)
+      (fun i _ => norm_nonneg _) (Finset.mem_univ k)
+  obtain ⟨u, hucont, hubd, hufix⟩ :=
+    exists_multiMild_fixedPoint_of_smallHorizon (ν := ν) hν hT0 q u₀ hMle hR0 hstep hLip
+  refine ⟨T, hT0, u, R, ?_, ?_⟩
+  · intro T' hT'0 hT'T
+    refine ⟨fun k => (hucont k).mono (Set.Icc_subset_Icc le_rfl hT'T.le), ?_⟩
+    intro k t ht
+    exact hufix t ⟨ht.1, le_trans ht.2 hT'T.le⟩ k
+  · intro t ht0 htT k
+    exact hubd t ⟨ht0, htT.le⟩ k
 
 /-- **Local existence for the honest Galerkin truncation.**  For every viscosity
 `ν ≥ 0`, finite frequency family and initial amplitudes there is a positive horizon
@@ -1023,3 +1372,4 @@ theorem exists_isMultiMildSolutionOn_local
 
 
 end Navier.Analysis.MultiFrequencyMild
+
