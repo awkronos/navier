@@ -135,14 +135,14 @@ and keeping them explicit avoids committing this general lemma to any one
 measurability setup. -/
 theorem setIntegral_norm_sub_setAverage_sq_le {s : Set α} (hsm : MeasurableSet s)
     (h0 : μ s ≠ 0) (hs : μ s ≠ ⊤) (f : α → E) (hfi : IntegrableOn f s μ)
-    (hslice : ∀ x : α, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) s μ)
+    (hslice : ∀ x ∈ s, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) s μ)
     (hlhs : IntegrableOn (fun x => ‖f x - ⨍ y in s, f y ∂μ‖ ^ 2) s μ)
     (hrhs : IntegrableOn (fun x => ⨍ y in s, ‖f y - f x‖ ^ 2 ∂μ) s μ) :
     ∫ x in s, ‖f x - ⨍ y in s, f y ∂μ‖ ^ 2 ∂μ
       ≤ ∫ x in s, (⨍ y in s, ‖f y - f x‖ ^ 2 ∂μ) ∂μ := by
-  refine setIntegral_mono_on hlhs hrhs hsm fun x _ => ?_
+  refine setIntegral_mono_on hlhs hrhs hsm fun x hx => ?_
   rw [show ‖f x - ⨍ y in s, f y ∂μ‖ = ‖(⨍ y in s, f y ∂μ) - f x‖ from norm_sub_rev _ _]
-  exact norm_setAverage_sub_apply_sq_le h0 hs f x hfi (hslice x)
+  exact norm_setAverage_sub_apply_sq_le h0 hs f x hfi (hslice x hx)
 
 /-- Cauchy–Schwarz on a **unit-measure** set, where the averaging constant
 disappears: `‖∫_s f‖² ≤ ∫_s ‖f‖²`.  This is the form the segment estimate below
@@ -525,11 +525,11 @@ theorem setIntegral_cellError_le_displacement {G : Type*} [MeasurableSpace G]
     (h0 : ν A ≠ 0) (hfin : ν A ≠ ⊤)
     (hdiam : ∀ x ∈ A, ∀ y ∈ A, ‖y - x‖ ≤ h)
     (hfi : IntegrableOn f A ν)
-    (hslice : ∀ x : G, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) A ν)
+    (hslice : ∀ x ∈ A, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) A ν)
     (hlhs : IntegrableOn (fun x => ‖f x - ⨍ y in A, f y ∂ν‖ ^ 2) A ν)
     (hrhs : IntegrableOn (fun x => ⨍ y in A, ‖f y - f x‖ ^ 2 ∂ν) A ν)
-    (hiA : ∀ x : G, Integrable (Set.indicator A fun y => ‖f y - f x‖ ^ 2) ν)
-    (hiB : ∀ x : G, Integrable
+    (hiA : ∀ x ∈ A, Integrable (Set.indicator A fun y => ‖f y - f x‖ ^ 2) ν)
+    (hiB : ∀ x ∈ A, Integrable
       (Set.indicator (Metric.closedBall (0:G) h) fun k => ‖f (x + k) - f x‖ ^ 2) ν)
     (hball : IntegrableOn
       (fun x => ∫ k in Metric.closedBall (0:G) h, ‖f (x + k) - f x‖ ^ 2 ∂ν) A ν)
@@ -552,7 +552,7 @@ theorem setIntegral_cellError_le_displacement {G : Type*} [MeasurableSpace G]
       rw [hpull x]
       refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr measureReal_nonneg)
       exact setIntegral_oscillation_le_translate_ball A hA h x
-        (fun y hy => hdiam x hx y hy) f (hiA x) (hiB x)
+        (fun y hy => hdiam x hx y hy) f (hiA x hx) (hiB x hx)
     rwa [MeasureTheory.integral_const_mul] at hmono
   refine le_trans hstep1 (le_trans hstep2 ?_)
   rw [setIntegral_setIntegral_swap A (Metric.closedBall (0:G) h) _ hprod]
@@ -595,7 +595,7 @@ theorem setIntegral_cellError_le_displacement_of_bounded {G : Type*} [Measurable
     MeasureTheory.Measure.integrableOn_of_bounded hfin hmeas.aestronglyMeasurable
       (M := M) (Filter.Eventually.of_forall fun x => hM x)
   -- (2) the oscillation at a fixed base point, on the cell
-  have hslice : ∀ x : G, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) A ν := fun x =>
+  have hslice : ∀ x ∈ A, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) A ν := fun x _ =>
     integrableOn_of_bound hfin
       (((hmeas.sub measurable_const).norm.pow_const 2)).aestronglyMeasurable
       (M := 4 * M ^ 2) fun y => by
@@ -621,10 +621,10 @@ theorem setIntegral_cellError_le_displacement_of_bounded {G : Type*} [Measurable
           exact hbd _ _ (hM y) (hM x)
       simpa [Real.norm_eq_abs] using this
   -- (5)(6) indicator forms
-  have hiA : ∀ x : G, Integrable (Set.indicator A fun y => ‖f y - f x‖ ^ 2) ν :=
-    fun x => (integrable_indicator_iff hA).mpr (hslice x)
-  have hiB : ∀ x : G, Integrable (Set.indicator B fun k => ‖f (x + k) - f x‖ ^ 2) ν := by
-    intro x
+  have hiA : ∀ x ∈ A, Integrable (Set.indicator A fun y => ‖f y - f x‖ ^ 2) ν :=
+    fun x hx => (integrable_indicator_iff hA).mpr (hslice x hx)
+  have hiB : ∀ x ∈ A, Integrable (Set.indicator B fun k => ‖f (x + k) - f x‖ ^ 2) ν := by
+    intro x _
     refine (integrable_indicator_iff measurableSet_closedBall).mpr ?_
     refine integrableOn_of_bound hBfin
       ((((hmeas.comp (measurable_const_add x)).sub measurable_const).norm.pow_const
@@ -1146,6 +1146,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
