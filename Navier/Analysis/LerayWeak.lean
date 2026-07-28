@@ -67,8 +67,14 @@ Galerkin/compactness tower has a home with no floating restatement.
   first `m` divergence-free modes + time-regularity bookkeeping); depends on
   `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily` [Temam III.3;
   Constantin–Foias II; Leray 1934 §§18–20; est ~350 LOC].
-* `aubin_lions_l2loc_compactness` — the compact-embedding core
-  [Aubin 1963; Lions 1969; Simon 1987; Temam III.2.3; est ~550 LOC].
+* `aubin_lions_l2loc_compactness` — the compact-embedding core, on the
+  **Pattern-A repaired** hypothesis list (the earlier one was FALSE as stated:
+  no divergence-freeness, hence no spatial control, and no joint measurability;
+  see the docstring for the checked curl-free witness).  What remains is
+  Riesz–Fréchet–Kolmogorov on one window plus Riesz–Fischer
+  [Brezis Thm 4.26/4.27 + Thm 4.8; Simon 1987 Thm 1; Temam III.2.3;
+  est ~550 LOC]; the diagonal extraction and the real-window reduction are
+  certified here.
 * `exists_lerayLimitData` — limit passage in the weak form, stated for `t > 0`
   [Leray 1934 §§21–23; Temam III.3.3; est ~700 LOC].
 -/
@@ -718,6 +724,41 @@ def TimeEquicontinuous (uSeq : ℕ → VelocityEvolution) : Prop :=
     ∀ (m : ℕ) (h : ℝ), |h| < δ →
       (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖uSeq m (t + h) x - uSeq m t x‖ ^ 2) ≤ ε
 
+/-- **(H-space) Uniform spatial-translation equicontinuity** — the
+Riesz–Fréchet–Kolmogorov condition, and the exact spatial mirror of
+`TimeEquicontinuous`: a space shift `y` in place of a time shift `h`.  This is
+Simon (1987) Thm 1 condition (ii) / Brezis (2011) Thm 4.26 hypothesis, i.e. the
+hypothesis that actually delivers *spatial* compactness.
+
+**Why this is a hypothesis and not a consequence of `UniformEnstrophyBound`.**
+`enstrophy` integrates `‖curl u‖²` only, and nothing in the Galerkin bundle
+forces divergence-freeness, so `‖ω‖_{L²} = ‖∇u‖_{L²}` is unavailable and the
+enstrophy bound gives no spatial control whatsoever.  The curl-free family
+`u_m = ∇(m⁻¹ cos(m x₀) χ)`, `χ = e^{−|x|²}`, has `curl u_m ≡ 0` by Clairaut
+(so `UniformEnstrophyBound u_m 0`), is `L²`-bounded, is time-independent (so
+`TimeEquicontinuous` holds with a `0` integrand), and yet has **no**
+`L²_loc`-Cauchy subsequence.  Checked numerically (`experiments/aubin_lions_curlfree_witness.py`):
+`‖u_m‖² → 0.6267 = ½∫χ²` while `‖u_m − u_{2m}‖² → 1.2533` for `m ≥ 8`.  That
+family is excluded by exactly this predicate: at the shift `y = (π/m, 0, 0)`,
+whose norm tends to `0`, the translation error stays at `≈ 2∫χ² = 2.507`,
+so no `δ` works.  (Same script, part (3); part (4) checks a non-oscillating
+family has translation error `→ 0`, so the predicate is not vacuous.) -/
+def SpaceEquicontinuous (uSeq : ℕ → VelocityEvolution) : Prop :=
+  ∀ (T ε : ℝ), 0 < ε → ∃ δ : ℝ, 0 < δ ∧
+    ∀ (m : ℕ) (y : Space), ‖y‖ < δ →
+      (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖uSeq m t (x + y) - uSeq m t x‖ ^ 2) ≤ ε
+
+/-- **(H-meas) Joint `(t,x)`-measurability.**  `VelocityEvolution` is the bare
+function type `ℝ → Space → Space`, which carries no measurability at all, so
+every `t`-integral of an `x`-integral in this file is a Bochner integral that
+silently returns the junk value `0` off the integrable locus.  Without this
+field even the elementary bookkeeping of the compactness argument fails: the
+countable exhaustion `T = R = n` needs `∫_{Ioc 0 T} ≤ ∫_{Ioc 0 n}` for `T ≤ n`,
+i.e. `IntegrableOn` in `t`, which slicewise `x`-integrability alone cannot give.
+`strongL2LocLimit_of_natWindows` below is the theorem this field unlocks. -/
+def JointlyMeasurable (uSeq : ℕ → VelocityEvolution) : Prop :=
+  ∀ m : ℕ, Measurable (fun z : ℝ × Space => uSeq m z.1 z.2)
+
 /-- A **Galerkin approximation** of Navier–Stokes with viscosity `ν` and datum
 `u₀`: a sequence of velocity fields carrying the uniform energy/dissipation
 bounds and time-regularity from the projected energy identity, plus the `L²`
@@ -738,6 +779,15 @@ structure GalerkinApproximation (ν : ℝ) (u₀ : SchwartzVelocity) where
   enstrophy_bounded : UniformEnstrophyBound approx bound
   /-- Uniform time-translation equicontinuity (Simon time-regularity). -/
   time_equicontinuous : TimeEquicontinuous approx
+  /-- (H-space) Uniform spatial-translation equicontinuity (Riesz–Kolmogorov).
+  For genuine Galerkin approximants this comes from the divergence-free
+  `H¹` bound `∫₀^T ‖∇u_m‖²_{L²} ≤ ‖u₀‖²/(2ν)` through
+  `‖τ_y f − f‖_{L²} ≤ ‖y‖ ‖∇f‖_{L²}`; it does **not** follow from
+  `enstrophy_bounded`, see `SpaceEquicontinuous`. -/
+  space_equicontinuous : SpaceEquicontinuous approx
+  /-- (H-meas) Joint `(t,x)`-measurability; automatic for the Galerkin
+  approximants, which are finite sums `∑ᵢ cᵢ(t) wᵢ(x)` with continuous `cᵢ`. -/
+  jointly_measurable : JointlyMeasurable approx
   /-- Each slice is square-integrable. -/
   sq_integrable :
     ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖approx m t x‖ ^ 2)
@@ -870,6 +920,10 @@ structure GalerkinModeData (ν : ℝ) (u₀ : SchwartzVelocity) where
   enstrophy_bounded : UniformEnstrophyBound approx bound
   /-- Uniform time-translation equicontinuity. -/
   time_equicontinuous : TimeEquicontinuous approx
+  /-- (H-space) Uniform spatial-translation equicontinuity (Riesz–Kolmogorov). -/
+  space_equicontinuous : SpaceEquicontinuous approx
+  /-- (H-meas) Joint `(t,x)`-measurability. -/
+  jointly_measurable : JointlyMeasurable approx
   /-- Each slice is square-integrable. -/
   sq_integrable :
     ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖approx m t x‖ ^ 2)
@@ -893,7 +947,10 @@ theorem galerkinApproximation_of_modeData (ν : ℝ) (u₀ : SchwartzVelocity)
     (D : GalerkinModeData ν u₀) : Nonempty (GalerkinApproximation ν u₀) := by
   refine ⟨{ approx := D.approx, bound := D.bound, bound_nonneg := D.bound_nonneg,
             kinetic_bounded := D.kinetic_bounded, enstrophy_bounded := D.enstrophy_bounded,
-            time_equicontinuous := D.time_equicontinuous, sq_integrable := D.sq_integrable,
+            time_equicontinuous := D.time_equicontinuous,
+            space_equicontinuous := D.space_equicontinuous,
+            jointly_measurable := D.jointly_measurable,
+            sq_integrable := D.sq_integrable,
             weak_consistent := D.weak_consistent, initial_converges := ?_ }⟩
   have hbridge := tendsto_integral_norm_sq_of_tendsto_officialInner_self
     (fun m => D.initialMode m - u₀) D.initial_converges_L2
@@ -920,6 +977,10 @@ def zeroGalerkinModeData (ν : ℝ) : GalerkinModeData ν (0 : SchwartzVelocity)
   time_equicontinuous := by
     intro T ε hε
     exact ⟨1, one_pos, fun m h _ => by simp only [sub_self, norm_zero]; simp [hε.le]⟩
+  space_equicontinuous := by
+    intro T ε hε
+    exact ⟨1, one_pos, fun m y _ => by simp only [sub_self, norm_zero]; simp [hε.le]⟩
+  jointly_measurable := fun _ => measurable_const
   sq_integrable := by
     intro m t _
     exact (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => by simp)
@@ -1005,14 +1066,19 @@ theorem aubinLions_zero_instance :
     UniformKineticBound (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) 0 ∧
     UniformEnstrophyBound (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) 0 ∧
     TimeEquicontinuous (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) ∧
+    SpaceEquicontinuous (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) ∧
+    JointlyMeasurable (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) ∧
     (∀ t : ℝ, 0 ≤ t →
       Integrable (fun x : Space => ‖(fun (_ : ℝ) (_ : Space) => (0:Space)) t x‖ ^ 2)) ∧
     StrongL2LocLimit (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) (fun _ _ => 0) := by
-  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro m t _; simp [kineticEnergy]
   · intro m T _; simp only [enstrophy_zero_velocity]; simp
   · intro T ε hε
     exact ⟨1, one_pos, fun m h _ => by simp only [sub_self, norm_zero]; simp [hε.le]⟩
+  · intro T ε hε
+    exact ⟨1, one_pos, fun m y _ => by simp only [sub_self, norm_zero]; simp [hε.le]⟩
+  · exact fun _ => measurable_const
   · intro t _
     exact (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => by simp)
   · exact strongL2LocLimit_const (fun _ _ => 0)
@@ -1176,74 +1242,214 @@ theorem enstrophy_stepField_eq_zero (t : ℝ) :
   filter_upwards [hae] with x hx
   exact fderiv_stepField_eq_zero_of_notMem_sphere x hx
 
-/-- **[NAMED RESIDUAL — Aubin–Lions–Simon compactness; Aubin (C. R. Acad. Sci.
-256, 1963); Lions (*Quelques méthodes de résolution*, 1969); Simon (*Ann. Mat.
-Pura Appl.* 146, 1987, "Compact sets in `L^p(0,T;B)`"); Temam III.2.3;
-est ~550 LOC.]**  A sequence bounded in `L^∞_t L²_x` (uniform kinetic bound)
-and in `L²(0,T; H¹)` (uniform enstrophy bound), square-integrable slicewise,
-and uniformly `L²`-time-equicontinuous, has a subsequence converging strongly
-in `L²(0,T; L²_loc)` to a slicewise square-integrable limit.  This is the
-Mathlib-absent compact-embedding core: Mathlib has Banach–Alaoglu (weak-*
-compactness) but NOT the Aubin–Lions compact embedding
-`{u ∈ L²(H¹) : ∂ₜu ∈ L²(H⁻¹)} ↪↪ L²(L²)`.  The `TimeEquicontinuous` hypothesis
-is load-bearing (without it the statement is false — pure spatial `H¹` bounds
-give Rellich in space but not compactness in time).
+/-!
+### The countable-window reduction (unlocked by `JointlyMeasurable`)
 
-**Step-0e strengthening (this wave).**  The conclusion now also asserts that the
-limit is slicewise square-integrable.  Without that clause the statement does
-not deliver what its only consumer needs — `IsLerayHopfWeakSolution` has a
-`square_integrable` field, and a `VelocityEvolution` carries no measurability
-whatsoever, so `StrongL2LocLimit uSeq u` alone is satisfiable by a limit for
-which every error integral is a Bochner integral of a non-integrable function
-(hence `0` by convention) rather than a genuine convergence.  Adding the clause
-costs nothing in the intended proof — the Aubin–Lions limit lives in
-`L²(0,T;L²_loc)` by construction — and closes that gap.
+`StrongL2LocLimit` quantifies over **real** parameters `T, R`, while every
+extraction argument produces convergence only along the **countable** exhaustion
+`T = R = n`.  Bridging the two needs
+`∫_{Ioc 0 T} ∫_{B_R} ≤ ∫_{Ioc 0 n} ∫_{B_n}` for `T, R ≤ n`, hence integrability
+of the inner integral *in `t`* — which slicewise `x`-integrability cannot supply
+and which `JointlyMeasurable` does.  This is the second of the two gaps recorded
+in the Aubin–Lions residual; it is closed here.
+-/
 
-**Named sub-obligations, corrected this wave.**  (ii) temporal compactness: the
-`TimeEquicontinuous` field in Kolmogorov–Riesz form — this hypothesis is genuinely
-load-bearing and does its job (the family `u_m(t,x) = sin(m t) w(x)` satisfies the
-kinetic and enstrophy bounds, has no strong `L²_loc` limit, and is excluded exactly
-by `TimeEquicontinuous`).  (iii) diagonal extraction over the countable exhaustion
-`T = R = n`: `exists_diagonal_subseq` / `exists_subseq_forall_window_tendsto`
-(CERTIFIED above), with `StrongL2LocLimit.comp_strictMono` as the bookkeeping step.
-(iv) slicewise square-integrability of the limit, from the uniform kinetic bound by
-Fatou.
+/-- `‖v − w‖²` is integrable as soon as both `‖v‖²` and `‖w‖²` are and the
+difference is measurable, by `‖v − w‖² ≤ 2‖v‖² + 2‖w‖²`. -/
+theorem integrable_norm_sub_sq (v w : VelocityField)
+    (hmeas : Measurable fun x : Space => v x - w x)
+    (hv : Integrable fun x : Space => ‖v x‖ ^ 2)
+    (hw : Integrable fun x : Space => ‖w x‖ ^ 2) :
+    Integrable fun x : Space => ‖v x - w x‖ ^ 2 := by
+  refine Integrable.mono' ((hv.const_mul 2).add (hw.const_mul 2))
+    (hmeas.norm.pow_const 2).aestronglyMeasurable
+    (Filter.Eventually.of_forall fun x => ?_)
+  have htri : ‖v x - w x‖ ≤ ‖v x‖ + ‖w x‖ := norm_sub_le _ _
+  have hbd : ‖v x - w x‖ ^ 2 ≤ 2 * ‖v x‖ ^ 2 + 2 * ‖w x‖ ^ 2 := by
+    nlinarith [norm_nonneg (v x), norm_nonneg (w x), norm_nonneg (v x - w x),
+      sq_nonneg (‖v x‖ - ‖w x‖)]
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity : (0:ℝ) ≤ ‖v x - w x‖ ^ 2)]
+  exact hbd
 
-**Sub-obligation (i) is NOT reachable from the present hypotheses, and that is the
-honest residual.**  It was stated as "spatial compactness: Riesz–Fréchet–Kolmogorov
-on each ball, fed by the enstrophy bound".  Two independent reasons that fails:
+/-- **Real windows reduce to integer windows.**  Given joint `(t,x)`-measurability
+of the sequence and of the limit, slicewise square-integrability, and a uniform
+kinetic bound on both, convergence of the error over every *integer* window
+`(0,n] × B̄(0,n)` upgrades to `StrongL2LocLimit`, i.e. convergence over every
+*real* window `(0,T] × B̄(0,R)`.
 
-* `enstrophy` integrates `‖curl u‖²`, and **nothing in this hypothesis bundle
-  requires `uSeq` to be divergence-free**, so the identity `‖ω‖_{L²} = ‖∇u‖_{L²}`
-  is unavailable.  A curl-free family already defeats it: for
-  `u_m = ∇(m⁻¹ cos(m x₀) χ)` the curl vanishes identically (Clairaut), so
-  `UniformEnstrophyBound u_m 0` holds; the family is `L²`-bounded, time-independent
-  (hence `TimeEquicontinuous` trivially, the integrand being `0`), and has no
-  `L²_loc`-Cauchy subsequence.  Checked numerically: `‖u_m‖² ≈ 0.63` for all `m`
-  while `‖u_m - u_{2m}‖² ≈ 1.25` for `m ≥ 8`.
-* `enstrophy` is additionally blind to non-differentiability — see
-  `enstrophy_stepField_eq_zero` (CERTIFIED above), a discontinuous field with
-  enstrophy exactly `0`.
+The two monotonicity steps are exactly what the bare function type
+`VelocityEvolution` could not support before: the inner one
+(`setIntegral_mono_set` on `B̄(0,R) ⊆ B̄(0,n)`) needs slicewise integrability on
+the larger ball, and the outer one (`Ioc 0 T ⊆ Ioc 0 n`) needs the inner integral
+to be integrable **in `t`**, which follows from `JointlyMeasurable` via
+`StronglyMeasurable.integral_prod_right'` together with the uniform bound
+`∫_{B̄(0,n)} ‖u_k(t) − u(t)‖² ≤ 2‖u_k(t)‖²_{L²} + 2‖u(t)‖²_{L²} ≤ 4C`. -/
+theorem strongL2LocLimit_of_natWindows
+    (uSeq : ℕ → VelocityEvolution) (u : VelocityEvolution) (C : ℝ)
+    (hmeasSeq : JointlyMeasurable uSeq)
+    (hmeasU : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (hintSeq : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable fun x : Space => ‖uSeq m t x‖ ^ 2)
+    (hintU : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (hkinSeq : UniformKineticBound uSeq C)
+    (hkinU : ∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C)
+    (hwin : ∀ n : ℕ, Filter.Tendsto
+      (fun k => ∫ t in Set.Ioc (0:ℝ) (n:ℝ), ∫ x in Metric.closedBall (0:Space) (n:ℝ),
+        ‖uSeq k t x - u t x‖ ^ 2) Filter.atTop (nhds 0)) :
+    StrongL2LocLimit uSeq u := by
+  have hFmeas : ∀ k : ℕ, Measurable fun z : ℝ × Space => ‖uSeq k z.1 z.2 - u z.1 z.2‖ ^ 2 :=
+    fun k => (((hmeasSeq k).sub hmeasU).norm).pow_const 2
+  have hFnn : ∀ (k : ℕ) (t : ℝ) (x : Space), (0:ℝ) ≤ ‖uSeq k t x - u t x‖ ^ 2 :=
+    fun _ _ _ => by positivity
+  -- slicewise integrability of the error
+  have hslice : ∀ (k : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable fun x : Space => ‖uSeq k t x - u t x‖ ^ 2 := by
+    intro k t ht
+    have hm1 : Measurable fun x : Space => uSeq k t x := (hmeasSeq k).comp measurable_prodMk_left
+    have hm2 : Measurable fun x : Space => u t x := hmeasU.comp measurable_prodMk_left
+    exact integrable_norm_sub_sq (uSeq k t) (u t) (hm1.sub hm2) (hintSeq k t ht) (hintU t ht)
+  -- the uniform slicewise bound `∫ ‖u_k(t) − u(t)‖² ≤ 4C`
+  have hCnn : 0 ≤ C := le_trans (kineticEnergy_nonneg (uSeq 0) 0) (hkinSeq 0 0 le_rfl)
+  have hglob : ∀ (k : ℕ) (t : ℝ), 0 ≤ t →
+      (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2) ≤ 4 * C := by
+    intro k t ht
+    have hb : (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2)
+        ≤ ∫ x : Space, (2 * ‖uSeq k t x‖ ^ 2 + 2 * ‖u t x‖ ^ 2) := by
+      refine integral_mono (hslice k t ht)
+        (((hintSeq k t ht).const_mul 2).add ((hintU t ht).const_mul 2)) fun x => ?_
+      have htri : ‖uSeq k t x - u t x‖ ≤ ‖uSeq k t x‖ + ‖u t x‖ := norm_sub_le _ _
+      nlinarith [norm_nonneg (uSeq k t x), norm_nonneg (u t x),
+        norm_nonneg (uSeq k t x - u t x), sq_nonneg (‖uSeq k t x‖ - ‖u t x‖)]
+    rw [integral_add ((hintSeq k t ht).const_mul 2) ((hintU t ht).const_mul 2),
+      MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hb
+    have h1 : (∫ x : Space, ‖uSeq k t x‖ ^ 2) ≤ C := hkinSeq k t ht
+    have h2 : (∫ x : Space, ‖u t x‖ ^ 2) ≤ C := hkinU t ht
+    linarith
+  -- the ball integral, as a function of `t`, is integrable on every `Ioc 0 b`
+  have hInner : ∀ (k : ℕ) (ρ b : ℝ),
+      IntegrableOn (fun t => ∫ x in Metric.closedBall (0:Space) ρ, ‖uSeq k t x - u t x‖ ^ 2)
+        (Set.Ioc (0:ℝ) b) volume := by
+    intro k ρ b
+    have hsm : StronglyMeasurable
+        fun t : ℝ => ∫ x in Metric.closedBall (0:Space) ρ, ‖uSeq k t x - u t x‖ ^ 2 :=
+      (hFmeas k).stronglyMeasurable.integral_prod_right'
+        (ν := volume.restrict (Metric.closedBall (0:Space) ρ))
+    refine MeasureTheory.Measure.integrableOn_of_bounded
+      (measure_Ioc_lt_top).ne hsm.aestronglyMeasurable (M := 4 * C) ?_
+    refine (MeasureTheory.ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    have hnn : 0 ≤ ∫ x in Metric.closedBall (0:Space) ρ, ‖uSeq k t x - u t x‖ ^ 2 :=
+      setIntegral_nonneg measurableSet_closedBall fun x _ => hFnn k t x
+    rw [Real.norm_eq_abs, abs_of_nonneg hnn]
+    calc (∫ x in Metric.closedBall (0:Space) ρ, ‖uSeq k t x - u t x‖ ^ 2)
+        ≤ ∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2 :=
+          setIntegral_le_integral (hslice k t ht.1.le)
+            (Filter.Eventually.of_forall fun x => hFnn k t x)
+      _ ≤ 4 * C := hglob k t ht.1.le
+  -- the squeeze against the integer window `n ≥ max T R`
+  intro T R
+  obtain ⟨n, hn⟩ := exists_nat_ge (max T R)
+  have hTn : T ≤ (n : ℝ) := le_trans (le_max_left _ _) hn
+  have hRn : R ≤ (n : ℝ) := le_trans (le_max_right _ _) hn
+  refine squeeze_zero (fun k => ?_) (fun k => ?_) (hwin n)
+  · exact setIntegral_nonneg measurableSet_Ioc fun t _ =>
+      setIntegral_nonneg measurableSet_closedBall fun x _ => hFnn k t x
+  · calc (∫ t in Set.Ioc (0:ℝ) T, ∫ x in Metric.closedBall (0:Space) R,
+              ‖uSeq k t x - u t x‖ ^ 2)
+        ≤ ∫ t in Set.Ioc (0:ℝ) T, ∫ x in Metric.closedBall (0:Space) (n:ℝ),
+              ‖uSeq k t x - u t x‖ ^ 2 := by
+          refine setIntegral_mono_on (hInner k R T) (hInner k (n:ℝ) T)
+            measurableSet_Ioc fun t ht => ?_
+          exact setIntegral_mono_set ((hslice k t ht.1.le).integrableOn)
+            (Filter.Eventually.of_forall fun x => hFnn k t x)
+            (HasSubset.Subset.eventuallyLE (Metric.closedBall_subset_closedBall hRn))
+      _ ≤ ∫ t in Set.Ioc (0:ℝ) (n:ℝ), ∫ x in Metric.closedBall (0:Space) (n:ℝ),
+              ‖uSeq k t x - u t x‖ ^ 2 := by
+          refine setIntegral_mono_set (hInner k (n:ℝ) (n:ℝ))
+            (Filter.Eventually.of_forall fun t =>
+              setIntegral_nonneg measurableSet_closedBall fun x _ => hFnn k t x)
+            (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc_right hTn))
 
-A second, independent gap: no hypothesis supplies **joint `(t,x)`-measurability** of
-the members, and `VelocityEvolution` is a bare function type.  Without it even the
-elementary bookkeeping fails — reducing the real-parameter conclusion to the
-countable exhaustion needs `∫_{Ioc 0 T} ≤ ∫_{Ioc 0 n}` for `T ≤ n`, i.e.
-`IntegrableOn` in `t`, which no hypothesis provides.
+/-- **[NAMED RESIDUAL — Aubin–Lions–Simon compactness, PATTERN-A REPAIRED
+STATEMENT; Aubin (*C. R. Acad. Sci.* **256**, 1963); Lions (*Quelques méthodes de
+résolution des problèmes aux limites non linéaires*, Dunod 1969, Ch. 1 §5);
+Simon ("Compact sets in `L^p(0,T;B)`", *Ann. Mat. Pura Appl.* **146** (1987)
+65–96, Thm 1); Temam, *Navier–Stokes Equations*, AMS Chelsea 2001, III.2.3;
+Brezis, *Functional Analysis*, Springer 2011, Thm 4.26 + Cor 4.27.]**  A sequence
+bounded in `L^∞_t L²_x`, uniformly equicontinuous under **both** time and space
+translations, jointly `(t,x)`-measurable and slicewise square-integrable, has a
+subsequence converging strongly in `L²(0,T; L²_loc)` to a jointly measurable,
+slicewise square-integrable limit.  This is the Mathlib-absent compact-embedding
+core: Mathlib has Banach–Alaoglu (weak-* compactness) but neither the Aubin–Lions
+embedding `{u ∈ L²(H¹) : ∂ₜu ∈ L²(H⁻¹)} ↪↪ L²(L²)` nor the
+Riesz–Fréchet–Kolmogorov criterion it rests on.
 
-So the residual is precisely **two missing hypotheses**, not a missing proof:
-`(H-space)` uniform spatial-translation equicontinuity in the Riesz–Kolmogorov sense
-(Simon 1987's actual condition), or divergence-freeness plus genuine `H¹` control;
-and `(H-meas)` joint measurability of `(t,x) ↦ uSeq m t x`.  With those two added,
-the route is (i)+(ii) Riesz–Fréchet–Kolmogorov on `(0,n) × B_n`, then (iii), then
-(iv).  The statement below is left exactly as it stands — unweakened — so the gap
-stays visible rather than being hidden by a repaired hypothesis list. -/
+## Pattern-A repair (this wave): the previous hypothesis list was FALSE as stated
+
+The earlier version asked for **spatial** compactness out of
+`UniformEnstrophyBound` alone.  Two independent checked defects; both are removed
+here by *adding* a hypothesis, never by weakening the conclusion.
+
+* **(H-space) was missing.**  `enstrophy` integrates `‖curl u‖²`, and nothing in
+  the bundle forces `uSeq` to be divergence-free, so the identity
+  `‖ω‖_{L²} = ‖∇u‖_{L²}` — the only route from enstrophy to an `H¹` bound — is
+  unavailable.  Falsifying family: `u_m = ∇(m⁻¹ cos(m x₀) χ)`, `χ = e^{−|x|²}`.
+  Its curl vanishes identically by Clairaut, so `UniformEnstrophyBound u_m 0`
+  holds; it is `L²`-bounded; it is time-independent, so `TimeEquicontinuous`
+  holds with a `0` integrand; and it has **no** `L²_loc`-Cauchy subsequence.
+  Checked numerically (`experiments/aubin_lions_curlfree_witness.py`, part (1)):
+  `‖u_m‖² → 0.6267 = ½∫χ²` while `‖u_m − u_{2m}‖² → 1.2533` for `m ≥ 8`; part (2)
+  checks `curl ∇ψ = 0` to `2.8e-13` in 3-D.  `SpaceEquicontinuous` excludes
+  exactly this family: part (3) exhibits shifts `y = (π/m,0,0)` with `‖y‖ → 0`
+  along which the translation error stays at `≈ 2∫χ² = 2.507`, so no `δ` works.
+  Part (4) checks a non-oscillating family *does* satisfy it, so the added
+  hypothesis is not vacuous; `aubinLions_zero_instance` certifies the same in
+  Lean.
+* **(H-meas) was missing.**  `VelocityEvolution` is the bare function type
+  `ℝ → Space → Space`, so no `t`-integral in the conclusion had any integrability
+  behind it and every one of them could silently be the Bochner junk value `0`.
+  `strongL2LocLimit_of_natWindows` (CERTIFIED above) is precisely the bookkeeping
+  step that was unreachable without it, and is now proved.
+
+Adding these two hypotheses is the *correct* repair rather than a weakening: the
+old statement was false, so any proof of it would have been a proof of a
+falsehood.  The conclusion is simultaneously **strengthened** with joint
+measurability of the limit, which the Riesz–Fischer construction supplies for
+free and which every downstream consumer needs in order to integrate against the
+limit at all.  A second, earlier strengthening is retained: the limit is
+slicewise square-integrable (`IsLerayHopfWeakSolution` has a `square_integrable`
+field, and without the clause `StrongL2LocLimit uSeq u` alone is satisfiable by a
+limit for which every error integral is a Bochner integral of a non-integrable
+function).
+
+## Certified support, and what remains
+
+`enstrophy` is additionally blind to non-differentiability —
+`enstrophy_stepField_eq_zero` (CERTIFIED above) is a discontinuous field with
+enstrophy exactly `0` — so no repair routed through `enstrophy` could work; the
+hypothesis had to be added at the translation level, which is what Simon (1987)
+actually assumes.  `TimeEquicontinuous` is likewise load-bearing and does its job
+(the family `u_m(t,x) = sin(m t)·w(x)` meets the kinetic and enstrophy bounds, has
+no strong `L²_loc` limit, and is excluded exactly by it).
+
+Remaining route, all four steps: **(i)+(ii)** Riesz–Fréchet–Kolmogorov total
+boundedness on the single window `(0,n] × B̄(0,n)` from (H-space) + (H-time) +
+the `L²` bound, giving an `L²`-Cauchy refinement of any subsequence
+[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~400 LOC]; **(iii)** the nested
+Cantor diagonal over the countable exhaustion — `exists_diagonal_subseq` /
+`exists_subseq_forall_window_tendsto` (CERTIFIED above), with
+`StrongL2LocLimit.comp_strictMono` for the bookkeeping; **(iv)** Riesz–Fischer:
+an `L²`-Cauchy sequence of jointly measurable fields has a jointly measurable
+pointwise-a.e. limit with vanishing window errors, slicewise square-integrable by
+Fatou [Brezis Thm 4.8; est ~150 LOC]; then `strongL2LocLimit_of_natWindows`
+(CERTIFIED above) turns the integer windows into the real ones. -/
 theorem aubin_lions_l2loc_compactness
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C) (hens : UniformEnstrophyBound uSeq C)
-    (htime : TimeEquicontinuous uSeq)
+    (htime : TimeEquicontinuous uSeq) (hspace : SpaceEquicontinuous uSeq)
+    (hmeas : JointlyMeasurable uSeq)
     (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2)) :
     ∃ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ ∧
+      Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
       StrongL2LocLimit (fun k => uSeq (σ k)) u := by
   sorry
@@ -1450,3 +1656,4 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
+
