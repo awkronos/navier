@@ -741,6 +741,18 @@ Riesz–Fréchet–Kolmogorov condition, and the exact spatial mirror of
 Simon (1987) Thm 1 condition (ii) / Brezis (2011) Thm 4.26 hypothesis, i.e. the
 hypothesis that actually delivers *spatial* compactness.
 
+**The falsification and the repair are one fact seen from two sides.**  Do not
+"simplify" this hypothesis away.  `enstrophy` measures `‖ω‖_{L²}`, and the whole
+question is whether that controls `‖∇u‖_{L²}`.  For a **divergence-free** field the
+two are equal, which is why the Galerkin approximants satisfy this predicate
+(`spaceEquicontinuous_of_dissipation_bound`, certified below, feeds Brezis Prop. 9.3
+the gradient bound the enstrophy bound then *is*).  For a general field the identity
+fails, and the curl-free witness below is exactly a family realizing that failure:
+`‖ω‖ ≡ 0` while `‖∇u_m‖` blows up.  So the counterexample exhibits the gap between
+enstrophy and gradient norm, and this hypothesis closes it by demanding what
+divergence-freeness would have supplied.  Deleting it re-falsifies
+`aubin_lions_l2loc_compactness`.
+
 **Why this is a hypothesis and not a consequence of `UniformEnstrophyBound`.**
 `enstrophy` integrates `‖curl u‖²` only, and nothing in the Galerkin bundle
 forces divergence-freeness, so `‖ω‖_{L²} = ‖∇u‖_{L²}` is unavailable and the

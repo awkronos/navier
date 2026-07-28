@@ -378,6 +378,57 @@ theorem setIntegral_le_measureReal_mul_const {S : Set α} (hS : MeasurableSet S)
   have hmono := setIntegral_mono_on hint (integrableOn_const hSfin) hS hb
   simpa [setIntegral_const, smul_eq_mul] using hmono
 
+/-- **Per-cell assembly.**  Chaining the three landed steps — the cell-average
+bound, the per-base-point translation to the displacement ball, and Tonelli — the
+error of replacing `f` by its average on a cell of radius `h` is controlled by the
+displacement integral over the ball `‖k‖ ≤ h`:
+
+`∫_A ‖f − ⨍_A f‖² ≤ ν(A)⁻¹ ∫_{‖k‖≤h} ∫_A ‖f(x+k) − f(x)‖² dx dk`.
+
+Summing this over a disjoint partition, the inner integral becomes
+`‖τ_k f − f‖²_{L²}` (`sum_setIntegral_le_integral_of_disjoint`) and the outer one
+becomes `ν(B_h)·sup` (`setIntegral_le_measureReal_mul_const`); against `ν(A) = h^d`
+that is the `2^d`. -/
+theorem setIntegral_cellError_le_displacement {G : Type*} [MeasurableSpace G]
+    [NormedAddCommGroup G] [MeasurableAdd G] [OpensMeasurableSpace G]
+    {ν : Measure G} [ν.IsAddLeftInvariant] [SFinite ν]
+    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+    (A : Set G) (hA : MeasurableSet A) (h : ℝ) (f : G → F)
+    (h0 : ν A ≠ 0) (hfin : ν A ≠ ⊤)
+    (hdiam : ∀ x ∈ A, ∀ y ∈ A, ‖y - x‖ ≤ h)
+    (hfi : IntegrableOn f A ν)
+    (hslice : ∀ x : G, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) A ν)
+    (hlhs : IntegrableOn (fun x => ‖f x - ⨍ y in A, f y ∂ν‖ ^ 2) A ν)
+    (hrhs : IntegrableOn (fun x => ⨍ y in A, ‖f y - f x‖ ^ 2 ∂ν) A ν)
+    (hiA : ∀ x : G, Integrable (Set.indicator A fun y => ‖f y - f x‖ ^ 2) ν)
+    (hiB : ∀ x : G, Integrable
+      (Set.indicator (Metric.closedBall (0:G) h) fun k => ‖f (x + k) - f x‖ ^ 2) ν)
+    (hball : IntegrableOn
+      (fun x => ∫ k in Metric.closedBall (0:G) h, ‖f (x + k) - f x‖ ^ 2 ∂ν) A ν)
+    (hprod : Integrable (Function.uncurry fun (x k : G) => ‖f (x + k) - f x‖ ^ 2)
+      ((ν.restrict A).prod (ν.restrict (Metric.closedBall (0:G) h)))) :
+    ∫ x in A, ‖f x - ⨍ y in A, f y ∂ν‖ ^ 2 ∂ν
+      ≤ (ν.real A)⁻¹ * ∫ k in Metric.closedBall (0:G) h,
+          (∫ x in A, ‖f (x + k) - f x‖ ^ 2 ∂ν) ∂ν := by
+  have hstep1 := setIntegral_norm_sub_setAverage_sq_le hA h0 hfin f hfi hslice hlhs hrhs
+  have hstep2 : ∫ x in A, (⨍ y in A, ‖f y - f x‖ ^ 2 ∂ν) ∂ν
+      ≤ (ν.real A)⁻¹ * ∫ x in A,
+          (∫ k in Metric.closedBall (0:G) h, ‖f (x + k) - f x‖ ^ 2 ∂ν) ∂ν := by
+    have hpull : ∀ x : G, (⨍ y in A, ‖f y - f x‖ ^ 2 ∂ν)
+        = (ν.real A)⁻¹ * ∫ y in A, ‖f y - f x‖ ^ 2 ∂ν := by
+      intro x; rw [setAverage_eq, smul_eq_mul]
+    have hmono : ∫ x in A, (⨍ y in A, ‖f y - f x‖ ^ 2 ∂ν) ∂ν
+        ≤ ∫ x in A, (ν.real A)⁻¹ *
+            (∫ k in Metric.closedBall (0:G) h, ‖f (x + k) - f x‖ ^ 2 ∂ν) ∂ν := by
+      refine setIntegral_mono_on hrhs (hball.const_mul _) hA fun x hx => ?_
+      rw [hpull x]
+      refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr measureReal_nonneg)
+      exact setIntegral_oscillation_le_translate_ball A hA h x
+        (fun y hy => hdiam x hx y hy) f (hiA x) (hiB x)
+    rwa [MeasureTheory.integral_const_mul] at hmono
+  refine le_trans hstep1 (le_trans hstep2 ?_)
+  rw [setIntegral_setIntegral_swap A (Metric.closedBall (0:G) h) _ hprod]
+
 /-!
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
@@ -403,6 +454,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
