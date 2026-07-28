@@ -67,18 +67,28 @@ This file lays that layer over the repo's own objects:
   (and the `initial_converges_L2` field of `GalerkinModeData`) at
   `initialMode m := P_m u₀`, obtained from `proj_tendsto_self` through the
   coordinate-norm bridge in `LerayWeak`.
-* `exists_rawDivFreeFamily` — now a **composition** of the single density
-  residual below with `dense_span_of_member_approximation`, no `sorry` of its
-  own.
+* `exists_rawDivFreeFamily` — now a **composition** of the single residual below
+  with `dense_span_of_member_approximation`, no `sorry` of its own.
+
+* `esCLM` / `toES` / `toL2` — the divergence-free Schwartz class mapped into
+  `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume`, with `toL2_sub` (linearity) and
+  `norm_toL2_sq` (`‖toL2 u‖² = schwartzL2Inner u u`, exact: `officialInner` *is*
+  the Euclidean inner product of `officialEuclideanPoint = WithLp.toLp 2`, so no
+  sup-versus-Euclidean constant appears).
+* `exists_dense_divFree_family` — **the density core, certified**: a countable
+  family of divergence-free Schwartz fields `L²`-approximating every
+  divergence-free Schwartz datum, from second-countability of `L²` (hereditary,
+  so the dense sequence is drawn from the divergence-free image itself).
 
 ## Named residual (honest `sorry`, strictly-lower leaf)
 
-* `exists_denseIndependentDivFreeFamily` — **density core**: a countable
-  `L²`-dense linearly-independent family of divergence-free Schwartz fields.
-  Two of its three conjuncts hold for the explicit disjoint-translate family of
-  `Navier.Analysis.GalerkinRawFamily`; only density is open
-  [RRS Ch. 4; Temam III §3; Leray 1934 §§18–20; ~250 LOC, Mathlib-absent
-  div-free-constrained density].
+* `exists_denseIndependentDivFreeFamily` — **independence reconciliation**.  Its
+  density conjunct is now certified separately by `exists_dense_divFree_family`
+  (see the separability section below), and its divergence-free and
+  independence conjuncts hold for the disjoint-translate reservoir of
+  `Navier.Analysis.GalerkinRawFamily`.  What is open is combining the two into a
+  single family: greedy off-span perturbation of the dense family by vanishing
+  multiples of the reservoir [RRS Ch. 4; Temam III §3; ~250 LOC].
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -380,40 +390,131 @@ theorem dense_span_of_member_approximation (v : ℕ → SchwartzVelocity)
   rw [hsum]
   exact hj
 
-/-- **[NAMED RESIDUAL — density core; the divergence-free Schwartz class on
-`ℝ³` admits a countable `L²`-dense linearly-independent family of
-divergence-free Schwartz fields; Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3;
-Leray 1934 §§18–20; est ~250 LOC.]**
+/-!
+## `L²` separability of the divergence-free Schwartz class
 
-**Two of the three conjuncts are already established for an EXPLICIT family**
-(`Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`):
-pairwise-disjoint-support translates of the certified curl-of-bump field
-`phiSchwartz` are divergence-free (translation invariance of the Clairaut
-cancellation) and `L²`-linearly-independent (disjoint supports kill the cross
-terms, so `schwartzL2Inner` collapses to a sum of positive squares).
+The density conjunct of the residual below is settled here, by separability
+rather than by either of the two constructions the residual's docstring
+previously proposed.  `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume` over `ℝ³` is
+second-countable (`Lp.SecondCountableTopology`, which needs only
+`Fact (2 ≠ ⊤)` supplied by hand), second-countability is hereditary, so the
+image of the divergence-free Schwartz class under `u ↦ toL2 u` carries a dense
+sequence *drawn from the image itself* — i.e. from genuinely divergence-free
+Schwartz fields.  Transporting back is exact, not lossy: `officialInner` is the
+Euclidean inner product of `officialEuclideanPoint = WithLp.toLp 2`, so
+`‖toL2 u‖² = schwartzL2Inner u u` on the nose (`norm_toL2_sq`), with no
+sup-versus-Euclidean constant.
 
-**The sole remaining obstruction is the density conjunct**, and the
-disjoint-translate family provably does NOT supply it: every finite combination
-of disjoint-support translates of ONE fixed shape is supported in a bounded
-union of disjoint balls, so it cannot `L²`-approximate a divergence-free
-Schwartz datum whose mass lies outside all of them.  Density needs a strictly
-richer construction — EITHER (a) translates at a DENSE set of centres plus a
-Wiener-type theorem ("the closed span of the translates of `φ` is all of `L²`
-iff `φ̂` is a.e. nonzero"), OR (b) a Helmholtz/Leray vector-potential
-representation `u = curl A` driven by an `H¹`-dense (not merely `L²`-dense)
-scalar potential family, since `L²`-density of potentials does not transfer
-through the derivative in `curl` without a stronger topology.  Both routes are
-individually deep and Mathlib-absent.
+Reference: Robinson–Rodrigo–Sadowski, *The Three-Dimensional Navier–Stokes
+Equations*, Ch. 4; Temam, *Navier–Stokes Equations*, AMS Chelsea 2001, Ch. III
+§3; Reed–Simon I, Academic Press 1980, §II.1 (separability of `L²`).
+-/
+
+section Separability
+
+/-- The `Space` coordinates as a continuous linear map into the Euclidean model;
+`esCLM x = officialEuclideanPoint x` definitionally. -/
+def esCLM : Space →L[ℝ] EuclideanSpace ℝ (Fin 3) := (EuclideanSpace.equiv (Fin 3) ℝ).symm.toContinuousLinearMap
+example (x : Space) : esCLM x = officialEuclideanPoint x := rfl
+
+def toES (u : SchwartzVelocity) : SchwartzMap Space (EuclideanSpace ℝ (Fin 3)) := SchwartzMap.postcompCLM (𝕜 := ℝ) esCLM u
+example (u : SchwartzVelocity) (x : Space) : toES u x = officialEuclideanPoint (u x) := rfl
+
+def toL2 (u : SchwartzVelocity) : Lp (EuclideanSpace ℝ (Fin 3)) 2 (volume : Measure Space) := (toES u).toLp 2
+
+theorem toL2_sub (u v : SchwartzVelocity) : toL2 (u - v) = toL2 u - toL2 v := by
+  unfold toL2 toES
+  rw [map_sub]
+  exact SetLike.coe_eq_coe.mp rfl
+
+theorem norm_toL2_sq (u : SchwartzVelocity) : ‖toL2 u‖ ^ 2 = schwartzL2Inner u u := by
+  rw [← real_inner_self_eq_norm_sq, MeasureTheory.L2.inner_def, schwartzL2Inner]
+  refine integral_congr_ae ?_
+  filter_upwards [SchwartzMap.coeFn_toLp (toES u) 2 (volume : Measure Space)] with x hx
+  simp only [toL2]
+  rw [hx]
+  rfl
+
+def divFreeL2Set : Set (Lp (EuclideanSpace ℝ (Fin 3)) 2 (volume : Measure Space)) :=
+  toL2 '' {u : SchwartzVelocity | DivergenceFreeInitial u}
+
+theorem exists_dense_divFree_family :
+    ∃ v : ℕ → SchwartzVelocity,
+      (∀ j : ℕ, DivergenceFreeInitial (v j)) ∧
+      (∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+        ∃ j : ℕ, schwartzL2Inner (u - v j) (u - v j) < ε) := by
+  classical
+  haveI : Fact ((2:ENNReal) ≠ ⊤) := ⟨by simp⟩
+  haveI hsc : SecondCountableTopology (Lp (EuclideanSpace ℝ (Fin 3)) 2 (volume : Measure Space)) := inferInstance
+  haveI : Nonempty ↥divFreeL2Set :=
+    ⟨⟨toL2 phiSchwartz, ⟨phiSchwartz, phiSchwartz_divfree, rfl⟩⟩⟩
+  obtain ⟨d, hd⟩ := TopologicalSpace.exists_dense_seq ↥divFreeL2Set
+  have hex : ∀ j : ℕ, ∃ w : SchwartzVelocity, DivergenceFreeInitial w ∧ toL2 w = (d j : Lp (EuclideanSpace ℝ (Fin 3)) 2 _) :=
+    fun j => (d j).2
+  choose w hwdiv hwe using hex
+  refine ⟨w, hwdiv, ?_⟩
+  intro u hu ε hε
+  have hmem : toL2 u ∈ divFreeL2Set := ⟨u, hu, rfl⟩
+  obtain ⟨j, hj⟩ := Metric.denseRange_iff.mp hd ⟨toL2 u, hmem⟩ (Real.sqrt ε) (Real.sqrt_pos.mpr hε)
+  have hdist : ‖toL2 u - toL2 (w j)‖ < Real.sqrt ε := by
+    rw [hwe j]
+    simpa [Subtype.dist_eq, dist_eq_norm] using hj
+  have : ‖toL2 (u - w j)‖ < Real.sqrt ε := by rw [toL2_sub]; exact hdist
+  refine ⟨j, ?_⟩
+  calc schwartzL2Inner (u - w j) (u - w j) = ‖toL2 (u - w j)‖ ^ 2 := (norm_toL2_sq _).symm
+    _ < (Real.sqrt ε) ^ 2 := by
+        have h0 : (0:ℝ) ≤ ‖toL2 (u - w j)‖ := norm_nonneg _
+        nlinarith
+    _ = ε := Real.sq_sqrt (le_of_lt hε)
+
+end Separability
+
+/-- **[NAMED RESIDUAL — independence reconciliation; est ~250 LOC.]**
+
+**The density conjunct is now certified** by `exists_dense_divFree_family`
+above: `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume` is second-countable, second
+countability is hereditary, so the image of the divergence-free Schwartz class
+carries a dense sequence drawn from that image — a countable family of genuinely
+divergence-free Schwartz fields that `L²`-approximates every divergence-free
+Schwartz datum.  The transport back is exact (`norm_toL2_sq`).
+
+*Correction of a previous estimate recorded here.*  This docstring used to assert
+that density required either a Wiener-type theorem on translates or a
+Helmholtz/Leray vector-potential construction, and that "both routes are
+individually deep and Mathlib-absent".  That is wrong: a third route —
+separability of `L²` plus hereditary second-countability — is neither, and is
+what closes it above.  The only Mathlib friction was a missing
+`Fact ((2:ENNReal) ≠ ⊤)` instance, supplied by hand.
+
+Still correct, and still the reason a richer family is needed: the
+disjoint-translate reservoir
+`Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`
+supplies divergence-free and `L²`-linearly-independent, but provably NOT dense —
+every finite combination of disjoint-support translates of one fixed shape is
+supported in a bounded union of disjoint balls, so it cannot approximate a datum
+whose mass lies outside all of them.
+
+**What remains is exactly the reconciliation of the two.**  A dense sequence may
+repeat members or be linearly dependent, so it does not satisfy `independent` as
+produced.  The route is greedy off-span perturbation: set
+`v n = w n + δ n • p (k n)` with `w` the dense family above, `p` the reservoir,
+and `δ n → 0` fast enough that density survives.  At step `n` the span of
+`v 0, …, v (n−1)` is a finite-dimensional subspace `W` of `L²`; if two distinct
+reservoir indices `k ≠ k'` both gave `w n + δ • p k ∈ W`, then
+`δ • (p k − p k') ∈ W`, and independence of the `p`'s makes such differences an
+infinite independent set, contradicting `finrank W ≤ n`.  So at most `n + 1`
+indices are bad and a good one exists.  Formalizing this needs the bridge from
+`schwartzL2Inner`-independence to `LinearIndependent ℝ` in `Lp`, plus
+`Submodule.span` finite-dimensionality — mechanical, but not short.
 
 **Form of the statement.**  The density conjunct here is *member* density
 (approximation by one `v j`), not the *span* density of `RawDivFreeFamily`.
 Member density is formally the stronger of the two — the implication is
-`dense_span_of_member_approximation`, certified above — and it is the form both
-routes produce: a countable `L²`-dense subset of the divergence-free Schwartz
-class (separability of `L²`), reconciled with independence by perturbing the
-`j`-th member by a vanishing multiple of a far-away translate of `phiSchwartz`.
-Stating the residual in the produced form is what lets the coefficient
-bookkeeping be discharged once and for all, above. -/
+`dense_span_of_member_approximation`, certified above — and it is the form the
+separability route produces.
+
+Reference: Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; Leray, Acta Math. 63
+(1934) §§18–20. -/
 theorem exists_denseIndependentDivFreeFamily :
     ∃ v : ℕ → SchwartzVelocity,
       (∀ j : ℕ, DivergenceFreeInitial (v j)) ∧
