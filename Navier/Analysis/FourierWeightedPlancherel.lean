@@ -1,4 +1,4 @@
-import Navier.Analysis.FourierMajorant
+import Navier.Problem
 
 /-!
 # The weighted Plancherel rungs (Fourier residual, substep 3)

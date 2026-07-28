@@ -1,5 +1,6 @@
 import Navier.Analysis.WeightIntegrability
 import Navier.Analysis.BKMLogBootstrap
+import Navier.Analysis.FourierWeightedPlancherel
 
 /-!
 # Fourier majorant infrastructure for the `H³(ℝ³) ↪ L^∞` Sobolev embedding
