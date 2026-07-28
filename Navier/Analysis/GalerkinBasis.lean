@@ -1,4 +1,4 @@
-import Navier.Analysis.LerayWeak
+import Navier.Analysis.GalerkinRawFamily
 
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
@@ -92,14 +92,17 @@ This file lays that layer over the repo's own objects:
   images `toL2 ∘ v`.  `schwartzL2Inner` is only a seminorm on Schwartz fields,
   but `norm_toL2_sq` makes it the honest `Lp` norm, so the two notions coincide.
 
-## Named residual (honest `sorry`, strictly-lower leaf)
+## Import-DAG placement note
 
-* `exists_denseIndependentDivFreeFamily` — **import-order only; no mathematics
-  is open.**  `exists_denseIndependentDivFreeFamily_of_reservoir` proves the
-  statement from any countable divergence-free `L²`-independent family, and
-  `Navier.Analysis.GalerkinRawFamily` constructs one — but that file imports
-  this one, so the discharge (two lines) has to happen downstream of both.  See
-  the declaration for the exact snippet and for the alternative edge-reversal.
+* `exists_denseIndependentDivFreeFamily` — established here.
+  `exists_denseIndependentDivFreeFamily_of_reservoir` derives the statement from
+  any countable divergence-free `L²`-independent family, and
+  `Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`
+  builds one.  The two used to be mutually unreachable, because the reservoir
+  file imported this one.  The shared `schwartzL2Inner` layer now lives in
+  `Navier.Analysis.SchwartzL2Pairing`, upstream of both, so the chain reads
+  `LerayWeak → SchwartzL2Pairing → GalerkinRawFamily → GalerkinBasis` and the
+  instantiation is two lines.
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -120,166 +123,6 @@ open Navier
 open Navier.Analysis.Enstrophy
 open Navier.Analysis.LerayWeak
 open Navier.Analysis.OfficialABEncoding
-
-/-!
-## The `L²` pairing of Schwartz velocity fields
--/
-
-/-- The `L²` inner product of two Schwartz velocity fields in the official
-Euclidean coordinates: `⟨f, g⟩_{L²} = ∫ ⟨f x, g x⟩ dx`. -/
-def schwartzL2Inner (f g : SchwartzVelocity) : ℝ :=
-  ∫ x : Space, officialInner (f x) (g x)
-
-/-- Symmetry of the official pointwise inner product. -/
-theorem officialInner_comm (x y : Space) : officialInner x y = officialInner y x := by
-  simp only [officialInner_eq_sum]
-  exact Finset.sum_congr rfl (fun i _ => mul_comm _ _)
-
-/-- Symmetry of the `L²` pairing. -/
-theorem schwartzL2Inner_comm (f g : SchwartzVelocity) :
-    schwartzL2Inner f g = schwartzL2Inner g f := by
-  unfold schwartzL2Inner
-  congr 1; funext x; exact officialInner_comm _ _
-
-/-- The `L²` pairing is positive-semidefinite (a seminorm squared). -/
-theorem schwartzL2Inner_self_nonneg (f : SchwartzVelocity) :
-    0 ≤ schwartzL2Inner f f :=
-  integral_nonneg fun x => by
-    rw [officialInner_self]; positivity
-
-/-- **The pairing density of two Schwartz fields is integrable** (Leray weak
-theory, Temam III §3).  Pointwise Cauchy–Schwarz `|⟨f x, g x⟩| ≤ ‖f x‖₂·‖g x‖₂`
-(`abs_officialInner_le`), the coordinate-norm comparison `‖·‖₂ ≤ √3·‖·‖∞`
-(`officialEuclideanNorm_le`), the uniform bound on the Schwartz field `g`, and
-`SchwartzMap.integrable` (integrability of `‖f ·‖`) dominate the density by
-`(3·Cg)·‖f x‖`.  This upgrades `schwartzL2Inner` from a raw Bochner integral to
-a bilinear form (`∫ (a+b)·c = ∫ a·c + ∫ b·c` needs integrability of each part),
-unlocking projection self-adjointness and the skew transfer `⟨P_m B u, u⟩ = 0`
-on the span. -/
-theorem schwartzPairing_integrable (f g : SchwartzVelocity) :
-    Integrable (fun x : Space => officialInner (f x) (g x)) := by
-  -- Uniform bound `Cg` on `‖g x‖` (Schwartz `k=0,n=0` decay).
-  obtain ⟨Cg, hCg0, hCgraw⟩ :=
-    (schwartzmap_satisfies_fefferman_euclidean_weight_rapid_decay g) 0 0
-  have hCg : ∀ x : Space, ‖g x‖ ≤ Cg := by
-    intro x
-    have h := hCgraw x
-    rw [pow_zero, one_mul, norm_iteratedFDeriv_zero] at h
-    exact h
-  -- `x ↦ ‖f x‖` is integrable (`SchwartzMap.integrable`).
-  have hfint : Integrable (fun x : Space => ‖f x‖) volume := (SchwartzMap.integrable f).norm
-  -- Dominate the pairing density by `(3·Cg)·‖f x‖`.
-  refine Integrable.mono' (hfint.const_mul (3 * Cg)) ?_ ?_
-  · -- Continuity ⇒ a.e.-strong-measurability (coordinate sum of products).
-    apply Continuous.aestronglyMeasurable
-    simp only [officialInner_eq_sum]
-    exact continuous_finsetSum _ (fun i _ =>
-      ((continuous_apply i).comp f.continuous).mul ((continuous_apply i).comp g.continuous))
-  · -- Pointwise Cauchy–Schwarz + `‖·‖₂ ≤ √3‖·‖∞` + the uniform bound on `g`.
-    refine Filter.Eventually.of_forall (fun x => ?_)
-    rw [Real.norm_eq_abs]
-    calc |officialInner (f x) (g x)|
-        ≤ officialEuclideanNorm (f x) * officialEuclideanNorm (g x) := abs_officialInner_le _ _
-      _ ≤ (Real.sqrt 3 * ‖f x‖) * (Real.sqrt 3 * ‖g x‖) := by
-          refine mul_le_mul (officialEuclideanNorm_le _) (officialEuclideanNorm_le _)
-            (officialEuclideanNorm_nonneg _) ?_
-          positivity
-      _ = 3 * (‖f x‖ * ‖g x‖) := by
-          rw [show Real.sqrt 3 * ‖f x‖ * (Real.sqrt 3 * ‖g x‖)
-                = (Real.sqrt 3 * Real.sqrt 3) * (‖f x‖ * ‖g x‖) by ring,
-             Real.mul_self_sqrt (by norm_num)]
-      _ ≤ 3 * (‖f x‖ * Cg) := by
-          apply mul_le_mul_of_nonneg_left _ (by norm_num)
-          exact mul_le_mul_of_nonneg_left (hCg x) (norm_nonneg _)
-      _ = (3 * Cg) * ‖f x‖ := by ring
-
-/-!
-## Bilinearity of the `L²` pairing
-
-With `schwartzPairing_integrable` in hand, `schwartzL2Inner` is a genuine
-bilinear form: `∫ (a + b)·c = ∫ a·c + ∫ b·c` uses integrability of each part.
-This is the algebra behind projection self-adjointness (Temam III §3).
--/
-
-/-- Additivity of the official pointwise inner product in its left argument. -/
-theorem officialInner_add_left (x y z : Space) :
-    officialInner (x + y) z = officialInner x z + officialInner y z := by
-  rw [officialInner_comm, officialInner_add_right, officialInner_comm z x, officialInner_comm z y]
-
-/-- `ℝ`-homogeneity of the official pointwise inner product in its left argument. -/
-theorem officialInner_smul_left (c : ℝ) (x y : Space) :
-    officialInner (c • x) y = c * officialInner x y := by
-  rw [officialInner_comm, officialInner_smul_right, officialInner_comm y x]
-
-/-- The `L²` pairing of the zero field with anything vanishes. -/
-theorem schwartzL2Inner_zero_left (g : SchwartzVelocity) : schwartzL2Inner 0 g = 0 := by
-  unfold schwartzL2Inner
-  have hz : (fun x : Space => officialInner ((0 : SchwartzVelocity) x) (g x)) = fun _ => 0 := by
-    funext x; simp [officialInner_zero_left]
-  rw [hz, integral_zero]
-
-/-- **Left-additivity of the `L²` pairing** (needs `schwartzPairing_integrable`). -/
-theorem schwartzL2Inner_add_left (f g h : SchwartzVelocity) :
-    schwartzL2Inner (f + g) h = schwartzL2Inner f h + schwartzL2Inner g h := by
-  unfold schwartzL2Inner
-  rw [← integral_add (schwartzPairing_integrable f h) (schwartzPairing_integrable g h)]
-  congr 1; funext x
-  rw [SchwartzMap.add_apply, officialInner_add_left]
-
-/-- **Right-additivity of the `L²` pairing.** -/
-theorem schwartzL2Inner_add_right (f g h : SchwartzVelocity) :
-    schwartzL2Inner f (g + h) = schwartzL2Inner f g + schwartzL2Inner f h := by
-  rw [schwartzL2Inner_comm, schwartzL2Inner_add_left, schwartzL2Inner_comm g f,
-    schwartzL2Inner_comm h f]
-
-/-- **Left-homogeneity of the `L²` pairing.** -/
-theorem schwartzL2Inner_smul_left (c : ℝ) (f g : SchwartzVelocity) :
-    schwartzL2Inner (c • f) g = c * schwartzL2Inner f g := by
-  unfold schwartzL2Inner
-  rw [← integral_const_mul]
-  congr 1; funext x
-  rw [SchwartzMap.smul_apply, officialInner_smul_left]
-
-/-- **Right-homogeneity of the `L²` pairing.** -/
-theorem schwartzL2Inner_smul_right (c : ℝ) (f g : SchwartzVelocity) :
-    schwartzL2Inner f (c • g) = c * schwartzL2Inner f g := by
-  rw [schwartzL2Inner_comm, schwartzL2Inner_smul_left, schwartzL2Inner_comm g f]
-
-/-- **Finite-sum left-linearity**: pulls a finite linear combination out of the
-left slot (the algebra the projection's self-adjointness rides on). -/
-theorem schwartzL2Inner_sum_left (s : Finset ℕ) (F : ℕ → SchwartzVelocity)
-    (g : SchwartzVelocity) :
-    schwartzL2Inner (∑ j ∈ s, F j) g = ∑ j ∈ s, schwartzL2Inner (F j) g := by
-  induction s using Finset.induction_on with
-  | empty => simp only [Finset.sum_empty, schwartzL2Inner_zero_left]
-  | insert a s ha ih =>
-    rw [Finset.sum_insert ha, schwartzL2Inner_add_left, ih, Finset.sum_insert ha]
-
-/-- **Finite-sum right-linearity.** -/
-theorem schwartzL2Inner_sum_right (s : Finset ℕ) (f : SchwartzVelocity)
-    (F : ℕ → SchwartzVelocity) :
-    schwartzL2Inner f (∑ j ∈ s, F j) = ∑ j ∈ s, schwartzL2Inner f (F j) := by
-  rw [schwartzL2Inner_comm, schwartzL2Inner_sum_left]
-  exact Finset.sum_congr rfl (fun j _ => schwartzL2Inner_comm _ _)
-
-/-- **Left-negation of the `L²` pairing.** -/
-theorem schwartzL2Inner_neg_left (f g : SchwartzVelocity) :
-    schwartzL2Inner (-f) g = - schwartzL2Inner f g := by
-  have h : (-f : SchwartzVelocity) = (-1 : ℝ) • f := by rw [neg_one_smul]
-  rw [h, schwartzL2Inner_smul_left]; ring
-
-/-- **Left-subtractivity of the `L²` pairing.** -/
-theorem schwartzL2Inner_sub_left (f g h : SchwartzVelocity) :
-    schwartzL2Inner (f - g) h = schwartzL2Inner f h - schwartzL2Inner g h := by
-  rw [sub_eq_add_neg, schwartzL2Inner_add_left, schwartzL2Inner_neg_left, ← sub_eq_add_neg]
-
-/-- **Pythagoras for the `L²` seminorm**: orthogonal parts add in the squared
-seminorm, `Q(a+b) = Q a + Q b` when `⟨a,b⟩ = 0`. -/
-theorem schwartzL2Inner_self_add_of_orthogonal (a b : SchwartzVelocity)
-    (h : schwartzL2Inner a b = 0) :
-    schwartzL2Inner (a + b) (a + b) = schwartzL2Inner a a + schwartzL2Inner b b := by
-  rw [schwartzL2Inner_add_left, schwartzL2Inner_add_right, schwartzL2Inner_add_right,
-      schwartzL2Inner_comm b a, h]; ring
 
 /-!
 ## Divergence linearity toolkit
@@ -573,12 +416,13 @@ the dense member `w n` by a vanishing multiple of a reservoir element chosen off
 the span of everything built so far:
 `v n = w n + pert n k · p k` with `pert n k · ‖p k‖ < 1/(n+1)`.
 
-The reservoir is a *hypothesis* here, not the concrete disjoint-translate family
-of `Navier.Analysis.GalerkinRawFamily`: that file **imports this one**, so its
-family is downstream of this statement and cannot be used in place without an
-import cycle.  `exists_denseIndependentDivFreeFamily_of_reservoir` is therefore
-the strongest form provable here, and it discharges in one line at any point
-where a divergence-free independent sequence is in scope.
+The reservoir is a *hypothesis* of
+`exists_denseIndependentDivFreeFamily_of_reservoir`, the strongest form the
+recursion establishes on its own.  It is instantiated below at the concrete
+disjoint-translate family
+`Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`,
+which this file imports — the shared `schwartzL2Inner` layer sits upstream of
+both in `Navier.Analysis.SchwartzL2Pairing`.
 -/
 
 section IndependenceRecursion
@@ -774,9 +618,8 @@ that is simultaneously divergence-free, `L²`-linearly-independent, and
 `L²`-member-dense in the divergence-free Schwartz class.
 
 This is the full content of `exists_denseIndependentDivFreeFamily`; only the
-reservoir is hypothesised, and only because
-`Navier.Analysis.GalerkinRawFamily`, which constructs one, imports this file.
-Discharging it downstream is one line.
+reservoir is hypothesised, and it is instantiated two declarations below from
+`Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`.
 
 Reference: Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3. -/
 theorem exists_denseIndependentDivFreeFamily_of_reservoir
@@ -810,11 +653,10 @@ theorem exists_denseIndependentDivFreeFamily_of_reservoir
 
 end IndependenceRecursion
 
-/-- **[NAMED RESIDUAL — import-order only.  Discharge is one line, downstream.]**
+/-- **A divergence-free, `L²`-independent, `L²`-member-dense family exists.**
 
-The mathematics is finished.  `exists_denseIndependentDivFreeFamily_of_reservoir`
-above proves this exact statement from *any* countable divergence-free
-`L²`-independent family `p`:
+`exists_denseIndependentDivFreeFamily_of_reservoir` above derives this exact
+statement from *any* countable divergence-free `L²`-independent family `p`:
 
 * density from `exists_dense_divFree_family` (second-countability of
   `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume`, hereditary, so the dense sequence is
@@ -826,26 +668,15 @@ above proves this exact statement from *any* countable divergence-free
   re-indexing makes every dense member recur at arbitrarily large indices
   (`vfam_dense`).
 
-**What blocks closing it in place is the import DAG, not an open problem.**
-The reservoir is constructed by
+The reservoir `p` is built by
 `Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`
-(pairwise-disjoint-support translates of `phiSchwartz`), and that file begins
-`import Navier.Analysis.GalerkinBasis` — it is *downstream* of this statement,
-so naming it here is an import cycle.  An earlier version of this docstring
-asserted the reservoir "supplies two of the three conjuncts" without noting that
-it is not in scope at this location.
-
-Discharging it, at any point downstream of both, is:
-
-```
-obtain ⟨p, hpdiv, hpindep⟩ := exists_countable_independent_divFree_family
-exact exists_denseIndependentDivFreeFamily_of_reservoir p hpdiv hpindep
-```
-
-The alternative, if this declaration must stay kernel-clean *here*, is to move
-`schwartzL2Inner` (and the handful of bilinearity lemmas `GalerkinRawFamily`
-consumes) into a module upstream of both files and reverse the edge.  That is a
-placement decision across files this lane does not own, not a proof obligation.
+(pairwise-disjoint-support translates of `phiSchwartz`).  That file used to
+begin `import Navier.Analysis.GalerkinBasis`, placing the reservoir *downstream*
+of this statement, so naming it here was an import cycle and this declaration
+stood open on import order alone — no mathematics was missing.  Hoisting the
+shared `schwartzL2Inner` layer into `Navier.Analysis.SchwartzL2Pairing`,
+upstream of both, reverses that edge; the reservoir is now in scope and the
+proof below is its two-line instantiation.
 
 Reference: Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; Leray, Acta Math. 63
 (1934) §§18–20. -/
@@ -857,7 +688,8 @@ theorem exists_denseIndependentDivFreeFamily :
             (∑ j ∈ Finset.range n, c j • v j) = 0 → ∀ j ∈ Finset.range n, c j = 0) ∧
       (∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
         ∃ j : ℕ, schwartzL2Inner (u - v j) (u - v j) < ε) := by
-  sorry
+  obtain ⟨p, hpdiv, hpindep⟩ := exists_countable_independent_divFree_family
+  exact exists_denseIndependentDivFreeFamily_of_reservoir p hpdiv hpindep
 
 /-- **Non-vacuity of `RawDivFreeFamily`** — now a composition of the density
 residual with the certified coefficient bookkeeping

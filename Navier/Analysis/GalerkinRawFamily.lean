@@ -1,27 +1,33 @@
-import Navier.Analysis.GalerkinBasis
+import Navier.Analysis.SchwartzL2Pairing
 
 /-!
 # A countable independent divergence-free family (strictly-lower sub-lemma)
 
-**Status**: this file closes the `divergence_free` and `independent` fields of
-`RawDivFreeFamily` (`Navier.Analysis.GalerkinBasis`) for an EXPLICIT family —
-pairwise-disjoint-support translates of the already-certified curl-of-bump
-field `phiSchwartz` (`Navier.Analysis.LerayWeak`).  It does **not** close
-`exists_rawDivFreeFamily`: that theorem's `dense_span` obligation needs a
-family whose finite spans are `L²`-dense in the FULL divergence-free Schwartz
-class, and a family of translates of ONE fixed shape at pairwise-disjoint
-supports provably cannot be dense-spanning (a finite combination is supported
-on a bounded union of disjoint balls, so it cannot `L²`-approximate a
-divergence-free Schwartz datum whose mass lies outside every one of those
-balls — e.g. a bump at a location none of the `v_j` reach). Density needs a
-genuinely different route: EITHER a translate family at a DENSE set of
-centers plus a Wiener-type "closed span of translates = whole space iff the
-generator's Fourier transform is a.e. nonzero" theorem, OR a Helmholtz/Leray
-vector-potential representation (`u = curl A`) combined with an `H¹`-dense
-(not just `L²`-dense) scalar potential family — both genuinely
-Mathlib-absent and each individually deep.  This file's contribution is the
-two fields that ARE closable now, isolated as a fresh, independently
-checkable leaf so future dense-span work only has one obligation left.
+**Status**: this file builds an EXPLICIT countable divergence-free family that
+is `L²`-linearly independent — pairwise-disjoint-support translates of the
+already-certified curl-of-bump field `phiSchwartz`
+(`Navier.Analysis.LerayWeak`).  It is the *reservoir* consumed by
+`Navier.Analysis.GalerkinBasis.exists_denseIndependentDivFreeFamily_of_reservoir`,
+which imports this file.
+
+This family is deliberately NOT dense-spanning, and provably cannot be: a
+finite combination of translates of ONE fixed shape at pairwise-disjoint
+supports lives on a bounded union of disjoint balls, so it cannot
+`L²`-approximate a divergence-free Schwartz datum whose mass lies outside
+every one of those balls (e.g. a bump at a location none of the `v_j` reach).
+Density is supplied separately downstream, by second-countability of
+`Lp (EuclideanSpace ℝ (Fin 3)) 2 volume`
+(`GalerkinBasis.exists_dense_divFree_family`); the greedy off-span recursion
+there perturbs that dense family by vanishing multiples of THIS family's
+elements, so independence and density hold simultaneously.  Neither the
+Wiener-type dense-centre route nor a Helmholtz/Leray vector-potential route
+is needed.
+
+**Placement**: the shared `schwartzL2Inner` layer lives upstream in
+`Navier.Analysis.SchwartzL2Pairing`, so the chain is
+`LerayWeak → SchwartzL2Pairing → GalerkinRawFamily → GalerkinBasis`.  Before
+that split this file imported `GalerkinBasis` directly, which put the
+reservoir downstream of its own consumer.
 -/
 
 set_option autoImplicit false
