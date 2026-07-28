@@ -79,6 +79,10 @@ This file lays that layer over the repo's own objects:
   family of divergence-free Schwartz fields `L²`-approximating every
   divergence-free Schwartz datum, from second-countability of `L²` (hereditary,
   so the dense sequence is drawn from the divergence-free image itself).
+* `toL2_smul` / `toL2_sum` / `independent_iff_toL2` — the residual's
+  `independent` conjunct restated as ordinary linear independence of the `L²`
+  images `toL2 ∘ v`.  `schwartzL2Inner` is only a seminorm on Schwartz fields,
+  but `norm_toL2_sq` makes it the honest `Lp` norm, so the two notions coincide.
 
 ## Named residual (honest `sorry`, strictly-lower leaf)
 
@@ -467,6 +471,37 @@ theorem exists_dense_divFree_family :
         nlinarith
     _ = ε := Real.sq_sqrt (le_of_lt hε)
 
+theorem toL2_smul (c : ℝ) (u : SchwartzVelocity) : toL2 (c • u) = c • toL2 u := by
+  unfold toL2 toES
+  rw [map_smul]
+  exact SetLike.coe_eq_coe.mp rfl
+
+theorem toL2_sum (n : ℕ) (c : ℕ → ℝ) (v : ℕ → SchwartzVelocity) :
+    toL2 (∑ j ∈ Finset.range n, c j • v j) = ∑ j ∈ Finset.range n, c j • toL2 (v j) := by
+  induction n with
+  | zero => simp [toL2, toES]; exact SetLike.coe_eq_coe.mp rfl
+  | succ n ih =>
+      rw [Finset.sum_range_succ, Finset.sum_range_succ, ← ih, ← toL2_smul]
+      unfold toL2 toES
+      rw [map_add]
+      exact SetLike.coe_eq_coe.mp rfl
+
+/-- `schwartzL2Inner`-independence is exactly linear independence of the `L²`
+images: the seminorm is a genuine norm after `toL2`. -/
+theorem independent_iff_toL2 (v : ℕ → SchwartzVelocity) :
+    (∀ (n : ℕ) (c : ℕ → ℝ),
+        schwartzL2Inner (∑ j ∈ Finset.range n, c j • v j)
+          (∑ j ∈ Finset.range n, c j • v j) = 0 → ∀ j ∈ Finset.range n, c j = 0)
+      ↔ (∀ (n : ℕ) (c : ℕ → ℝ),
+        (∑ j ∈ Finset.range n, c j • toL2 (v j)) = 0 → ∀ j ∈ Finset.range n, c j = 0) := by
+  constructor <;> intro h n c hc
+  · refine h n c ?_
+    rw [← norm_toL2_sq, toL2_sum, hc, norm_zero]; ring
+  · refine h n c ?_
+    have : ‖toL2 (∑ j ∈ Finset.range n, c j • v j)‖ ^ 2 = 0 := by rw [norm_toL2_sq]; exact hc
+    rw [← toL2_sum]
+    simpa using pow_eq_zero_iff (n := 2) (by norm_num) |>.mp this
+
 end Separability
 
 /-- **[NAMED RESIDUAL — independence reconciliation; est ~250 LOC.]**
@@ -503,9 +538,10 @@ and `δ n → 0` fast enough that density survives.  At step `n` the span of
 reservoir indices `k ≠ k'` both gave `w n + δ • p k ∈ W`, then
 `δ • (p k − p k') ∈ W`, and independence of the `p`'s makes such differences an
 infinite independent set, contradicting `finrank W ≤ n`.  So at most `n + 1`
-indices are bad and a good one exists.  Formalizing this needs the bridge from
-`schwartzL2Inner`-independence to `LinearIndependent ℝ` in `Lp`, plus
-`Submodule.span` finite-dimensionality — mechanical, but not short.
+indices are bad and a good one exists.  The bridge from `schwartzL2Inner`-independence to ordinary
+linear independence in `Lp` is `independent_iff_toL2`, certified above, so what
+is left is purely the `Submodule.span` finite-dimensionality argument plus the
+recursion — mechanical, but not short.
 
 **Form of the statement.**  The density conjunct here is *member* density
 (approximation by one `v j`), not the *span* density of `RawDivFreeFamily`.
