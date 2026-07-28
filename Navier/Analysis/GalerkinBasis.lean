@@ -75,6 +75,14 @@ This file lays that layer over the repo's own objects:
   `norm_toL2_sq` (`‖toL2 u‖² = schwartzL2Inner u u`, exact: `officialInner` *is*
   the Euclidean inner product of `officialEuclideanPoint = WithLp.toLp 2`, so no
   sup-versus-Euclidean constant appears).
+* `pert` / `nextIdx` / `nextV` / `accSet` / `vfam` and
+  `vfam_divFree`, `vfam_not_mem_span`, `vfam_independent`, `vfam_dense`,
+  `exists_denseIndependentDivFreeFamily_of_reservoir` — **the greedy off-span
+  recursion**: perturbing the dense family by vanishing multiples of an
+  independent reservoir yields one family that is at once divergence-free,
+  `L²`-independent and `L²`-member-dense.
+* `divergenceFreeInitial_add_smul` — divergence-free fields are closed under
+  `a + c • b` (the two-term case the recursion needs).
 * `exists_dense_divFree_family` — **the density core, certified**: a countable
   family of divergence-free Schwartz fields `L²`-approximating every
   divergence-free Schwartz datum, from second-countability of `L²` (hereditary,
@@ -86,13 +94,12 @@ This file lays that layer over the repo's own objects:
 
 ## Named residual (honest `sorry`, strictly-lower leaf)
 
-* `exists_denseIndependentDivFreeFamily` — **independence reconciliation**.  Its
-  density conjunct is now certified separately by `exists_dense_divFree_family`
-  (see the separability section below), and its divergence-free and
-  independence conjuncts hold for the disjoint-translate reservoir of
-  `Navier.Analysis.GalerkinRawFamily`.  What is open is combining the two into a
-  single family: greedy off-span perturbation of the dense family by vanishing
-  multiples of the reservoir [RRS Ch. 4; Temam III §3; ~250 LOC].
+* `exists_denseIndependentDivFreeFamily` — **import-order only; no mathematics
+  is open.**  `exists_denseIndependentDivFreeFamily_of_reservoir` proves the
+  statement from any countable divergence-free `L²`-independent family, and
+  `Navier.Analysis.GalerkinRawFamily` constructs one — but that file imports
+  this one, so the discharge (two lines) has to happen downstream of both.  See
+  the declaration for the exact snippet and for the alternative edge-reversal.
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -558,50 +565,287 @@ theorem exists_not_mem_span_of_linearIndependent (y : ℕ → V)
 
 end Separability
 
-/-- **[NAMED RESIDUAL — independence reconciliation; est ~250 LOC.]**
+/-!
+### The greedy off-span recursion
 
-**The density conjunct is now certified** by `exists_dense_divFree_family`
-above: `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume` is second-countable, second
-countability is hereditary, so the image of the divergence-free Schwartz class
-carries a dense sequence drawn from that image — a countable family of genuinely
-divergence-free Schwartz fields that `L²`-approximates every divergence-free
-Schwartz datum.  The transport back is exact (`norm_toL2_sq`).
+Reconciles the dense family with linear independence.  At stage `n` we perturb
+the dense member `w n` by a vanishing multiple of a reservoir element chosen off
+the span of everything built so far:
+`v n = w n + pert n k · p k` with `pert n k · ‖p k‖ < 1/(n+1)`.
 
-*Correction of a previous estimate recorded here.*  This docstring used to assert
-that density required either a Wiener-type theorem on translates or a
-Helmholtz/Leray vector-potential construction, and that "both routes are
-individually deep and Mathlib-absent".  That is wrong: a third route —
-separability of `L²` plus hereditary second-countability — is neither, and is
-what closes it above.  The only Mathlib friction was a missing
-`Fact ((2:ENNReal) ≠ ⊤)` instance, supplied by hand.
+The reservoir is a *hypothesis* here, not the concrete disjoint-translate family
+of `Navier.Analysis.GalerkinRawFamily`: that file **imports this one**, so its
+family is downstream of this statement and cannot be used in place without an
+import cycle.  `exists_denseIndependentDivFreeFamily_of_reservoir` is therefore
+the strongest form provable here, and it discharges in one line at any point
+where a divergence-free independent sequence is in scope.
+-/
 
-Still correct, and still the reason a richer family is needed: the
-disjoint-translate reservoir
+section IndependenceRecursion
+
+open scoped Classical
+
+local notation "L2Sp" => Lp (EuclideanSpace ℝ (Fin 3)) 2 (volume : Measure Space)
+
+theorem toL2_add (u v : SchwartzVelocity) : toL2 (u + v) = toL2 u + toL2 v := by
+  unfold toL2 toES
+  rw [map_add]
+  exact SetLike.coe_eq_coe.mp rfl
+
+/-- Divergence-free fields are closed under `a + c • b`. -/
+theorem divergenceFreeInitial_add_smul (a b : SchwartzVelocity) (c : ℝ)
+    (ha : DivergenceFreeInitial a) (hb : DivergenceFreeInitial b) :
+    DivergenceFreeInitial (a + c • b) := by
+  intro x
+  have hcoe : (fun y => (a + c • b : SchwartzVelocity) y)
+      = fun y => a y + (c • b : SchwartzVelocity) y := by funext y; simp
+  rw [hcoe, staticDivergence_add _ _ x (schwartz_differentiableAt _ x)
+    (schwartz_differentiableAt _ x)]
+  have h1 : staticDivergence (fun y => (c • b : SchwartzVelocity) y) x = 0 := by
+    have hcoe2 : (fun y => (c • b : SchwartzVelocity) y) = fun y => c • b y := by funext y; simp
+    rw [hcoe2, staticDivergence_const_smul _ _ _ (schwartz_differentiableAt _ x), hb x, mul_zero]
+  rw [h1, ha x, add_zero]
+
+/-- Perturbation size at stage `n` with reservoir index `k`; positive, and small
+enough that the perturbation moves the `L²` point by less than `1/(n+1)`. -/
+def pert (p : ℕ → SchwartzVelocity) (n k : ℕ) : ℝ :=
+  1 / (((n : ℝ) + 1) * (‖toL2 (p k)‖ + 1))
+
+theorem pert_pos (p : ℕ → SchwartzVelocity) (n k : ℕ) : 0 < pert p n k := by
+  have h : (0:ℝ) < ((n : ℝ) + 1) * (‖toL2 (p k)‖ + 1) := by positivity
+  exact div_pos one_pos h
+
+theorem pert_mul_norm_lt (p : ℕ → SchwartzVelocity) (n k : ℕ) :
+    pert p n k * ‖toL2 (p k)‖ < 1 / ((n : ℝ) + 1) := by
+  have h1 : (0:ℝ) < (n : ℝ) + 1 := by positivity
+  have h2 : (0:ℝ) < ‖toL2 (p k)‖ + 1 := by positivity
+  have hlt : ‖toL2 (p k)‖ / (‖toL2 (p k)‖ + 1) < 1 := by
+    rw [div_lt_one h2]; linarith
+  rw [pert, div_mul_eq_mul_div, one_mul]
+  calc ‖toL2 (p k)‖ / (((n : ℝ) + 1) * (‖toL2 (p k)‖ + 1))
+      = (1 / ((n : ℝ) + 1)) * (‖toL2 (p k)‖ / (‖toL2 (p k)‖ + 1)) := by
+        field_simp
+    _ < (1 / ((n : ℝ) + 1)) * 1 :=
+        mul_lt_mul_of_pos_left hlt (by positivity)
+    _ = 1 / ((n : ℝ) + 1) := by ring
+
+/-- The greedy reservoir index at stage `n`. -/
+def nextIdx (w p : ℕ → SchwartzVelocity) (S : Finset L2Sp) (n : ℕ) : ℕ :=
+  if h : ∃ k : ℕ, toL2 (p k) ∉ Submodule.span ℝ (↑(insert (toL2 (w n)) S) : Set L2Sp)
+  then Classical.choose h else 0
+
+theorem nextIdx_spec (w p : ℕ → SchwartzVelocity)
+    (hp : LinearIndependent ℝ (fun k : ℕ => toL2 (p k))) (S : Finset L2Sp) (n : ℕ) :
+    toL2 (p (nextIdx w p S n)) ∉ Submodule.span ℝ (↑(insert (toL2 (w n)) S) : Set L2Sp) := by
+  have h : ∃ k : ℕ, toL2 (p k) ∉ Submodule.span ℝ (↑(insert (toL2 (w n)) S) : Set L2Sp) :=
+    exists_not_mem_span_of_linearIndependent (fun k : ℕ => toL2 (p k)) hp _
+  rw [nextIdx, dif_pos h]
+  exact Classical.choose_spec h
+
+/-- One stage of the recursion. -/
+def nextV (w p : ℕ → SchwartzVelocity) (S : Finset L2Sp) (n : ℕ) : SchwartzVelocity :=
+  w n + (pert p n (nextIdx w p S n)) • p (nextIdx w p S n)
+
+/-- The `L²` points already produced. -/
+def accSet (w p : ℕ → SchwartzVelocity) : ℕ → Finset L2Sp
+  | 0 => ∅
+  | n + 1 => insert (toL2 (nextV w p (accSet w p n) n)) (accSet w p n)
+
+/-- The perturbed family. -/
+def vfam (w p : ℕ → SchwartzVelocity) (n : ℕ) : SchwartzVelocity :=
+  nextV w p (accSet w p n) n
+
+theorem accSet_eq (w p : ℕ → SchwartzVelocity) (n : ℕ) :
+    accSet w p n = (Finset.range n).image (fun j => toL2 (vfam w p j)) := by
+  induction n with
+  | zero => simp [accSet]
+  | succ n ih =>
+      have h : accSet w p (n + 1) = insert (toL2 (vfam w p n)) (accSet w p n) := rfl
+      rw [h, ih, Finset.range_add_one, Finset.image_insert]
+
+theorem toL2_vfam (w p : ℕ → SchwartzVelocity) (n : ℕ) :
+    toL2 (vfam w p n)
+      = toL2 (w n) + (pert p n (nextIdx w p (accSet w p n) n)) •
+          toL2 (p (nextIdx w p (accSet w p n) n)) := by
+  rw [vfam, nextV, toL2_add, toL2_smul]
+
+theorem vfam_divFree (w p : ℕ → SchwartzVelocity)
+    (hw : ∀ n, DivergenceFreeInitial (w n)) (hpd : ∀ k, DivergenceFreeInitial (p k)) (n : ℕ) :
+    DivergenceFreeInitial (vfam w p n) :=
+  divergenceFreeInitial_add_smul _ _ _ (hw n) (hpd _)
+
+theorem norm_toL2_vfam_sub (w p : ℕ → SchwartzVelocity) (n : ℕ) :
+    ‖toL2 (vfam w p n) - toL2 (w n)‖ < 1 / ((n : ℝ) + 1) := by
+  rw [toL2_vfam, add_sub_cancel_left, norm_smul, Real.norm_eq_abs,
+    abs_of_pos (pert_pos p n _)]
+  exact pert_mul_norm_lt p n _
+
+/-- **The greedy invariant**: each new member is off the span of its predecessors. -/
+theorem vfam_not_mem_span (w p : ℕ → SchwartzVelocity)
+    (hp : LinearIndependent ℝ (fun k : ℕ => toL2 (p k))) (n : ℕ) :
+    toL2 (vfam w p n) ∉ Submodule.span ℝ (↑(accSet w p n) : Set L2Sp) := by
+  intro hmem
+  set k := nextIdx w p (accSet w p n) n with hk
+  set W' := Submodule.span ℝ (↑(insert (toL2 (w n)) (accSet w p n)) : Set L2Sp) with hW'
+  have hsub : Submodule.span ℝ (↑(accSet w p n) : Set L2Sp) ≤ W' :=
+    Submodule.span_mono (by
+      intro x hx
+      simp only [Finset.coe_insert, Set.mem_insert_iff]
+      exact Or.inr hx)
+  have h1 : toL2 (vfam w p n) ∈ W' := hsub hmem
+  have h2 : toL2 (w n) ∈ W' := Submodule.subset_span (by simp)
+  have h3 : (pert p n k) • toL2 (p k) ∈ W' := by
+    have hd := W'.sub_mem h1 h2
+    rwa [toL2_vfam, add_sub_cancel_left] at hd
+  have h4 : toL2 (p k) ∈ W' := by
+    have h5 := W'.smul_mem (pert p n k)⁻¹ h3
+    rwa [smul_smul, inv_mul_cancel₀ (ne_of_gt (pert_pos p n k)), one_smul] at h5
+  exact nextIdx_spec w p hp (accSet w p n) n h4
+
+theorem vfam_independent (w p : ℕ → SchwartzVelocity)
+    (hp : LinearIndependent ℝ (fun k : ℕ => toL2 (p k))) :
+    ∀ (n : ℕ) (c : ℕ → ℝ), (∑ j ∈ Finset.range n, c j • toL2 (vfam w p j)) = 0 →
+      ∀ j ∈ Finset.range n, c j = 0 := by
+  intro n
+  induction n with
+  | zero => intro c _ j hj; simp at hj
+  | succ n ih =>
+      intro c hc j hj
+      rw [Finset.sum_range_succ] at hc
+      have hA : (∑ i ∈ Finset.range n, c i • toL2 (vfam w p i))
+          ∈ Submodule.span ℝ (↑(accSet w p n) : Set L2Sp) := by
+        refine Submodule.sum_mem _ (fun i hi => Submodule.smul_mem _ _ (Submodule.subset_span ?_))
+        rw [accSet_eq]
+        exact Finset.mem_coe.mpr (Finset.mem_image.mpr ⟨i, hi, rfl⟩)
+      have hcn : c n = 0 := by
+        by_contra hne
+        refine vfam_not_mem_span w p hp n ?_
+        have heq : c n • toL2 (vfam w p n)
+            = -(∑ i ∈ Finset.range n, c i • toL2 (vfam w p i)) :=
+          (neg_eq_of_add_eq_zero_right hc).symm
+        have h5 := Submodule.smul_mem _ (c n)⁻¹ (Submodule.neg_mem _ hA)
+        rwa [← heq, smul_smul, inv_mul_cancel₀ hne, one_smul] at h5
+      rw [hcn, zero_smul, add_zero] at hc
+      rcases lt_or_eq_of_le (Finset.mem_range_succ_iff.mp hj) with h | h
+      · exact ih c hc j (Finset.mem_range.mpr h)
+      · rw [h]; exact hcn
+
+/-- **Density survives the perturbation**, provided the dense family recurs at
+arbitrarily large indices (which the `Nat.pair` re-indexing below arranges):
+the stage-`n` perturbation moves the `L²` point by less than `1/(n+1)`, so
+choosing a good index far enough out absorbs it. -/
+theorem vfam_dense (w p : ℕ → SchwartzVelocity)
+    (hw : ∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ δ : ℝ, 0 < δ → ∀ N : ℕ,
+      ∃ n : ℕ, N ≤ n ∧ ‖toL2 u - toL2 (w n)‖ < δ) :
+    ∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+      ∃ j : ℕ, schwartzL2Inner (u - vfam w p j) (u - vfam w p j) < ε := by
+  intro u hu ε hε
+  have hsq : 0 < Real.sqrt ε := Real.sqrt_pos.mpr hε
+  set δ := Real.sqrt ε / 2 with hδdef
+  have hδ : 0 < δ := by rw [hδdef]; linarith
+  obtain ⟨N, hN⟩ := exists_nat_one_div_lt hδ
+  obtain ⟨n, hnN, hn⟩ := hw u hu δ hδ N
+  refine ⟨n, ?_⟩
+  have hstep : ‖toL2 (w n) - toL2 (vfam w p n)‖ < 1 / ((n : ℝ) + 1) := by
+    rw [← norm_neg, neg_sub]
+    exact norm_toL2_vfam_sub w p n
+  have hmono : 1 / ((n : ℝ) + 1) ≤ 1 / ((N : ℝ) + 1) := by
+    refine one_div_le_one_div_of_le (by positivity) ?_
+    have : (N : ℝ) ≤ (n : ℝ) := Nat.cast_le.mpr hnN
+    linarith
+  have hsplit : toL2 (u - vfam w p n)
+      = (toL2 u - toL2 (w n)) + (toL2 (w n) - toL2 (vfam w p n)) := by
+    rw [toL2_sub]; abel
+  have htot : ‖toL2 (u - vfam w p n)‖ < Real.sqrt ε := by
+    calc ‖toL2 (u - vfam w p n)‖
+        ≤ ‖toL2 u - toL2 (w n)‖ + ‖toL2 (w n) - toL2 (vfam w p n)‖ := by
+          rw [hsplit]; exact norm_add_le _ _
+      _ < δ + δ := by linarith
+      _ = Real.sqrt ε := by rw [hδdef]; ring
+  calc schwartzL2Inner (u - vfam w p n) (u - vfam w p n)
+      = ‖toL2 (u - vfam w p n)‖ ^ 2 := (norm_toL2_sq _).symm
+    _ < Real.sqrt ε ^ 2 := by nlinarith [norm_nonneg (toL2 (u - vfam w p n))]
+    _ = ε := Real.sq_sqrt hε.le
+
+/-- **The density core and the independence core, combined — modulo a reservoir.**
+Given *any* countable divergence-free `L²`-independent family `p`, the greedy
+off-span perturbation of the separability-dense family produces a single family
+that is simultaneously divergence-free, `L²`-linearly-independent, and
+`L²`-member-dense in the divergence-free Schwartz class.
+
+This is the full content of `exists_denseIndependentDivFreeFamily`; only the
+reservoir is hypothesised, and only because
+`Navier.Analysis.GalerkinRawFamily`, which constructs one, imports this file.
+Discharging it downstream is one line.
+
+Reference: Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3. -/
+theorem exists_denseIndependentDivFreeFamily_of_reservoir
+    (p : ℕ → SchwartzVelocity)
+    (hpdiv : ∀ j : ℕ, DivergenceFreeInitial (p j))
+    (hpindep : ∀ (n : ℕ) (c : ℕ → ℝ),
+      schwartzL2Inner (∑ j ∈ Finset.range n, c j • p j)
+          (∑ j ∈ Finset.range n, c j • p j) = 0 → ∀ j ∈ Finset.range n, c j = 0) :
+    ∃ v : ℕ → SchwartzVelocity,
+      (∀ j : ℕ, DivergenceFreeInitial (v j)) ∧
+      (∀ (n : ℕ) (c : ℕ → ℝ),
+        schwartzL2Inner (∑ j ∈ Finset.range n, c j • v j)
+            (∑ j ∈ Finset.range n, c j • v j) = 0 → ∀ j ∈ Finset.range n, c j = 0) ∧
+      (∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+        ∃ j : ℕ, schwartzL2Inner (u - v j) (u - v j) < ε) := by
+  obtain ⟨w0, hw0div, hw0dense⟩ := exists_dense_divFree_family
+  set w : ℕ → SchwartzVelocity := fun n => w0 n.unpair.1 with hwdef
+  have hp : LinearIndependent ℝ (fun k : ℕ => toL2 (p k)) :=
+    linearIndependent_of_range_form _ ((independent_iff_toL2 p).mp hpindep)
+  refine ⟨vfam w p, vfam_divFree w p (fun n => hw0div _) hpdiv,
+    (independent_iff_toL2 (vfam w p)).mpr (vfam_independent w p hp), ?_⟩
+  refine vfam_dense w p ?_
+  intro u hu δ hδ N
+  obtain ⟨i, hi⟩ := hw0dense u hu (δ ^ 2) (by positivity)
+  refine ⟨Nat.pair i N, Nat.right_le_pair i N, ?_⟩
+  have hwn : w (Nat.pair i N) = w0 i := by rw [hwdef]; simp [Nat.unpair_pair]
+  rw [hwn]
+  have hnorm : ‖toL2 u - toL2 (w0 i)‖ ^ 2 = schwartzL2Inner (u - w0 i) (u - w0 i) := by
+    rw [← toL2_sub, norm_toL2_sq]
+  nlinarith [norm_nonneg (toL2 u - toL2 (w0 i)), hi, hnorm]
+
+end IndependenceRecursion
+
+/-- **[NAMED RESIDUAL — import-order only.  Discharge is one line, downstream.]**
+
+The mathematics is finished.  `exists_denseIndependentDivFreeFamily_of_reservoir`
+above proves this exact statement from *any* countable divergence-free
+`L²`-independent family `p`:
+
+* density from `exists_dense_divFree_family` (second-countability of
+  `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume`, hereditary, so the dense sequence is
+  drawn from the divergence-free image itself);
+* independence by greedy off-span perturbation `v n = w n + pert n k • p k`,
+  with `k` chosen by `exists_not_mem_span_of_linearIndependent` outside the span
+  of everything built so far (`vfam_not_mem_span`, `vfam_independent`);
+* density survives because `pert n k * ‖p k‖ < 1/(n+1)` and the `Nat.pair`
+  re-indexing makes every dense member recur at arbitrarily large indices
+  (`vfam_dense`).
+
+**What blocks closing it in place is the import DAG, not an open problem.**
+The reservoir is constructed by
 `Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`
-supplies divergence-free and `L²`-linearly-independent, but provably NOT dense —
-every finite combination of disjoint-support translates of one fixed shape is
-supported in a bounded union of disjoint balls, so it cannot approximate a datum
-whose mass lies outside all of them.
+(pairwise-disjoint-support translates of `phiSchwartz`), and that file begins
+`import Navier.Analysis.GalerkinBasis` — it is *downstream* of this statement,
+so naming it here is an import cycle.  An earlier version of this docstring
+asserted the reservoir "supplies two of the three conjuncts" without noting that
+it is not in scope at this location.
 
-**What remains is exactly the reconciliation of the two.**  A dense sequence may
-repeat members or be linearly dependent, so it does not satisfy `independent` as
-produced.  The route is greedy off-span perturbation: set
-`v n = w n + δ n • p (k n)` with `w` the dense family above, `p` the reservoir,
-and `δ n → 0` fast enough that density survives.  At step `n` the span of
-`v 0, …, v (n−1)` is a finite-dimensional subspace `W` of `L²`; if two distinct
-reservoir indices `k ≠ k'` both gave `w n + δ • p k ∈ W`, then
-`δ • (p k − p k') ∈ W`, and independence of the `p`'s makes such differences an
-infinite independent set, contradicting `finrank W ≤ n`.  So at most `n + 1`
-indices are bad and a good one exists.  The bridge from `schwartzL2Inner`-independence to ordinary
-linear independence in `Lp` is `independent_iff_toL2`, certified above, so what
-is left is purely the `Submodule.span` finite-dimensionality argument plus the
-recursion — mechanical, but not short.
+Discharging it, at any point downstream of both, is:
 
-**Form of the statement.**  The density conjunct here is *member* density
-(approximation by one `v j`), not the *span* density of `RawDivFreeFamily`.
-Member density is formally the stronger of the two — the implication is
-`dense_span_of_member_approximation`, certified above — and it is the form the
-separability route produces.
+```
+obtain ⟨p, hpdiv, hpindep⟩ := exists_countable_independent_divFree_family
+exact exists_denseIndependentDivFreeFamily_of_reservoir p hpdiv hpindep
+```
+
+The alternative, if this declaration must stay kernel-clean *here*, is to move
+`schwartzL2Inner` (and the handful of bilinearity lemmas `GalerkinRawFamily`
+consumes) into a module upstream of both files and reverse the edge.  That is a
+placement decision across files this lane does not own, not a proof obligation.
 
 Reference: Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; Leray, Acta Math. 63
 (1934) §§18–20. -/
