@@ -1017,6 +1017,165 @@ theorem aubinLions_zero_instance :
     exact (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => by simp)
   · exact strongL2LocLimit_const (fun _ _ => 0)
 
+/-!
+### Diagonal extraction and the enstrophy blind spot (certified)
+
+Two pieces of the Aubin–Lions core that need no measure-theoretic input, plus the
+checked obstruction that reshapes the residual below.
+-/
+
+/-- **Cantor diagonal extraction over a countable family of subsequence
+predicates.**  If `Q n` is stable under passing to a further subsequence
+(`hsub`) and under dropping a finite head (`htail`), and if from *every*
+strictly monotone `τ` one can extract a refinement satisfying `Q n` (`hstep`),
+then a single strictly monotone `σ` satisfies `Q n` for **every** `n`.
+
+This is the extraction step of the Aubin–Lions–Simon argument over a countable
+exhaustion; Mathlib has `Filter.extraction_forall_of_frequently`, which produces
+`P n (φ n)` rather than a subsequence good for all `n` simultaneously, so this
+nested form is absent.  Construction: nested extractors `Ψ 0 = id`,
+`Ψ (j+1) = Ψ j ∘ ρ j`, diagonal `σ k = Ψ (k+1) k`; the ranges `Set.range (Ψ j)` are
+antitone, which places every tail of `σ` inside `Set.range (Ψ (n+1))`.
+
+[J.-L. Lions, *Quelques méthodes de résolution des problèmes aux limites non
+linéaires*, Dunod 1969, Ch. 1 §5; J. Simon, "Compact sets in `L^p(0,T;B)`",
+*Ann. Mat. Pura Appl.* **146** (1987) 65–96; R. Temam, *Navier–Stokes
+Equations*, AMS Chelsea 2001, Ch. III §2.3.] -/
+theorem exists_diagonal_subseq (Q : ℕ → (ℕ → ℕ) → Prop)
+    (hsub : ∀ (n : ℕ) (τ ρ : ℕ → ℕ), Q n τ → StrictMono ρ → Q n (τ ∘ ρ))
+    (htail : ∀ (n N : ℕ) (τ : ℕ → ℕ), Q n (fun k => τ (k + N)) → Q n τ)
+    (hstep : ∀ (n : ℕ) (τ : ℕ → ℕ), StrictMono τ → ∃ ρ, StrictMono ρ ∧ Q n (τ ∘ ρ)) :
+    ∃ σ : ℕ → ℕ, StrictMono σ ∧ ∀ n, Q n σ := by
+  classical
+  choose ρ hρmono hρQ using hstep
+  let Ψ : ℕ → {f : ℕ → ℕ // StrictMono f} := fun n =>
+    Nat.rec (motive := fun _ => {f : ℕ → ℕ // StrictMono f})
+      ⟨id, strictMono_id⟩
+      (fun j p => ⟨p.1 ∘ ρ j p.1 p.2, p.2.comp (hρmono j p.1 p.2)⟩) n
+  have hΨsucc : ∀ j, (Ψ (j+1)).1 = (Ψ j).1 ∘ ρ j (Ψ j).1 (Ψ j).2 := fun _ => rfl
+  have hmono : ∀ n, StrictMono (Ψ n).1 := fun n => (Ψ n).2
+  have hQ : ∀ j, Q j (Ψ (j+1)).1 := by
+    intro j
+    have h := hρQ j (Ψ j).1 (Ψ j).2
+    simpa [hΨsucc j] using h
+  have hrange : ∀ j, Set.range (Ψ (j+1)).1 ⊆ Set.range (Ψ j).1 := by
+    intro j; rw [hΨsucc j]; exact Set.range_comp_subset_range _ _
+  have hrange' : ∀ a b, a ≤ b → Set.range (Ψ b).1 ⊆ Set.range (Ψ a).1 := by
+    intro a b hab
+    induction b with
+    | zero => simp_all
+    | succ b ih =>
+      rcases Nat.lt_or_ge a (b+1) with h | h
+      · exact (hrange b).trans (ih (Nat.lt_succ_iff.mp h))
+      · have he : a = b + 1 := le_antisymm hab h
+        subst he; exact subset_rfl
+  set σ : ℕ → ℕ := fun k => (Ψ (k+1)).1 k with hσdef
+  have hσmono : StrictMono σ := by
+    apply strictMono_nat_of_lt_succ
+    intro k
+    have h1 : σ (k+1) = (Ψ (k+1)).1 (ρ (k+1) (Ψ (k+1)).1 (Ψ (k+1)).2 (k+1)) := by
+      show (Ψ (k+2)).1 (k+1) = _
+      rw [hΨsucc (k+1)]; rfl
+    rw [h1]
+    exact (hmono (k+1)) (lt_of_lt_of_le (Nat.lt_succ_self k) ((hρmono (k+1) _ _).le_apply))
+  refine ⟨σ, hσmono, ?_⟩
+  intro n
+  have hmem : ∀ j : ℕ, σ (j + n) ∈ Set.range (Ψ (n+1)).1 := by
+    intro j; exact hrange' (n+1) (j+n+1) (by omega) ⟨j + n, rfl⟩
+  choose ψ hψ using hmem
+  have hψmono : StrictMono ψ := by
+    intro a b hab
+    have h1 : σ (a + n) < σ (b + n) := hσmono (by omega)
+    rw [← hψ a, ← hψ b] at h1
+    exact (hmono (n+1)).lt_iff_lt.mp h1
+  have hQn : Q n ((Ψ (n+1)).1 ∘ ψ) := hsub n _ _ (hQ n) hψmono
+  have heq : ((Ψ (n+1)).1 ∘ ψ) = fun j => σ (j + n) := by funext j; exact hψ j
+  rw [heq] at hQn
+  exact htail n n σ hQn
+
+/-- **Diagonal extraction, specialized to a countable array of error
+functionals.**  `F n m` is the error of member `m` on window `n`.  If every
+window can be handled along a further refinement of any given subsequence, one
+subsequence drives every window to `0`.  This is the form consumed by the
+`T = R = n` exhaustion of `StrongL2LocLimit`. -/
+theorem exists_subseq_forall_window_tendsto (F : ℕ → ℕ → ℝ)
+    (hstep : ∀ (n : ℕ) (τ : ℕ → ℕ), StrictMono τ →
+      ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
+        Filter.Tendsto (fun k => F n (τ (ρ k))) Filter.atTop (nhds 0)) :
+    ∃ σ : ℕ → ℕ, StrictMono σ ∧
+      ∀ n, Filter.Tendsto (fun k => F n (σ k)) Filter.atTop (nhds 0) := by
+  refine exists_diagonal_subseq
+    (fun n τ => Filter.Tendsto (fun k => F n (τ k)) Filter.atTop (nhds 0)) ?_ ?_ hstep
+  · intro n τ ρ hQ hρ
+    exact hQ.comp hρ.tendsto_atTop
+  · intro n N τ hQ
+    exact (Filter.tendsto_add_atTop_iff_nat (f := fun k => F n (τ k)) N).mp hQ
+
+/-- The curl vanishes wherever the spatial Fréchet derivative vanishes. -/
+theorem staticCurl_eq_zero_of_fderiv_eq_zero (u : VelocityField) (x : Space)
+    (h : fderiv ℝ u x = 0) :
+    Navier.Analysis.Vorticity.staticCurl u x = 0 := by
+  simp [Navier.Analysis.Vorticity.staticCurl, h]
+
+/-- **Enstrophy is blind to non-differentiability.**  Mathlib's `fderiv` takes the
+junk value `0` at a point where `u` is not differentiable, so `staticCurl` — hence
+`vorticity` and `enstrophy` — reads `0` there rather than detecting the singularity. -/
+theorem staticCurl_eq_zero_of_not_differentiableAt (u : VelocityField) (x : Space)
+    (h : ¬ DifferentiableAt ℝ u x) :
+    Navier.Analysis.Vorticity.staticCurl u x = 0 :=
+  staticCurl_eq_zero_of_fderiv_eq_zero u x (fderiv_zero_of_not_differentiableAt h)
+
+/-- If the spatial derivative vanishes almost everywhere, the enstrophy is `0`. -/
+theorem enstrophy_eq_zero_of_ae_fderiv_eq_zero (u : VelocityEvolution) (t : ℝ)
+    (h : ∀ᵐ x : Space, fderiv ℝ (u t) x = 0) : enstrophy u t = 0 := by
+  have hz : (fun x : Space => officialEuclideanNorm
+      (Navier.Analysis.Vorticity.vorticity u t x) ^ 2) =ᵐ[volume] fun _ => 0 := by
+    filter_upwards [h] with x hx
+    rw [show Navier.Analysis.Vorticity.vorticity u t x = 0 from
+      staticCurl_eq_zero_of_fderiv_eq_zero (u t) x hx,
+      (Navier.Analysis.Vorticity.officialEuclideanNorm_eq_zero_iff 0).mpr rfl]
+    norm_num
+  rw [enstrophy, integral_congr_ae hz]
+  simp
+
+/-- The step field: the indicator of the open unit ball in a fixed direction.  It is
+bounded, compactly supported and square-integrable, and it is discontinuous across
+the unit sphere. -/
+def stepField : VelocityField :=
+  Set.indicator (Metric.ball (0:Space) 1) (fun _ => basisVector 0)
+
+theorem fderiv_stepField_eq_zero_of_notMem_sphere (x : Space)
+    (hx : x ∉ Metric.sphere (0:Space) 1) : fderiv ℝ stepField x = 0 := by
+  rcases lt_or_gt_of_ne (show ‖x‖ ≠ 1 by simpa [Metric.mem_sphere, dist_zero_right] using hx)
+    with hlt | hgt
+  · have hmem : x ∈ Metric.ball (0:Space) 1 := by
+      simpa [Metric.mem_ball, dist_zero_right] using hlt
+    have hEq : stepField =ᶠ[nhds x] (fun _ : Space => basisVector 0) := by
+      filter_upwards [Metric.isOpen_ball.mem_nhds hmem] with y hy
+      simp [stepField, Set.indicator_of_mem hy]
+    rw [hEq.fderiv_eq]; simp
+  · have hopen : IsOpen {y : Space | 1 < ‖y‖} := isOpen_lt continuous_const continuous_norm
+    have hEq : stepField =ᶠ[nhds x] (fun _ : Space => (0 : Space)) := by
+      filter_upwards [hopen.mem_nhds hgt] with y hy
+      have hnm : y ∉ Metric.ball (0:Space) 1 := by
+        simp only [Metric.mem_ball, dist_zero_right, not_lt]; exact le_of_lt hy
+      simp [stepField, Set.indicator_of_notMem hnm]
+    rw [hEq.fderiv_eq]; simp
+
+/-- **Checked witness: `UniformEnstrophyBound` detects no spatial singularity.**  The
+discontinuous `stepField` has repo-`enstrophy` exactly `0` at every time, because the
+curl is computed from `fderiv`, which is `0` off the (null) unit sphere by local
+constancy and `0` on it by Mathlib's junk convention. -/
+theorem enstrophy_stepField_eq_zero (t : ℝ) :
+    enstrophy (fun _ => stepField) t = 0 := by
+  refine enstrophy_eq_zero_of_ae_fderiv_eq_zero _ t ?_
+  have hnull : volume (Metric.sphere (0:Space) 1) = 0 :=
+    MeasureTheory.Measure.addHaar_sphere volume (0:Space) 1
+  have hae : ∀ᵐ x : Space, x ∉ Metric.sphere (0:Space) 1 :=
+    MeasureTheory.measure_eq_zero_iff_ae_notMem.mp hnull
+  filter_upwards [hae] with x hx
+  exact fderiv_stepField_eq_zero_of_notMem_sphere x hx
+
 /-- **[NAMED RESIDUAL — Aubin–Lions–Simon compactness; Aubin (C. R. Acad. Sci.
 256, 1963); Lions (*Quelques méthodes de résolution*, 1969); Simon (*Ann. Mat.
 Pura Appl.* 146, 1987, "Compact sets in `L^p(0,T;B)`"); Temam III.2.3;
@@ -1040,12 +1199,45 @@ which every error integral is a Bochner integral of a non-integrable function
 costs nothing in the intended proof — the Aubin–Lions limit lives in
 `L²(0,T;L²_loc)` by construction — and closes that gap.
 
-**Named sub-obligations.**  (i) spatial compactness: Riesz–Fréchet–Kolmogorov on
-each ball, fed by the enstrophy bound; (ii) temporal compactness: the
-`TimeEquicontinuous` field in Kolmogorov–Riesz form; (iii) the diagonal
-extraction over the countable exhaustion `T = R = n`, whose bookkeeping step is
-`StrongL2LocLimit.comp_strictMono` (CERTIFIED above); (iv) slicewise
-square-integrability of the limit, from the uniform kinetic bound by Fatou. -/
+**Named sub-obligations, corrected this wave.**  (ii) temporal compactness: the
+`TimeEquicontinuous` field in Kolmogorov–Riesz form — this hypothesis is genuinely
+load-bearing and does its job (the family `u_m(t,x) = sin(m t) w(x)` satisfies the
+kinetic and enstrophy bounds, has no strong `L²_loc` limit, and is excluded exactly
+by `TimeEquicontinuous`).  (iii) diagonal extraction over the countable exhaustion
+`T = R = n`: `exists_diagonal_subseq` / `exists_subseq_forall_window_tendsto`
+(CERTIFIED above), with `StrongL2LocLimit.comp_strictMono` as the bookkeeping step.
+(iv) slicewise square-integrability of the limit, from the uniform kinetic bound by
+Fatou.
+
+**Sub-obligation (i) is NOT reachable from the present hypotheses, and that is the
+honest residual.**  It was stated as "spatial compactness: Riesz–Fréchet–Kolmogorov
+on each ball, fed by the enstrophy bound".  Two independent reasons that fails:
+
+* `enstrophy` integrates `‖curl u‖²`, and **nothing in this hypothesis bundle
+  requires `uSeq` to be divergence-free**, so the identity `‖ω‖_{L²} = ‖∇u‖_{L²}`
+  is unavailable.  A curl-free family already defeats it: for
+  `u_m = ∇(m⁻¹ cos(m x₀) χ)` the curl vanishes identically (Clairaut), so
+  `UniformEnstrophyBound u_m 0` holds; the family is `L²`-bounded, time-independent
+  (hence `TimeEquicontinuous` trivially, the integrand being `0`), and has no
+  `L²_loc`-Cauchy subsequence.  Checked numerically: `‖u_m‖² ≈ 0.63` for all `m`
+  while `‖u_m - u_{2m}‖² ≈ 1.25` for `m ≥ 8`.
+* `enstrophy` is additionally blind to non-differentiability — see
+  `enstrophy_stepField_eq_zero` (CERTIFIED above), a discontinuous field with
+  enstrophy exactly `0`.
+
+A second, independent gap: no hypothesis supplies **joint `(t,x)`-measurability** of
+the members, and `VelocityEvolution` is a bare function type.  Without it even the
+elementary bookkeeping fails — reducing the real-parameter conclusion to the
+countable exhaustion needs `∫_{Ioc 0 T} ≤ ∫_{Ioc 0 n}` for `T ≤ n`, i.e.
+`IntegrableOn` in `t`, which no hypothesis provides.
+
+So the residual is precisely **two missing hypotheses**, not a missing proof:
+`(H-space)` uniform spatial-translation equicontinuity in the Riesz–Kolmogorov sense
+(Simon 1987's actual condition), or divergence-freeness plus genuine `H¹` control;
+and `(H-meas)` joint measurability of `(t,x) ↦ uSeq m t x`.  With those two added,
+the route is (i)+(ii) Riesz–Fréchet–Kolmogorov on `(0,n) × B_n`, then (iii), then
+(iv).  The statement below is left exactly as it stands — unweakened — so the gap
+stays visible rather than being hidden by a repaired hypothesis list. -/
 theorem aubin_lions_l2loc_compactness
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C) (hens : UniformEnstrophyBound uSeq C)
