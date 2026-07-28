@@ -25,9 +25,24 @@ honestly.
   *entails* boundedness of `u₀`, which is why both now carry `hu₀`.
 * `uniformL2Mass_of_energyBound`, `energyBound_nonneg` — the uniform-in-time
   `L²` mass bracket extracted from the hypothesis-carried energy bound.
-* `coherentVorticity_crossProduct_le_scaled`, `coherentVorticity_crossProduct_le`
-  — the depletion factor that direction coherence hands to the enstrophy
-  stretching estimate.
+* `coherentVorticity_crossProduct_le_scaled` — the depletion factor `ε` that
+  direction coherence hands to the enstrophy stretching estimate at separations
+  `|x−y| ≤ ε·ρ`.  Informative exactly for `ε < 1`; see
+  `depletedCrossProduct_vacuous` for why the `ε = 1` instance is not.
+* `euclideanNormSq_eq_sum`, `crossProduct_smul_smul`,
+  `officialEuclideanNorm_crossProduct_le`, `crossProductBound_saturated`,
+  `officialEuclideanNorm_crossProduct_le_sub_of_unit`,
+  `officialEuclideanNorm_crossProduct_le_directionDist` — the Euclidean
+  cross-product geometry underlying Constantin–Fefferman: Lagrange's bound,
+  its saturation at an orthogonal pair, and the sharp comparison
+  `|ξ ⨯ η| ≤ |ξ − η|` for unit vectors.
+* `crossProductCoherent_of_directionLipschitz` — Lipschitz continuity of the
+  vorticity direction `ξ = ω/|ω|` on `{|ω| ≥ Ω₀}` implies the division-free
+  Constantin–Fefferman coherence bound.
+* `massBracket_vacuous_of_infiniteMass`,
+  `serrinMixedNorm_vacuous_of_nonIntegrableTime`, `depletedCrossProduct_vacuous`
+  — the three kernel-checked vacuity witnesses driving the Pattern-A repairs
+  recorded below.
 * `uniformL2Integrable_of_energyBound` — the integrability conjunct of a
   hypothesis-carried energy bound, which `uniformL2Mass_of_energyBound`
   discards.
@@ -55,13 +70,54 @@ that bracket, and were therefore **false as stated**: the shear flow
 of the one-dimensional heat equation with `φ(0,·) = 0`
 [Tychonov, Mat. Sb. 42 (1935) 199–216], is an exact zero-force classical
 solution with bounded (zero) initial datum whose vorticity is everywhere
-parallel to `e₂` — so `hdep` holds for every `ρ`, `Ω₀` — while `φ` is unbounded
+parallel to `e₂` — so every direction-coherence hypothesis holds for every
+`ρ`, `Ω₀` — while `φ` is unbounded
 on every strip by Tychonov uniqueness.  The repair adds the integrability
 hypothesis `hL2` to both leaves; `constantinFefferman_velocity_bounded` already
 holds it inside `henergy` and now forwards it via
 `uniformL2Integrable_of_energyBound`, so no caller pays for the repair.  The
 Prodi–Serrin leaves were unaffected: their `hint` is a genuine `Integrable`
 hypothesis and already excludes this class.
+
+### Second falsification and repair (Pattern A): the tautologous `hdep`
+
+`constantinFefferman_interior_outerRegion_bounded` additionally carried
+
+`|ω(x) ⨯ ω(y)| ≤ |ω(x)| · |ω(y)|` on `{|ω| ≥ Ω₀} × {|ω| ≥ Ω₀}`, `|x−y| ≤ ρ`
+
+as its supposed direction-coherence hypothesis `hdep`, obtained by
+specialising `coherentVorticity_crossProduct_le_scaled` to `ε = 1`.
+`depletedCrossProduct_vacuous` is the kernel-checked witness that this formula
+is a **tautology**: it is an instance of the unconditional Lagrange bound
+`officialEuclideanNorm_crossProduct_le`, its proof term discards every
+antecedent and never mentions `u`, `ρ` or `Ω₀`, and by
+`crossProductBound_saturated` it is attained with ratio `1` at an orthogonal
+pair.  So the leaf constrained the vorticity geometry not at all, whereas the
+Constantin–Fefferman mechanism *is* the depletion of the stretching term
+`α = (ξ·∇)u·ξ` caused by continuity of the direction field `ξ = ω/|ω|`; a
+cross-product magnitude bound expresses none of it.
+
+The repair is Pattern A — strengthening a hypothesis that was vacuous, hence
+a repair and not a weakening.  The leaf and
+`constantinFefferman_interior_bounded` now carry the genuine `ρ`-scaled
+coherence hypothesis `hcoh`, verbatim the one
+`constantinFefferman_velocity_bounded` already holds, so again no caller pays;
+the collapsing lemma `coherentVorticity_crossProduct_le` is deleted.  For
+callers holding the geometric form,
+`crossProductCoherent_of_directionLipschitz` derives `hcoh` from
+`|ξ(x) − ξ(y)| ≤ |x−y|/ρ` on the high-vorticity region.
+
+### Third falsification and repair (Pattern A): the untimed Serrin bracket
+
+The same junk-value defect recurs in the *temporal* slot.  `hM` encodes the
+Ladyzhenskaya–Prodi–Serrin hypothesis as
+`∀ T' < T, ∫₀^{T'} (∫|u|^p)^{q/p} ds ≤ M` with no conjunct asserting that the
+slice-norm profile is interval-integrable, and Lean's interval integral
+returns `0` off that class.  `serrinMixedNorm_vacuous_of_nonIntegrableTime` is
+the kernel-checked witness.  Repair: `prodiSerrin_interior_outerRegion_bounded`,
+`prodiSerrin_interior_bounded` and `prodiSerrin_velocity_bounded` now carry
+`hMint`.  This restores a conjunct the encoding dropped — `u ∈ L^q(0,T;L^p)`
+already asserts it — rather than adding a new assumption.
 
 ## Bridges (assembled from named residual leaves)
 
@@ -80,7 +136,8 @@ hypothesis and already excludes this class.
   [Constantin–Fefferman, Indiana Univ. Math. J. 42 (1993) 775–789].
   Residuals: `constantinFefferman_layer_farField_bounded`,
   `constantinFefferman_interior_outerRegion_bounded` — likewise restricted to
-  the outer region.
+  the outer region, the latter carrying `hcoh` itself after the tautology
+  repair recorded above.
 
 ## Statement repair (bounded initial datum)
 
@@ -205,7 +262,7 @@ theorem uniformL2Integrable_of_energyBound {u : VelocityEvolution} {T E : ℝ}
       Integrable (fun x : Space => ‖u t x‖ ^ 2) :=
   fun t ht0 htT => (henergy t ht0 htT).1
 
-/-! ### Falsification of the bare mass bracket -/
+/-! ### Falsification of the bare integral brackets -/
 
 /-- **The bare `L²` mass bracket is vacuous off the integrable class.**  Lean's
 Bochner integral returns the junk value `0` on a non-integrable integrand, so
@@ -230,8 +287,9 @@ put `u(t,x) = (φ(t,x₃), 0, 0)` with `p ≡ 0`.  Then
   `φ` is independent of `x₁`, and the equation collapses to the heat equation;
 * its initial datum is `0`, so `hu₀` holds with `B₀ = 0`;
 * its vorticity `ω = (0, ∂₃φ, 0)` is everywhere parallel to `e₂`, so
-  `ω(x) ⨯ ω(y) = 0` and the direction-coherence hypothesis `hdep` holds for
-  every `ρ` and `Ω₀`;
+  `ω(x) ⨯ ω(y) = 0` and every direction-coherence hypothesis — the
+  tautologous `hdep` and the genuine `hcoh` alike — holds for every `ρ` and
+  `Ω₀`;
 * `x ↦ ‖u t x‖ ^ 2` is independent of `(x₁,x₂)` and not a.e. zero once
   `φ(t,·) ≠ 0`, hence is not integrable on `ℝ³`, so this lemma supplies the
   mass bracket for every `E ≥ 0`;
@@ -254,6 +312,36 @@ theorem massBracket_vacuous_of_infiniteMass
   intro t ht0 htT
   rw [integral_undef (hbad t ht0 htT)]
   exact ⟨le_rfl, hE⟩
+
+/-- **The bare Serrin mixed-norm bracket is vacuous off the time-integrable
+class.**  The Ladyzhenskaya–Prodi–Serrin hypothesis is `u ∈ L^q(0,T; L^p(ℝ³))`,
+whose definition includes integrability of `s ↦ ‖u(s,·)‖_{L^p}^q` on `(0,T')`.
+The numeric encoding
+
+`∀ T' ∈ [0,T), ∫₀^{T'} (∫ |u(s,x)|^p dx)^{q/p} ds ≤ M`
+
+drops that conjunct, and Lean's interval integral returns the junk value `0`
+on a non-interval-integrable integrand, so the bracket is satisfied by *every*
+velocity evolution whose slice-norm profile fails to be interval-integrable on
+`(0,T')` for every admissible `T'` — for instance one blowing up like `s⁻¹` at
+the initial time — for every `M ≥ 0`.
+
+This is the same defect class as `massBracket_vacuous_of_infiniteMass`, in the
+temporal slot rather than the spatial one, and it is repaired the same way
+(Pattern A): the Prodi–Serrin leaf, its assembly and the bridge now carry the
+explicit conjunct `hMint`, which is part of the classical hypothesis
+`u ∈ L^q_t L^p_x` and is therefore not an additional assumption but the
+restoration of a dropped one. -/
+theorem serrinMixedNorm_vacuous_of_nonIntegrableTime
+    {u : VelocityEvolution} {T p q M : ℝ} (hM : 0 ≤ M)
+    (hbad : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      ¬ IntervalIntegrable
+          (fun s : ℝ => (∫ x : Space, ‖u s x‖ ^ p) ^ (q / p)) volume 0 T') :
+    ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      (∫ s in (0 : ℝ)..T', (∫ x : Space, ‖u s x‖ ^ p) ^ (q / p)) ≤ M := by
+  intro T' h0 hT
+  rw [intervalIntegral.integral_undef (hbad T' h0 hT)]
+  exact hM
 
 /-! ### Compact space-time control (established) -/
 
@@ -344,9 +432,11 @@ depletion factor `ε`:
 
 `|ω(x) ⨯ ω(y)| ≤ ε · |ω(x)| · |ω(y)|`.
 
-This is the form the enstrophy stretching estimate consumes — for `ε < 1` it is
-strictly stronger than the universal cross-product bound, and it no longer
-mentions `ρ`. -/
+This is the form the enstrophy stretching estimate consumes.  It is
+informative exactly for `ε < 1`: at `ε = 1` it degenerates to the
+unconditional Lagrange bound `officialEuclideanNorm_crossProduct_le`, which
+`depletedCrossProduct_vacuous` certifies is a tautology and
+`crossProductBound_saturated` certifies is attained. -/
 theorem coherentVorticity_crossProduct_le_scaled
     {u : VelocityEvolution} {T ρ Ω₀ : ℝ} (hρ : 0 < ρ)
     (hcoh : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
@@ -369,29 +459,206 @@ theorem coherentVorticity_crossProduct_le_scaled
   exact mul_le_mul_of_nonneg_right ((div_le_iff₀ hρ).2 hd)
     (mul_nonneg (officialEuclideanNorm_nonneg _) (officialEuclideanNorm_nonneg _))
 
-/-- The `ε = 1` case of `coherentVorticity_crossProduct_le_scaled`: inside a
-single coherence radius the vorticity cross product is bounded by the product
-of the vorticity magnitudes, with no residual `ρ` factor. -/
-theorem coherentVorticity_crossProduct_le
-    {u : VelocityEvolution} {T ρ Ω₀ : ℝ} (hρ : 0 < ρ)
-    (hcoh : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
-      Ω₀ ≤ officialEuclideanNorm (vorticity u t x) →
-      Ω₀ ≤ officialEuclideanNorm (vorticity u t y) →
-      officialEuclideanNorm (vorticity u t x ⨯₃ vorticity u t y) ≤
-        (officialEuclideanNorm (fun i => x i - y i) / ρ) *
-          (officialEuclideanNorm (vorticity u t x) *
-            officialEuclideanNorm (vorticity u t y))) :
+/-! ### Euclidean cross-product geometry -/
+
+/-- Coordinate formula for the square of the official Euclidean point norm. -/
+theorem euclideanNormSq_eq_sum (x : Space) :
+    officialEuclideanNorm x ^ 2 = ∑ i : Fin 3, (x i) ^ 2 := by
+  rw [officialEuclideanNorm_eq_sqrt_sum_sq,
+    Real.sq_sqrt (Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+  simp [sq_abs]
+
+/-- The official Euclidean point norm vanishes at the origin. -/
+theorem officialEuclideanNorm_zero : officialEuclideanNorm (0 : Space) = 0 :=
+  (officialEuclideanNorm_eq_zero_iff 0).2 rfl
+
+/-- Bilinearity of the cross product in the two scalar factors. -/
+theorem crossProduct_smul_smul (c d : ℝ) (a b : Space) :
+    (c • a) ⨯₃ (d • b) = (c * d) • (a ⨯₃ b) := by
+  simp only [cross_apply]
+  ext i
+  fin_cases i <;> simp [Pi.smul_apply] <;> ring
+
+/-- **Lagrange's identity bound.**  `|a ⨯ b|² = |a|²|b|² − ⟨a,b⟩² ≤ |a|²|b|²`,
+so the Euclidean norm of a cross product never exceeds the product of the two
+norms.
+
+This holds for *every* pair of vectors, with no hypothesis whatsoever.  It is
+the reason `depletedCrossProduct_vacuous` below is a tautology, and hence the
+kernel-checked source of the second Pattern-A repair recorded in the module
+header. -/
+theorem officialEuclideanNorm_crossProduct_le (a b : Space) :
+    officialEuclideanNorm (a ⨯₃ b) ≤
+      officialEuclideanNorm a * officialEuclideanNorm b := by
+  have hb : 0 ≤ officialEuclideanNorm a * officialEuclideanNorm b :=
+    mul_nonneg (officialEuclideanNorm_nonneg _) (officialEuclideanNorm_nonneg _)
+  have h1 : officialEuclideanNorm (a ⨯₃ b) ^ 2
+      ≤ (officialEuclideanNorm a * officialEuclideanNorm b) ^ 2 := by
+    rw [mul_pow, euclideanNormSq_eq_sum, euclideanNormSq_eq_sum, euclideanNormSq_eq_sum]
+    simp only [cross_apply, Fin.sum_univ_three, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.head_cons, Matrix.cons_val_two, Matrix.tail_cons]
+    nlinarith [sq_nonneg (a 0 * b 0 + a 1 * b 1 + a 2 * b 2)]
+  nlinarith [officialEuclideanNorm_nonneg (a ⨯₃ b), h1, hb]
+
+/-- **The universal cross-product bound is saturated.**  At the orthogonal unit
+pair `e₁, e₂` the inequality of `officialEuclideanNorm_crossProduct_le` is an
+equality (ratio exactly `1`), so it cannot be sharpened by any constant and it
+separates no pair of vectors from any other.  Together with
+`officialEuclideanNorm_crossProduct_le` this is the falsification witness for
+the `hdep` hypothesis previously carried by
+`constantinFefferman_interior_outerRegion_bounded`. -/
+theorem crossProductBound_saturated :
+    officialEuclideanNorm ((![1, 0, 0] : Space) ⨯₃ (![0, 1, 0] : Space)) =
+      officialEuclideanNorm (![1, 0, 0] : Space) *
+        officialEuclideanNorm (![0, 1, 0] : Space) := by
+  have hcross : ((![1, 0, 0] : Space) ⨯₃ (![0, 1, 0] : Space)) = ![0, 0, 1] := by
+    simp only [cross_apply]
+    ext i
+    fin_cases i <;>
+      simp [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+        Matrix.cons_val_two, Matrix.tail_cons]
+  rw [hcross, officialEuclideanNorm_eq_sqrt_sum_sq, officialEuclideanNorm_eq_sqrt_sum_sq,
+    officialEuclideanNorm_eq_sqrt_sum_sq]
+  simp only [Fin.sum_univ_three, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  norm_num
+
+/-- **Unit-vector direction bound.**  For Euclidean unit vectors,
+`|a ⨯ b| ≤ |a − b|`.
+
+In the angle variable this is `|sin θ| = 2 sin(θ/2) cos(θ/2) ≤ 2 sin(θ/2) =
+|a − b|`; algebraically, writing `c = ⟨a,b⟩`, it is `1 − c² ≤ 2 − 2c`, i.e.
+`0 ≤ (1 − c)²`.  This is the geometric step that converts Lipschitz continuity
+of the vorticity *direction* into the Constantin–Fefferman sine bound
+[Constantin–Fefferman, Indiana Univ. Math. J. 42 (1993) 775–789, §2]. -/
+theorem officialEuclideanNorm_crossProduct_le_sub_of_unit {a b : Space}
+    (ha : officialEuclideanNorm a = 1) (hb : officialEuclideanNorm b = 1) :
+    officialEuclideanNorm (a ⨯₃ b) ≤ officialEuclideanNorm (a - b) := by
+  have ha2 : ∑ i : Fin 3, (a i) ^ 2 = 1 := by
+    rw [← euclideanNormSq_eq_sum, ha]; norm_num
+  have hb2 : ∑ i : Fin 3, (b i) ^ 2 = 1 := by
+    rw [← euclideanNormSq_eq_sum, hb]; norm_num
+  have h1 : officialEuclideanNorm (a ⨯₃ b) ^ 2 ≤ officialEuclideanNorm (a - b) ^ 2 := by
+    rw [euclideanNormSq_eq_sum, euclideanNormSq_eq_sum]
+    simp only [cross_apply, Fin.sum_univ_three, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.head_cons, Matrix.cons_val_two, Matrix.tail_cons, Pi.sub_apply] at *
+    nlinarith [sq_nonneg (1 - (a 0 * b 0 + a 1 * b 1 + a 2 * b 2)), ha2, hb2]
+  nlinarith [officialEuclideanNorm_nonneg (a ⨯₃ b), officialEuclideanNorm_nonneg (a - b), h1]
+
+/-- **Cross product controlled by direction distance.**  For arbitrary vectors,
+
+`|a ⨯ b| ≤ |a/|a| − b/|b|| · (|a| · |b|)`,
+
+both sides vanishing when either factor does.  This is the division-free form
+of `|sin θ(a,b)| ≤ |ξ(a) − ξ(b)|`, and unlike
+`officialEuclideanNorm_crossProduct_le` it is *not* vacuous: its right-hand
+factor is the distance between the two directions, which is small exactly when
+the two vectors are nearly aligned. -/
+theorem officialEuclideanNorm_crossProduct_le_directionDist (a b : Space) :
+    officialEuclideanNorm (a ⨯₃ b) ≤
+      officialEuclideanNorm
+          ((officialEuclideanNorm a)⁻¹ • a - (officialEuclideanNorm b)⁻¹ • b) *
+        (officialEuclideanNorm a * officialEuclideanNorm b) := by
+  rcases eq_or_ne a 0 with rfl | ha
+  · simp [officialEuclideanNorm_zero]
+  rcases eq_or_ne b 0 with rfl | hb
+  · simp [officialEuclideanNorm_zero]
+  have hna : officialEuclideanNorm a ≠ 0 := fun h =>
+    ha ((officialEuclideanNorm_eq_zero_iff a).1 h)
+  have hnb : officialEuclideanNorm b ≠ 0 := fun h =>
+    hb ((officialEuclideanNorm_eq_zero_iff b).1 h)
+  set α := officialEuclideanNorm a with hα
+  set β := officialEuclideanNorm b with hβ
+  have hαpos : 0 < α := lt_of_le_of_ne (officialEuclideanNorm_nonneg a) (Ne.symm hna)
+  have hβpos : 0 < β := lt_of_le_of_ne (officialEuclideanNorm_nonneg b) (Ne.symm hnb)
+  have hu : officialEuclideanNorm (α⁻¹ • a) = 1 := by
+    rw [officialEuclideanNorm_smul, abs_of_nonneg (inv_nonneg.2 hαpos.le), ← hα,
+      inv_mul_cancel₀ hna]
+  have hv : officialEuclideanNorm (β⁻¹ • b) = 1 := by
+    rw [officialEuclideanNorm_smul, abs_of_nonneg (inv_nonneg.2 hβpos.le), ← hβ,
+      inv_mul_cancel₀ hnb]
+  have key := officialEuclideanNorm_crossProduct_le_sub_of_unit hu hv
+  have hdecomp : a ⨯₃ b = (α * β) • ((α⁻¹ • a) ⨯₃ (β⁻¹ • b)) := by
+    rw [crossProduct_smul_smul, smul_smul,
+      show α * β * (α⁻¹ * β⁻¹) = 1 by field_simp, one_smul]
+  rw [hdecomp, officialEuclideanNorm_smul, abs_of_nonneg (by positivity : (0 : ℝ) ≤ α * β)]
+  calc α * β * officialEuclideanNorm ((α⁻¹ • a) ⨯₃ (β⁻¹ • b))
+      ≤ α * β * officialEuclideanNorm (α⁻¹ • a - β⁻¹ • b) :=
+        mul_le_mul_of_nonneg_left key (by positivity)
+    _ = officialEuclideanNorm (α⁻¹ • a - β⁻¹ • b) * (α * β) := by ring
+
+/-! ### Falsification of the `ε = 1` depletion hypothesis -/
+
+/-- **The `ε = 1` depletion bound is a tautology.**  The statement
+
+`|ω(x) ⨯ ω(y)| ≤ |ω(x)| · |ω(y)|` whenever `|ω(x)|, |ω(y)| ≥ Ω₀` and `|x−y| ≤ ρ`
+
+holds for *every* velocity evolution `u`, every `T`, every `ρ` and every `Ω₀`,
+because it is an instance of the unconditional Lagrange bound
+`officialEuclideanNorm_crossProduct_le`.  Note the proof term below discards
+all three antecedents and never mentions `u`, `ρ` or `Ω₀`.
+
+This is the kernel-checked falsification witness for the previous statement of
+`constantinFefferman_interior_outerRegion_bounded`, which carried exactly this
+formula as its hypothesis `hdep` and therefore carried *no* geometric
+constraint on the vorticity direction at all — while the Constantin–Fefferman
+mechanism is precisely the depletion of the stretching term
+`α = (ξ·∇)u·ξ` produced by continuity of `ξ = ω/|ω|`.  By
+`crossProductBound_saturated` the bound is attained with ratio `1`, so it is
+not even a quantitatively useful universal estimate: it is the sharp form of
+"no information".
+
+The repair is Pattern A: the leaf now carries the genuine `ρ`-scaled
+Constantin–Fefferman coherence hypothesis `hcoh`, which its only caller
+`constantinFefferman_velocity_bounded` already holds verbatim, so no caller
+pays for the repair; and `crossProductCoherent_of_directionLipschitz` derives
+`hcoh` from Lipschitz continuity of the vorticity direction. -/
+theorem depletedCrossProduct_vacuous (u : VelocityEvolution) (T ρ Ω₀ : ℝ) :
     ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
       Ω₀ ≤ officialEuclideanNorm (vorticity u t x) →
       Ω₀ ≤ officialEuclideanNorm (vorticity u t y) →
       officialEuclideanNorm (fun i => x i - y i) ≤ ρ →
       officialEuclideanNorm (vorticity u t x ⨯₃ vorticity u t y) ≤
         officialEuclideanNorm (vorticity u t x) *
-          officialEuclideanNorm (vorticity u t y) := by
-  intro t ht0 htT x y hx hy hd
-  have h := coherentVorticity_crossProduct_le_scaled hρ hcoh 1 t ht0 htT x y hx hy
-    (by simpa using hd)
-  simpa using h
+          officialEuclideanNorm (vorticity u t y) :=
+  fun _ _ _ _ _ _ _ _ => officialEuclideanNorm_crossProduct_le _ _
+
+/-! ### The genuine Constantin–Fefferman direction hypothesis -/
+
+/-- **Lipschitz vorticity direction implies Constantin–Fefferman coherence.**
+If the unit vorticity direction `ξ = ω/|ω|` is `ρ⁻¹`-Lipschitz on the
+high-vorticity region `{|ω| ≥ Ω₀}` — the hypothesis actually used in
+[Constantin–Fefferman, Indiana Univ. Math. J. 42 (1993) 775–789] — then the
+division-free coherence bound
+
+`|ω(x) ⨯ ω(y)| ≤ (|x−y|/ρ) · |ω(x)| · |ω(y)|`
+
+holds on that region.  Geometrically: `|sin θ| ≤ |ξ(x) − ξ(y)| ≤ |x−y|/ρ`, the
+first step being `officialEuclideanNorm_crossProduct_le_sub_of_unit`.
+
+Unlike `depletedCrossProduct_vacuous`, the conclusion here is genuinely
+constraining: it degenerates to `0` as `y → x`, which is exactly the depletion
+that makes the enstrophy stretching term subordinate to viscous dissipation. -/
+theorem crossProductCoherent_of_directionLipschitz
+    {u : VelocityEvolution} {T ρ Ω₀ : ℝ}
+    (hdir : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
+      Ω₀ ≤ officialEuclideanNorm (vorticity u t x) →
+      Ω₀ ≤ officialEuclideanNorm (vorticity u t y) →
+      officialEuclideanNorm
+          ((officialEuclideanNorm (vorticity u t x))⁻¹ • vorticity u t x -
+            (officialEuclideanNorm (vorticity u t y))⁻¹ • vorticity u t y) ≤
+        officialEuclideanNorm (fun i => x i - y i) / ρ) :
+    ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
+      Ω₀ ≤ officialEuclideanNorm (vorticity u t x) →
+      Ω₀ ≤ officialEuclideanNorm (vorticity u t y) →
+      officialEuclideanNorm (vorticity u t x ⨯₃ vorticity u t y) ≤
+        (officialEuclideanNorm (fun i => x i - y i) / ρ) *
+          (officialEuclideanNorm (vorticity u t x) *
+            officialEuclideanNorm (vorticity u t y)) := by
+  intro t ht0 htT x y hx hy
+  refine (officialEuclideanNorm_crossProduct_le_directionDist _ _).trans ?_
+  exact mul_le_mul_of_nonneg_right (hdir t ht0 htT x y hx hy)
+    (mul_nonneg (officialEuclideanNorm_nonneg _) (officialEuclideanNorm_nonneg _))
 
 /-! ### Named residual leaves -/
 
@@ -483,6 +750,9 @@ theorem prodiSerrin_interior_outerRegion_bounded
     (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
       (∫ s in (0 : ℝ)..T',
         (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
+    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      IntervalIntegrable
+        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
       (ϱ ≤ ‖x‖ ∨ (δ + T) / 2 < t) → ‖sol.velocity t x‖ ≤ R := by
@@ -506,12 +776,15 @@ theorem prodiSerrin_interior_bounded
     (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
       (∫ s in (0 : ℝ)..T',
         (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
+    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      IntervalIntegrable
+        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ R₂ : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
       ‖sol.velocity t x‖ ≤ R₂ := by
   obtain ⟨ϱ, R, htail⟩ :=
     prodiSerrin_interior_outerRegion_bounded hν sol p q hp hq hcrit hint M hM
-      δ hδ0 hδT
+      hMint δ hδ0 hδT
   exact interiorBound_of_outerRegion (m := (δ + T) / 2) sol.velocity_smooth
     hδ0.le (by linarith) htail
 
@@ -576,17 +849,25 @@ theorem constantinFefferman_initialLayer_bounded
 
 /-- **[LEAF — Constantin–Fefferman interior outer region; est ~400 LOC.]**
 Away from the initial time, the uniform `L²` mass bracket with its
-integrability hypothesis, together with the depleted cross-product bound
-`hdep` (the `ε = 1` output of `coherentVorticity_crossProduct_le`), controls
-the velocity on the *outer* region of the interior window: far field
-`ϱ ≤ ‖x‖`, or late times `(δ+T)/2 < t`.
+integrability hypothesis, together with the `ρ`-scaled Constantin–Fefferman
+direction-coherence bound `hcoh`, controls the velocity on the *outer* region
+of the interior window: far field `ϱ ≤ ‖x‖`, or late times `(δ+T)/2 < t`.
 
 Carries `hL2` alongside `hmass` for the reason recorded in
 `massBracket_vacuous_of_infiniteMass`: the bracket alone is satisfied by every
 field of infinite `L²` mass, and the Tychonov shear flow described there has
-vorticity everywhere parallel to `e₂`, hence satisfies `hdep` for every `ρ` and
-`Ω₀` while violating the conclusion.  That flow is precisely what the previous
-statement of this leaf failed to exclude.
+vorticity everywhere parallel to `e₂`, hence satisfies every direction
+hypothesis for every `ρ` and `Ω₀` while violating the conclusion.  That flow is
+precisely what the previous statement of this leaf failed to exclude.
+
+Carries `hcoh` rather than the collapsed `ε = 1` bound `hdep` it previously
+carried: by `depletedCrossProduct_vacuous` that bound is a tautology, satisfied
+by every velocity evolution whatsoever, so the leaf as previously stated
+asserted the Constantin–Fefferman conclusion with *no* geometric hypothesis on
+the vorticity direction.  `hcoh` is exactly the hypothesis the only caller
+`constantinFefferman_velocity_bounded` already holds, and
+`crossProductCoherent_of_directionLipschitz` supplies it from Lipschitz
+continuity of `ξ = ω/|ω|`.
 
 This is the residual after `compactSpaceTime_bounded` discharges the compact
 core `[δ,(δ+T)/2] × closedBall 0 ϱ`.
@@ -611,14 +892,14 @@ theorem constantinFefferman_interior_outerRegion_bounded
     (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
       (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
     (ρ Ω₀ : ℝ) (hρ : 0 < ρ) (hΩ₀ : 0 < Ω₀)
-    (hdep : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
+    (hcoh : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
       Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t x) →
       Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t y) →
-      officialEuclideanNorm (fun i => x i - y i) ≤ ρ →
       officialEuclideanNorm
           (vorticity sol.velocity t x ⨯₃ vorticity sol.velocity t y) ≤
-        officialEuclideanNorm (vorticity sol.velocity t x) *
-          officialEuclideanNorm (vorticity sol.velocity t y))
+        (officialEuclideanNorm (fun i => x i - y i) / ρ) *
+          (officialEuclideanNorm (vorticity sol.velocity t x) *
+            officialEuclideanNorm (vorticity sol.velocity t y)))
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
       (ϱ ≤ ‖x‖ ∨ (δ + T) / 2 < t) → ‖sol.velocity t x‖ ≤ R := by
@@ -641,20 +922,20 @@ theorem constantinFefferman_interior_bounded
     (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
       (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
     (ρ Ω₀ : ℝ) (hρ : 0 < ρ) (hΩ₀ : 0 < Ω₀)
-    (hdep : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
+    (hcoh : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
       Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t x) →
       Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t y) →
-      officialEuclideanNorm (fun i => x i - y i) ≤ ρ →
       officialEuclideanNorm
           (vorticity sol.velocity t x ⨯₃ vorticity sol.velocity t y) ≤
-        officialEuclideanNorm (vorticity sol.velocity t x) *
-          officialEuclideanNorm (vorticity sol.velocity t y))
+        (officialEuclideanNorm (fun i => x i - y i) / ρ) *
+          (officialEuclideanNorm (vorticity sol.velocity t x) *
+            officialEuclideanNorm (vorticity sol.velocity t y)))
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ R₂ : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
       ‖sol.velocity t x‖ ≤ R₂ := by
   obtain ⟨ϱ, R, htail⟩ :=
     constantinFefferman_interior_outerRegion_bounded hν sol E hE hL2 hmass
-      ρ Ω₀ hρ hΩ₀ hdep δ hδ0 hδT
+      ρ Ω₀ hρ hΩ₀ hcoh δ hδ0 hδT
   exact interiorBound_of_outerRegion (m := (δ + T) / 2) sol.velocity_smooth
     hδ0.le (by linarith) htail
 
@@ -683,7 +964,10 @@ theorem prodiSerrin_velocity_bounded
     (M : ℝ)
     (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
       (∫ s in (0:ℝ)..T',
-        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M) :
+        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
+    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      IntervalIntegrable
+        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T') :
     ∃ R : ℝ, ∀ t : ℝ, 0 ≤ t → t < T → ∀ x : Space,
       ‖sol.velocity t x‖ ≤ R := by
   have hq : 2 < q := serrin_exponent_gt_two hp hcrit
@@ -693,7 +977,8 @@ theorem prodiSerrin_velocity_bounded
   obtain ⟨R₁, hR₁⟩ :=
     prodiSerrin_initialLayer_bounded hν sol hu₀ p hp hint (T / 2) hδ0 hδT
   obtain ⟨R₂, hR₂⟩ :=
-    prodiSerrin_interior_bounded hν sol p q hp hq hcrit hint M hM (T / 2) hδ0 hδT
+    prodiSerrin_interior_bounded hν sol p q hp hq hcrit hint M hM hMint
+      (T / 2) hδ0 hδT
   exact uniformBound_of_split (fun t x => ‖sol.velocity t x‖) R₁ R₂ hR₁ hR₂
 
 /-- **[Constantin–Fefferman direction coherence; Indiana Univ. Math. J. 42
@@ -707,9 +992,11 @@ Constantin–Fefferman's notation; the cross product bilinearizes the sine.)
 Assembled from `constantinFefferman_initialLayer_bounded` and
 `constantinFefferman_interior_bounded` at the split time `δ = T/2` via
 `uniformBound_of_split`, with the `L²` mass bracket supplied by
-`uniformL2Mass_of_energyBound`/`energyBound_nonneg` and the stretching-term
-depletion supplied by `coherentVorticity_crossProduct_le`.  The hypothesis
-`hu₀` is necessary by `initialDatum_bounded_of_uniformBound`. -/
+`uniformL2Mass_of_energyBound`/`energyBound_nonneg` and the direction-coherence
+hypothesis `hcoh` forwarded verbatim to the interior leaf.  (It was previously
+collapsed to the `ε = 1` bound `hdep` en route; `depletedCrossProduct_vacuous`
+shows that collapse discarded the entire hypothesis.)  The hypothesis `hu₀` is
+necessary by `initialDatum_bounded_of_uniformBound`. -/
 theorem constantinFefferman_velocity_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -733,14 +1020,13 @@ theorem constantinFefferman_velocity_bounded
   have hE : 0 ≤ E := energyBound_nonneg hT henergy
   have hL2 := uniformL2Integrable_of_energyBound henergy
   have hmass := uniformL2Mass_of_energyBound henergy
-  have hdep := coherentVorticity_crossProduct_le hρ hcoh
   have hδ0 : 0 < T / 2 := by linarith
   have hδT : T / 2 < T := by linarith
   obtain ⟨R₁, hR₁⟩ :=
     constantinFefferman_initialLayer_bounded hν sol hu₀ E hE hL2 hmass
       (T / 2) hδ0 hδT
   obtain ⟨R₂, hR₂⟩ :=
-    constantinFefferman_interior_bounded hν sol E hE hL2 hmass ρ Ω₀ hρ hΩ₀ hdep
+    constantinFefferman_interior_bounded hν sol E hE hL2 hmass ρ Ω₀ hρ hΩ₀ hcoh
       (T / 2) hδ0 hδT
   exact uniformBound_of_split (fun t x => ‖sol.velocity t x‖) R₁ R₂ hR₁ hR₂
 
