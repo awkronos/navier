@@ -43,6 +43,7 @@ import Navier.Analysis.FourierMajorant
 import Navier.Analysis.FourierWeightedPlancherel
 import Navier.Analysis.FourierBridge
 import Navier.Analysis.BealeKatoMajda
+import Navier.Analysis.VacuityAudit
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.EnstrophyPointwise
@@ -74,6 +75,7 @@ import Navier.ConventionBridges
 import Navier.Analysis.SchwartzComponentBound
 import Navier.Analysis.UniformDecayDominated
 import Navier.Analysis.HeatSemigroupSmoothing
+import Navier.Analysis.RieszKolmogorov
 import Navier.Analysis.SchwartzConventionEquivalence
 import Navier.Analysis.CoordinatePDEBridge
 import Navier.Analysis.HalfSpaceSmoothnessBridge
