@@ -502,6 +502,60 @@ theorem independent_iff_toL2 (v : ℕ → SchwartzVelocity) :
     rw [← toL2_sum]
     simpa using pow_eq_zero_iff (n := 2) (by norm_num) |>.mp this
 
+/-!
+### Off-span selection (the counting argument)
+
+The two general facts the independence reconciliation runs on, stated for an
+arbitrary `ℝ`-module so nothing here depends on `Lp` or on Schwartz decay.
+
+`exists_not_mem_span_of_linearIndependent` is the load-bearing one: an
+`ℕ`-indexed linearly independent family cannot lie entirely inside the span of a
+finite set, because it would then be an infinite independent family in a
+finite-dimensional (hence Noetherian) module.  This is what makes the greedy
+step of the recursion well-defined — at each stage the already-chosen prefix
+spans a finite-dimensional subspace, so some reservoir element escapes it.
+
+`linearIndependent_of_range_form` converts this repo's `Finset.range`-indexed
+independence statement into Mathlib's `LinearIndependent`; the converse
+direction is immediate from `linearIndependent_iff'`.
+-/
+
+variable {V : Type*} [AddCommGroup V] [Module ℝ V]
+
+/-- Range-form independence implies `LinearIndependent`. -/
+theorem linearIndependent_of_range_form (y : ℕ → V)
+    (h : ∀ (n : ℕ) (c : ℕ → ℝ), (∑ j ∈ Finset.range n, c j • y j) = 0 →
+      ∀ j ∈ Finset.range n, c j = 0) :
+    LinearIndependent ℝ y := by
+  classical
+  rw [linearIndependent_iff']
+  intro s g hs i hi
+  set n := s.sup id + 1 with hn
+  have hsub : s ⊆ Finset.range n := by
+    intro x hx
+    exact Finset.mem_range.mpr (Nat.lt_succ_of_le (Finset.le_sup (f := id) hx))
+  set c : ℕ → ℝ := fun j => if j ∈ s then g j else 0 with hc
+  have hsum : (∑ j ∈ Finset.range n, c j • y j) = 0 := by
+    rw [← Finset.sum_subset hsub (fun x _ hxs => by simp [hc, hxs])]
+    exact hs.symm ▸ Finset.sum_congr rfl (fun x hx => by simp [hc, hx])
+  have := h n c hsum i (hsub hi)
+  simpa [hc, hi] using this
+
+/-- **The counting lemma.**  An `ℕ`-indexed linearly independent family cannot lie
+entirely inside the span of a finite set. -/
+theorem exists_not_mem_span_of_linearIndependent (y : ℕ → V)
+    (hy : LinearIndependent ℝ y) (s : Finset V) :
+    ∃ k : ℕ, y k ∉ Submodule.span ℝ (s : Set V) := by
+  by_contra hcon
+  push Not at hcon
+  haveI : FiniteDimensional ℝ (Submodule.span ℝ (s : Set V)) :=
+    FiniteDimensional.span_of_finite ℝ s.finite_toSet
+  have hy' : LinearIndependent ℝ (fun k : ℕ => (⟨y k, hcon k⟩ : Submodule.span ℝ (s : Set V))) :=
+    LinearIndependent.of_comp (Submodule.span ℝ (s : Set V)).subtype (by exact hy)
+  haveI := hy'.finite_of_isNoetherian
+  exact _root_.not_finite ℕ
+
+
 end Separability
 
 /-- **[NAMED RESIDUAL — independence reconciliation; est ~250 LOC.]**
