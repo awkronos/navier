@@ -931,6 +931,28 @@ end ProdGridCell
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
 
+/-- **Engine 2, vector-valued.**  A norm-bounded sequence in `Fin N → F` with `F`
+finite-dimensional over `ℝ` has a Cauchy subsequence.
+
+This is the form the criterion actually needs: the cell-average vector of a member of
+the family has one entry per cell, and each entry is an average of `f`, so it is
+`F`-valued rather than real.  `Fin N → F` is finite-dimensional, hence proper, so
+Heine–Borel applies exactly as in the scalar case — no infinite-dimensional
+compactness anywhere. -/
+theorem exists_subseq_cauchy_of_bounded_pi_finiteDim {N : ℕ} {F : Type*}
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
+    (v : ℕ → Fin N → F) (M : ℝ) (hb : ∀ k : ℕ, ‖v k‖ ≤ M) :
+    ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
+      ∀ ε : ℝ, 0 < ε → ∃ K : ℕ, ∀ j k : ℕ, K ≤ j → K ≤ k →
+        ‖v (ρ j) - v (ρ k)‖ < ε := by
+  haveI : ProperSpace (Fin N → F) := FiniteDimensional.proper_real (Fin N → F)
+  obtain ⟨b, -, ρ, hρ, hconv⟩ :=
+    tendsto_subseq_of_bounded (Metric.isBounded_closedBall (x := (0 : Fin N → F)) (r := M))
+      (fun k => by simpa [Metric.mem_closedBall, dist_zero_right] using hb k)
+  refine ⟨ρ, hρ, fun ε hε => ?_⟩
+  obtain ⟨K, hK⟩ := Metric.cauchySeq_iff.mp hconv.cauchySeq ε hε
+  exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
+
 /-- **Engine 2.**  A norm-bounded sequence in `Fin N → ℝ` has a Cauchy
 subsequence.  This is the step that makes the dyadic-average route elementary:
 the cell-average vector of a member of the family is a point of `Fin N → ℝ` with
@@ -952,6 +974,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
