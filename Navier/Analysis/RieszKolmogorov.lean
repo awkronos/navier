@@ -397,6 +397,40 @@ theorem setIntegral_le_measureReal_mul_const {S : Set α} (hS : MeasurableSet S)
   have hmono := setIntegral_mono_on hint (integrableOn_const hSfin) hS hb
   simpa [setIntegral_const, smul_eq_mul] using hmono
 
+/-!
+### Uniform integrability of the cell data
+
+`setIntegral_cellError_le_displacement` below takes eight integrability hypotheses,
+stated per cell.  Instantiating it over a *family* of cells therefore needs them to
+hold **uniformly in the cell index**, which is a quantifier order that is painful to
+discover halfway through a transport argument.  So the uniform statement is hoisted
+here and proved standalone: for a bounded measurable field every one of the eight
+follows from the single global bound `‖f‖ ≤ M` plus finiteness of the cell and the
+displacement ball, and a global bound is uniform in the cell by construction.
+-/
+
+/-- A bounded a.e.-measurable real function is integrable on any finite-measure set. -/
+theorem integrableOn_of_bound {s : Set α} (hs : μ s ≠ ⊤) {g : α → ℝ}
+    (hmeas : AEStronglyMeasurable g μ) {M : ℝ} (hb : ∀ x, |g x| ≤ M) :
+    IntegrableOn g s μ :=
+  MeasureTheory.Measure.integrableOn_of_bounded hs hmeas (M := M)
+    (Filter.Eventually.of_forall fun x => by rw [Real.norm_eq_abs]; exact hb x)
+
+omit [CompleteSpace E] in
+/-- A set-average inherits any global bound on the function.  No measurability
+hypothesis: the bound goes through `norm_setIntegral_le_of_norm_le_const`, which
+needs only finiteness of the set and an a.e. bound. -/
+theorem norm_setAverage_le_of_bound {s : Set α} (h0 : μ s ≠ 0) (hs : μ s ≠ ⊤)
+    (f : α → E) {M : ℝ} (hb : ∀ z, ‖f z‖ ≤ M) : ‖⨍ y in s, f y ∂μ‖ ≤ M := by
+  have hpos : 0 < μ.real s := ENNReal.toReal_pos h0 hs
+  have hnorm : ‖∫ y in s, f y ∂μ‖ ≤ M * μ.real s :=
+    norm_setIntegral_le_of_norm_le_const (lt_top_iff_ne_top.mpr hs) fun x _ => hb x
+  rw [setAverage_eq, norm_smul, Real.norm_eq_abs,
+    abs_of_nonneg (inv_nonneg.mpr measureReal_nonneg)]
+  calc (μ.real s)⁻¹ * ‖∫ y in s, f y ∂μ‖ ≤ (μ.real s)⁻¹ * (M * μ.real s) :=
+        mul_le_mul_of_nonneg_left hnorm (by positivity)
+    _ = M := by field_simp
+
 /-- **Per-cell assembly.**  Chaining the three landed steps — the cell-average
 bound, the per-base-point translation to the displacement ball, and Tonelli — the
 error of replacing `f` by its average on a cell of radius `h` is controlled by the
@@ -595,6 +629,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
