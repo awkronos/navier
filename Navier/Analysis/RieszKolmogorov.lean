@@ -430,6 +430,88 @@ theorem setIntegral_cellError_le_displacement {G : Type*} [MeasurableSpace G]
   rw [setIntegral_setIntegral_swap A (Metric.closedBall (0:G) h) _ hprod]
 
 /-!
+## The cell grid
+
+The cells the criterion is summed over: half-open axis-parallel cubes of side `h`
+indexed by an integer multi-index, on a finite-dimensional coordinate space
+`ι → ℝ`.  Half-open (`Ico`) is what makes the grid an exact partition — closed
+cubes would overlap on faces and open ones would miss them.
+
+**Mathlib query, recorded either way.**  `MeasureTheory/Covering/` (Vitali,
+Besicovitch, VitaliFamily) does not serve here: `Vitali.exists_disjoint_covering_ae`
+produces an a.e.-cover by balls drawn from a family satisfying a Vitali condition,
+with no control on the cells' common measure, whereas the criterion needs cells of
+*known equal* measure `h^d` and diameter `≤ h` so that `ν(B_h)/ν(A) = 2^d`.
+`ZSpan.exist_unique_vadd_mem_fundamentalDomain` does give a genuine lattice tiling
+and would work, at the cost of carrying a basis and its `ZSpan.repr` coordinates
+through every estimate.  For an axis-parallel grid the direct construction below is
+shorter and its measure is `volume_pi_pi` in one line, so it is hand-rolled.
+
+Per the standing advice, no attempt is made to tile the window exactly: cells are
+indexed over all of `ι → ℤ` and intersected with the window where needed.  Boundary
+cells then stick out, which is harmless — the criterion needs only disjointness and
+covering, and the `2^d` slack absorbs partial cells.
+-/
+
+section GridCell
+
+variable {ι : Type*} [Fintype ι]
+
+/-- The half-open grid cell of side `h` at integer multi-index `j`. -/
+def gridCell (h : ℝ) (j : ι → ℤ) : Set (ι → ℝ) :=
+  Set.univ.pi fun i => Set.Ico (h * j i) (h * (j i + 1))
+
+theorem measurableSet_gridCell (h : ℝ) (j : ι → ℤ) : MeasurableSet (gridCell h j) :=
+  MeasurableSet.univ_pi fun _ => measurableSet_Ico
+
+/-- Every grid cell has measure `h^{|ι|}`. -/
+theorem volume_gridCell {h : ℝ} (hh : 0 ≤ h) (j : ι → ℤ) :
+    volume (gridCell h j) = ENNReal.ofReal (h ^ Fintype.card ι) := by
+  rw [gridCell, volume_pi_pi]
+  have hEach : ∀ i : ι, volume (Set.Ico (h * j i) (h * (j i + 1))) = ENNReal.ofReal h := by
+    intro i; rw [Real.volume_Ico]; ring_nf
+  simp only [hEach, Finset.prod_const, Finset.card_univ]
+  rw [← ENNReal.ofReal_pow hh]
+
+omit [Fintype ι] in
+/-- Distinct multi-indices give disjoint cells. -/
+theorem gridCell_disjoint {h : ℝ} (hh : 0 < h) {j j' : ι → ℤ} (hne : j ≠ j') :
+    Disjoint (gridCell h j) (gridCell h j') := by
+  obtain ⟨i, hi⟩ := Function.ne_iff.mp hne
+  refine Set.disjoint_left.mpr fun x hx hx' => ?_
+  have h1 := hx i (Set.mem_univ i)
+  have h2 := hx' i (Set.mem_univ i)
+  simp only [Set.mem_Ico] at h1 h2
+  rcases lt_or_gt_of_ne hi with hlt | hgt
+  · have : (j i : ℝ) + 1 ≤ (j' i : ℝ) := by exact_mod_cast Int.add_one_le_iff.mpr hlt
+    nlinarith [h1.2, h2.1]
+  · have : (j' i : ℝ) + 1 ≤ (j i : ℝ) := by exact_mod_cast Int.add_one_le_iff.mpr hgt
+    nlinarith [h2.2, h1.1]
+
+/-- A grid cell has diameter at most `h` in the supremum norm of `ι → ℝ`. -/
+theorem norm_sub_le_of_mem_gridCell {h : ℝ} (hh : 0 ≤ h) {j : ι → ℤ} {x y : ι → ℝ}
+    (hx : x ∈ gridCell h j) (hy : y ∈ gridCell h j) : ‖x - y‖ ≤ h := by
+  refine (pi_norm_le_iff_of_nonneg hh).mpr fun i => ?_
+  have h1 := hx i (Set.mem_univ i)
+  have h2 := hy i (Set.mem_univ i)
+  simp only [Set.mem_Ico] at h1 h2
+  rw [Pi.sub_apply, Real.norm_eq_abs, abs_le]
+  constructor <;> [nlinarith [h1.1, h2.2]; nlinarith [h1.2, h2.1]]
+
+omit [Fintype ι] in
+/-- **The grid covers**: every point lies in the cell of its coordinatewise floor. -/
+theorem mem_gridCell_floor {h : ℝ} (hh : 0 < h) (x : ι → ℝ) :
+    x ∈ gridCell h fun i => ⌊x i / h⌋ := by
+  intro i _
+  have hfl := Int.floor_le (x i / h)
+  have hlt := Int.lt_floor_add_one (x i / h)
+  constructor
+  · rw [← le_div_iff₀' hh]; exact hfl
+  · rw [← div_lt_iff₀' hh]; exact hlt
+
+end GridCell
+
+/-!
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
 
@@ -454,6 +536,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
