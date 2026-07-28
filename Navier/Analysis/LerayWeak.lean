@@ -1032,6 +1032,17 @@ are BANKED, and whose existence rests on the single density residual
 `proj_tendsto_self` (this is why the field is stated in the Euclidean seminorm).
 (ii) `time_equicontinuous` and `weak_consistent` from the finite-mode energy
 identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (est ~100 LOC).
+(iii) The two Pattern-A fields added this wave.  `space_equicontinuous` is
+where the finite-mode construction pays for what the bare Aubin–Lions bundle
+could not supply: `u_m(t)` lies in the span of the first `m` **divergence-free**
+Schwartz modes, so there `‖ω‖_{L²} = ‖∇u_m‖_{L²}` genuinely holds, and
+`‖τ_y f − f‖_{L²} ≤ ‖y‖ · ‖∇f‖_{L²}` [Brezis, Springer 2011, Prop. 9.3]
+integrated against `∫₀^T ‖∇u_m‖²_{L²} ≤ ‖u₀‖²_{L²}/(2ν)`
+(`EnergyDissipation.dissipation_integral_le_forward`, BANKED) gives the uniform
+modulus `δ = ε ν / ‖u₀‖²` up to constants (est ~120 LOC).  `jointly_measurable`
+is immediate: `u_m(t,x) = ∑_{i<m} cᵢ(t) wᵢ(x)` with `cᵢ` the `C¹` ODE solutions
+of `finiteDim_dissipative_ode_global` and `wᵢ` Schwartz, a finite sum of
+products of continuous functions, hence jointly continuous (est ~20 LOC).
 
 The product-norm/Euclidean conversion that used to sit inside this obligation is
 now certified (`galerkinApproximation_of_modeData`). -/
