@@ -1525,6 +1525,85 @@ theorem exists_subseq_forall_windowCauchy (uSeq : ℕ → VelocityEvolution)
     (fun _ N _ hQ => WindowCauchy.of_tail N hQ)
     hstep
 
+/-- **The window error is a product integral.**  `windowError` is a *nested* integral,
+while the compactness criterion works with a single integral over the spacetime window.
+`setIntegral_prod` bridges them — but it needs product-integrability, so the swap is
+**not** free in Bochner form even though the integrand is nonnegative.  That matters:
+without integrability `windowError` is a Bochner junk value, so the hypothesis is
+load-bearing rather than bookkeeping.
+
+Hypotheses read off the Galerkin bundle rather than chosen for convenience: joint
+measurability (`JointlyMeasurable`), slicewise square-integrability (`sq_integrable`),
+and a uniform slicewise bound (`UniformKineticBound`).  Those are exactly what
+`integrable_prod_iff` consumes — slicewise integrability for a.e. `t`, plus
+integrability in `t` of the inner integral, the latter from the uniform bound `4C` on
+the finite interval `Ioc 0 n`. -/
+theorem windowError_eq_setIntegral_prod (v w : VelocityEvolution) (n : ℕ) (C : ℝ)
+    (hv : Measurable fun z : ℝ × Space => v z.1 z.2)
+    (hw : Measurable fun z : ℝ × Space => w z.1 z.2)
+    (hvi : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖v t x‖ ^ 2)
+    (hwi : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖w t x‖ ^ 2)
+    (hvb : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖v t x‖ ^ 2) ≤ C)
+    (hwb : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖w t x‖ ^ 2) ≤ C) :
+    windowError v w n
+      = ∫ z in Set.Ioc (0:ℝ) (n:ℝ) ×ˢ Metric.closedBall (0:Space) (n:ℝ),
+          ‖v z.1 z.2 - w z.1 z.2‖ ^ 2 ∂(volume.prod volume) := by
+  classical
+  set T := Set.Ioc (0:ℝ) (n:ℝ) with hTdef
+  set Bn := Metric.closedBall (0:Space) (n:ℝ) with hBdef
+  have hFmeas : Measurable fun z : ℝ × Space => ‖v z.1 z.2 - w z.1 z.2‖ ^ 2 :=
+    ((hv.sub hw).norm).pow_const 2
+  have hnn : ∀ z : ℝ × Space, (0:ℝ) ≤ ‖v z.1 z.2 - w z.1 z.2‖ ^ 2 := fun _ => by positivity
+  -- slicewise integrability of the difference
+  have hslice : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖v t x - w t x‖ ^ 2 := by
+    intro t ht
+    exact integrable_norm_sub_sq (v t) (w t)
+      ((hv.comp measurable_prodMk_left).sub (hw.comp measurable_prodMk_left))
+      (hvi t ht) (hwi t ht)
+  -- the uniform slicewise bound `4C`
+  have hglob : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖v t x - w t x‖ ^ 2) ≤ 4 * C := by
+    intro t ht
+    have hb : (∫ x : Space, ‖v t x - w t x‖ ^ 2)
+        ≤ ∫ x : Space, (2 * ‖v t x‖ ^ 2 + 2 * ‖w t x‖ ^ 2) := by
+      refine integral_mono (hslice t ht)
+        (((hvi t ht).const_mul 2).add ((hwi t ht).const_mul 2)) fun x => ?_
+      nlinarith [norm_nonneg (v t x), norm_nonneg (w t x), norm_nonneg (v t x - w t x),
+        norm_sub_le (v t x) (w t x), sq_nonneg (‖v t x‖ - ‖w t x‖)]
+    rw [integral_add ((hvi t ht).const_mul 2) ((hwi t ht).const_mul 2),
+      MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hb
+    linarith [hvb t ht, hwb t ht]
+  -- the inner integral is integrable in `t` on the finite window
+  have hsm : StronglyMeasurable fun t : ℝ => ∫ x in Bn, ‖v t x - w t x‖ ^ 2 :=
+    hFmeas.stronglyMeasurable.integral_prod_right' (ν := volume.restrict Bn)
+  have hInner : IntegrableOn (fun t => ∫ x in Bn, ‖v t x - w t x‖ ^ 2) T volume := by
+    refine MeasureTheory.Measure.integrableOn_of_bounded (measure_Ioc_lt_top).ne
+      hsm.aestronglyMeasurable (M := 4 * C) ?_
+    refine (MeasureTheory.ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    have hnn' : 0 ≤ ∫ x in Bn, ‖v t x - w t x‖ ^ 2 :=
+      setIntegral_nonneg measurableSet_closedBall fun x _ => by positivity
+    rw [Real.norm_eq_abs, abs_of_nonneg hnn']
+    calc (∫ x in Bn, ‖v t x - w t x‖ ^ 2)
+        ≤ ∫ x : Space, ‖v t x - w t x‖ ^ 2 :=
+          setIntegral_le_integral (hslice t ht.1.le)
+            (Filter.Eventually.of_forall fun x => by positivity)
+      _ ≤ 4 * C := hglob t ht.1.le
+  -- product integrability, then the swap
+  have hrestrict : (volume.restrict T).prod (volume.restrict Bn)
+      = (volume.prod volume).restrict (T ×ˢ Bn) := Measure.prod_restrict _ _
+  have hprod : IntegrableOn (fun z : ℝ × Space => ‖v z.1 z.2 - w z.1 z.2‖ ^ 2)
+      (T ×ˢ Bn) (volume.prod volume) := by
+    rw [IntegrableOn, ← hrestrict]
+    refine (integrable_prod_iff hFmeas.aestronglyMeasurable).mpr ⟨?_, ?_⟩
+    · refine (MeasureTheory.ae_restrict_iff' measurableSet_Ioc).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      exact (hslice t ht.1.le).restrict
+    · refine hInner.congr_fun (fun t _ => ?_) measurableSet_Ioc
+      refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+      show ‖v t x - w t x‖ ^ 2 = ‖‖v t x - w t x‖ ^ 2‖
+      rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  exact (MeasureTheory.setIntegral_prod _ hprod).symm
+
 /-- **[NAMED RESIDUAL — Riesz–Fréchet–Kolmogorov compactness on one window;
 Brezis, *Functional Analysis, Sobolev Spaces and PDE*, Springer 2011, Thm 4.26
 + Cor 4.27; Simon, *Ann. Mat. Pura Appl.* **146** (1987) 65–96, Thm 1; est ~400
@@ -1901,6 +1980,7 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
+
 
 
 
