@@ -286,6 +286,51 @@ theorem setIntegral_oscillation_le_translate_ball {G : Type*} [MeasurableSpace G
       ≤ ∫ k in Metric.closedBall (0:G) h, ‖f (x + k) - f x‖ ^ 2 ∂ν :=
   setIntegral_le_translate_ball A hA h x hAx _ (fun _ => by positivity) hiA hiB
 
+/-- **Brezis Prop. 9.3, `L²` form.**  `‖τ_y f − f‖²_{L²} ≤ ‖y‖² · ‖∇f‖²_{L²}`.
+
+This is the half of the translation modulus that turns a uniform `H¹` bound into
+the spatial-translation equicontinuity that Riesz–Fréchet–Kolmogorov requires, and
+it is what lets the Galerkin approximants discharge `SpaceEquicontinuous`.
+
+Integrating the pointwise segment estimate in `x` and exchanging the order,
+translation-invariance makes every slice `∫ ‖Df(x + s·y)‖² dx` equal to
+`∫ ‖Df(x)‖² dx`, so the `s`-integral over the unit segment contributes exactly
+`1`.  Integrability is taken as hypotheses rather than derived: on the intended
+inputs (compactly supported smooth modes) each is immediate, and keeping them
+explicit avoids committing a general lemma to one decay class. -/
+theorem integral_norm_sub_sq_le_mul_integral_fderiv_sq {G F : Type*}
+    [NormedAddCommGroup G] [NormedSpace ℝ G] [MeasurableSpace G] [MeasurableAdd G]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+    {ν : Measure G} [SFinite ν] [ν.IsAddRightInvariant]
+    (f : G → F) (hf : Differentiable ℝ f) (y : G)
+    (hi : ∀ x : G, IntervalIntegrable (fun s : ℝ => fderiv ℝ f (x + s • y) y) volume 0 1)
+    (hsq : ∀ x : G, IntervalIntegrable (fun s : ℝ => ‖fderiv ℝ f (x + s • y) y‖ ^ 2) volume 0 1)
+    (hop : ∀ x : G, IntervalIntegrable (fun s : ℝ => ‖fderiv ℝ f (x + s • y)‖ ^ 2) volume 0 1)
+    (hlhs : Integrable (fun x => ‖f (x + y) - f x‖ ^ 2) ν)
+    (hmid : Integrable (fun x => ∫ s in Set.Ioc (0:ℝ) 1, ‖fderiv ℝ f (x + s • y)‖ ^ 2) ν)
+    (hprod : Integrable
+      (Function.uncurry fun (x : G) (s : ℝ) => ‖fderiv ℝ f (x + s • y)‖ ^ 2)
+      (ν.prod (volume.restrict (Set.Ioc (0:ℝ) 1)))) :
+    ∫ x, ‖f (x + y) - f x‖ ^ 2 ∂ν ≤ ‖y‖ ^ 2 * ∫ x, ‖fderiv ℝ f x‖ ^ 2 ∂ν := by
+  have hpt : ∀ x : G, ‖f (x + y) - f x‖ ^ 2
+      ≤ ‖y‖ ^ 2 * ∫ s in Set.Ioc (0:ℝ) 1, ‖fderiv ℝ f (x + s • y)‖ ^ 2 := by
+    intro x
+    have hseg := norm_sub_sq_le_segment_opNorm f hf x y (hi x) (hsq x) (hop x)
+    rwa [intervalIntegral.integral_of_le zero_le_one] at hseg
+  calc ∫ x, ‖f (x + y) - f x‖ ^ 2 ∂ν
+      ≤ ∫ x, ‖y‖ ^ 2 * (∫ s in Set.Ioc (0:ℝ) 1, ‖fderiv ℝ f (x + s • y)‖ ^ 2) ∂ν :=
+        integral_mono hlhs (hmid.const_mul _) hpt
+    _ = ‖y‖ ^ 2 * ∫ x, (∫ s in Set.Ioc (0:ℝ) 1, ‖fderiv ℝ f (x + s • y)‖ ^ 2) ∂ν :=
+        MeasureTheory.integral_const_mul _ _
+    _ = ‖y‖ ^ 2 * ∫ s in Set.Ioc (0:ℝ) 1, (∫ x, ‖fderiv ℝ f (x + s • y)‖ ^ 2 ∂ν) := by
+        rw [integral_integral_swap hprod]
+    _ = ‖y‖ ^ 2 * ∫ _s in Set.Ioc (0:ℝ) 1, (∫ x, ‖fderiv ℝ f x‖ ^ 2 ∂ν) := by
+        congr 1
+        refine setIntegral_congr_fun measurableSet_Ioc fun s _ => ?_
+        exact integral_add_right_eq_self (fun x => ‖fderiv ℝ f x‖ ^ 2) (s • y)
+    _ = ‖y‖ ^ 2 * ∫ x, ‖fderiv ℝ f x‖ ^ 2 ∂ν := by
+        rw [setIntegral_const]; simp
+
 /-!
 ## Aggregation over the partition
 
@@ -358,6 +403,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
