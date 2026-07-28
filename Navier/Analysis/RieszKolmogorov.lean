@@ -460,6 +460,52 @@ theorem norm_setAverage_le_of_bound {s : Set α} (h0 : μ s ≠ 0) (hs : μ s �
         mul_le_mul_of_nonneg_left hnorm (by positivity)
     _ = M := by field_simp
 
+/-!
+### From local `L²` to the cell-data integrability
+
+The `_of_bounded` corollary below assumes `‖f‖ ≤ M`, which is the *convenient* bound
+and not the one a Leray field has: `UniformKineticBound` is `∫ ‖u(t)‖² ≤ C`, an `L²`
+bound, and a Leray field is genuinely not uniformly bounded.  Demanding `L^∞` of it
+would be a hypothesis satisfied by none of the intended objects — the
+satisfied-by-nothing pole — so the corollary is kept and *supplemented* rather than
+edited.
+
+These two atoms are what make the `L²` route mechanical.  Both turn on the cell having
+**finite measure**, which is exactly where that hypothesis is load-bearing: it is what
+makes a constant integrable on the cell, and every step below is `‖f‖²` plus a
+constant.  Neither needs `Memℒp` or Hölder — `2a ≤ 1 + a²` and
+`‖a − c‖² ≤ 2‖a‖² + 2‖c‖²` suffice. -/
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- On a **finite-measure** set, square-integrability gives integrability, by the
+elementary `2a ≤ 1 + a²`.  Needs only a normed group on the codomain. -/
+theorem integrableOn_norm_of_sq {s : Set α} (hs : μ s ≠ ⊤) {f : α → E}
+    (hmeas : AEStronglyMeasurable (fun z => ‖f z‖) μ)
+    (hsq : IntegrableOn (fun z => ‖f z‖ ^ 2) s μ) :
+    IntegrableOn (fun z => ‖f z‖) s μ := by
+  refine Integrable.mono' (((integrableOn_const hs (C := (1:ℝ))).add hsq).div_const 2)
+    hmeas.restrict (Filter.Eventually.of_forall fun z => ?_)
+  rw [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _)]
+  simp only [Pi.add_apply]
+  rw [le_div_iff₀ (by norm_num : (0:ℝ) < 2)]
+  nlinarith [sq_nonneg (‖f z‖ - 1)]
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- Square-integrability survives subtracting a constant, on a **finite-measure** set:
+`‖f − c‖² ≤ 2‖f‖² + 2‖c‖²`, and the constant term is integrable precisely because the
+set is finite. -/
+theorem integrableOn_norm_sub_const_sq {s : Set α} (hs : μ s ≠ ⊤) {f : α → E} (c : E)
+    (hmeas : AEStronglyMeasurable (fun z => ‖f z - c‖ ^ 2) μ)
+    (hsq : IntegrableOn (fun z => ‖f z‖ ^ 2) s μ) :
+    IntegrableOn (fun z => ‖f z - c‖ ^ 2) s μ := by
+  refine Integrable.mono'
+    ((hsq.const_mul 2).add (integrableOn_const hs (C := 2 * ‖c‖ ^ 2)))
+    hmeas.restrict (Filter.Eventually.of_forall fun z => ?_)
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  simp only [Pi.add_apply]
+  nlinarith [norm_nonneg (f z - c), norm_sub_le (f z) c, norm_nonneg (f z), norm_nonneg c,
+    sq_nonneg (‖f z‖ - ‖c‖)]
+
 /-- **Per-cell assembly.**  Chaining the three landed steps — the cell-average
 bound, the per-base-point translation to the displacement ball, and Tonelli — the
 error of replacing `f` by its average on a cell of radius `h` is controlled by the
@@ -1100,6 +1146,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
