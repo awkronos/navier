@@ -368,6 +368,25 @@ theorem sum_setIntegral_le_integral_of_disjoint {N : ℕ} (A : Fin N → Set α)
     _ ≤ ∫ x, F x ∂μ :=
         setIntegral_le_integral hint (Filter.Eventually.of_forall hF)
 
+/-- Finset-indexed form of the disjointness step, so a cell family indexed by
+multi-indices needs no reindexing through `Fin N`. -/
+theorem sum_finset_setIntegral_le_integral_of_disjoint {κ : Type*} (S : Finset κ)
+    (A : κ → Set α) (hm : ∀ i, MeasurableSet (A i))
+    (hd : Pairwise (Function.onFun Disjoint A))
+    (F : α → ℝ) (hF : ∀ x, 0 ≤ F x) (hint : Integrable F μ) :
+    ∑ i ∈ S, ∫ x in A i, F x ∂μ ≤ ∫ x, F x ∂μ := by
+  classical
+  have hdS : Pairwise (Function.onFun Disjoint fun i : ↥S => A i) := by
+    intro i i' hne
+    exact hd (Subtype.coe_injective.ne hne)
+  have hUnion : ∫ x in ⋃ i : ↥S, A i, F x ∂μ = ∑' i : ↥S, ∫ x in A i, F x ∂μ :=
+    integral_iUnion (fun i => hm i) hdS hint.integrableOn
+  calc ∑ i ∈ S, ∫ x in A i, F x ∂μ
+      = ∑ i : ↥S, ∫ x in A i, F x ∂μ := (Finset.sum_coe_sort S _).symm
+    _ = ∑' i : ↥S, ∫ x in A i, F x ∂μ := (tsum_fintype _).symm
+    _ = ∫ x in ⋃ i : ↥S, A i, F x ∂μ := hUnion.symm
+    _ ≤ ∫ x, F x ∂μ := setIntegral_le_integral hint (Filter.Eventually.of_forall hF)
+
 /-- **Last line of the criterion.**  A bound `M` on a finite-measure set turns its
 integral into `ν(S)·M`; applied to `k ↦ ‖τ_k f − f‖²_{L²}` over the displacement
 ball this is what converts the integral in `k` into a supremum. -/
@@ -447,6 +466,16 @@ and would work, at the cost of carrying a basis and its `ZSpan.repr` coordinates
 through every estimate.  For an axis-parallel grid the direct construction below is
 shorter and its measure is `volume_pi_pi` in one line, so it is hand-rolled.
 
+**Spacetime shape.**  The Navier–Stokes window lives in `ℝ × (Fin 3 → ℝ)`, not in a
+pi type, so instantiating this grid there goes through
+`MeasurableEquiv.piFinSuccAbove` (`Mathlib/MeasureTheory/MeasurableSpace/Embedding.lean:562`),
+which at `n = 3`, `i = 0` is `(Fin 4 → ℝ) ≃ᵐ ℝ × (Fin 3 → ℝ)`, together with
+`MeasureTheory.volume_preserving_piFinSuccAbove`
+(`Mathlib/MeasureTheory/Constructions/Pi.lean:813`) — the measure-preserving
+statement, which is the property the estimates need rather than the bijection alone.
+`volume_preserving_piEquivPiSubtypeProd` (same file, `:721`) is the coarser split if
+one is ever wanted.
+
 Per the standing advice, no attempt is made to tile the window exactly: cells are
 indexed over all of `ι → ℤ` and intersected with the window where needed.  Boundary
 cells then stick out, which is harmless — the criterion needs only disjointness and
@@ -509,6 +538,36 @@ theorem mem_gridCell_floor {h : ℝ} (hh : 0 < h) (x : ι → ℝ) :
   · rw [← le_div_iff₀' hh]; exact hfl
   · rw [← div_lt_iff₀' hh]; exact hlt
 
+/-- **Only finitely many cells meet a bounded window.**  If `gridCell h j` meets
+`B̄(0,R)` then each coordinate index `j i` lies in a fixed integer interval, so the
+index set embeds in a finite product. -/
+theorem finite_gridIndices {h : ℝ} (hh : 0 < h) (R : ℝ) :
+    {j : ι → ℤ | (gridCell h j ∩ Metric.closedBall (0 : ι → ℝ) R).Nonempty}.Finite := by
+  classical
+  refine Set.Finite.subset
+    (Set.Finite.pi fun _ : ι => Set.finite_Icc ⌈(-R / h) - 1⌉ ⌊R / h⌋) ?_
+  rintro j ⟨x, hxj, hxB⟩
+  intro i _
+  have hxi : |x i| ≤ R := by
+    have h1 : ‖x i‖ ≤ ‖x‖ := norm_le_pi_norm x i
+    have h2 : ‖x‖ ≤ R := by simpa [Metric.mem_closedBall, dist_zero_right] using hxB
+    simpa [Real.norm_eq_abs] using h1.trans h2
+  have hmem := hxj i (Set.mem_univ i)
+  simp only [Set.mem_Ico] at hmem
+  obtain ⟨hlo, hhi⟩ := abs_le.mp hxi
+  refine ⟨Int.ceil_le.mpr ?_, Int.le_floor.mpr ?_⟩
+  · have hdiv : -R / h < (j i : ℝ) + 1 := by
+      rw [div_lt_iff₀ hh]; linarith [hmem.2]
+    linarith
+  · rw [le_div_iff₀ hh]; linarith [hmem.1]
+
+/-- **The finitely many cells meeting a ball cover it.** -/
+theorem closedBall_subset_biUnion_gridCell {h : ℝ} (hh : 0 < h) (R : ℝ) :
+    Metric.closedBall (0 : ι → ℝ) R ⊆
+      ⋃ j ∈ {j : ι → ℤ | (gridCell h j ∩ Metric.closedBall (0 : ι → ℝ) R).Nonempty},
+        gridCell h j := fun x hx =>
+  Set.mem_biUnion ⟨x, mem_gridCell_floor hh x, hx⟩ (mem_gridCell_floor hh x)
+
 end GridCell
 
 /-!
@@ -536,6 +595,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
