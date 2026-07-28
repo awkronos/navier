@@ -45,11 +45,18 @@ Certified here (no sorry):
   the closed horizon `[0,T]`.  The extension is the Duhamel formula itself; the
   a-priori bound is what makes its integrand integrable up to `T`.
 
-## Skeletons (honest `sorry`, truth-checked signatures)
+## The product Duhamel contraction (certified inputs)
 
-* `exists_isMultiMildSolutionOn_local` — local existence via the Duhamel
-  contraction on the product path space [Kato 1984; product generalization of
-  `FrequencyDuhamel`; est ~400 LOC].
+* `multiDuhamelImage`, `truncatedSymbol_diff_norm_le_sup`,
+  `continuousOn_multiDuhamelImage`, `norm_multiDuhamelImage_sub_heat_le` — the
+  self-map, sup-norm Lipschitz and ball-invariance inputs to the Banach fixed point.
+* `exists_isMultiMildSolutionOn_local` — local existence on the CLOSED horizon,
+  derived from the half-open-horizon residual plus the continuation criterion.
+
+## Residual (honest `sorry`, truth-checked signature)
+
+* `exists_multiMild_shortHorizon` — the product Duhamel contraction itself
+  [Kato, Math. Z. 187 (1984) §2; est ~250 LOC].
 -/
 
 set_option autoImplicit false
@@ -268,19 +275,6 @@ theorem truncated_cascade_witness :
 ## Skeletons: existence, uniqueness, transversality, continuation
 -/
 
-/-- **[SKELETON — local existence; Kato 1984; product generalization of
-`FrequencyDuhamel.exists_isMildSolutionOn`; est ~400 LOC.]**  For every
-viscosity `ν ≥ 0`, finite frequency family, and initial amplitudes there is a
-positive horizon carrying a multi-frequency mild solution.  Closure route:
-Banach fixed point (`ContractingWith.exists_fixedPoint'`) on the product path
-space `C(Icc 0 T, Fin n → E3)` with the sup norm; the truncated symbol is a
-finite sum of continuous bilinear terms, so the Duhamel map is locally
-Lipschitz and contracts for small `T`, exactly as at one frequency. -/
-theorem exists_isMultiMildSolutionOn_local
-    (ν : ℝ) (hν : 0 ≤ ν) {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3) :
-    ∃ T : ℝ, 0 < T ∧ ∃ u : ℝ → Fin n → E3,
-      IsMultiMildSolutionOn ν q u₀ T u := by
-  sorry
 
 /-- **Bilinear Lipschitz bound for the honest Galerkin nonlinearity.**  The
 truncated convection symbol is quadratic, hence locally Lipschitz on the
@@ -870,6 +864,162 @@ theorem multiMild_extends_of_apriori_bound
     simp only [hgdef, hvs]
   show v t k = _
   rw [hswap]
+
+
+/-!
+## The product Duhamel map and the inputs to its contraction
+-/
+
+/-- **The multi-frequency Duhamel image.**  The self-map whose fixed point is a
+multi-frequency mild solution: mode `k` is propagated by the diagonal heat–Leray
+multiplier and forced by the truncated convection symbol of the whole amplitude
+vector.  `IsMultiMildSolutionOn ν q u₀ T u` says exactly that `u` is continuous on
+`[0,T]` and is a fixed point of this map there. -/
+def multiDuhamelImage (ν : ℝ) {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3)
+    (f : ℝ → Fin n → E3) (t : ℝ) (k : Fin n) : E3 :=
+  frequencyHeatLeray ν t (q k) (u₀ k) +
+    ∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k)
+      (truncatedConvectionSymbol q (f s) (f s) k)
+
+/-- **Sup-norm bilinear Lipschitz bound for the truncated symbol.**  Sup-form of
+`truncatedConvection_diff_sum_norm_le`: on the sup-normed product fibre
+`Fin n → E3` — which is the norm the product path space `C(Icc 0 T, Fin n → E3)`
+carries — the difference of two truncated nonlinearities is controlled mode-by-mode
+by the sup distance of the inputs.  This is the estimate the Duhamel contraction
+consumes; the summed form is the wrong norm for the product path space. -/
+theorem truncatedSymbol_diff_norm_le_sup {n : ℕ} (q a b : Fin n → E3)
+    {R D : ℝ} (hR : 0 ≤ R) (ha : ∀ m, ‖a m‖ ≤ R) (hb : ∀ m, ‖b m‖ ≤ R)
+    (hD : ∀ m, ‖a m - b m‖ ≤ D) (k : Fin n) :
+    ‖truncatedConvectionSymbol q a a k - truncatedConvectionSymbol q b b k‖
+      ≤ 2 * (n : ℝ) ^ 2 * R * (∑ j, ‖q j‖) * ((n : ℝ) * D) := by
+  have hsum := truncatedConvection_diff_sum_norm_le q a b hR ha hb
+  have hsingle : ‖truncatedConvectionSymbol q a a k - truncatedConvectionSymbol q b b k‖
+      ≤ ∑ k', ‖truncatedConvectionSymbol q a a k' - truncatedConvectionSymbol q b b k'‖ :=
+    Finset.single_le_sum
+      (f := fun k' : Fin n => ‖truncatedConvectionSymbol q a a k' -
+        truncatedConvectionSymbol q b b k'‖)
+      (fun i _ => norm_nonneg _) (Finset.mem_univ k)
+  have hamp : (∑ m, ‖a m - b m‖) ≤ (n : ℝ) * D := by
+    calc (∑ m, ‖a m - b m‖) ≤ ∑ _m : Fin n, D := Finset.sum_le_sum fun m _ => hD m
+      _ = (n : ℝ) * D := by simp [Finset.sum_const, nsmul_eq_mul]
+  have hcoef : 0 ≤ 2 * (n : ℝ) ^ 2 * R * (∑ j, ‖q j‖) := by
+    have : 0 ≤ ∑ j, ‖q j‖ := Finset.sum_nonneg fun j _ => norm_nonneg _
+    positivity
+  exact hsingle.trans (hsum.trans (mul_le_mul_of_nonneg_left hamp hcoef))
+
+/-- **The Duhamel image of a continuous bounded path is continuous on the closed
+horizon.**  Self-map property of the product Duhamel map: this is what makes it an
+endomorphism of the path space `C(Icc 0 T, Fin n → E3)`, the first hypothesis of the
+Banach fixed-point theorem.  Consumes `continuousOn_truncatedSymbol`,
+`truncatedSymbol_norm_le_of_bound`, `integrableOn_heatWeighted` and
+`continuousOn_primitive_Icc_of_integrableOn`. -/
+theorem continuousOn_multiDuhamelImage {ν T : ℝ} (hν : 0 ≤ ν) (hT : (0:ℝ) ≤ T) {n : ℕ}
+    {q : Fin n → E3} {u₀ : Fin n → E3} {f : ℝ → Fin n → E3} {R : ℝ} (hR : 0 ≤ R)
+    (hfc : ∀ m : Fin n, ContinuousOn (fun t => f t m) (Set.Ico 0 T))
+    (hfb : ∀ t ∈ Set.Ico (0:ℝ) T, ∀ m, ‖f t m‖ ≤ R) (k : Fin n) :
+    ContinuousOn (fun t => multiDuhamelImage ν q u₀ f t k) (Set.Icc 0 T) := by
+  have hgc : ContinuousOn (fun s => truncatedConvectionSymbol q (f s) (f s) k)
+      (Set.Ico 0 T) := continuousOn_truncatedSymbol hfc k
+  have hgb : ∀ s ∈ Set.Ico (0:ℝ) T,
+      ‖truncatedConvectionSymbol q (f s) (f s) k‖
+        ≤ 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R) :=
+    fun s hs => truncatedSymbol_norm_le_of_bound q (f s) hR (hfb s hs) k
+  have hint := integrableOn_heatWeighted hν (q k) hgc hgb
+  have hprim := continuousOn_primitive_Icc_of_integrableOn hT hint
+  have h1 : ContinuousOn (fun t : ℝ => frequencyHeatLeray ν t (q k) (u₀ k))
+      (Set.Icc 0 T) := by
+    have hrw : (fun t : ℝ => frequencyHeatLeray ν t (q k) (u₀ k))
+        = fun t : ℝ => heatDecay ν t (q k) • euclideanLeray (q k) (u₀ k) := by
+      funext t; exact frequencyHeatLeray_apply ν t (q k) (u₀ k)
+    rw [hrw]
+    refine ContinuousOn.smul ?_ continuousOn_const
+    unfold heatDecay; fun_prop
+  have h2 : ContinuousOn (fun t : ℝ => heatDecay ν t (q k)) (Set.Icc 0 T) := by
+    unfold heatDecay; fun_prop
+  have hrw2 : (fun t => multiDuhamelImage ν q u₀ f t k)
+      = fun t => frequencyHeatLeray ν t (q k) (u₀ k)
+        + heatDecay ν t (q k) • ∫ s in (0:ℝ)..t,
+            heatDecay ν (-s) (q k) •
+              euclideanLeray (q k) (truncatedConvectionSymbol q (f s) (f s) k) := by
+    funext t
+    unfold multiDuhamelImage
+    congr 1
+    rw [← intervalIntegral.integral_smul]
+    refine intervalIntegral.integral_congr fun s _hs => ?_
+    show frequencyHeatLeray ν (t - s) (q k) (truncatedConvectionSymbol q (f s) (f s) k)
+        = heatDecay ν t (q k) • (heatDecay ν (-s) (q k) •
+            euclideanLeray (q k) (truncatedConvectionSymbol q (f s) (f s) k))
+    rw [frequencyHeatLeray_apply, smul_smul, ← heatDecay_factor]
+  rw [hrw2]
+  exact h1.add (h2.smul hprim)
+
+/-- **The Duhamel image moves off the free flow by at most `O(t)`.**  Quantitative
+ball-invariance estimate: the nonlinear correction is bounded by the quadratic symbol
+bound times the elapsed time, so for a short enough horizon the Duhamel map preserves
+any ball around the free heat–Leray flow.  This is the second hypothesis of the Banach
+fixed-point theorem (invariant complete subset). -/
+theorem norm_multiDuhamelImage_sub_heat_le {ν T : ℝ} (hν : 0 ≤ ν) {n : ℕ}
+    {q : Fin n → E3} {u₀ : Fin n → E3} {f : ℝ → Fin n → E3} {R : ℝ} (hR : 0 ≤ R)
+    (hfb : ∀ t ∈ Set.Icc (0:ℝ) T, ∀ m, ‖f t m‖ ≤ R)
+    {t : ℝ} (ht : t ∈ Set.Icc (0:ℝ) T) (k : Fin n) :
+    ‖multiDuhamelImage ν q u₀ f t k - frequencyHeatLeray ν t (q k) (u₀ k)‖
+      ≤ (2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R)) * t := by
+  obtain ⟨ht0, htT⟩ := ht
+  unfold multiDuhamelImage
+  rw [add_sub_cancel_left]
+  have hbound : ∀ s ∈ Set.uIoc (0:ℝ) t,
+      ‖frequencyHeatLeray ν (t - s) (q k)
+        (truncatedConvectionSymbol q (f s) (f s) k)‖
+        ≤ 2 * (n:ℝ)^2 * R * (∑ j, ‖q j‖) * ((n:ℝ) * R) := by
+    intro s hs
+    rw [Set.uIoc_of_le ht0] at hs
+    have hs0 : (0:ℝ) ≤ s := le_of_lt hs.1
+    have hsT : s ≤ T := le_trans hs.2 htT
+    refine le_trans (frequencyHeatLeray_norm_le hν (by linarith [hs.2]) _ _) ?_
+    exact truncatedSymbol_norm_le_of_bound q (f s) hR (hfb s ⟨hs0, hsT⟩) k
+  have h := intervalIntegral.norm_integral_le_of_norm_le_const hbound
+  simpa [abs_of_nonneg ht0] using h
+
+/-- **[RESIDUAL — the product Duhamel contraction on the half-open horizon.
+Reference: Kato, *Strong L^p solutions of the Navier–Stokes equation*, Math. Z. 187
+(1984) 471–480 §2; Fujita–Kato, Arch. Rational Mech. Anal. 16 (1964) 269–315.
+Est ~250 LOC.  Dependencies (all present and kernel-clean): the product path space
+`C(Icc 0 T, Fin n → E3)` with its sup metric and Mathlib's
+`ContractingWith.exists_fixedPoint'`; `continuousOn_multiDuhamelImage` for the
+self-map property; `norm_multiDuhamelImage_sub_heat_le` for ball invariance;
+`truncatedSymbol_diff_norm_le_sup` for the Lipschitz constant; and
+`intervalIntegral.norm_integral_le_of_norm_le_const` to turn that constant into a
+factor `L·T < 1`.]**  For every viscosity `ν ≥ 0`, finite frequency family and
+initial amplitudes there is a positive horizon `T` carrying an amplitude field that
+solves the truncated mild equation on *every* strictly shorter horizon and stays
+uniformly bounded there.
+
+Deliberately stated on the half-open horizon: the contraction naturally produces a
+solution on each `[0,T']` with `T' < T`, and the passage to the closed horizon `[0,T]`
+is no longer part of this obligation — it is supplied by
+`multiMild_extends_of_apriori_bound`. -/
+theorem exists_multiMild_shortHorizon
+    (ν : ℝ) (hν : 0 ≤ ν) {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3) :
+    ∃ T : ℝ, 0 < T ∧ ∃ (u : ℝ → Fin n → E3) (R : ℝ),
+      (∀ T' : ℝ, 0 ≤ T' → T' < T → IsMultiMildSolutionOn ν q u₀ T' u) ∧
+      (∀ t : ℝ, 0 ≤ t → t < T → ∀ k : Fin n, ‖u t k‖ ≤ R) := by
+  sorry
+
+/-- **Local existence for the honest Galerkin truncation.**  For every viscosity
+`ν ≥ 0`, finite frequency family and initial amplitudes there is a positive horizon
+carrying a multi-frequency mild solution on the *closed* horizon.
+
+The closed-horizon statement is derived, not assumed: the contraction supplies only a
+uniformly bounded solution on every strictly shorter horizon
+(`exists_multiMild_shortHorizon`), and the finite-mode continuation criterion
+`multiMild_extends_of_apriori_bound` carries it to the terminal time. -/
+theorem exists_isMultiMildSolutionOn_local
+    (ν : ℝ) (hν : 0 ≤ ν) {n : ℕ} (q : Fin n → E3) (u₀ : Fin n → E3) :
+    ∃ T : ℝ, 0 < T ∧ ∃ u : ℝ → Fin n → E3,
+      IsMultiMildSolutionOn ν q u₀ T u := by
+  obtain ⟨T, hT, u, R, hsol, hbd⟩ := exists_multiMild_shortHorizon ν hν q u₀
+  obtain ⟨v, hv, _⟩ := multiMild_extends_of_apriori_bound hν hT hsol R hbd
+  exact ⟨T, hT, v, hv⟩
 
 
 end Navier.Analysis.MultiFrequencyMild

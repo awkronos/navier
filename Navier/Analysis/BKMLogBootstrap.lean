@@ -1,4 +1,5 @@
 import Navier.Analysis.BealeKatoMajda
+import Navier.Analysis.BKMLogLeaves
 
 /-!
 # BKM log bootstrap: from the Biot–Savart log inequality to the criterion
@@ -23,18 +24,28 @@ exactly `gronwall_log_apriori`; unwinding gives the doubly-exponential bound
 * `LogBKMControl.velocity_bounded`, `LogBKMControl.excludes_pointEvaluationBreakdown`
   — finite vorticity integral ⟹ uniform velocity bound ⟹ no pointwise blow-up.
 
-## Skeletons (honest `sorry`, truth-checked signatures)
+* `sobolevH2NormSq_le_sobolevH3NormSq` — the `H³ ⊆ H²` norm inclusion.
+* the four analytic inputs below are **derived**, each from one named residual
+  plus a certified leaf in `Navier/Analysis/BKMLogLeaves.lean`.
 
-The three named PDE inputs (`BKMAnalyticResidual` in `BealeKatoMajda.lean`) as
-concrete sorried statements over `SchwartzVelocity`, with hypothesis-carried
-majorants (Step-0e: avoids `⨆`-junk vacuity; each statement is monotone in its
-majorant, so the hypothesis-carried form follows from the classical one):
+## Named residuals (honest `sorry`, truth-checked signatures)
 
-* `biotSavartLogInequality` — BKM 1984 Lemma 1 / Majda–Bertozzi Prop. 3.8.
-* `sobolevEmbeddingDomination` — `H³(ℝ³) ↪ L^∞` (Agmon/Sobolev, s = 3 > 3/2).
-* `sobolevControlContinuity`, `katoCommutatorEstimate` — continuity and the
-  `H³` energy/commutator estimate along a Schwartz-sliced classical solution
-  (Kato–Ponce; Majda–Bertozzi §3.2.3).
+The three named PDE inputs (`BKMAnalyticResidual` in `BealeKatoMajda.lean`) are
+no longer opaque `sorry`s.  Each is now derived from a *strictly lower* named
+residual carrying its own reference, LOC estimate and dependency list, and the
+bookkeeping between the two is certified in `BKMLogLeaves`:
+
+| consumer | named residual | certified leaf |
+|---|---|---|
+| `biotSavartLogInequality` | `exists_biotSavartLogTextbook` (textbook `log(e+‖u‖_{H³})` shape) | `bkm_log_shape_transfer` |
+| `sobolevEmbeddingDomination` | `exists_agmonSupBound` (`H² ↪ L^∞`, the sharp order) | `le_mul_sqrt_of_le_majorant` + `sobolevH2NormSq_le_sobolevH3NormSq` |
+| `sobolevControlContinuity` | `sobolevOrderIntegralContinuity` (one derivative order) | `continuousOn_sum_range` |
+| `katoCommutatorEstimate` | `exists_sobolevOrderEnergyEstimate` (one derivative order) | `exists_hasDerivAt_sum_range_le` |
+
+Majorants stay hypothesis-carried (Step-0e: avoids `⨆`-junk vacuity; each
+statement is monotone in its majorant, so the hypothesis-carried form follows
+from the classical one — for the two `√`/`log` majorants that monotonicity is
+now *proved*, not asserted, in `BKMLogLeaves`).
 
 `logBKMControl_of_schwartzSliced` then **derives** a `LogBKMControl` from the
 skeletons — the composition type-checks end-to-end, so once the three analytic
@@ -50,6 +61,7 @@ open Set MeasureTheory intervalIntegral
 namespace Navier.Analysis.BealeKatoMajda
 
 open Navier
+open Navier.Analysis.BKMLogLeaves
 open Navier.Analysis.Vorticity
 open Navier.Analysis.OfficialABEncoding
 open Navier.Breakdown
@@ -245,7 +257,59 @@ theorem sobolevH3NormSq_nonneg (u : SchwartzVelocity) :
   intro n _
   exact integral_nonneg (fun x => by positivity)
 
-/-- **[SKELETON — BKM 1984, Lemma 1; Majda–Bertozzi Prop. 3.8; est ~400 LOC.]**
+/-- The squared inhomogeneous `H²(ℝ³)` Sobolev norm of a Schwartz velocity
+field: `∑_{n ≤ 2} ‖D^n u‖²_{L²}`.  `H²` is already *strictly* above the
+critical order `3/2` in three dimensions, so it is the sharp order at which the
+sup-norm embedding used by the BKM assembly holds. -/
+def sobolevH2NormSq (u : SchwartzVelocity) : ℝ :=
+  ∑ n ∈ Finset.range 3, ∫ x : Space, ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2
+
+/-- **`H³ ⊆ H²` at the level of norms (certified, no sorry).**  The `H²` sum runs
+over `Finset.range 3 ⊆ Finset.range 4` and the omitted `n = 3` summand is an
+integral of a square, hence nonnegative. -/
+theorem sobolevH2NormSq_le_sobolevH3NormSq (u : SchwartzVelocity) :
+    sobolevH2NormSq u ≤ sobolevH3NormSq u := by
+  refine Finset.sum_le_sum_of_subset_of_nonneg
+    (Finset.range_subset.mpr (fun x hx => Finset.mem_range.mpr (by omega))) ?_
+  intro n _ _
+  exact integral_nonneg (fun x => by positivity)
+
+/-- **[NAMED RESIDUAL — BKM 1984 Lemma 1; Majda–Bertozzi Prop. 3.8;
+Stein, *Singular Integrals* (1970) Ch. II §4; est ~400 LOC.]**
+The Biot–Savart logarithmic inequality in its **textbook shape**
+
+  `‖∇u‖_∞ ≤ C(1 + ‖ω‖_∞·(1 + log(e + ‖u‖_{H³})) + ‖ω‖_{L²})`,
+
+with `‖u‖_{H³} = √(sobolevH3NormSq u)` written out as
+`Real.sqrt (sobolevH3NormSq u)` and `e = Real.exp 1`.  The two vorticity
+majorants stay hypothesis-carried; the right-hand side is monotone in both, so
+this form follows from the classical statement.
+
+**Dependencies (all genuinely Mathlib-absent).**  The Biot–Savart
+representation `∇u = ∇K ∗ ω` for the homogeneous degree `−3` kernel `∇K`;
+Calderón–Zygmund near-field cancellation for that kernel; the far-field tail
+`∇K ∈ L²(|z| > 1)` paired with `‖ω‖_{L²}` by Cauchy–Schwarz; and the cutoff
+optimisation at scale `ρ ≈ ‖u‖_{H³}^{-1}` which is what produces the logarithm.
+
+**What is no longer residual.**  The passage from this citable shape to the
+`log (1 + Ms)` shape the bootstrap consumes — including the transfer to an
+arbitrary `H³`-majorant `Ms` — is certified in
+`BKMLogLeaves.bkm_log_shape_transfer`, at the cost of the constant factor `3`. -/
+theorem exists_biotSavartLogTextbook :
+    ∃ C : ℝ, 0 < C ∧
+      ∀ (u : SchwartzVelocity), DivergenceFreeInitial u →
+        ∀ Mω M₂ : ℝ,
+          (∀ x : Space,
+            officialEuclideanNorm (staticCurl (⇑u) x) ≤ Mω) →
+          (∫ x : Space,
+            officialEuclideanNorm (staticCurl (⇑u) x) ^ 2) ≤ M₂ →
+          ∀ x : Space,
+            ‖fderiv ℝ (⇑u) x‖ ≤
+              C * (1 + Mω * (1 + Real.log (Real.exp 1 +
+                Real.sqrt (sobolevH3NormSq u))) + Real.sqrt M₂) := by
+  sorry
+
+/-- **[DERIVED from `exists_biotSavartLogTextbook`.]**
 The Biot–Savart logarithmic inequality: for a divergence-free Schwartz field,
 the velocity gradient is bounded by the vorticity sup norm times a *logarithm*
 of the `H³` norm, plus the vorticity `L²` norm:
@@ -271,9 +335,38 @@ theorem biotSavartLogInequality :
           ∀ x : Space,
             ‖fderiv ℝ (⇑u) x‖ ≤
               C * (1 + Mω * (1 + Real.log (1 + Ms)) + Real.sqrt M₂) := by
+  obtain ⟨C, hCpos, hC⟩ := exists_biotSavartLogTextbook
+  refine ⟨3 * C, by linarith, ?_⟩
+  intro u hdiv Mω M₂ Ms hMω hM₂ hMs x
+  have hMωnn : 0 ≤ Mω :=
+    le_trans (officialEuclideanNorm_nonneg _) (hMω 0)
+  exact bkm_log_shape_transfer (le_of_lt hCpos) hMωnn
+    (sobolevH3NormSq_nonneg u) hMs (hC u hdiv Mω M₂ hMω hM₂ x)
+
+/-- **[NAMED RESIDUAL — Agmon / Sobolev embedding `H²(ℝ³) ↪ L^∞`
+(`s = 2 > 3/2 = n/2`); Majda–Bertozzi Lemma 3.2; Stein, *Singular Integrals*
+Ch. V; est ~250 LOC.]**  The sup norm of a Schwartz field is dominated by the
+square root of its `H²` norm: `‖u‖_∞ ≤ C·‖u‖_{H²}`.  This is the **sharp**
+derivative order for the embedding used by the BKM assembly, one order below
+the `H³` control the criterion actually carries.
+
+**Dependencies.**  Fourier inversion for `SchwartzMap Space Space`, then
+Cauchy–Schwarz against `(1 + |ξ|²)^{-2}` (integrable on `ℝ³` because
+`2·2 > 3`), then Plancherel to return to the physical `H²` norm.  The Schwartz
+Fourier–Plancherel API is present in Mathlib; the derivative-to-symbol
+bookkeeping `‖(1+|ξ|²)^{s/2} û‖_{L²} ≍ ‖u‖_{H^s}` is not.
+
+**What is no longer residual.**  The step from the sharp `H²` order up to the
+`H³` majorant form consumed by the bootstrap is certified by
+`sobolevH2NormSq_le_sobolevH3NormSq` together with
+`BKMLogLeaves.le_mul_sqrt_of_le_majorant` — with no loss of constant. -/
+theorem exists_agmonSupBound :
+    ∃ C : ℝ, 0 < C ∧
+      ∀ (u : SchwartzVelocity) (x : Space),
+        ‖(⇑u) x‖ ≤ C * Real.sqrt (sobolevH2NormSq u) := by
   sorry
 
-/-- **[SKELETON — Agmon/Sobolev embedding `H²(ℝ³) ↪ L^∞`, s = 3 > 3/2;
+/-- **[DERIVED from `exists_agmonSupBound`.]**  Agmon/Sobolev embedding, s = 3 > 3/2;
 Majda–Bertozzi Lemma 3.2; est ~250 LOC.]**  The sup norm of a Schwartz field is
 dominated by (the square root of) its `H³` norm: `‖u‖_∞ ≤ C·√Ms` for any
 majorant `Ms ≥ ‖u‖²_{H³}`.  Closure route: Fourier inversion +
@@ -284,7 +377,11 @@ theorem sobolevEmbeddingDomination :
     ∃ C : ℝ, 0 < C ∧
       ∀ (u : SchwartzVelocity) (Ms : ℝ), sobolevH3NormSq u ≤ Ms →
         ∀ x : Space, ‖(⇑u) x‖ ≤ C * Real.sqrt Ms := by
-  sorry
+  obtain ⟨C, hCpos, hC⟩ := exists_agmonSupBound
+  refine ⟨C, hCpos, ?_⟩
+  intro u Ms hMs x
+  exact le_mul_sqrt_of_le_majorant (le_of_lt hCpos) (hC u x)
+    (le_trans (sobolevH2NormSq_le_sobolevH3NormSq u) hMs)
 
 /-- A classical solution whose nonnegative-time slices are Schwartz fields.
 This is the regularity frame in which the `H³` energy method operates; the
@@ -297,7 +394,27 @@ structure SchwartzSlicedSolution (ν : ℝ) (u₀ : SchwartzVelocity) where
   slice_eq : ∀ t : ℝ, 0 ≤ t → ⇑(slice t) = velocity t
   solution : IsClassicalSolution ν zeroForce u₀ velocity pressure
 
-/-- **[SKELETON — higher-norm control continuity; Majda–Bertozzi §3.2.3;
+/-- **[NAMED RESIDUAL — per-derivative-order control continuity;
+Majda–Bertozzi §3.2.3; est ~300 LOC.]**  Along a Schwartz-sliced classical
+solution, and for **one** derivative order `n < 4` at a time, the map
+`t ↦ ∫ ‖D^n u(t,x)‖² dx` is continuous on nonnegative time.
+
+**Dependencies.**  Joint smoothness of `(t,x) ↦ u t x` on `Ici 0 ×ˢ univ`
+(`IsClassicalSolution.velocity_smooth`) gives locally uniform convergence of
+`D^n u(t,·)` on compacts; upgrading that to convergence of the `L²(ℝ³)`
+integral needs a locally-in-time uniform Schwartz-seminorm dominating function
+and dominated convergence.
+
+**What is no longer residual.**  Assembling the four orders into the `H³` norm
+is certified by `BKMLogLeaves.continuousOn_sum_range`. -/
+theorem sobolevOrderIntegralContinuity
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
+    {n : ℕ} (hn : n < 4) :
+    ContinuousOn (fun t => ∫ x : Space,
+      ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0) := by
+  sorry
+
+/-- **[DERIVED from `sobolevOrderIntegralContinuity`.]**  Majda–Bertozzi §3.2.3;
 est ~300 LOC.]**  Along a Schwartz-sliced classical solution the `H³`-norm
 control `t ↦ ‖u(t)‖²_{H³}` is continuous on nonnegative time.  Closure route:
 dominated convergence over the jointly-smooth slices with locally uniform
@@ -305,9 +422,46 @@ Schwartz seminorm bounds. -/
 theorem sobolevControlContinuity
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
     ContinuousOn (fun t => sobolevH3NormSq (S.slice t)) (Set.Ici 0) := by
+  have h : ∀ n ∈ Finset.range 4,
+      ContinuousOn (fun t => ∫ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0) :=
+    fun n hn => sobolevOrderIntegralContinuity S (Finset.mem_range.mp hn)
+  show ContinuousOn (fun t => ∑ n ∈ Finset.range 4,
+      ∫ x : Space, ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0)
+  exact continuousOn_sum_range h
+
+/-- **[NAMED RESIDUAL — Kato–Ponce commutator / per-order energy estimate;
+Majda–Bertozzi Prop. 3.7; Kato–Ponce, *CPAM* **41** (1988) 891–907;
+est ~600 LOC.]**  Along a Schwartz-sliced classical solution with a pointwise
+gradient majorant `G`, and for **one** derivative order `n < 4` at a time, the
+order-`n` energy `t ↦ ∫ ‖D^n u(t,x)‖² dx` is differentiable on positive time
+with derivative at most `C·G(t)·‖u(t)‖²_{H³}`.
+
+**Dependencies.**  Differentiation under the `L²(ℝ³)` integral for the
+jointly-smooth slices; the pressure term vanishing after integration by parts
+(incompressibility); the viscous term `−2ν∫‖D^{n+1}u‖²` being `≤ 0` for
+`ν ≥ 0`; and the Kato–Ponce commutator bound
+`|⟨D^n(u·∇u), D^n u⟩| ≤ C‖∇u‖_∞‖u‖²_{H^n}` for `n ≤ 3`.
+
+**What is no longer residual.**  Summing the four orders — the differentiability
+of the `H³` energy and the accumulation of the four bounds into the single
+constant `4C` — is certified by
+`BKMLogLeaves.exists_hasDerivAt_sum_range_le`. -/
+theorem exists_sobolevOrderEnergyEstimate :
+    ∃ C : ℝ, 0 < C ∧
+      ∀ {ν : ℝ}, 0 ≤ ν →
+      ∀ {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
+        {T : ℝ} (G : ℝ → ℝ),
+        (∀ t ∈ Set.Ico (0:ℝ) T, ∀ x : Space,
+          ‖fderiv ℝ (S.velocity t) x‖ ≤ G t) →
+        ∀ t ∈ Set.Ioo (0:ℝ) T, ∀ n : ℕ, n < 4 →
+          ∃ D : ℝ,
+            HasDerivAt (fun s => ∫ x : Space,
+              ‖iteratedFDeriv ℝ n (⇑(S.slice s)) x‖ ^ 2) D t ∧
+            D ≤ C * G t * sobolevH3NormSq (S.slice t) := by
   sorry
 
-/-- **[SKELETON — Kato–Ponce commutator / `H³` energy estimate;
+/-- **[DERIVED from `exists_sobolevOrderEnergyEstimate`.]**  `H³` energy estimate;
 Majda–Bertozzi Prop. 3.7; Kato–Ponce CPAM 41 (1988); est ~600 LOC.]**
 Along a Schwartz-sliced classical solution with a pointwise gradient majorant
 `G`, the `H³` energy `t ↦ ‖u(t)‖²_{H³}` is differentiable on positive time
@@ -329,7 +483,21 @@ theorem katoCommutatorEstimate :
           ∃ D : ℝ,
             HasDerivAt (fun s => sobolevH3NormSq (S.slice s)) D t ∧
             D ≤ C * G t * sobolevH3NormSq (S.slice t) := by
-  sorry
+  obtain ⟨C, hCpos, hC⟩ := exists_sobolevOrderEnergyEstimate
+  refine ⟨4 * C, by linarith, ?_⟩
+  intro ν hν u₀ S T G hG t ht
+  have hstep : ∀ n ∈ Finset.range 4,
+      ∃ D : ℝ, HasDerivAt (fun s => ∫ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(S.slice s)) x‖ ^ 2) D t ∧
+        D ≤ C * G t * sobolevH3NormSq (S.slice t) :=
+    fun n hn => hC hν S G hG t ht n (Finset.mem_range.mp hn)
+  obtain ⟨D, hD, hDle⟩ :=
+    exists_hasDerivAt_sum_range_le
+      (F := fun n s => ∫ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(S.slice s)) x‖ ^ 2) hstep
+  refine ⟨D, hD, ?_⟩
+  calc D ≤ ((4:ℕ) : ℝ) * (C * G t * sobolevH3NormSq (S.slice t)) := hDle
+    _ = 4 * C * G t * sobolevH3NormSq (S.slice t) := by push_cast; ring
 
 
 /-!
