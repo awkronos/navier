@@ -38,13 +38,39 @@ Galerkin/compactness tower has a home with no floating restatement.
   time envelope) — `weak_form` is not trivially satisfiable.
 * `officialInner_zero_left` and the zero-solution smoke
   `zero_isLerayHopfWeak` — the structure is realizable, hence non-degenerate.
+* **Coordinate-norm bridge** — `norm_sq_le_officialInner_self`,
+  `officialInner_self_le_three_norm_sq`, `integrable_norm_sq_schwartz`,
+  `integrable_officialInner_self`, and
+  `tendsto_integral_norm_sq_of_tendsto_officialInner_self`: the product norm on
+  `Space = Fin 3 → ℝ` versus Fefferman's Euclidean pairing.  This converts the
+  Galerkin layer's Bessel convergence (Euclidean seminorm) into the
+  product-norm `initial_converges` field.
+* `galerkinApproximation_of_modeData` — transport of `GalerkinModeData` (the
+  shape the finite-mode layer produces) to a `GalerkinApproximation`, plus the
+  anti-vacuity inhabitant `zeroGalerkinModeData`.
+* `StrongL2LocLimit.comp_strictMono`, `strongL2LocLimit_const`,
+  `aubinLions_zero_instance` — subsequence bookkeeping for the Aubin–Lions
+  diagonal extraction and the hypothesis/conclusion non-vacuity smoke.
+* **Initial-slice patch** — `patchInitial`, `setIntegral_Ici_congr_off_zero`
+  (the time integral over `Set.Ici 0` ignores the null set `{0}`), and
+  `isLerayHopfWeakSolution_patchInitial`: `LerayLimitData` (Leray–Hopf clauses
+  for `t > 0` only, which is all a compactness limit can give) transports to a
+  full `IsLerayHopfWeakSolution` with pointwise `initial_attained`.  Anti-vacuity
+  inhabitant: `zeroLerayLimitData`.
+* `leray_weak_existence`, `galerkin_approximation_exists`, and
+  `leray_of_galerkinApproximation` are now **compositions**, with no `sorry` of
+  their own.
 
-## Skeletons (honest `sorry`)
+## Named residuals (honest `sorry`, strictly-lower leaves)
 
-* `leray_weak_existence` — global existence of a Leray–Hopf weak solution for
-  every `ν > 0` and divergence-free Schwartz datum
-  [Leray, Acta Math. 63 (1934); Temam, *NSE* Ch. III (Galerkin + compactness
-  + energy inequality); est ~1500 LOC].
+* `exists_galerkinModeData` — the finite-mode Galerkin construction (ODE on the
+  first `m` divergence-free modes + time-regularity bookkeeping); depends on
+  `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily` [Temam III.3;
+  Constantin–Foias II; Leray 1934 §§18–20; est ~350 LOC].
+* `aubin_lions_l2loc_compactness` — the compact-embedding core
+  [Aubin 1963; Lions 1969; Simon 1987; Temam III.2.3; est ~550 LOC].
+* `exists_lerayLimitData` — limit passage in the weak form, stated for `t > 0`
+  [Leray 1934 §§21–23; Temam III.3.3; est ~700 LOC].
 -/
 
 set_option autoImplicit false
@@ -441,6 +467,90 @@ theorem officialInner_smul_right (c : ℝ) (x y : Space) :
   simp only [officialInner_eq_sum, Pi.smul_apply, smul_eq_mul, Finset.mul_sum]
   exact Finset.sum_congr rfl (fun i _ => by ring)
 
+/-!
+### Coordinate-norm bridge: the Euclidean pairing vs. the product norm
+
+`Space = Fin 3 → ℝ` carries the **product** (sup) norm `‖·‖`, while
+`officialInner` is Fefferman's **Euclidean** pairing.  The Galerkin layer states
+every `L²` fact with the Euclidean pairing (that is what `schwartzL2Inner` is),
+whereas `kineticEnergy` and `GalerkinApproximation.initial_converges` are stated
+with the product norm.  The two are comparable in both directions
+(`norm_le_officialEuclideanNorm`, `officialEuclideanNorm_le`), and that
+comparison — the "coordinate-norm equivalence bookkeeping" named in
+`Navier.Analysis.GalerkinBasis.proj_tendsto_self` — is exactly what turns the
+banked Bessel convergence `‖u₀ − P_m u₀‖²_{L²} → 0` into the
+`initial_converges` field of a `GalerkinApproximation`.  It is certified here.
+-/
+
+/-- The product norm is dominated by the official Euclidean pairing:
+`‖x‖² ≤ ⟨x, x⟩`. -/
+theorem norm_sq_le_officialInner_self (x : Space) : ‖x‖ ^ 2 ≤ officialInner x x := by
+  rw [officialInner_self]
+  exact pow_le_pow_left₀ (norm_nonneg _) (norm_le_officialEuclideanNorm x) 2
+
+/-- In dimension three the official Euclidean pairing is dominated by three
+times the squared product norm: `⟨x, x⟩ ≤ 3‖x‖²`. -/
+theorem officialInner_self_le_three_norm_sq (x : Space) :
+    officialInner x x ≤ 3 * ‖x‖ ^ 2 := by
+  rw [officialInner_self]
+  have h := officialEuclideanNorm_le x
+  nlinarith [officialEuclideanNorm_nonneg x, norm_nonneg x,
+    Real.sq_sqrt (by norm_num : (3:ℝ) ≥ 0), Real.sqrt_nonneg 3]
+
+/-- **The squared product-norm density of a Schwartz field is integrable.**
+The uniform Schwartz bound `‖f x‖ ≤ C` (`k = n = 0` decay) dominates
+`‖f x‖² ≤ C·‖f x‖`, and `x ↦ ‖f x‖` is integrable (`SchwartzMap.integrable`).
+This is the integrability side of `kineticEnergy` for Schwartz slices. -/
+theorem integrable_norm_sq_schwartz (f : SchwartzVelocity) :
+    Integrable (fun x : Space => ‖f x‖ ^ 2) := by
+  obtain ⟨C, hC0, hCraw⟩ :=
+    (schwartzmap_satisfies_fefferman_euclidean_weight_rapid_decay f) 0 0
+  have hC : ∀ x : Space, ‖f x‖ ≤ C := by
+    intro x
+    have h := hCraw x
+    rw [pow_zero, one_mul, norm_iteratedFDeriv_zero] at h
+    exact h
+  have hfint : Integrable (fun x : Space => ‖f x‖) volume := (SchwartzMap.integrable f).norm
+  refine Integrable.mono' (hfint.const_mul C) ?_ ?_
+  · exact ((f.continuous.norm).pow 2).aestronglyMeasurable
+  · refine Filter.Eventually.of_forall (fun x => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    calc ‖f x‖ ^ 2 = ‖f x‖ * ‖f x‖ := sq _
+      _ ≤ C * ‖f x‖ := mul_le_mul_of_nonneg_right (hC x) (norm_nonneg _)
+
+/-- The Euclidean self-pairing density of a Schwartz field is integrable
+(dominated by `3‖f x‖²`). -/
+theorem integrable_officialInner_self (f : SchwartzVelocity) :
+    Integrable (fun x : Space => officialInner (f x) (f x)) := by
+  refine Integrable.mono' ((integrable_norm_sq_schwartz f).const_mul 3) ?_ ?_
+  · apply Continuous.aestronglyMeasurable
+    simp only [officialInner_eq_sum]
+    exact continuous_finsetSum _ (fun i _ =>
+      ((continuous_apply i).comp f.continuous).mul ((continuous_apply i).comp f.continuous))
+  · refine Filter.Eventually.of_forall (fun x => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (by rw [officialInner_self]; positivity)]
+    exact officialInner_self_le_three_norm_sq (f x)
+
+/-- Integrated form of the pointwise comparison: the product-norm `L²` energy is
+below the Euclidean `L²` energy. -/
+theorem integral_norm_sq_le_integral_officialInner_self (f : SchwartzVelocity) :
+    ∫ x : Space, ‖f x‖ ^ 2 ≤ ∫ x : Space, officialInner (f x) (f x) :=
+  integral_mono (integrable_norm_sq_schwartz f) (integrable_officialInner_self f)
+    (fun x => norm_sq_le_officialInner_self (f x))
+
+/-- **The `L²` convergence bridge.**  A sequence of Schwartz fields whose
+Euclidean `L²` energies vanish also has vanishing product-norm `L²` energies
+(squeeze between `0` and the Euclidean energy).  With
+`Navier.Analysis.GalerkinBasis.proj_tendsto_self` — which delivers exactly the
+Euclidean hypothesis for `f m = P_m u₀ − u₀` — this produces the
+`initial_converges` field of a `GalerkinApproximation`. -/
+theorem tendsto_integral_norm_sq_of_tendsto_officialInner_self (f : ℕ → SchwartzVelocity)
+    (h : Filter.Tendsto (fun m => ∫ x : Space, officialInner (f m x) (f m x))
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun m => ∫ x : Space, ‖f m x‖ ^ 2) Filter.atTop (nhds 0) :=
+  squeeze_zero (fun m => integral_nonneg fun x => by positivity)
+    (fun m => integral_norm_sq_le_integral_officialInner_self (f m)) h
+
 /-- **Energy-decay engine.**  In a real inner-product space, if a curve `u` has
 derivative `u'` with `⟨u'(t), u(t)⟩ ≤ 0` for every `t`, then `‖u(t)‖²` is
 antitone.  This is the a-priori-bound core of the Galerkin construction: for a
@@ -724,35 +834,188 @@ theorem finiteDim_dissipative_ode_global
   rw [← hG_eq (u t) hconf]
   exact hu_deriv t ht
 
-/-- **[NAMED RESIDUAL — Galerkin construction + a-priori bounds; Temam, *NSE*
-III.3; Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20.]**
+/-!
+### Finite-mode Galerkin data and its transport to a `GalerkinApproximation`
+
+`GalerkinApproximation.initial_converges` is phrased with the product norm on
+`Space`, but the convergence the finite-mode layer actually produces is Bessel's
+`‖u₀ − P_m u₀‖²_{L²} → 0` in the **Euclidean** pairing
+(`Navier.Analysis.GalerkinBasis.proj_tendsto_self`, banked).  `GalerkinModeData`
+records the construction in the form the finite-mode layer produces it — with an
+explicit Schwartz initial mode `P_m u₀` and the Euclidean-`L²` convergence — and
+`galerkinApproximation_of_modeData` transports it through the coordinate-norm
+bridge above.  Every other field is carried through verbatim, so the residual
+below is strictly the finite-mode ODE/basis construction.
+-/
+
+/-- **Finite-mode Galerkin construction data.**  Same content as
+`GalerkinApproximation` except that the `t = 0` slice is exhibited as a Schwartz
+field `initialMode m` (in the construction, `P_m u₀`) and the initial-data
+convergence is stated in the Euclidean `L²` seminorm, which is the shape the
+Galerkin projection layer delivers.  Non-vacuous: `zeroGalerkinModeData`
+inhabits it at the zero datum. -/
+structure GalerkinModeData (ν : ℝ) (u₀ : SchwartzVelocity) where
+  /-- The finite-mode approximants. -/
+  approx : ℕ → VelocityEvolution
+  /-- The Schwartz field realizing the `t = 0` slice (`P_m u₀`). -/
+  initialMode : ℕ → SchwartzVelocity
+  /-- The `t = 0` slice is that Schwartz field. -/
+  initial_eq : ∀ m : ℕ, approx m 0 = fun x => initialMode m x
+  /-- Uniform energy bound constant. -/
+  bound : ℝ
+  bound_nonneg : 0 ≤ bound
+  /-- Uniform `L^∞_t L²_x` bound. -/
+  kinetic_bounded : UniformKineticBound approx bound
+  /-- Uniform `L²(0,T; H¹)` dissipation bound. -/
+  enstrophy_bounded : UniformEnstrophyBound approx bound
+  /-- Uniform time-translation equicontinuity. -/
+  time_equicontinuous : TimeEquicontinuous approx
+  /-- Each slice is square-integrable. -/
+  sq_integrable :
+    ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖approx m t x‖ ^ 2)
+  /-- Bessel convergence of the initial modes in the Euclidean `L²` seminorm. -/
+  initial_converges_L2 :
+    Filter.Tendsto (fun m => ∫ x : Space,
+        officialInner ((initialMode m - u₀) x) ((initialMode m - u₀) x))
+      Filter.atTop (nhds 0)
+  /-- Asymptotic weak-form consistency with the NSE dynamics. -/
+  weak_consistent :
+    ∀ φ : DivergenceFreeTestFunction,
+      Filter.Tendsto (fun m => weakFormResidual ν u₀ (approx m) φ)
+        Filter.atTop (nhds 0)
+
+/-- **Transport: finite-mode data yields a `GalerkinApproximation`.**  All
+fields but one are carried verbatim; `initial_converges` is obtained from the
+Euclidean-`L²` convergence through
+`tendsto_integral_norm_sq_of_tendsto_officialInner_self`, using `initial_eq` to
+identify the `t = 0` slice with the Schwartz error `initialMode m − u₀`. -/
+theorem galerkinApproximation_of_modeData (ν : ℝ) (u₀ : SchwartzVelocity)
+    (D : GalerkinModeData ν u₀) : Nonempty (GalerkinApproximation ν u₀) := by
+  refine ⟨{ approx := D.approx, bound := D.bound, bound_nonneg := D.bound_nonneg,
+            kinetic_bounded := D.kinetic_bounded, enstrophy_bounded := D.enstrophy_bounded,
+            time_equicontinuous := D.time_equicontinuous, sq_integrable := D.sq_integrable,
+            weak_consistent := D.weak_consistent, initial_converges := ?_ }⟩
+  have hbridge := tendsto_integral_norm_sq_of_tendsto_officialInner_self
+    (fun m => D.initialMode m - u₀) D.initial_converges_L2
+  have hEq : (fun m => ∫ x : Space, ‖(D.initialMode m - u₀) x‖ ^ 2)
+      = fun m => ∫ x : Space, ‖D.approx m 0 x - u₀ x‖ ^ 2 := by
+    funext m
+    congr 1; funext x
+    rw [D.initial_eq m]
+    simp
+  rw [hEq] at hbridge
+  exact hbridge
+
+/-- **Consumer-instantiability smoke (anti-vacuity).**  `GalerkinModeData` is
+inhabited at the zero datum by the zero sequence, so the transport above and the
+residual below are not vacuous obligations. -/
+def zeroGalerkinModeData (ν : ℝ) : GalerkinModeData ν (0 : SchwartzVelocity) where
+  approx := fun _ _ _ => 0
+  initialMode := fun _ => 0
+  initial_eq := by intro m; funext x; simp
+  bound := 0
+  bound_nonneg := le_rfl
+  kinetic_bounded := by intro m t _; simp [kineticEnergy]
+  enstrophy_bounded := by intro m T _; simp only [enstrophy_zero_velocity]; simp
+  time_equicontinuous := by
+    intro T ε hε
+    exact ⟨1, one_pos, fun m h _ => by simp only [sub_self, norm_zero]; simp [hε.le]⟩
+  sq_integrable := by
+    intro m t _
+    exact (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => by simp)
+  initial_converges_L2 := by
+    have hpt : (fun x : Space =>
+        officialInner (((0 : SchwartzVelocity) - (0 : SchwartzVelocity)) x)
+          (((0 : SchwartzVelocity) - (0 : SchwartzVelocity)) x)) = fun _ : Space => (0:ℝ) := by
+      funext x
+      simp only [sub_self, zero_apply, officialInner_zero_left]
+    have hz : (fun _ : ℕ => ∫ x : Space,
+        officialInner (((0 : SchwartzVelocity) - (0 : SchwartzVelocity)) x)
+          (((0 : SchwartzVelocity) - (0 : SchwartzVelocity)) x)) = fun _ : ℕ => (0:ℝ) := by
+      funext m; rw [hpt, integral_zero]
+    rw [hz]; exact tendsto_const_nhds
+  weak_consistent := by
+    intro φ
+    have hz : (fun _ : ℕ => weakFormResidual ν (0 : SchwartzVelocity)
+        (fun (_ : ℝ) (_ : Space) => (0:Space)) φ) = fun _ : ℕ => (0:ℝ) := by
+      funext m; simp [weakFormResidual, officialInner_zero_left]
+    rw [hz]; exact tendsto_const_nhds
+
+/-- **[NAMED RESIDUAL — finite-mode Galerkin construction; Temam, *NSE* III.3;
+Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20; est ~350 LOC.]**
 Projecting NSE onto the first `m` divergence-free modes gives a `C¹` ODE on a
-finite subspace whose field `F_m = −ν A_m + P_m B` is dissipative-plus-skew,
-so `⟨F_m x, x⟩ ≤ 0`; `finiteDim_dissipative_ode_global` then yields a global
-finite-mode solution and `galerkin_apriori_bound` (now BANKED, above) gives the
-uniform `L²` bound `‖u_m(t)‖² ≤ ‖u_m(0)‖² ≤ ‖u₀‖²` — the `kinetic_bounded`
-field.  The a-priori engine is therefore closed; the two genuinely-remaining
-Mathlib-absent sub-residuals are:
+finite subspace whose field `F_m = −ν A_m + P_m B` is dissipative-plus-skew, so
+`⟨F_m x, x⟩ ≤ 0`; `finiteDim_dissipative_ode_global` (BANKED, above) then yields
+a global finite-mode solution and `galerkin_apriori_bound` (BANKED) gives
+`kinetic_bounded`, while
+`Navier.Analysis.EnergyDissipation.dissipation_integral_le_forward` (BANKED)
+gives `enstrophy_bounded` with `C = ‖u₀‖²_{L²}/(2ν)`.
 
-* the **finite-mode divergence-free (Leray) projection** `P_m` on the repo's
-  `Space` objects — a Stokes/Hodge/Fourier divergence-free ON basis and the
-  orthogonal projection onto its first `m` modes, with `P_m u₀ →_{L²} u₀`
-  (`initial_converges`) and skew-symmetry `⟨P_m B(u_m), u_m⟩ = 0` (est ~250 LOC;
-  Mathlib has no divergence-free spectral basis on `ℝ³`); and
-* the **time-derivative bookkeeping** giving `time_equicontinuous` and
-  `weak_consistent` from the finite-mode energy identity (est ~100 LOC).  The
-  `enstrophy_bounded` engine is now BANKED:
-  `Navier.Analysis.EnergyDissipation.dissipation_integral_le_forward` turns any
-  forward solution of `u' = −ν A_m u + P_m B u` into the `Set.Ioc`-integral
-  dissipation bound `∫_{(0,T]} ⟨A_m u, u⟩ ≤ ‖u(0)‖²/(2ν)` — exactly the
-  `UniformEnstrophyBound` shape with `C = ‖u₀‖²_{L²}/(2ν)`, uniform in `m`.
+**Dependencies, exactly.**  (i) The divergence-free finite-mode basis and its
+projection `P_m` — `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily`, whose
+projection algebra (`proj_divergence_free`, `proj_self_adjoint`,
+`proj_skew_transfer`) and Bessel tower (`proj_best_approx`, `proj_tendsto_self`)
+are BANKED, and whose existence rests on the single density residual
+`Navier.Analysis.GalerkinBasis.exists_denseIndependentDivFreeFamily`;
+`initialMode m := P_m u₀` then makes `initial_converges_L2` literally
+`proj_tendsto_self` (this is why the field is stated in the Euclidean seminorm).
+(ii) `time_equicontinuous` and `weak_consistent` from the finite-mode energy
+identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (est ~100 LOC).
 
-Assembling the `GalerkinApproximation` record is blocked only on the first
-(basis) residual, which is needed even to STATE the per-mode objects. -/
+The product-norm/Euclidean conversion that used to sit inside this obligation is
+now certified (`galerkinApproximation_of_modeData`). -/
+theorem exists_galerkinModeData (ν : ℝ) (hν : 0 < ν)
+    (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀) :
+    Nonempty (GalerkinModeData ν u₀) := by
+  sorry
+
+/-- **Galerkin approximants exist** — now a composition of the finite-mode data
+residual with the certified transport `galerkinApproximation_of_modeData`. -/
 theorem galerkin_approximation_exists (ν : ℝ) (hν : 0 < ν)
     (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀) :
-    Nonempty (GalerkinApproximation ν u₀) := by
-  sorry
+    Nonempty (GalerkinApproximation ν u₀) :=
+  galerkinApproximation_of_modeData ν u₀ (exists_galerkinModeData ν hν u₀ hu₀).some
+
+/-!
+### `StrongL2LocLimit` plumbing (certified)
+-/
+
+/-- Passing to a further subsequence preserves the strong `L²_loc` limit — the
+bookkeeping step of the diagonal extraction inside Aubin–Lions. -/
+theorem StrongL2LocLimit.comp_strictMono {uSeq : ℕ → VelocityEvolution}
+    {u : VelocityEvolution} (h : StrongL2LocLimit uSeq u) {τ : ℕ → ℕ} (hτ : StrictMono τ) :
+    StrongL2LocLimit (fun k => uSeq (τ k)) u :=
+  fun T R => (h T R).comp hτ.tendsto_atTop
+
+/-- The constant sequence converges to its own value (non-degeneracy smoke:
+`StrongL2LocLimit` is satisfiable with a genuine, measurable limit). -/
+theorem strongL2LocLimit_const (u : VelocityEvolution) : StrongL2LocLimit (fun _ => u) u := by
+  intro T R
+  have hz : (fun _ : ℕ => ∫ t in Set.Ioc (0:ℝ) T,
+      ∫ x in Metric.closedBall (0:Space) R, ‖u t x - u t x‖ ^ 2) = fun _ : ℕ => (0:ℝ) := by
+    funext m; simp
+  rw [hz]; exact tendsto_const_nhds
+
+/-- **Consumer-instantiability smoke (anti-vacuity, B-Audit-3/8).**  The zero
+sequence satisfies every hypothesis of `aubin_lions_l2loc_compactness` at
+`C = 0`, and the strengthened conclusion holds for it with limit `0` and
+`σ = id`.  So neither the hypothesis bundle nor the strengthened conclusion is
+vacuous. -/
+theorem aubinLions_zero_instance :
+    UniformKineticBound (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) 0 ∧
+    UniformEnstrophyBound (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) 0 ∧
+    TimeEquicontinuous (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) ∧
+    (∀ t : ℝ, 0 ≤ t →
+      Integrable (fun x : Space => ‖(fun (_ : ℝ) (_ : Space) => (0:Space)) t x‖ ^ 2)) ∧
+    StrongL2LocLimit (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) (fun _ _ => 0) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · intro m t _; simp [kineticEnergy]
+  · intro m T _; simp only [enstrophy_zero_velocity]; simp
+  · intro T ε hε
+    exact ⟨1, one_pos, fun m h _ => by simp only [sub_self, norm_zero]; simp [hε.le]⟩
+  · intro t _
+    exact (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => by simp)
+  · exact strongL2LocLimit_const (fun _ _ => 0)
 
 /-- **[NAMED RESIDUAL — Aubin–Lions–Simon compactness; Aubin (C. R. Acad. Sci.
 256, 1963); Lions (*Quelques méthodes de résolution*, 1969); Simon (*Ann. Mat.
@@ -760,37 +1023,218 @@ Pura Appl.* 146, 1987, "Compact sets in `L^p(0,T;B)`"); Temam III.2.3;
 est ~550 LOC.]**  A sequence bounded in `L^∞_t L²_x` (uniform kinetic bound)
 and in `L²(0,T; H¹)` (uniform enstrophy bound), square-integrable slicewise,
 and uniformly `L²`-time-equicontinuous, has a subsequence converging strongly
-in `L²(0,T; L²_loc)`.  This is the Mathlib-absent compact-embedding core:
-Mathlib has Banach–Alaoglu (weak-* compactness) but NOT the Aubin–Lions
-compact embedding `{u ∈ L²(H¹) : ∂ₜu ∈ L²(H⁻¹)} ↪↪ L²(L²)`.  The
-`TimeEquicontinuous` hypothesis is load-bearing (without it the statement is
-false — pure spatial `H¹` bounds give Rellich in space but not compactness in
-time). -/
+in `L²(0,T; L²_loc)` to a slicewise square-integrable limit.  This is the
+Mathlib-absent compact-embedding core: Mathlib has Banach–Alaoglu (weak-*
+compactness) but NOT the Aubin–Lions compact embedding
+`{u ∈ L²(H¹) : ∂ₜu ∈ L²(H⁻¹)} ↪↪ L²(L²)`.  The `TimeEquicontinuous` hypothesis
+is load-bearing (without it the statement is false — pure spatial `H¹` bounds
+give Rellich in space but not compactness in time).
+
+**Step-0e strengthening (this wave).**  The conclusion now also asserts that the
+limit is slicewise square-integrable.  Without that clause the statement does
+not deliver what its only consumer needs — `IsLerayHopfWeakSolution` has a
+`square_integrable` field, and a `VelocityEvolution` carries no measurability
+whatsoever, so `StrongL2LocLimit uSeq u` alone is satisfiable by a limit for
+which every error integral is a Bochner integral of a non-integrable function
+(hence `0` by convention) rather than a genuine convergence.  Adding the clause
+costs nothing in the intended proof — the Aubin–Lions limit lives in
+`L²(0,T;L²_loc)` by construction — and closes that gap.
+
+**Named sub-obligations.**  (i) spatial compactness: Riesz–Fréchet–Kolmogorov on
+each ball, fed by the enstrophy bound; (ii) temporal compactness: the
+`TimeEquicontinuous` field in Kolmogorov–Riesz form; (iii) the diagonal
+extraction over the countable exhaustion `T = R = n`, whose bookkeeping step is
+`StrongL2LocLimit.comp_strictMono` (CERTIFIED above); (iv) slicewise
+square-integrability of the limit, from the uniform kinetic bound by Fatou. -/
 theorem aubin_lions_l2loc_compactness
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C) (hens : UniformEnstrophyBound uSeq C)
     (htime : TimeEquicontinuous uSeq)
     (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2)) :
     ∃ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ ∧
+      (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
       StrongL2LocLimit (fun k => uSeq (σ k)) u := by
   sorry
 
+/-!
+### Initial-slice patching (certified)
+
+The compactness step produces a limit that is controlled only for `t > 0` (the
+time integrals in `StrongL2LocLimit` and in the weak form never see the single
+instant `t = 0`), whereas `IsLerayHopfWeakSolution.initial_attained` asks for
+*pointwise* attainment at `t = 0`.  The gap is closed by redefining the limit on
+the null set `{0}`: `patchInitial` does that, and
+`isLerayHopfWeakSolution_patchInitial` certifies that the patch changes neither
+the weak form (`setIntegral_Ici_congr_off_zero`: the time integral over
+`Set.Ici 0` does not see `{0}`) nor the energy bound, while supplying
+`initial_attained` by construction.
+-/
+
+/-- The weak-form test density `⟨u, ∂ₜφ + (u·∇)φ + νΔφ⟩` (the integrand of the
+Leray–Hopf weak form). -/
+def weakPairingDensity (ν : ℝ) (u : VelocityEvolution) (φ : DivergenceFreeTestFunction)
+    (t : ℝ) (x : Space) : ℝ :=
+  officialInner (u t x)
+    (timeDerivative (fun s => (φ.field s : Space → Space)) t x +
+      spatialDerivative (fun s => (φ.field s : Space → Space)) t x (u t x) +
+      ν • laplacian (fun s => (φ.field s : Space → Space)) t x)
+
+/-- Redefinition of a velocity evolution at the single instant `t = 0`. -/
+def patchInitial (u : VelocityEvolution) (u₀ : SchwartzVelocity) : VelocityEvolution :=
+  fun t x => if t = 0 then u₀ x else u t x
+
+theorem patchInitial_apply_zero (u : VelocityEvolution) (u₀ : SchwartzVelocity) :
+    patchInitial u u₀ 0 = fun x => u₀ x := by
+  funext x; simp [patchInitial]
+
+theorem patchInitial_apply_of_ne (u : VelocityEvolution) (u₀ : SchwartzVelocity) {t : ℝ}
+    (ht : t ≠ 0) : patchInitial u u₀ t = u t := by
+  funext x; simp [patchInitial, ht]
+
+/-- **The time integral over `Set.Ici 0` does not see the instant `0`.**  Two
+integrands agreeing off `{0}` have the same integral (`{0}` is Lebesgue-null).
+This is what makes the initial-slice patch invisible to the weak form. -/
+theorem setIntegral_Ici_congr_off_zero {F G : ℝ → ℝ} (h : ∀ t : ℝ, t ≠ 0 → F t = G t) :
+    ∫ t in Set.Ici (0:ℝ), F t = ∫ t in Set.Ici (0:ℝ), G t := by
+  refine setIntegral_congr_ae measurableSet_Ici ?_
+  have h0 : ∀ᵐ t : ℝ, t ≠ 0 := by
+    rw [MeasureTheory.ae_iff]
+    have hset : {a : ℝ | ¬ a ≠ 0} = {(0:ℝ)} := by ext t; simp
+    rw [hset]; simp
+  filter_upwards [h0] with t ht _ using h t ht
+
+/-- **Leray limit data**: what the compactness + limit-passage step produces —
+a velocity evolution satisfying the Leray–Hopf clauses for **positive** times
+only (the limit of an `L²`-convergent subsequence is pinned only off null sets),
+together with the datum-side integrability at `t = 0`.  Non-vacuous:
+`zeroLerayLimitData` inhabits it at the zero datum. -/
+structure LerayLimitData (ν : ℝ) (u₀ : SchwartzVelocity) where
+  /-- The limit velocity evolution. -/
+  limit : VelocityEvolution
+  /-- Slicewise square-integrability for positive times. -/
+  sq_integrable : ∀ t : ℝ, 0 < t → Integrable (fun x : Space => ‖limit t x‖ ^ 2)
+  /-- The datum is square-integrable (automatic for Schwartz data). -/
+  datum_sq_integrable : Integrable (fun x : Space => ‖u₀ x‖ ^ 2)
+  /-- The Leray energy bound for positive times. -/
+  energy_le : ∀ t : ℝ, 0 < t → kineticEnergy limit t ≤ ∫ x : Space, ‖u₀ x‖ ^ 2
+  /-- Integrability of the weak-form density for positive times. -/
+  pairing_integrable : ∀ (φ : DivergenceFreeTestFunction) (t : ℝ), 0 < t →
+    Integrable (fun x : Space => weakPairingDensity ν limit φ t x)
+  /-- Integrability of the weak-form density of the datum slice. -/
+  datum_pairing_integrable : ∀ φ : DivergenceFreeTestFunction,
+    Integrable (fun x : Space => weakPairingDensity ν (fun _ y => u₀ y) φ 0 x)
+  /-- The Leray–Hopf weak form. -/
+  weak_form : ∀ φ : DivergenceFreeTestFunction,
+    (∫ t in Set.Ici (0:ℝ), ∫ x : Space, weakPairingDensity ν limit φ t x) =
+      -(∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))
+
+/-- **Transport: patched limit data is a Leray–Hopf weak solution.**  The patch
+supplies `initial_attained` by construction; `square_integrable`,
+`energy_nonincreasing` and `pairing_integrable` split on `t = 0` (datum side)
+versus `t > 0` (limit side); and `weak_form` is unchanged because the time
+integral over `Set.Ici 0` ignores the null set `{0}`
+(`setIntegral_Ici_congr_off_zero`).  Note `kineticEnergy (patch) 0 = ‖u₀‖²_{L²}`,
+so the record's `energy_le` field is exactly Leray's energy inequality. -/
+theorem isLerayHopfWeakSolution_patchInitial (ν : ℝ) (u₀ : SchwartzVelocity)
+    (D : LerayLimitData ν u₀) :
+    IsLerayHopfWeakSolution ν u₀ (patchInitial D.limit u₀) where
+  square_integrable := by
+    intro t ht
+    rcases eq_or_lt_of_le ht with h | h
+    · rw [← h, patchInitial_apply_zero]; exact D.datum_sq_integrable
+    · rw [patchInitial_apply_of_ne _ _ (ne_of_gt h)]; exact D.sq_integrable t h
+  initial_attained := by intro x; simp [patchInitial]
+  energy_nonincreasing := by
+    intro t ht
+    have h0 : kineticEnergy (patchInitial D.limit u₀) 0 = ∫ x : Space, ‖u₀ x‖ ^ 2 := by
+      unfold kineticEnergy; rw [patchInitial_apply_zero]
+    rcases eq_or_lt_of_le ht with h | h
+    · rw [← h]
+    · rw [h0]
+      have hslice : kineticEnergy (patchInitial D.limit u₀) t = kineticEnergy D.limit t := by
+        unfold kineticEnergy; rw [patchInitial_apply_of_ne _ _ (ne_of_gt h)]
+      rw [hslice]; exact D.energy_le t h
+  pairing_integrable := by
+    intro φ t ht
+    rcases eq_or_lt_of_le ht with h | h
+    · rw [← h]
+      have hcong : (fun x : Space => weakPairingDensity ν (patchInitial D.limit u₀) φ 0 x)
+          = fun x : Space => weakPairingDensity ν (fun _ y => u₀ y) φ 0 x := by
+        funext x; unfold weakPairingDensity; rw [patchInitial_apply_zero]
+      have hres := D.datum_pairing_integrable φ
+      rw [← hcong] at hres
+      exact hres
+    · have hcong : (fun x : Space => weakPairingDensity ν (patchInitial D.limit u₀) φ t x)
+          = fun x : Space => weakPairingDensity ν D.limit φ t x := by
+        funext x; unfold weakPairingDensity; rw [patchInitial_apply_of_ne _ _ (ne_of_gt h)]
+      have hres := D.pairing_integrable φ t h
+      rw [← hcong] at hres
+      exact hres
+  weak_form := by
+    intro φ
+    have hcong : ∀ t : ℝ, t ≠ 0 →
+        (∫ x : Space, weakPairingDensity ν (patchInitial D.limit u₀) φ t x)
+          = ∫ x : Space, weakPairingDensity ν D.limit φ t x := by
+      intro t ht
+      congr 1; funext x; unfold weakPairingDensity; rw [patchInitial_apply_of_ne _ _ ht]
+    have hint := setIntegral_Ici_congr_off_zero hcong
+    show (∫ t in Set.Ici (0:ℝ), ∫ x : Space,
+      weakPairingDensity ν (patchInitial D.limit u₀) φ t x) = _
+    rw [hint]
+    exact D.weak_form φ
+
+/-- **Consumer-instantiability smoke (anti-vacuity, B-Audit-8).**  `LerayLimitData`
+is inhabited at the zero datum by the zero evolution, so the transport above and
+the residual below are not vacuous obligations. -/
+def zeroLerayLimitData (ν : ℝ) : LerayLimitData ν (0 : SchwartzVelocity) where
+  limit := fun _ _ => 0
+  sq_integrable := by
+    intro t _
+    exact (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => by simp)
+  datum_sq_integrable :=
+    (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => by simp)
+  energy_le := by intro t _; simp [kineticEnergy]
+  pairing_integrable := by
+    intro φ t _
+    refine (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => ?_)
+    simp [weakPairingDensity, officialInner_zero_left]
+  datum_pairing_integrable := by
+    intro φ
+    refine (integrable_zero Space ℝ volume).congr (Filter.Eventually.of_forall fun x => ?_)
+    simp [weakPairingDensity, officialInner_zero_left]
+  weak_form := by
+    intro φ
+    simp [weakPairingDensity, officialInner_zero_left]
+
 /-- **[NAMED RESIDUAL — Galerkin limit passage; Leray, Acta Math. 63 (1934)
-§§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~900 LOC.]**  From a
+§§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a
 Galerkin approximation, `aubin_lions_l2loc_compactness` (invoked on the
 `kinetic_bounded`, `enstrophy_bounded`, `time_equicontinuous`, `sq_integrable`
-fields) extracts a strong `L²_loc` limit `u`.  The linear weak-form terms pass
-by weak-* convergence in `L^∞_t L²_x`, the quadratic convection term by the
-strong `L²_loc` convergence (weak × strong on the test's compact support),
-`initial_converges` gives `initial_attained`, and weak lower-semicontinuity of
-the norm gives `energy_nonincreasing`.  Hence the limit is a Leray–Hopf weak
-solution.  Non-vacuous: `galerkin_approximation_exists` witnesses the
-hypothesis, so this is not a vacuous-consumer (anti-F11) obligation. -/
+fields) extracts a strong `L²_loc` limit `u` with slicewise square-integrable
+slices.  The linear weak-form terms pass by weak-* convergence in `L^∞_t L²_x`,
+the quadratic convection term by the strong `L²_loc` convergence (weak × strong
+on the test's compact support), and weak lower-semicontinuity of the norm gives
+`energy_le`.  `datum_sq_integrable` is `integrable_norm_sq_schwartz` (BANKED).
+
+Stated at `0 < t` rather than `0 ≤ t`: the limit of an `L²`-convergent
+subsequence is pinned only off null sets in time, so requiring the clauses at
+the single instant `t = 0` would be a strictly stronger — and false-for-the-
+constructed-object — demand.  The `t = 0` bookkeeping is now carried by the
+certified `isLerayHopfWeakSolution_patchInitial`. -/
+theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
+    (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
+    (G : GalerkinApproximation ν u₀) :
+    Nonempty (LerayLimitData ν u₀) := by
+  sorry
+
+/-- **Leray–Hopf solution from a Galerkin approximation** — now a composition of
+the limit-passage residual with the certified initial-slice patch transport. -/
 theorem leray_of_galerkinApproximation (ν : ℝ) (hν : 0 < ν)
     (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
     (G : GalerkinApproximation ν u₀) :
-    ∃ u : VelocityEvolution, IsLerayHopfWeakSolution ν u₀ u := by
-  sorry
+    ∃ u : VelocityEvolution, IsLerayHopfWeakSolution ν u₀ u :=
+  (exists_lerayLimitData ν hν u₀ hu₀ G).elim
+    (fun D => ⟨patchInitial D.limit u₀, isLerayHopfWeakSolution_patchInitial ν u₀ D⟩)
 
 /-!
 ## Existence skeleton
