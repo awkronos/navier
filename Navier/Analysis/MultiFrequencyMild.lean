@@ -36,16 +36,20 @@ Certified here (no sorry):
   (Grönwall/contraction: `Δ t ≤ L ∫₀ᵗ Δ` forces `Δ ≡ 0`).
 * `multiMild_inner_frequency_eq_zero` — per-mode transversality is automatic
   (the Duhamel integrand is Leray-projected, hence pointwise transverse).
+* `continuousOn_Ico_of_forall_lt`, `continuousOn_truncatedSymbol`,
+  `truncatedSymbol_norm_le_of_bound`, `integrableOn_heatWeighted`,
+  `continuousOn_primitive_Icc_of_integrableOn` — the five analytic leaves of the
+  continuation argument.
+* `multiMild_extends_of_apriori_bound` — **the finite-mode continuation criterion**:
+  a solution on every `[0,T']`, `T' < T`, with a uniform amplitude bound extends to
+  the closed horizon `[0,T]`.  The extension is the Duhamel formula itself; the
+  a-priori bound is what makes its integrand integrable up to `T`.
 
 ## Skeletons (honest `sorry`, truth-checked signatures)
 
 * `exists_isMultiMildSolutionOn_local` — local existence via the Duhamel
   contraction on the product path space [Kato 1984; product generalization of
   `FrequencyDuhamel`; est ~400 LOC].
-* `multiMild_extends_of_apriori_bound` — the finite-dimensional continuation
-  criterion: a uniformly bounded mild solution on `[0,T)` extends to `[0,T]`
-  (the finite-mode analogue of Beale–Kato–Majda) [standard ODE continuation;
-  est ~300 LOC].
 -/
 
 set_option autoImplicit false
@@ -668,8 +672,123 @@ theorem multiMild_inner_frequency_eq_zero
       _ = 0 := intervalIntegral.integral_zero
   · rw [intervalIntegral.integral_undef hInt, inner_zero_right]
 
-/-- **[SKELETON — finite-mode continuation criterion; standard ODE
-continuation; est ~300 LOC.]**  A multi-frequency mild solution uniformly
+/-- **Half-open-horizon continuity from every shorter horizon.**  If `u` solves the
+truncated mild equation on `[0,T']` for *every* `T' < T`, then each amplitude is
+continuous on the half-open horizon `[0,T)`: around any `x < T` pick the midpoint
+`T' = (x+T)/2`, whose closed horizon is a neighbourhood of `x` inside `[0,T)`.
+Strictly lower than the continuation theorem, which consumes it. -/
+theorem continuousOn_Ico_of_forall_lt {ν T : ℝ} {n : ℕ}
+    {q : Fin n → E3} {u₀ : Fin n → E3} {u : ℝ → Fin n → E3}
+    (hu : ∀ T' : ℝ, 0 ≤ T' → T' < T → IsMultiMildSolutionOn ν q u₀ T' u)
+    (m : Fin n) : ContinuousOn (fun t => u t m) (Set.Ico 0 T) := by
+  intro x hx
+  have hxT : x < T := hx.2
+  have hx0 : (0:ℝ) ≤ x := hx.1
+  set T' : ℝ := (x + T) / 2 with hT'def
+  have hxT' : x < T' := by rw [hT'def]; linarith
+  have hT'T : T' < T := by rw [hT'def]; linarith
+  have hT'0 : (0:ℝ) ≤ T' := by rw [hT'def]; linarith
+  have hcont := (hu T' hT'0 hT'T).1 m
+  have hmem : Set.Icc (0:ℝ) T' ∈ nhdsWithin x (Set.Ico 0 T) := by
+    refine mem_nhdsWithin.2 ⟨Set.Iio T', isOpen_Iio, hxT', ?_⟩
+    rintro y ⟨hy1, hy2⟩
+    exact ⟨hy2.1, le_of_lt hy1⟩
+  exact (hcont x ⟨hx0, le_of_lt hxT'⟩).mono_of_mem_nhdsWithin hmem
+
+
+/-- **The truncated symbol inherits continuity from the amplitudes.**  The resonance
+condition `q i + q j = q k` does not depend on time, so the symbol is a finite sum of
+constant-or-bilinear terms in the amplitudes; continuity is termwise. -/
+theorem continuousOn_truncatedSymbol {n : ℕ} {q : Fin n → E3} {u : ℝ → Fin n → E3}
+    {S : Set ℝ} (hu : ∀ m : Fin n, ContinuousOn (fun t => u t m) S) (k : Fin n) :
+    ContinuousOn (fun s => truncatedConvectionSymbol q (u s) (u s) k) S := by
+  classical
+  unfold truncatedConvectionSymbol
+  refine continuousOn_finsetSum _ fun i _ => continuousOn_finsetSum _ fun j _ => ?_
+  by_cases h : q i + q j = q k
+  · simp only [if_pos h]
+    exact (continuousOn_const.inner (hu i)).smul (hu j)
+  · simp only [if_neg h]
+    exact continuousOn_const
+
+/-- **Per-mode quadratic a-priori self-bound.**  Sharpening of
+`truncatedConvection_sum_norm_le` from the summed bound to a bound on each output mode,
+using `∑ m ‖a m‖ ≤ n·R`.  This is the form the continuation argument consumes: it makes
+the Duhamel integrand uniformly bounded on the horizon. -/
+theorem truncatedSymbol_norm_le_of_bound {n : ℕ} (q a : Fin n → E3)
+    {R : ℝ} (hR : 0 ≤ R) (ha : ∀ m, ‖a m‖ ≤ R) (k : Fin n) :
+    ‖truncatedConvectionSymbol q a a k‖ ≤
+      2 * (n : ℝ) ^ 2 * R * (∑ j, ‖q j‖) * ((n : ℝ) * R) := by
+  have hsum := truncatedConvection_sum_norm_le q a hR ha
+  have hsingle : ‖truncatedConvectionSymbol q a a k‖ ≤
+      ∑ k', ‖truncatedConvectionSymbol q a a k'‖ :=
+    Finset.single_le_sum (f := fun k' : Fin n => ‖truncatedConvectionSymbol q a a k'‖)
+      (fun i _ => norm_nonneg _) (Finset.mem_univ k)
+  have hamp : (∑ m, ‖a m‖) ≤ (n : ℝ) * R := by
+    calc (∑ m, ‖a m‖) ≤ ∑ _m : Fin n, R := Finset.sum_le_sum fun m _ => ha m
+      _ = (n : ℝ) * R := by simp [Finset.sum_const, nsmul_eq_mul]
+  have hcoef : 0 ≤ 2 * (n : ℝ) ^ 2 * R * (∑ j, ‖q j‖) := by
+    have : 0 ≤ ∑ j, ‖q j‖ := Finset.sum_nonneg fun j _ => norm_nonneg _
+    positivity
+  exact hsingle.trans (hsum.trans (mul_le_mul_of_nonneg_left hamp hcoef))
+
+
+/-- **Integrability of the factorized Duhamel integrand up to the closed horizon.**
+A field continuous and uniformly bounded on the *half-open* horizon `[0,T)` gives, after
+the heat-weight factorization `heatDecay ν (t-s) = heatDecay ν t · heatDecay ν (-s)`, an
+integrand that is integrable on the *closed* horizon `[0,T]`: the missing endpoint is
+Lebesgue-null (`Ico_ae_eq_Icc`) and the weight is bounded by `exp (ν T ‖q₀‖²)`.
+This is the analytic step that lets the solution be evaluated at the terminal time. -/
+theorem integrableOn_heatWeighted {ν T : ℝ} (hν : 0 ≤ ν) (q₀ : E3)
+    {G : ℝ → E3} {M : ℝ}
+    (hGc : ContinuousOn G (Set.Ico 0 T))
+    (hGb : ∀ s ∈ Set.Ico (0:ℝ) T, ‖G s‖ ≤ M) :
+    IntegrableOn (fun s => heatDecay ν (-s) q₀ • euclideanLeray q₀ (G s))
+      (Set.Icc 0 T) volume := by
+  have hset : volume.restrict (Set.Icc (0:ℝ) T) = volume.restrict (Set.Ico 0 T) :=
+    (Measure.restrict_congr_set Ico_ae_eq_Icc).symm
+  haveI : Fact (volume (Set.Ico (0:ℝ) T) < ⊤) := ⟨by
+    rw [Real.volume_Ico]; exact ENNReal.ofReal_lt_top⟩
+  rw [IntegrableOn, hset]
+  have hmeas : AEStronglyMeasurable
+      (fun s => heatDecay ν (-s) q₀ • euclideanLeray q₀ (G s))
+      (volume.restrict (Set.Ico (0:ℝ) T)) := by
+    refine ContinuousOn.aestronglyMeasurable ?_ measurableSet_Ico
+    have h1 : ContinuousOn (fun s : ℝ => heatDecay ν (-s) q₀) (Set.Ico 0 T) := by
+      unfold heatDecay; fun_prop
+    exact h1.smul ((euclideanLeray q₀).continuous.comp_continuousOn hGc)
+  refine Integrable.mono'
+    (g := fun _ : ℝ => Real.exp (ν * T * ‖q₀‖ ^ 2) * M)
+    (integrable_const _) hmeas ?_
+  refine (ae_restrict_iff' measurableSet_Ico).2 (Filter.Eventually.of_forall fun s hs => ?_)
+  have hGs := hGb s hs
+  have hexp : heatDecay ν (-s) q₀ ≤ Real.exp (ν * T * ‖q₀‖ ^ 2) := by
+    unfold heatDecay
+    apply Real.exp_le_exp.2
+    have hs0 : (0:ℝ) ≤ s := hs.1
+    have hsT : s ≤ T := le_of_lt hs.2
+    nlinarith [mul_nonneg (mul_nonneg hν (sub_nonneg.2 hsT)) (sq_nonneg ‖q₀‖)]
+  rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (heatDecay_nonneg ν (-s) q₀)]
+  calc heatDecay ν (-s) q₀ * ‖euclideanLeray q₀ (G s)‖
+      ≤ heatDecay ν (-s) q₀ * ‖G s‖ :=
+        mul_le_mul_of_nonneg_left (euclideanLeray_norm_le q₀ (G s))
+          (heatDecay_nonneg ν (-s) q₀)
+    _ ≤ Real.exp (ν * T * ‖q₀‖ ^ 2) * ‖G s‖ :=
+        mul_le_mul_of_nonneg_right hexp (norm_nonneg _)
+    _ ≤ Real.exp (ν * T * ‖q₀‖ ^ 2) * M :=
+        mul_le_mul_of_nonneg_left hGs (Real.exp_nonneg _)
+
+/-- **The running Duhamel primitive is continuous on the closed horizon.**  Specialization
+of `intervalIntegral.continuousOn_primitive_interval` to `uIcc 0 T = Icc 0 T`. -/
+theorem continuousOn_primitive_Icc_of_integrableOn {T : ℝ} (hT : (0:ℝ) ≤ T)
+    {f : ℝ → E3} (hf : IntegrableOn f (Set.Icc 0 T) volume) :
+    ContinuousOn (fun t => ∫ s in (0:ℝ)..t, f s) (Set.Icc 0 T) := by
+  have h := intervalIntegral.continuousOn_primitive_interval
+    (a := (0:ℝ)) (b := T) (μ := volume) (f := f) (by rwa [Set.uIcc_of_le hT])
+  rwa [Set.uIcc_of_le hT] at h
+
+
+/-- **The finite-mode continuation criterion.**  A multi-frequency mild solution uniformly
 bounded on every sub-horizon of `[0,T)` extends to the closed horizon `[0,T]`.
 This is the finite-dimensional analogue of the Beale–Kato–Majda continuation
 criterion, and the precise sense in which the surviving cross-mode transport
@@ -684,6 +803,73 @@ theorem multiMild_extends_of_apriori_bound
     ∃ v : ℝ → Fin n → E3,
       IsMultiMildSolutionOn ν q u₀ T v ∧
       ∀ t : ℝ, 0 ≤ t → t < T → v t = u t := by
-  sorry
+  classical
+  set g : ℝ → Fin n → E3 := fun s k => truncatedConvectionSymbol q (u s) (u s) k with hgdef
+  set v : ℝ → Fin n → E3 := fun t k =>
+    frequencyHeatLeray ν t (q k) (u₀ k) +
+      ∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k) (g s k) with hvdef
+  have hvu : ∀ t : ℝ, 0 ≤ t → t < T → v t = u t := by
+    intro t ht0 htT
+    funext k
+    exact ((hu t ht0 htT).2 k t ⟨ht0, le_rfl⟩).symm
+  set R' : ℝ := max R 0 with hR'def
+  have hR'0 : (0:ℝ) ≤ R' := le_max_right _ _
+  have hR' : ∀ t : ℝ, 0 ≤ t → t < T → ∀ k, ‖u t k‖ ≤ R' :=
+    fun t h1 h2 k => (hR t h1 h2 k).trans (le_max_left _ _)
+  have hucont : ∀ m : Fin n, ContinuousOn (fun t => u t m) (Set.Ico 0 T) :=
+    fun m => continuousOn_Ico_of_forall_lt hu m
+  have hgcont : ∀ k : Fin n, ContinuousOn (fun s => g s k) (Set.Ico 0 T) :=
+    fun k => continuousOn_truncatedSymbol hucont k
+  set M₀ : ℝ := 2 * (n:ℝ)^2 * R' * (∑ j, ‖q j‖) * ((n:ℝ) * R') with hM₀def
+  have hgbd : ∀ k : Fin n, ∀ s ∈ Set.Ico (0:ℝ) T, ‖g s k‖ ≤ M₀ := by
+    intro k s hs
+    exact truncatedSymbol_norm_le_of_bound q (u s) hR'0 (hR' s hs.1 hs.2) k
+  have hint : ∀ k : Fin n, IntegrableOn
+      (fun s => heatDecay ν (-s) (q k) • euclideanLeray (q k) (g s k))
+      (Set.Icc 0 T) volume :=
+    fun k => integrableOn_heatWeighted hν (q k) (hgcont k) (hgbd k)
+  have hker : ∀ (k : Fin n) (t : ℝ),
+      (∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k) (g s k))
+        = heatDecay ν t (q k) •
+            ∫ s in (0:ℝ)..t, heatDecay ν (-s) (q k) • euclideanLeray (q k) (g s k) := by
+    intro k t
+    rw [← intervalIntegral.integral_smul]
+    refine intervalIntegral.integral_congr fun s _hs => ?_
+    show frequencyHeatLeray ν (t - s) (q k) (g s k)
+        = heatDecay ν t (q k) • (heatDecay ν (-s) (q k) • euclideanLeray (q k) (g s k))
+    rw [frequencyHeatLeray_apply, smul_smul, ← heatDecay_factor]
+  have hvcont : ∀ k : Fin n, ContinuousOn (fun t => v t k) (Set.Icc 0 T) := by
+    intro k
+    have hprim := continuousOn_primitive_Icc_of_integrableOn (le_of_lt hT) (hint k)
+    have h1 : ContinuousOn (fun t : ℝ => frequencyHeatLeray ν t (q k) (u₀ k))
+        (Set.Icc 0 T) := by
+      have hrw : (fun t : ℝ => frequencyHeatLeray ν t (q k) (u₀ k))
+          = fun t : ℝ => heatDecay ν t (q k) • euclideanLeray (q k) (u₀ k) := by
+        funext t; exact frequencyHeatLeray_apply ν t (q k) (u₀ k)
+      rw [hrw]
+      refine ContinuousOn.smul ?_ continuousOn_const
+      unfold heatDecay; fun_prop
+    have h2 : ContinuousOn (fun t : ℝ => heatDecay ν t (q k)) (Set.Icc 0 T) := by
+      unfold heatDecay; fun_prop
+    have hrw2 : (fun t => v t k) = fun t => frequencyHeatLeray ν t (q k) (u₀ k)
+        + heatDecay ν t (q k) •
+            ∫ s in (0:ℝ)..t, heatDecay ν (-s) (q k) • euclideanLeray (q k) (g s k) := by
+      funext t; simp only [hvdef]; rw [hker k t]
+    rw [hrw2]
+    exact h1.add (h2.smul hprim)
+  refine ⟨v, ⟨hvcont, ?_⟩, hvu⟩
+  intro k t ht
+  obtain ⟨ht0, htT⟩ := ht
+  have hswap : (∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k)
+        (truncatedConvectionSymbol q (v s) (v s) k))
+      = ∫ s in (0:ℝ)..t, frequencyHeatLeray ν (t - s) (q k) (g s k) := by
+    refine intervalIntegral.integral_congr_uIoo ?_
+    intro s hs
+    rw [Set.uIoo_of_le ht0] at hs
+    have hvs : v s = u s := hvu s (le_of_lt hs.1) (lt_of_lt_of_le hs.2 htT)
+    simp only [hgdef, hvs]
+  show v t k = _
+  rw [hswap]
+
 
 end Navier.Analysis.MultiFrequencyMild
