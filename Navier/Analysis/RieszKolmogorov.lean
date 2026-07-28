@@ -686,6 +686,58 @@ theorem mem_prodGridCell_floor {h : ℝ} (hh : 0 < h) (z : ℝ × (ι → ℝ)) 
   · rw [← le_div_iff₀' hh]; exact Int.floor_le (z.1 / h)
   · rw [← div_lt_iff₀' hh]; exact Int.lt_floor_add_one (z.1 / h)
 
+/-- The one-dimensional index bound shared by the spatial and time factors: a cell
+of side `h` meeting `[-R, R]` has its index in a fixed integer interval. -/
+theorem mem_Icc_of_mem_Ico_of_abs_le {h : ℝ} (hh : 0 < h) {R : ℝ} {m : ℤ} {t : ℝ}
+    (ht : t ∈ Set.Ico (h * m) (h * (m + 1))) (htR : |t| ≤ R) :
+    m ∈ Set.Icc ⌈(-R / h) - 1⌉ ⌊R / h⌋ := by
+  simp only [Set.mem_Ico] at ht
+  obtain ⟨hlo, hhi⟩ := abs_le.mp htR
+  refine ⟨Int.ceil_le.mpr ?_, Int.le_floor.mpr ?_⟩
+  · have hdiv : -R / h < (m : ℝ) + 1 := by rw [div_lt_iff₀ hh]; linarith [ht.2]
+    linarith
+  · rw [le_div_iff₀ hh]; linarith [ht.1]
+
+/-- **Only finitely many spacetime cells meet a bounded spacetime window.** -/
+theorem finite_prodGridIndices {h : ℝ} (hh : 0 < h) (R : ℝ) :
+    {p : ℤ × (ι → ℤ) | (prodGridCell h p.1 p.2 ∩
+        Metric.closedBall (0 : ℝ × (ι → ℝ)) R).Nonempty}.Finite := by
+  classical
+  refine Set.Finite.subset
+    (Set.Finite.prod (Set.finite_Icc ⌈(-R / h) - 1⌉ ⌊R / h⌋) (finite_gridIndices hh R)) ?_
+  rintro ⟨m, j⟩ ⟨z, ⟨hz1, hz2⟩, hzB⟩
+  have hnB : ‖z‖ ≤ R := by simpa [Metric.mem_closedBall, dist_zero_right] using hzB
+  rw [Prod.norm_def] at hnB
+  have h1 : |z.1| ≤ R := by
+    have hle := le_trans (le_max_left ‖z.1‖ ‖z.2‖) hnB
+    simpa [Real.norm_eq_abs] using hle
+  have h2 : ‖z.2‖ ≤ R := le_trans (le_max_right ‖z.1‖ ‖z.2‖) hnB
+  refine ⟨mem_Icc_of_mem_Ico_of_abs_le hh hz1 h1, ⟨z.2, hz2, ?_⟩⟩
+  simpa [Metric.mem_closedBall, dist_zero_right] using h2
+
+/-- **The finitely many spacetime cells meeting a ball cover it.** -/
+theorem closedBall_subset_biUnion_prodGridCell {h : ℝ} (hh : 0 < h) (R : ℝ) :
+    Metric.closedBall (0 : ℝ × (ι → ℝ)) R ⊆
+      ⋃ p ∈ {p : ℤ × (ι → ℤ) | (prodGridCell h p.1 p.2 ∩
+          Metric.closedBall (0 : ℝ × (ι → ℝ)) R).Nonempty}, prodGridCell h p.1 p.2 :=
+  fun z hz =>
+    Set.mem_biUnion (x := (⌊z.1 / h⌋, fun i => ⌊z.2 i / h⌋))
+      ⟨z, mem_prodGridCell_floor hh z, hz⟩ (mem_prodGridCell_floor hh z)
+
+/-- **The Navier–Stokes window sits inside a spacetime ball.**  `(0,T] × B̄(0,R)` has
+spacetime norm at most `max T R`, because the product norm is the max.  This is how a
+time-times-space window enters the cell machinery. -/
+theorem window_subset_closedBall {T R : ℝ} :
+    Set.Ioc (0:ℝ) T ×ˢ Metric.closedBall (0 : ι → ℝ) R
+      ⊆ Metric.closedBall (0 : ℝ × (ι → ℝ)) (max T R) := by
+  rintro ⟨t, x⟩ ⟨ht, hx⟩
+  simp only [Metric.mem_closedBall, dist_zero_right, Prod.norm_def]
+  simp only [Set.mem_Ioc] at ht
+  refine max_le ?_ ?_
+  · rw [Real.norm_eq_abs, abs_of_pos ht.1]
+    exact le_trans ht.2 (le_max_left T R)
+  · exact le_trans (by simpa [Metric.mem_closedBall, dist_zero_right] using hx) (le_max_right T R)
+
 end ProdGridCell
 
 /-!
@@ -820,6 +872,7 @@ theorem setIntegral_cellError_le_displacement_of_bounded {G : Type*} [Measurable
     hiA hiB hballInt hprod
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
