@@ -122,6 +122,28 @@ theorem norm_setAverage_sub_apply_sq_le {s : Set α} (h0 : μ s ≠ 0) (hs : μ 
     ‖(⨍ y in s, f y ∂μ) - f x‖ ^ 2 ≤ ⨍ y in s, ‖f y - f x‖ ^ 2 ∂μ :=
   norm_setAverage_sub_sq_le h0 hs f (f x) hfi hsq
 
+/-- **The integrated cell bound.**  Integrating `norm_setAverage_sub_apply_sq_le`
+over the cell: replacing `f` by its cell-average costs at most the mean-square
+oscillation of `f` on that cell.  Summing this over the cells of a partition of
+the window, and converting the right side by Fubini and translation-invariance of
+Lebesgue measure, is what produces `‖E_h f − f‖²_{L²} ≤ 2^d sup_{|k|_∞ ≤ h}
+‖τ_k f − f‖²_{L²}`.
+
+The integrability side conditions are taken as hypotheses rather than derived:
+on the intended cells they are immediate (bounded cell, `f` square-integrable),
+and keeping them explicit avoids committing this general lemma to any one
+measurability setup. -/
+theorem setIntegral_norm_sub_setAverage_sq_le {s : Set α} (hsm : MeasurableSet s)
+    (h0 : μ s ≠ 0) (hs : μ s ≠ ⊤) (f : α → E) (hfi : IntegrableOn f s μ)
+    (hslice : ∀ x : α, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) s μ)
+    (hlhs : IntegrableOn (fun x => ‖f x - ⨍ y in s, f y ∂μ‖ ^ 2) s μ)
+    (hrhs : IntegrableOn (fun x => ⨍ y in s, ‖f y - f x‖ ^ 2 ∂μ) s μ) :
+    ∫ x in s, ‖f x - ⨍ y in s, f y ∂μ‖ ^ 2 ∂μ
+      ≤ ∫ x in s, (⨍ y in s, ‖f y - f x‖ ^ 2 ∂μ) ∂μ := by
+  refine setIntegral_mono_on hlhs hrhs hsm fun x _ => ?_
+  rw [show ‖f x - ⨍ y in s, f y ∂μ‖ = ‖(⨍ y in s, f y ∂μ) - f x‖ from norm_sub_rev _ _]
+  exact norm_setAverage_sub_apply_sq_le h0 hs f x hfi (hslice x)
+
 /-!
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
@@ -147,4 +169,5 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
