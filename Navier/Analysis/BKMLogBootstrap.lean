@@ -625,25 +625,76 @@ structure SchwartzSlicedSolution (ν : ℝ) (u₀ : SchwartzVelocity) where
   slice_eq : ∀ t : ℝ, 0 ≤ t → ⇑(slice t) = velocity t
   solution : IsClassicalSolution ν zeroForce u₀ velocity pressure
 
-/-- **[NAMED RESIDUAL — per-derivative-order control continuity;
-Majda–Bertozzi §3.2.3; est ~300 LOC.]**  Along a Schwartz-sliced classical
+/-- **[NAMED RESIDUAL — the dominated-convergence *data* for one derivative
+order; Majda–Bertozzi §3.2.3; est ~250 LOC.]**  Along a Schwartz-sliced
+classical solution, for one order `n < 4`, there is a single integrable
+`g : Space → ℝ` dominating `‖D^n u(t,·)‖²` uniformly for `t ≥ 0`, and for each
+fixed `x` the map `t ↦ ‖D^n u(t,x)‖²` is continuous on `Ici 0`.
+
+**Why this is a genuine hypothesis and not bookkeeping.**  The docstring this
+statement replaces claimed `sobolevOrderIntegralContinuity` follows from joint
+smoothness by dominated convergence.  It does not: joint smoothness together
+with Schwartz slices is *provably insufficient* to produce the dominating
+function.  Witness (verified numerically before formalisation, and exact by
+scaling): on `ℝ³` take `ψ(y) = exp(-‖y‖²)` and
+
+  `v t x := t³ · ψ(t² x)`.
+
+Then `(t,x) ↦ v t x` is `C^∞` on all of `ℝ × ℝ³`, every slice `v t` is Schwartz
+(at `t = 0` it is identically `0`), yet
+
+  `∫_{ℝ³} ‖v t x‖² dx = t⁶ · (t²)^{-3} · ‖ψ‖²_{L²} = ‖ψ‖²_{L²}`  for every `t ≠ 0`,
+
+while the value at `t = 0` is `0`.  So `t ↦ ∫‖v t ·‖²` jumps at `0` — mass
+escapes to spatial infinity at exactly the rate that keeps the `L²` norm
+constant.  Hence no dominating function exists for that family, and any proof of
+`sobolevOrderIntegralContinuity` must use the Navier–Stokes clauses of
+`IsClassicalSolution` (`equation`, `incompressible`, `finite_energy`,
+`uniformly_bounded_energy`) and not merely `velocity_smooth`.
+
+**Dependencies.**  Propagation of Schwartz bounds with locally-in-time uniform
+seminorms along the flow (this is where the PDE enters), plus identification of
+`iteratedFDeriv` of the slice with the spatial partial derivatives of the joint
+map on the half-space product `Ici 0 ×ˢ univ`.
+
+**What is no longer residual.**  The dominated-convergence step itself, the
+measurability of every integrand, and the assembly of the four orders into the
+`H³` norm (`BKMLogLeaves.continuousOn_sum_range`) are all certified. -/
+theorem exists_sliceOrderDominatedData
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
+    {n : ℕ} (hn : n < 4) :
+    ∃ g : Space → ℝ, Integrable g ∧
+      (∀ t ∈ Set.Ici (0 : ℝ), ∀ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ g x) ∧
+      (∀ x : Space, ContinuousOn
+        (fun t => ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0)) := by
+  sorry
+
+/-- **[DERIVED from `exists_sliceOrderDominatedData`.]**  Per-derivative-order
+control continuity; Majda–Bertozzi §3.2.3.  Along a Schwartz-sliced classical
 solution, and for **one** derivative order `n < 4` at a time, the map
 `t ↦ ∫ ‖D^n u(t,x)‖² dx` is continuous on nonnegative time.
 
-**Dependencies.**  Joint smoothness of `(t,x) ↦ u t x` on `Ici 0 ×ˢ univ`
-(`IsClassicalSolution.velocity_smooth`) gives locally uniform convergence of
-`D^n u(t,·)` on compacts; upgrading that to convergence of the `L²(ℝ³)`
-integral needs a locally-in-time uniform Schwartz-seminorm dominating function
-and dominated convergence.
-
-**What is no longer residual.**  Assembling the four orders into the `H³` norm
-is certified by `BKMLogLeaves.continuousOn_sum_range`. -/
+The derivation is `MeasureTheory.continuousOn_of_dominated` applied to the data
+above; the measurability of each integrand is supplied here from smoothness of
+the Schwartz slice (`ContDiff.continuous_iteratedFDeriv`), so the only input
+left open is the dominating function together with the fixed-`x` time
+continuity. -/
 theorem sobolevOrderIntegralContinuity
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
     {n : ℕ} (hn : n < 4) :
     ContinuousOn (fun t => ∫ x : Space,
       ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0) := by
-  sorry
+  obtain ⟨g, hgint, hbound, hcont⟩ := exists_sliceOrderDominatedData S hn
+  refine MeasureTheory.continuousOn_of_dominated (bound := g) ?_ ?_ hgint ?_
+  · intro t _
+    exact ((ContDiff.continuous_iteratedFDeriv le_rfl
+      ((S.slice t).smooth n)).norm.pow 2).aestronglyMeasurable
+  · intro t ht
+    filter_upwards with x
+    rw [Real.norm_of_nonneg (by positivity)]
+    exact hbound t ht x
+  · filter_upwards with x using hcont x
 
 /-- **[DERIVED from `sobolevOrderIntegralContinuity`.]**  Majda–Bertozzi §3.2.3;
 est ~300 LOC.]**  Along a Schwartz-sliced classical solution the `H³`-norm
@@ -946,4 +997,5 @@ theorem logBKMControl_of_schwartzSliced
     exact mul_le_mul_of_nonneg_left (hB t ht) (le_of_lt hMpos)
 
 end Navier.Analysis.BealeKatoMajda
+
 
