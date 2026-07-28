@@ -1,5 +1,6 @@
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogLeaves
+import Navier.Analysis.UniformDecayDominated
 
 /-!
 # BKM log bootstrap: from the Biot–Savart log inequality to the criterion
@@ -72,6 +73,7 @@ namespace Navier.Analysis.BealeKatoMajda
 
 open Navier
 open Navier.Analysis.BKMLogLeaves
+open Navier.Analysis.UniformDecayDominated
 open Navier.Analysis.Vorticity
 open Navier.Analysis.OfficialABEncoding
 open Navier.Breakdown
@@ -660,41 +662,43 @@ map on the half-space product `Ici 0 ×ˢ univ`.
 **What is no longer residual.**  The dominated-convergence step itself, the
 measurability of every integrand, and the assembly of the four orders into the
 `H³` norm (`BKMLogLeaves.continuousOn_sum_range`) are all certified. -/
-theorem exists_sliceOrderDominatedData
-    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
-    {n : ℕ} (hn : n < 4) :
-    ∃ g : Space → ℝ, Integrable g ∧
-      (∀ t ∈ Set.Ici (0 : ℝ), ∀ x : Space,
-        ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ g x) ∧
-      (∀ x : Space, ContinuousOn
+theorem exists_locallyUniformSliceDecay
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
+    (∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ r K : ℝ, 0 < r ∧
+        ∀ t ∈ Set.Ici (0 : ℝ) ∩ Metric.ball t₀ r, ∀ n : ℕ, n < 4 → ∀ x : Space,
+          ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ)) ∧
+      (∀ n : ℕ, n < 4 → ∀ x : Space, ContinuousOn
         (fun t => ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0)) := by
   sorry
 
-/-- **[DERIVED from `exists_sliceOrderDominatedData`.]**  Per-derivative-order
+/-- **[DERIVED from `exists_locallyUniformSliceDecay`.]**  Per-derivative-order
 control continuity; Majda–Bertozzi §3.2.3.  Along a Schwartz-sliced classical
 solution, and for **one** derivative order `n < 4` at a time, the map
 `t ↦ ∫ ‖D^n u(t,x)‖² dx` is continuous on nonnegative time.
 
-The derivation is `MeasureTheory.continuousOn_of_dominated` applied to the data
-above; the measurability of each integrand is supplied here from smoothness of
-the Schwartz slice (`ContDiff.continuous_iteratedFDeriv`), so the only input
-left open is the dominating function together with the fixed-`x` time
+The derivation is
+`UniformDecayDominated.continuousOn_integral_of_locallyUniformDecay` applied to
+the shared decay gap; the measurability of every integrand and the
+nonnegativity are supplied here, kernel-clean, from smoothness of the Schwartz
+slice (`ContDiff.continuous_iteratedFDeriv`).  Nothing about continuity of the
+integral remains open — only the decay bound and the fixed-`x` time
 continuity. -/
 theorem sobolevOrderIntegralContinuity
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
     {n : ℕ} (hn : n < 4) :
     ContinuousOn (fun t => ∫ x : Space,
       ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0) := by
-  obtain ⟨g, hgint, hbound, hcont⟩ := exists_sliceOrderDominatedData S hn
-  refine MeasureTheory.continuousOn_of_dominated (bound := g) ?_ ?_ hgint ?_
-  · intro t _
+  obtain ⟨hdecay, hcont⟩ := exists_locallyUniformSliceDecay S
+  refine continuousOn_integral_of_locallyUniformDecay
+    (F := fun t x => ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) ?_ ?_ ?_ ?_
+  · intro t
     exact ((ContDiff.continuous_iteratedFDeriv le_rfl
       ((S.slice t).smooth n)).norm.pow 2).aestronglyMeasurable
-  · intro t ht
-    filter_upwards with x
-    rw [Real.norm_of_nonneg (by positivity)]
-    exact hbound t ht x
-  · filter_upwards with x using hcont x
+  · intro t x; positivity
+  · intro x; exact hcont n hn x
+  · intro t₀ ht₀
+    obtain ⟨r, K, hr, hb⟩ := hdecay t₀ ht₀
+    exact ⟨r, K, hr, fun t ht x => hb t ht n hn x⟩
 
 /-- **[DERIVED from `sobolevOrderIntegralContinuity`.]**  Majda–Bertozzi §3.2.3;
 est ~300 LOC.]**  Along a Schwartz-sliced classical solution the `H³`-norm
@@ -997,5 +1001,7 @@ theorem logBKMControl_of_schwartzSliced
     exact mul_le_mul_of_nonneg_left (hB t ht) (le_of_lt hMpos)
 
 end Navier.Analysis.BealeKatoMajda
+
+
 
 

@@ -72,6 +72,7 @@ import Navier.Scaling
 import Navier.EnergyObstruction
 import Navier.ConventionBridges
 import Navier.Analysis.SchwartzComponentBound
+import Navier.Analysis.UniformDecayDominated
 import Navier.Analysis.SchwartzConventionEquivalence
 import Navier.Analysis.CoordinatePDEBridge
 import Navier.Analysis.HalfSpaceSmoothnessBridge
