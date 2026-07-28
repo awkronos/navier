@@ -158,6 +158,27 @@ structure LogBKMControl (u : VelocityEvolution) (T : ℝ) where
   /-- The log-linear BKM differential inequality. -/
   loglinear_inequality : ∀ t ∈ Set.Ioo 0 T,
     controlDeriv t ≤ rate t * (control t * (1 + Real.log (control t)))
+  /-- **(H-diff), Pattern-A.**  Each spatial slice is genuinely differentiable.
+  Without it `vorticity u t x = staticCurl (u t) x` is the `fderiv` **junk value**
+  `0` wherever `u t` fails to be differentiable, and `rate_dominates_vorticity`
+  below is satisfied at `rate ≡ 0` by fields that are not even continuous:
+  `VacuityAudit.preRepairBKMFields_vacuous_of_ballStep` exhibits the indicator of
+  the unit ball in direction `e₀` doing exactly that, and
+  `VacuityAudit.ballStep_not_differentiable` certifies that this field is the one
+  excluded here.  `VelocityEvolution` carries no regularity of its own, so this
+  field is the only thing standing between the criterion and that junk. -/
+  velocity_differentiable :
+    ∀ t ∈ Set.Ico 0 T, ∀ x : Space, DifferentiableAt ℝ (u t) x
+  /-- **(H-div), Pattern-A.**  Incompressibility.  Differentiability alone does
+  not repair the criterion: by Clairaut every smooth gradient field `∇φ` has
+  `staticCurl (∇φ) ≡ 0`, so it too satisfies `rate_dominates_vorticity` at
+  `rate ≡ 0` while having divergence `Δφ ≠ 0` — it is not a Navier–Stokes
+  velocity at all.  Witness:
+  `VacuityAudit.preRepairBKMFields_vacuous_of_curlFree`.  With both fields
+  present the bounded inhabitants with `rate ≡ 0` are, by Liouville, the
+  constants. -/
+  incompressible :
+    ∀ t ∈ Set.Ico 0 T, ∀ x : Space, staticDivergence (u t) x = 0
   /-- `rate t` dominates the vorticity supremum at time `t`. -/
   rate_dominates_vorticity :
     ∀ t ∈ Set.Ico 0 T, ∀ x : Space,
@@ -234,6 +255,8 @@ def controlZero (T : ℝ) : LogBKMControl (fun _ _ => 0) T where
   control_hasDerivAt := fun t _ => hasDerivAt_const t 1
   control_ge_one := fun t _ => le_rfl
   loglinear_inequality := fun t _ => by norm_num
+  velocity_differentiable := fun _ _ _ => differentiableAt_const _
+  incompressible := fun _ _ _ => by simp [staticDivergence]
   rate_dominates_vorticity := fun t _ x => by
     have hv : vorticity (fun _ _ => 0) t x = 0 := by
       simp [vorticity, staticCurl]
@@ -886,7 +909,9 @@ theorem logBKMControl_of_schwartzSliced
     loglinear_inequality := ?_
     rate_dominates_vorticity := ?_
     control_dominates_velocity := ?_
-    finite_vorticity_integral := ?_ }⟩
+    finite_vorticity_integral := ?_
+    velocity_differentiable := ?_
+    incompressible := ?_ }⟩
   · -- rate continuity
     exact continuousOn_const.mul ((continuousOn_const.add hMωc).add
       (Real.continuous_sqrt.comp_continuousOn hM₂c))
@@ -968,6 +993,17 @@ theorem logBKMControl_of_schwartzSliced
           refine mul_le_mul_of_nonneg_left ?_
             (mul_nonneg (le_of_lt hcpos) honePlusN)
           linarith
+  · -- (H-diff): the Schwartz slices are differentiable, so `vorticity` is the
+    -- genuine curl and not the `fderiv` junk value
+    intro t ht x
+    have hst : ⇑(S.slice t) = S.velocity t := S.slice_eq t ht.1
+    have hd : DifferentiableAt ℝ (⇑(S.slice t)) x :=
+      (((S.slice t).smooth 1).differentiable (by norm_num)).differentiableAt
+    rwa [hst] at hd
+  · -- (H-div): incompressibility, straight from the classical solution
+    intro t ht x
+    have hd := S.solution.incompressible t ht.1 x
+    simpa [staticDivergence, divergence, spatialDerivative] using hd
   · -- rate dominates vorticity
     intro t ht x
     have h1 := hMω t ht x
@@ -1001,6 +1037,8 @@ theorem logBKMControl_of_schwartzSliced
     exact mul_le_mul_of_nonneg_left (hB t ht) (le_of_lt hMpos)
 
 end Navier.Analysis.BealeKatoMajda
+
+
 
 
 
