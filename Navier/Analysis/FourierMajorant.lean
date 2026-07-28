@@ -9,10 +9,10 @@ This is the reusable analytic core of the Beale–Kato–Majda Sobolev-embedding
 route.  The certified interface `SobolevEmbedding.sobolev_domination_of_intermediate`
 turns two analytic bounds on a Fourier-side majorant `Q` into the embedding
 `‖u‖_∞ ≤ C·√Ms`.  This file supplies the *first* of those two bounds
-kernel-cleanly (the Cauchy–Schwarz step), together with the weighted-`L²`
-calculus and the componentwise (vector → scalar) reduction, leaving a single
-named **scalar** Fourier residual (inversion + Plancherel):
-`exists_scalarFourierSpectralData`.
+kernel-cleanly, and — as of this file's closure of
+`exists_scalarFourierSpectralData` — the *second* one as well (Fourier inversion
+and weighted Plancherel), so the embedding `fourierMajorant_embedding` is now
+proved outright with no `sorry` and no project axiom.
 
 ## Certified here (no sorry)
 
@@ -39,6 +39,27 @@ named **scalar** Fourier residual (inversion + Plancherel):
   `spectralMajorant_add_le` (`Q(F+G) ≤ 2(Q F + Q G)`, constant sharp) and
   `spectralMajorant_sum_three_le` (`Q(∑_{i<3}Fᵢ) ≤ 3∑ᵢ Q Fᵢ`) — the majorant's
   algebra.
+* `componentCLM`, `spaceProj` — the two norm-`≤ 1` contractions (coordinate
+  projection `ℝ³ → ℝ ↪ ℂ` for the Pi sup norm; the Euclidean-to-sup comparison).
+* `scalarComponent`, `euclidComponent` — the real component of `u` as a `ℂ`-valued
+  Schwartz map on `Space`, then on the Euclidean model, via Mathlib's
+  `SchwartzMap.postcompCLM` and `toEuclid`.
+* `integrable_normSq_iteratedFDeriv` — every order-`n` derivative energy of a
+  Schwartz map is a genuine finite integral.
+* `norm_iteratedFDeriv_euclidComponent_le`, `integral_spaceProj`,
+  `integral_normSq_iteratedFDeriv_euclidComponent_le` — the derivative comparison
+  and its measure transport back to `Space`.
+* `norm_iteratedLineDeriv_le`, `norm_pd_le`, `norm_pd2_le`, `norm_pd3_le` — iterated
+  coordinate line derivatives are dominated by the full order-`n` derivative, via
+  `SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv`.
+* `componentDensity`, `abs_component_le_integral_componentDensity` — the spectral
+  density `‖𝓕(uᵢ)‖` and its Fourier-inversion domination.
+* `spectralMajorant_componentDensity_eq` — the binomial fold
+  `(1+|ξ|²)³ = 1+3|ξ|²+3|ξ|⁴+|ξ|⁶` against the four weighted Plancherel rungs.
+* `spectralMajorant_componentDensity_le` — the `H³` bound with constant `27`.
+* `exists_scalarFourierSpectralData`, `exists_fourierSpectralData`,
+  `exists_fourierMajorant_intermediate`, `fourierMajorant_embedding` — the
+  embedding chain, kernel-clean.
 * `exists_spectralData_of_components` — **the componentwise reduction**: three
   scalar densities, one per real component of `u`, assemble into a single vector
   density with majorant `9·B`.  `Space = Fin 3 → ℝ` is sup-normed, so componentwise
@@ -57,17 +78,19 @@ Axiom set: `⊆ {propext, Classical.choice, Quot.sound}` for certified decls.
 -/
 
 set_option autoImplicit false
+set_option maxHeartbeats 1000000
 
 noncomputable section
 
-open MeasureTheory
-open scoped BigOperators
+open MeasureTheory SchwartzMap LineDeriv
+open scoped BigOperators FourierTransform SchwartzMap
 
 namespace Navier.Analysis.FourierMajorant
 
 open Navier
 open Navier.Analysis.WeightIntegrability
 open Navier.Analysis.BealeKatoMajda
+open Navier.Analysis.FourierWeightedPlancherel
 
 /-!
 ## The Cauchy–Schwarz weight constant
@@ -428,111 +451,396 @@ theorem spacePlancherel (f : SchwartzMap Space ℂ) :
 ## The Fourier residual and the intermediate-majorant assembly
 -/
 
-/-- **[RESIDUAL — the SCALAR Fourier–Plancherel bundle.  Est ~180–260 LOC.]**
-For every Schwartz velocity `u` and every coordinate `i`, the *real scalar*
-component `x ↦ u(x)ᵢ` admits a nonnegative spectral density `F` (classically
-`F ξ = ‖𝓕(uᵢ)(ξ)‖`) with (i) finite weighted `L²` mass, (ii) Fourier-inversion
-domination `|u(x)ᵢ| ≤ ∫ F`, and (iii) the Plancherel bound
-`spectralMajorant F ≤ C·‖u‖²_{H³}`, uniformly in `u` and `i`.
+/-! ## The scalar Fourier–Plancherel bundle (certified)
 
-This is strictly smaller than the former vector-valued residual: the sup-norm
-recombination of the three components, the `L²`-weight algebra, and the two
-Cauchy–Schwarz constants are now kernel-clean
-(`exists_spectralData_of_components`, `spectralMajorant_sum_three_le`,
-`memLp_weighted_sum`, `integrable_of_memLp_weighted`).  What remains is exactly
-the scalar Fourier analysis.
+The residual `exists_scalarFourierSpectralData` is discharged below.  The route
+is: transport the real component `x ↦ u(x)ᵢ` to a `ℂ`-valued Schwartz map on the
+Euclidean model `ES` (`euclidComponent`, via Mathlib's `SchwartzMap.postcompCLM`
+and `toEuclid`); take `F ξ = ‖𝓕(uᵢ)(ξ)‖` (`componentDensity`); get the pointwise
+domination from Fourier inversion; and evaluate `spectralMajorant F` by the
+binomial `(1+|ξ|²)³ = 1 + 3|ξ|² + 3|ξ|⁴ + |ξ|⁶` against the four weighted
+Plancherel rungs of `Navier.Analysis.FourierWeightedPlancherel`.  The derivative
+comparison uses `SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv`
+(`∂^{m}f x = D^n f x m`) together with the two contractions `componentCLM`
+(post-composition, `‖·‖ ≤ 1` for the Pi sup norm) and `spaceProj`
+(pre-composition, `‖·‖ ≤ 1` for the Euclidean-to-sup comparison).
+-/
 
-Explicit dependency list for the remaining work:
+/-! ### components -/
+def componentCLM (i : Fin 3) : Space →L[ℝ] ℂ :=
+  Complex.ofRealCLM.comp (ContinuousLinearMap.proj i)
 
-1. **Component transport (~50 LOC).**  Realize `x ↦ u(x)ᵢ` as a
-   `SchwartzMap (EuclideanSpace ℝ (Fin 3)) ℂ`.  Mathlib supplies *pre*-composition
-   (`SchwartzMap.compCLMOfContinuousLinearEquiv`, already used by `toEuclid`); the
-   missing plumbing is *post*-composition by the coordinate map
-   `ContinuousLinearMap.proj i : (Fin 3 → ℝ) →L[ℝ] ℝ` followed by `ℝ ↪ ℂ`.
-2. **Inversion domination (~50 LOC).**  `SchwartzMap.fourier_inversion` plus
-   `norm_integral_le_integral_norm` give `|u(x)ᵢ| ≤ ∫ ‖𝓕(uᵢ)‖`.
-3. **Weighted `L²` membership (~30 LOC).**  `MemLp (‖𝓕(uᵢ)‖·(sobWeight)^{-1/2}) 2`
-   from Schwartz decay of `𝓕(uᵢ)` (`SchwartzMap.fourierTransformCLE` maps Schwartz
-   to Schwartz), in the style of
-   `FourierWeightedPlancherel.integrable_norm_pow_mul_normSq`.
-4. **Binomial assembly (~40 LOC).**  `sobWeightInv_eq` expands the weight as
-   `(1+|ξ|²)³ = 1 + 3|ξ|² + 3|ξ|⁴ + |ξ|⁶`; the four matching weighted-Plancherel
-   rungs are **already established** in `Navier.Analysis.FourierWeightedPlancherel`:
-   `spacePlancherel` (n = 0), `sum_integral_normSq_pd_eq` (n = 1),
-   `sum_integral_normSq_pd_two_eq` (n = 2), `sum_integral_normSq_pd_three_eq`
-   (n = 3).
-5. **Component/derivative comparison (~60 LOC).**  `‖iteratedFDeriv ℝ n (uᵢ) x‖ ≤
-   ‖iteratedFDeriv ℝ n u x‖` via `ContinuousLinearMap.iteratedFDeriv_comp_left`
-   with `‖ContinuousLinearMap.proj i‖ ≤ 1`; the iterated-`pd` versus
-   `iteratedFDeriv` norm comparison; and the sup-versus-Euclidean norm equivalence
-   on `Fin 3 → ℝ`.  Only this step needs new (elementary) infrastructure.
+theorem norm_componentCLM_le_one (i : Fin 3) : ‖componentCLM i‖ ≤ 1 :=
+  ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => by
+    simpa [componentCLM] using norm_le_pi_norm x i
 
-**Structural note (import DAG).**  Step 4's four rungs exist but sit *downstream*:
-`Navier/Analysis/FourierWeightedPlancherel.lean` imports this file, so they are not
-in scope here.  Inspection of that file shows the import is unused — it needs only
-Mathlib and `EuclideanSpace ℝ (Fin 3)`, never `Space`, `sobWeight`, `toEuclid` or
-`spacePlancherel`.  Reversing the edge (drop `import Navier.Analysis.FourierMajorant`
-there; import `Navier.Analysis.FourierWeightedPlancherel` here) puts all four rungs
-in scope for this residual at zero mathematical cost.  That single-edge refactor is
-the prerequisite for closing this statement in place.
+def spaceProj : ES →L[ℝ] Space := (EuclideanSpace.equiv (Fin 3) ℝ).toContinuousLinearMap
 
-Reference: Stein, *Singular Integrals* III.2; Agmon; Majda–Bertozzi Lemma 3.2.
-TRUE-as-stated for Schwartz `u` (take `F = ‖𝓕(uᵢ)‖`). -/
+theorem norm_spaceProj_le_one : ‖spaceProj‖ ≤ 1 := by
+  refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => ?_
+  rw [one_mul]
+  refine (pi_norm_le_iff_of_nonneg (norm_nonneg x)).mpr fun i => ?_
+  have hs : ‖x i‖ ^ 2 ≤ ∑ j : Fin 3, ‖x j‖ ^ 2 :=
+    Finset.single_le_sum (f := fun j : Fin 3 => ‖x j‖ ^ 2)
+      (fun j _ => sq_nonneg _) (Finset.mem_univ i)
+  calc ‖x i‖ = Real.sqrt (‖x i‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
+    _ ≤ Real.sqrt (∑ j : Fin 3, ‖x j‖ ^ 2) := Real.sqrt_le_sqrt hs
+    _ = ‖x‖ := (EuclideanSpace.norm_eq x).symm
+
+def scalarComponent (u : SchwartzVelocity) (i : Fin 3) : SchwartzMap Space ℂ :=
+  SchwartzMap.postcompCLM (𝕜 := ℝ) (componentCLM i) u
+
+def euclidComponent (u : SchwartzVelocity) (i : Fin 3) : SchwartzMap ES ℂ :=
+  toEuclid (scalarComponent u i)
+
+theorem euclidComponent_apply (u : SchwartzVelocity) (i : Fin 3) (y : ES) :
+    euclidComponent u i y = (((⇑u) (spaceProj y) i : ℝ) : ℂ) := rfl
+
+theorem coe_euclidComponent (u : SchwartzVelocity) (i : Fin 3) :
+    ⇑(euclidComponent u i) = (⇑(scalarComponent u i)) ∘ ⇑spaceProj := rfl
+
+/-! ### integrability of derivative energies -/
+theorem integrable_normSq_iteratedFDeriv {D V : Type*} [NormedAddCommGroup D] [NormedSpace ℝ D]
+    [MeasurableSpace D] [BorelSpace D] [SecondCountableTopology D]
+    [NormedAddCommGroup V] [NormedSpace ℝ V]
+    (μ : Measure D) [μ.HasTemperateGrowth] (f : SchwartzMap D V) (n : ℕ) :
+    Integrable (fun x : D => ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2) μ := by
+  obtain ⟨C, _, hC⟩ := f.decay 0 n
+  have hCnn : ∀ x : D, ‖iteratedFDeriv ℝ n (⇑f) x‖ ≤ C := fun x => by simpa using hC x
+  refine ((f.integrable_pow_mul_iteratedFDeriv μ 0 n).const_mul C).mono'
+    (((f.smooth ⊤).continuous_iteratedFDeriv (mod_cast le_top)).norm.pow 2).aestronglyMeasurable ?_
+  filter_upwards with x
+  rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+  calc ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2
+      = ‖iteratedFDeriv ℝ n (⇑f) x‖ * ‖iteratedFDeriv ℝ n (⇑f) x‖ := sq _
+    _ ≤ C * (‖x‖ ^ 0 * ‖iteratedFDeriv ℝ n (⇑f) x‖) := by
+        simpa using mul_le_mul_of_nonneg_right (hCnn x) (norm_nonneg _)
+
+/-! ### derivative comparison -/
+theorem norm_iteratedFDeriv_euclidComponent_le
+    (u : SchwartzVelocity) (i : Fin 3) (n : ℕ) (y : ES) :
+    ‖iteratedFDeriv ℝ n (⇑(euclidComponent u i)) y‖
+      ≤ ‖iteratedFDeriv ℝ n (⇑u) (spaceProj y)‖ := by
+  have hstep1 : ‖iteratedFDeriv ℝ n (⇑(euclidComponent u i)) y‖
+      ≤ ‖iteratedFDeriv ℝ n (⇑(scalarComponent u i)) (spaceProj y)‖ := by
+    rw [coe_euclidComponent,
+      ContinuousLinearMap.iteratedFDeriv_comp_right (g := spaceProj)
+        ((scalarComponent u i).smooth ⊤) y (mod_cast le_top)]
+    refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
+    have hp : ∏ _k : Fin n, ‖spaceProj‖ ≤ 1 :=
+      Finset.prod_le_one (fun _ _ => norm_nonneg _) (fun _ _ => norm_spaceProj_le_one)
+    nlinarith [norm_nonneg (iteratedFDeriv ℝ n (⇑(scalarComponent u i)) (spaceProj y)),
+      Finset.prod_nonneg (fun (_ : Fin n) (_ : _ ∈ Finset.univ) => norm_nonneg spaceProj)]
+  refine hstep1.trans ?_
+  have hcomp : ⇑(scalarComponent u i) = (⇑(componentCLM i)) ∘ (⇑u) := rfl
+  have h2 := (componentCLM i).norm_iteratedFDeriv_comp_left
+    (f := (⇑u)) (x := spaceProj y) (n := n) ((u.smooth ⊤).contDiffAt) (mod_cast le_top)
+  rw [hcomp]
+  refine h2.trans ?_
+  nlinarith [norm_componentCLM_le_one i, norm_nonneg (iteratedFDeriv ℝ n (⇑u) (spaceProj y))]
+
+/-- Transport an integral over the Euclidean model back to `Space`. -/
+theorem integral_spaceProj (ψ : Space → ℝ) : ∫ y : ES, ψ (spaceProj y) = ∫ x : Space, ψ x := by
+  rw [← (PiLp.volume_preserving_toLp (Fin 3)).integral_comp
+        (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).measurableEmbedding (fun z : ES => ψ (spaceProj z))]
+  rfl
+
+theorem integral_normSq_iteratedFDeriv_euclidComponent_le
+    (u : SchwartzVelocity) (i : Fin 3) (n : ℕ) :
+    (∫ y : ES, ‖iteratedFDeriv ℝ n (⇑(euclidComponent u i)) y‖ ^ 2)
+      ≤ ∫ x : Space, ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2 := by
+  rw [← integral_spaceProj (fun x => ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2)]
+  refine integral_mono (integrable_normSq_iteratedFDeriv volume (euclidComponent u i) n) ?_ ?_
+  · have hu : Integrable
+        ((fun y : ES => ‖iteratedFDeriv ℝ n (⇑u) (spaceProj y)‖ ^ 2) ∘ (WithLp.toLp 2)) volume :=
+      integrable_normSq_iteratedFDeriv volume u n
+    exact ((PiLp.volume_preserving_toLp (Fin 3)).integrable_comp_emb
+      (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).measurableEmbedding).mp hu
+  · intro y
+    have h := norm_iteratedFDeriv_euclidComponent_le u i n y
+    nlinarith [norm_nonneg (iteratedFDeriv ℝ n (⇑(euclidComponent u i)) y)]
+
+/-- Iterated coordinate line derivatives are dominated by the full order-`n` derivative. -/
+theorem norm_iteratedLineDeriv_le {n : ℕ} (m : Fin n → ES) (hm : ∀ k, ‖m k‖ ≤ 1)
+    (f : SchwartzMap ES ℂ) (x : ES) :
+    ‖(∂^{m} f) x‖ ≤ ‖iteratedFDeriv ℝ n (⇑f) x‖ := by
+  rw [SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv]
+  refine (ContinuousMultilinearMap.le_opNorm _ _).trans ?_
+  have hp : ∏ k, ‖m k‖ ≤ 1 := Finset.prod_le_one (fun k _ => norm_nonneg _) (fun k _ => hm k)
+  nlinarith [norm_nonneg (iteratedFDeriv ℝ n (⇑f) x),
+    Finset.prod_nonneg (fun k (_ : k ∈ Finset.univ) => norm_nonneg (m k))]
+
+theorem norm_single_es (j : Fin 3) : ‖(EuclideanSpace.single j (1:ℝ) : ES)‖ = 1 := by simp
+
+theorem norm_pd_le (j : Fin 3) (f : SchwartzMap ES ℂ) (x : ES) :
+    ‖(pd j f) x‖ ≤ ‖iteratedFDeriv ℝ 1 (⇑f) x‖ := by
+  have h : pd j f = ∂^{![EuclideanSpace.single j (1:ℝ)]} f := by
+    rw [LineDeriv.iteratedLineDerivOp_one]; rfl
+  rw [h]
+  exact norm_iteratedLineDeriv_le _ (by intro k; fin_cases k; simp) f x
+
+theorem norm_pd2_le (i j : Fin 3) (f : SchwartzMap ES ℂ) (x : ES) :
+    ‖(pd i (pd j f)) x‖ ≤ ‖iteratedFDeriv ℝ 2 (⇑f) x‖ := by
+  have h : pd i (pd j f)
+      = ∂^{![EuclideanSpace.single i (1:ℝ), EuclideanSpace.single j (1:ℝ)]} f := by
+    rw [LineDeriv.iteratedLineDerivOp_succ_left]
+    norm_num [LineDeriv.iteratedLineDerivOp_one, pd_def]
+  rw [h]
+  exact norm_iteratedLineDeriv_le _ (by intro k; fin_cases k <;> simp) f x
+
+theorem norm_pd3_le (i j l : Fin 3) (f : SchwartzMap ES ℂ) (x : ES) :
+    ‖(pd i (pd j (pd l f))) x‖ ≤ ‖iteratedFDeriv ℝ 3 (⇑f) x‖ := by
+  have h : pd i (pd j (pd l f))
+      = ∂^{![EuclideanSpace.single i (1:ℝ), EuclideanSpace.single j (1:ℝ),
+             EuclideanSpace.single l (1:ℝ)]} f := by
+    rw [LineDeriv.iteratedLineDerivOp_succ_left, LineDeriv.iteratedLineDerivOp_succ_left]
+    norm_num [LineDeriv.iteratedLineDerivOp_one, pd_def]
+  rw [h]
+  exact norm_iteratedLineDeriv_le _ (by intro k; fin_cases k <;> simp) f x
+
+/-! ### the component spectral density -/
+def componentDensity (u : SchwartzVelocity) (i : Fin 3) (ξ : Space) : ℝ :=
+  ‖(𝓕 (euclidComponent u i)) (WithLp.toLp 2 ξ : ES)‖
+
+theorem componentDensity_nonneg (u : SchwartzVelocity) (i : Fin 3) (ξ : Space) :
+    0 ≤ componentDensity u i ξ := norm_nonneg _
+
+theorem sobWeightInv_euclid (ξ : Space) :
+    (sobWeight ξ)⁻¹ = (1 + ‖(WithLp.toLp 2 ξ : ES)‖ ^ 2) ^ 3 := by
+  rw [sobWeight, EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity)]
+  simp [Fin.sum_univ_three]
+  ring
+
+theorem integral_componentDensity_eq (u : SchwartzVelocity) (i : Fin 3) :
+    (∫ ξ : Space, componentDensity u i ξ)
+      = ∫ η : ES, ‖(𝓕 (euclidComponent u i)) η‖ :=
+  (PiLp.volume_preserving_toLp (Fin 3)).integral_comp
+    (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).measurableEmbedding
+    (fun η : ES => ‖(𝓕 (euclidComponent u i)) η‖)
+
+theorem abs_component_le_integral_componentDensity
+    (u : SchwartzVelocity) (i : Fin 3) (x : Space) :
+    |(⇑u) x i| ≤ ∫ ξ : Space, componentDensity u i ξ := by
+  rw [integral_componentDensity_eq]
+  set g := euclidComponent u i with hg
+  have hinv : 𝓕⁻ (𝓕 (⇑g)) = (⇑g) :=
+    g.continuous.fourierInv_fourier_eq g.integrable
+      (by rw [← SchwartzMap.fourier_coe]; exact (𝓕 g).integrable)
+  have h1 : ‖(𝓕⁻ (𝓕 (⇑g))) (WithLp.toLp 2 x : ES)‖ ≤ ∫ η : ES, ‖(𝓕 (⇑g)) η‖ :=
+    VectorFourier.norm_fourierIntegral_le_integral_norm _ _ _ _ _
+  rw [hinv] at h1
+  rw [SchwartzMap.fourier_coe]
+  refine le_trans (le_of_eq ?_) h1
+  rw [hg]
+  exact (Complex.norm_real _).symm
+
+/-! ### the binomial fold -/
+theorem spectralMajorant_componentDensity_eq (u : SchwartzVelocity) (i : Fin 3) :
+    spectralMajorant (componentDensity u i)
+      = (∫ η : ES, ‖(𝓕 (euclidComponent u i)) η‖ ^ 2)
+        + 3 * (∫ η : ES, ‖η‖ ^ 2 * ‖(𝓕 (euclidComponent u i)) η‖ ^ 2)
+        + 3 * (∫ η : ES, ‖η‖ ^ 4 * ‖(𝓕 (euclidComponent u i)) η‖ ^ 2)
+        + (∫ η : ES, ‖η‖ ^ 6 * ‖(𝓕 (euclidComponent u i)) η‖ ^ 2) := by
+  set g := euclidComponent u i with hg
+  have hI : ∀ k : ℕ, Integrable (fun η : ES => ‖η‖ ^ k * ‖(𝓕 g) η‖ ^ 2) volume :=
+    fun k => integrable_norm_pow_mul_normSq (𝓕 g) k
+  have hI0 : Integrable (fun η : ES => ‖(𝓕 g) η‖ ^ 2) volume := integrable_normSq (𝓕 g)
+  have hcomp := (PiLp.volume_preserving_toLp (Fin 3)).integral_comp
+      (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).measurableEmbedding
+      (fun η : ES => ‖(𝓕 g) η‖ ^ 2 + 3 * (‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2)
+          + 3 * (‖η‖ ^ 4 * ‖(𝓕 g) η‖ ^ 2) + ‖η‖ ^ 6 * ‖(𝓕 g) η‖ ^ 2)
+  have htrans : spectralMajorant (componentDensity u i)
+      = ∫ η : ES, (‖(𝓕 g) η‖ ^ 2 + 3 * (‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2)
+          + 3 * (‖η‖ ^ 4 * ‖(𝓕 g) η‖ ^ 2) + ‖η‖ ^ 6 * ‖(𝓕 g) η‖ ^ 2) := by
+    refine Eq.trans ?_ hcomp
+    rw [spectralMajorant]
+    refine integral_congr_ae ?_
+    filter_upwards with ξ
+    rw [componentDensity, sobWeightInv_euclid]
+    ring
+  have hA : Integrable (fun η : ES =>
+      ‖(𝓕 g) η‖ ^ 2 + 3 * (‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2)) volume :=
+    hI0.add ((hI 2).const_mul 3)
+  have hB : Integrable (fun η : ES =>
+      ‖(𝓕 g) η‖ ^ 2 + 3 * (‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2)
+        + 3 * (‖η‖ ^ 4 * ‖(𝓕 g) η‖ ^ 2)) volume :=
+    hA.add ((hI 4).const_mul 3)
+  rw [htrans, integral_add hB (hI 6), integral_add hA ((hI 4).const_mul 3),
+      integral_add hI0 ((hI 2).const_mul 3), integral_const_mul, integral_const_mul]
+
+/-! ### the H³ bound -/
+theorem sobolevH3NormSq_expand (u : SchwartzVelocity) :
+    sobolevH3NormSq u = (∫ x : Space, ‖iteratedFDeriv ℝ 0 (⇑u) x‖ ^ 2)
+      + (∫ x : Space, ‖iteratedFDeriv ℝ 1 (⇑u) x‖ ^ 2)
+      + (∫ x : Space, ‖iteratedFDeriv ℝ 2 (⇑u) x‖ ^ 2)
+      + (∫ x : Space, ‖iteratedFDeriv ℝ 3 (⇑u) x‖ ^ 2) := by
+  simp [sobolevH3NormSq, Finset.sum_range_succ]
+
+theorem integral_normSq_pd_le (u : SchwartzVelocity) (i j : Fin 3) :
+    (∫ x : ES, ‖(pd j (euclidComponent u i)) x‖ ^ 2)
+      ≤ ∫ x : Space, ‖iteratedFDeriv ℝ 1 (⇑u) x‖ ^ 2 := by
+  refine le_trans ?_ (integral_normSq_iteratedFDeriv_euclidComponent_le u i 1)
+  refine integral_mono (integrable_normSq _)
+    (integrable_normSq_iteratedFDeriv volume (euclidComponent u i) 1) fun x => ?_
+  nlinarith [norm_pd_le j (euclidComponent u i) x,
+    norm_nonneg ((pd j (euclidComponent u i)) x)]
+
+theorem integral_normSq_pd2_le (u : SchwartzVelocity) (i j l : Fin 3) :
+    (∫ x : ES, ‖(pd l (pd j (euclidComponent u i))) x‖ ^ 2)
+      ≤ ∫ x : Space, ‖iteratedFDeriv ℝ 2 (⇑u) x‖ ^ 2 := by
+  refine le_trans ?_ (integral_normSq_iteratedFDeriv_euclidComponent_le u i 2)
+  refine integral_mono (integrable_normSq _)
+    (integrable_normSq_iteratedFDeriv volume (euclidComponent u i) 2) fun x => ?_
+  nlinarith [norm_pd2_le l j (euclidComponent u i) x,
+    norm_nonneg ((pd l (pd j (euclidComponent u i))) x)]
+
+theorem integral_normSq_pd3_le (u : SchwartzVelocity) (i j l k : Fin 3) :
+    (∫ x : ES, ‖(pd k (pd l (pd j (euclidComponent u i)))) x‖ ^ 2)
+      ≤ ∫ x : Space, ‖iteratedFDeriv ℝ 3 (⇑u) x‖ ^ 2 := by
+  refine le_trans ?_ (integral_normSq_iteratedFDeriv_euclidComponent_le u i 3)
+  refine integral_mono (integrable_normSq _)
+    (integrable_normSq_iteratedFDeriv volume (euclidComponent u i) 3) fun x => ?_
+  nlinarith [norm_pd3_le k l j (euclidComponent u i) x,
+    norm_nonneg ((pd k (pd l (pd j (euclidComponent u i)))) x)]
+
+theorem one_le_two_pi_pow (n : ℕ) : (1 : ℝ) ≤ (2 * Real.pi) ^ n := by
+  refine one_le_pow₀ ?_
+  nlinarith [Real.pi_gt_three]
+
+theorem spectralMajorant_componentDensity_le (u : SchwartzVelocity) (i : Fin 3) :
+    spectralMajorant (componentDensity u i) ≤ 27 * sobolevH3NormSq u := by
+  set g := euclidComponent u i with hg
+  set E : ℕ → ℝ := fun n => ∫ x : Space, ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2 with hE
+  have hEnn : ∀ n, 0 ≤ E n := fun n => integral_nonneg fun x => by positivity
+  -- the four spectral integrals
+  have hI2nn : (0:ℝ) ≤ ∫ η : ES, ‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2 :=
+    integral_nonneg fun η => by positivity
+  have hI4nn : (0:ℝ) ≤ ∫ η : ES, ‖η‖ ^ 4 * ‖(𝓕 g) η‖ ^ 2 :=
+    integral_nonneg fun η => by positivity
+  have hI6nn : (0:ℝ) ≤ ∫ η : ES, ‖η‖ ^ 6 * ‖(𝓕 g) η‖ ^ 2 :=
+    integral_nonneg fun η => by positivity
+  -- n = 0
+  have h0 : (∫ η : ES, ‖(𝓕 g) η‖ ^ 2) ≤ E 0 := by
+    have hz := integral_normSq_iteratedFDeriv_euclidComponent_le u i 0
+    rw [SchwartzMap.integral_norm_sq_fourier g]
+    show (∫ y : ES, ‖g y‖ ^ 2) ≤ ∫ x : Space, ‖iteratedFDeriv ℝ 0 (⇑u) x‖ ^ 2
+    refine le_trans (le_of_eq ?_) hz
+    exact integral_congr_ae (by filter_upwards with y; rw [norm_iteratedFDeriv_zero])
+  -- n = 1
+  have h1 : (2 * Real.pi) ^ 2 * (∫ η : ES, ‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2) ≤ 3 * E 1 := by
+    rw [← sum_integral_normSq_pd_eq g, Fin.sum_univ_three]
+    linarith [integral_normSq_pd_le u i 0, integral_normSq_pd_le u i 1,
+      integral_normSq_pd_le u i 2]
+  have hle1 : (∫ η : ES, ‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2) ≤ 3 * E 1 := by
+    nlinarith [one_le_two_pi_pow 2, hI2nn]
+  -- n = 2
+  have h2 : (2 * Real.pi) ^ 4 * (∫ η : ES, ‖η‖ ^ 4 * ‖(𝓕 g) η‖ ^ 2) ≤ 9 * E 2 := by
+    rw [← sum_integral_normSq_pd_two_eq g]
+    simp only [Fin.sum_univ_three]
+    linarith [integral_normSq_pd2_le u i 0 0, integral_normSq_pd2_le u i 0 1,
+      integral_normSq_pd2_le u i 0 2, integral_normSq_pd2_le u i 1 0,
+      integral_normSq_pd2_le u i 1 1, integral_normSq_pd2_le u i 1 2,
+      integral_normSq_pd2_le u i 2 0, integral_normSq_pd2_le u i 2 1,
+      integral_normSq_pd2_le u i 2 2]
+  have hle2 : (∫ η : ES, ‖η‖ ^ 4 * ‖(𝓕 g) η‖ ^ 2) ≤ 9 * E 2 := by
+    nlinarith [one_le_two_pi_pow 4, hI4nn]
+  -- n = 3
+  have h3 : (2 * Real.pi) ^ 6 * (∫ η : ES, ‖η‖ ^ 6 * ‖(𝓕 g) η‖ ^ 2) ≤ 27 * E 3 := by
+    rw [← sum_integral_normSq_pd_three_eq g]
+    simp only [Fin.sum_univ_three]
+    linarith [integral_normSq_pd3_le u i 0 0 0, integral_normSq_pd3_le u i 0 0 1,
+      integral_normSq_pd3_le u i 0 0 2, integral_normSq_pd3_le u i 0 1 0,
+      integral_normSq_pd3_le u i 0 1 1, integral_normSq_pd3_le u i 0 1 2,
+      integral_normSq_pd3_le u i 0 2 0, integral_normSq_pd3_le u i 0 2 1,
+      integral_normSq_pd3_le u i 0 2 2, integral_normSq_pd3_le u i 1 0 0,
+      integral_normSq_pd3_le u i 1 0 1, integral_normSq_pd3_le u i 1 0 2,
+      integral_normSq_pd3_le u i 1 1 0, integral_normSq_pd3_le u i 1 1 1,
+      integral_normSq_pd3_le u i 1 1 2, integral_normSq_pd3_le u i 1 2 0,
+      integral_normSq_pd3_le u i 1 2 1, integral_normSq_pd3_le u i 1 2 2,
+      integral_normSq_pd3_le u i 2 0 0, integral_normSq_pd3_le u i 2 0 1,
+      integral_normSq_pd3_le u i 2 0 2, integral_normSq_pd3_le u i 2 1 0,
+      integral_normSq_pd3_le u i 2 1 1, integral_normSq_pd3_le u i 2 1 2,
+      integral_normSq_pd3_le u i 2 2 0, integral_normSq_pd3_le u i 2 2 1,
+      integral_normSq_pd3_le u i 2 2 2]
+  have hle3 : (∫ η : ES, ‖η‖ ^ 6 * ‖(𝓕 g) η‖ ^ 2) ≤ 27 * E 3 := by
+    nlinarith [one_le_two_pi_pow 6, hI6nn]
+  rw [spectralMajorant_componentDensity_eq u i, sobolevH3NormSq_expand u]
+  simp only [← hg]
+  linarith [hEnn 0, hEnn 1, hEnn 2, hEnn 3]
+
+/-! ### MemLp and the closed residual -/
+theorem integrable_componentDensity_sq_weighted (u : SchwartzVelocity) (i : Fin 3) :
+    Integrable (fun ξ : Space => componentDensity u i ξ ^ 2 * (sobWeight ξ)⁻¹) volume := by
+  set g := euclidComponent u i with hg
+  have hI : ∀ k : ℕ, Integrable (fun η : ES => ‖η‖ ^ k * ‖(𝓕 g) η‖ ^ 2) volume :=
+    fun k => integrable_norm_pow_mul_normSq (𝓕 g) k
+  have hI0 : Integrable (fun η : ES => ‖(𝓕 g) η‖ ^ 2) volume := integrable_normSq (𝓕 g)
+  have hES : Integrable (fun η : ES => ‖(𝓕 g) η‖ ^ 2 + 3 * (‖η‖ ^ 2 * ‖(𝓕 g) η‖ ^ 2)
+      + 3 * (‖η‖ ^ 4 * ‖(𝓕 g) η‖ ^ 2) + ‖η‖ ^ 6 * ‖(𝓕 g) η‖ ^ 2) volume :=
+    ((hI0.add ((hI 2).const_mul 3)).add ((hI 4).const_mul 3)).add (hI 6)
+  have htr := ((PiLp.volume_preserving_toLp (Fin 3)).integrable_comp_emb
+      (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).measurableEmbedding).mpr hES
+  refine htr.congr ?_
+  filter_upwards with ξ
+  show ‖(𝓕 g) (WithLp.toLp 2 ξ)‖ ^ 2 + 3 * (‖(WithLp.toLp 2 ξ : ES)‖ ^ 2 * ‖(𝓕 g) (WithLp.toLp 2 ξ)‖ ^ 2)
+      + 3 * (‖(WithLp.toLp 2 ξ : ES)‖ ^ 4 * ‖(𝓕 g) (WithLp.toLp 2 ξ)‖ ^ 2)
+      + ‖(WithLp.toLp 2 ξ : ES)‖ ^ 6 * ‖(𝓕 g) (WithLp.toLp 2 ξ)‖ ^ 2
+      = componentDensity u i ξ ^ 2 * (sobWeight ξ)⁻¹
+  rw [componentDensity, sobWeightInv_euclid, ← hg]
+  ring
+
+theorem continuous_componentDensity_weighted (u : SchwartzVelocity) (i : Fin 3) :
+    Continuous (fun ξ : Space => componentDensity u i ξ * Real.sqrt (sobWeight ξ)⁻¹) := by
+  refine Continuous.mul ?_ ?_
+  · exact ((𝓕 (euclidComponent u i)).continuous.comp
+      (EuclideanSpace.equiv (Fin 3) ℝ).symm.continuous).norm
+  · exact Real.continuous_sqrt.comp
+      (sobWeight_continuous.inv₀ (fun ξ => ne_of_gt (sobWeight_pos ξ)))
+
+theorem memLp_componentDensity (u : SchwartzVelocity) (i : Fin 3) :
+    MemLp (fun ξ : Space => componentDensity u i ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume := by
+  rw [memLp_two_iff_integrable_sq
+    (continuous_componentDensity_weighted u i).aestronglyMeasurable]
+  refine (integrable_componentDensity_sq_weighted u i).congr ?_
+  filter_upwards with ξ
+  rw [mul_pow, Real.sq_sqrt (inv_nonneg.mpr (sobWeight_nonneg ξ))]
+
+/-- **The SCALAR Fourier–Plancherel bundle (certified, no sorry).**
+For every Schwartz velocity `u` and every coordinate `i`, the real scalar
+component `x ↦ u(x)ᵢ` admits a nonnegative spectral density `F` (namely
+`F ξ = ‖𝓕(uᵢ)(ξ)‖`, `componentDensity`) with (i) finite weighted `L²` mass,
+(ii) Fourier-inversion domination `|u(x)ᵢ| ≤ ∫ F`, and (iii) the Plancherel bound
+`spectralMajorant F ≤ 27·‖u‖²_{H³}`, uniformly in `u` and `i`.
+
+The constant `27` is not optimal: it is the crude uniform majorant of the four
+binomial coefficients `1, 3·3, 3·9, 27` divided by `(2π)^{0,2,4,6} ≥ 1`
+(`one_le_two_pi_pow`), which is all the downstream consumers need.
+
+Reference: Stein, *Singular Integrals* (1970) III.2; Grafakos, *Classical
+Fourier Analysis*, 3rd ed. (2014) §2.2 (Plancherel and inversion for Schwartz
+functions); Reed–Simon I (1980) §IX.1; Majda–Bertozzi Lemma 3.2. -/
 theorem exists_scalarFourierSpectralData :
     ∃ C : ℝ, 0 < C ∧ ∀ (u : SchwartzVelocity) (i : Fin 3),
       ∃ F : Space → ℝ, (∀ ξ, 0 ≤ F ξ) ∧
         MemLp (fun ξ => F ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume ∧
         (∀ x : Space, |(⇑u) x i| ≤ ∫ ξ : Space, F ξ) ∧
-        spectralMajorant F ≤ C * sobolevH3NormSq u := by
-  sorry
+        spectralMajorant F ≤ C * sobolevH3NormSq u :=
+  ⟨27, by norm_num, fun u i => ⟨componentDensity u i, componentDensity_nonneg u i,
+    memLp_componentDensity u i, abs_component_le_integral_componentDensity u i,
+    spectralMajorant_componentDensity_le u i⟩⟩
 
-/-- **The vector-valued spectral data, reduced to the scalar residual.**  Derived
-from `exists_scalarFourierSpectralData` by the kernel-clean componentwise assembly
+/-- **The vector-valued spectral data (certified, no sorry).**  Derived from the
+scalar bundle `exists_scalarFourierSpectralData` by the componentwise assembly
 `exists_spectralData_of_components` (constant `C₂ = 9·C`; the two Cauchy–Schwarz
-factors of `3`).  The attack map below records the remaining scalar work and the
-Mathlib tools verified present for it.
+factors of `3`).
 
-For every Schwartz velocity `u` there is a nonnegative
-spectral density `F` (classically `F ξ = ‖û(ξ)‖`) with (i) `F·(sobWeight)^{-1/2} ∈ L²`,
+For every Schwartz velocity `u` there is a nonnegative spectral density `F`
+(namely `F ξ = ∑ᵢ ‖𝓕(uᵢ)(ξ)‖`) with (i) `F·(sobWeight)^{-1/2} ∈ L²`,
 (ii) Fourier-inversion domination `‖u x‖ ≤ ∫ F`, and (iii) the Plancherel bound
 `spectralMajorant F ≤ C₂·‖u‖²_{H³}` uniformly in `u`.
 
-Concrete attack map (Mathlib tools verified present, 2026-07-16):
-
-* **[transport, ~60 LOC]** `Space = Fin 3 → ℝ` is sup-normed, but the Fourier /
-  Plancherel API needs an inner-product domain.  Transport via the CLE
-  `EuclideanSpace ℝ (Fin 3) ≃L[ℝ] (Fin 3 → ℝ)` and
-  `SchwartzMap.compCLMOfContinuousLinearEquiv` (`⇑(compCLMOfCLE 𝕜 g f) = ⇑f ∘ ⇑g`),
-  reducing `u` to `SchwartzMap (EuclideanSpace ℝ (Fin 3)) ℂ` componentwise (embed the
-  3 real components `ℝ ↪ ℂ`).  Lebesgue `volume` agrees across the equiv.
-* **[Plancherel, in Mathlib]** `SchwartzMap.integral_norm_sq_fourier` :
-  `∫‖𝓕f‖² = ∫‖f‖²` — the `n=0` (L²) term directly.
-* **[weighted Plancherel, ~200 LOC; n = 1 rung ESTABLISHED 2026-07-22]**
-  iterate the Schwartz-level multiplier identity
-  `SchwartzMap.fourier_lineDerivOp_eq` (`𝓕(∂ₘf) = 2πi⟨ξ,m⟩·𝓕f`) to get
-  `∫‖𝓕f‖²|ξ|^{2n} = c·∫‖D^n f‖²` (n ≤ 3).  The n = 1 rung is
-  `FourierWeightedPlancherel.sum_integral_normSq_lineDeriv_eq`
-  (`∑ⱼ∫‖∂ⱼf‖² = (2π)²∫‖ξ‖²‖𝓕f‖²`, kernel-clean); n = 2, 3 iterate it on
-  `∂ⱼf`; then `sobWeightInv_eq`'s binomial
-  `(1+|ξ|²)³ = 1+3|ξ|²+3|ξ|⁴+|ξ|⁶` sums the four terms into
-  `C₂·sobolevH3NormSq`.  Mathlib recon 2026-07-22: `Distribution/Sobolev.lean`
-  (Bessel-potential spaces) now ships `MemSobolev.fourier_memL1` — the
-  qualitative `𝓕f ∈ L¹` half for `2s > d` — and `SchwartzMap.memSobolev`;
-  the quantitative physical↔spectral bridge remains this ladder.
-* **[substep-3 OBSTRUCTION, found 2026-07-16]** the pointwise multiplier norm is
-  assembleable — `‖𝗕(fderiv g) ξ‖ = 2π‖ξ‖‖𝗕g ξ‖` from `Real.fourierIntegral_fderiv`
-  + `VectorFourier.norm_fourierSMulRight` (`‖fourierSMulRight L f v‖ = 2π‖L v‖‖f v‖`)
-  + `innerSL_apply_norm` (`‖innerSL ℝ ξ‖ = ‖ξ‖`).  But `SchwartzMap.integral_norm_sq_fourier`
-  needs a `ℂ`-inner-product codomain, and `fderiv g : ES →L[ℝ] ℂ` has none canonically;
-  workaround = scalar partials `∂ⱼg : ES→ℂ` (`fderiv g · eⱼ`, `spacePlancherel` per `j`, sum
-  over `j` with HS-vs-operator norm equivalence) + `Integrable (fderiv g)` via
-  `SchwartzMap.fderivCLM`.  This is the genuine dedicated-session core.
-* **[inversion, ~90 LOC]** `SchwartzMap.fourier_inversion` + `norm_integral_le_integral_norm`
-  give `‖u x‖ ≤ ∫‖û‖ = ∫ F`; `MemLp` of `F·(sobWeight)^{-1/2}` from Schwartz decay of `û`.
-
-The Cauchy–Schwarz half is already discharged kernel-cleanly by
-`cauchySchwarz_supMajorant`; `sobWeightInv_eq` supplies the weight-polynomial for the
-weighted-Plancherel step.  TRUE-as-stated for Schwartz `u` (take `F = ‖û‖`). -/
+Reference: Stein, *Singular Integrals* (1970) III.2; Grafakos, *Classical Fourier
+Analysis*, 3rd ed. (2014) §2.2; Majda–Bertozzi Lemma 3.2. -/
 theorem exists_fourierSpectralData :
     ∃ C₂ : ℝ, 0 < C₂ ∧ ∀ u : SchwartzVelocity,
       ∃ F : Space → ℝ, (∀ ξ, 0 ≤ F ξ) ∧
@@ -558,8 +866,9 @@ concrete Fourier-side majorant `Q u` with both analytic bounds required by
 * the physical bound `Q u ≤ C₂·‖u‖²_{H³}` (Plancherel).
 
 This has exactly the type of the `SobolevEmbedding.exists_sobolev_intermediate`
-residual: the Cauchy–Schwarz half is kernel-clean here, and the only `sorryAx`
-enters through `exists_fourierSpectralData` (Fourier inversion + Plancherel). -/
+residual, and is now kernel-clean end to end: the Cauchy–Schwarz half by
+`cauchySchwarz_supMajorant`, the Fourier inversion and Plancherel half by
+`exists_fourierSpectralData`. -/
 theorem exists_fourierMajorant_intermediate :
     ∃ (Q : SchwartzVelocity → ℝ) (C₁ C₂ : ℝ),
       0 < C₁ ∧ 0 < C₂ ∧
@@ -576,13 +885,13 @@ theorem exists_fourierMajorant_intermediate :
     exact hplanch
 
 
-/-- **The `H³(ℝ³) ↪ L^∞` embedding conclusion, reduced to the single Fourier
-residual.**  Composing the intermediate assembly with monotonicity of `√` yields
-`‖u x‖ ≤ C·√Ms` for any `H³`-majorant `Ms ≥ ‖u‖²_{H³}`.  This is the same statement
-as `SobolevEmbedding.sobolevEmbeddingDomination_H3`; here the Cauchy–Schwarz half is
-kernel-clean and the sole `sorryAx` enters through `exists_fourierSpectralData`
-(Fourier inversion + Plancherel).  Self-contained (√-monotonicity assembly inlined;
-no dependence on the SobolevEmbedding olean). -/
+/-- **The `H³(ℝ³) ↪ L^∞` Sobolev embedding (certified, no sorry).**  Composing the
+intermediate assembly with monotonicity of `√` yields `‖u x‖ ≤ C·√Ms` for any
+`H³`-majorant `Ms ≥ ‖u‖²_{H³}`.  This is the same statement as
+`SobolevEmbedding.sobolevEmbeddingDomination_H3`, here proved outright: the
+Cauchy–Schwarz half by `cauchySchwarz_supMajorant`, the Fourier inversion and
+Plancherel half by `exists_fourierSpectralData`.  Self-contained (√-monotonicity
+assembly inlined; no dependence on the SobolevEmbedding olean). -/
 theorem fourierMajorant_embedding :
     ∃ C : ℝ, 0 < C ∧
       ∀ (u : SchwartzVelocity) (Ms : ℝ), sobolevH3NormSq u ≤ Ms →
