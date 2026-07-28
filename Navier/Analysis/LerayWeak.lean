@@ -1014,6 +1014,81 @@ def zeroGalerkinModeData (ν : ℝ) : GalerkinModeData ν (0 : SchwartzVelocity)
     rw [hz]; exact tendsto_const_nhds
 
 /-!
+### `SpaceEquicontinuous` from a dissipation bound (certified)
+
+The other Pattern-A hypothesis.  `SpaceEquicontinuous` was added to repair the
+falsified `aubin_lions_l2loc_compactness`, so — like `jointly_measurable` — it has
+to be dischargeable by the Galerkin construction or the repair merely relocated
+the problem.  It is, and the route is Brezis Prop. 9.3 against the banked
+dissipation bound:
+
+`‖τ_y u_m(t) − u_m(t)‖²_{L²} ≤ ‖y‖²·‖∇u_m(t)‖²_{L²}`
+(`RieszKolmogorov.integral_norm_sub_sq_le_mul_integral_fderiv_sq`), integrated in
+`t` against `∫₀^T ‖∇u_m(t)‖²_{L²} dt ≤ ‖u₀‖²_{L²}/(2ν)`
+(`EnergyDissipation.dissipation_integral_le_forward`), gives a modulus uniform in
+`m`, and `δ = √(ε/(C+1))` converts it into the `ε`-`δ` form.
+
+Note where the divergence-free basis actually earns its keep: it is what makes
+`‖ω‖_{L²} = ‖∇u_m‖_{L²}` true, hence what connects the repo's `enstrophy` to the
+gradient bound this theorem consumes.  For a general sequence that identity fails,
+which is exactly the curl-free falsification.
+-/
+
+/-- **`SpaceEquicontinuous` from a uniform `L²(0,T;H¹)` bound.**  Given the
+slicewise Brezis Prop. 9.3 estimate and a uniform bound `C` on the time-integrated
+squared gradient, the family is spatially equicontinuous, with the explicit
+modulus `δ = √(ε/(C+1))`.
+
+`C + 1` rather than `C` so that the modulus is well defined at `C = 0` and the
+final estimate `‖y‖²·C < ε·C/(C+1) ≤ ε` needs no case split. -/
+theorem spaceEquicontinuous_of_dissipation_bound
+    (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
+    (hbrezis : ∀ (m : ℕ) (t : ℝ), 0 < t → ∀ y : Space,
+      (∫ x : Space, ‖uSeq m t (x + y) - uSeq m t x‖ ^ 2)
+        ≤ ‖y‖ ^ 2 * ∫ x : Space, ‖fderiv ℝ (uSeq m t) x‖ ^ 2)
+    (hintTr : ∀ (m : ℕ) (T : ℝ) (y : Space),
+      IntegrableOn (fun t => ∫ x : Space, ‖uSeq m t (x + y) - uSeq m t x‖ ^ 2)
+        (Set.Ioc (0:ℝ) T) volume)
+    (hintGr : ∀ (m : ℕ) (T : ℝ),
+      IntegrableOn (fun t => ∫ x : Space, ‖fderiv ℝ (uSeq m t) x‖ ^ 2)
+        (Set.Ioc (0:ℝ) T) volume)
+    (hdiss : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖fderiv ℝ (uSeq m t) x‖ ^ 2) ≤ C) :
+    SpaceEquicontinuous uSeq := by
+  intro T ε hε
+  rcases lt_or_ge T 0 with hT | hT
+  · -- degenerate window: `Ioc 0 T` is empty, so every error integral is `0`
+    refine ⟨1, one_pos, fun m y _ => ?_⟩
+    rw [show Set.Ioc (0:ℝ) T = ∅ from Set.Ioc_eq_empty (by linarith)]
+    simpa using hε.le
+  refine ⟨Real.sqrt (ε / (C + 1)), Real.sqrt_pos.mpr (by positivity), fun m y hy => ?_⟩
+  -- `‖y‖² < ε/(C+1)`
+  have hCpos : (0:ℝ) < C + 1 := by linarith
+  have hysq : ‖y‖ ^ 2 < ε / (C + 1) := by
+    have hlt : ‖y‖ < Real.sqrt (ε / (C + 1)) := hy
+    have := (Real.lt_sqrt (norm_nonneg y)).mp hlt
+    linarith
+  -- Brezis, integrated in `t`, then the dissipation bound
+  calc (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖uSeq m t (x + y) - uSeq m t x‖ ^ 2)
+      ≤ ∫ t in Set.Ioc (0:ℝ) T,
+          ‖y‖ ^ 2 * ∫ x : Space, ‖fderiv ℝ (uSeq m t) x‖ ^ 2 :=
+        setIntegral_mono_on (hintTr m T y) ((hintGr m T).const_mul _) measurableSet_Ioc
+          fun t ht => hbrezis m t ht.1 y
+    _ = ‖y‖ ^ 2 * ∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖fderiv ℝ (uSeq m t) x‖ ^ 2 :=
+        MeasureTheory.integral_const_mul _ _
+    _ ≤ ‖y‖ ^ 2 * C := by
+        exact mul_le_mul_of_nonneg_left (hdiss m T hT) (by positivity)
+    _ ≤ ε := by
+        rcases eq_or_lt_of_le hC with hC0 | hC0
+        · rw [← hC0]; simpa using hε.le
+        · have h1 : ‖y‖ ^ 2 * C < (ε / (C + 1)) * C := by
+            exact mul_lt_mul_of_pos_right hysq hC0
+          have h2 : (ε / (C + 1)) * C ≤ ε := by
+            rw [div_mul_eq_mul_div, div_le_iff₀ hCpos]
+            nlinarith [hε.le]
+          linarith
+
+/-!
 ### Joint measurability of finite modal sums (certified)
 
 `jointly_measurable` is one of the two hypotheses added to repair the falsified
@@ -1109,17 +1184,21 @@ as *data* at the point of use, or the leaf relocates downstream of `GalerkinBasi
 shape a projection layer delivers, not because a projection is imported here.
 (ii) `time_equicontinuous` and `weak_consistent` from the finite-mode energy
 identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (est ~100 LOC).
-(iii) The two Pattern-A fields added this wave.  `space_equicontinuous` is
-where the finite-mode construction pays for what the bare Aubin–Lions bundle
-could not supply: `u_m(t)` lies in the span of the first `m` **divergence-free**
-Schwartz modes, so there `‖ω‖_{L²} = ‖∇u_m‖_{L²}` genuinely holds, and
-`‖τ_y f − f‖_{L²} ≤ ‖y‖ · ‖∇f‖_{L²}` [Brezis, Springer 2011, Prop. 9.3]
-integrated against `∫₀^T ‖∇u_m‖²_{L²} ≤ ‖u₀‖²_{L²}/(2ν)`
-(`EnergyDissipation.dissipation_integral_le_forward`, BANKED) gives the uniform
-modulus `δ = ε ν / ‖u₀‖²` up to constants (est ~120 LOC).  `jointly_measurable`
-is **no longer an obligation**: `jointlyMeasurable_of_forwardODE` (CERTIFIED
-below) discharges it outright for any modal sum built from forward ODE solutions
-and Schwartz modes, which is exactly the shape this construction produces.
+(iii) The two Pattern-A fields added in the Aubin–Lions repair are **both
+discharged**, so neither is an obligation of this leaf any more.
+`jointly_measurable`: `jointlyMeasurable_of_forwardODE` (CERTIFIED below) settles
+it outright for any modal sum built from forward ODE solutions and Schwartz modes,
+which is exactly the shape this construction produces.  `space_equicontinuous`:
+`spaceEquicontinuous_of_dissipation_bound` (CERTIFIED below) reduces it to the
+slicewise Brezis Prop. 9.3 estimate — itself certified as
+`RieszKolmogorov.integral_norm_sub_sq_le_mul_integral_fderiv_sq` — together with
+`∫₀^T ‖∇u_m‖²_{L²} ≤ ‖u₀‖²_{L²}/(2ν)`
+(`EnergyDissipation.dissipation_integral_le_forward`, BANKED), and supplies the
+explicit modulus `δ = √(ε/(C+1))`.  This is where the finite-mode construction
+pays for what the bare Aubin–Lions bundle could not: `u_m(t)` lies in the span of
+the first `m` **divergence-free** modes, so there `‖ω‖_{L²} = ‖∇u_m‖_{L²}` genuinely
+holds and the enstrophy bound *is* a gradient bound.  For a general sequence that
+identity fails — which is precisely the curl-free falsification.
 
 The product-norm/Euclidean conversion that used to sit inside this obligation is
 now certified (`galerkinApproximation_of_modeData`). -/
@@ -1894,6 +1973,7 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
+
 
 
 
