@@ -286,6 +286,56 @@ theorem setIntegral_oscillation_le_translate_ball {G : Type*} [MeasurableSpace G
       ≤ ∫ k in Metric.closedBall (0:G) h, ‖f (x + k) - f x‖ ^ 2 ∂ν :=
   setIntegral_le_translate_ball A hA h x hAx _ (fun _ => by positivity) hiA hiB
 
+/-!
+### Translate domination
+
+Obligations (6)–(8) of the cell data involve `f(x + k)` for `x` in the cell and
+`‖k‖ ≤ h`, so local `L²` on the cell is not enough — they need `L²` on an **enlarged**
+window `W ⊇ A + B_h`.  These two lemmas are the transfer.  `hAB` is load-bearing in
+exactly one place: it is what makes the indicator of `W`, evaluated at the *translated*
+point, majorize the translate on `B`.  The inclusion does not transfer under the
+translation by itself.
+-/
+
+/-- If `x + B ⊆ W`, then `L¹` on `W` transfers to the translate on `B`. -/
+theorem integrableOn_translate_of_mapsTo {G : Type*} [MeasurableSpace G]
+    [NormedAddCommGroup G] [MeasurableAdd G] {ν : Measure G} [ν.IsAddLeftInvariant]
+    (B W : Set G) (hB : MeasurableSet B) (hW : MeasurableSet W) (x : G)
+    (hAB : ∀ k ∈ B, x + k ∈ W) (g : G → ℝ) (hg : ∀ z, 0 ≤ g z)
+    (hmeas : AEStronglyMeasurable (fun k => g (x + k)) ν) (hiW : IntegrableOn g W ν) :
+    IntegrableOn (fun k => g (x + k)) B ν := by
+  have hmaj : Integrable (fun k => Set.indicator W g (x + k)) ν :=
+    ((integrable_indicator_iff hW).mpr hiW).comp_add_left x
+  refine (integrable_indicator_iff hB).mp ?_
+  refine Integrable.mono' hmaj (hmeas.indicator hB) (Filter.Eventually.of_forall fun k => ?_)
+  by_cases hk : k ∈ B
+  · rw [Set.indicator_of_mem hk, Set.indicator_of_mem (hAB k hk), Real.norm_eq_abs,
+      abs_of_nonneg (hg _)]
+  · rw [Set.indicator_of_notMem hk, norm_zero]
+    exact Set.indicator_nonneg (fun z _ => hg z) (x + k)
+
+/-- If `x + B ⊆ W`, the translated integral over `B` is dominated by the integral over
+`W`.  Translation-invariance enters once, as `integral_add_left_eq_self`. -/
+theorem setIntegral_translate_le_setIntegral {G : Type*} [MeasurableSpace G]
+    [NormedAddCommGroup G] [MeasurableAdd G] {ν : Measure G} [ν.IsAddLeftInvariant]
+    (B W : Set G) (hB : MeasurableSet B) (hW : MeasurableSet W) (x : G)
+    (hAB : ∀ k ∈ B, x + k ∈ W) (g : G → ℝ) (hg : ∀ z, 0 ≤ g z)
+    (hmeas : AEStronglyMeasurable (fun k => g (x + k)) ν) (hiW : IntegrableOn g W ν) :
+    ∫ k in B, g (x + k) ∂ν ≤ ∫ z in W, g z ∂ν := by
+  have hmaj : Integrable (fun k => Set.indicator W g (x + k)) ν :=
+    ((integrable_indicator_iff hW).mpr hiW).comp_add_left x
+  have hiB := integrableOn_translate_of_mapsTo B W hB hW x hAB g hg hmeas hiW
+  calc ∫ k in B, g (x + k) ∂ν = ∫ k, Set.indicator B (fun k => g (x + k)) k ∂ν :=
+        (integral_indicator hB).symm
+    _ ≤ ∫ k, Set.indicator W g (x + k) ∂ν := by
+        refine integral_mono ((integrable_indicator_iff hB).mpr hiB) hmaj fun k => ?_
+        by_cases hk : k ∈ B
+        · rw [Set.indicator_of_mem hk, Set.indicator_of_mem (hAB k hk)]
+        · rw [Set.indicator_of_notMem hk]
+          exact Set.indicator_nonneg (fun z _ => hg z) (x + k)
+    _ = ∫ z, Set.indicator W g z ∂ν := integral_add_left_eq_self _ x
+    _ = ∫ z in W, g z ∂ν := integral_indicator hW
+
 /-- **Brezis Prop. 9.3, `L²` form.**  `‖τ_y f − f‖²_{L²} ≤ ‖y‖² · ‖∇f‖²_{L²}`.
 
 This is the half of the translation modulus that turns a uniform `H¹` bound into
@@ -1146,6 +1196,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
