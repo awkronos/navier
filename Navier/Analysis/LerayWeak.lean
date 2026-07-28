@@ -1013,6 +1013,78 @@ def zeroGalerkinModeData (ν : ℝ) : GalerkinModeData ν (0 : SchwartzVelocity)
       funext m; simp [weakFormResidual, officialInner_zero_left]
     rw [hz]; exact tendsto_const_nhds
 
+/-!
+### Joint measurability of finite modal sums (certified)
+
+`jointly_measurable` is one of the two hypotheses added to repair the falsified
+`aubin_lions_l2loc_compactness`, so it has to be dischargeable by the Galerkin
+construction or the repair merely moved the problem.  It is: a Galerkin
+approximant is `u_m(t,x) = ∑_{i<m} cᵢ(t)·wᵢ(x)`, a finite sum of products of a
+`t`-continuous coefficient and an `x`-continuous mode, hence jointly *continuous*.
+
+The one wrinkle is that `finiteDim_dissipative_ode_global` (BANKED above) is
+honestly forward-only: it constrains `u` on `Set.Ici 0` and says nothing at all
+for `t < 0`, so the raw solution carries no measurability there.
+`forwardExtend` is the canonical continuation, constant backwards from `t = 0`;
+it changes nothing on `t ≥ 0`, which is the half-space on which every other
+field of `GalerkinModeData` is imposed.
+-/
+
+/-- Continuation of a forward-only trajectory to negative times by its value at
+`0`.  Agrees with the original on `Set.Ici 0` (`forwardExtend_eq_of_nonneg`). -/
+def forwardExtend {E : Type*} (u : ℝ → E) : ℝ → E := fun t => u (max t 0)
+
+theorem forwardExtend_eq_of_nonneg {E : Type*} (u : ℝ → E) {t : ℝ} (ht : 0 ≤ t) :
+    forwardExtend u t = u t := by
+  simp [forwardExtend, max_eq_left ht]
+
+/-- A forward ODE solution, continued backwards by its value at `0`, is
+continuous on all of `ℝ`.  `HasDerivWithinAt … (Set.Ici 0)` at every `t ≥ 0`
+gives `ContinuousOn` there, and `t ↦ max t 0` maps `ℝ` into `Set.Ici 0`. -/
+theorem continuous_forwardExtend {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (u : ℝ → E) (F : ℝ → E)
+    (hu : ∀ t : ℝ, 0 ≤ t → HasDerivWithinAt u (F t) (Set.Ici (0:ℝ)) t) :
+    Continuous (forwardExtend u) := by
+  have hcont : ContinuousOn u (Set.Ici (0:ℝ)) := fun t ht => (hu t ht).continuousWithinAt
+  exact hcont.comp_continuous (continuous_id.max continuous_const)
+    fun t => Set.mem_Ici.mpr (le_max_right t 0)
+
+/-- **A finite modal sum is jointly `(t,x)`-measurable.**  Finite sums of products
+of a `t`-continuous coefficient and an `x`-continuous mode are jointly continuous,
+hence measurable. -/
+theorem jointlyMeasurable_modalSum {n : ℕ} (c : Fin n → ℝ → ℝ) (w : Fin n → Space → Space)
+    (hc : ∀ i, Continuous (c i)) (hw : ∀ i, Continuous (w i)) :
+    Measurable fun z : ℝ × Space => ∑ i, c i z.1 • w i z.2 :=
+  (continuous_finsetSum _ fun i _ =>
+    ((hc i).comp continuous_fst).smul ((hw i).comp continuous_snd)).measurable
+
+/-- `JointlyMeasurable` for a sequence of finite modal sums — the
+`jointly_measurable` field of `GalerkinModeData` and `GalerkinApproximation`. -/
+theorem jointlyMeasurable_of_modalSum (deg : ℕ → ℕ)
+    (c : ∀ m : ℕ, Fin (deg m) → ℝ → ℝ) (w : ∀ m : ℕ, Fin (deg m) → Space → Space)
+    (hc : ∀ (m : ℕ) (i : Fin (deg m)), Continuous (c m i))
+    (hw : ∀ (m : ℕ) (i : Fin (deg m)), Continuous (w m i)) :
+    JointlyMeasurable fun m t x => ∑ i, c m i t • w m i x :=
+  fun m => jointlyMeasurable_modalSum (c m) (w m) (hc m) (hw m)
+
+/-- **The field, discharged end-to-end from what is already banked.**  Given, for
+each mode, a coefficient solving a forward ODE on `Set.Ici 0` — precisely the
+output shape of `finiteDim_dissipative_ode_global` — and Schwartz modes, the
+resulting Galerkin-shaped sequence is `JointlyMeasurable`.  So the Pattern-A
+hypothesis added in the Aubin–Lions repair costs the Galerkin construction
+nothing beyond choosing the (irrelevant, `t < 0`) continuation. -/
+theorem jointlyMeasurable_of_forwardODE (deg : ℕ → ℕ)
+    (c : ∀ m : ℕ, Fin (deg m) → ℝ → ℝ) (F : ∀ m : ℕ, Fin (deg m) → ℝ → ℝ)
+    (hc : ∀ (m : ℕ) (i : Fin (deg m)) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m i) (F m i t) (Set.Ici (0:ℝ)) t)
+    (w : ∀ m : ℕ, Fin (deg m) → SchwartzVelocity) :
+    JointlyMeasurable fun m t x =>
+      ∑ i, forwardExtend (c m i) t • (w m i) x :=
+  jointlyMeasurable_of_modalSum deg (fun m i => forwardExtend (c m i))
+    (fun m i => fun x => (w m i) x)
+    (fun m i => continuous_forwardExtend (c m i) (F m i) (hc m i))
+    (fun m i => (w m i).continuous)
+
 /-- **[NAMED RESIDUAL — finite-mode Galerkin construction; Temam, *NSE* III.3;
 Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20; est ~350 LOC.]**
 Projecting NSE onto the first `m` divergence-free modes gives a `C¹` ODE on a
@@ -1023,14 +1095,18 @@ a global finite-mode solution and `galerkin_apriori_bound` (BANKED) gives
 `Navier.Analysis.EnergyDissipation.dissipation_integral_le_forward` (BANKED)
 gives `enstrophy_bounded` with `C = ‖u₀‖²_{L²}/(2ν)`.
 
-**Dependencies, exactly.**  (i) The divergence-free finite-mode basis and its
-projection `P_m` — `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily`, whose
-projection algebra (`proj_divergence_free`, `proj_self_adjoint`,
-`proj_skew_transfer`) and Bessel tower (`proj_best_approx`, `proj_tendsto_self`)
-are BANKED, and whose existence rests on the single density residual
-`Navier.Analysis.GalerkinBasis.exists_denseIndependentDivFreeFamily`;
-`initialMode m := P_m u₀` then makes `initial_converges_L2` literally
-`proj_tendsto_self` (this is why the field is stated in the Euclidean seminorm).
+**Dependencies, exactly — corrected.**  (i) An earlier revision of this docstring
+named `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily` and its density residual
+`exists_denseIndependentDivFreeFamily` as the dependency of this leaf.  **That is
+structurally impossible and the claim is withdrawn**: `GalerkinBasis.lean` line 1
+is `import Navier.Analysis.LerayWeak`, so this file is strictly *upstream* of
+`GalerkinBasis` and cannot consume anything from it.  Nothing in this file
+references it in code, and `GalerkinModeData` has no basis field — its data is
+`approx`, `initialMode`, and the bound/regularity clauses.  So the divergence-free
+basis is not a blocker for this leaf; whoever closes it either supplies the modes
+as *data* at the point of use, or the leaf relocates downstream of `GalerkinBasis`.
+`initial_converges_L2` is stated in the Euclidean seminorm because that is the
+shape a projection layer delivers, not because a projection is imported here.
 (ii) `time_equicontinuous` and `weak_consistent` from the finite-mode energy
 identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (est ~100 LOC).
 (iii) The two Pattern-A fields added this wave.  `space_equicontinuous` is
@@ -1041,9 +1117,9 @@ Schwartz modes, so there `‖ω‖_{L²} = ‖∇u_m‖_{L²}` genuinely holds, 
 integrated against `∫₀^T ‖∇u_m‖²_{L²} ≤ ‖u₀‖²_{L²}/(2ν)`
 (`EnergyDissipation.dissipation_integral_le_forward`, BANKED) gives the uniform
 modulus `δ = ε ν / ‖u₀‖²` up to constants (est ~120 LOC).  `jointly_measurable`
-is immediate: `u_m(t,x) = ∑_{i<m} cᵢ(t) wᵢ(x)` with `cᵢ` the `C¹` ODE solutions
-of `finiteDim_dissipative_ode_global` and `wᵢ` Schwartz, a finite sum of
-products of continuous functions, hence jointly continuous (est ~20 LOC).
+is **no longer an obligation**: `jointlyMeasurable_of_forwardODE` (CERTIFIED
+below) discharges it outright for any modal sum built from forward ODE solutions
+and Schwartz modes, which is exactly the shape this construction produces.
 
 The product-norm/Euclidean conversion that used to sit inside this obligation is
 now certified (`galerkinApproximation_of_modeData`). -/
@@ -1818,6 +1894,7 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
+
 
 
 
