@@ -387,6 +387,35 @@ theorem sum_finset_setIntegral_le_integral_of_disjoint {κ : Type*} (S : Finset 
     _ = ∫ x in ⋃ i : ↥S, A i, F x ∂μ := hUnion.symm
     _ ≤ ∫ x, F x ∂μ := setIntegral_le_integral hint (Filter.Eventually.of_forall hF)
 
+/-- **Disjointness step, localized to a bounded window.**  Bounds the cell sum by the
+integral over any measurable set containing the cells, rather than over the whole
+space.
+
+This weaker form is the one a Navier–Stokes bundle can actually supply.
+`sum_finset_setIntegral_le_integral_of_disjoint` requires `Integrable F` over the
+*whole* space; a Leray/Galerkin bundle controls its field only on bounded windows
+`(0,T] × B̄(0,R)` and says nothing whatsoever for `t < 0`, so that hypothesis is
+strictly stronger than any consumer here can discharge.  Since the cells of a finite
+family always sit inside a bounded window, nothing is lost. -/
+theorem sum_finset_setIntegral_le_setIntegral_of_disjoint {κ : Type*} (S : Finset κ)
+    (A : κ → Set α) (W : Set α) (hsub : ∀ i ∈ S, A i ⊆ W)
+    (hm : ∀ i, MeasurableSet (A i)) (hd : Pairwise (Function.onFun Disjoint A))
+    (F : α → ℝ) (hF : ∀ x, 0 ≤ F x) (hint : IntegrableOn F W μ) :
+    ∑ i ∈ S, ∫ x in A i, F x ∂μ ≤ ∫ x in W, F x ∂μ := by
+  classical
+  have hUsub : (⋃ i : ↥S, A i) ⊆ W := Set.iUnion_subset fun i => hsub i i.2
+  have hdS : Pairwise (Function.onFun Disjoint fun i : ↥S => A i) :=
+    fun i i' hne => hd (Subtype.coe_injective.ne hne)
+  have hUnion : ∫ x in ⋃ i : ↥S, A i, F x ∂μ = ∑' i : ↥S, ∫ x in A i, F x ∂μ :=
+    integral_iUnion (fun i => hm i) hdS (hint.mono_set hUsub)
+  calc ∑ i ∈ S, ∫ x in A i, F x ∂μ
+      = ∑ i : ↥S, ∫ x in A i, F x ∂μ := (Finset.sum_coe_sort S _).symm
+    _ = ∑' i : ↥S, ∫ x in A i, F x ∂μ := (tsum_fintype _).symm
+    _ = ∫ x in ⋃ i : ↥S, A i, F x ∂μ := hUnion.symm
+    _ ≤ ∫ x in W, F x ∂μ :=
+        setIntegral_mono_set hint (Filter.Eventually.of_forall hF)
+          (HasSubset.Subset.eventuallyLE hUsub)
+
 /-- **Last line of the criterion.**  A bound `M` on a finite-measure set turns its
 integral into `ν(S)·M`; applied to `k ↦ ‖τ_k f − f‖²_{L²}` over the displacement
 ball this is what converts the integral in `k` into a supremum. -/
@@ -1071,6 +1100,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
