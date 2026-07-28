@@ -54,16 +54,31 @@ This file lays that layer over the repo's own objects:
 * `exists_galerkinBasisFamily` — now a **composition** of the two named leaves
   below (raw dense family ∘ Gram–Schmidt), no longer a monolithic sorry.
 
-## Skeletons (honest `sorry`, strictly-lower named leaves)
-
-* `exists_rawDivFreeFamily` — **density core**: a countable `L²`-dense
-  linearly-independent family of divergence-free Schwartz fields (curls of bump
-  towers) [RRS Ch. 4; Temam III §3; Leray 1934 §§18–20; ~250 LOC, Mathlib-absent
-  div-free-constrained density].
+* `dense_span_of_member_approximation` — **the coefficient bookkeeping of
+  `dense_span`**: approximation by a single family member implies approximation
+  by a finite combination, so the remaining density obligation is stated in the
+  coefficient-free form every construction produces.
 * `rawDivFree_orthonormalize` — **Gram–Schmidt** of a raw dense family into a
-  `GalerkinBasisFamily` (div-free preserved via `divergenceFreeInitial_sum_smul`;
-  orthonormality by strong induction using `L²`-independence) [RRS Ch. 4;
-  Temam III §3; ~220 LOC, seminorm/non-`InnerProductSpace` setting].
+  `GalerkinBasisFamily`, now a full composition of the banked recursion
+  (`gramSchmidtField_orthonormal`, `gramSchmidtField_divergenceFree`,
+  `gramSchmidtField_dense_span`) [RRS Ch. 4; Temam III §3].
+* `proj_initial_converges_L2` / `proj_initial_converges` — the
+  `initial_converges` field of `Navier.Analysis.LerayWeak.GalerkinApproximation`
+  (and the `initial_converges_L2` field of `GalerkinModeData`) at
+  `initialMode m := P_m u₀`, obtained from `proj_tendsto_self` through the
+  coordinate-norm bridge in `LerayWeak`.
+* `exists_rawDivFreeFamily` — now a **composition** of the single density
+  residual below with `dense_span_of_member_approximation`, no `sorry` of its
+  own.
+
+## Named residual (honest `sorry`, strictly-lower leaf)
+
+* `exists_denseIndependentDivFreeFamily` — **density core**: a countable
+  `L²`-dense linearly-independent family of divergence-free Schwartz fields.
+  Two of its three conjuncts hold for the explicit disjoint-translate family of
+  `Navier.Analysis.GalerkinRawFamily`; only density is open
+  [RRS Ch. 4; Temam III §3; Leray 1934 §§18–20; ~250 LOC, Mathlib-absent
+  div-free-constrained density].
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -339,34 +354,85 @@ structure RawDivFreeFamily where
       schwartzL2Inner (u - ∑ j ∈ Finset.range m, c j • v j)
         (u - ∑ j ∈ Finset.range m, c j • v j) < ε
 
+/-- **Member approximation implies span approximation.**  If every
+divergence-free Schwartz field is `L²`-approximated by a *single member* of the
+family `v`, then it is `L²`-approximated by a finite *combination* of the first
+`m` members — take the one-term combination with coefficient `1` at the good
+index.  This is the `dense_span` field of `RawDivFreeFamily`, reduced to the
+coefficient-free statement that every construction of a countable `L²`-dense
+subset of the divergence-free Schwartz class actually produces
+[Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3]. -/
+theorem dense_span_of_member_approximation (v : ℕ → SchwartzVelocity)
+    (hmem : ∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+      ∃ j : ℕ, schwartzL2Inner (u - v j) (u - v j) < ε) :
+    ∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+      ∃ (m : ℕ) (c : ℕ → ℝ),
+        schwartzL2Inner (u - ∑ j ∈ Finset.range m, c j • v j)
+          (u - ∑ j ∈ Finset.range m, c j • v j) < ε := by
+  classical
+  intro u hu ε hε
+  obtain ⟨j, hj⟩ := hmem u hu ε hε
+  refine ⟨j + 1, fun i => if i = j then 1 else 0, ?_⟩
+  have hsum : (∑ i ∈ Finset.range (j + 1), (if i = j then (1:ℝ) else 0) • v i) = v j := by
+    rw [Finset.sum_eq_single j (fun i _ hij => by simp [hij])
+      (fun hjm => absurd (Finset.mem_range.mpr (Nat.lt_succ_self j)) hjm)]
+    simp
+  rw [hsum]
+  exact hj
+
 /-- **[NAMED RESIDUAL — density core; the divergence-free Schwartz class on
-`ℝ³` admits a countable `L²`-dense linearly-independent family of divergence-free
-Schwartz fields; Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3; Leray 1934
-§§18–20.]**  Non-vacuity of `RawDivFreeFamily`.
+`ℝ³` admits a countable `L²`-dense linearly-independent family of
+divergence-free Schwartz fields; Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3;
+Leray 1934 §§18–20; est ~250 LOC.]**
 
-**Two of three fields are now CLOSED** (`Navier.Analysis.GalerkinRawFamily`,
-`exists_countable_independent_divFree_family`): pairwise-disjoint-support
-translates of the certified curl-of-bump field `phiSchwartz` are
-divergence-free (translation invariance of the Clairaut cancellation) and
-`L²`-linearly-independent (disjoint supports force cross terms to vanish, so
-`schwartzL2Inner` collapses to a sum of positive squares).
+**Two of the three conjuncts are already established for an EXPLICIT family**
+(`Navier.Analysis.GalerkinRawFamily.exists_countable_independent_divFree_family`):
+pairwise-disjoint-support translates of the certified curl-of-bump field
+`phiSchwartz` are divergence-free (translation invariance of the Clairaut
+cancellation) and `L²`-linearly-independent (disjoint supports kill the cross
+terms, so `schwartzL2Inner` collapses to a sum of positive squares).
 
-**The sole remaining obstruction is `dense_span`** (est ~150-250 LOC,
-genuinely Mathlib-absent), and the disjoint-translate family used for the
-first two fields provably does NOT supply it: a finite combination of
-disjoint-support translates of ONE fixed shape has support confined to a
-bounded union of disjoint balls, so it cannot `L²`-approximate a
-divergence-free Schwartz datum whose mass sits outside every one of those
-balls. Density needs a strictly richer construction — EITHER (a) a translate
-family at a DENSE set of centres plus a Wiener-type theorem ("the closed span
-of translates of `φ` is all of `L²` iff `φ`'s Fourier transform is a.e.
-nonzero"), or (b) a Helmholtz/Leray vector-potential representation
-(`u = curl A`) driven by an `H¹`-dense (not merely `L²`-dense) scalar
-potential family, since `L²`-density of potentials does not transfer through
-the derivative in `curl` without a stronger topology. Both routes are
-individually deep, unformalized functional analysis. -/
-theorem exists_rawDivFreeFamily : Nonempty RawDivFreeFamily := by
+**The sole remaining obstruction is the density conjunct**, and the
+disjoint-translate family provably does NOT supply it: every finite combination
+of disjoint-support translates of ONE fixed shape is supported in a bounded
+union of disjoint balls, so it cannot `L²`-approximate a divergence-free
+Schwartz datum whose mass lies outside all of them.  Density needs a strictly
+richer construction — EITHER (a) translates at a DENSE set of centres plus a
+Wiener-type theorem ("the closed span of the translates of `φ` is all of `L²`
+iff `φ̂` is a.e. nonzero"), OR (b) a Helmholtz/Leray vector-potential
+representation `u = curl A` driven by an `H¹`-dense (not merely `L²`-dense)
+scalar potential family, since `L²`-density of potentials does not transfer
+through the derivative in `curl` without a stronger topology.  Both routes are
+individually deep and Mathlib-absent.
+
+**Form of the statement.**  The density conjunct here is *member* density
+(approximation by one `v j`), not the *span* density of `RawDivFreeFamily`.
+Member density is formally the stronger of the two — the implication is
+`dense_span_of_member_approximation`, certified above — and it is the form both
+routes produce: a countable `L²`-dense subset of the divergence-free Schwartz
+class (separability of `L²`), reconciled with independence by perturbing the
+`j`-th member by a vanishing multiple of a far-away translate of `phiSchwartz`.
+Stating the residual in the produced form is what lets the coefficient
+bookkeeping be discharged once and for all, above. -/
+theorem exists_denseIndependentDivFreeFamily :
+    ∃ v : ℕ → SchwartzVelocity,
+      (∀ j : ℕ, DivergenceFreeInitial (v j)) ∧
+      (∀ (n : ℕ) (c : ℕ → ℝ),
+        schwartzL2Inner (∑ j ∈ Finset.range n, c j • v j)
+            (∑ j ∈ Finset.range n, c j • v j) = 0 → ∀ j ∈ Finset.range n, c j = 0) ∧
+      (∀ u : SchwartzVelocity, DivergenceFreeInitial u → ∀ ε : ℝ, 0 < ε →
+        ∃ j : ℕ, schwartzL2Inner (u - v j) (u - v j) < ε) := by
   sorry
+
+/-- **Non-vacuity of `RawDivFreeFamily`** — now a composition of the density
+residual with the certified coefficient bookkeeping
+`dense_span_of_member_approximation`. -/
+theorem exists_rawDivFreeFamily : Nonempty RawDivFreeFamily := by
+  obtain ⟨v, hdiv, hindep, hmem⟩ := exists_denseIndependentDivFreeFamily
+  exact ⟨{ v := v
+           divergence_free := hdiv
+           independent := hindep
+           dense_span := dense_span_of_member_approximation v hmem }⟩
 
 /-!
 ### Gram–Schmidt building blocks (banked)
@@ -831,5 +897,57 @@ theorem proj_tendsto_self (W : GalerkinBasisFamily) (u₀ : SchwartzVelocity)
     _ ≤ schwartzL2Inner (u₀ - ∑ k ∈ Finset.range m, c k • W.w k)
                         (u₀ - ∑ k ∈ Finset.range m, c k • W.w k) := proj_best_approx W m u₀ c
     _ < ε := hmc
+
+/-!
+## The `initial_converges` field, delivered
+
+`proj_tendsto_self` above is the Bessel convergence in the Euclidean `L²`
+seminorm; `GalerkinApproximation.initial_converges` is stated with the *product*
+norm on `Space`.  `Navier.Analysis.LerayWeak.tendsto_integral_norm_sq_of_tendsto_officialInner_self`
+is the bridge between them, so the two theorems below hand the Galerkin assembly
+its `initial_converges` / `initial_converges_L2` field verbatim, with
+`initialMode m := P_m u₀`.
+-/
+
+/-- The `L²` seminorm is invariant under negation. -/
+theorem schwartzL2Inner_neg_neg (a : SchwartzVelocity) :
+    schwartzL2Inner (-a) (-a) = schwartzL2Inner a a := by
+  rw [schwartzL2Inner_neg_left, schwartzL2Inner_comm a (-a), schwartzL2Inner_neg_left, neg_neg]
+
+/-- The `L²` seminorm of a difference is symmetric in its two arguments. -/
+theorem schwartzL2Inner_sub_symm (a b : SchwartzVelocity) :
+    schwartzL2Inner (a - b) (a - b) = schwartzL2Inner (b - a) (b - a) := by
+  rw [show b - a = -(a - b) from (neg_sub _ _).symm, schwartzL2Inner_neg_neg]
+
+/-- **`initial_converges_L2` for the Galerkin projection.**  Exactly the
+`Navier.Analysis.LerayWeak.GalerkinModeData.initial_converges_L2` field with
+`initialMode m := P_m u₀`: Bessel convergence (`proj_tendsto_self`) rewritten
+with the error taken in the `P_m u₀ − u₀` orientation. -/
+theorem proj_initial_converges_L2 (W : GalerkinBasisFamily) (u₀ : SchwartzVelocity)
+    (hu₀ : DivergenceFreeInitial u₀) :
+    Filter.Tendsto (fun m => ∫ x : Space,
+        officialInner ((W.proj m u₀ - u₀) x) ((W.proj m u₀ - u₀) x))
+      Filter.atTop (nhds 0) := by
+  have h := proj_tendsto_self W u₀ hu₀
+  have hfun : (fun m => schwartzL2Inner (u₀ - W.proj m u₀) (u₀ - W.proj m u₀))
+      = fun m => ∫ x : Space,
+          officialInner ((W.proj m u₀ - u₀) x) ((W.proj m u₀ - u₀) x) := by
+    funext m
+    rw [schwartzL2Inner_sub_symm u₀ (W.proj m u₀)]
+    rfl
+  rw [hfun] at h
+  exact h
+
+/-- **`initial_converges` for the Galerkin projection.**  Exactly the
+`Navier.Analysis.LerayWeak.GalerkinApproximation.initial_converges` field with
+`approx m 0 := P_m u₀`, obtained from the Euclidean-seminorm statement above
+through the coordinate-norm bridge. -/
+theorem proj_initial_converges (W : GalerkinBasisFamily) (u₀ : SchwartzVelocity)
+    (hu₀ : DivergenceFreeInitial u₀) :
+    Filter.Tendsto (fun m => ∫ x : Space, ‖(W.proj m u₀) x - u₀ x‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+  have h := tendsto_integral_norm_sq_of_tendsto_officialInner_self
+    (fun m => W.proj m u₀ - u₀) (proj_initial_converges_L2 W u₀ hu₀)
+  simpa using h
 
 end Navier.Analysis.GalerkinBasis
