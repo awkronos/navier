@@ -25,6 +25,16 @@ exactly `gronwall_log_apriori`; unwinding gives the doubly-exponential bound
   — finite vorticity integral ⟹ uniform velocity bound ⟹ no pointwise blow-up.
 
 * `sobolevH2NormSq_le_sobolevH3NormSq` — the `H³ ⊆ H²` norm inclusion.
+* `integrable_inv_one_add_normSq_sq` — the Bessel weight `(1 + |ξ|²)⁻²` is
+  integrable on `ℝ³` (decay exponent `4 > 3 = dim`); this is the *only*
+  dimension-dependent input to `H²(ℝ³) ↪ L^∞`, and it is exactly what fails
+  for `H¹`.
+* `not_integrable_inv_one_add_normSq` — the matching **sharpness** certificate:
+  the `H¹` weight `(1 + |ξ|²)⁻¹` is *not* integrable on `ℝ³`, so the `H²` order
+  in `exists_agmonSupBound` is load-bearing, not decoration.
+* `integral_le_besselWeightMass_mul_sqrt` — the weighted Cauchy–Schwarz step.
+* `exists_agmonSupBound` — now **derived** from the two above plus the strictly
+  lower Fourier residual `exists_besselFourierMajorant`.
 * the four analytic inputs below are **derived**, each from one named residual
   plus a certified leaf in `Navier/Analysis/BKMLogLeaves.lean`.
 
@@ -38,7 +48,7 @@ bookkeeping between the two is certified in `BKMLogLeaves`:
 | consumer | named residual | certified leaf |
 |---|---|---|
 | `biotSavartLogInequality` | `exists_biotSavartLogTextbook` (textbook `log(e+‖u‖_{H³})` shape) | `bkm_log_shape_transfer` |
-| `sobolevEmbeddingDomination` | `exists_agmonSupBound` (`H² ↪ L^∞`, the sharp order) | `le_mul_sqrt_of_le_majorant` + `sobolevH2NormSq_le_sobolevH3NormSq` |
+| `sobolevEmbeddingDomination` | `exists_besselFourierMajorant` (Fourier inversion + Plancherel symbol bookkeeping) | `integrable_inv_one_add_normSq_sq` + `integral_le_besselWeightMass_mul_sqrt` + `le_mul_sqrt_of_le_majorant` |
 | `sobolevControlContinuity` | `sobolevOrderIntegralContinuity` (one derivative order) | `continuousOn_sum_range` |
 | `katoCommutatorEstimate` | `exists_sobolevOrderEnergyEstimate` (one derivative order) | `exists_hasDerivAt_sum_range_le` |
 
@@ -343,28 +353,249 @@ theorem biotSavartLogInequality :
   exact bkm_log_shape_transfer (le_of_lt hCpos) hMωnn
     (sobolevH3NormSq_nonneg u) hMs (hC u hdiv Mω M₂ hMω hM₂ x)
 
-/-- **[NAMED RESIDUAL — Agmon / Sobolev embedding `H²(ℝ³) ↪ L^∞`
-(`s = 2 > 3/2 = n/2`); Majda–Bertozzi Lemma 3.2; Stein, *Singular Integrals*
-Ch. V; est ~250 LOC.]**  The sup norm of a Schwartz field is dominated by the
-square root of its `H²` norm: `‖u‖_∞ ≤ C·‖u‖_{H²}`.  This is the **sharp**
-derivative order for the embedding used by the BKM assembly, one order below
-the `H³` control the criterion actually carries.
+/-- The squared `H²` norm is nonnegative (each summand is an integral of a
+square). -/
+theorem sobolevH2NormSq_nonneg (u : SchwartzVelocity) :
+    0 ≤ sobolevH2NormSq u := by
+  apply Finset.sum_nonneg
+  intro n _
+  exact integral_nonneg (fun x => by positivity)
 
-**Dependencies.**  Fourier inversion for `SchwartzMap Space Space`, then
-Cauchy–Schwarz against `(1 + |ξ|²)^{-2}` (integrable on `ℝ³` because
-`2·2 > 3`), then Plancherel to return to the physical `H²` norm.  The Schwartz
-Fourier–Plancherel API is present in Mathlib; the derivative-to-symbol
-bookkeeping `‖(1+|ξ|²)^{s/2} û‖_{L²} ≍ ‖u‖_{H^s}` is not.
+/-!
+### The Bessel weight `(1 + |ξ|²)⁻²` on `ℝ³` (certified, no sorry)
 
-**What is no longer residual.**  The step from the sharp `H²` order up to the
-`H³` majorant form consumed by the bootstrap is certified by
-`sobolevH2NormSq_le_sobolevH3NormSq` together with
-`BKMLogLeaves.le_mul_sqrt_of_le_majorant` — with no loss of constant. -/
+The part of the Agmon embedding `H²(ℝ³) ↪ L^∞` that is *specific to three
+dimensions* is the finiteness of `∫_{ℝ³} (1 + |ξ|²)^{-2} dξ`: on the Euclidean
+model this is the radial integral `∫₀^∞ 4πr²/(1+r²)² dr = π²`, finite precisely
+because the decay exponent `4` strictly exceeds the dimension `3`.  The `H¹`
+analogue `∫_{ℝ³} (1 + |ξ|²)^{-1} dξ` **diverges** (`∫₀^R 4πr²/(1+r²) dr ∼ 4πR`),
+which is why the `H²` order in `exists_agmonSupBound` is load-bearing and not
+decoration.  Everything below is dimension-generic Lean; `ℝ³` enters through
+the single arithmetic fact `Module.finrank ℝ Space = 3 < 4`.
+
+Reference: E. M. Stein, *Singular Integrals and Differentiability Properties of
+Functions*, Princeton University Press 1970, Ch. V §3 (Bessel potentials);
+S. Agmon, *Lectures on Elliptic Boundary Value Problems*, Van Nostrand 1965.
+-/
+
+/-- The reciprocal Bessel weight `ξ ↦ (1 + ‖ξ‖²)⁻¹` is continuous (the
+denominator is bounded below by `1`). -/
+theorem continuous_inv_one_add_normSq :
+    Continuous (fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹) := by
+  apply Continuous.inv₀
+  · fun_prop
+  · intro ξ; positivity
+
+/-- **Bessel-weight integrability in three dimensions (certified, no sorry).**
+`ξ ↦ (1 + ‖ξ‖²)⁻²` is `volume`-integrable on `Space = ℝ³`, because the decay
+exponent `4` strictly exceeds `Module.finrank ℝ Space = 3`.
+
+This is the sole dimension-dependent input to the Agmon embedding: with the
+exponent `2` in place of `4` (the `H¹` weight) the integral diverges, so this
+lemma is exactly the reason `H²` — and not `H¹` — embeds into `L^∞` on `ℝ³`.
+
+Reference: Stein, *Singular Integrals and Differentiability Properties of
+Functions*, Princeton 1970, Ch. V §3. -/
+theorem integrable_inv_one_add_normSq_sq :
+    Integrable (fun ξ : Space => (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹) := by
+  have hr : (Module.finrank ℝ Space : ℝ) < 4 := by
+    have h3 : Module.finrank ℝ Space = 3 := by simp
+    rw [h3]; norm_num
+  refine (integrable_rpow_neg_one_add_norm_sq (E := Space) (μ := volume)
+    (r := 4) hr).congr ?_
+  filter_upwards with ξ
+  rw [show (-4 : ℝ) / 2 = -(2 : ℕ) by norm_num, Real.rpow_neg (by positivity),
+    Real.rpow_natCast]
+
+/-- **Sharpness of the `H²` order (certified, no sorry).**  The `H¹` Bessel
+weight `ξ ↦ (1 + ‖ξ‖²)⁻¹` is **not** integrable on `ℝ³`: its decay exponent `2`
+does not exceed `Module.finrank ℝ Space = 3`.
+
+This is the exact counterpart of `integrable_inv_one_add_normSq_sq`, and it is
+what makes the `H²` hypothesis in `exists_agmonSupBound` load-bearing rather
+than decorative: the same Fourier/Cauchy–Schwarz route run at order `1` has no
+finite weight to pair against, so it yields no `L^∞` bound.  (Indeed
+`H¹(ℝ³) ↪ L^∞` is false.)
+
+Proof: on `ball 0 R` with `R ≥ 1` the integrand is `≥ (2R²)⁻¹`, while
+`volume (ball 0 R) = R³ · volume (ball 0 1)` by `Measure.addHaar_ball`, so the
+lower Lebesgue integral is at least `(R/2)·volume (ball 0 1) → ∞`.
+
+Reference: Stein, *Singular Integrals and Differentiability Properties of
+Functions*, Princeton 1970, Ch. V §3 (the Bessel potential `G_s` is in `L²`
+iff `2s > n`). -/
+theorem not_integrable_inv_one_add_normSq :
+    ¬ Integrable (fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹) := by
+  intro hint
+  set M : ENNReal := ∫⁻ ξ : Space, ‖((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹‖ₑ with hM
+  have hMlt : M < ⊤ := hint.2
+  set v : ENNReal := (volume : Measure Space) (Metric.ball (0 : Space) 1) with hv
+  have hvpos : 0 < v := Metric.measure_ball_pos _ _ one_pos
+  have hvne : v ≠ ⊤ := measure_ball_lt_top.ne
+  have key : ∀ R : ℝ, 1 ≤ R →
+      ENNReal.ofReal ((2 * R ^ 2)⁻¹) *
+        (volume : Measure Space) (Metric.ball (0 : Space) R) ≤ M := by
+    intro R hR
+    have hms : MeasurableSet (Metric.ball (0 : Space) R) := measurableSet_ball
+    rw [← lintegral_indicator_const hms]
+    refine lintegral_mono fun ξ => ?_
+    by_cases hξ : ξ ∈ Metric.ball (0 : Space) R
+    · rw [Set.indicator_of_mem hξ]
+      have hlt : ‖ξ‖ < R := by simpa [Metric.mem_ball, dist_eq_norm] using hξ
+      have hnn : (0 : ℝ) ≤ ‖ξ‖ := norm_nonneg _
+      have hb : (1 : ℝ) + ‖ξ‖ ^ 2 ≤ 2 * R ^ 2 := by nlinarith
+      have hpos : (0 : ℝ) < 1 + ‖ξ‖ ^ 2 := by positivity
+      have hinv : ((2 * R ^ 2 : ℝ))⁻¹ ≤ ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹ := inv_anti₀ hpos hb
+      calc ENNReal.ofReal ((2 * R ^ 2)⁻¹)
+          ≤ ENNReal.ofReal (((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹) := ENNReal.ofReal_le_ofReal hinv
+        _ = ‖((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹‖ₑ := by rw [Real.enorm_eq_ofReal (by positivity)]
+    · rw [Set.indicator_of_notMem hξ]; exact zero_le
+  have hball : ∀ R : ℝ, 0 ≤ R →
+      (volume : Measure Space) (Metric.ball (0 : Space) R)
+        = ENNReal.ofReal (R ^ 3) * v := by
+    intro R hR
+    rw [Measure.addHaar_ball _ _ hR]
+    congr 2
+    simp
+  have final : ∀ R : ℝ, 1 ≤ R → R / 2 * v.toReal ≤ M.toReal := by
+    intro R hR
+    have h0 : (0 : ℝ) ≤ R := le_trans zero_le_one hR
+    have h := key R hR
+    rw [hball R h0, ← mul_assoc, ← ENNReal.ofReal_mul (by positivity)] at h
+    have heq : (2 * R ^ 2)⁻¹ * R ^ 3 = R / 2 := by
+      have hR0 : R ≠ 0 := by positivity
+      field_simp
+    rw [heq] at h
+    have h2 := ENNReal.toReal_mono hMlt.ne h
+    rwa [ENNReal.toReal_mul, ENNReal.toReal_ofReal (by positivity)] at h2
+  have hvr : 0 < v.toReal := ENNReal.toReal_pos hvpos.ne' hvne
+  obtain ⟨R, hR1, hRbig⟩ : ∃ R : ℝ, 1 ≤ R ∧ M.toReal < R / 2 * v.toReal := by
+    refine ⟨max 1 (2 * (M.toReal + 1) / v.toReal), le_max_left _ _, ?_⟩
+    have h2 : 2 * (M.toReal + 1) / v.toReal ≤ max 1 (2 * (M.toReal + 1) / v.toReal) :=
+      le_max_right _ _
+    have h3 : 2 * (M.toReal + 1) / v.toReal * v.toReal = 2 * (M.toReal + 1) := by
+      field_simp
+    nlinarith [h3, h2, hvr]
+  linarith [final R hR1]
+
+/-- The `L¹(ℝ³)` mass `∫ (1 + ‖ξ‖²)⁻² dξ` of the Bessel weight.  Finite by
+`integrable_inv_one_add_normSq_sq`; on the Euclidean model of `ℝ³` its value is
+`π²`, but only finiteness is used below. -/
+def besselWeightMass : ℝ := ∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹
+
+/-- **Weighted Cauchy–Schwarz against the Bessel weight (certified, no sorry).**
+For nonnegative `h : ℝ³ → ℝ` whose Bessel-weighted version `(1 + ‖ξ‖²)·h` is
+square integrable,
+
+  `∫ h ≤ √(∫ (1+‖ξ‖²)⁻²) · √(∫ ((1+‖ξ‖²)·h)²)`.
+
+Proof: write `h = (1+‖ξ‖²)⁻¹ · ((1+‖ξ‖²)·h)` and apply Hölder with the
+conjugate pair `(2,2)`; the first factor lies in `L²(ℝ³)` by
+`integrable_inv_one_add_normSq_sq`.  Applied with `h = ‖û‖` this is precisely
+the Cauchy–Schwarz step of the Agmon/Sobolev embedding (Stein, *Singular
+Integrals*, Princeton 1970, Ch. V §3). -/
+theorem integral_le_besselWeightMass_mul_sqrt
+    {h : Space → ℝ} (hnn : ∀ ξ : Space, 0 ≤ h ξ)
+    (hmem : MemLp (fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) 2) :
+    ∫ ξ : Space, h ξ ≤
+      Real.sqrt besselWeightMass *
+        Real.sqrt (∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) ^ 2) := by
+  have hpq : Real.HolderConjugate 2 2 := by rw [Real.holderConjugate_iff]; norm_num
+  have hfsq : Integrable (fun ξ : Space => (((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹) ^ 2) := by
+    simpa [inv_pow] using integrable_inv_one_add_normSq_sq
+  have hf : MemLp (fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹) 2 :=
+    (memLp_two_iff_integrable_sq continuous_inv_one_add_normSq.aestronglyMeasurable).mpr hfsq
+  have key := integral_mul_le_Lp_mul_Lq_of_nonneg (μ := (volume : Measure Space)) hpq
+    (f := fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹)
+    (g := fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ)
+    (Filter.Eventually.of_forall fun ξ => by positivity)
+    (Filter.Eventually.of_forall fun ξ => by have := hnn ξ; positivity)
+    (by simpa using hf) (by simpa using hmem)
+  have hprod : ∀ ξ : Space,
+      ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹ * (((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) = h ξ := by
+    intro ξ; field_simp
+  simp only [hprod] at key
+  have hrw : ∀ y : ℝ, y ^ (2 : ℝ) = y ^ (2 : ℕ) := by
+    intro y; rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+  simp only [hrw] at key
+  rw [Real.sqrt_eq_rpow, Real.sqrt_eq_rpow]
+  simpa [besselWeightMass, inv_pow] using key
+
+/-- **[NAMED RESIDUAL — Fourier inversion + Plancherel + Bessel-symbol
+bookkeeping for `SchwartzMap Space Space`; Stein, *Singular Integrals and
+Differentiability Properties of Functions*, Princeton 1970, Ch. V §3;
+L. Hörmander, *The Analysis of Linear Partial Differential Operators I*,
+2nd ed. Springer 1990, §7.1 and §7.9; est ~300 LOC.]**
+
+Every Schwartz velocity field admits a nonnegative **Fourier majorant density**
+`h` — classically `h = ‖û‖` in the convention `u(x) = ∫ e^{2πi⟨x,ξ⟩} û(ξ) dξ` —
+which dominates the sup norm through inversion, `‖u(x)‖ ≤ ∫ ‖û‖`, and whose
+Bessel-weighted `L²` mass is controlled by the *physical* `H²` norm,
+`∫ (1+|ξ|²)²‖û‖² ≤ C·‖u‖²_{H²}`: expand `(1+|ξ|²)² = 1 + 2|ξ|² + |ξ|⁴` and match
+the three terms against `n = 0, 1, 2` via Plancherel and `ℱ(D^n u) =
+(2πiξ)^{⊗n} û`.
+
+**Why this is strictly lower than `exists_agmonSupBound`.**  It contains no
+sup-norm/Sobolev inequality and no dimensional hypothesis.  The dimensional
+content — that `(1+|ξ|²)⁻²` is integrable on `ℝ³` exactly because `4 > 3`, and
+the Cauchy–Schwarz that turns that into the embedding — is discharged above by
+`integrable_inv_one_add_normSq_sq` and `integral_le_besselWeightMass_mul_sqrt`.
+What remains here is pure Fourier bookkeeping, provable without any reference
+to `exists_agmonSupBound`.
+
+**Dependencies (Mathlib-absent as stated).**  `Space = Fin 3 → ℝ` carries the
+Pi (sup) norm and hence no `InnerProductSpace ℝ` instance, so Mathlib's
+`SchwartzMap.fourierTransformCLE` does not apply on the nose; the transform has
+to be transported along `Fin 3 → ℝ ≃L[ℝ] EuclideanSpace ℝ (Fin 3)` together
+with `iteratedFDeriv` and `volume`.  On top of that: Fourier inversion for
+Schwartz maps, Plancherel, and the derivative-to-symbol identity, with the
+finite-dimensional norm-equivalence constants absorbed into `C`. -/
+theorem exists_besselFourierMajorant :
+    ∃ C : ℝ, 0 < C ∧
+      ∀ u : SchwartzVelocity, ∃ h : Space → ℝ,
+        (∀ ξ : Space, 0 ≤ h ξ) ∧
+        MemLp (fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) 2 ∧
+        (∀ x : Space, ‖(⇑u) x‖ ≤ ∫ ξ : Space, h ξ) ∧
+        (∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) ^ 2) ≤ C * sobolevH2NormSq u := by
+  sorry
+
+/-- **[DERIVED from `exists_besselFourierMajorant`.]**  Agmon / Sobolev
+embedding `H²(ℝ³) ↪ L^∞` (`s = 2 > 3/2 = n/2`); Majda–Bertozzi Lemma 3.2;
+Agmon, *Lectures on Elliptic Boundary Value Problems*, Van Nostrand 1965;
+Stein, *Singular Integrals*, Princeton 1970, Ch. V.  The sup norm of a Schwartz
+field is dominated by the square root of its `H²` norm:
+`‖u‖_∞ ≤ C·‖u‖_{H²}`.  This is the **sharp** derivative order for the embedding
+used by the BKM assembly, one order below the `H³` control the criterion
+actually carries.
+
+The derivation is the classical two-line Fourier argument, now assembled from
+certified parts: take the Fourier majorant density `h` supplied by
+`exists_besselFourierMajorant`, bound `‖u(x)‖ ≤ ∫ h` by inversion, split
+`h = (1+|ξ|²)⁻¹·((1+|ξ|²)h)` and apply
+`integral_le_besselWeightMass_mul_sqrt`, whose weight has finite mass by
+`integrable_inv_one_add_normSq_sq` — the `4 > 3` step that fails for `H¹`. -/
 theorem exists_agmonSupBound :
     ∃ C : ℝ, 0 < C ∧
       ∀ (u : SchwartzVelocity) (x : Space),
         ‖(⇑u) x‖ ≤ C * Real.sqrt (sobolevH2NormSq u) := by
-  sorry
+  obtain ⟨C₀, hC₀pos, hC₀⟩ := exists_besselFourierMajorant
+  refine ⟨Real.sqrt besselWeightMass * Real.sqrt C₀ + 1, by positivity, ?_⟩
+  intro u x
+  obtain ⟨h, hnn, hmem, hsup, hplan⟩ := hC₀ u
+  have hS : (0 : ℝ) ≤ Real.sqrt (sobolevH2NormSq u) := Real.sqrt_nonneg _
+  have hstep : ∫ ξ : Space, h ξ ≤
+      Real.sqrt besselWeightMass * Real.sqrt (C₀ * sobolevH2NormSq u) :=
+    le_trans (integral_le_besselWeightMass_mul_sqrt hnn hmem)
+      (mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt hplan) (Real.sqrt_nonneg _))
+  calc ‖(⇑u) x‖
+      ≤ ∫ ξ : Space, h ξ := hsup x
+    _ ≤ Real.sqrt besselWeightMass * Real.sqrt (C₀ * sobolevH2NormSq u) := hstep
+    _ = (Real.sqrt besselWeightMass * Real.sqrt C₀) *
+          Real.sqrt (sobolevH2NormSq u) := by
+        rw [Real.sqrt_mul hC₀pos.le]; ring
+    _ ≤ (Real.sqrt besselWeightMass * Real.sqrt C₀ + 1) *
+          Real.sqrt (sobolevH2NormSq u) :=
+        mul_le_mul_of_nonneg_right (by linarith) hS
 
 /-- **[DERIVED from `exists_agmonSupBound`.]**  Agmon/Sobolev embedding, s = 3 > 3/2;
 Majda–Bertozzi Lemma 3.2; est ~250 LOC.]**  The sup norm of a Schwartz field is
@@ -715,3 +946,4 @@ theorem logBKMControl_of_schwartzSliced
     exact mul_le_mul_of_nonneg_left (hB t ht) (le_of_lt hMpos)
 
 end Navier.Analysis.BealeKatoMajda
+
