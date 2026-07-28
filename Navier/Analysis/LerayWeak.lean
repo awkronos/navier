@@ -102,6 +102,7 @@ open scoped ContDiff
 
 open Navier
 open Navier.Analysis.Enstrophy
+open Navier.Analysis.RieszKolmogorov
 open Navier.Analysis.OfficialABEncoding
 
 /-!
@@ -1273,98 +1274,12 @@ theorem aubinLions_zero_instance :
   · exact strongL2LocLimit_const (fun _ _ => 0)
 
 /-!
-### Diagonal extraction and the enstrophy blind spot (certified)
+### The enstrophy blind spot (certified)
 
-Two pieces of the Aubin–Lions core that need no measure-theoretic input, plus the
-checked obstruction that reshapes the residual below.
+The checked obstruction that reshapes the residual below.  The diagonal extraction
+that used to sit here is pure subsequence combinatorics with no Navier–Stokes content,
+so it now lives upstream in `Navier.Analysis.RieszKolmogorov`.
 -/
-
-/-- **Cantor diagonal extraction over a countable family of subsequence
-predicates.**  If `Q n` is stable under passing to a further subsequence
-(`hsub`) and under dropping a finite head (`htail`), and if from *every*
-strictly monotone `τ` one can extract a refinement satisfying `Q n` (`hstep`),
-then a single strictly monotone `σ` satisfies `Q n` for **every** `n`.
-
-This is the extraction step of the Aubin–Lions–Simon argument over a countable
-exhaustion; Mathlib has `Filter.extraction_forall_of_frequently`, which produces
-`P n (φ n)` rather than a subsequence good for all `n` simultaneously, so this
-nested form is absent.  Construction: nested extractors `Ψ 0 = id`,
-`Ψ (j+1) = Ψ j ∘ ρ j`, diagonal `σ k = Ψ (k+1) k`; the ranges `Set.range (Ψ j)` are
-antitone, which places every tail of `σ` inside `Set.range (Ψ (n+1))`.
-
-[J.-L. Lions, *Quelques méthodes de résolution des problèmes aux limites non
-linéaires*, Dunod 1969, Ch. 1 §5; J. Simon, "Compact sets in `L^p(0,T;B)`",
-*Ann. Mat. Pura Appl.* **146** (1987) 65–96; R. Temam, *Navier–Stokes
-Equations*, AMS Chelsea 2001, Ch. III §2.3.] -/
-theorem exists_diagonal_subseq (Q : ℕ → (ℕ → ℕ) → Prop)
-    (hsub : ∀ (n : ℕ) (τ ρ : ℕ → ℕ), Q n τ → StrictMono ρ → Q n (τ ∘ ρ))
-    (htail : ∀ (n N : ℕ) (τ : ℕ → ℕ), Q n (fun k => τ (k + N)) → Q n τ)
-    (hstep : ∀ (n : ℕ) (τ : ℕ → ℕ), StrictMono τ → ∃ ρ, StrictMono ρ ∧ Q n (τ ∘ ρ)) :
-    ∃ σ : ℕ → ℕ, StrictMono σ ∧ ∀ n, Q n σ := by
-  classical
-  choose ρ hρmono hρQ using hstep
-  let Ψ : ℕ → {f : ℕ → ℕ // StrictMono f} := fun n =>
-    Nat.rec (motive := fun _ => {f : ℕ → ℕ // StrictMono f})
-      ⟨id, strictMono_id⟩
-      (fun j p => ⟨p.1 ∘ ρ j p.1 p.2, p.2.comp (hρmono j p.1 p.2)⟩) n
-  have hΨsucc : ∀ j, (Ψ (j+1)).1 = (Ψ j).1 ∘ ρ j (Ψ j).1 (Ψ j).2 := fun _ => rfl
-  have hmono : ∀ n, StrictMono (Ψ n).1 := fun n => (Ψ n).2
-  have hQ : ∀ j, Q j (Ψ (j+1)).1 := by
-    intro j
-    have h := hρQ j (Ψ j).1 (Ψ j).2
-    simpa [hΨsucc j] using h
-  have hrange : ∀ j, Set.range (Ψ (j+1)).1 ⊆ Set.range (Ψ j).1 := by
-    intro j; rw [hΨsucc j]; exact Set.range_comp_subset_range _ _
-  have hrange' : ∀ a b, a ≤ b → Set.range (Ψ b).1 ⊆ Set.range (Ψ a).1 := by
-    intro a b hab
-    induction b with
-    | zero => simp_all
-    | succ b ih =>
-      rcases Nat.lt_or_ge a (b+1) with h | h
-      · exact (hrange b).trans (ih (Nat.lt_succ_iff.mp h))
-      · have he : a = b + 1 := le_antisymm hab h
-        subst he; exact subset_rfl
-  set σ : ℕ → ℕ := fun k => (Ψ (k+1)).1 k with hσdef
-  have hσmono : StrictMono σ := by
-    apply strictMono_nat_of_lt_succ
-    intro k
-    have h1 : σ (k+1) = (Ψ (k+1)).1 (ρ (k+1) (Ψ (k+1)).1 (Ψ (k+1)).2 (k+1)) := by
-      show (Ψ (k+2)).1 (k+1) = _
-      rw [hΨsucc (k+1)]; rfl
-    rw [h1]
-    exact (hmono (k+1)) (lt_of_lt_of_le (Nat.lt_succ_self k) ((hρmono (k+1) _ _).le_apply))
-  refine ⟨σ, hσmono, ?_⟩
-  intro n
-  have hmem : ∀ j : ℕ, σ (j + n) ∈ Set.range (Ψ (n+1)).1 := by
-    intro j; exact hrange' (n+1) (j+n+1) (by omega) ⟨j + n, rfl⟩
-  choose ψ hψ using hmem
-  have hψmono : StrictMono ψ := by
-    intro a b hab
-    have h1 : σ (a + n) < σ (b + n) := hσmono (by omega)
-    rw [← hψ a, ← hψ b] at h1
-    exact (hmono (n+1)).lt_iff_lt.mp h1
-  have hQn : Q n ((Ψ (n+1)).1 ∘ ψ) := hsub n _ _ (hQ n) hψmono
-  have heq : ((Ψ (n+1)).1 ∘ ψ) = fun j => σ (j + n) := by funext j; exact hψ j
-  rw [heq] at hQn
-  exact htail n n σ hQn
-
-/-- **Diagonal extraction, specialized to a countable array of error
-functionals.**  `F n m` is the error of member `m` on window `n`.  If every
-window can be handled along a further refinement of any given subsequence, one
-subsequence drives every window to `0`.  This is the form consumed by the
-`T = R = n` exhaustion of `StrongL2LocLimit`. -/
-theorem exists_subseq_forall_window_tendsto (F : ℕ → ℕ → ℝ)
-    (hstep : ∀ (n : ℕ) (τ : ℕ → ℕ), StrictMono τ →
-      ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
-        Filter.Tendsto (fun k => F n (τ (ρ k))) Filter.atTop (nhds 0)) :
-    ∃ σ : ℕ → ℕ, StrictMono σ ∧
-      ∀ n, Filter.Tendsto (fun k => F n (σ k)) Filter.atTop (nhds 0) := by
-  refine exists_diagonal_subseq
-    (fun n τ => Filter.Tendsto (fun k => F n (τ k)) Filter.atTop (nhds 0)) ?_ ?_ hstep
-  · intro n τ ρ hQ hρ
-    exact hQ.comp hρ.tendsto_atTop
-  · intro n N τ hQ
-    exact (Filter.tendsto_add_atTop_iff_nat (f := fun k => F n (τ k)) N).mp hQ
 
 /-- The curl vanishes wherever the spatial Fréchet derivative vanishes. -/
 theorem staticCurl_eq_zero_of_fderiv_eq_zero (u : VelocityField) (x : Space)
@@ -1752,7 +1667,8 @@ boundedness on the single window `(0,n] × B̄(0,n)` from (H-space) + (H-time) +
 the `L²` bound, giving an `L²`-Cauchy refinement of any subsequence
 [Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~400 LOC]; **(iii)** the nested
 Cantor diagonal over the countable exhaustion — `exists_diagonal_subseq` /
-`exists_subseq_forall_window_tendsto` (CERTIFIED above), with
+`exists_subseq_forall_window_tendsto` (CERTIFIED in
+`Navier.Analysis.RieszKolmogorov`), with
 `StrongL2LocLimit.comp_strictMono` for the bookkeeping; **(iv)** Riesz–Fischer:
 an `L²`-Cauchy sequence of jointly measurable fields has a jointly measurable
 pointwise-a.e. limit with vanishing window errors, slicewise square-integrable by
@@ -1985,6 +1901,7 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
+
 
 
 
