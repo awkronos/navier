@@ -605,6 +605,90 @@ theorem closedBall_subset_biUnion_gridCell {h : ℝ} (hh : 0 < h) (R : ℝ) :
 end GridCell
 
 /-!
+### Spacetime cells
+
+The Navier–Stokes window lives in `ℝ × (ι → ℝ)`, not in a pi type.  **Route chosen,
+and why.**  `MeasurableEquiv.piFinSuccAbove` with
+`MeasureTheory.volume_preserving_piFinSuccAbove` transports `(Fin 4 → ℝ)` to
+`ℝ × (Fin 3 → ℝ)` and would carry the *measure* facts across — but the cell
+hypothesis `hdiam` is about the **norm**, and Mathlib records no
+norm-preservation or isometry statement for that equivalence (searched: the only
+`piFinSuccAbove` results are the measurable-equiv definition and the two
+measure-preserving lemmas).  Transporting would therefore need an isometry lemma
+proved from scratch on top of the equivalence.
+
+Building the product cell directly needs no such lemma, because
+`Prod.norm_mk : ‖(x, y)‖ = max ‖x‖ ‖y‖` gives the diameter bound immediately from
+the two factor bounds.  So the product is taken directly and the transport is not
+used.  Every fact below mirrors its `gridCell` counterpart.
+-/
+
+section ProdGridCell
+
+variable {ι : Type*} [Fintype ι]
+
+/-- A spacetime cell: a time interval of length `h` times a spatial grid cell. -/
+def prodGridCell (h : ℝ) (m : ℤ) (j : ι → ℤ) : Set (ℝ × (ι → ℝ)) :=
+  Set.Ico (h * m) (h * (m + 1)) ×ˢ gridCell h j
+
+theorem measurableSet_prodGridCell (h : ℝ) (m : ℤ) (j : ι → ℤ) :
+    MeasurableSet (prodGridCell h m j) :=
+  measurableSet_Ico.prod (measurableSet_gridCell h j)
+
+/-- A spacetime cell has measure `h^{|ι|+1}`: the `h⁴` of the criterion when
+`|ι| = 3`. -/
+theorem volume_prodGridCell {h : ℝ} (hh : 0 ≤ h) (m : ℤ) (j : ι → ℤ) :
+    volume (prodGridCell h m j) = ENNReal.ofReal (h ^ (Fintype.card ι + 1)) := by
+  rw [prodGridCell, MeasureTheory.Measure.volume_eq_prod, MeasureTheory.Measure.prod_prod,
+    volume_gridCell hh j, Real.volume_Ico]
+  rw [show h * (m + 1) - h * m = h by ring, ← ENNReal.ofReal_mul hh]
+  congr 1
+  rw [pow_succ]
+  ring
+
+omit [Fintype ι] in
+theorem prodGridCell_disjoint {h : ℝ} (hh : 0 < h) {m m' : ℤ} {j j' : ι → ℤ}
+    (hne : (m, j) ≠ (m', j')) : Disjoint (prodGridCell h m j) (prodGridCell h m' j') := by
+  refine Set.disjoint_left.mpr fun z hz hz' => ?_
+  obtain ⟨hz1, hz2⟩ := hz
+  obtain ⟨hz1', hz2'⟩ := hz'
+  by_cases hm : m = m'
+  · subst hm
+    have hj : j ≠ j' := fun hj => hne (by rw [hj])
+    exact (Set.disjoint_left.mp (gridCell_disjoint hh hj)) hz2 hz2'
+  · simp only [Set.mem_Ico] at hz1 hz1'
+    rcases lt_or_gt_of_ne hm with hlt | hgt
+    · have : (m : ℝ) + 1 ≤ (m' : ℝ) := by exact_mod_cast Int.add_one_le_iff.mpr hlt
+      nlinarith [hz1.2, hz1'.1]
+    · have : (m' : ℝ) + 1 ≤ (m : ℝ) := by exact_mod_cast Int.add_one_le_iff.mpr hgt
+      nlinarith [hz1'.2, hz1.1]
+
+/-- A spacetime cell has diameter at most `h`.  This is `Prod.norm_mk`: the product
+norm is the max of the factor norms, so the two factor bounds combine with no
+isometry argument. -/
+theorem norm_sub_le_of_mem_prodGridCell {h : ℝ} (hh : 0 ≤ h) {m : ℤ} {j : ι → ℤ}
+    {z w : ℝ × (ι → ℝ)} (hz : z ∈ prodGridCell h m j) (hw : w ∈ prodGridCell h m j) :
+    ‖z - w‖ ≤ h := by
+  obtain ⟨hz1, hz2⟩ := hz
+  obtain ⟨hw1, hw2⟩ := hw
+  rw [show z - w = (z.1 - w.1, z.2 - w.2) from rfl, Prod.norm_mk]
+  refine max_le ?_ (norm_sub_le_of_mem_gridCell hh hz2 hw2)
+  simp only [Set.mem_Ico] at hz1 hw1
+  rw [Real.norm_eq_abs, abs_le]
+  constructor <;> [nlinarith [hz1.1, hw1.2]; nlinarith [hz1.2, hw1.1]]
+
+omit [Fintype ι] in
+/-- **The spacetime grid covers.** -/
+theorem mem_prodGridCell_floor {h : ℝ} (hh : 0 < h) (z : ℝ × (ι → ℝ)) :
+    z ∈ prodGridCell h ⌊z.1 / h⌋ fun i => ⌊z.2 i / h⌋ := by
+  refine ⟨?_, mem_gridCell_floor hh z.2⟩
+  constructor
+  · rw [← le_div_iff₀' hh]; exact Int.floor_le (z.1 / h)
+  · rw [← div_lt_iff₀' hh]; exact Int.lt_floor_add_one (z.1 / h)
+
+end ProdGridCell
+
+/-!
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
 
@@ -736,6 +820,7 @@ theorem setIntegral_cellError_le_displacement_of_bounded {G : Type*} [Measurable
     hiA hiB hballInt hprod
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
