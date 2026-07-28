@@ -287,6 +287,53 @@ theorem setIntegral_oscillation_le_translate_ball {G : Type*} [MeasurableSpace G
   setIntegral_le_translate_ball A hA h x hAx _ (fun _ => by positivity) hiA hiB
 
 /-!
+## Aggregation over the partition
+
+Two purely measure-theoretic steps, with no group structure and no analysis left
+in them.  `sum_setIntegral_le_integral_of_disjoint` is where the disjointness of
+the cells is spent: the cell integrals of a nonnegative integrand add up to an
+integral over their union, hence are dominated by the integral over the whole
+space — which for the displacement integrand is `‖τ_k f − f‖²_{L²}`.
+`setIntegral_le_measureReal_mul_const` is the last line of the criterion,
+integrating the displacement variable `k` over the ball to turn a supremum into
+the factor `ν(B_h) = (2h)^d`, which against the cell measure `h^d` is the `2^d`.
+-/
+
+/-- **Tonelli swap, in set-integral form.**  Exchanging the cell variable `x` with
+the displacement variable `k`.  A thin wrapper on `integral_integral_swap`, stated
+with set integrals so the consumer never has to juggle restricted product
+measures: `(μ.restrict A).prod (ν.restrict B)` is exactly the measure the
+integrability hypothesis needs. -/
+theorem setIntegral_setIntegral_swap {β : Type*} [MeasurableSpace β] {ν : Measure β}
+    [SFinite μ] [SFinite ν] (A : Set α) (B : Set β) (F : α → β → ℝ)
+    (hint : Integrable (Function.uncurry F) ((μ.restrict A).prod (ν.restrict B))) :
+    ∫ x in A, (∫ k in B, F x k ∂ν) ∂μ = ∫ k in B, (∫ x in A, F x k ∂μ) ∂ν :=
+  integral_integral_swap hint
+
+/-- **Disjointness step.**  Cell integrals of a nonnegative integrand sum to at
+most the integral over the whole space. -/
+theorem sum_setIntegral_le_integral_of_disjoint {N : ℕ} (A : Fin N → Set α)
+    (hm : ∀ i, MeasurableSet (A i)) (hd : Pairwise (Function.onFun Disjoint A))
+    (F : α → ℝ) (hF : ∀ x, 0 ≤ F x) (hint : Integrable F μ) :
+    ∑ i, ∫ x in A i, F x ∂μ ≤ ∫ x, F x ∂μ := by
+  have hUnion : ∫ x in ⋃ i, A i, F x ∂μ = ∑' i, ∫ x in A i, F x ∂μ :=
+    integral_iUnion hm hd hint.integrableOn
+  calc ∑ i, ∫ x in A i, F x ∂μ = ∑' i, ∫ x in A i, F x ∂μ := (tsum_fintype _).symm
+    _ = ∫ x in ⋃ i, A i, F x ∂μ := hUnion.symm
+    _ ≤ ∫ x, F x ∂μ :=
+        setIntegral_le_integral hint (Filter.Eventually.of_forall hF)
+
+/-- **Last line of the criterion.**  A bound `M` on a finite-measure set turns its
+integral into `ν(S)·M`; applied to `k ↦ ‖τ_k f − f‖²_{L²}` over the displacement
+ball this is what converts the integral in `k` into a supremum. -/
+theorem setIntegral_le_measureReal_mul_const {S : Set α} (hS : MeasurableSet S)
+    (hSfin : μ S ≠ ⊤) (g : α → ℝ) (M : ℝ) (hb : ∀ k ∈ S, g k ≤ M)
+    (hint : IntegrableOn g S μ) :
+    ∫ k in S, g k ∂μ ≤ μ.real S * M := by
+  have hmono := setIntegral_mono_on hint (integrableOn_const hSfin) hS hb
+  simpa [setIntegral_const, smul_eq_mul] using hmono
+
+/-!
 ## Engine 2 — Bolzano–Weierstrass in the finite-dimensional cell space
 -/
 
@@ -311,6 +358,7 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
+
 
 
 
