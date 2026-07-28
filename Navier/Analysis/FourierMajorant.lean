@@ -8,8 +8,10 @@ This is the reusable analytic core of the Beale–Kato–Majda Sobolev-embedding
 route.  The certified interface `SobolevEmbedding.sobolev_domination_of_intermediate`
 turns two analytic bounds on a Fourier-side majorant `Q` into the embedding
 `‖u‖_∞ ≤ C·√Ms`.  This file supplies the *first* of those two bounds
-kernel-cleanly (the Cauchy–Schwarz step) and reduces the embedding to a single
-named Fourier residual (inversion + Plancherel).
+kernel-cleanly (the Cauchy–Schwarz step), together with the weighted-`L²`
+calculus and the componentwise (vector → scalar) reduction, leaving a single
+named **scalar** Fourier residual (inversion + Plancherel):
+`exists_scalarFourierSpectralData`.
 
 ## Certified here (no sorry)
 
@@ -26,6 +28,22 @@ named Fourier residual (inversion + Plancherel).
   of the classical embedding, minus Fourier inversion.
 * `supBound_of_spectralData` — packages the sup bound `‖u x‖ ≤ C₁·√(Q u)` from a
   spectral density that dominates `u` pointwise (Fourier inversion `|u(x)| ≤ ∫‖û‖`).
+* `memLp_sqrt_sobWeight`, `integrable_spectralMajorant_integrand`,
+  `integrable_of_memLp_weighted`, `memLp_weighted_sum` — the weighted-`L²`
+  calculus: the single hypothesis `F·(sobWeight)^{-1/2} ∈ L²` yields both `F ∈ L¹`
+  (Hölder against the weight) and `F²·(sobWeight)^{-1} ∈ L¹`, and is stable under
+  finite sums.  These make `spectralMajorant F` and `∫ F` genuine finite integrals
+  rather than junk values.
+* `spectralMajorant_const_mul` (`Q(a·F) = a²·Q F`, unconditional),
+  `spectralMajorant_add_le` (`Q(F+G) ≤ 2(Q F + Q G)`, constant sharp) and
+  `spectralMajorant_sum_three_le` (`Q(∑_{i<3}Fᵢ) ≤ 3∑ᵢ Q Fᵢ`) — the majorant's
+  algebra.
+* `exists_spectralData_of_components` — **the componentwise reduction**: three
+  scalar densities, one per real component of `u`, assemble into a single vector
+  density with majorant `9·B`.  `Space = Fin 3 → ℝ` is sup-normed, so componentwise
+  domination is sup-norm domination.  This is what reduces
+  `exists_fourierSpectralData` to the *scalar* residual
+  `exists_scalarFourierSpectralData`.
 
 Weight convention: the sibling `sobWeight ξ = (1+|ξ|²)^{-3}` uses `(1+|ξ|²)`, not
 the `(1+4π²|ξ|²)` of the raw Fourier statement.  The two differ by a constant
@@ -106,6 +124,134 @@ majorant weight as a polynomial in the frequency variable. -/
 theorem sobWeightInv_eq (ξ : Space) :
     (sobWeight ξ)⁻¹ = (1 + ξ 0 ^ 2 + ξ 1 ^ 2 + ξ 2 ^ 2) ^ 3 := by
   rw [sobWeight, inv_pow, inv_inv]
+
+/-!
+## Weighted-`L²` calculus: integrability and the majorant's algebra
+
+The spectral density hypothesis carried through the whole route is
+`MemLp (F·(sobWeight)^{-1/2}) 2`.  These leaves turn that single hypothesis into
+the two integrability facts every assembly step needs (`F ∈ L¹` and
+`F²·(sobWeight)^{-1} ∈ L¹`) and record how `spectralMajorant` behaves under
+scaling and finite sums — the exact algebra consumed when the three real
+components of a velocity field are recombined into one density.
+-/
+
+/-- **The square root of the Sobolev weight lies in `L²`.**  `(√(sobWeight ξ))² =
+sobWeight ξ` and `sobWeight ∈ L¹`, so the Hölder partner of a weighted density is
+itself square-integrable.  (Extracted from the Cauchy–Schwarz engine so downstream
+Hölder arguments reuse it rather than re-deriving it.) -/
+theorem memLp_sqrt_sobWeight :
+    MemLp (fun ξ : Space => Real.sqrt (sobWeight ξ)) 2 volume := by
+  have hcont : Continuous (fun ξ : Space => Real.sqrt (sobWeight ξ)) :=
+    Real.continuous_sqrt.comp sobWeight_continuous
+  rw [memLp_two_iff_integrable_sq hcont.aestronglyMeasurable]
+  have hsq : (fun ξ : Space => (Real.sqrt (sobWeight ξ)) ^ 2) = sobWeight := by
+    funext ξ; exact Real.sq_sqrt (sobWeight_nonneg ξ)
+  rw [hsq]; exact sobWeight_integrable
+
+/-- **The `spectralMajorant` integrand of a weighted-`L²` density is integrable.**
+`(F·√(sobWeight)^{-1})² = F²·(sobWeight)^{-1}` pointwise, so the `L²` hypothesis
+is exactly integrability of the majorant integrand.  This makes
+`spectralMajorant F` a genuine (finite) integral rather than a junk value. -/
+theorem integrable_spectralMajorant_integrand {F : Space → ℝ}
+    (hmem : MemLp (fun ξ => F ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume) :
+    Integrable (fun ξ : Space => (F ξ) ^ 2 * (sobWeight ξ)⁻¹) volume := by
+  refine ((memLp_two_iff_integrable_sq hmem.aestronglyMeasurable).mp hmem).congr ?_
+  filter_upwards with ξ
+  rw [mul_pow, Real.sq_sqrt (inv_nonneg.mpr (sobWeight_nonneg ξ))]
+
+/-- **A weighted-`L²` spectral density is itself integrable.**  Hölder against
+`memLp_sqrt_sobWeight`: `F = (F·√(sobWeight)^{-1})·√(sobWeight)` is a product of two
+`L²` functions, hence `L¹`.  This is what makes `∫ F` finite and lets the
+componentwise assembly compare component integrals. -/
+theorem integrable_of_memLp_weighted {F : Space → ℝ}
+    (hmem : MemLp (fun ξ => F ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume) :
+    Integrable F volume := by
+  refine (hmem.integrable_mul memLp_sqrt_sobWeight).congr ?_
+  filter_upwards with ξ
+  simp only [Pi.mul_apply]
+  rw [mul_assoc, ← Real.sqrt_mul (inv_nonneg.mpr (sobWeight_nonneg ξ)),
+      inv_mul_cancel₀ (ne_of_gt (sobWeight_pos ξ)), Real.sqrt_one, mul_one]
+
+/-- **Scaling of the spectral majorant**: `Q(a·F) = a²·Q(F)`.  Unconditional — the
+Bochner integral is `ℝ`-homogeneous whether or not the integrand is integrable. -/
+theorem spectralMajorant_const_mul (a : ℝ) (F : Space → ℝ) :
+    spectralMajorant (fun ξ => a * F ξ) = a ^ 2 * spectralMajorant F := by
+  simp only [spectralMajorant]
+  rw [← integral_const_mul]
+  exact integral_congr_ae (Filter.Eventually.of_forall fun ξ => by ring)
+
+/-- **Weighted-`L²` membership is closed under finite sums.** -/
+theorem memLp_weighted_sum {n : ℕ} (F : Fin n → Space → ℝ)
+    (hF : ∀ i, MemLp (fun ξ => F i ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume) :
+    MemLp (fun ξ => (∑ i, F i ξ) * Real.sqrt (sobWeight ξ)⁻¹) 2 volume := by
+  refine MemLp.ae_eq ?_
+    (memLp_finsetSum (Finset.univ : Finset (Fin n))
+      (f := fun i ξ => F i ξ * Real.sqrt (sobWeight ξ)⁻¹) (fun i _ => hF i))
+  filter_upwards with ξ
+  rw [Finset.sum_mul]
+
+/-- **Subadditivity of the spectral majorant with the sharp constant `2`:**
+`Q(F+G) ≤ 2·(Q F + Q G)`.  Pointwise `(x+y)² ≤ 2x²+2y²` (equivalently
+`0 ≤ (x-y)²`); the constant `2` is sharp and cannot be lowered to `1`
+(`F = G` gives equality). -/
+theorem spectralMajorant_add_le {F G : Space → ℝ}
+    (hF : MemLp (fun ξ => F ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume)
+    (hG : MemLp (fun ξ => G ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume) :
+    spectralMajorant (fun ξ => F ξ + G ξ)
+      ≤ 2 * (spectralMajorant F + spectralMajorant G) := by
+  have hFi := integrable_spectralMajorant_integrand hF
+  have hGi := integrable_spectralMajorant_integrand hG
+  have hsum : MemLp (fun ξ => (F ξ + G ξ) * Real.sqrt (sobWeight ξ)⁻¹) 2 volume := by
+    refine MemLp.ae_eq ?_ (hF.add hG)
+    filter_upwards with ξ
+    simp only [Pi.add_apply]
+    ring
+  have hSi := integrable_spectralMajorant_integrand hsum
+  have hle : (fun ξ : Space => (F ξ + G ξ) ^ 2 * (sobWeight ξ)⁻¹)
+      ≤ fun ξ : Space =>
+          2 * ((F ξ) ^ 2 * (sobWeight ξ)⁻¹) + 2 * ((G ξ) ^ 2 * (sobWeight ξ)⁻¹) := by
+    intro ξ
+    have hw : (0 : ℝ) ≤ (sobWeight ξ)⁻¹ := inv_nonneg.mpr (sobWeight_nonneg ξ)
+    nlinarith [mul_nonneg hw (sq_nonneg (F ξ - G ξ))]
+  calc spectralMajorant (fun ξ => F ξ + G ξ)
+      ≤ ∫ ξ : Space, (2 * ((F ξ) ^ 2 * (sobWeight ξ)⁻¹)
+            + 2 * ((G ξ) ^ 2 * (sobWeight ξ)⁻¹)) :=
+        integral_mono hSi ((hFi.const_mul 2).add (hGi.const_mul 2)) hle
+    _ = 2 * (spectralMajorant F + spectralMajorant G) := by
+        rw [integral_add (hFi.const_mul 2) (hGi.const_mul 2), integral_const_mul,
+            integral_const_mul]
+        simp only [spectralMajorant]
+        ring
+
+/-- **Three-term subadditivity of the spectral majorant:**
+`Q(∑_{i<3} Fᵢ) ≤ 3·∑_{i<3} Q(Fᵢ)`.  Pointwise Cauchy–Schwarz
+`(a+b+c)² ≤ 3(a²+b²+c²)`, sharp at `a = b = c`.  This is the exact algebra
+consumed when the three real components of a velocity field are recombined
+into a single spectral density. -/
+theorem spectralMajorant_sum_three_le (F : Fin 3 → Space → ℝ)
+    (hF : ∀ i, MemLp (fun ξ => F i ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume) :
+    spectralMajorant (fun ξ => ∑ i, F i ξ) ≤ 3 * ∑ i, spectralMajorant (F i) := by
+  have hi : ∀ i : Fin 3,
+      Integrable (fun ξ : Space => (F i ξ) ^ 2 * (sobWeight ξ)⁻¹) volume :=
+    fun i => integrable_spectralMajorant_integrand (hF i)
+  have hSi := integrable_spectralMajorant_integrand (memLp_weighted_sum F hF)
+  have hle : (fun ξ : Space => (∑ i, F i ξ) ^ 2 * (sobWeight ξ)⁻¹)
+      ≤ fun ξ : Space => ∑ i : Fin 3, 3 * ((F i ξ) ^ 2 * (sobWeight ξ)⁻¹) := by
+    intro ξ
+    have hw : (0 : ℝ) ≤ (sobWeight ξ)⁻¹ := inv_nonneg.mpr (sobWeight_nonneg ξ)
+    simp only [Fin.sum_univ_three]
+    nlinarith [mul_nonneg hw (sq_nonneg (F 0 ξ - F 1 ξ)),
+      mul_nonneg hw (sq_nonneg (F 1 ξ - F 2 ξ)),
+      mul_nonneg hw (sq_nonneg (F 0 ξ - F 2 ξ))]
+  calc spectralMajorant (fun ξ => ∑ i, F i ξ)
+      ≤ ∫ ξ : Space, ∑ i : Fin 3, 3 * ((F i ξ) ^ 2 * (sobWeight ξ)⁻¹) :=
+        integral_mono hSi
+          (integrable_finsetSum _ fun i _ => (hi i).const_mul 3) hle
+    _ = ∑ i : Fin 3, ∫ ξ : Space, 3 * ((F i ξ) ^ 2 * (sobWeight ξ)⁻¹) :=
+        integral_finsetSum _ fun i _ => (hi i).const_mul 3
+    _ = 3 * ∑ i : Fin 3, spectralMajorant (F i) := by
+        simp only [spectralMajorant, integral_const_mul, ← Finset.mul_sum]
 
 /-!
 ## The Cauchy–Schwarz sup-majorant (the analytic engine)
@@ -192,6 +338,56 @@ theorem supBound_of_spectralData {u : SchwartzVelocity} {F : Space → ℝ}
 
 
 /-!
+## The componentwise reduction: three scalar densities give one vector density
+-/
+
+/-- **The vector-valued spectral data is assembled from three scalar densities.**
+`Space = Fin 3 → ℝ` carries the *sup* norm, so a bound on every real component
+`|u(x)ᵢ|` is a bound on `‖u(x)‖`.  Given, for each component `i`, a nonnegative
+weighted-`L²` density `Fᵢ` dominating that component (`|u(x)ᵢ| ≤ ∫ Fᵢ`) with
+majorant `spectralMajorant Fᵢ ≤ B`, the *sum* `G = ∑ᵢ Fᵢ` is a single density
+satisfying all three requirements of `exists_fourierSpectralData` with majorant
+`9·B`.
+
+The constant `9 = 3·3` is the product of the two Cauchy–Schwarz factors: `3` from
+`spectralMajorant_sum_three_le` (`(a+b+c)² ≤ 3(a²+b²+c²)`) and `3` from summing the
+three per-component majorant bounds.  Kernel-clean; this is the leaf that turns the
+*vector-valued* Fourier–Plancherel bundle into a *scalar* one.
+
+Consumes: `memLp_weighted_sum`, `integrable_of_memLp_weighted`,
+`spectralMajorant_sum_three_le`. -/
+theorem exists_spectralData_of_components {u : SchwartzVelocity} {B : ℝ}
+    (F : Fin 3 → Space → ℝ)
+    (hFnn : ∀ (i : Fin 3) (ξ : Space), 0 ≤ F i ξ)
+    (hFmem : ∀ i, MemLp (fun ξ => F i ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume)
+    (hdom : ∀ (i : Fin 3) (x : Space), |(⇑u) x i| ≤ ∫ ξ : Space, F i ξ)
+    (hmaj : ∀ i, spectralMajorant (F i) ≤ B) :
+    ∃ G : Space → ℝ, (∀ ξ, 0 ≤ G ξ) ∧
+      MemLp (fun ξ => G ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume ∧
+      (∀ x : Space, ‖(⇑u) x‖ ≤ ∫ ξ : Space, G ξ) ∧
+      spectralMajorant G ≤ 9 * B := by
+  have hGnn : ∀ ξ : Space, 0 ≤ ∑ i, F i ξ :=
+    fun ξ => Finset.sum_nonneg fun i _ => hFnn i ξ
+  have hFint : ∀ i, Integrable (F i) volume :=
+    fun i => integrable_of_memLp_weighted (hFmem i)
+  have hGint : Integrable (fun ξ : Space => ∑ i, F i ξ) volume :=
+    integrable_finsetSum _ fun i _ => hFint i
+  refine ⟨fun ξ => ∑ i, F i ξ, hGnn, memLp_weighted_sum F hFmem, ?_, ?_⟩
+  · -- sup-norm domination: every component is dominated by the summed density
+    intro x
+    rw [pi_norm_le_iff_of_nonneg (integral_nonneg hGnn)]
+    intro i
+    rw [Real.norm_eq_abs]
+    refine le_trans (hdom i x) (integral_mono (hFint i) hGint fun ξ => ?_)
+    exact Finset.single_le_sum (f := fun j => F j ξ)
+      (fun j _ => hFnn j ξ) (Finset.mem_univ i)
+  · -- majorant: two Cauchy–Schwarz factors of 3
+    have h3 : ∑ i : Fin 3, spectralMajorant (F i) ≤ 3 * B := by
+      rw [Fin.sum_univ_three]
+      linarith [hmaj 0, hmaj 1, hmaj 2]
+    linarith [spectralMajorant_sum_three_le F hFmem]
+
+/-!
 ## Plancherel on the sup-normed domain `Space = Fin 3 → ℝ` (substeps 1–2)
 
 Mathlib's Fourier/Plancherel API (`SchwartzMap.integral_norm_sq_fourier`) needs an
@@ -231,9 +427,71 @@ theorem spacePlancherel (f : SchwartzMap Space ℂ) :
 ## The Fourier residual and the intermediate-majorant assembly
 -/
 
-/-- **[RESIDUAL — the vector-valued Schwartz Fourier–Plancherel bundle; the sole
-Mathlib-absent piece of the `H³↪L^∞` embedding.  Total est ~300–450 LOC across the
-four sub-steps below.]**  For every Schwartz velocity `u` there is a nonnegative
+/-- **[RESIDUAL — the SCALAR Fourier–Plancherel bundle.  Est ~180–260 LOC.]**
+For every Schwartz velocity `u` and every coordinate `i`, the *real scalar*
+component `x ↦ u(x)ᵢ` admits a nonnegative spectral density `F` (classically
+`F ξ = ‖𝓕(uᵢ)(ξ)‖`) with (i) finite weighted `L²` mass, (ii) Fourier-inversion
+domination `|u(x)ᵢ| ≤ ∫ F`, and (iii) the Plancherel bound
+`spectralMajorant F ≤ C·‖u‖²_{H³}`, uniformly in `u` and `i`.
+
+This is strictly smaller than the former vector-valued residual: the sup-norm
+recombination of the three components, the `L²`-weight algebra, and the two
+Cauchy–Schwarz constants are now kernel-clean
+(`exists_spectralData_of_components`, `spectralMajorant_sum_three_le`,
+`memLp_weighted_sum`, `integrable_of_memLp_weighted`).  What remains is exactly
+the scalar Fourier analysis.
+
+Explicit dependency list for the remaining work:
+
+1. **Component transport (~50 LOC).**  Realize `x ↦ u(x)ᵢ` as a
+   `SchwartzMap (EuclideanSpace ℝ (Fin 3)) ℂ`.  Mathlib supplies *pre*-composition
+   (`SchwartzMap.compCLMOfContinuousLinearEquiv`, already used by `toEuclid`); the
+   missing plumbing is *post*-composition by the coordinate map
+   `ContinuousLinearMap.proj i : (Fin 3 → ℝ) →L[ℝ] ℝ` followed by `ℝ ↪ ℂ`.
+2. **Inversion domination (~50 LOC).**  `SchwartzMap.fourier_inversion` plus
+   `norm_integral_le_integral_norm` give `|u(x)ᵢ| ≤ ∫ ‖𝓕(uᵢ)‖`.
+3. **Weighted `L²` membership (~30 LOC).**  `MemLp (‖𝓕(uᵢ)‖·(sobWeight)^{-1/2}) 2`
+   from Schwartz decay of `𝓕(uᵢ)` (`SchwartzMap.fourierTransformCLE` maps Schwartz
+   to Schwartz), in the style of
+   `FourierWeightedPlancherel.integrable_norm_pow_mul_normSq`.
+4. **Binomial assembly (~40 LOC).**  `sobWeightInv_eq` expands the weight as
+   `(1+|ξ|²)³ = 1 + 3|ξ|² + 3|ξ|⁴ + |ξ|⁶`; the four matching weighted-Plancherel
+   rungs are **already established** in `Navier.Analysis.FourierWeightedPlancherel`:
+   `spacePlancherel` (n = 0), `sum_integral_normSq_pd_eq` (n = 1),
+   `sum_integral_normSq_pd_two_eq` (n = 2), `sum_integral_normSq_pd_three_eq`
+   (n = 3).
+5. **Component/derivative comparison (~60 LOC).**  `‖iteratedFDeriv ℝ n (uᵢ) x‖ ≤
+   ‖iteratedFDeriv ℝ n u x‖` via `ContinuousLinearMap.iteratedFDeriv_comp_left`
+   with `‖ContinuousLinearMap.proj i‖ ≤ 1`; the iterated-`pd` versus
+   `iteratedFDeriv` norm comparison; and the sup-versus-Euclidean norm equivalence
+   on `Fin 3 → ℝ`.  Only this step needs new (elementary) infrastructure.
+
+**Structural note (import DAG).**  Step 4's four rungs exist but sit *downstream*:
+`Navier/Analysis/FourierWeightedPlancherel.lean` imports this file, so they are not
+in scope here.  Inspection of that file shows the import is unused — it needs only
+Mathlib and `EuclideanSpace ℝ (Fin 3)`, never `Space`, `sobWeight`, `toEuclid` or
+`spacePlancherel`.  Reversing the edge (drop `import Navier.Analysis.FourierMajorant`
+there; import `Navier.Analysis.FourierWeightedPlancherel` here) puts all four rungs
+in scope for this residual at zero mathematical cost.  That single-edge refactor is
+the prerequisite for closing this statement in place.
+
+Reference: Stein, *Singular Integrals* III.2; Agmon; Majda–Bertozzi Lemma 3.2.
+TRUE-as-stated for Schwartz `u` (take `F = ‖𝓕(uᵢ)‖`). -/
+theorem exists_scalarFourierSpectralData :
+    ∃ C : ℝ, 0 < C ∧ ∀ (u : SchwartzVelocity) (i : Fin 3),
+      ∃ F : Space → ℝ, (∀ ξ, 0 ≤ F ξ) ∧
+        MemLp (fun ξ => F ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume ∧
+        (∀ x : Space, |(⇑u) x i| ≤ ∫ ξ : Space, F ξ) ∧
+        spectralMajorant F ≤ C * sobolevH3NormSq u := by
+  sorry
+
+/-- **The vector-valued spectral data, reduced to the scalar residual.**  Derived
+from `exists_scalarFourierSpectralData` by the kernel-clean componentwise assembly
+`exists_spectralData_of_components` (constant `C₂ = 9·C`; the two Cauchy–Schwarz
+factors of `3`).  The attack map below records the remaining scalar work and the
+Mathlib tools verified present for it.
+
+For every Schwartz velocity `u` there is a nonnegative
 spectral density `F` (classically `F ξ = ‖û(ξ)‖`) with (i) `F·(sobWeight)^{-1/2} ∈ L²`,
 (ii) Fourier-inversion domination `‖u x‖ ≤ ∫ F`, and (iii) the Plancherel bound
 `spectralMajorant F ≤ C₂·‖u‖²_{H³}` uniformly in `u`.
@@ -280,7 +538,15 @@ theorem exists_fourierSpectralData :
         MemLp (fun ξ => F ξ * Real.sqrt (sobWeight ξ)⁻¹) 2 volume ∧
         (∀ x : Space, ‖(⇑u) x‖ ≤ ∫ ξ : Space, F ξ) ∧
         spectralMajorant F ≤ C₂ * sobolevH3NormSq u := by
-  sorry
+  obtain ⟨C, hC, hdata⟩ := exists_scalarFourierSpectralData
+  refine ⟨9 * C, by linarith, fun u => ?_⟩
+  choose F hFnn hFmem hdom hmaj using hdata u
+  obtain ⟨G, hGnn, hGmem, hGdom, hGmaj⟩ :=
+    exists_spectralData_of_components (u := u) (B := C * sobolevH3NormSq u)
+      F hFnn hFmem hdom hmaj
+  refine ⟨G, hGnn, hGmem, hGdom, ?_⟩
+  calc spectralMajorant G ≤ 9 * (C * sobolevH3NormSq u) := hGmaj
+    _ = 9 * C * sobolevH3NormSq u := by ring
 
 /-- **The intermediate-majorant assembly for the Fourier route.**  Packages a
 concrete Fourier-side majorant `Q u` with both analytic bounds required by
