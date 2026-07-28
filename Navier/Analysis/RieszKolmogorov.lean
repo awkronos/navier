@@ -714,6 +714,158 @@ theorem setIntegral_cellError_le_displacement_of_bounded {G : Type*} [Measurable
   exact setIntegral_cellError_le_displacement A hA h f h0 hfin hdiam hfi hslice hlhs hrhs
     hiA hiB hballInt hprod
 
+/-- **Per-cell bound from local `L²`** — the form a Leray field can actually satisfy.
+Same conclusion as `setIntegral_cellError_le_displacement_of_bounded`, with the `L^∞`
+bound replaced by square-integrability on an **enlarged** window `W ⊇ A ∪ (A + B_h)`.
+
+`UniformKineticBound` is `∫ ‖u(t)‖² ≤ C`, an `L²` bound, and a Leray field is genuinely
+not uniformly bounded — so `_of_bounded` is not the applicable case and is kept
+alongside rather than edited.
+
+Note there is **no finiteness hypothesis on `W`**.  Both the author and the reviewer
+predicted one would be needed, on the reasoning that the constant-integrability step
+requires on `W` what it requires on `A`.  The compiler disagreed: every
+constant-integrability step happens on `A` (finite by `hfin`) or on the displacement
+ball (finite by `hBfin`), and the only thing `W` is ever asked for is `hL2`, which is
+supplied directly.  The enlarged window may have infinite measure.
+
+Obligations (1)–(5) come from the two `L²` atoms on `A`; (6)–(8) from the same atoms on
+`W` plus `integrableOn_translate_of_mapsTo` and `setIntegral_translate_le_setIntegral`,
+with (8) reduced to (6)+(7) by `integrable_prod_iff` since the integrand is
+nonnegative. -/
+theorem setIntegral_cellError_le_displacement_of_memL2 {G : Type*} [MeasurableSpace G]
+    [NormedAddCommGroup G] [MeasurableAdd G] [MeasurableAdd₂ G] [OpensMeasurableSpace G]
+    {ν : Measure G} [ν.IsAddLeftInvariant] [SFinite ν]
+    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+    [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F]
+    (A W : Set G) (hA : MeasurableSet A) (hW : MeasurableSet W) (h : ℝ) (f : G → F)
+    (hmeas : Measurable f)
+    (h0 : ν A ≠ 0) (hfin : ν A ≠ ⊤)
+    (hBfin : ν (Metric.closedBall (0:G) h) ≠ ⊤)
+    (hAW : A ⊆ W)
+    (hAB : ∀ x ∈ A, ∀ k ∈ Metric.closedBall (0:G) h, x + k ∈ W)
+    (hL2 : IntegrableOn (fun z => ‖f z‖ ^ 2) W ν)
+    (hdiam : ∀ x ∈ A, ∀ y ∈ A, ‖y - x‖ ≤ h) :
+    ∫ x in A, ‖f x - ⨍ y in A, f y ∂ν‖ ^ 2 ∂ν
+      ≤ (ν.real A)⁻¹ * ∫ k in Metric.closedBall (0:G) h,
+          (∫ x in A, ‖f (x + k) - f x‖ ^ 2 ∂ν) ∂ν := by
+  classical
+  set B := Metric.closedBall (0:G) h with hBdef
+  have hBm : MeasurableSet B := measurableSet_closedBall
+  have hApos : (0:ℝ) < ν.real A := ENNReal.toReal_pos h0 hfin
+  have hL2A : IntegrableOn (fun z => ‖f z‖ ^ 2) A ν := hL2.mono_set hAW
+  have hmsq : Measurable fun z => ‖f z‖ ^ 2 := hmeas.norm.pow_const 2
+  have hmsub : ∀ c : F, Measurable fun z => ‖f z - c‖ ^ 2 :=
+    fun c => ((hmeas.sub measurable_const).norm.pow_const 2)
+  have hnn : ∀ z, (0:ℝ) ≤ ‖f z‖ ^ 2 := fun z => by positivity
+  have hbd2 : ∀ a b : F, ‖a - b‖ ^ 2 ≤ 2 * ‖a‖ ^ 2 + 2 * ‖b‖ ^ 2 := by
+    intro a b
+    nlinarith [norm_nonneg (a - b), norm_sub_le a b, norm_nonneg a, norm_nonneg b,
+      sq_nonneg (‖a‖ - ‖b‖)]
+  -- (1) `f` on the cell: `L²` + finite measure gives `L¹`
+  have hfi : IntegrableOn f A ν :=
+    (integrable_norm_iff hmeas.aestronglyMeasurable.restrict).mp
+      (integrableOn_norm_of_sq hfin hmeas.norm.aestronglyMeasurable hL2A)
+  -- (2)(3) the oscillation and the cell-average error
+  have hslice : ∀ x ∈ A, IntegrableOn (fun y => ‖f y - f x‖ ^ 2) A ν := fun x _ =>
+    integrableOn_norm_sub_const_sq hfin (f x) (hmsub (f x)).aestronglyMeasurable hL2A
+  have hlhs : IntegrableOn (fun x => ‖f x - ⨍ y in A, f y ∂ν‖ ^ 2) A ν :=
+    integrableOn_norm_sub_const_sq hfin _ (hmsub _).aestronglyMeasurable hL2A
+  -- the per-base-point bound on the cell oscillation integral
+  have hoscA : ∀ x ∈ A, (∫ y in A, ‖f y - f x‖ ^ 2 ∂ν)
+      ≤ 2 * (∫ y in A, ‖f y‖ ^ 2 ∂ν) + ν.real A * (2 * ‖f x‖ ^ 2) := by
+    intro x hx
+    have hstep : (∫ y in A, ‖f y - f x‖ ^ 2 ∂ν)
+        ≤ ∫ y in A, (2 * ‖f y‖ ^ 2 + 2 * ‖f x‖ ^ 2) ∂ν :=
+      setIntegral_mono_on (hslice x hx)
+        ((hL2A.const_mul 2).add (integrableOn_const hfin (C := 2 * ‖f x‖ ^ 2))) hA
+        fun y _ => hbd2 (f y) (f x)
+    rwa [integral_add (hL2A.const_mul 2) (integrableOn_const hfin (C := 2 * ‖f x‖ ^ 2)),
+      MeasureTheory.integral_const_mul, setIntegral_const, smul_eq_mul] at hstep
+  -- (4) the averaged oscillation
+  have hj1 : Measurable fun z : G × G => ‖f z.2 - f z.1‖ ^ 2 :=
+    (((hmeas.comp measurable_snd).sub (hmeas.comp measurable_fst)).norm).pow_const 2
+  have hsmA : StronglyMeasurable fun x : G => ∫ y in A, ‖f y - f x‖ ^ 2 ∂ν :=
+    hj1.stronglyMeasurable.integral_prod_right' (ν := ν.restrict A)
+  have hrhs : IntegrableOn (fun x => ⨍ y in A, ‖f y - f x‖ ^ 2 ∂ν) A ν := by
+    have hEq : (fun x => ⨍ y in A, ‖f y - f x‖ ^ 2 ∂ν)
+        = fun x => (ν.real A)⁻¹ * ∫ y in A, ‖f y - f x‖ ^ 2 ∂ν := by
+      funext x; rw [setAverage_eq, smul_eq_mul]
+    rw [hEq]
+    have hmaj : IntegrableOn
+        (fun x => 2 * (ν.real A)⁻¹ * (∫ y in A, ‖f y‖ ^ 2 ∂ν) + 2 * ‖f x‖ ^ 2) A ν :=
+      (integrableOn_const hfin
+        (C := 2 * (ν.real A)⁻¹ * ∫ y in A, ‖f y‖ ^ 2 ∂ν)).add (hL2A.const_mul 2)
+    refine Integrable.mono' hmaj ((hsmA.const_mul _).aestronglyMeasurable.restrict)
+      ((MeasureTheory.ae_restrict_iff' hA).mpr (Filter.Eventually.of_forall fun x hx => ?_))
+    have hnnI : 0 ≤ ∫ y in A, ‖f y - f x‖ ^ 2 ∂ν :=
+      setIntegral_nonneg hA fun y _ => by positivity
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    have hmul := mul_le_mul_of_nonneg_left (hoscA x hx) (le_of_lt (inv_pos.mpr hApos))
+    calc (ν.real A)⁻¹ * ∫ y in A, ‖f y - f x‖ ^ 2 ∂ν
+        ≤ (ν.real A)⁻¹ * (2 * (∫ y in A, ‖f y‖ ^ 2 ∂ν) + ν.real A * (2 * ‖f x‖ ^ 2)) := hmul
+      _ = 2 * (ν.real A)⁻¹ * (∫ y in A, ‖f y‖ ^ 2 ∂ν) + 2 * ‖f x‖ ^ 2 := by
+          field_simp
+  -- (5) indicator form on the cell
+  have hiA : ∀ x ∈ A, Integrable (Set.indicator A fun y => ‖f y - f x‖ ^ 2) ν :=
+    fun x hx => (integrable_indicator_iff hA).mpr (hslice x hx)
+  -- (6) the displacement integrand, via translate domination
+  have htrans : ∀ x ∈ A, IntegrableOn (fun k => ‖f (x + k)‖ ^ 2) B ν := fun x hx =>
+    integrableOn_translate_of_mapsTo B W hBm hW x (hAB x hx) _ hnn
+      ((hmsq.comp (measurable_const_add x)).aestronglyMeasurable) hL2
+  have hoscB : ∀ x ∈ A, IntegrableOn (fun k => ‖f (x + k) - f x‖ ^ 2) B ν := by
+    intro x hx
+    refine Integrable.mono' (((htrans x hx).const_mul 2).add
+      (integrableOn_const hBfin (C := 2 * ‖f x‖ ^ 2)))
+      (((hmsub (f x)).comp (measurable_const_add x)).aestronglyMeasurable.restrict)
+      (Filter.Eventually.of_forall fun k => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    exact hbd2 (f (x + k)) (f x)
+  have hiB : ∀ x ∈ A, Integrable (Set.indicator B fun k => ‖f (x + k) - f x‖ ^ 2) ν :=
+    fun x hx => (integrable_indicator_iff hBm).mpr (hoscB x hx)
+  -- (7) the displacement integral as a function of the base point
+  have hj2 : Measurable fun z : G × G => ‖f (z.1 + z.2) - f z.1‖ ^ 2 :=
+    (((hmeas.comp (measurable_fst.add measurable_snd)).sub
+      (hmeas.comp measurable_fst)).norm).pow_const 2
+  have hsmB : StronglyMeasurable fun x : G => ∫ k in B, ‖f (x + k) - f x‖ ^ 2 ∂ν :=
+    hj2.stronglyMeasurable.integral_prod_right' (ν := ν.restrict B)
+  have hball : IntegrableOn (fun x => ∫ k in B, ‖f (x + k) - f x‖ ^ 2 ∂ν) A ν := by
+    have hmaj : IntegrableOn
+        (fun x => 2 * (∫ z in W, ‖f z‖ ^ 2 ∂ν) + 2 * ν.real B * ‖f x‖ ^ 2) A ν :=
+      (integrableOn_const hfin (C := 2 * ∫ z in W, ‖f z‖ ^ 2 ∂ν)).add
+        (hL2A.const_mul (2 * ν.real B))
+    refine Integrable.mono' hmaj hsmB.aestronglyMeasurable.restrict
+      ((MeasureTheory.ae_restrict_iff' hA).mpr (Filter.Eventually.of_forall fun x hx => ?_))
+    have hstep : (∫ k in B, ‖f (x + k) - f x‖ ^ 2 ∂ν)
+        ≤ ∫ k in B, (2 * ‖f (x + k)‖ ^ 2 + 2 * ‖f x‖ ^ 2) ∂ν :=
+      setIntegral_mono_on (hoscB x hx)
+        (((htrans x hx).const_mul 2).add (integrableOn_const hBfin (C := 2 * ‖f x‖ ^ 2))) hBm
+        fun k _ => hbd2 (f (x + k)) (f x)
+    rw [integral_add ((htrans x hx).const_mul 2)
+      (integrableOn_const hBfin (C := 2 * ‖f x‖ ^ 2)),
+      MeasureTheory.integral_const_mul, setIntegral_const, smul_eq_mul] at hstep
+    have htr : (∫ k in B, ‖f (x + k)‖ ^ 2 ∂ν) ≤ ∫ z in W, ‖f z‖ ^ 2 ∂ν :=
+      setIntegral_translate_le_setIntegral B W hBm hW x (hAB x hx) _ hnn
+        ((hmsq.comp (measurable_const_add x)).aestronglyMeasurable) hL2
+    rw [Real.norm_eq_abs, abs_of_nonneg (setIntegral_nonneg hBm fun k _ => by positivity)]
+    nlinarith [hstep, htr, measureReal_nonneg (μ := ν) (s := B), hnn x]
+  -- (8) the product integrand, from (6) and (7)
+  haveI : IsFiniteMeasure (ν.restrict A) :=
+    ⟨by rwa [Measure.restrict_apply_univ, lt_top_iff_ne_top]⟩
+  haveI : IsFiniteMeasure (ν.restrict B) :=
+    ⟨by rwa [Measure.restrict_apply_univ, lt_top_iff_ne_top]⟩
+  have hprod : Integrable (Function.uncurry fun (x k : G) => ‖f (x + k) - f x‖ ^ 2)
+      ((ν.restrict A).prod (ν.restrict B)) := by
+    refine (integrable_prod_iff hj2.aestronglyMeasurable).mpr ⟨?_, ?_⟩
+    · exact (MeasureTheory.ae_restrict_iff' hA).mpr
+        (Filter.Eventually.of_forall fun x hx => hoscB x hx)
+    · refine hball.congr_fun (fun x _ => ?_) hA
+      refine integral_congr_ae (Filter.Eventually.of_forall fun k => ?_)
+      show ‖f (x + k) - f x‖ ^ 2 = ‖‖f (x + k) - f x‖ ^ 2‖
+      rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  exact setIntegral_cellError_le_displacement A hA h f h0 hfin hdiam hfi hslice hlhs hrhs
+    hiA hiB hball hprod
+
 /-!
 ## The cell grid
 
@@ -1196,23 +1348,3 @@ theorem exists_subseq_cauchy_of_bounded_pi {N : ℕ} (v : ℕ → Fin N → ℝ)
   exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
 
 end Navier.Analysis.RieszKolmogorov
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
