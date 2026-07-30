@@ -91,7 +91,106 @@ def globalWeightedSpectralOutput
     memℓp_gen (by
       simpa using summable_norm_globalWeightedSpectralOutputFiber v w hv hw)⟩
 
+/-- The one-weight real input factor used by the asymmetric global estimate. -/
+def globalWeightedInputFactor (v : LatticeMode → ComplexSpace) : LatticeMode → ℝ :=
+  fun m => latticeModeWeight m * complexEuclideanNorm (v m)
+
+/-- The two-weight real input factor used by the asymmetric global estimate. -/
+def globalTwoWeightInputFactor (w : LatticeMode → ComplexSpace) : LatticeMode → ℝ :=
+  fun m => latticeModeWeight m ^ 2 * complexEuclideanNorm (w m)
+
+/-- The pair majorant factors exactly as the product of the two named input
+factors. -/
+theorem tsum_latticeOneDerivativeInputMajorant_eq_product
+    (v w : LatticeMode → ComplexSpace) (hv : LatticeWeightedL1 v)
+    (hw : LatticeTwoWeightL1 w) :
+    (∑' ij : LatticeMode × LatticeMode, latticeOneDerivativeInputMajorant v w ij) =
+      (∑' m, globalWeightedInputFactor v m) *
+        ∑' m, globalTwoWeightInputFactor w m := by
+  let a : LatticeMode → ℝ := globalWeightedInputFactor v
+  let b : LatticeMode → ℝ := globalTwoWeightInputFactor w
+  have ha0 : ∀ m, 0 ≤ a m := by
+    intro m
+    exact mul_nonneg (zero_le_one.trans (one_le_latticeModeWeight m)) (norm_nonneg _)
+  have hb0 : ∀ m, 0 ≤ b m := by
+    intro m
+    exact mul_nonneg (sq_nonneg _) (norm_nonneg _)
+  have ha : Summable a := by
+    change Summable (fun m => latticeModeWeight m * complexEuclideanNorm (v m)) at hv
+    exact hv
+  have hb : Summable b := by
+    change Summable (fun m => latticeModeWeight m ^ 2 * complexEuclideanNorm (w m)) at hw
+    exact hw
+  have hab : Summable (fun ij : LatticeMode × LatticeMode => a ij.1 * b ij.2) :=
+    ha.mul_of_nonneg hb ha0 hb0
+  convert (ha.tsum_mul_tsum hb hab).symm using 1
+  · apply tsum_congr
+    intro ij
+    change latticeModeWeight ij.1 * complexEuclideanNorm (v ij.1) *
+        latticeModeWeight ij.2 ^ 2 * complexEuclideanNorm (w ij.2) =
+      (latticeModeWeight ij.1 * complexEuclideanNorm (v ij.1)) *
+        (latticeModeWeight ij.2 ^ 2 * complexEuclideanNorm (w ij.2))
+    ring
+
+/-- The total constrained-fiber majorant sum is exactly the unconstrained
+pair-majorant sum. -/
+theorem tsum_latticeOneDerivativeInputMajorant_fibers_eq_pair
+    (v w : LatticeMode → ComplexSpace) (hv : LatticeWeightedL1 v)
+    (hw : LatticeTwoWeightL1 w) :
+    (∑' k : LatticeMode,
+      ∑' ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode),
+        latticeOneDerivativeInputMajorant v w ij.1) =
+      ∑' ij : LatticeMode × LatticeMode,
+        latticeOneDerivativeInputMajorant v w ij := by
+  have hpair := summable_latticeOneDerivativeInputMajorant v w hv hw
+  have hsigma : Summable (fun x :
+      Σ k : LatticeMode, latticeOutputMode ⁻¹' ({k} : Set LatticeMode) =>
+      latticeOneDerivativeInputMajorant v w x.2.1) := by
+    exact latticeOutputFiberSigmaEquiv.summable_iff.mpr hpair
+  rw [← hsigma.tsum_sigma]
+  exact latticeOutputFiberSigmaEquiv.tsum_eq _
+
+/-- The `ℓ¹` norm of the completed output is the sum of its exact fiber
+norms. -/
+theorem norm_globalWeightedSpectralOutput_eq_tsum
+    (v w : LatticeMode → ComplexSpace) (hv : LatticeWeightedL1 v)
+    (hw : LatticeTwoWeightL1 w) :
+    ‖globalWeightedSpectralOutput v w hv hw‖ =
+      ∑' k, ‖globalWeightedSpectralOutputFiber k v w hv hw‖ := by
+  rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+  change (∑' k : LatticeMode,
+    ‖globalWeightedSpectralOutputFiber k v w hv hw‖ ^ (1 : ℝ)) ^ (1 / (1 : ℝ)) = _
+  rw [show (1 : ℝ) / 1 = 1 by norm_num, Real.rpow_one]
+  apply congrArg tsum
+  funext k
+  exact Real.rpow_one _
+
+/-- Quantitative global asymmetric output estimate for the completed spectral
+carrier. -/
+theorem norm_globalWeightedSpectralOutput_le
+    (v w : LatticeMode → ComplexSpace) (hv : LatticeWeightedL1 v)
+    (hw : LatticeTwoWeightL1 w) :
+    ‖globalWeightedSpectralOutput v w hv hw‖ ≤
+      (∑' m, globalWeightedInputFactor v m) *
+        ∑' m, globalTwoWeightInputFactor w m := by
+  rw [norm_globalWeightedSpectralOutput_eq_tsum]
+  calc
+    (∑' k, ‖globalWeightedSpectralOutputFiber k v w hv hw‖) ≤
+      ∑' k, ∑' ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode),
+        latticeOneDerivativeInputMajorant v w ij.1 := by
+      exact Summable.tsum_le_tsum (fun k => norm_globalWeightedSpectralOutputFiber_le k v w hv hw)
+        (summable_norm_globalWeightedSpectralOutputFiber v w hv hw)
+        (summable_latticeOneDerivativeInputMajorant_fibers v w hv hw)
+    _ = ∑' ij : LatticeMode × LatticeMode,
+        latticeOneDerivativeInputMajorant v w ij :=
+      tsum_latticeOneDerivativeInputMajorant_fibers_eq_pair v w hv hw
+    _ = (∑' m, globalWeightedInputFactor v m) *
+        ∑' m, globalTwoWeightInputFactor w m :=
+      tsum_latticeOneDerivativeInputMajorant_eq_product v w hv hw
+
+
 #print axioms globalWeightedSpectralOutputFiber
 #print axioms norm_globalWeightedSpectralOutputFiber_le
+#print axioms norm_globalWeightedSpectralOutput_le
 
 end Navier.Analysis.CriticalMildGlobalWeightedOutput
