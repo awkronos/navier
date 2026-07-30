@@ -35,11 +35,11 @@ genuinely two-frequency, not an artifact of a mismatched definition.
 
 ## Honest scope (this is an obstruction, not a falsification)
 
-This does **not** prove `Navier.Clay.StatementA` false, and it constructs no
+This does **not** prove `Navier.ProblemStatements.WholeSpaceGlobalRegularity` false, and it constructs no
 blow-up.  It certifies that the *exact-transversality-cancellation* route — the
 mechanism behind one-frequency global regularity — cannot by itself close the
 multi-frequency problem: the surviving cross-transport term is exactly the
-nonlinear cascade that constitutes the Millennium difficulty.  The REDIRECT it
+nonlinear cascade that constitutes the global-regularity difficulty.  The REDIRECT it
 records: a multi-frequency regularity route must **control** cross-mode transport
 (an energy / a-priori estimate — e.g. the Beale–Kato–Majda vorticity bound in
 `Navier.Analysis.BealeKatoMajda`), never eliminate it by cancellation.  The R2

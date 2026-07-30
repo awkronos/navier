@@ -104,7 +104,7 @@ import Navier.Routes.R7.FiniteSupportClosureObstruction
 import Navier.Routes.R7.GeneratedSupportStrictGrowth
 import Navier.Disposition
 import Navier.Frontier
-import Navier.ClayFrontier
+import Navier.ProblemStatementsFrontier
 import Navier.AxiomAudit
 
 /-!
@@ -116,6 +116,6 @@ point-breakdown consumers, vector-calculus and guarded energy-identity leaves,
 algebraic scaling facts, frequencywise heat--Leray infrastructure, the R7
 symmetrized and recursively generated finite Fourier tests, proof-bearing
 dispositions, finite frontier map, and raw public axiom audit.
-The Clay endpoint remains conjectural; importing this module does not claim a
-solution of the Millennium Prize Problem.
+The problem endpoint remains conjectural; importing this module does not claim a
+solution of the global regularity problem.
 -/

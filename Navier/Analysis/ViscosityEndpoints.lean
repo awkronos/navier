@@ -36,22 +36,22 @@ open ViscosityAdmissibility
 open ViscosityForceDecay
 
 /-- The exact viscosity-one surface of the whole-space existence alternative
-A.  Unlike `Clay.StatementA`, it has no viscosity quantifier. -/
-def StatementAAtViscosityOne : Prop :=
+A.  Unlike `ProblemStatements.WholeSpaceGlobalRegularity`, it has no viscosity quantifier. -/
+def WholeSpaceGlobalRegularityAtViscosityOne : Prop :=
   ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
     ∃ (u : VelocityEvolution) (p : PressureEvolution),
       IsClassicalSolution 1 zeroForce u₀ u p
 
 /-- The exact viscosity-one surface of the periodic existence alternative B.
-Unlike `Clay.StatementB`, it has no viscosity quantifier. -/
-def StatementBAtViscosityOne : Prop :=
+Unlike `ProblemStatements.PeriodicGlobalRegularity`, it has no viscosity quantifier. -/
+def PeriodicGlobalRegularityAtViscosityOne : Prop :=
   ∀ u₀ : VelocityField, PeriodicInitialDatum u₀ →
     ∃ (u : VelocityEvolution) (p : PressureEvolution),
       IsPeriodicClassicalSolution 1 zeroForce u₀ u p
 
 /-- The exact viscosity-one surface of the arbitrary-force whole-space
 breakdown alternative C. -/
-def StatementCAtViscosityOne : Prop :=
+def WholeSpaceBreakdownAtViscosityOne : Prop :=
   ∃ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ ∧
     ∃ f : ForceField, ForcedDataRapidDecay f ∧
       ¬ ∃ (u : VelocityEvolution) (p : PressureEvolution),
@@ -59,7 +59,7 @@ def StatementCAtViscosityOne : Prop :=
 
 /-- The exact viscosity-one surface of the arbitrary-force periodic breakdown
 alternative D. -/
-def StatementDAtViscosityOne : Prop :=
+def PeriodicBreakdownAtViscosityOne : Prop :=
   ∃ u₀ : VelocityField, PeriodicInitialDatum u₀ ∧
     ∃ f : ForceField, PeriodicForcedDataRapidDecay f ∧
       ¬ ∃ (u : VelocityEvolution) (p : PressureEvolution),
@@ -70,9 +70,9 @@ some admissible whole-space datum has no complete unforced classical solution
 at viscosity one.
 
 This proposition is not inhabited in this module.  It is stronger than the
-viscosity-one instance of `Clay.StatementC`, which may choose an arbitrary
+viscosity-one instance of `ProblemStatements.WholeSpaceBreakdown`, which may choose an arbitrary
 admissible force. -/
-def StatementCZeroForceAtViscosityOne : Prop :=
+def WholeSpaceBreakdownZeroForceAtViscosityOne : Prop :=
   ∃ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ ∧
     ¬ ∃ (u : VelocityEvolution) (p : PressureEvolution),
       IsClassicalSolution 1 zeroForce u₀ u p
@@ -82,18 +82,18 @@ some admissible periodic datum has no complete unforced periodic classical
 solution at viscosity one.
 
 This proposition is not inhabited in this module.  It is stronger than the
-viscosity-one instance of `Clay.StatementD`, which may choose an arbitrary
+viscosity-one instance of `ProblemStatements.PeriodicBreakdown`, which may choose an arbitrary
 admissible periodic force. -/
-def StatementDZeroForceAtViscosityOne : Prop :=
+def PeriodicBreakdownZeroForceAtViscosityOne : Prop :=
   ∃ u₀ : VelocityField, PeriodicInitialDatum u₀ ∧
     ¬ ∃ (u : VelocityEvolution) (p : PressureEvolution),
       IsPeriodicClassicalSolution 1 zeroForce u₀ u p
 
 /-- The full all-positive-viscosity statement A is equivalent to its
 viscosity-one surface. -/
-theorem statementA_iff_atViscosityOne :
-    Clay.StatementA ↔ StatementAAtViscosityOne := by
-  unfold Clay.StatementA StatementAAtViscosityOne
+theorem wholeSpaceGlobalRegularity_iff_atViscosityOne :
+    ProblemStatements.WholeSpaceGlobalRegularity ↔ WholeSpaceGlobalRegularityAtViscosityOne := by
+  unfold ProblemStatements.WholeSpaceGlobalRegularity WholeSpaceGlobalRegularityAtViscosityOne
   constructor
   · intro h u₀ hu₀
     exact h 1 zero_lt_one u₀ hu₀
@@ -112,9 +112,9 @@ theorem statementA_iff_atViscosityOne :
 
 /-- The full all-positive-viscosity statement B is equivalent to its
 viscosity-one surface. -/
-theorem statementB_iff_atViscosityOne :
-    Clay.StatementB ↔ StatementBAtViscosityOne := by
-  unfold Clay.StatementB StatementBAtViscosityOne
+theorem periodicGlobalRegularity_iff_atViscosityOne :
+    ProblemStatements.PeriodicGlobalRegularity ↔ PeriodicGlobalRegularityAtViscosityOne := by
+  unfold ProblemStatements.PeriodicGlobalRegularity PeriodicGlobalRegularityAtViscosityOne
   constructor
   · intro h u₀ hu₀
     exact h 1 zero_lt_one u₀ hu₀
@@ -142,9 +142,9 @@ arbitrary-force viscosity-one surface.
 For the nontrivial direction, both datum and force witnesses are scaled
 forward.  A hypothetical solution for the scaled witnesses inverse-transports
 to a solution contradicting the viscosity-one witness. -/
-theorem statementC_iff_atViscosityOne :
-    Clay.StatementC ↔ StatementCAtViscosityOne := by
-  unfold Clay.StatementC StatementCAtViscosityOne
+theorem wholeSpaceBreakdown_iff_atViscosityOne :
+    ProblemStatements.WholeSpaceBreakdown ↔ WholeSpaceBreakdownAtViscosityOne := by
+  unfold ProblemStatements.WholeSpaceBreakdown WholeSpaceBreakdownAtViscosityOne
   constructor
   · intro h
     exact h 1 zero_lt_one
@@ -173,9 +173,9 @@ arbitrary-force viscosity-one surface.
 The periodic datum and force witnesses are scaled forward, while any
 hypothetical target-viscosity solution is transported inversely to contradict
 the viscosity-one nonexistence witness. -/
-theorem statementD_iff_atViscosityOne :
-    Clay.StatementD ↔ StatementDAtViscosityOne := by
-  unfold Clay.StatementD StatementDAtViscosityOne
+theorem periodicBreakdown_iff_atViscosityOne :
+    ProblemStatements.PeriodicBreakdown ↔ PeriodicBreakdownAtViscosityOne := by
+  unfold ProblemStatements.PeriodicBreakdown PeriodicBreakdownAtViscosityOne
   constructor
   · intro h
     exact h 1 zero_lt_one
@@ -205,8 +205,8 @@ At viscosity `nu`, the witness datum is its forward amplitude scaling by
 `nu`.  Any hypothetical solution for that datum inverse-transports to the
 forbidden viscosity-one solution.  The reverse implication is not asserted:
 an official C witness may rely essentially on a nonzero force. -/
-theorem statementC_of_zeroForceAtViscosityOne
-    (h : StatementCZeroForceAtViscosityOne) : Clay.StatementC := by
+theorem wholeSpaceBreakdown_of_zeroForceAtViscosityOne
+    (h : WholeSpaceBreakdownZeroForceAtViscosityOne) : ProblemStatements.WholeSpaceBreakdown := by
   rcases h with ⟨u₀, hu₀, hbad⟩
   intro nu hnu
   refine ⟨viscosityScaledSchwartzDatum nu u₀,
@@ -230,8 +230,8 @@ The datum is forward-scaled to viscosity `nu`; a hypothetical periodic
 solution then inverse-transports to the excluded viscosity-one solution.  No
 reverse implication is asserted because an official D witness may use a
 nonzero admissible periodic force. -/
-theorem statementD_of_zeroForceAtViscosityOne
-    (h : StatementDZeroForceAtViscosityOne) : Clay.StatementD := by
+theorem periodicBreakdown_of_zeroForceAtViscosityOne
+    (h : PeriodicBreakdownZeroForceAtViscosityOne) : ProblemStatements.PeriodicBreakdown := by
   rcases h with ⟨u₀, hu₀, hbad⟩
   intro nu hnu
   refine ⟨viscosityScaledDatum nu u₀,

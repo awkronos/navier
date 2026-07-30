@@ -15,7 +15,7 @@ route that fails a kill test either records a narrower residual or pivots.
 | Scaling/criticality | Compute every norm under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\) | Energy or a supercritical norm asserted to control concentration with no new gain | Search for a scale-critical local/frequency/geometric estimate |
 | Energy-only | Does the decisive proof use more than \(\langle B(u,u),u\rangle=0\) and generic multiplier estimates? | “Energy plus harmonic analysis proves global regularity” | Identify a property of the exact bilinear symbol |
 | Endpoint-as-assumption | Normalize all hypotheses and compare with the conclusion/continuation criterion | Serrin, \(L^\infty_tL^3_x\), BKM-type, or strain criterion simply assumed | Move the assumed bound into the open-residual field |
-| Weak/smooth category | Check solution class, energy inequality, force, uniqueness, and regularity | Weak existence/nonuniqueness presented as Clay A–D | Build an explicit weak-to-smooth or breakdown bridge |
+| Weak/smooth category | Check solution class, energy inequality, force, uniqueness, and regularity | Weak existence/nonuniqueness presented as whole-space global-regularity alternative–D | Build an explicit weak-to-smooth or breakdown bridge |
 | Model/domain drift | Compare dimension, domain, dissipation, force, and nonlinearity | 2D, Euler, averaged, dyadic, hyperdissipative, bounded-domain, or periodic result presented as whole-space A | Prove a transfer theorem or quarantine the model |
 | Compactness defect | Track pressure, strong convergence, nonlinear products, and nontriviality | Weak limit treated as a strong exact solution without defect accounting | Promote the defect to the first residual |
 | Numerics-as-proof | Demand universal coverage, interval bounds, truncation and tail proof | Finite sampling or floating-point evidence presented as a theorem | Use observations to propose a falsifiable inequality |
@@ -76,7 +76,7 @@ results are vital boundary evidence, but:
 - the forced result does not answer unforced (A);
 - nonuniqueness is not the breakdown conclusion in (C) or (D);
 - a force/datum must separately satisfy Fefferman's exact smoothness, decay,
-  and domain clauses before it can be used in a Clay alternative.
+  and domain clauses before it can be used in a problem alternative.
 
 Accordingly, a weak route is live only if it produces an explicit upgrade to
 smoothness/uniqueness or an exact logical bridge to one of Fefferman's

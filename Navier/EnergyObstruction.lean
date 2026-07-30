@@ -17,7 +17,7 @@ energy bound cannot imply smallness of the scale-critical `L³` quantity: for
 every `ε > 0` one can rescale a nonzero field so that its energy is below `ε`
 while its critical `L³` mass is unchanged and positive.
 
-This is an obstruction theorem, not a Clay-endpoint claim. It assumes nothing
+This is an obstruction theorem, not a problem-endpoint claim. It assumes nothing
 about the existence or smoothness of a Navier–Stokes solution; it is pure
 change-of-variables on `ℝ³`. It is a regression test against accidental
 energy-only promotions of regularity.

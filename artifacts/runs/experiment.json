@@ -5,7 +5,7 @@
   "generated_at": "2026-07-15T00:06:16Z",
   "repository_revision": "64600448b8a3f2ddc251e32ccb67d7e2b86cd1ee",
   "epistemic_status": "FALSIFICATION_WITNESS",
-  "closes_clay_endpoint": false,
+  "closes_problem_endpoint": false,
   "model": {
     "equation": "DISCRETE_NAVIER_STOKES",
     "dimension": 3,

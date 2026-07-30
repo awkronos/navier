@@ -7,8 +7,8 @@ This file gives a direct `R^3` formulation of the velocity, pressure, spatial
 and time derivatives, incompressibility, the Navier--Stokes equation, smooth
 nonnegative-time classical solutions, and bounded energy.
 
-The canonical endpoint `Navier.Clay.StatementA` formalizes the quantifiers and
-equations in (1)--(7) and statement (A) of Charles Fefferman's official Clay
+The canonical endpoint `Navier.ProblemStatements.WholeSpaceGlobalRegularity` formalizes the quantifiers and
+equations in (1)--(7) and statement (A) of Charles Fefferman's official problem-statement
 problem description.  It quantifies over every positive viscosity and every
 divergence-free Schwartz initial datum, and it fixes the force to zero.
 
@@ -156,8 +156,8 @@ structure IsClassicalSolution (ν : ℝ) (f : ForceField)
 Mathlib statement-A surface with Fefferman's coordinatewise clauses (1)--(7).
 
 These are metamathematical encoding residuals, not hypotheses of
-`Clay.StatementA`; consequently they cannot be used to project a proof of the
-Clay endpoint. -/
+`ProblemStatements.WholeSpaceGlobalRegularity`; consequently they cannot be used to project a proof of the
+problem endpoint. -/
 inductive ProblemEncodingResidual where
   | schwartzConventionEquivalence
   | halfSpaceSmoothnessEquivalence
@@ -174,7 +174,7 @@ bridges, independently of its separate analytic existence frontier. -/
 theorem problemEncodingResiduals_card : problemEncodingResiduals.card = 5 := by
   decide
 
-namespace Clay
+namespace ProblemStatements
 
 /-- The canonical formal encoding of Fefferman whole-space statement A.
 
@@ -188,12 +188,12 @@ not a theorem and not a conclusion hidden in a payload or proof-program
 argument.  The five `ProblemEncodingResidual` bridges above must close before
 this surface may be identified with the official textual conventions without
 qualification. -/
-def StatementA : Prop :=
+def WholeSpaceGlobalRegularity : Prop :=
   ∀ ν : ℝ, 0 < ν →
     ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
       ∃ (u : VelocityEvolution) (p : PressureEvolution),
         IsClassicalSolution ν zeroForce u₀ u p
 
-end Clay
+end ProblemStatements
 
 end Navier

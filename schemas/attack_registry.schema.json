@@ -12,7 +12,7 @@
     "base_revision",
     "generated_at",
     "ssot",
-    "campaign",
+    "research_program",
     "barriers",
     "references",
     "approaches",
@@ -28,7 +28,7 @@
     "base_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "generated_at": {"type": "string", "format": "date-time"},
     "ssot": {"const": true},
-    "campaign": {"$ref": "#/$defs/campaign"},
+    "research_program": {"$ref": "#/$defs/research_program"},
     "barriers": {
       "type": "array",
       "minItems": 1,
@@ -75,7 +75,7 @@
     "claimTier": {
       "enum": ["SCAFFOLD", "THEOREM", "CONJECTURE", "EXPERIMENT", "FALSIFICATION"]
     },
-    "campaign": {
+    "research_program": {
       "type": "object",
       "additionalProperties": false,
       "required": [

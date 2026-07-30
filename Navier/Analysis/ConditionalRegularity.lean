@@ -147,7 +147,7 @@ that do not constrain `u₀` in `L^∞`.  Since `0 < T` (`terminalTime_pos`) and
 `SmoothVelocityBefore` is `ContDiffOn` on `Set.Ico 0 T ×ˢ univ` — a purely
 local condition carrying no uniform spatial bound — and per-slice `L^p`
 integrability likewise does not imply boundedness.  Both statements therefore
-carry the explicit hypothesis `hu₀ : ∃ B₀, ∀ x, ‖u₀ x‖ ≤ B₀`, which the Clay
+carry the explicit hypothesis `hu₀ : ∃ B₀, ∀ x, ‖u₀ x‖ ≤ B₀`, which the formal problem
 formulation supplies (Schwartz initial data).  `initialDatum_bounded_of_uniformBound`
 certifies that this hypothesis is *necessary*, hence minimal rather than an
 over-assumption.

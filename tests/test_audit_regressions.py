@@ -64,7 +64,7 @@ def _manifest(
         "generated_at": "2026-07-14T18:00:00Z",
         "repository_revision": revision,
         "epistemic_status": "OBSERVATION_ONLY",
-        "closes_clay_endpoint": False,
+        "closes_problem_endpoint": False,
         "model": copy.deepcopy(obligation["domain"]),
         "run": {
             "command": ["python3", "experiments/audit_driver.py"],
@@ -170,7 +170,7 @@ class RegistryAuditRegressionTests(unittest.TestCase):
         endpoint = registry_fixtures._find(
             self.registry["obligations"], registry_fixtures.A_ID
         )
-        target = self.registry["campaign"]["problem_surface"]["resolution_branches"][0][
+        target = self.registry["research_program"]["problem_surface"]["resolution_branches"][0][
             "public_declaration"
         ]
         endpoint["formal_declaration"] = target
@@ -184,10 +184,10 @@ class RegistryAuditRegressionTests(unittest.TestCase):
         endpoint = registry_fixtures._find(
             self.registry["obligations"], registry_fixtures.A_ID
         )
-        endpoint["formal_declaration"] = "Navier.Audit.syntheticStatementAProof"
+        endpoint["formal_declaration"] = "Navier.Audit.syntheticWholeSpaceGlobalRegularityProof"
         evidence = registry_fixtures._native_evidence(self.registry)
         evidence["provenance"]["source_locator"] = "artifact:missing-self-asserted-receipt.json"
-        evidence["receipt"]["declaration"] = "Navier.Audit.syntheticStatementAProof"
+        evidence["receipt"]["declaration"] = "Navier.Audit.syntheticWholeSpaceGlobalRegularityProof"
         registry_fixtures._close_a(self.registry, evidence)
 
         self.assertRejected("native receipt was not freshly revalidated")
@@ -338,18 +338,18 @@ class RegistryAuditRegressionTests(unittest.TestCase):
         self.assertFalse(result.valid, "compound provenance unexpectedly validated")
         self.assertIn("requires exactly one source-specific provenance record", rendered)
 
-    def test_cached_campaign_status_cannot_outrun_open_endpoints(self) -> None:
-        self.registry["campaign"]["global_disposition"] = "DECOMPOSED"
-        self.registry["campaign"]["scientific_status"] = "CONDITIONAL_FRONTIER"
+    def test_cached_research_program_status_cannot_outrun_open_endpoints(self) -> None:
+        self.registry["research_program"]["global_disposition"] = "DECOMPOSED"
+        self.registry["research_program"]["scientific_status"] = "CONDITIONAL_FRONTIER"
 
-        self.assertRejected("open campaign must remain SCAFFOLDED / SCIENTIFIC_FRONTIER")
+        self.assertRejected("open research_program must remain SCAFFOLDED / SCIENTIFIC_FRONTIER")
 
-    def test_campaign_identifier_collision_is_globally_rejected(self) -> None:
+    def test_research_program_identifier_collision_is_globally_rejected(self) -> None:
         colliding_id = registry_fixtures.A_ID
-        self.registry["campaign"]["id"] = colliding_id
-        campaign_consumer = f"campaign:{colliding_id}"
+        self.registry["research_program"]["id"] = colliding_id
+        research_program_consumer = f"research_program:{colliding_id}"
         for endpoint in self.registry["obligations"]:
-            endpoint["residual"]["consumer_ids"] = [campaign_consumer]
+            endpoint["residual"]["consumer_ids"] = [research_program_consumer]
 
         self.assertRejected("identifiers must be globally unique", colliding_id)
 

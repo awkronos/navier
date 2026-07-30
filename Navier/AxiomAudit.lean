@@ -1,4 +1,4 @@
-import Navier.ClayFrontier
+import Navier.ProblemStatementsFrontier
 import Navier.Analysis.CKNIntegralScaling
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyOfficialClause
@@ -74,24 +74,24 @@ import Navier.Analysis.LerayWeak
 Each command below asks Lean for the transitive axioms of a named declaration.
 The resumed section below covers every public theorem added by the local,
 energy, CKN-scaling, and generated-frequency attack leaves.  The audit of
-`Clay.StatementA` concerns only the canonical proposition's
+`ProblemStatements.WholeSpaceGlobalRegularity` concerns only the canonical proposition's
 definition and its imported foundations; it does not construct an inhabitant
 and is not evidence that the conjectural endpoint is proved.  The proved
 declarations audited below are scaling arithmetic, disposition guards, and
 finite-frontier facts.
 -/
 
-#print axioms Navier.Clay.StatementA
-#print axioms Navier.Clay.StatementB
-#print axioms Navier.Clay.StatementC
-#print axioms Navier.Clay.StatementD
+#print axioms Navier.ProblemStatements.WholeSpaceGlobalRegularity
+#print axioms Navier.ProblemStatements.PeriodicGlobalRegularity
+#print axioms Navier.ProblemStatements.WholeSpaceBreakdown
+#print axioms Navier.ProblemStatements.PeriodicBreakdown
 #print axioms Navier.problemEncodingResiduals_card
 #print axioms Navier.OfficialSurfaceSignatures.classicalSolution_signature
 #print axioms Navier.OfficialSurfaceSignatures.periodicClassicalSolution_signature
-#print axioms Navier.OfficialSurfaceSignatures.statementA_signature
-#print axioms Navier.OfficialSurfaceSignatures.statementB_signature
-#print axioms Navier.OfficialSurfaceSignatures.statementC_signature
-#print axioms Navier.OfficialSurfaceSignatures.statementD_signature
+#print axioms Navier.OfficialSurfaceSignatures.wholeSpaceGlobalRegularity_signature
+#print axioms Navier.OfficialSurfaceSignatures.periodicGlobalRegularity_signature
+#print axioms Navier.OfficialSurfaceSignatures.wholeSpaceBreakdown_signature
+#print axioms Navier.OfficialSurfaceSignatures.periodicBreakdown_signature
 
 #print axioms Navier.Scaling.mixedNormExponent_eq_zero_iff
 #print axioms Navier.Scaling.criticalLine_six_four
@@ -228,12 +228,12 @@ finite-frontier facts.
 #print axioms Navier.Analysis.ViscosityForceDecay.forcedDataRapidDecay_viscosityScaled
 #print axioms Navier.Analysis.ViscosityForceDecay.periodicForcedDataRapidDecay_viscosityScaled
 
-#print axioms Navier.Analysis.ViscosityEndpoints.statementA_iff_atViscosityOne
-#print axioms Navier.Analysis.ViscosityEndpoints.statementB_iff_atViscosityOne
-#print axioms Navier.Analysis.ViscosityEndpoints.statementC_iff_atViscosityOne
-#print axioms Navier.Analysis.ViscosityEndpoints.statementD_iff_atViscosityOne
-#print axioms Navier.Analysis.ViscosityEndpoints.statementC_of_zeroForceAtViscosityOne
-#print axioms Navier.Analysis.ViscosityEndpoints.statementD_of_zeroForceAtViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.wholeSpaceGlobalRegularity_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.periodicGlobalRegularity_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.periodicBreakdown_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_of_zeroForceAtViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.periodicBreakdown_of_zeroForceAtViscosityOne
 
 #print axioms Navier.Breakdown.bounded_pointEvaluation_of_smooth
 #print axioms Navier.Breakdown.noGlobal_of_pointEvaluationBreakdown
@@ -345,12 +345,12 @@ finite-frontier facts.
 #print axioms Navier.Frontier.not_mem_own_dependencies
 #print axioms Navier.Frontier.nodes_card
 #print axioms Navier.Frontier.encodingResidual_is_tracked
-#print axioms Navier.Frontier.statementA_dependencies
+#print axioms Navier.Frontier.wholeSpaceGlobalRegularity_dependencies
 
-#print axioms Navier.Clay.statementADisposition_status
-#print axioms Navier.Clay.statementADisposition_not_ready
-#print axioms Navier.Clay.statementAFrontier_eq
-#print axioms Navier.Clay.statementA_not_self_dependent
+#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularityDisposition_status
+#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularityDisposition_not_ready
+#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularityFrontier_eq
+#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularity_not_self_dependent
 
 /-!
 ## Resumed full-map support leaves
@@ -358,7 +358,7 @@ finite-frontier facts.
 Every public theorem introduced by the resumed local, energy, CKN-scaling,
 and generated-frequency leaves is audited directly here so the canonical
 `lake env lean Navier/AxiomAudit.lean` command emits the complete raw receipt.
-These are support theorems, not inhabitants of an official Clay endpoint.
+These are support theorems, not inhabitants of an official problem endpoint.
 -/
 
 #print axioms Navier.Analysis.CKNCylinder.det_parabolicPointEquiv
@@ -578,7 +578,7 @@ These are support theorems, not inhabitants of an official Clay endpoint.
 #print axioms Navier.Analysis.SchwartzConventionEquivalence.schwartzOfFeffermanData_apply
 #print axioms Navier.Analysis.SchwartzConventionEquivalence.fefferman_clause_four_iff_schwartz
 #print axioms Navier.Analysis.SchwartzConventionEquivalence.divergenceFreeInitial_schwartzOfFeffermanData
-#print axioms Navier.Analysis.SchwartzConventionEquivalence.statementA_covers_fefferman_data
+#print axioms Navier.Analysis.SchwartzConventionEquivalence.wholeSpaceGlobalRegularity_covers_fefferman_data
 #print axioms Navier.Analysis.CoordinatePDEBridge.spatialPartial_slice_eq
 #print axioms Navier.Analysis.CoordinatePDEBridge.timePartial_eq_timeDerivative
 #print axioms Navier.Analysis.CoordinatePDEBridge.convection_eq_official_sum
@@ -614,11 +614,11 @@ These are support theorems, not inhabitants of an official Clay endpoint.
 /-!
 ## Wave-2 BKM assembly-line unconditional layer
 
-The sorry-first tower campaign (`fable/clay-navier-20260716`) added the
+The sorry-first tower research program (`fable/navier-20260716`) added the
 Beale–Kato–Majda log-bootstrap engine, the enstrophy vortex-stretching layer,
 the honest Galerkin multi-frequency mild layer, and the Leray–Hopf weak
 structure.  Every declaration audited below is an UNCONDITIONAL theorem of that
-campaign — each `#print axioms` receipt is a strict subset of
+research program — each `#print axioms` receipt is a strict subset of
 `{propext, Classical.choice, Quot.sound}` (verified 2026-07-16).  The
 conditional tower theorems that consume the remaining analytic skeletons
 (`logBKMControl_of_schwartzSliced`, `halfSpaceSmooth_iff_extension`) are

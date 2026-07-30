@@ -7,8 +7,8 @@ import Navier.Scaling
 
 This module records a finite, ranked dependency map for the present attack
 surface.  The map is planning data: it does not assert that arbitrary proofs of
-the listed nodes compose to `Clay.StatementA`, and it intentionally defines no
-proof-program argument whose result is the Clay endpoint.
+the listed nodes compose to `ProblemStatements.WholeSpaceGlobalRegularity`, and it intentionally defines no
+proof-program argument whose result is the problem endpoint.
 
 The five statement-A representation residuals from `Problem.lean` occur as
 explicit frontier nodes.  The global analytic obstruction remains the
@@ -119,7 +119,7 @@ theorem encodingResidual_is_tracked (residual : ProblemEncodingResidual) :
   simp [nodes]
 
 /-- The immediate dependency view attached to the formal statement-A surface. -/
-theorem statementA_dependencies :
+theorem wholeSpaceGlobalRegularity_dependencies :
     dependencies .statementA =
       { .schwartzConventionBridge, .halfSpaceSmoothnessBridge,
         .currentSpaceNormBridge, .frechetCoordinatePDEBridge,

@@ -5,7 +5,7 @@ Status: **SCAFFOLDED / SCIENTIFIC_FRONTIER**
 The formal source tree now exists. `Navier/Problem.lean` is the canonical
 statement-A encoding; `Navier/Scaling.lean`, `Navier/Disposition.lean`, and
 `Navier/Frontier.lean` provide checked algebraic and status infrastructure.
-`Navier/ClayFrontier.lean` fixes the conjectural disposition, and
+`Navier/ProblemFrontier.lean` fixes the conjectural disposition, and
 `Navier/AxiomAudit.lean` emits the complete public trace. They do not realize
 the endpoint. Two convention-comparison residuals and the entire global
 analytic payload remain open. Alternative (A) on the whole space is the first
@@ -72,7 +72,7 @@ periodic pressure, as required by Fefferman's erratum.
 | F6 | proposed `Navier/Regularity/Criteria.lean` | Serrin and endpoint-\(L^3\) conditional continuation contracts | hypotheses and scaling match primary results | open analytic port |
 | F7 | proposed `Navier/Routes/*/Payload.lean` | one narrow route certificate per ATTACK.md | theorem uses only lower nodes and exposes its first residual | scientific frontier |
 | F8 | proposed `Navier/Bridges/GlobalContinuation.lean` | local theory + route certificate \(\Rightarrow\) global smooth finite-energy solution | dependency/no-circular-import audit | open conditional wiring |
-| F9 | `Navier/Disposition.lean`, `Navier/Frontier.lean`, `Navier/ClayFrontier.lean`, `Navier/AxiomAudit.lean` | proof-bearing status gate, ranked dependency view, conjectural statement-A disposition, and exhaustive public axiom commands | compile plus raw axiom audit | implemented status/audit scaffold; blocked on F7 |
+| F9 | `Navier/Disposition.lean`, `Navier/Frontier.lean`, `Navier/ProblemFrontier.lean`, `Navier/AxiomAudit.lean` | proof-bearing status gate, ranked dependency view, conjectural statement-A disposition, and exhaustive public axiom commands | compile plus raw axiom audit | implemented status/audit scaffold; blocked on F7 |
 
 The implemented parts of F0–F3 are reusable infrastructure; the table keeps
 their unimplemented analytic portions explicit. F5/F6 are substantial
@@ -140,7 +140,7 @@ its scale-critical `L³` mass is unchanged and positive. The two scaling lemmas
 (`L³` invariant) are proved by `MeasureTheory.Measure.integral_comp_smul` and
 `Module.finrank_fin_fun` (the change-of-variables on `ℝ³`). Kernel-clean; raw
 `#print axioms` ⊆ `{propext, Classical.choice, Quot.sound}`. This closes the
-formal side of falsification entry `F-001`. It does not advance the Clay
+formal side of falsification entry `F-001`. It does not advance the problem-statement
 endpoint.
 
 ## 5. Known-result ports versus frontier payloads
@@ -196,7 +196,7 @@ domains for PDE energy and Littlewood–Paley analysis.
    inventory, including domain, force, equation, solution class, and scaling.
 4. A bridge proof cannot change the evidence status of its input payload.
 5. Model theorems live in a Quarantine namespace until a checked transfer
-   theorem reaches an exact Clay type.
+   theorem reaches an exact problem-statement type.
 6. Numerical data types cannot coerce to proof-bearing route certificates.
 7. A theorem declaration with an axiom/sorry dependency remains conditional
    even if every wrapper above it compiles.
@@ -234,7 +234,7 @@ audit.
 - **F7 exit for A:** one of R1–R10 has a genuinely proved first residual,
   survives all barrier tests, and has native evidence. R11 has a separate C/D
   exit through an exact BreakdownCertificate.
-- **F9 exit:** a theorem inhabiting `Clay.StatementA` compiles, its dependency
+- **F9 exit:** a theorem inhabiting `Navier.ProblemStatements.WholeSpaceGlobalRegularity` compiles, its dependency
   graph reaches that F7 realization, and its raw axiom audit is clean.
 
 Before F7, the honest project-level status remains

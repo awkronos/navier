@@ -1,11 +1,11 @@
 import Navier.OfficialProblem
 
 /-!
-# Definitional signatures for the official Clay surfaces
+# Definitional signatures for the official problem-statement surfaces
 
 These theorems pin the exact outer quantifiers of alternatives A--D and the
 fields of the whole-space and periodic solution contracts.  They are
-regression guards for semantic drift, not inhabitants of any Clay statement.
+regression guards for semantic drift, not inhabitants of any problem statement.
 -/
 
 set_option autoImplicit false
@@ -73,24 +73,24 @@ theorem periodicClassicalSolution_signature
         pressure_periodic := hpPeriodic }
 
 /-- Exact outer signature of Fefferman alternative A. -/
-theorem statementA_signature :
-    Clay.StatementA =
+theorem wholeSpaceGlobalRegularity_signature :
+    ProblemStatements.WholeSpaceGlobalRegularity =
       (∀ nu : ℝ, 0 < nu →
         ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
           ∃ (u : VelocityEvolution) (p : PressureEvolution),
             IsClassicalSolution nu zeroForce u₀ u p) := rfl
 
 /-- Exact outer signature of Fefferman alternative B. -/
-theorem statementB_signature :
-    Clay.StatementB =
+theorem periodicGlobalRegularity_signature :
+    ProblemStatements.PeriodicGlobalRegularity =
       (∀ nu : ℝ, 0 < nu →
         ∀ u₀ : VelocityField, PeriodicInitialDatum u₀ →
           ∃ (u : VelocityEvolution) (p : PressureEvolution),
             IsPeriodicClassicalSolution nu zeroForce u₀ u p) := rfl
 
 /-- Exact outer signature of Fefferman alternative C. -/
-theorem statementC_signature :
-    Clay.StatementC =
+theorem wholeSpaceBreakdown_signature :
+    ProblemStatements.WholeSpaceBreakdown =
       (∀ nu : ℝ, 0 < nu →
         ∃ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ ∧
           ∃ f : ForceField, ForcedDataRapidDecay f ∧
@@ -98,8 +98,8 @@ theorem statementC_signature :
               IsClassicalSolution nu f u₀ u p) := rfl
 
 /-- Exact outer signature of Fefferman alternative D. -/
-theorem statementD_signature :
-    Clay.StatementD =
+theorem periodicBreakdown_signature :
+    ProblemStatements.PeriodicBreakdown =
       (∀ nu : ℝ, 0 < nu →
         ∃ u₀ : VelocityField, PeriodicInitialDatum u₀ ∧
           ∃ f : ForceField, PeriodicForcedDataRapidDecay f ∧

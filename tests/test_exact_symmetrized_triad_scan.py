@@ -153,7 +153,7 @@ class ExactSymmetrizedTriadTests(unittest.TestCase):
         )
         report = json.loads(completed.stdout)
         self.assertEqual(report["status"], "FALSIFICATION_ONLY")
-        self.assertFalse(report["closes_clay_endpoint"])
+        self.assertFalse(report["closes_problem_endpoint"])
         self.assertFalse(report["six_mode_leakage"]["closed_under_projected_convolution"])
         self.assertNotIn("PROVED", completed.stdout)
 

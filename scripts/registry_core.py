@@ -110,7 +110,7 @@ TOP_KEYS = {
     "base_revision",
     "generated_at",
     "ssot",
-    "campaign",
+    "research_program",
     "barriers",
     "references",
     "approaches",
@@ -128,20 +128,20 @@ TOP_KEYS = {
 # data alone can never retag an open conjecture or substitute an unrelated
 # theorem and then claim closure.
 PINNED_OBLIGATION_CONTRACTS = {
-    "breakdown.any_exact_realization": "b0459487fd369c5dc192b33f3127ef177e26a53f65b30096a5f542f51b8f2abd",
-    "breakdown.averaged_model_warning": "b053771ac3318e04f16b24b42c50d1e167f1dc799695bfc78e814db91ecccde6",
-    "breakdown.c_encoding_bridges": "15906cf0d27959c03846e416ab55fd4aeafa76fadb2e084ee153d03e57f8926c",
-    "breakdown.exact_c_surface": "e8a4a4a7e6099ef35c27c079eab29355af1cdff5c61abb5561f50c468195ef3d",
-    "breakdown.forced_c_payload": "db897b8c7ee33ed5d394d522c85bdcfd814b86be29c1838ea008e531ef9c1cf9",
-    "breakdown.zero_force_blowup_payload": "adef400d4f6f1666fc96204d1f9d2b386ec4263602bfc93fa757515c8bd25439",
+    "breakdown.any_exact_realization": "8d19731f78f9a24688c5d95dfbf0f1c4f2a14ddf0c4a1b3165f2d28b59c53893",
+    "breakdown.averaged_model_warning": "3a977d884ccfc430b3784490524230af05b845c194e4fc10786f6e3982a80b0d",
+    "breakdown.c_encoding_bridges": "3fdaff15b011c4a933eb8df7b5f04b95ea75990866c6e7d97e7bd4b06fc68356",
+    "breakdown.exact_c_surface": "103264c1fd2001740172c2174d4db2073c0b5487b64aff94a5c5162d4e733dee",
+    "breakdown.forced_c_payload": "8a6bd46f6eb064fc3db7a378ce01f6f0e36022b18998a671d32479177184e021",
+    "breakdown.zero_force_blowup_payload": "028f51631bcd0c5fad857f3b3513b47c08b9b38449decb9be447497049094eb1",
     "compact.profile_decomposition": "ef7b52fd9fe27cb06385dc0e7206739136ebee29218a5db800cbe5873171d077",
     "compact.rigidity_exclusion": "6ec3b14afee9dc1dd29c88a2c0b718cd403d854f8dc30f7df84c9c080c08416f",
-    "computation.intermediate_falsification": "90978c574d5dc27b26d33815cb36544f6b062c00ad8094fec678a3e8219b3b93",
+    "computation.intermediate_falsification": "3e21a29b7c6f35bc6f4250598d694a7d8632b2bd9ab77108d0b6fd159fe8c0c7",
     "critical.bound_to_regularity_composition": "7832b8cea0afc3aee3956a73dc6400e26218dbb6c6c075f3cd7574e08bfc04dc",
     "critical.global_regularity_bridge": "6bbac7349868e68e97ca94b1d53103309f911d74796f0ca13efc2d1d1a7f6ba0",
     "critical.unconditional_bound": "29901196ef28e138e7905e728db9b4f8afb705487b5d3c40f5a2c8500d474d09",
-    "endpoint.fefferman_a": "2cb551497700dd34b1f805248a227475279c90a0bddaca49310a7a6997b4cd39",
-    "endpoint.fefferman_c": "d9ecb0edb59b5d7d452f4d043ba91eec503d3fdc2676e5ff5462b29e0328c051",
+    "endpoint.fefferman_a": "cab2697221afbbadb0d7181c2eb3e90a4fd9b5d8c339370766d6b5369a3cf5c4",
+    "endpoint.fefferman_c": "10c3f4102f4e28aff7ee1b20d965af0347595be13ec2602dd7ef412600d1fd89",
     "energy.global_weak_solution": "73ff765a666f7b0f3634709838bc7f05d60b25ddfeb3fa009c8b1f38cb8ceae7",
     "energy.smooth_identity": "a1d8c000aced63c554e986618db32900f0adc2ae2522ff28a11664f7aa898f75",
     "energy.weak_to_strong_upgrade": "9b23dbf1df09d64b1cd8875ec8bf75ea4b024bf4bcbb1163afc7a5310aa9af16",
@@ -149,13 +149,13 @@ PINNED_OBLIGATION_CONTRACTS = {
     "epsilon.local_regular_criterion": "a85e7bb39488181fa3658b5b711ee635323b7c7465fd31b0a64732829916f4eb",
     "frequency.cascade_exclusion": "9d3b9c3d220c77876e99d495fe7a08a0996d2ff14ecbb2f45b5e53e80fea8697",
     "local.continuation_alternative": "7770f2405a91f768fc4d29ec7c622561e3c36ff0473f9447ef43ac09a7b648da",
-    "local.global_continuation": "423db890357c0de62917cc11c8ccf456bd4ff3ecc78683444eaddb86c937da91",
+    "local.global_continuation": "b0cc058e9a0991ccb28baae711e003775e35f320d0cb96f4499cd5f88fc24a00",
     "local.mild_solution": "276cbd009398413dcf722d6bbf18a9bd14d66b4600f0a1b18b8c28dec47ef7d8",
-    "meta.route_triage": "f2531c5b237be61eda38e1b57d09c7cdb566327271bd54ba9823e90087dd4907",
+    "meta.route_triage": "0115cc0293d9c0174e922b2b5d052fcfde46f35f79b67e2ae8bef75c1affac31",
     "regularity.any_positive_route": "d86ca459e22054c1f4a313b201e351f971ef1b1074af4bdecf02fc0c544e607e",
     "scaling.algebraic_critical_line": "44c07b56e7598ccadd22b47b9f19013f51c14b6779683fd1fa115ce2d1a586ca",
-    "semantics.encoding_bridges": "a6bf7793f16530e10b44ff5fd4b3fce29831960dab27c98e228a61ba9463e621",
-    "semantics.exact_a_surface": "8a9bee06b0dbc0318d83e0b0170909bea14f95725c601e6c955a8caa2291f637",
+    "semantics.encoding_bridges": "01cca4f3b18ca710dbaa23d54c597c295a78b0f829d1c6a3c7be7faaf0afe0eb",
+    "semantics.exact_a_surface": "493de29d0af0b0a3e6e0d01cbe1d657339ca5d5137931e9c847767b58989df46",
     "vorticity.alignment_criterion": "18a65f3bf37d5793375e85a924da1c06eaffdb7645b9dbed0b89d2abb2cb45fa",
     "vorticity.unconditional_depletion": "34e4d7bec4a5261ad61dc7552312d4bea79273362dbb51b68f7a7decff6e4999",
 }
@@ -197,7 +197,7 @@ PINNED_OPEN_OBLIGATION_DISPOSITIONS = {
 
 # Internal formal nodes are not closable merely because some Lean theorem can
 # be found.  Their exact realization declaration must be pinned here first.
-# Public endpoints use their separately pinned StatementA/StatementC targets.
+# Public endpoints use their separately pinned whole-space global-regularity/whole-space breakdown targets.
 PINNED_INTERNAL_REALIZATIONS = {
     "scaling.algebraic_critical_line": "Navier.Scaling.mixedNormExponent_eq_zero_iff",
 }
@@ -461,7 +461,7 @@ def _nonvacuous(value: Any, path: str, errors: list[str]) -> str:
         errors.append(f"{path}: vacuous text is forbidden")
     lowered = text.casefold()
     banned_phrases = (
-        "assume the clay endpoint",
+        "assume the problem_statement endpoint",
         "assume the endpoint conclusion",
         "result as hypothesis",
         "wrapper around the desired result",
@@ -529,7 +529,7 @@ def _check_unique_strings(values: list[Any], path: str, errors: list[str]) -> li
     return strings
 
 
-def _validate_campaign(data: Any, errors: list[str]) -> dict[str, Any]:
+def _validate_research_program(data: Any, errors: list[str]) -> dict[str, Any]:
     keys = {
         "id",
         "title",
@@ -540,26 +540,26 @@ def _validate_campaign(data: Any, errors: list[str]) -> dict[str, Any]:
         "resolution_mode",
         "resolution_obligation_ids",
     }
-    campaign = _exact_object(data, "$.campaign", keys, errors) or {}
-    _identifier(campaign.get("id"), "$.campaign.id", errors)
-    _nonvacuous(campaign.get("title"), "$.campaign.title", errors)
-    _nonvacuous(campaign.get("summary"), "$.campaign.summary", errors)
-    _enum(campaign.get("global_disposition"), "$.campaign.global_disposition", DISPOSITIONS, errors)
+    research_program = _exact_object(data, "$.research_program", keys, errors) or {}
+    _identifier(research_program.get("id"), "$.research_program.id", errors)
+    _nonvacuous(research_program.get("title"), "$.research_program.title", errors)
+    _nonvacuous(research_program.get("summary"), "$.research_program.summary", errors)
+    _enum(research_program.get("global_disposition"), "$.research_program.global_disposition", DISPOSITIONS, errors)
     _enum(
-        campaign.get("scientific_status"),
-        "$.campaign.scientific_status",
+        research_program.get("scientific_status"),
+        "$.research_program.scientific_status",
         {"SCIENTIFIC_FRONTIER", "CONDITIONAL_FRONTIER", "FORMALLY_RESOLVED"},
         errors,
     )
-    if campaign.get("resolution_mode") != "ANY":
-        errors.append("$.campaign.resolution_mode: Clay resolution branches must use ANY")
+    if research_program.get("resolution_mode") != "ANY":
+        errors.append("$.research_program.resolution_mode: endpoint resolution branches must use ANY")
     resolution_ids = _check_unique_strings(
-        _list(campaign.get("resolution_obligation_ids"), "$.campaign.resolution_obligation_ids", errors, nonempty=True),
-        "$.campaign.resolution_obligation_ids",
+        _list(research_program.get("resolution_obligation_ids"), "$.research_program.resolution_obligation_ids", errors, nonempty=True),
+        "$.research_program.resolution_obligation_ids",
         errors,
     )
     if len(resolution_ids) != 2:
-        errors.append("$.campaign.resolution_obligation_ids: exactly Fefferman A and C are required")
+        errors.append("$.research_program.resolution_obligation_ids: exactly Fefferman A and C are required")
 
     surface_keys = {
         "equation",
@@ -573,7 +573,7 @@ def _validate_campaign(data: Any, errors: list[str]) -> dict[str, Any]:
         "primary_branch",
         "resolution_branches",
     }
-    surface = _exact_object(campaign.get("problem_surface"), "$.campaign.problem_surface", surface_keys, errors) or {}
+    surface = _exact_object(research_program.get("problem_surface"), "$.research_program.problem_surface", surface_keys, errors) or {}
     constants = {
         "equation": "INCOMPRESSIBLE_NAVIER_STOKES",
         "dimension": 3,
@@ -587,13 +587,13 @@ def _validate_campaign(data: Any, errors: list[str]) -> dict[str, Any]:
     }
     for field, expected in constants.items():
         if surface.get(field) != expected:
-            errors.append(f"$.campaign.problem_surface.{field}: expected {expected!r}")
+            errors.append(f"$.research_program.problem_surface.{field}: expected {expected!r}")
 
     branch_keys = {"id", "forcing", "target", "obligation_id", "public_declaration", "planned_formal_target"}
-    branches = _list(surface.get("resolution_branches"), "$.campaign.problem_surface.resolution_branches", errors)
+    branches = _list(surface.get("resolution_branches"), "$.research_program.problem_surface.resolution_branches", errors)
     by_branch: dict[str, dict[str, Any]] = {}
     for index, raw in enumerate(branches):
-        path = f"$.campaign.problem_surface.resolution_branches[{index}]"
+        path = f"$.research_program.problem_surface.resolution_branches[{index}]"
         branch = _exact_object(raw, path, branch_keys, errors) or {}
         branch_id = _enum(branch.get("id"), f"{path}.id", {"FEFFERMAN_A", "FEFFERMAN_C"}, errors)
         if branch_id in by_branch:
@@ -614,28 +614,28 @@ def _validate_campaign(data: Any, errors: list[str]) -> dict[str, Any]:
         "FEFFERMAN_C": ("SMOOTH_RAPID_DECAY", "NO_GLOBAL_PHYSICALLY_REASONABLE_SOLUTION"),
     }
     if set(by_branch) != set(expected_branches):
-        errors.append("$.campaign.problem_surface.resolution_branches: exact A/C branch pair required")
+        errors.append("$.research_program.problem_surface.resolution_branches: exact A/C branch pair required")
     for branch_id, (forcing, target) in expected_branches.items():
         branch = by_branch.get(branch_id, {})
         if branch and branch.get("forcing") != forcing:
-            errors.append(f"$.campaign.problem_surface: {branch_id} forcing must be {forcing}")
+            errors.append(f"$.research_program.problem_surface: {branch_id} forcing must be {forcing}")
         if branch and branch.get("target") != target:
-            errors.append(f"$.campaign.problem_surface: {branch_id} target must be {target}")
+            errors.append(f"$.research_program.problem_surface: {branch_id} target must be {target}")
         if branch and branch.get("obligation_id") not in resolution_ids:
-            errors.append(f"$.campaign.problem_surface: {branch_id} obligation is not a resolution obligation")
+            errors.append(f"$.research_program.problem_surface: {branch_id} obligation is not a resolution obligation")
     branch_a = by_branch.get("FEFFERMAN_A", {})
     if branch_a and (
-        branch_a.get("public_declaration") != "Navier.Clay.StatementA"
+        branch_a.get("public_declaration") != "Navier.ProblemStatements.WholeSpaceGlobalRegularity"
         or branch_a.get("planned_formal_target") is not None
     ):
-        errors.append("$.campaign.problem_surface: Fefferman A must bind the delivered Navier.Clay.StatementA")
+        errors.append("$.research_program.problem_surface: Fefferman A must bind the delivered Navier.ProblemStatements.WholeSpaceGlobalRegularity")
     branch_c = by_branch.get("FEFFERMAN_C", {})
     if branch_c and (
-        branch_c.get("public_declaration") != "Navier.Clay.StatementC"
+        branch_c.get("public_declaration") != "Navier.ProblemStatements.WholeSpaceBreakdown"
         or branch_c.get("planned_formal_target") is not None
     ):
-        errors.append("$.campaign.problem_surface: Fefferman C must bind the delivered Navier.Clay.StatementC")
-    return campaign
+        errors.append("$.research_program.problem_surface: Fefferman C must bind the delivered Navier.ProblemStatements.WholeSpaceBreakdown")
+    return research_program
 
 
 def _validate_references(items: Any, errors: list[str]) -> dict[str, dict[str, Any]]:
@@ -655,9 +655,9 @@ def _validate_references(items: Any, errors: list[str]) -> dict[str, dict[str, A
             lowered = locator.casefold()
             if any(token in lowered for token in ("/latest", "/main", "/master", "?branch=", "#head")):
                 errors.append(f"{path}.locator: mutable locator is forbidden")
-            stable_prefixes = ("doi:", "arxiv:", "clay:", "journal:", "isbn:")
+            stable_prefixes = ("doi:", "arxiv:", "problem_statement:", "journal:", "isbn:")
             if not locator.startswith(stable_prefixes):
-                errors.append(f"{path}.locator: expected stable DOI/arXiv/Clay/journal/ISBN locator")
+                errors.append(f"{path}.locator: expected stable DOI/arXiv/problem-statement/journal/ISBN locator")
             if locator.startswith("arxiv:") and not re.search(r"v[1-9][0-9]*$", locator):
                 errors.append(f"{path}.locator: arXiv locators must pin a version")
         _nonvacuous(ref.get("relevance"), f"{path}.relevance", errors)
@@ -939,7 +939,7 @@ def _validate_formal_surface_snapshot(
                 repo_root, "merge-base", "--is-ancestor", base_revision, revision
             )
             if after_baseline.returncode == 1:
-                errors.append(f"{revision_path}: snapshot commit predates the campaign baseline")
+                errors.append(f"{revision_path}: snapshot commit predates the research_program baseline")
             elif after_baseline.returncode != 0:
                 errors.append(f"{revision_path}: could not compare snapshot commit with baseline")
 
@@ -1114,7 +1114,7 @@ def _validate_evidence(
                         repo_root, "merge-base", "--is-ancestor", receipt_revision, "HEAD"
                     )
                     if after_baseline.returncode != 0:
-                        errors.append(f"{path}.receipt.repository_revision: receipt predates the campaign baseline")
+                        errors.append(f"{path}.receipt.repository_revision: receipt predates the research_program baseline")
                     if before_head.returncode != 0:
                         errors.append(f"{path}.receipt.repository_revision: receipt commit is not an ancestor of HEAD")
             if receipt.get("artifact_sha256") != provenance.get("artifact_sha256"):
@@ -1341,7 +1341,7 @@ def _ancestors(root_id: str, nodes: dict[str, dict[str, Any]]) -> set[str]:
 
 
 def _validate_graph_and_epistemics(
-    campaign: dict[str, Any],
+    research_program: dict[str, Any],
     approaches: dict[str, dict[str, Any]],
     nodes: dict[str, dict[str, Any]],
     evidence: dict[str, dict[str, Any]],
@@ -1351,14 +1351,14 @@ def _validate_graph_and_epistemics(
     check_native_receipts: bool,
     errors: list[str],
 ) -> None:
-    resolution_ids = set(campaign.get("resolution_obligation_ids", []))
+    resolution_ids = set(research_program.get("resolution_obligation_ids", []))
     for resolution_id in resolution_ids:
         node = nodes.get(resolution_id)
         if node is None:
-            errors.append(f"$.campaign.resolution_obligation_ids: unknown endpoint {resolution_id!r}")
+            errors.append(f"$.research_program.resolution_obligation_ids: unknown endpoint {resolution_id!r}")
         elif node.get("kind") != "ENDPOINT":
-            errors.append(f"$.campaign.resolution_obligation_ids: {resolution_id!r} is not an ENDPOINT")
-    branches = campaign.get("problem_surface", {}).get("resolution_branches", [])
+            errors.append(f"$.research_program.resolution_obligation_ids: {resolution_id!r} is not an ENDPOINT")
+    branches = research_program.get("problem_surface", {}).get("resolution_branches", [])
     branch_by_obligation = {
         branch.get("obligation_id"): branch.get("id")
         for branch in branches
@@ -1438,16 +1438,16 @@ def _validate_graph_and_epistemics(
     for consumer_id, node in nodes.items():
         for dependency_id in node.get("dependencies", []) + node.get("assumption_ids", []):
             consumers[dependency_id].add(consumer_id)
-    campaign_consumer = f"campaign:{campaign.get('id', '')}"
+    research_program_consumer = f"research_program:{research_program.get('id', '')}"
     for node_id, node in nodes.items():
         residual = node.get("residual")
         if not isinstance(residual, dict):
             continue
         for consumer_id in residual.get("consumer_ids", []):
-            if consumer_id == campaign_consumer:
+            if consumer_id == research_program_consumer:
                 if node_id not in resolution_ids and node.get("kind") != "META":
                     errors.append(
-                        f"$.obligations[{node_id}].residual.consumer_ids: only endpoints/meta records may feed the campaign directly"
+                        f"$.obligations[{node_id}].residual.consumer_ids: only endpoints/meta records may feed the research_program directly"
                     )
             elif consumer_id not in nodes:
                 errors.append(f"$.obligations[{node_id}].residual.consumer_ids: unknown consumer {consumer_id!r}")
@@ -1616,17 +1616,17 @@ def _validate_graph_and_epistemics(
                 errors.append(f"$.obligations[{node_id}]: falsified/reverted disposition requires a checked witness")
 
     closed_endpoints = [node_id for node_id in resolution_ids if nodes.get(node_id, {}).get("disposition") == "CLOSED"]
-    global_closed = campaign.get("global_disposition") == "CLOSED"
-    formally_resolved = campaign.get("scientific_status") == "FORMALLY_RESOLVED"
+    global_closed = research_program.get("global_disposition") == "CLOSED"
+    formally_resolved = research_program.get("scientific_status") == "FORMALLY_RESOLVED"
     if closed_endpoints and not (global_closed and formally_resolved):
-        errors.append("$.campaign: a closed public endpoint requires CLOSED / FORMALLY_RESOLVED global status")
+        errors.append("$.research_program: a closed public endpoint requires CLOSED / FORMALLY_RESOLVED global status")
     if (global_closed or formally_resolved) and not closed_endpoints:
-        errors.append("$.campaign: false global closure claim; no public endpoint is natively closed")
+        errors.append("$.research_program: false global closure claim; no public endpoint is natively closed")
     if not closed_endpoints and (
-        campaign.get("global_disposition") != "SCAFFOLDED"
-        or campaign.get("scientific_status") != "SCIENTIFIC_FRONTIER"
+        research_program.get("global_disposition") != "SCAFFOLDED"
+        or research_program.get("scientific_status") != "SCIENTIFIC_FRONTIER"
     ):
-        errors.append("$.campaign: open campaign must remain SCAFFOLDED / SCIENTIFIC_FRONTIER")
+        errors.append("$.research_program: open research_program must remain SCAFFOLDED / SCIENTIFIC_FRONTIER")
 
     for approach_id, approach in approaches.items():
         approach_nodes = [node for node in nodes.values() if node.get("approach_id") == approach_id]
@@ -1702,7 +1702,7 @@ def validate_registry(
         except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             errors.append(f"$.base_revision: missing or unverifiable baseline commit: {exc}")
 
-    campaign = _validate_campaign(top.get("campaign"), errors)
+    research_program = _validate_research_program(top.get("research_program"), errors)
     references = _validate_references(top.get("references"), errors)
     barriers = _validate_barriers(top.get("barriers"), references, errors)
     approaches = _validate_approaches(top.get("approaches"), references, barriers, errors)
@@ -1736,7 +1736,7 @@ def validate_registry(
 
     all_ids: list[str] = [
         item_id
-        for item_id in (top.get("registry_id"), campaign.get("id"))
+        for item_id in (top.get("registry_id"), research_program.get("id"))
         if isinstance(item_id, str)
     ]
     for collection in (references, barriers, approaches, verifiers, evidence, obligations):
@@ -1751,7 +1751,7 @@ def validate_registry(
                 errors.append(f"$.evidence[{evidence_id}].supports: unknown obligation {supported_id!r}")
 
     _validate_graph_and_epistemics(
-        campaign,
+        research_program,
         approaches,
         obligations,
         evidence,
@@ -1835,7 +1835,7 @@ def derived_status(data: dict[str, Any]) -> dict[str, Any]:
             "residual": node["residual"]["statement"] if node["residual"] else None,
         }
         for node in obligations
-        if node["id"] in data["campaign"]["resolution_obligation_ids"]
+        if node["id"] in data["research_program"]["resolution_obligation_ids"]
     ]
     approach_rows = []
     for approach in approaches:
@@ -1858,8 +1858,8 @@ def derived_status(data: dict[str, Any]) -> dict[str, Any]:
         "registry_id": data["registry_id"],
         "registry_version": data["registry_version"],
         "base_revision": data["base_revision"],
-        "global_disposition": data["campaign"]["global_disposition"],
-        "scientific_status": data["campaign"]["scientific_status"],
+        "global_disposition": data["research_program"]["global_disposition"],
+        "scientific_status": data["research_program"]["scientific_status"],
         "dispositions": dict(sorted(dispositions.items())),
         "claim_tiers": dict(sorted(tiers.items())),
         "endpoints": endpoints,

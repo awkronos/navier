@@ -5,7 +5,7 @@ import Navier.Problem
 
 This module establishes spatial and parabolic scaling identities for the
 pointwise Navier--Stokes equation.  It does not assert covariance of the
-separate smoothness, energy, or Clay endpoint clauses.
+separate smoothness, energy, or problem endpoint clauses.
 
 The Frechet-derivative identity is universal: Mathlib's
 `fderiv_comp_smul` and `fderiv_const_smul_field` include the `c = 0` case and

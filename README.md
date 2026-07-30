@@ -1,7 +1,7 @@
 # Navier
 
-An evidence-gated, parallel mathematical research and formalization campaign
-for the three-dimensional incompressible Navier–Stokes Clay problem.
+An evidence-gated, parallel mathematical research and formalization research_program
+for the three-dimensional incompressible Navier–Stokes Navier--Stokes problem.
 
 **Current status: SCAFFOLDED / SCIENTIFIC FRONTIER.** This repository does not
 claim a solution. It separates kernel-checked infrastructure, conditional
@@ -54,11 +54,11 @@ make check
 Individual commands and pinned versions are documented in
 [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md). `make status` derives a current
 human view from the canonical registry. Successful checks establish artifact
-integrity and the stated support lemmas; they do not prove the Clay endpoint.
+integrity and the stated support lemmas; they do not prove the problem endpoint.
 
 ## Lineage
 
-The campaign borrows proof-bearing status discipline from `~/reality`,
+The research_program borrows proof-bearing status discipline from `~/reality`,
 frontier/bridge separation from `~/reimann`, and a single fail-closed parallel
 portfolio from `~/npnep`. It imports no mathematical conclusion from those
 projects. Exact snapshots, transplanted patterns, and rejected anti-patterns

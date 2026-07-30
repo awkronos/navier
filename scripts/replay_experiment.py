@@ -5,7 +5,7 @@ The gate executes no shell text.  It accepts only a pinned Python driver under
 ``experiments/``, checks its digest, replays it with a fixed seed supplied in
 the manifest, and compares stdout and declared artifacts byte-for-byte by
 SHA-256.  Even a successful replay is explicitly observation or falsification
-evidence; the manifest cannot claim a Clay endpoint.
+evidence; the manifest cannot claim a problem endpoint.
 """
 
 from __future__ import annotations
@@ -223,7 +223,7 @@ def validate_manifest(
         "generated_at",
         "repository_revision",
         "epistemic_status",
-        "closes_clay_endpoint",
+        "closes_problem_endpoint",
         "model",
         "run",
         "artifacts",
@@ -252,8 +252,8 @@ def validate_manifest(
         raise ManifestError("$.repository_revision: expected a full lowercase Git commit")
     if data["epistemic_status"] not in {"OBSERVATION_ONLY", "FALSIFICATION_WITNESS"}:
         raise ManifestError("$.epistemic_status: expected observation or falsification evidence")
-    if data["closes_clay_endpoint"] is not False:
-        raise ManifestError("$.closes_clay_endpoint: experiments may never close a Clay endpoint")
+    if data["closes_problem_endpoint"] is not False:
+        raise ManifestError("$.closes_problem_endpoint: experiments may never close a problem endpoint")
 
     model_keys = {
         "equation",
@@ -630,7 +630,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(
         f"VALID experiment={manifest['experiment_id']} status={manifest['epistemic_status']} "
-        "closes_clay_endpoint=false"
+        "closes_problem_endpoint=false"
     )
     return 0
 

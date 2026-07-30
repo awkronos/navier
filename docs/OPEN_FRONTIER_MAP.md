@@ -3,9 +3,9 @@
 ## Verdict
 
 The formal support graph has advanced materially, but the three-dimensional
-Navier--Stokes Clay problem is not solved.  There is still no term
-inhabiting `Navier.Clay.StatementA`, `StatementB`, `StatementC`, or
-`StatementD`.  The repository therefore remains
+Navier--Stokes Navier--Stokes problem is not solved.  There is still no term
+inhabiting `Navier.ProblemStatements.WholeSpaceGlobalRegularity`, `Navier.ProblemStatements.PeriodicGlobalRegularity`, `Navier.ProblemStatements.WholeSpaceBreakdown`, or
+`Navier.ProblemStatements.PeriodicBreakdown`.  The repository therefore remains
 `SCAFFOLDED / SCIENTIFIC_FRONTIER`.
 
 At source commit `ca6d3b3d6954988541b45aef0bfb7ea2de1113e2`, the canonical command
@@ -172,6 +172,6 @@ recovery without admissibility and agreement realizes none of these stages.
 
 The checked layer proves substantial lower mathematics and sharply reduces
 several formalization residuals.  It does not establish global regularity,
-finite-time singularity, or either side of the Clay alternative.  Any future
+finite-time singularity, or either side of the problem alternative.  Any future
 claim of closure must provide an actual A/B/C/D inhabitant, a fresh canonical
 build, and a raw axiom audit restricted to the allowed foundational axioms.

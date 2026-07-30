@@ -45,7 +45,7 @@ def valid_manifest() -> dict[str, object]:
         "generated_at": "2026-07-14T18:00:00Z",
         "repository_revision": "a" * 40,
         "epistemic_status": "OBSERVATION_ONLY",
-        "closes_clay_endpoint": False,
+        "closes_problem_endpoint": False,
         "model": copy.deepcopy(EXPERIMENT_DOMAIN),
         "run": {
             "command": ["python3", "experiments/example_probe.py"],
@@ -166,10 +166,10 @@ class ExperimentManifestTests(unittest.TestCase):
         manifest["proof_status"] = "PROVED"
         self.assertInvalid(manifest, "unknown fields")
 
-    def test_experiment_cannot_claim_clay_closure(self) -> None:
+    def test_experiment_cannot_claim_problem_statement_closure(self) -> None:
         manifest = valid_manifest()
-        manifest["closes_clay_endpoint"] = True
-        self.assertInvalid(manifest, "may never close a Clay endpoint")
+        manifest["closes_problem_endpoint"] = True
+        self.assertInvalid(manifest, "may never close a problem endpoint")
 
     def test_exact_equation_laundering_is_rejected(self) -> None:
         manifest = valid_manifest()

@@ -389,7 +389,7 @@ def build_report(wave_radius: int, polarization_radius: int, limit: int) -> dict
     leakage = six_mode_leakage(UNEQUAL_RADIUS_WITNESS)
     return {
         "status": "FALSIFICATION_ONLY",
-        "closes_clay_endpoint": False,
+        "closes_problem_endpoint": False,
         "arithmetic": "exact integers and rational normalized projections; no floats",
         "old_selected_output_cancellation": _case_json(OLD_CANCELLING_WITNESS),
         "unequal_radius_witness": _case_json(UNEQUAL_RADIUS_WITNESS),
@@ -411,7 +411,7 @@ def build_report(wave_radius: int, polarization_radius: int, limit: int) -> dict
         "six_mode_leakage": _leakage_json(leakage, limit),
         "scope": (
             "finite exact algebraic falsification; not a Navier--Stokes solution, "
-            "closed Galerkin model, or Clay proof"
+            "closed Galerkin model, or problem-statement proof"
         ),
     }
 

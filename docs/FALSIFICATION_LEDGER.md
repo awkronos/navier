@@ -1,7 +1,7 @@
 # Falsification ledger
 
 Ledger initialized: **2026-07-14**
-Campaign baseline (initial contract commit):
+Research program baseline (initial contract commit):
 **81448ed3e488b8b7d357ce430d52df4434f0c9cd**
 
 This ledger records failed claim classes and boundary mistakes, not failed
@@ -34,7 +34,7 @@ Statuses:
 | F-004 | DECOMPOSED | Banach contraction gives arbitrary-large-data global existence | Kato/Koch–Tataru mechanisms obtain local large-data or global small-data control [KATO1984], [KOCH_TATARU2001] | FixedPointBanach may close local wiring only | Produce an interval-independent large-data gain not based on assumed smallness |
 | F-005 | RED | CKN partial regularity proves that every suitable solution is smooth | CKN controls the parabolic size of the singular set; it does not show the set is empty [CKN1982] | Partial regularity cannot inhabit FeffermanA | Add a quantitative all-cylinder exclusion theorem |
 | F-006 | RED | Leray weak existence proves Fefferman alternative A | A requires globally smooth velocity and pressure; Leray supplies a finite-energy weak solution [LERAY1934] | Weak existence is a lower producer only | Prove weak-to-strong regularity for every admissible smooth datum |
-| F-007 | RED | Weak nonuniqueness proves Fefferman C or D | Nonuniqueness is not nonexistence of every global smooth physically reasonable solution; the solution/force classes also require an exact audit [BUCKMASTER_VICOL2019], [ALBRITTON_BRUE_COLOMBO2022] | These papers mark a weak-category boundary, not a Clay breakdown witness | Construct an exact C/D datum and force and prove the stated nonexistence |
+| F-007 | RED | Weak nonuniqueness proves Fefferman C or D | Nonuniqueness is not nonexistence of every global smooth physically reasonable solution; the solution/force classes also require an exact audit [BUCKMASTER_VICOL2019], [ALBRITTON_BRUE_COLOMBO2022] | These papers mark a weak-category boundary, not a problem-statement breakdown witness | Construct an exact C/D datum and force and prove the stated nonexistence |
 | F-008 | QUARANTINED | A periodic global theorem automatically proves the whole-space theorem | Fefferman states B and A as distinct alternatives with different domains [FEFFERMAN2000] | No B-to-A coercion is admitted | Supply a theorem transporting all data, pressure, decay, and energy properties |
 | F-009 | RED | Polya EnergyMethod is a formal PDE energy theorem | Its live theorem concerns finite additive energy and small difference sets | Name similarity cannot supply P5 | Formalize a new kinetic/local-energy theorem with the correct integral domain |
 | F-010 | RED | Polya DyadicDecomposition supplies Littlewood–Paley theory | Its live theorem is dyadic pigeonholing for a finite set of natural numbers | It cannot build R5 frequency projections or Besov estimates | Add genuine Fourier projection/paraproduct infrastructure |

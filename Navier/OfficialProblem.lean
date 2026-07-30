@@ -3,7 +3,7 @@ import Navier.Problem
 /-!
 # Formal Fefferman alternatives A--D
 
-This module leaves `Navier.Clay.StatementA` unchanged and defines non-inhabited
+This module leaves `Navier.ProblemStatements.WholeSpaceGlobalRegularity` unchanged and defines non-inhabited
 proposition surfaces for the sibling alternatives B, C, and D.  The definitions
 follow Fefferman's clauses (1)--(11), including the pressure-periodicity
 erratum.  They do not assert that the chosen Mathlib conventions are equivalent
@@ -122,11 +122,11 @@ inductive OfficialSurfaceEncodingResidual where
 def officialSurfaceEncodingResiduals : Finset OfficialSurfaceEncodingResidual :=
   Finset.univ
 
-namespace Clay
+namespace ProblemStatements
 
 /-- Fefferman alternative B: unforced global smooth periodic solutions for
 every positive viscosity and every admissible periodic initial datum. -/
-def StatementB : Prop :=
+def PeriodicGlobalRegularity : Prop :=
   ∀ nu : ℝ, 0 < nu →
     ∀ u₀ : VelocityField, PeriodicInitialDatum u₀ →
       ∃ (u : VelocityEvolution) (p : PressureEvolution),
@@ -135,7 +135,7 @@ def StatementB : Prop :=
 /-- Fefferman alternative C: for every positive viscosity, some admissible
 whole-space datum and admissible force admit no global smooth bounded-energy
 classical solution pair. -/
-def StatementC : Prop :=
+def WholeSpaceBreakdown : Prop :=
   ∀ nu : ℝ, 0 < nu →
     ∃ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ ∧
       ∃ f : ForceField, ForcedDataRapidDecay f ∧
@@ -145,13 +145,13 @@ def StatementC : Prop :=
 /-- Fefferman alternative D: for every positive viscosity, some admissible
 periodic datum and periodic time-decaying force admit no global smooth periodic
 solution pair.  No whole-space energy condition occurs. -/
-def StatementD : Prop :=
+def PeriodicBreakdown : Prop :=
   ∀ nu : ℝ, 0 < nu →
     ∃ u₀ : VelocityField, PeriodicInitialDatum u₀ ∧
       ∃ f : ForceField, PeriodicForcedDataRapidDecay f ∧
         ¬ ∃ (u : VelocityEvolution) (p : PressureEvolution),
           IsPeriodicClassicalSolution nu f u₀ u p
 
-end Clay
+end ProblemStatements
 
 end Navier

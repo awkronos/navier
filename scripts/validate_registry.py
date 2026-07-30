@@ -34,8 +34,8 @@ def main(argv: list[str] | None = None) -> int:
         f"registry={data['registry_id']}@{data['registry_version']} "
         f"approaches={len(data['approaches'])} "
         f"obligations={len(data['obligations'])} "
-        f"status={data['campaign']['global_disposition']}/"
-        f"{data['campaign']['scientific_status']}"
+        f"status={data['research_program']['global_disposition']}/"
+        f"{data['research_program']['scientific_status']}"
     )
     return 0
 

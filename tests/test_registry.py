@@ -40,14 +40,14 @@ NOW = datetime(2026, 7, 15, 4, 34, tzinfo=UTC)
 
 A_ID = "endpoint.fefferman_a"
 C_ID = "endpoint.fefferman_c"
-CAMPAIGN_CONSUMER = "campaign:campaign.navier_clay"
+RESEARCH_PROGRAM_CONSUMER = "research_program:research.navier_stokes_3d"
 
 
 def _residual(branch: str) -> dict[str, object]:
     return {
         "statement": f"Construct the missing exact {branch} realization without endpoint assumptions.",
         "smaller_than": f"This requests one branch-specific realization rather than the full {branch} endpoint.",
-        "consumer_ids": [CAMPAIGN_CONSUMER],
+        "consumer_ids": [RESEARCH_PROGRAM_CONSUMER],
         "falsifier": f"A checked wrong-domain or circular {branch} construction falsifies this route.",
         "next_action": f"Formalize and audit the next exact {branch} realization payload.",
     }
@@ -82,7 +82,7 @@ def _native_evidence(
         "kind": "NATIVE_RECEIPT",
         "claim_tier": "THEOREM",
         "summary": "A native compiler and axiom-audit receipt for the exact formal declaration.",
-        "reference_ids": ["ref.clay.fefferman2000"],
+        "reference_ids": ["ref.problem_statement.fefferman2000"],
         "supports": [node_id],
         "provenance": {
             "source_locator": "artifact:native-test-receipt",
@@ -98,7 +98,7 @@ def _native_evidence(
             "result": "PASS",
             "generated_at": generated_at.isoformat(),
             "repository_revision": registry["base_revision"],
-            "declaration": "Navier.Clay.StatementAProof",
+            "declaration": "Navier.ProblemStatements.WholeSpaceGlobalRegularityProof",
             "axioms": ["propext", "Classical.choice", "Quot.sound"],
             "artifact_sha256": digest,
         },
@@ -113,7 +113,7 @@ def _experiment_evidence(registry: dict[str, object]) -> dict[str, object]:
         "kind": "EXPERIMENT_RECEIPT",
         "claim_tier": "EXPERIMENT",
         "summary": "A reproducible numerical observation that cannot realize a theorem claim.",
-        "reference_ids": ["ref.clay.fefferman2000"],
+        "reference_ids": ["ref.problem_statement.fefferman2000"],
         "supports": [A_ID],
         "provenance": {
             "source_locator": "artifact:experiment-test-receipt",
@@ -142,7 +142,7 @@ def _surface_snapshot(registry: dict[str, object]) -> dict[str, object]:
         "kind": "FORMAL_SURFACE_SNAPSHOT",
         "claim_tier": "SCAFFOLD",
         "summary": "A generated formal-surface snapshot that records syntax but proves no theorem.",
-        "reference_ids": ["ref.clay.fefferman2000"],
+        "reference_ids": ["ref.problem_statement.fefferman2000"],
         "supports": [A_ID],
         "provenance": {
             "source_locator": "artifact:generated-formal-surface",
@@ -221,7 +221,7 @@ def _falsification_witness(registry: dict[str, object]) -> dict[str, object]:
         "kind": "FALSIFICATION_WITNESS",
         "claim_tier": "FALSIFICATION",
         "summary": "A checked counterexample witness falsifying the selected route without claiming closure.",
-        "reference_ids": ["ref.clay.fefferman2000"],
+        "reference_ids": ["ref.problem_statement.fefferman2000"],
         "supports": [A_ID],
         "provenance": {
             "source_locator": "artifact:falsification-test-witness",
@@ -238,13 +238,13 @@ def _close_a(registry: dict[str, object], evidence: dict[str, object] | None = N
     node = _find(registry["obligations"], A_ID)
     node["disposition"] = "CLOSED"
     if node["formal_declaration"] is None:
-        node["formal_declaration"] = "Navier.Clay.StatementAProof"
+        node["formal_declaration"] = "Navier.ProblemStatements.WholeSpaceGlobalRegularityProof"
     node["residual"] = None
     if evidence is not None:
         registry["evidence"].append(evidence)
         node["evidence_links"].append({"evidence_id": evidence["id"], "role": "REALIZATION"})
-    registry["campaign"]["global_disposition"] = "CLOSED"
-    registry["campaign"]["scientific_status"] = "FORMALLY_RESOLVED"
+    registry["research_program"]["global_disposition"] = "CLOSED"
+    registry["research_program"]["scientific_status"] = "FORMALLY_RESOLVED"
 
 
 class RegistryTestCase(unittest.TestCase):
@@ -295,8 +295,8 @@ class PositiveAndClosedWorldTests(RegistryTestCase):
         self.assertInvalid("$: unknown fields ['optimistic_status']")
 
     def test_unknown_nested_key_is_rejected(self) -> None:
-        self.registry["campaign"]["proof_by_press_release"] = True
-        self.assertInvalid("$.campaign: unknown fields ['proof_by_press_release']")
+        self.registry["research_program"]["proof_by_press_release"] = True
+        self.assertInvalid("$.research_program: unknown fields ['proof_by_press_release']")
 
     def test_silent_required_field_omission_is_rejected(self) -> None:
         del self.registry["ssot"]
@@ -343,32 +343,32 @@ class PositiveAndClosedWorldTests(RegistryTestCase):
 
 class EndpointAndDomainTests(RegistryTestCase):
     def test_fefferman_a_forcing_drift_is_rejected(self) -> None:
-        self.registry["campaign"]["problem_surface"]["resolution_branches"][0]["forcing"] = "SMOOTH_RAPID_DECAY"
+        self.registry["research_program"]["problem_surface"]["resolution_branches"][0]["forcing"] = "SMOOTH_RAPID_DECAY"
         self.assertInvalid("FEFFERMAN_A forcing must be ZERO")
 
     def test_fefferman_c_forcing_drift_is_rejected(self) -> None:
-        self.registry["campaign"]["problem_surface"]["resolution_branches"][1]["forcing"] = "ZERO"
+        self.registry["research_program"]["problem_surface"]["resolution_branches"][1]["forcing"] = "ZERO"
         self.assertInvalid("FEFFERMAN_C forcing must be SMOOTH_RAPID_DECAY")
 
     def test_problem_surface_viscosity_drift_is_rejected(self) -> None:
-        self.registry["campaign"]["problem_surface"]["viscosity"] = "ZERO"
-        self.assertInvalid("$.campaign.problem_surface.viscosity: expected 'POSITIVE'")
+        self.registry["research_program"]["problem_surface"]["viscosity"] = "ZERO"
+        self.assertInvalid("$.research_program.problem_surface.viscosity: expected 'POSITIVE'")
 
     def test_fefferman_c_delivered_declaration_cannot_be_demoted_to_planned(self) -> None:
-        branch = self.registry["campaign"]["problem_surface"]["resolution_branches"][1]
+        branch = self.registry["research_program"]["problem_surface"]["resolution_branches"][1]
         branch["public_declaration"] = None
-        branch["planned_formal_target"] = "Navier.Clay.StatementC"
+        branch["planned_formal_target"] = "Navier.ProblemStatements.WholeSpaceBreakdown"
         _find(self.registry["obligations"], "breakdown.exact_c_surface")[
             "formal_declaration"
         ] = None
-        self.assertInvalid("Fefferman C must bind the delivered Navier.Clay.StatementC")
+        self.assertInvalid("Fefferman C must bind the delivered Navier.ProblemStatements.WholeSpaceBreakdown")
 
     def test_fefferman_a_delivered_declaration_cannot_be_demoted_to_planned(self) -> None:
-        branch = self.registry["campaign"]["problem_surface"]["resolution_branches"][0]
+        branch = self.registry["research_program"]["problem_surface"]["resolution_branches"][0]
         branch["public_declaration"] = None
-        branch["planned_formal_target"] = "Navier.Clay.StatementA"
+        branch["planned_formal_target"] = "Navier.ProblemStatements.WholeSpaceGlobalRegularity"
         _find(self.registry["obligations"], A_ID)["formal_declaration"] = None
-        self.assertInvalid("Fefferman A must bind the delivered Navier.Clay.StatementA")
+        self.assertInvalid("Fefferman A must bind the delivered Navier.ProblemStatements.WholeSpaceGlobalRegularity")
 
     def test_wrong_equation_on_endpoint_path_is_rejected(self) -> None:
         _find(self.registry["obligations"], A_ID)["domain"]["equation"] = "AVERAGED_NAVIER_STOKES"
@@ -422,7 +422,7 @@ class GraphAndResidualTests(RegistryTestCase):
 
     def test_wrapper_payload_laundering_phrase_is_rejected(self) -> None:
         _find(self.registry["obligations"], A_ID)["statement"] = (
-            "Assume the Clay endpoint and package the desired result as a bridge."
+            "Assume the problem endpoint and package the desired result as a bridge."
         )
         self.assertInvalid("endpoint/wrapper laundering phrase is forbidden")
 
@@ -544,7 +544,7 @@ class EvidenceAndClosureTests(RegistryTestCase):
 
     def test_receipt_declaration_must_match_obligation(self) -> None:
         evidence = _native_evidence(self.registry)
-        evidence["receipt"]["declaration"] = "Navier.Clay.UnrelatedStatement"
+        evidence["receipt"]["declaration"] = "Navier.problem-statement.UnrelatedStatement"
         _close_a(self.registry, evidence)
         self.assertInvalid("receipt declaration does not match obligation")
 
@@ -597,8 +597,8 @@ class EvidenceAndClosureTests(RegistryTestCase):
         self.assertInvalid("artifact-backed evidence requires a digest")
 
     def test_renamed_global_closure_evasion_is_rejected(self) -> None:
-        self.registry["campaign"]["global_disposition"] = "CLOSED"
-        self.registry["campaign"]["scientific_status"] = "CONDITIONAL_FRONTIER"
+        self.registry["research_program"]["global_disposition"] = "CLOSED"
+        self.registry["research_program"]["scientific_status"] = "CONDITIONAL_FRONTIER"
         self.assertInvalid("false global closure claim; no public endpoint is natively closed")
 
     def test_cost_or_stall_verifier_age_must_be_nonnegative(self) -> None:
@@ -809,7 +809,7 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         self.assertIn("FEFFERMAN_A: SCAFFOLDED", rendered)
         self.assertIn(
             "residual: Construct a native theorem term inhabiting "
-            "Navier.Clay.StatementA",
+            "Navier.ProblemStatements.WholeSpaceGlobalRegularity",
             rendered,
         )
 

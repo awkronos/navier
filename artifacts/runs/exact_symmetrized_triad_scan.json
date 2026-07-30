@@ -1,6 +1,6 @@
 {
   "arithmetic": "exact integers and rational normalized projections; no floats",
-  "closes_clay_endpoint": false,
+  "closes_problem_endpoint": false,
   "old_selected_output_cancellation": {
     "configuration": {
       "a": [
@@ -282,7 +282,7 @@
     "unequal_shell_weighted_transfer_count": 10752,
     "wave_radius": 1
   },
-  "scope": "finite exact algebraic falsification; not a Navier--Stokes solution, closed Galerkin model, or Clay proof",
+  "scope": "finite exact algebraic falsification; not a Navier--Stokes solution, closed Galerkin model, or problem-statement proof",
   "six_mode_leakage": {
     "closed_under_projected_convolution": false,
     "examples": [

@@ -15,7 +15,7 @@ pattern library.
 
 | Artifact class | Navier instance | What it may contain | What it may not hide |
 |---|---|---|---|
-| dataContract | Clay data, PDE operators, norms, weak/smooth solution predicates | Definitions and well-formedness proofs | Existence of the target solution |
+| dataContract | problem-statement data, PDE operators, norms, weak/smooth solution predicates | Definitions and well-formedness proofs | Existence of the target solution |
 | payloadRealization | A proved route-specific critical bound, rigidity result, or exact breakdown witness | The new analytic witness | The endpoint as a constructor field |
 | bridgeContract | Local solution + continuation criterion \(\Rightarrow\) global solution | Established implication with explicit hypotheses | An assumed route payload |
 | decompositionTree | Nodes P0–P8, B0–B7, R1–R11 below | Dependencies and residual ordering | Status promotion by naming |
@@ -145,7 +145,7 @@ Every proposed theorem must pass these checks before it is wired upward:
 
 The proposed namespace split is intentionally one-way:
 
-    Navier.Clay.Data
+    Navier.problem-statement.Data
     Navier.Analysis.Scaling
     Navier.Analysis.Energy
     Navier.LocalTheory.Contract

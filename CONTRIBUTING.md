@@ -1,7 +1,7 @@
 # Contributing
 
 This is an evidence-gated research repository. Contributions are welcome when
-they sharpen the exact Clay target, close a named obligation, falsify a route,
+they sharpen the exact problem-statement target, close a named obligation, falsify a route,
 or improve a verifier without promoting an unproved claim.
 
 ## Before editing
@@ -20,7 +20,7 @@ or improve a verifier without promoting an unproved claim.
 - A cited theorem is literature evidence only when its hypotheses and domain
   match the obligation being discharged.
 - A numerical result is an observation. It cannot realize an analytic payload
-  or the Clay endpoint.
+  or the problem endpoint.
 - An assumption may support a conditional theorem, but must remain visible in
   both the type and the registry.
 

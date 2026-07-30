@@ -83,7 +83,7 @@ theorem divergenceFreeInitial_schwartzOfFeffermanData
 statement-A surface holds, then every smooth, rapidly decaying,
 divergence-free datum in Fefferman's coordinatewise prose class launches a
 smooth bounded-energy classical solution attaining it at time zero. -/
-theorem statementA_covers_fefferman_data (hA : Clay.StatementA)
+theorem wholeSpaceGlobalRegularity_covers_fefferman_data (hA : ProblemStatements.WholeSpaceGlobalRegularity)
     (ν : ℝ) (hν : 0 < ν) (f : Space → Space)
     (hs : ContDiff ℝ ∞ f) (hd : FeffermanRapidDecayBound f)
     (hdiv : ∀ x : Space, staticDivergence f x = 0) :

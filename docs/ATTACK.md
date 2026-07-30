@@ -1,7 +1,7 @@
 # Navier–Stokes attack blueprint
 
 Status: **SCAFFOLDED / SCIENTIFIC_FRONTIER**
-Campaign baseline (initial contract commit):
+Research program baseline (initial contract commit):
 **81448ed3e488b8b7d357ce430d52df4434f0c9cd**
 Primary formal target: **Fefferman alternative (A), whole space, zero force**
 
@@ -62,14 +62,14 @@ siblings; a result for one is not silently transported to another.
 
 ## 2. Provenance and synthesis boundary
 
-This dossier reuses campaign architecture, not mathematical conclusions, from
+This dossier reuses research_program architecture, not mathematical conclusions, from
 three local research repositories:
 
 | Source snapshot | Provenance status | Pattern transplanted | Anti-pattern rejected here |
 |---|---|---|---|
-| Reality object **e38aacfd494562410ad0f6e0ae789a19b09271d1** | Observed during a peer-active/mutable campaign; **not a frozen dependency or stable worktree pin** | typed scientific contracts; separate realized/conjectural/quarantined/falsified/retired rows; preserved route tombstones; same-model predecessor checks; native validators | free “readback” fields that restate a target, record projection as realization, finite/numerical agreement promoted to continuum science, and deletion of failed routes |
+| Reality object **e38aacfd494562410ad0f6e0ae789a19b09271d1** | Observed during a peer-active/mutable research_program; **not a frozen dependency or stable worktree pin** | typed scientific contracts; separate realized/conjectural/quarantined/falsified/retired rows; preserved route tombstones; same-model predecessor checks; native validators | free “readback” fields that restate a target, record projection as realization, finite/numerical agreement promoted to continuum science, and deletion of failed routes |
 | Reimann **6dab82adc30a6e9c0c3f54ad5b4f4f51168e4b5c** | Clean read-only snapshot | named frontier leaves, conditional-adapter versus payload separation, obstruction/false-form theorems, raw axiom boundary, and a dependency map from lower roots to endpoint | a green wrapper or adapter reported as the endpoint theorem; hidden endpoint assumptions; source-level proof-gap counts standing in for compiler/axiom evidence |
-| npnep **a3e56a4c922f8103f680c28d5217245497ab7236** | Clean read-only snapshot | parallel approach portfolio, per-approach barrier analysis, reproducible campaign schema, and theorem/conjecture/experiment evidence tiers | experiments generalized as proofs, barrier-free route descriptions, stale prose overriding native evidence, and unfalsifiable campaign outputs |
+| npnep **a3e56a4c922f8103f680c28d5217245497ab7236** | Clean read-only snapshot | parallel approach portfolio, per-approach barrier analysis, reproducible research_program schema, and theorem/conjecture/experiment evidence tiers | experiments generalized as proofs, barrier-free route descriptions, stale prose overriding native evidence, and unfalsifiable research_program outputs |
 
 The synthesis is intentionally one-way. No theorem, scientific payload, data
 file, or mutable status from these repositories is an assumption of the

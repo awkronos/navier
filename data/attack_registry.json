@@ -6,10 +6,10 @@
   "base_revision": "81448ed3e488b8b7d357ce430d52df4434f0c9cd",
   "generated_at": "2026-07-15T04:33:42Z",
   "ssot": true,
-  "campaign": {
-    "id": "campaign.navier_clay",
-    "title": "Parallel evidence-gated attack on the three-dimensional Navier-Stokes Clay problem",
-    "summary": "The campaign tracks Fefferman A and C as distinct exact endpoints and forbids conditional, numerical, or wrong-domain evidence from being promoted to a Clay resolution.",
+  "research_program": {
+    "id": "research.navier_stokes_3d",
+    "title": "Parallel evidence-gated attack on the three-dimensional Navier-Stokes Navier--Stokes problem",
+    "summary": "The research_program tracks Fefferman A and C as distinct exact endpoints and forbids conditional, numerical, or wrong-domain evidence from being promoted to a endpoint resolution.",
     "global_disposition": "SCAFFOLDED",
     "scientific_status": "SCIENTIFIC_FRONTIER",
     "problem_surface": {
@@ -28,7 +28,7 @@
           "forcing": "ZERO",
           "target": "GLOBAL_SMOOTH_FINITE_ENERGY",
           "obligation_id": "endpoint.fefferman_a",
-          "public_declaration": "Navier.Clay.StatementA",
+          "public_declaration": "Navier.ProblemStatements.WholeSpaceGlobalRegularity",
           "planned_formal_target": null
         },
         {
@@ -36,7 +36,7 @@
           "forcing": "SMOOTH_RAPID_DECAY",
           "target": "NO_GLOBAL_PHYSICALLY_REASONABLE_SOLUTION",
           "obligation_id": "endpoint.fefferman_c",
-          "public_declaration": "Navier.Clay.StatementC",
+          "public_declaration": "Navier.ProblemStatements.WholeSpaceBreakdown",
           "planned_formal_target": null
         }
       ]
@@ -49,7 +49,7 @@
       "id": "barrier.endpoint_semantics",
       "title": "Exact official endpoint semantics",
       "description": "A route must preserve the dimension, whole-space geometry, viscosity, data class, branch-specific forcing, and exact A or C conclusion.",
-      "primary_reference_ids": ["ref.clay.fefferman2000"]
+      "primary_reference_ids": ["ref.problem_statement.fefferman2000"]
     },
     {
       "id": "barrier.scaling_criticality",
@@ -84,23 +84,23 @@
     {
       "id": "barrier.numerical_nonproof",
       "title": "Numerical evidence is not proof",
-      "description": "Finite grids, floating-point trajectories, and parameter sweeps are observations and cannot realize a theorem, bridge, payload, or Clay endpoint.",
-      "primary_reference_ids": ["ref.clay.fefferman2000"]
+      "description": "Finite grids, floating-point trajectories, and parameter sweeps are observations and cannot realize a theorem, bridge, payload, or problem endpoint.",
+      "primary_reference_ids": ["ref.problem_statement.fefferman2000"]
     },
     {
       "id": "barrier.endpoint_circularity",
       "title": "Endpoint and bridge circularity",
       "description": "A continuation criterion, critical bound, compactness element, or breakdown profile cannot be assumed in a wrapper whose conclusion is the same endpoint.",
-      "primary_reference_ids": ["ref.clay.fefferman2000", "ref.ess.2003"]
+      "primary_reference_ids": ["ref.problem_statement.fefferman2000", "ref.ess.2003"]
     }
   ],
   "references": [
     {
-      "id": "ref.clay.fefferman2000",
+      "id": "ref.problem_statement.fefferman2000",
       "kind": "PRIMARY",
-      "citation": "Charles L. Fefferman, Existence and Smoothness of the Navier-Stokes Equation, Clay Mathematics Institute problem description.",
+      "citation": "Charles L. Fefferman, Existence and Smoothness of the Navier-Stokes Equation, problem-statement Mathematics Institute problem description.",
       "year": 2000,
-      "locator": "clay:navier-stokes-fefferman-official-2000",
+      "locator": "problem_statement:navier-stokes-fefferman-official-2000",
       "relevance": "Defines the exact whole-space alternatives A and C, including their distinct forcing quantifiers and solution conclusions."
     },
     {
@@ -223,27 +223,27 @@
       "objective": "Pin Fefferman A and C separately, formalize the exact equation and data classes, and expose the maximal-solution continuation alternative without endpoint assumptions.",
       "status": "DECOMPOSED",
       "transfer_mechanism": "DIRECT_THEOREM_APPLICATION",
-      "primary_reference_ids": ["ref.clay.fefferman2000", "ref.kato.1984"],
+      "primary_reference_ids": ["ref.problem_statement.fefferman2000", "ref.kato.1984"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "ADDRESSED", "rationale": "The lane owns branch-specific A and C surfaces and does not collapse their forcing quantifiers.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "ADDRESSED", "rationale": "The lane owns branch-specific A and C surfaces and does not collapse their forcing quantifiers.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "EXPOSED", "rationale": "Local theory identifies critical continuation quantities but does not bound them globally.", "reference_ids": ["ref.kato.1984"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "NOT_APPLICABLE", "rationale": "Local mild construction does not claim that the energy estimate closes critical control.", "reference_ids": ["ref.kato.1984"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "NOT_APPLICABLE", "rationale": "The local fixed-point construction precedes any critical-sequence compactness argument.", "reference_ids": ["ref.kato.1984"]},
         {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "The exact mild formulation retains the Leray projection and nonlocal pressure structure.", "reference_ids": ["ref.kato.1984"]},
         {"barrier_id": "barrier.weak_strong_gap", "disposition": "EXPOSED", "rationale": "Local strong uniqueness is not promoted to global regularity or global weak uniqueness.", "reference_ids": ["ref.kato.1984", "ref.leray.1934"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "No numerical artifact is accepted as realization evidence in the semantics lane.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "No numerical artifact is accepted as realization evidence in the semantics lane.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.endpoint_circularity", "disposition": "ADDRESSED", "rationale": "The continuation alternative names norm blowup as a residual instead of assuming global boundedness.", "reference_ids": ["ref.kato.1984"]}
       ]
     },
     {
       "id": "approach.energy",
       "title": "Energy and weak-solution architecture",
-      "objective": "Formalize smooth energy balance and global weak existence while isolating the precise scale and uniqueness deficits blocking an upgrade to the Clay endpoint.",
+      "objective": "Formalize smooth energy balance and global weak existence while isolating the precise scale and uniqueness deficits blocking an upgrade to the problem endpoint.",
       "status": "DECOMPOSED",
       "transfer_mechanism": "COMPLETION_LIMIT",
       "primary_reference_ids": ["ref.leray.1934"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Leray weak existence has the exact equation but not the smooth unique endpoint conclusion.", "reference_ids": ["ref.leray.1934", "ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Leray weak existence has the exact equation but not the smooth unique endpoint conclusion.", "reference_ids": ["ref.leray.1934", "ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "BLOCKED", "rationale": "The L2 energy control is supercritical for three-dimensional Navier-Stokes scaling.", "reference_ids": ["ref.leray.1934", "ref.kato.1984"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "BLOCKED", "rationale": "Energy dissipation alone does not exclude concentration at a possible singular time.", "reference_ids": ["ref.leray.1934"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "EXPOSED", "rationale": "Weak compactness constructs a solution but can lose the strong control needed for regularity.", "reference_ids": ["ref.leray.1934"]},
@@ -261,13 +261,13 @@
       "transfer_mechanism": "REALIZATION_PAYLOAD",
       "primary_reference_ids": ["ref.prodi.1959", "ref.serrin.1962", "ref.ess.2003"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "The conditional criterion targets exact zero-force A but does not supply its unconditional hypothesis.", "reference_ids": ["ref.clay.fefferman2000", "ref.ess.2003"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "The conditional criterion targets exact zero-force A but does not supply its unconditional hypothesis.", "reference_ids": ["ref.problem_statement.fefferman2000", "ref.ess.2003"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "ADDRESSED", "rationale": "The lane works at scaling-critical Prodi-Serrin and L3 endpoint quantities.", "reference_ids": ["ref.serrin.1962", "ref.ess.2003"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "EXPOSED", "rationale": "Energy enters only as background and cannot furnish the missing critical bound.", "reference_ids": ["ref.leray.1934", "ref.ess.2003"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "EXPOSED", "rationale": "Failure of a critical bound feeds the critical-element lane rather than disappearing.", "reference_ids": ["ref.gallagher.koch.planchon2013"]},
         {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "Endpoint regularity relies on backward uniqueness and pressure-aware local estimates.", "reference_ids": ["ref.ess.2003"]},
         {"barrier_id": "barrier.weak_strong_gap", "disposition": "ADDRESSED", "rationale": "The criterion is explicitly conditional and upgrades only when its critical hypothesis is realized.", "reference_ids": ["ref.ess.2003"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Computed norm growth may guide search but is not a realization of the analytic bound.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Computed norm growth may guide search but is not a realization of the analytic bound.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.endpoint_circularity", "disposition": "BLOCKED", "rationale": "The unconditional critical bound is near-equivalent to regularity and must be proved without assuming continuation.", "reference_ids": ["ref.ess.2003"]}
       ]
     },
@@ -279,13 +279,13 @@
       "transfer_mechanism": "QUOTIENT_LOCALIZATION",
       "primary_reference_ids": ["ref.ckn.1982"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Partial regularity concerns exact solutions but permits a singular set and therefore does not equal A.", "reference_ids": ["ref.ckn.1982", "ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Partial regularity concerns exact solutions but permits a singular set and therefore does not equal A.", "reference_ids": ["ref.ckn.1982", "ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "ADDRESSED", "rationale": "The epsilon criterion is formulated in scale-invariant local quantities.", "reference_ids": ["ref.ckn.1982"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "EXPOSED", "rationale": "Local energy inequalities do not guarantee epsilon smallness at every scale.", "reference_ids": ["ref.ckn.1982"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "BLOCKED", "rationale": "A concentrating sequence can retain nontrivial scale-invariant mass at a candidate singularity.", "reference_ids": ["ref.ckn.1982", "ref.gallagher.koch.planchon2013"]},
         {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "Pressure terms are included in the local epsilon quantity and cannot be dropped.", "reference_ids": ["ref.ckn.1982"]},
         {"barrier_id": "barrier.weak_strong_gap", "disposition": "EXPOSED", "rationale": "Suitable weak regularity becomes strong only after the smallness hypothesis is verified.", "reference_ids": ["ref.ckn.1982"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Grid-scale smallness cannot establish continuum epsilon smallness at all scales.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Grid-scale smallness cannot establish continuum epsilon smallness at all scales.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.endpoint_circularity", "disposition": "ADDRESSED", "rationale": "The global exclusion payload is named separately from the established local regularity implication.", "reference_ids": ["ref.ckn.1982"]}
       ]
     },
@@ -297,13 +297,13 @@
       "transfer_mechanism": "COMPLETION_LIMIT",
       "primary_reference_ids": ["ref.gallagher.koch.planchon2013"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "A critical element must remain an exact R3 zero-force solution to inform A.", "reference_ids": ["ref.gallagher.koch.planchon2013", "ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "A critical element must remain an exact R3 zero-force solution to inform A.", "reference_ids": ["ref.gallagher.koch.planchon2013", "ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "ADDRESSED", "rationale": "Profiles are extracted modulo the exact critical scaling and translation symmetries.", "reference_ids": ["ref.gallagher.koch.planchon2013"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "EXPOSED", "rationale": "Energy bounds alone do not provide the compact critical topology used by the route.", "reference_ids": ["ref.leray.1934", "ref.gallagher.koch.planchon2013"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "BLOCKED", "rationale": "Profile extraction organizes noncompactness, but the final rigidity contradiction remains open.", "reference_ids": ["ref.gallagher.koch.planchon2013"]},
         {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "Limit passage must preserve the nonlocal projected equation and pressure normalization.", "reference_ids": ["ref.gallagher.koch.planchon2013"]},
         {"barrier_id": "barrier.weak_strong_gap", "disposition": "EXPOSED", "rationale": "The route uses critical mild solutions and does not infer smoothness from arbitrary weak limits.", "reference_ids": ["ref.kato.1984", "ref.gallagher.koch.planchon2013"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Numerical profile concentration cannot realize the compactness or rigidity theorem.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Numerical profile concentration cannot realize the compactness or rigidity theorem.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.endpoint_circularity", "disposition": "BLOCKED", "rationale": "Rigidity must not assume the critical bound or regularity conclusion used to define the minimal element.", "reference_ids": ["ref.gallagher.koch.planchon2013"]}
       ]
     },
@@ -315,13 +315,13 @@
       "transfer_mechanism": "REALIZATION_PAYLOAD",
       "primary_reference_ids": ["ref.tao.2019", "ref.gallagher.koch.planchon2013"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Every frequency scenario is tied to the exact zero-force R3 critical element.", "reference_ids": ["ref.tao.2019", "ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Every frequency scenario is tied to the exact zero-force R3 critical element.", "reference_ids": ["ref.tao.2019", "ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "ADDRESSED", "rationale": "Frequency envelopes and critical bounds respect the Navier-Stokes scaling.", "reference_ids": ["ref.tao.2019"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "EXPOSED", "rationale": "Low-frequency energy control does not alone prevent high-frequency escape.", "reference_ids": ["ref.leray.1934", "ref.tao.2019"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "BLOCKED", "rationale": "Frequency evacuation and concentration are explicit noncompact scenarios needing rigidity estimates.", "reference_ids": ["ref.gallagher.koch.planchon2013", "ref.tao.2019"]},
         {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "Paraproduct and frequency estimates retain the Leray projection rather than localizing a false equation.", "reference_ids": ["ref.tao.2019"]},
         {"barrier_id": "barrier.weak_strong_gap", "disposition": "NOT_APPLICABLE", "rationale": "The lane starts from a critical mild element rather than upgrading an arbitrary weak solution.", "reference_ids": ["ref.kato.1984"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Computed spectra can prioritize scenarios but cannot exclude continuum cascades.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Computed spectra can prioritize scenarios but cannot exclude continuum cascades.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.endpoint_circularity", "disposition": "BLOCKED", "rationale": "No-cascade estimates must be obtained without assuming a priori global critical control.", "reference_ids": ["ref.tao.2019"]}
       ]
     },
@@ -333,13 +333,13 @@
       "transfer_mechanism": "REALIZATION_PAYLOAD",
       "primary_reference_ids": ["ref.constantin.fefferman1993"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "The geometric criterion concerns exact smooth zero-force evolution but remains conditional.", "reference_ids": ["ref.constantin.fefferman1993", "ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "The geometric criterion concerns exact smooth zero-force evolution but remains conditional.", "reference_ids": ["ref.constantin.fefferman1993", "ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "EXPOSED", "rationale": "Alignment hypotheses must be checked at the scale-invariant strength required to control stretching.", "reference_ids": ["ref.constantin.fefferman1993"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "EXPOSED", "rationale": "Energy does not bound vorticity direction coherence at small scales.", "reference_ids": ["ref.leray.1934", "ref.constantin.fefferman1993"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "EXPOSED", "rationale": "Vorticity direction can oscillate or concentrate along a critical sequence.", "reference_ids": ["ref.constantin.fefferman1993"]},
         {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "Velocity recovery from vorticity is nonlocal and must preserve Biot-Savart geometry.", "reference_ids": ["ref.constantin.fefferman1993"]},
         {"barrier_id": "barrier.weak_strong_gap", "disposition": "EXPOSED", "rationale": "Vorticity direction is not automatically defined strongly enough for every Leray solution.", "reference_ids": ["ref.leray.1934", "ref.constantin.fefferman1993"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Observed alignment on a mesh is not an all-scale analytic alignment bound.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Observed alignment on a mesh is not an all-scale analytic alignment bound.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.endpoint_circularity", "disposition": "BLOCKED", "rationale": "The unconditional alignment payload cannot assume bounded vorticity or smooth continuation.", "reference_ids": ["ref.constantin.fefferman1993"]}
       ]
     },
@@ -349,16 +349,16 @@
       "objective": "Search exact-equation approximations for counterexamples to intermediate conjectures and preserve reproducible negative witnesses without using experiments as theorem evidence.",
       "status": "SCAFFOLDED",
       "transfer_mechanism": "COMPUTATION_ONLY",
-      "primary_reference_ids": ["ref.clay.fefferman2000"],
+      "primary_reference_ids": ["ref.problem_statement.fefferman2000"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Discretizations approximate the exact equation and are labeled approximation-only rather than exact endpoints.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "EXPOSED", "rationale": "Discretizations approximate the exact equation and are labeled approximation-only rather than exact endpoints.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.scaling_criticality", "disposition": "EXPOSED", "rationale": "Finite resolution cannot inspect an unbounded critical frequency cascade.", "reference_ids": ["ref.ess.2003"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "NOT_APPLICABLE", "rationale": "The lane tests conjectures and does not claim that discrete energy closes continuum regularity.", "reference_ids": ["ref.leray.1934"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "EXPOSED", "rationale": "Finite boxes and grids can suppress translation, scaling, and concentration defects.", "reference_ids": ["ref.gallagher.koch.planchon2013"]},
         {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "A valid experiment must specify and verify the discrete pressure projection.", "reference_ids": ["ref.ckn.1982"]},
         {"barrier_id": "barrier.weak_strong_gap", "disposition": "NOT_APPLICABLE", "rationale": "Numerical trajectories do not assert existence or uniqueness in a continuum solution class.", "reference_ids": ["ref.leray.1934"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "BLOCKED", "rationale": "The validator forbids experiment receipts from realizing formal nodes or public endpoints.", "reference_ids": ["ref.clay.fefferman2000"]},
-        {"barrier_id": "barrier.endpoint_circularity", "disposition": "ADDRESSED", "rationale": "Experiments terminate in route triage or falsification records, never a proof dependency.", "reference_ids": ["ref.clay.fefferman2000"]}
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "BLOCKED", "rationale": "The validator forbids experiment receipts from realizing formal nodes or public endpoints.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_circularity", "disposition": "ADDRESSED", "rationale": "Experiments terminate in route triage or falsification records, never a proof dependency.", "reference_ids": ["ref.problem_statement.fefferman2000"]}
       ]
     },
     {
@@ -367,16 +367,16 @@
       "objective": "Target Fefferman C with admissible smooth rapidly decaying forcing while separately labeling zero-force blowup as a stronger speculative construction and averaged equations as analogues only.",
       "status": "SCAFFOLDED",
       "transfer_mechanism": "CONSTRUCTION",
-      "primary_reference_ids": ["ref.clay.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"],
+      "primary_reference_ids": ["ref.problem_statement.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"],
       "barrier_reviews": [
-        {"barrier_id": "barrier.endpoint_semantics", "disposition": "BLOCKED", "rationale": "Weak nonuniqueness and averaged-equation blowup are wrong objects; exact C needs admissible smooth forcing and failure of every global physically reasonable solution.", "reference_ids": ["ref.clay.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"]},
-        {"barrier_id": "barrier.scaling_criticality", "disposition": "EXPOSED", "rationale": "A construction must control its exact scaling and smooth initial data up to the breakdown time.", "reference_ids": ["ref.clay.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_semantics", "disposition": "BLOCKED", "rationale": "Weak nonuniqueness and averaged-equation blowup are wrong objects; exact C needs admissible smooth forcing and failure of every global physically reasonable solution.", "reference_ids": ["ref.problem_statement.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"]},
+        {"barrier_id": "barrier.scaling_criticality", "disposition": "EXPOSED", "rationale": "A construction must control its exact scaling and smooth initial data up to the breakdown time.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
         {"barrier_id": "barrier.supercritical_energy_gap", "disposition": "EXPOSED", "rationale": "Energy-compatible concentration is necessary but does not itself construct exact breakdown.", "reference_ids": ["ref.leray.1934"]},
         {"barrier_id": "barrier.compactness_defect", "disposition": "EXPOSED", "rationale": "Approximate concentrating profiles require a stable exact realization, not a formal limit that loses the equation.", "reference_ids": ["ref.tao.averaged2016"]},
-        {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "The construction must solve the exact projected nonlinearity and pressure equation.", "reference_ids": ["ref.clay.fefferman2000"]},
-        {"barrier_id": "barrier.weak_strong_gap", "disposition": "BLOCKED", "rationale": "Nonunique weak solutions do not witness failure of global smooth physically reasonable solutions from smooth data.", "reference_ids": ["ref.buckmaster.vicol2019", "ref.clay.fefferman2000"]},
-        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Numerical profile growth may guide construction but cannot establish the exact C quantifiers.", "reference_ids": ["ref.clay.fefferman2000"]},
-        {"barrier_id": "barrier.endpoint_circularity", "disposition": "BLOCKED", "rationale": "An approximate or averaged blowup profile cannot be wrapped as an exact realization payload.", "reference_ids": ["ref.tao.averaged2016", "ref.clay.fefferman2000"]}
+        {"barrier_id": "barrier.nonlocal_pressure", "disposition": "EXPOSED", "rationale": "The construction must solve the exact projected nonlinearity and pressure equation.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
+        {"barrier_id": "barrier.weak_strong_gap", "disposition": "BLOCKED", "rationale": "Nonunique weak solutions do not witness failure of global smooth physically reasonable solutions from smooth data.", "reference_ids": ["ref.buckmaster.vicol2019", "ref.problem_statement.fefferman2000"]},
+        {"barrier_id": "barrier.numerical_nonproof", "disposition": "NOT_APPLICABLE", "rationale": "Numerical profile growth may guide construction but cannot establish the exact C quantifiers.", "reference_ids": ["ref.problem_statement.fefferman2000"]},
+        {"barrier_id": "barrier.endpoint_circularity", "disposition": "BLOCKED", "rationale": "An approximate or averaged blowup profile cannot be wrapped as an exact realization payload.", "reference_ids": ["ref.tao.averaged2016", "ref.problem_statement.fefferman2000"]}
       ]
     }
   ],
@@ -420,13 +420,13 @@
   ],
   "evidence": [
     {
-      "id": "evidence.clay.surface",
+      "id": "evidence.problem_statement.surface",
       "kind": "PRIMARY_REFERENCE_EVIDENCE",
       "claim_tier": "REFERENCE",
       "summary": "Fefferman's official problem statement fixes the distinct A and C whole-space endpoint quantifiers.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["semantics.exact_a_surface", "breakdown.exact_c_surface"],
-      "provenance": {"source_locator": "clay:navier-stokes-fefferman-official-2000", "source_revision": "fefferman-official-2000", "immutable": true, "observed_at": "2026-07-14T16:58:58Z", "artifact_sha256": null},
+      "provenance": {"source_locator": "problem_statement:navier-stokes-fefferman-official-2000", "source_revision": "fefferman-official-2000", "immutable": true, "observed_at": "2026-07-14T16:58:58Z", "artifact_sha256": null},
       "receipt": null
     },
     {
@@ -514,7 +514,7 @@
       "kind": "FALSIFICATION_WITNESS",
       "claim_tier": "FALSIFICATION",
       "summary": "The audited F-017 ledger witness keeps Tao's averaged bilinear operator distinct from the exact Navier-Stokes nonlinearity and therefore rejects direct endpoint transport.",
-      "reference_ids": ["ref.tao.averaged2016", "ref.clay.fefferman2000"],
+      "reference_ids": ["ref.tao.averaged2016", "ref.problem_statement.fefferman2000"],
       "supports": ["breakdown.averaged_model_warning"],
       "provenance": {"source_locator": "repo:docs/FALSIFICATION_LEDGER.md#F-017", "source_revision": "4aba62dcbcbc42c3507a0778a0ed6fbadbd0b80d", "immutable": true, "observed_at": "2026-07-14T22:26:23Z", "artifact_sha256": "49a51548e90f6028a22d6fc68c7ea9a363adc188c1195e218d0fc8c1d40f79a3"},
       "receipt": null
@@ -524,7 +524,7 @@
       "kind": "FORMAL_SURFACE_SNAPSHOT",
       "claim_tier": "SCAFFOLD",
       "summary": "The committed Problem module defines the public Fefferman A proposition and all five statement-A representation residuals; this snapshot proves no inhabitant.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["semantics.exact_a_surface"],
       "provenance": {"source_locator": "repo:Navier/Problem.lean", "source_revision": "bed41276801e8168ecc0ce377b6fbc93e25927ac", "immutable": true, "observed_at": "2026-07-14T22:58:16Z", "artifact_sha256": "99fd73931ef55812377ed7ba8348fbd86adb0132fa9c7de28dcb4d3ba73e913f"},
       "receipt": null
@@ -534,7 +534,7 @@
       "kind": "FORMAL_SURFACE_SNAPSHOT",
       "claim_tier": "SCAFFOLD",
       "summary": "The committed OfficialProblem module defines the public Fefferman C proposition with admissible datum, force, and no-global-solution quantifiers; this snapshot proves no inhabitant.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["breakdown.exact_c_surface"],
       "provenance": {"source_locator": "repo:Navier/OfficialProblem.lean", "source_revision": "bf8dbc7ae01a235f19a0fe4029f6e1013b7fab9d", "immutable": true, "observed_at": "2026-07-14T22:37:17Z", "artifact_sha256": "e0860458bab6263833147269526a99f56e410454d4f7e96f3cc229aa27993643"},
       "receipt": null
@@ -554,7 +554,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit of the exact equivalence between official Statement A and its viscosity-one surface; neither side is inhabited.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["semantics.exact_a_surface", "endpoint.fefferman_a"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-viscosity-a", "source_revision": "01a8ce0a57ed3021389bb57a13996448d6422fad", "immutable": true, "observed_at": "2026-07-15T00:25:23Z", "artifact_sha256": "4d88195b7ce85f8f57f0b4fab2d149a63d747e1624ef87337522f91518c5b34a"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T00:25:23Z", "repository_revision": "01a8ce0a57ed3021389bb57a13996448d6422fad", "declaration": "Navier.Analysis.ViscosityEndpoints.statementA_iff_atViscosityOne", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "4d88195b7ce85f8f57f0b4fab2d149a63d747e1624ef87337522f91518c5b34a"}
@@ -564,7 +564,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit of the exact arbitrary-force equivalence between official Statement C and its viscosity-one surface; no breakdown witness is supplied.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["breakdown.exact_c_surface", "breakdown.forced_c_payload", "endpoint.fefferman_c"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-viscosity-c", "source_revision": "01a8ce0a57ed3021389bb57a13996448d6422fad", "immutable": true, "observed_at": "2026-07-15T00:25:23Z", "artifact_sha256": "4d88195b7ce85f8f57f0b4fab2d149a63d747e1624ef87337522f91518c5b34a"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T00:25:23Z", "repository_revision": "01a8ce0a57ed3021389bb57a13996448d6422fad", "declaration": "Navier.Analysis.ViscosityEndpoints.statementC_iff_atViscosityOne", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "4d88195b7ce85f8f57f0b4fab2d149a63d747e1624ef87337522f91518c5b34a"}
@@ -574,7 +574,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit of the conditional theorem converting a local point-evaluation blowup witness and global agreement into official whole-space nonexistence.",
-      "reference_ids": ["ref.clay.fefferman2000", "ref.kato.1984"],
+      "reference_ids": ["ref.problem_statement.fefferman2000", "ref.kato.1984"],
       "supports": ["breakdown.any_exact_realization"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-point-breakdown", "source_revision": "01a8ce0a57ed3021389bb57a13996448d6422fad", "immutable": true, "observed_at": "2026-07-15T00:25:23Z", "artifact_sha256": "4d88195b7ce85f8f57f0b4fab2d149a63d747e1624ef87337522f91518c5b34a"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T00:25:23Z", "repository_revision": "01a8ce0a57ed3021389bb57a13996448d6422fad", "declaration": "Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "4d88195b7ce85f8f57f0b4fab2d149a63d747e1624ef87337522f91518c5b34a"}
@@ -604,7 +604,7 @@
       "kind": "EXPERIMENT_RECEIPT",
       "claim_tier": "FALSIFICATION",
       "summary": "A sandboxed exact-integer/rational replay cancels the old ordered witness, finds surviving unequal-shell cases, and explicitly reports closes=false.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["computation.intermediate_falsification"],
       "provenance": {"source_locator": "artifact:exact-symmetrized-triad-scan-output", "source_revision": "3bec042d389dbe8a19a9a0026f958aca8d115633", "immutable": true, "observed_at": "2026-07-15T00:25:23Z", "artifact_sha256": "d8e1e59d5da8eaca5cb2c39ffe6d0055fcd2a76ffa1276c6df3477ca5c07fac2"},
       "receipt": {"verifier_id": "verifier.experiment.replay", "command": "python3 scripts/replay_experiment.py artifacts/runs/experiment.json", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T00:25:23Z", "repository_revision": "3bec042d389dbe8a19a9a0026f958aca8d115633", "declaration": null, "axioms": [], "artifact_sha256": "d8e1e59d5da8eaca5cb2c39ffe6d0055fcd2a76ffa1276c6df3477ca5c07fac2"}
@@ -614,7 +614,7 @@
       "kind": "FALSIFICATION_WITNESS",
       "claim_tier": "FALSIFICATION",
       "summary": "Ledger entries F-032 and F-033 preserve the corrected receiver-phase sign and reject promotion from one nonzero pair before the exhaustive full convolution sum.",
-      "reference_ids": ["ref.clay.fefferman2000", "ref.tao.averaged2016"],
+      "reference_ids": ["ref.problem_statement.fefferman2000", "ref.tao.averaged2016"],
       "supports": ["frequency.cascade_exclusion", "breakdown.zero_force_blowup_payload", "meta.route_triage"],
       "provenance": {"source_locator": "repo:docs/FALSIFICATION_LEDGER.md#F-032-F-033", "source_revision": "0d48732e6c6ca86e9e3b060f01039836e3c1bda1", "immutable": true, "observed_at": "2026-07-15T00:25:23Z", "artifact_sha256": "fef5c47deffebe0d71f8fd19c055d85c26205a497e5cf5b01cf457a763b8e821"},
       "receipt": null
@@ -644,7 +644,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit of the exact Euclidean-versus-Pi spatial norm comparison and the resulting rapid-decay representation equivalence for the official A/B datum surface.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["semantics.encoding_bridges", "semantics.exact_a_surface"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-official-ab-norm-transport", "source_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "immutable": true, "observed_at": "2026-07-15T01:05:40Z", "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T01:05:40Z", "repository_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "declaration": "Navier.Analysis.OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"}
@@ -654,7 +654,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit that the whole-space force Frechet-derivative decay contract implies every official coordinate directional derivative bound with Euclidean spatial weights, with the periodic no-weight analogue separated.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["breakdown.c_encoding_bridges", "breakdown.exact_c_surface"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-official-cd-force-transport", "source_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "immutable": true, "observed_at": "2026-07-15T01:05:40Z", "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T01:05:40Z", "repository_revision": "6a105ecac2d980ba529ff56721510398844f6e65", "declaration": "Navier.Breakdown.OfficialCDEncoding.forcedDataRapidDecay_implies_coordinatewise", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "3297b0de5c23d9cda02c8c5e62999226d637d891d84ad18ad0b732c321223f83"}
@@ -674,7 +674,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit of partial-classical-solution restriction transitivity and velocity-agreement algebra; these are coherence prerequisites and do not construct, restart, maximize, or glue a local solution.",
-      "reference_ids": ["ref.kato.1984", "ref.clay.fefferman2000"],
+      "reference_ids": ["ref.kato.1984", "ref.problem_statement.fefferman2000"],
       "supports": ["local.continuation_alternative", "breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-partial-restriction-laws", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Breakdown.PartialClassicalSolution.restrict_restrict", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
@@ -724,7 +724,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit of exact recovered-force characterizations for global and partial Navier-Stokes equations and restriction of an official global solution to a partial one; this constructs no admissible force, agreement theorem, or breakdown evolution.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-force-recovery-interface", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Breakdown.ForceRecovery.satisfiesNavierStokesBefore_iff_force_eq_recoveredForce", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
@@ -734,7 +734,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and raw-axiom audit that the zero partial classical solution cannot satisfy the point-norm-unbounded predicate; this rejects a vacuous witness but supplies no nontrivial solution or blowup mechanism.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-zero-partial-obstruction", "source_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "immutable": true, "observed_at": "2026-07-15T02:07:11Z", "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T02:07:11Z", "repository_revision": "84fb8c1187648aebae90a757cf9ce662b6eac1eb", "declaration": "Navier.Breakdown.zeroPartial_not_pointNormUnbounded", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "5c8045e820b75f5008e239c0db4ce913411973d71b54f2dc3f1e58813bbb9c13"}
@@ -774,7 +774,7 @@
       "kind": "NATIVE_RECEIPT",
       "claim_tier": "THEOREM",
       "summary": "Kernel and canonical raw-axiom audit of the inherited, official-Euclidean, and literal coordinate kinetic-energy clauses, including slice measurability for every classical solution; this transports an already-assumed energy bound and does not produce one.",
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "supports": ["semantics.encoding_bridges", "semantics.exact_a_surface"],
       "provenance": {"source_locator": "artifact:lean-axiom-audit-output-resumed-official-energy", "source_revision": "ca6d3b3d6954988541b45aef0bfb7ea2de1113e2", "immutable": true, "observed_at": "2026-07-15T04:32:43Z", "artifact_sha256": "95c1b4669ed969caf1e6aa15d0db4da80853e21c4c131bf93d42c81d7578c0eb"},
       "receipt": {"verifier_id": "verifier.lean.native", "command": "lake env lean Navier/AxiomAudit.lean", "exit_code": 0, "result": "PASS", "generated_at": "2026-07-15T04:32:43Z", "repository_revision": "ca6d3b3d6954988541b45aef0bfb7ea2de1113e2", "declaration": "Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.coordinateWholeSpaceEnergyClause", "axioms": ["propext", "Classical.choice", "Quot.sound"], "artifact_sha256": "95c1b4669ed969caf1e6aa15d0db4da80853e21c4c131bf93d42c81d7578c0eb"}
@@ -844,7 +844,7 @@
       "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.native.official_ab_norm_transport", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.resumed_official_energy_clause", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
@@ -858,13 +858,13 @@
       "claim_tier": "SCAFFOLD",
       "disposition": "DECOMPOSED",
       "statement": "Encode positive viscosity, arbitrary divergence-free rapidly decaying data, zero force, the exact classical PDE, and a uniform finite-energy conclusion on R3.",
-      "formal_declaration": "Navier.Clay.StatementA",
+      "formal_declaration": "Navier.ProblemStatements.WholeSpaceGlobalRegularity",
       "dependency_mode": "ALL",
       "dependencies": ["semantics.encoding_bridges"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_A"},
-      "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_a", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_a_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.official_ab_norm_transport", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.resumed_official_energy_clause", "role": "OBSERVATION"}],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
+      "evidence_links": [{"evidence_id": "evidence.problem_statement.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_a", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_a_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.official_ab_norm_transport", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.resumed_official_energy_clause", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
       "residual": {"statement": "Viscosity normalization, the Euclidean spatial-weight datum bridge, and the complete official/literal coordinate whole-space energy clause are checked. The remaining exact-A surface work is the multi-index derivative convention, half-space smoothness, coordinate PDE wording, and periodic quotient separation.", "smaller_than": "Surface fidelity and viscosity normalization are representation obligations and do not assert existence of a quantified solution.", "consumer_ids": ["endpoint.fefferman_a"], "falsifier": "Any datum, force, domain, derivative, norm, PDE, energy, or quotient quantifier differing from official A invalidates the surface.", "next_action": "Discharge the multi-index, half-space, coordinate-equation, and periodic lift/quotient transports without changing the public signature or snapshot guards."}
@@ -1205,7 +1205,7 @@
       "dependencies": ["local.continuation_alternative", "regularity.any_positive_route", "energy.smooth_identity"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_A"},
-      "reference_ids": ["ref.clay.fefferman2000", "ref.kato.1984", "ref.leray.1934"],
+      "reference_ids": ["ref.problem_statement.fefferman2000", "ref.kato.1984", "ref.leray.1934"],
       "evidence_links": [],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
@@ -1224,11 +1224,11 @@
       "dependencies": ["semantics.exact_a_surface", "local.global_continuation"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_A"},
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.native.viscosity_a_reduction", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Construct a native theorem term inhabiting Navier.Clay.StatementA by inhabiting its exact viscosity-one surface from semantic, local-continuation, and unconditional analytic producers.", "smaller_than": "Viscosity normalization removes one quantifier but leaves the genuinely open global-regularity payload untouched.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "A term with sorryAx, a custom axiom, an endpoint assumption, or wrong-domain payload is not a Clay resolution.", "next_action": "Do not package the endpoint until every ALL dependency is closed and the viscosity-one surface is inhabited with an allowed-axiom native receipt."}
+      "residual": {"statement": "Construct a native theorem term inhabiting Navier.ProblemStatements.WholeSpaceGlobalRegularity by inhabiting its exact viscosity-one surface from semantic, local-continuation, and unconditional analytic producers.", "smaller_than": "Viscosity normalization removes one quantifier but leaves the genuinely open global-regularity payload untouched.", "consumer_ids": ["research_program:research.navier_stokes_3d"], "falsifier": "A term with sorryAx, a custom axiom, an endpoint assumption, or wrong-domain payload is not a endpoint resolution.", "next_action": "Do not package the endpoint until every ALL dependency is closed and the viscosity-one surface is inhabited with an allowed-axiom native receipt."}
     },
     {
       "id": "breakdown.c_encoding_bridges",
@@ -1237,13 +1237,13 @@
       "kind": "PAYLOAD",
       "claim_tier": "CONJECTURE",
       "disposition": "SCAFFOLDED",
-      "statement": "Relate the six whole-space Mathlib datum, force, half-space, norm, PDE, and energy conventions used by StatementC to Fefferman's coordinatewise clauses.",
+      "statement": "Relate the six whole-space Mathlib datum, force, half-space, norm, PDE, and energy conventions used by WholeSpaceBreakdown to Fefferman's coordinatewise clauses.",
       "formal_declaration": null,
       "dependency_mode": "NONE",
       "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_C"},
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.native.official_cd_force_transport", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
@@ -1257,16 +1257,16 @@
       "claim_tier": "SCAFFOLD",
       "disposition": "DECOMPOSED",
       "statement": "For every fixed positive viscosity, quantify admissible smooth rapidly decaying data and force for which no global physically reasonable R3 solution exists.",
-      "formal_declaration": "Navier.Clay.StatementC",
+      "formal_declaration": "Navier.ProblemStatements.WholeSpaceBreakdown",
       "dependency_mode": "ALL",
       "dependencies": ["breakdown.c_encoding_bridges"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_C"},
-      "reference_ids": ["ref.clay.fefferman2000"],
-      "evidence_links": [{"evidence_id": "evidence.clay.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_c", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.official_cd_force_transport", "role": "OBSERVATION"}],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
+      "evidence_links": [{"evidence_id": "evidence.problem_statement.surface", "role": "BACKGROUND"}, {"evidence_id": "evidence.surface.fefferman_c", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.official_cd_force_transport", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics"],
-      "residual": {"statement": "Close the remaining whole-space representation bridges while preserving the compiled StatementC signature; forward coordinate force decay, arbitrary-force admissibility, and all-positive viscosity transport are checked.", "smaller_than": "Surface fidelity and viscosity normalization do not construct the required breakdown datum or force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, importing periodic or weak-solution semantics, or changing the no-global-pair quantifier invalidates the surface.", "next_action": "Discharge the converse force, datum, boundary-jet, coordinate-PDE, and energy bridges on the viscosity-one surface; periodic quotient semantics stay separate."}
+      "residual": {"statement": "Close the remaining whole-space representation bridges while preserving the compiled WholeSpaceBreakdown signature; forward coordinate force decay, arbitrary-force admissibility, and all-positive viscosity transport are checked.", "smaller_than": "Surface fidelity and viscosity normalization do not construct the required breakdown datum or force.", "consumer_ids": ["endpoint.fefferman_c"], "falsifier": "Omitting admissible force, using existential viscosity, importing periodic or weak-solution semantics, or changing the no-global-pair quantifier invalidates the surface.", "next_action": "Discharge the converse force, datum, boundary-jet, coordinate-PDE, and energy bridges on the viscosity-one surface; periodic quotient semantics stay separate."}
     },
     {
       "id": "breakdown.forced_c_payload",
@@ -1281,7 +1281,7 @@
       "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_C"},
-      "reference_ids": ["ref.clay.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"],
+      "reference_ids": ["ref.problem_statement.fefferman2000", "ref.buckmaster.vicol2019", "ref.tao.averaged2016"],
       "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.partial_restriction_laws", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.force_recovery_interface", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.zero_partial_obstruction", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.weak_strong_gap", "barrier.endpoint_circularity"],
@@ -1300,7 +1300,7 @@
       "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "STRONGER_THAN_C", "endpoint_branch": "FEFFERMAN_C"},
-      "reference_ids": ["ref.clay.fefferman2000", "ref.tao.averaged2016"],
+      "reference_ids": ["ref.problem_statement.fefferman2000", "ref.tao.averaged2016"],
       "evidence_links": [{"evidence_id": "evidence.breakdown.weak_nonuniqueness_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.breakdown.averaged_operator_warning", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.r7_weighted_transfer", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.r7_full_leakage", "role": "BACKGROUND"}, {"evidence_id": "evidence.native.partial_restriction_laws", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.force_recovery_interface", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.zero_partial_obstruction", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.r7_full_six_mode_balance", "role": "OBSERVATION"}, {"evidence_id": "evidence.native.r7_generated_dynamics", "role": "OBSERVATION"}, {"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.r7_finite_support_nonclosure", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.r7_finite_additive_closure", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.supercritical_energy_gap"],
@@ -1319,7 +1319,7 @@
       "dependencies": ["breakdown.forced_c_payload", "breakdown.zero_force_blowup_payload"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "PREREQUISITE", "endpoint_branch": "FEFFERMAN_C"},
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.native.point_breakdown_consumer", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
@@ -1338,11 +1338,11 @@
       "dependencies": ["breakdown.exact_c_surface", "breakdown.any_exact_realization"],
       "assumption_ids": [],
       "domain": {"equation": "INCOMPRESSIBLE_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "SMOOTH_RAPID_DECAY", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "EXACT_SMOOTH_FINITE_ENERGY", "relation_to_endpoint": "EXACT", "endpoint_branch": "FEFFERMAN_C"},
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.native.viscosity_c_reduction", "role": "OBSERVATION"}],
       "verifier_ids": ["verifier.lean.native"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
-      "residual": {"statement": "Construct a native theorem term inhabiting Navier.Clay.StatementC by inhabiting its exact viscosity-one surface from an admissible breakdown realization.", "smaller_than": "Viscosity normalization is complete, but the construction dependency remains separate and genuinely open.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "Averaged blowup, weak nonuniqueness, inadmissible force, or a proposition definition without an inhabitant cannot close C.", "next_action": "Require the exact viscosity-one construction dependency and a fresh allowed-axiom receipt before endpoint promotion."}
+      "residual": {"statement": "Construct a native theorem term inhabiting Navier.ProblemStatements.WholeSpaceBreakdown by inhabiting its exact viscosity-one surface from an admissible breakdown realization.", "smaller_than": "Viscosity normalization is complete, but the construction dependency remains separate and genuinely open.", "consumer_ids": ["research_program:research.navier_stokes_3d"], "falsifier": "Averaged blowup, weak nonuniqueness, inadmissible force, or a proposition definition without an inhabitant cannot close C.", "next_action": "Require the exact viscosity-one construction dependency and a fresh allowed-axiom receipt before endpoint promotion."}
     },
     {
       "id": "computation.intermediate_falsification",
@@ -1357,7 +1357,7 @@
       "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "DISCRETE_NAVIER_STOKES", "dimension": 3, "geometry": "DISCRETE_GRID", "boundary": "DISCRETE", "forcing": "DISCRETE", "viscosity": "DISCRETE_POSITIVE", "viscosity_quantifier": "FIXED_DISCRETE_POSITIVE", "solution_class": "DISCRETE_APPROXIMATION", "relation_to_endpoint": "APPROXIMATION_ONLY", "endpoint_branch": "NONE"},
-      "reference_ids": ["ref.clay.fefferman2000"],
+      "reference_ids": ["ref.problem_statement.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.experiment.r7_exact_scan", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.experiment.replay"],
       "barrier_ids": ["barrier.numerical_nonproof", "barrier.endpoint_semantics"],
@@ -1376,7 +1376,7 @@
       "dependencies": [],
       "assumption_ids": [],
       "domain": {"equation": "AVERAGED_NAVIER_STOKES", "dimension": 3, "geometry": "R3", "boundary": "NONE", "forcing": "ZERO", "viscosity": "POSITIVE", "viscosity_quantifier": "FOR_EVERY_FIXED_POSITIVE", "solution_class": "CRITICAL_MILD", "relation_to_endpoint": "ANALOGUE_ONLY", "endpoint_branch": "NONE"},
-      "reference_ids": ["ref.tao.averaged2016", "ref.clay.fefferman2000"],
+      "reference_ids": ["ref.tao.averaged2016", "ref.problem_statement.fefferman2000"],
       "evidence_links": [{"evidence_id": "evidence.falsification.averaged_wrong_operator", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.registry.strict"],
       "barrier_ids": ["barrier.endpoint_semantics", "barrier.endpoint_circularity"],
@@ -1395,11 +1395,11 @@
       "dependencies": ["computation.intermediate_falsification", "breakdown.averaged_model_warning"],
       "assumption_ids": [],
       "domain": {"equation": "DISCRETE_NAVIER_STOKES", "dimension": 3, "geometry": "DISCRETE_GRID", "boundary": "DISCRETE", "forcing": "DISCRETE", "viscosity": "DISCRETE_POSITIVE", "viscosity_quantifier": "FIXED_DISCRETE_POSITIVE", "solution_class": "DISCRETE_APPROXIMATION", "relation_to_endpoint": "APPROXIMATION_ONLY", "endpoint_branch": "NONE"},
-      "reference_ids": ["ref.clay.fefferman2000", "ref.tao.averaged2016"],
+      "reference_ids": ["ref.problem_statement.fefferman2000", "ref.tao.averaged2016"],
       "evidence_links": [{"evidence_id": "evidence.falsification.r7_phase_and_full_sum", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.r7_finite_support_nonclosure", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.r7_finite_additive_closure", "role": "FALSIFICATION"}, {"evidence_id": "evidence.falsification.critical_l3_raw_contract", "role": "FALSIFICATION"}],
       "verifier_ids": ["verifier.registry.strict", "verifier.tests.hostile"],
       "barrier_ids": ["barrier.numerical_nonproof", "barrier.endpoint_semantics"],
-      "residual": {"statement": "The old ordered phase candidate, promotion of the six-mode table to a closed evolution, and every nontrivial finite additively closed Fourier support are explicitly falsified. Future negative witnesses still require a named obligation, narrower successor, and domain-correct role without becoming proof dependencies.", "smaller_than": "Triage changes research priority and never realizes a formal endpoint.", "consumer_ids": ["campaign:campaign.navier_clay"], "falsifier": "An experiment on an endpoint path, a discrete-only domain applied to formal/source falsifications, or a deleted failed route violates this interface.", "next_action": "Apply the finite-closure obstruction as a mandatory gate, then test only weighted infinite systems or explicitly quantified truncation tails; keep every failure attached to its successor route."}
+      "residual": {"statement": "The old ordered phase candidate, promotion of the six-mode table to a closed evolution, and every nontrivial finite additively closed Fourier support are explicitly falsified. Future negative witnesses still require a named obligation, narrower successor, and domain-correct role without becoming proof dependencies.", "smaller_than": "Triage changes research priority and never realizes a formal endpoint.", "consumer_ids": ["research_program:research.navier_stokes_3d"], "falsifier": "An experiment on an endpoint path, a discrete-only domain applied to formal/source falsifications, or a deleted failed route violates this interface.", "next_action": "Apply the finite-closure obstruction as a mandatory gate, then test only weighted infinite systems or explicitly quantified truncation tails; keep every failure attached to its successor route."}
     }
   ]
 }
