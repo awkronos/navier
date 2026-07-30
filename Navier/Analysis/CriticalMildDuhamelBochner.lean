@@ -2,6 +2,7 @@ import Navier.Analysis.CriticalMildHeatCoefficientLift
 import Navier.Analysis.CriticalMildWeightedBanach
 import Navier.Analysis.CriticalMildDuhamel
 import Navier.Analysis.CriticalMildGlobalWeightedOutput
+import Navier.Analysis.CriticalMildHeatBochner
 
 /-!
 # Output-frequency heat regularization of the actual lattice nonlinearity
@@ -18,6 +19,7 @@ noncomputable section
 
 namespace Navier.Analysis.CriticalMildDuhamelBochner
 
+open MeasureTheory Set Topology
 open Navier
 open Navier.Analysis.ComplexLerayProjection
 open Navier.Analysis.ComplexLerayNorm
@@ -30,6 +32,7 @@ open Navier.Analysis.CriticalMildHeatSmoothing
 open Navier.Analysis.CriticalMildDuhamel
 open Navier.Analysis.CriticalMildGlobalWeightedOutput
 open Navier.Analysis.CriticalMildGlobalReindex
+open Navier.Analysis.CriticalMildHeatTimeKernel
 
 /-- The physical Fourier divergence-free constraint on a completed weighted
 carrier: every decoded mode is Hermitian-transverse to its own frequency. -/
@@ -529,5 +532,70 @@ theorem norm_heatRegularizedSpectralOutputFiber_le (ν τ : ℝ)
         (norm_weightedLatticeSpectralConvolution_le k u v)
         (by positivity)
     _ = (1 + (Real.sqrt (ν * τ))⁻¹) * ‖u‖ * ‖v‖ := by ring
+
+/-- The actual nonlinear heat output, made total in its elapsed-time
+argument by zero extension at nonpositive lag. -/
+def positiveTimeHeatRegularizedSpectralOutput (ν : ℝ) (hν : 0 < ν)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    ℝ → WeightedLatticeBanach := fun τ =>
+  if hτ : 0 < τ then heatRegularizedSpectralOutput ν τ hν hτ u v hu else 0
+
+/-- Positive elapsed time selects the actual globally completed heat output. -/
+theorem positiveTimeHeatRegularizedSpectralOutput_of_pos (ν : ℝ) (hν : 0 < ν)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    {τ : ℝ} (hτ : 0 < τ) :
+    positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ =
+      heatRegularizedSpectralOutput ν τ hν hτ u v hu := by
+  simp [positiveTimeHeatRegularizedSpectralOutput, hτ]
+
+/-- The positive-time output heat gain is the viscosity-scaled inverse square
+root time singularity used by the Bochner budget. -/
+theorem outputHeatGain_eq_inverseSqrtTime (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ) :
+    (Real.sqrt (ν * τ))⁻¹ = (Real.sqrt ν)⁻¹ * inverseSqrtTime τ := by
+  have h := heatTimeMajorant_eq ν τ hν hτ
+  unfold heatTimeMajorant at h
+  linarith
+
+/-- The explicit scalar majorant for the total nonlinear Duhamel integrand. -/
+def duhamelHeatTimeMajorant (ν : ℝ) (u v : WeightedLatticeBanach) : ℝ → ℝ :=
+  fun τ => (Real.sqrt ν)⁻¹ * inverseSqrtTime τ * ‖u‖ * ‖v‖
+
+/-- On positive lag, the actual global output is controlled by the exact
+inverse-square-root majorant. -/
+theorem norm_positiveTimeHeatRegularizedSpectralOutput_le (ν : ℝ) (hν : 0 < ν)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    {τ : ℝ} (hτ : 0 < τ) :
+    ‖positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ‖ ≤
+      duhamelHeatTimeMajorant ν u v τ := by
+  rw [positiveTimeHeatRegularizedSpectralOutput_of_pos ν hν u v hu hτ]
+  calc
+    ‖heatRegularizedSpectralOutput ν τ hν hτ u v hu‖ ≤
+        (Real.sqrt (ν * τ))⁻¹ * ‖u‖ * ‖v‖ :=
+      norm_heatRegularizedSpectralOutput_le ν τ hν hτ u v hu
+    _ = duhamelHeatTimeMajorant ν u v τ := by
+      unfold duhamelHeatTimeMajorant
+      rw [outputHeatGain_eq_inverseSqrtTime ν τ hν hτ]
+
+/-- The nonlinear Duhamel scalar majorant is interval-integrable on every
+nonnegative finite horizon. -/
+theorem intervalIntegrable_duhamelHeatTimeMajorant (ν T : ℝ) (hν : 0 < ν)
+    (u v : WeightedLatticeBanach) :
+    IntervalIntegrable (duhamelHeatTimeMajorant ν u v) volume 0 T := by
+  unfold duhamelHeatTimeMajorant
+  exact (((inverseSqrtTime_intervalIntegrable T).const_mul _).mul_const _).mul_const _
+
+/-- Exact finite-horizon scalar budget for the nonlinear heat integrand. -/
+theorem integral_duhamelHeatTimeMajorant (ν T : ℝ) (hν : 0 < ν) (hT : 0 ≤ T)
+    (u v : WeightedLatticeBanach) :
+    (∫ τ in (0 : ℝ)..T, duhamelHeatTimeMajorant ν u v τ) =
+      (2 * Real.sqrt T / Real.sqrt ν) * ‖u‖ * ‖v‖ := by
+  unfold duhamelHeatTimeMajorant
+  rw [show (fun τ : ℝ => (Real.sqrt ν)⁻¹ * inverseSqrtTime τ * ‖u‖ * ‖v‖) =
+      fun τ => (Real.sqrt ν)⁻¹ * (inverseSqrtTime τ * (‖u‖ * ‖v‖)) by
+        funext τ; ring,
+    intervalIntegral.integral_const_mul,
+    intervalIntegral.integral_mul_const,
+    integral_inverseSqrtTime_zero T hT]
+  field_simp [ne_of_gt hν]
 
 end Navier.Analysis.CriticalMildDuhamelBochner
