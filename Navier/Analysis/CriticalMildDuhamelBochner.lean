@@ -24,6 +24,7 @@ open Navier
 open Navier.Analysis.ComplexLerayProjection
 open Navier.Analysis.ComplexLerayNorm
 open Navier.Analysis.ComplexFrequencyHeatLeray
+open Navier.Analysis.FrequencyHeatLeray
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedSpace
 open Navier.Analysis.CriticalMildWeightedBanach
@@ -597,5 +598,174 @@ theorem integral_duhamelHeatTimeMajorant (ν T : ℝ) (hν : 0 < ν) (hT : 0 ≤
     intervalIntegral.integral_mul_const,
     integral_inverseSqrtTime_zero T hT]
   field_simp [ne_of_gt hν]
+
+/-- Every output lattice coordinate of the post-convolution heat fiber is
+continuous in its elapsed-time parameter. -/
+theorem continuous_heatRegularizedSpectralOutputFiber_apply (ν : ℝ)
+    (k : LatticeMode) (u v : WeightedLatticeBanach) :
+    Continuous fun τ : ℝ => heatRegularizedSpectralOutputFiber ν τ k u v := by
+  unfold heatRegularizedSpectralOutputFiber
+  apply Continuous.const_smul
+  apply CriticalMildHeatBochner.continuous_complexEuclideanPoint.comp
+  rw [show (fun τ : ℝ => complexFrequencyHeatLeray ν τ (latticeFrequency k)
+      (spectralOutputCoefficient k u v)) =
+      fun τ => (complexHeatDecay ν τ (latticeFrequency k) : ℂ) •
+        complexLeray (latticeFrequency k) (spectralOutputCoefficient k u v) by
+    funext τ
+    exact complexFrequencyHeatLeray_apply ν τ (latticeFrequency k)
+      (spectralOutputCoefficient k u v)]
+  unfold complexHeatDecay heatDecay
+  fun_prop
+
+/-- Each coordinate of the zero-extended actual nonlinear integrand is
+strongly measurable. -/
+theorem stronglyMeasurable_positiveTimeHeatRegularizedSpectralOutput_apply
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) (k : LatticeMode) :
+    StronglyMeasurable (fun τ : ℝ =>
+      positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ k) := by
+  have hpiece : (fun τ : ℝ =>
+      positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ k) =
+      Set.piecewise (Ioi 0) (fun τ => heatRegularizedSpectralOutputFiber ν τ k u v)
+        (fun _ => 0) := by
+    funext τ
+    by_cases hτ : 0 < τ
+    · simp [hτ, positiveTimeHeatRegularizedSpectralOutput_of_pos,
+        heatRegularizedSpectralOutput_apply]
+    · simp [hτ, positiveTimeHeatRegularizedSpectralOutput]
+  rw [hpiece]
+  exact ((continuous_heatRegularizedSpectralOutputFiber_apply ν k u v).stronglyMeasurable).piecewise
+    measurableSet_Ioi stronglyMeasurable_const
+
+/-- Coordinate insertion into the one-weight completed output carrier. -/
+def duhamelOutputSingleLinear (k : LatticeMode) : ComplexE3 →ₗ[ℂ] WeightedLatticeBanach :=
+  lp.singleContinuousLinearMap ℂ (fun _ : LatticeMode => ComplexE3) 1 k
+
+theorem continuous_duhamelOutputSingleLinear (k : LatticeMode) :
+    Continuous (duhamelOutputSingleLinear k) :=
+  LinearMap.continuous_of_finiteDimensional _
+
+/-- Enumerated finite-coordinate approximants to the completed nonlinear
+Duhamel integrand. -/
+def positiveTimeHeatRegularizedSpectralOutputNatTruncation (n : ℕ) (ν : ℝ)
+    (hν : 0 < ν) (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    ℝ → WeightedLatticeBanach := fun τ =>
+  ∑ j ∈ Finset.range n,
+    duhamelOutputSingleLinear (CriticalMildHeatBochner.latticeModeEquivNat.symm j)
+      (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ
+        (CriticalMildHeatBochner.latticeModeEquivNat.symm j))
+
+theorem stronglyMeasurable_positiveTimeHeatRegularizedSpectralOutputNatTruncation
+    (n : ℕ) (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) :
+    StronglyMeasurable (positiveTimeHeatRegularizedSpectralOutputNatTruncation n ν hν u v hu) := by
+  unfold positiveTimeHeatRegularizedSpectralOutputNatTruncation
+  let f : ℕ → ℝ → WeightedLatticeBanach := fun j τ =>
+    duhamelOutputSingleLinear (CriticalMildHeatBochner.latticeModeEquivNat.symm j)
+      (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ
+        (CriticalMildHeatBochner.latticeModeEquivNat.symm j))
+  change StronglyMeasurable fun τ => ∑ j ∈ Finset.range n, f j τ
+  have hsum : StronglyMeasurable (∑ j ∈ Finset.range n, f j) :=
+    Finset.stronglyMeasurable_sum _ (fun j hj => by
+      apply (continuous_duhamelOutputSingleLinear _).comp_stronglyMeasurable
+      exact stronglyMeasurable_positiveTimeHeatRegularizedSpectralOutput_apply ν hν u v hu _)
+  have heq : (fun τ => ∑ j ∈ Finset.range n, f j τ) = ∑ j ∈ Finset.range n, f j := by
+    funext τ; simp
+  rw [heq]
+  exact hsum
+
+/-- The finite-coordinate approximants converge pointwise in the completed
+`lp` norm to the actual nonlinear output integrand. -/
+theorem tendsto_positiveTimeHeatRegularizedSpectralOutputNatTruncation
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) (τ : ℝ) :
+    Filter.Tendsto (fun n =>
+      positiveTimeHeatRegularizedSpectralOutputNatTruncation n ν hν u v hu τ)
+      Filter.atTop (𝓝 (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ)) := by
+  let f := positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ
+  have hsingle := lp.hasSum_single (E := fun _ : LatticeMode => ComplexE3)
+    (p := 1) (by norm_num : (1 : ENNReal) ≠ ⊤) f
+  have hsum : Summable (fun n : ℕ => lp.single (E := fun _ : LatticeMode => ComplexE3)
+      1 (CriticalMildHeatBochner.latticeModeEquivNat.symm n)
+      (f (CriticalMildHeatBochner.latticeModeEquivNat.symm n))) := by
+    exact CriticalMildHeatBochner.latticeModeEquivNat.symm.summable_iff.mpr hsingle.summable
+  have hsum_eq : (∑' n : ℕ, lp.single (E := fun _ : LatticeMode => ComplexE3)
+      1 (CriticalMildHeatBochner.latticeModeEquivNat.symm n)
+      (f (CriticalMildHeatBochner.latticeModeEquivNat.symm n))) = f := by
+    calc
+      (∑' n : ℕ, lp.single (E := fun _ : LatticeMode => ComplexE3)
+          1 (CriticalMildHeatBochner.latticeModeEquivNat.symm n)
+          (f (CriticalMildHeatBochner.latticeModeEquivNat.symm n))) =
+          ∑' i : LatticeMode, lp.single (E := fun _ : LatticeMode => ComplexE3) 1 i (f i) :=
+        CriticalMildHeatBochner.latticeModeEquivNat.symm.tsum_eq
+          (fun i : LatticeMode => lp.single (E := fun _ : LatticeMode => ComplexE3) 1 i (f i))
+      _ = f := hsingle.tsum_eq
+  have hhas := hsum.hasSum_iff.mpr hsum_eq
+  exact hhas.tendsto_sum_nat
+
+/-- The zero-extended completed nonlinear Duhamel integrand is strongly
+measurable. -/
+theorem stronglyMeasurable_positiveTimeHeatRegularizedSpectralOutput
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) :
+    StronglyMeasurable (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu) := by
+  apply stronglyMeasurable_of_tendsto
+    (f := fun n => positiveTimeHeatRegularizedSpectralOutputNatTruncation n ν hν u v hu)
+    Filter.atTop
+  · intro n
+    exact stronglyMeasurable_positiveTimeHeatRegularizedSpectralOutputNatTruncation n ν hν u v hu
+  · rw [tendsto_pi_nhds]
+    intro τ
+    exact tendsto_positiveTimeHeatRegularizedSpectralOutputNatTruncation ν hν u v hu τ
+
+/-- The completed nonlinear Duhamel integrand is Bochner-integrable on every
+nonnegative finite horizon. -/
+theorem integrableOn_positiveTimeHeatRegularizedSpectralOutput
+    (ν T : ℝ) (hν : 0 < ν) (hT : 0 ≤ T)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    IntegrableOn (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu) (Ioc 0 T) volume := by
+  have hmajorant := intervalIntegrable_duhamelHeatTimeMajorant ν T hν u v
+  have hinterval : IntervalIntegrable
+      (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu) volume 0 T :=
+    IntervalIntegrable.mono_fun' hmajorant
+      (stronglyMeasurable_positiveTimeHeatRegularizedSpectralOutput ν hν u v hu).aestronglyMeasurable (by
+        rw [uIoc_of_le hT]
+        filter_upwards [ae_restrict_mem measurableSet_Ioc] with τ hτ
+        exact norm_positiveTimeHeatRegularizedSpectralOutput_le ν hν u v hu hτ.1)
+  exact (intervalIntegrable_iff_integrableOn_Ioc_of_le hT).mp hinterval
+
+/-- The actual Bochner Duhamel integral of the completed nonlinear heat
+output on the elapsed-time interval `[0,T]`. -/
+def positiveTimeHeatRegularizedSpectralOutputIntegral
+    (ν T : ℝ) (hν : 0 < ν) (hT : 0 ≤ T)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    WeightedLatticeBanach :=
+  ∫ τ in Ioc 0 T, positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ
+
+/-- The genuine nonlinear Duhamel Bochner integral has the exact
+inverse-square-root finite-time budget. -/
+theorem norm_positiveTimeHeatRegularizedSpectralOutputIntegral_le
+    (ν T : ℝ) (hν : 0 < ν) (hT : 0 ≤ T)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    ‖positiveTimeHeatRegularizedSpectralOutputIntegral ν T hν hT u v hu‖ ≤
+      (2 * Real.sqrt T / Real.sqrt ν) * ‖u‖ * ‖v‖ := by
+  have hmajorant := intervalIntegrable_duhamelHeatTimeMajorant ν T hν u v
+  have hactual := integrableOn_positiveTimeHeatRegularizedSpectralOutput ν T hν hT u v hu
+  have hscalar := (intervalIntegrable_iff_integrableOn_Ioc_of_le hT).mp hmajorant
+  have hmono : (fun τ => ‖positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ‖) ≤ᵐ[
+      volume.restrict (Ioc 0 T)] duhamelHeatTimeMajorant ν u v := by
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with τ hτ
+    exact norm_positiveTimeHeatRegularizedSpectralOutput_le ν hν u v hu hτ.1
+  unfold positiveTimeHeatRegularizedSpectralOutputIntegral
+  calc
+    ‖∫ τ in Ioc 0 T, positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ‖ ≤
+        ∫ τ in Ioc 0 T, ‖positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ‖ :=
+      norm_integral_le_integral_norm _
+    _ ≤ ∫ τ in Ioc 0 T, duhamelHeatTimeMajorant ν u v τ :=
+      integral_mono_ae hactual.norm hscalar hmono
+    _ = ∫ τ in (0 : ℝ)..T, duhamelHeatTimeMajorant ν u v τ := by
+      rw [← intervalIntegral.integral_of_le hT]
+    _ = (2 * Real.sqrt T / Real.sqrt ν) * ‖u‖ * ‖v‖ :=
+      integral_duhamelHeatTimeMajorant ν T hν hT u v
 
 end Navier.Analysis.CriticalMildDuhamelBochner
