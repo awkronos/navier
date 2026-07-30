@@ -181,4 +181,27 @@ theorem norm_weightedLatticeSpectralCLM_le (k : LatticeMode)
     rw [mul_comm]
     exact norm_weightedLatticeSpectralConvolution_le k u z)
 
+/-- The genuine curried continuous bilinear weighted convolution at one output
+mode.  Both carrier inputs occur in the underlying spectral convolution. -/
+noncomputable def weightedLatticeSpectralBilinear (k : LatticeMode) :
+    WeightedLatticeBanach →L[ℂ] WeightedLatticeBanach →L[ℂ] ComplexE3 :=
+  LinearMap.mkContinuous₂
+    { toFun := fun u =>
+        { toFun := fun z => weightedLatticeSpectralConvolution k u z
+          map_add' := fun v z => weightedLatticeSpectralConvolution_add_right k u v z
+          map_smul' := fun c z => weightedLatticeSpectralConvolution_smul_right c k u z }
+      map_add' := fun u v => by
+        apply LinearMap.ext
+        intro z
+        exact weightedLatticeSpectralConvolution_add_left k u v z
+      map_smul' := fun c u => by
+        apply LinearMap.ext
+        intro z
+        exact weightedLatticeSpectralConvolution_smul_left c k u z }
+    1
+    (fun u z => by
+      simpa [one_mul] using norm_weightedLatticeSpectralConvolution_le k u z)
+
+#print axioms weightedLatticeSpectralBilinear
+
 end Navier.Analysis.CriticalMildWeightedBilinear
