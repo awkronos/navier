@@ -5,7 +5,7 @@
   "sources": [
     {
       "id": "FEFFERMAN2000",
-      "registry_id": "ref.clay.fefferman2000",
+      "registry_id": "ref.problem_statement.fefferman2000",
       "title": "Existence and Smoothness of the Navier-Stokes Equation",
       "authors": [
         "Charles L. Fefferman"
