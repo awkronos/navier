@@ -162,6 +162,39 @@ theorem summable_outputHeatPairMajorant (ν τ : ℝ)
     ring]
   exact (hu.mul_of_nonneg hv hu0 hv0).mul_left ((Real.sqrt (ν * τ))⁻¹)
 
+/-- The finite-dimensional encoding map from the Euclidean carrier to the
+coefficient carrier, made continuous explicitly for use with `tsum`. -/
+def complexEuclideanEncodeCLM : ComplexE3 →L[ℂ] ComplexSpace :=
+  ContinuousLinearMap.mk (WithLp.linearEquiv 2 ℂ ComplexSpace).toLinearMap
+    (LinearMap.continuous_of_finiteDimensional _)
+
+/-- The finite-dimensional decoding map back to the Euclidean carrier. -/
+def complexEuclideanDecodeCLM : ComplexSpace →L[ℂ] ComplexE3 :=
+  ContinuousLinearMap.mk (WithLp.linearEquiv 2 ℂ ComplexSpace).symm.toLinearMap
+    (LinearMap.continuous_of_finiteDimensional _)
+
+/-- The heat--Leray multiplier, promoted to a continuous linear map on its
+finite-dimensional coefficient carrier. -/
+def complexFrequencyHeatLerayCLM (ν τ : ℝ) (k : LatticeMode) :
+    ComplexSpace →L[ℂ] ComplexSpace :=
+  ContinuousLinearMap.mk (complexFrequencyHeatLeray ν τ (latticeFrequency k))
+    (LinearMap.continuous_of_finiteDimensional _)
+
+/-- The exact output-mode operation: encode, apply the output-frequency
+heat--Leray multiplier, decode, and attach the output lattice weight. -/
+def outputHeatCarrierCLM (ν τ : ℝ) (k : LatticeMode) : ComplexE3 →L[ℂ] ComplexE3 :=
+  (latticeModeWeight k : ℂ) •
+    (complexEuclideanDecodeCLM.comp
+      ((complexFrequencyHeatLerayCLM ν τ k).comp complexEuclideanEncodeCLM))
+
+theorem outputHeatCarrierCLM_apply (ν τ : ℝ) (k : LatticeMode) (z : ComplexE3) :
+    outputHeatCarrierCLM ν τ k z =
+      latticeModeWeight k • complexEuclideanPoint
+        (complexFrequencyHeatLeray ν τ (latticeFrequency k) (WithLp.ofLp z)) := by
+  simp [outputHeatCarrierCLM, complexEuclideanDecodeCLM,
+    complexFrequencyHeatLerayCLM, complexEuclideanEncodeCLM,
+    complexEuclideanPoint]
+
 /-- The actual heat-regularized summand on one exact constrained output
 fiber.  The heat operator acts on the triad output frequency. -/
 def constrainedHeatRegularizedFiberTerm (ν τ : ℝ) (k : LatticeMode)
@@ -172,6 +205,40 @@ def constrainedHeatRegularizedFiberTerm (ν τ : ℝ) (k : LatticeMode)
       (spectralTransport (latticeFrequency ij.1.2)
         (weightedLatticeCoefficient u ij.1.1)
         (weightedLatticeCoefficient v ij.1.2)))
+
+/-- On a constrained pair, the output carrier map is exactly the displayed
+heat-regularized triad summand. -/
+theorem outputHeatCarrierCLM_apply_latticeSpectralTerm
+    (ν τ : ℝ) (k : LatticeMode) (u v : WeightedLatticeBanach)
+    (ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode)) :
+    outputHeatCarrierCLM ν τ k
+        (latticeSpectralTerm k (weightedLatticeCoefficient u)
+          (weightedLatticeCoefficient v) ij.1) =
+      constrainedHeatRegularizedFiberTerm ν τ k u v ij := by
+  rw [outputHeatCarrierCLM_apply]
+  have hmem := ij.2
+  change latticeOutputMode ij.1 = k at hmem
+  have hij : ij.1.1 + ij.1.2 = k := by
+    simpa [latticeOutputMode] using hmem
+  rw [latticeSpectralTerm, if_pos hij]
+  rfl
+
+/-- The continuous output carrier map commutes with the already convergent
+literal convolution series. -/
+theorem outputHeatCarrierCLM_map_tsum (ν τ : ℝ) (k : LatticeMode)
+    (u v : WeightedLatticeBanach) :
+    outputHeatCarrierCLM ν τ k (weightedLatticeSpectralConvolution k u v) =
+      ∑' ij : LatticeMode × LatticeMode,
+        outputHeatCarrierCLM ν τ k
+          (latticeSpectralTerm k (weightedLatticeCoefficient u)
+            (weightedLatticeCoefficient v) ij) := by
+  unfold weightedLatticeSpectralConvolution latticeSpectralConvolution
+  exact ContinuousLinearMap.map_tsum _
+    (summable_latticeSpectralTerm_of_weightedL1 k
+      (weightedLatticeCoefficient u) (weightedLatticeCoefficient v)
+      (latticeConvolutionWeightedL1_of_weightedL1 k
+        (weightedLatticeCoefficient u) (weightedLatticeCoefficient v)
+        (latticeWeightedL1_coefficient u) (latticeWeightedL1_coefficient v)))
 
 /-- The constrained actual heat term is controlled by the global pair
 majorant via the proved divergence-free derivative transfer. -/
@@ -230,6 +297,59 @@ def heatRegularizedSpectralOutputFiber (ν τ : ℝ) (k : LatticeMode)
   latticeModeWeight k • complexEuclideanPoint
     (complexFrequencyHeatLeray ν τ (latticeFrequency k)
       (spectralOutputCoefficient k u v))
+
+/-- Applying the carrier map after the literal convolution is definitionally
+the pre-existing post-convolution heat output fiber. -/
+theorem outputHeatCarrierCLM_weightedLatticeSpectralConvolution
+    (ν τ : ℝ) (k : LatticeMode) (u v : WeightedLatticeBanach) :
+    outputHeatCarrierCLM ν τ k (weightedLatticeSpectralConvolution k u v) =
+      heatRegularizedSpectralOutputFiber ν τ k u v := by
+  rw [outputHeatCarrierCLM_apply]
+  rfl
+
+/-- The absolutely summable constrained heat fiber is exactly the existing
+post-convolution heat output: the carrier map commutes with the literal
+convolution `tsum`, and all off-fiber terms vanish. -/
+theorem constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    constrainedHeatRegularizedFiber ν τ hν hτ u v hu k =
+      heatRegularizedSpectralOutputFiber ν τ k u v := by
+  let f : LatticeMode × LatticeMode → ComplexE3 := fun ij =>
+    outputHeatCarrierCLM ν τ k
+      (latticeSpectralTerm k (weightedLatticeCoefficient u)
+        (weightedLatticeCoefficient v) ij)
+  calc
+    constrainedHeatRegularizedFiber ν τ hν hτ u v hu k =
+        ∑' ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode), f ij.1 := by
+      apply tsum_congr
+      intro ij
+      exact (outputHeatCarrierCLM_apply_latticeSpectralTerm ν τ k u v ij).symm
+    _ = ∑' ij : LatticeMode × LatticeMode,
+        (latticeOutputMode ⁻¹' ({k} : Set LatticeMode)).indicator f ij :=
+      tsum_subtype _ _
+    _ = ∑' ij : LatticeMode × LatticeMode, f ij := by
+      apply tsum_congr
+      intro ij
+      by_cases hij : ij.1 + ij.2 = k
+      · have hmem : ij ∈ latticeOutputMode ⁻¹' ({k} : Set LatticeMode) := by
+          change latticeOutputMode ij = k
+          simpa [latticeOutputMode] using hij
+        rw [Set.indicator_of_mem hmem]
+      · have hmem : ij ∉ latticeOutputMode ⁻¹' ({k} : Set LatticeMode) := by
+          intro hm
+          change latticeOutputMode ij = k at hm
+          apply hij
+          simpa [latticeOutputMode] using hm
+        rw [Set.indicator_of_notMem hmem]
+        dsimp [f]
+        rw [latticeSpectralTerm, if_neg hij]
+        simp
+    _ = outputHeatCarrierCLM ν τ k (weightedLatticeSpectralConvolution k u v) :=
+      (outputHeatCarrierCLM_map_tsum ν τ k u v).symm
+    _ = heatRegularizedSpectralOutputFiber ν τ k u v :=
+      outputHeatCarrierCLM_weightedLatticeSpectralConvolution ν τ k u v
 
 /-- The physical output coefficient has exactly the norm of the existing
 completed convolution fiber. -/
