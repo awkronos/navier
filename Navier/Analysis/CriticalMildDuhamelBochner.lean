@@ -351,6 +351,146 @@ theorem constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
     _ = heatRegularizedSpectralOutputFiber ν τ k u v :=
       outputHeatCarrierCLM_weightedLatticeSpectralConvolution ν τ k u v
 
+/-- The scalar majorant of one exact output heat fiber. -/
+def outputHeatFiberMajorant (ν τ : ℝ) (u v : WeightedLatticeBanach)
+    (k : LatticeMode) : ℝ :=
+  ∑' ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode),
+    outputHeatPairMajorant ν τ u v ij.1
+
+/-- Reindexing through exact output fibers preserves summability of the
+full-pair heat majorant. -/
+theorem summable_outputHeatFiberMajorant (ν τ : ℝ)
+    (u v : WeightedLatticeBanach) :
+    Summable (outputHeatFiberMajorant ν τ u v) := by
+  have hpair := summable_outputHeatPairMajorant ν τ u v
+  have hsigma : Summable (fun x :
+      Σ k : LatticeMode, latticeOutputMode ⁻¹' ({k} : Set LatticeMode) =>
+      outputHeatPairMajorant ν τ u v x.2.1) := by
+    exact latticeOutputFiberSigmaEquiv.summable_iff.mpr hpair
+  exact hsigma.sigma
+
+/-- The exact completed heat fiber is bounded by its reindexed scalar
+majorant. -/
+theorem norm_constrainedHeatRegularizedFiber_le_outputHeatFiberMajorant
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    ‖constrainedHeatRegularizedFiber ν τ hν hτ u v hu k‖ ≤
+      outputHeatFiberMajorant ν τ u v k := by
+  exact tsum_of_norm_bounded
+    ((summable_outputHeatPairMajorant ν τ u v).subtype _).hasSum
+    (norm_constrainedHeatRegularizedFiberTerm_le ν τ hν hτ u v hu k)
+
+/-- The norms of the actual heat fibers are summable over all output modes. -/
+theorem summable_norm_constrainedHeatRegularizedFiber
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    Summable fun k => ‖constrainedHeatRegularizedFiber ν τ hν hτ u v hu k‖ := by
+  exact (summable_outputHeatFiberMajorant ν τ u v).of_nonneg_of_le
+    (fun _ => norm_nonneg _)
+    (fun k => norm_constrainedHeatRegularizedFiber_le_outputHeatFiberMajorant
+      ν τ hν hτ u v hu k)
+
+/-- The completed same-weight heat-regularized nonlinear output carrier. -/
+def heatRegularizedSpectralOutput (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    WeightedLatticeBanach :=
+  ⟨fun k => constrainedHeatRegularizedFiber ν τ hν hτ u v hu k,
+    memℓp_gen (by
+      simpa using summable_norm_constrainedHeatRegularizedFiber ν τ hν hτ u v hu)⟩
+
+/-- Every coordinate of the completed carrier is the existing actual
+output-frequency heat-regularized convolution fiber. -/
+theorem heatRegularizedSpectralOutput_apply (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    heatRegularizedSpectralOutput ν τ hν hτ u v hu k =
+      heatRegularizedSpectralOutputFiber ν τ k u v := by
+  exact constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
+    ν τ hν hτ u v hu k
+
+/-- Summing the fiber majorants is exactly summing the original full-pair
+majorant. -/
+theorem tsum_outputHeatFiberMajorant_eq_pair (ν τ : ℝ)
+    (u v : WeightedLatticeBanach) :
+    (∑' k : LatticeMode, outputHeatFiberMajorant ν τ u v k) =
+      ∑' ij : LatticeMode × LatticeMode, outputHeatPairMajorant ν τ u v ij := by
+  have hpair := summable_outputHeatPairMajorant ν τ u v
+  have hsigma : Summable (fun x :
+      Σ k : LatticeMode, latticeOutputMode ⁻¹' ({k} : Set LatticeMode) =>
+      outputHeatPairMajorant ν τ u v x.2.1) := by
+    exact latticeOutputFiberSigmaEquiv.summable_iff.mpr hpair
+  rw [show outputHeatFiberMajorant ν τ u v = fun k =>
+      ∑' ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode),
+        outputHeatPairMajorant ν τ u v ij.1 by rfl]
+  rw [← hsigma.tsum_sigma]
+  exact latticeOutputFiberSigmaEquiv.tsum_eq _
+
+/-- The full-pair heat majorant has the exact inverse-square-root product
+budget supplied by the two completed one-weight input carriers. -/
+theorem tsum_outputHeatPairMajorant_eq (ν τ : ℝ)
+    (u v : WeightedLatticeBanach) :
+    (∑' ij : LatticeMode × LatticeMode, outputHeatPairMajorant ν τ u v ij) =
+      (Real.sqrt (ν * τ))⁻¹ * ‖u‖ * ‖v‖ := by
+  let a : LatticeMode → ℝ := latticeWeightedAmplitude (weightedLatticeCoefficient u)
+  let b : LatticeMode → ℝ := latticeWeightedAmplitude (weightedLatticeCoefficient v)
+  have ha : Summable a := latticeWeightedL1_coefficient u
+  have hb : Summable b := latticeWeightedL1_coefficient v
+  have ha0 : ∀ m, 0 ≤ a m := by
+    intro m
+    exact mul_nonneg (zero_le_one.trans (one_le_latticeModeWeight m)) (norm_nonneg _)
+  have hb0 : ∀ m, 0 ≤ b m := by
+    intro m
+    exact mul_nonneg (zero_le_one.trans (one_le_latticeModeWeight m)) (norm_nonneg _)
+  have hab : Summable (fun ij : LatticeMode × LatticeMode => a ij.1 * b ij.2) :=
+    ha.mul_of_nonneg hb ha0 hb0
+  rw [show outputHeatPairMajorant ν τ u v = fun ij =>
+      (Real.sqrt (ν * τ))⁻¹ * (a ij.1 * b ij.2) by
+    funext ij
+    unfold outputHeatPairMajorant a b latticeWeightedAmplitude
+    ring]
+  rw [tsum_mul_left, ← ha.tsum_mul_tsum hb hab]
+  rw [tsum_latticeWeightedAmplitude_coefficient,
+    tsum_latticeWeightedAmplitude_coefficient]
+  ring
+
+/-- The `ℓ¹` norm of the completed heat output is the sum of its exact
+output-coordinate norms. -/
+theorem norm_heatRegularizedSpectralOutput_eq_tsum (ν τ : ℝ)
+    (hν : 0 < ν) (hτ : 0 < τ) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) :
+    ‖heatRegularizedSpectralOutput ν τ hν hτ u v hu‖ =
+      ∑' k, ‖constrainedHeatRegularizedFiber ν τ hν hτ u v hu k‖ := by
+  rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+  change (∑' k : LatticeMode,
+    ‖constrainedHeatRegularizedFiber ν τ hν hτ u v hu k‖ ^ (1 : ℝ)) ^
+      (1 / (1 : ℝ)) = _
+  rw [show (1 : ℝ) / 1 = 1 by norm_num, Real.rpow_one]
+  apply congrArg tsum
+  funext k
+  exact Real.rpow_one _
+
+/-- Global same-weight inverse-square-root estimate for the actual completed
+output-frequency heat-regularized nonlinear carrier. -/
+theorem norm_heatRegularizedSpectralOutput_le (ν τ : ℝ)
+    (hν : 0 < ν) (hτ : 0 < τ) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) :
+    ‖heatRegularizedSpectralOutput ν τ hν hτ u v hu‖ ≤
+      (Real.sqrt (ν * τ))⁻¹ * ‖u‖ * ‖v‖ := by
+  rw [norm_heatRegularizedSpectralOutput_eq_tsum]
+  calc
+    (∑' k, ‖constrainedHeatRegularizedFiber ν τ hν hτ u v hu k‖) ≤
+        ∑' k, outputHeatFiberMajorant ν τ u v k := by
+      exact Summable.tsum_le_tsum
+        (fun k => norm_constrainedHeatRegularizedFiber_le_outputHeatFiberMajorant
+          ν τ hν hτ u v hu k)
+        (summable_norm_constrainedHeatRegularizedFiber ν τ hν hτ u v hu)
+        (summable_outputHeatFiberMajorant ν τ u v)
+    _ = ∑' ij : LatticeMode × LatticeMode, outputHeatPairMajorant ν τ u v ij :=
+      tsum_outputHeatFiberMajorant_eq_pair ν τ u v
+    _ = (Real.sqrt (ν * τ))⁻¹ * ‖u‖ * ‖v‖ :=
+      tsum_outputHeatPairMajorant_eq ν τ u v
+
 /-- The physical output coefficient has exactly the norm of the existing
 completed convolution fiber. -/
 theorem complexEuclideanNorm_spectralOutputCoefficient (k : LatticeMode)
