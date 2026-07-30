@@ -17,9 +17,12 @@ noncomputable section
 namespace Navier.Analysis.CriticalMildHeatSmoothing
 
 open Navier
+open Navier.Analysis.OfficialABEncoding
 open Navier.Analysis.ComplexLerayProjection
+open Navier.Analysis.LerayProjection
 open Navier.Analysis.ComplexLerayNorm
 open Navier.Analysis.ComplexFrequencyHeatLeray
+open Navier.Analysis.FrequencyHeatLeray
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildWeightedSpace
@@ -73,5 +76,22 @@ theorem mul_exp_neg_mul_sq_le_inv_sqrt {a r : ℝ} (ha : 0 < a) :
     _ ≤ (Real.sqrt a)⁻¹ * 1 :=
       mul_le_mul_of_nonneg_left hunit hs0
     _ = (Real.sqrt a)⁻¹ := mul_one _
+
+/-- The real and complex Euclidean frequency representations have identical
+norms. -/
+theorem complexFrequency_norm_eq_official (q : Space) :
+    ‖complexFrequency q‖ = ‖officialEuclideanPoint q‖ := by
+  apply (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).mp
+  rw [complexFrequency_norm_sq, officialPoint_norm_sq_eq_dotProduct]
+
+/-- Scalar heat smoothing at a concrete lattice frequency.  The inhomogeneous
+zero mode still requires the additive `1` in a full weight estimate. -/
+theorem latticeHeat_frequency_gain (ν τ : ℝ) (hντ : 0 < ν * τ)
+    (k : LatticeMode) :
+    ‖complexFrequency (latticeFrequency k)‖ *
+      complexHeatDecay ν τ (latticeFrequency k) ≤ (Real.sqrt (ν * τ))⁻¹ := by
+  unfold complexHeatDecay heatDecay
+  rw [← complexFrequency_norm_eq_official (latticeFrequency k)]
+  convert mul_exp_neg_mul_sq_le_inv_sqrt hντ using 1 <;> ring
 
 end Navier.Analysis.CriticalMildHeatSmoothing
