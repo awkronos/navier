@@ -1,6 +1,7 @@
 import Navier.Analysis.CriticalMildHeatCoefficientLift
 import Navier.Analysis.CriticalMildWeightedBanach
 import Navier.Analysis.CriticalMildDuhamel
+import Navier.Analysis.CriticalMildGlobalWeightedOutput
 
 /-!
 # Output-frequency heat regularization of the actual lattice nonlinearity
@@ -27,6 +28,8 @@ open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildHeatCoefficientLift
 open Navier.Analysis.CriticalMildHeatSmoothing
 open Navier.Analysis.CriticalMildDuhamel
+open Navier.Analysis.CriticalMildGlobalWeightedOutput
+open Navier.Analysis.CriticalMildGlobalReindex
 
 /-- The physical Fourier divergence-free constraint on a completed weighted
 carrier: every decoded mode is Hermitian-transverse to its own frequency. -/
@@ -158,6 +161,61 @@ theorem summable_outputHeatPairMajorant (ν τ : ℝ)
     unfold outputHeatPairMajorant
     ring]
   exact (hu.mul_of_nonneg hv hu0 hv0).mul_left ((Real.sqrt (ν * τ))⁻¹)
+
+/-- The actual heat-regularized summand on one exact constrained output
+fiber.  The heat operator acts on the triad output frequency. -/
+def constrainedHeatRegularizedFiberTerm (ν τ : ℝ) (k : LatticeMode)
+    (u v : WeightedLatticeBanach)
+    (ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode)) : ComplexE3 :=
+  latticeModeWeight k • complexEuclideanPoint
+    (complexFrequencyHeatLeray ν τ (latticeFrequency k)
+      (spectralTransport (latticeFrequency ij.1.2)
+        (weightedLatticeCoefficient u ij.1.1)
+        (weightedLatticeCoefficient v ij.1.2)))
+
+/-- The constrained actual heat term is controlled by the global pair
+majorant via the proved divergence-free derivative transfer. -/
+theorem norm_constrainedHeatRegularizedFiberTerm_le
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) (ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode)) :
+    ‖constrainedHeatRegularizedFiberTerm ν τ k u v ij‖ ≤
+      outputHeatPairMajorant ν τ u v ij.1 := by
+  unfold constrainedHeatRegularizedFiberTerm
+  rw [norm_smul, Real.norm_of_nonneg
+    (zero_le_one.trans (one_le_latticeModeWeight k))]
+  change latticeModeWeight k * complexEuclideanNorm
+    (complexFrequencyHeatLeray ν τ (latticeFrequency k)
+      (spectralTransport (latticeFrequency ij.1.2)
+        (weightedLatticeCoefficient u ij.1.1)
+        (weightedLatticeCoefficient v ij.1.2))) ≤ _
+  rw [show outputHeatPairMajorant ν τ u v ij.1 =
+      (Real.sqrt (ν * τ))⁻¹ *
+        (latticeModeWeight ij.1.1 * complexEuclideanNorm (weightedLatticeCoefficient u ij.1.1)) *
+          (latticeModeWeight ij.1.2 * complexEuclideanNorm (weightedLatticeCoefficient v ij.1.2)) by
+    unfold outputHeatPairMajorant latticeWeightedAmplitude
+    rfl]
+  exact latticeWeighted_heatLeray_spectralTransport_le ν τ hν hτ u v hu
+    ij.1.1 ij.1.2 k ij.2
+
+/-- Each actual constrained heat fiber is absolutely summable. -/
+theorem summable_constrainedHeatRegularizedFiberTerm
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    Summable (constrainedHeatRegularizedFiberTerm ν τ k u v) := by
+  exact ((summable_outputHeatPairMajorant ν τ u v).subtype
+    (latticeOutputMode ⁻¹' ({k} : Set LatticeMode))).of_norm_bounded
+      (norm_constrainedHeatRegularizedFiberTerm_le ν τ hν hτ u v hu k)
+
+/-- The completed constrained fiber obtained by summing the actual heat
+terms.  Its identification with heat applied after the pre-existing full
+convolution is the remaining explicit `tsum`-interchange bridge. -/
+def constrainedHeatRegularizedFiber (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) : ComplexE3 :=
+  ∑' ij : latticeOutputMode ⁻¹' ({k} : Set LatticeMode),
+    constrainedHeatRegularizedFiberTerm ν τ k u v ij
 
 /-- The physical nonlinear coefficient is the existing actual countable
 lattice convolution of two decoded one-weight carrier inputs. -/
