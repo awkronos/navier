@@ -55,4 +55,23 @@ theorem latticeHeatDecay_bounds (ν τ : ℝ) (hν : 0 ≤ ν) (hτ : 0 ≤ τ)
       complexHeatDecay ν τ (latticeFrequency k) ≤ 1 :=
   ⟨complexHeatDecay_nonneg _ _ _, complexHeatDecay_le_one hν hτ _⟩
 
+/-- A sharp-order scalar heat gain with an explicit (non-optimal) constant.
+The estimate is the elementary boundedness of `x exp (-x²)` after the
+parabolic scaling `x = √a r`. -/
+theorem mul_exp_neg_mul_sq_le_inv_sqrt {a r : ℝ} (ha : 0 < a) :
+    r * Real.exp (-(a * r * r)) ≤ (Real.sqrt a)⁻¹ := by
+  have hs : 0 < Real.sqrt a := Real.sqrt_pos.2 ha
+  have hs0 : 0 ≤ (Real.sqrt a)⁻¹ := inv_nonneg.mpr hs.le
+  have hunit := Real.mulExpNegMulSq_one_le_one (Real.sqrt a * r)
+  calc
+    r * Real.exp (-(a * r * r)) =
+        (Real.sqrt a)⁻¹ * Real.mulExpNegMulSq 1 (Real.sqrt a * r) := by
+      unfold Real.mulExpNegMulSq
+      field_simp
+      congr 2
+      rw [Real.sq_sqrt ha.le]
+    _ ≤ (Real.sqrt a)⁻¹ * 1 :=
+      mul_le_mul_of_nonneg_left hunit hs0
+    _ = (Real.sqrt a)⁻¹ := mul_one _
+
 end Navier.Analysis.CriticalMildHeatSmoothing
