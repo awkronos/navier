@@ -104,7 +104,7 @@ import Navier.Routes.R7.FiniteSupportClosureObstruction
 import Navier.Routes.R7.GeneratedSupportStrictGrowth
 import Navier.Disposition
 import Navier.Frontier
-import Navier.ProblemStatementsFrontier
+import Navier.ProblemFrontier
 import Navier.AxiomAudit
 
 /-!

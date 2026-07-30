@@ -461,7 +461,7 @@ def _nonvacuous(value: Any, path: str, errors: list[str]) -> str:
         errors.append(f"{path}: vacuous text is forbidden")
     lowered = text.casefold()
     banned_phrases = (
-        "assume the problem_statement endpoint",
+        "assume the problem endpoint",
         "assume the endpoint conclusion",
         "result as hypothesis",
         "wrapper around the desired result",

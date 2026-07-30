@@ -1,4 +1,4 @@
-import Navier.ProblemStatementsFrontier
+import Navier.ProblemFrontier
 import Navier.Analysis.CKNIntegralScaling
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyOfficialClause
