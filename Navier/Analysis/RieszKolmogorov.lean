@@ -867,6 +867,61 @@ theorem setIntegral_cellError_le_displacement_of_memL2 {G : Type*} [MeasurableSp
     hiA hiB hball hprod
 
 /-!
+### The ε/3 split, on squares
+
+The triangle assembly compares `f_j` to `f_k` through the two cell-average step
+functions.  Squared `L²` quantities do **not** satisfy a triangle inequality, so the
+split is done with `‖x + y + z‖² ≤ 3(‖x‖² + ‖y‖² + ‖z‖²)` rather than by taking square
+roots.  That keeps everything inside the squared-integral API already built and avoids
+bridging bare-function window integrals into `eLpNorm` purely to get Minkowski.
+-/
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- Four-point squared triangle inequality: the cost of routing `a → d` through `b` and
+`c` is at most three times the sum of the legs. -/
+theorem norm_sub_sq_le_three_legs (a b c d : E) :
+    ‖a - d‖ ^ 2 ≤ 3 * ‖a - b‖ ^ 2 + 3 * ‖b - c‖ ^ 2 + 3 * ‖c - d‖ ^ 2 := by
+  have htri : ‖a - d‖ ≤ ‖a - b‖ + ‖b - c‖ + ‖c - d‖ := by
+    calc ‖a - d‖ = ‖(a - b) + (b - c) + (c - d)‖ := by rw [show a - d = (a - b) + (b - c) + (c - d) by abel]
+      _ ≤ ‖(a - b) + (b - c)‖ + ‖c - d‖ := norm_add_le _ _
+      _ ≤ ‖a - b‖ + ‖b - c‖ + ‖c - d‖ := by gcongr; exact norm_add_le _ _
+  nlinarith [norm_nonneg (a - d), norm_nonneg (a - b), norm_nonneg (b - c), norm_nonneg (c - d),
+    sq_nonneg (‖a - b‖ - ‖b - c‖), sq_nonneg (‖b - c‖ - ‖c - d‖), sq_nonneg (‖a - b‖ - ‖c - d‖)]
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- The integrated ε/3 split: routing through two intermediate fields costs at most three
+times the sum of the three squared-`L²` legs.  This is the shape the triangle assembly
+consumes, with the two intermediates being the cell-average step functions. -/
+theorem setIntegral_norm_sub_sq_le_three_legs {s : Set α} (hs : MeasurableSet s)
+    (f g k l : α → E)
+    (h1 : IntegrableOn (fun z => ‖f z - l z‖ ^ 2) s μ)
+    (h2 : IntegrableOn (fun z => ‖f z - g z‖ ^ 2) s μ)
+    (h3 : IntegrableOn (fun z => ‖g z - k z‖ ^ 2) s μ)
+    (h4 : IntegrableOn (fun z => ‖k z - l z‖ ^ 2) s μ) :
+    ∫ z in s, ‖f z - l z‖ ^ 2 ∂μ
+      ≤ 3 * (∫ z in s, ‖f z - g z‖ ^ 2 ∂μ) + 3 * (∫ z in s, ‖g z - k z‖ ^ 2 ∂μ)
+        + 3 * ∫ z in s, ‖k z - l z‖ ^ 2 ∂μ := by
+  have hsum : IntegrableOn
+      (fun z => 3 * ‖f z - g z‖ ^ 2 + 3 * ‖g z - k z‖ ^ 2 + 3 * ‖k z - l z‖ ^ 2) s μ :=
+    ((h2.const_mul 3).add (h3.const_mul 3)).add (h4.const_mul 3)
+  have hmono := setIntegral_mono_on h1 hsum hs
+    fun z _ => norm_sub_sq_le_three_legs (f z) (g z) (k z) (l z)
+  have e1 : ∫ z in s, (3 * ‖f z - g z‖ ^ 2 + 3 * ‖g z - k z‖ ^ 2 + 3 * ‖k z - l z‖ ^ 2) ∂μ
+      = (∫ z in s, (3 * ‖f z - g z‖ ^ 2 + 3 * ‖g z - k z‖ ^ 2) ∂μ)
+        + ∫ z in s, 3 * ‖k z - l z‖ ^ 2 ∂μ :=
+    integral_add ((h2.const_mul 3).add (h3.const_mul 3)) (h4.const_mul 3)
+  have e2 : ∫ z in s, (3 * ‖f z - g z‖ ^ 2 + 3 * ‖g z - k z‖ ^ 2) ∂μ
+      = (∫ z in s, 3 * ‖f z - g z‖ ^ 2 ∂μ) + ∫ z in s, 3 * ‖g z - k z‖ ^ 2 ∂μ :=
+    integral_add (h2.const_mul 3) (h3.const_mul 3)
+  have c1 : ∫ z in s, 3 * ‖f z - g z‖ ^ 2 ∂μ = 3 * ∫ z in s, ‖f z - g z‖ ^ 2 ∂μ :=
+    MeasureTheory.integral_const_mul _ _
+  have c2 : ∫ z in s, 3 * ‖g z - k z‖ ^ 2 ∂μ = 3 * ∫ z in s, ‖g z - k z‖ ^ 2 ∂μ :=
+    MeasureTheory.integral_const_mul _ _
+  have c3 : ∫ z in s, 3 * ‖k z - l z‖ ^ 2 ∂μ = 3 * ∫ z in s, ‖k z - l z‖ ^ 2 ∂μ :=
+    MeasureTheory.integral_const_mul _ _
+  linarith [hmono, e1, e2, c1, c2, c3]
+
+/-!
 ## The cell grid
 
 The cells the criterion is summed over: half-open axis-parallel cubes of side `h`
