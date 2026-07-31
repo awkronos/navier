@@ -172,6 +172,127 @@ theorem stronglyMeasurable_criticalMildPathIntegrand
     intro s
     exact tendsto_criticalMildPathIntegrandNatTruncation ν hν u hu t s
 
+private theorem norm_criticalMildPathIntegrand_le_of_norm_le_pre
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t s : ℝ} (hR : 0 ≤ R) (hst : s ≤ t)
+    (huR : ‖u s‖ ≤ R) :
+    ‖criticalMildPathIntegrand ν hν u hu t s‖ ≤
+      (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * R ^ 2 := by
+  rcases hst.eq_or_lt with hst | hst
+  · subst t
+    simp [criticalMildPathIntegrand,
+      positiveTimeHeatRegularizedSpectralOutput, inverseSqrtTime]
+  · unfold criticalMildPathIntegrand
+    have hlag : 0 < t - s := sub_pos.mpr hst
+    have h := norm_positiveTimeHeatRegularizedSpectralOutput_le
+      ν hν (u s) (u s) (hu s) hlag
+    have hcoef :
+        0 ≤ (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) := by
+      exact mul_nonneg (inv_nonneg.mpr (Real.sqrt_nonneg _))
+        (Real.rpow_nonneg (sub_nonneg.mpr hst.le) _)
+    calc
+      ‖positiveTimeHeatRegularizedSpectralOutput ν hν
+          (u s) (u s) (hu s) (t - s)‖ ≤
+        (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * ‖u s‖ * ‖u s‖ := by
+          simpa [duhamelHeatTimeMajorant] using h
+      _ = (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * ‖u s‖ ^ 2 := by
+        ring
+      _ ≤ (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * R ^ 2 :=
+        mul_le_mul_of_nonneg_left
+          ((sq_le_sq₀ (norm_nonneg _) hR).2 huR) hcoef
+
+/-- The uniform-radius scalar majorant for the evolving-path integrand. -/
+def criticalMildPathMajorant (ν R t : ℝ) : ℝ → ℝ := fun s =>
+  (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * R ^ 2
+
+/-- The evolving-path scalar majorant is integrable on every finite
+nonnegative horizon. -/
+theorem intervalIntegrable_criticalMildPathMajorant
+    (ν R t : ℝ) :
+    IntervalIntegrable (criticalMildPathMajorant ν R t) volume 0 t := by
+  unfold criticalMildPathMajorant
+  have hlag : IntervalIntegrable
+      (fun s => inverseSqrtTime (t - s)) volume t 0 := by
+    simpa using (inverseSqrtTime_intervalIntegrable t).comp_sub_left t
+  exact ((hlag.symm.const_mul _).mul_const _)
+
+/-- A continuous divergence-free path uniformly bounded by `R` has an actual
+Bochner-integrable nonlinear Duhamel integrand on `[0,t]`. -/
+theorem integrableOn_criticalMildPathIntegrand
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s‖ ≤ R) :
+    IntegrableOn (criticalMildPathIntegrand ν hν u hu t) (Ioc 0 t) volume := by
+  have hmajorant := intervalIntegrable_criticalMildPathMajorant ν R t
+  have hinterval : IntervalIntegrable
+      (criticalMildPathIntegrand ν hν u hu t) volume 0 t :=
+    IntervalIntegrable.mono_fun' hmajorant
+      (stronglyMeasurable_criticalMildPathIntegrand ν hν u huc hu t).aestronglyMeasurable
+      (by
+        rw [uIoc_of_le ht]
+        filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+        exact norm_criticalMildPathIntegrand_le_of_norm_le_pre
+          ν hν u hu hR hs.2 (huR s hs))
+  exact (intervalIntegrable_iff_integrableOn_Ioc_of_le ht).mp hinterval
+
+/-- The genuine time-dependent nonlinear Duhamel integral. -/
+def criticalMildDuhamel
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    (t : ℝ) : WeightedLatticeBanach :=
+  ∫ s in Ioc 0 t, criticalMildPathIntegrand ν hν u hu t s
+
+/-- The actual time-dependent Duhamel integral satisfies the expected
+quadratic `O(sqrt t)` estimate on a radius-`R` path ball. -/
+theorem norm_criticalMildDuhamel_le
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s‖ ≤ R) :
+    ‖criticalMildDuhamel ν hν u hu t‖ ≤
+      (2 * Real.sqrt t / Real.sqrt ν) * R ^ 2 := by
+  have hactual :=
+    integrableOn_criticalMildPathIntegrand ν hν u huc hu hR ht huR
+  have hscalar :
+      IntegrableOn (criticalMildPathMajorant ν R t) (Ioc 0 t) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le ht).mp
+      (intervalIntegrable_criticalMildPathMajorant ν R t)
+  have hmono :
+      (fun s => ‖criticalMildPathIntegrand ν hν u hu t s‖) ≤ᵐ[
+        volume.restrict (Ioc 0 t)] criticalMildPathMajorant ν R t := by
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+    exact norm_criticalMildPathIntegrand_le_of_norm_le_pre
+      ν hν u hu hR hs.2 (huR s hs)
+  unfold criticalMildDuhamel
+  calc
+    ‖∫ s in Ioc 0 t, criticalMildPathIntegrand ν hν u hu t s‖ ≤
+        ∫ s in Ioc 0 t, ‖criticalMildPathIntegrand ν hν u hu t s‖ :=
+      norm_integral_le_integral_norm _
+    _ ≤ ∫ s in Ioc 0 t, criticalMildPathMajorant ν R t s :=
+      integral_mono_ae hactual.norm hscalar hmono
+    _ = ∫ s in (0 : ℝ)..t, criticalMildPathMajorant ν R t s := by
+      rw [← intervalIntegral.integral_of_le ht]
+    _ = (2 * Real.sqrt t / Real.sqrt ν) * R ^ 2 := by
+      unfold criticalMildPathMajorant
+      rw [show (fun s : ℝ =>
+          (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * R ^ 2) =
+        fun s => (Real.sqrt ν)⁻¹ *
+          (inverseSqrtTime (t - s) * R ^ 2) by
+            funext s
+            ring,
+        intervalIntegral.integral_const_mul,
+        intervalIntegral.integral_mul_const,
+        intervalIntegral.integral_comp_sub_left,
+        sub_self, sub_zero,
+        integral_inverseSqrtTime_zero t ht]
+      field_simp [ne_of_gt hν]
+
 /-- Before the observation time, the actual path-dependent integrand obeys
 the checked inverse-square-root heat-lag majorant. -/
 theorem norm_criticalMildPathIntegrand_le
@@ -217,3 +338,5 @@ end Navier.Analysis.CriticalMildPathIntegrand
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.norm_criticalMildPathIntegrand_le_of_norm_le
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.continuous_heatRegularizedSpectralOutputFiber_path
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.stronglyMeasurable_criticalMildPathIntegrand
+#print axioms Navier.Analysis.CriticalMildPathIntegrand.integrableOn_criticalMildPathIntegrand
+#print axioms Navier.Analysis.CriticalMildPathIntegrand.norm_criticalMildDuhamel_le
