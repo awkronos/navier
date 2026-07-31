@@ -130,3 +130,4 @@ end Navier.Analysis.CriticalMildSelfMap
 
 #print axioms Navier.Analysis.CriticalMildSelfMap.criticalMildImage_divergenceFree
 #print axioms Navier.Analysis.CriticalMildSelfMap.norm_criticalMildImage_le_radius
+#print axioms Navier.Analysis.CriticalMildSelfMap.criticalMildImage_zero_nonlinear
