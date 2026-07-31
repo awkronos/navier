@@ -113,6 +113,7 @@ import Navier.Analysis.CriticalMildHeatFlowLinear
 import Navier.Analysis.CriticalMildPathFixedPoint
 import Navier.Analysis.CriticalMildRestart
 import Navier.Analysis.CriticalMildRestartFixedPoint
+import Navier.Analysis.CriticalMildLocalSelection
 
 /-!
 # Navier
