@@ -47,6 +47,16 @@ theorem criticalMildPathExtension_apply
     criticalMildPathExtension T hT u t = u ⟨t, ht⟩ := by
   exact IccExtend_of_mem hT u ht
 
+/-- Clamping a local path to the real line does not increase its native
+uniform path distance. -/
+theorem norm_criticalMildPathExtension_sub_le
+    (T : ℝ) (hT : 0 ≤ T) (u v : CriticalMildPath T) (s : ℝ) :
+    ‖criticalMildPathExtension T hT u s - criticalMildPathExtension T hT v s‖ ≤
+      ‖u - v‖ := by
+  change ‖u (projIcc (0 : ℝ) T hT s) - v (projIcc (0 : ℝ) T hT s)‖ ≤ ‖u - v‖
+  rw [← ContinuousMap.sub_apply]
+  exact norm_weightedMildPath_eval_le T (u - v) _
+
 /-- The radius/divergence-free local ball, represented as a subtype of the
 complete continuous path carrier. -/
 abbrev CriticalMildPathBall (T R : ℝ) :=
