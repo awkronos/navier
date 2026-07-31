@@ -1040,9 +1040,51 @@ theorem norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_left_le
   exact norm_positiveTimeHeatRegularizedSpectralOutputPath_le
     ν hν (u - v) w (hu.sub hv) T
 
+/-- Two-input local Lipschitz estimate for the actual completed bilinear
+Duhamel path.  This is the quantitative nonlinear estimate needed by a
+fixed-point argument once a time-dependent path space is supplied. -/
+theorem norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_le
+    (ν : ℝ) (hν : 0 < ν)
+    (u u' v v' : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) (hu' : LatticeDivergenceFree u')
+    (T : NNReal) :
+    ‖positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu T -
+        positiveTimeHeatRegularizedSpectralOutputPath ν hν u' v' hu' T‖ ≤
+      (2 * Real.sqrt (T : ℝ) / Real.sqrt ν) *
+        (‖u‖ * ‖v - v'‖ + ‖u - u'‖ * ‖v'‖) := by
+  have hdecomp :
+      positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu T -
+          positiveTimeHeatRegularizedSpectralOutputPath ν hν u' v' hu' T =
+        (positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu T -
+          positiveTimeHeatRegularizedSpectralOutputPath ν hν u v' hu T) +
+        (positiveTimeHeatRegularizedSpectralOutputPath ν hν u v' hu T -
+          positiveTimeHeatRegularizedSpectralOutputPath ν hν u' v' hu' T) := by
+    abel
+  rw [hdecomp]
+  calc
+    ‖(positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu T -
+          positiveTimeHeatRegularizedSpectralOutputPath ν hν u v' hu T) +
+        (positiveTimeHeatRegularizedSpectralOutputPath ν hν u v' hu T -
+          positiveTimeHeatRegularizedSpectralOutputPath ν hν u' v' hu' T)‖ ≤
+        ‖positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu T -
+          positiveTimeHeatRegularizedSpectralOutputPath ν hν u v' hu T‖ +
+        ‖positiveTimeHeatRegularizedSpectralOutputPath ν hν u v' hu T -
+          positiveTimeHeatRegularizedSpectralOutputPath ν hν u' v' hu' T‖ :=
+      norm_add_le _ _
+    _ ≤ (2 * Real.sqrt (T : ℝ) / Real.sqrt ν) * ‖u‖ * ‖v - v'‖ +
+        (2 * Real.sqrt (T : ℝ) / Real.sqrt ν) * ‖u - u'‖ * ‖v'‖ :=
+      add_le_add
+        (norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_right_le
+          ν hν u v v' hu T)
+        (norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_left_le
+          ν hν u u' v' hu hu' T)
+    _ = (2 * Real.sqrt (T : ℝ) / Real.sqrt ν) *
+        (‖u‖ * ‖v - v'‖ + ‖u - u'‖ * ‖v'‖) := by ring
+
 end Navier.Analysis.CriticalMildDuhamelBochner
 
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.positiveTimeHeatRegularizedSpectralOutputPath_zero
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_le
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_right_le
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_left_le
+#print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_le
