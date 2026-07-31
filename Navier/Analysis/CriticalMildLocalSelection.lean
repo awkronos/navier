@@ -9,9 +9,11 @@ noncomputable section
 
 namespace Navier.Analysis.CriticalMildLocalSelection
 
+open MeasureTheory
 open Navier
 open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildHeatFlowLinear
+open Navier.Analysis.CriticalMildPathIntegrand
 open Navier.Analysis.CriticalMildWeightedBanach
 open Set
 open Navier.Analysis.CriticalMildPathFixedPoint
@@ -48,6 +50,64 @@ theorem continuous_criticalMildTwoIntervalExtension
   · exact continuous_criticalMildPathExtension T hT u.1
   · exact (continuous_criticalMildPathExtension S hS v.1).comp
       (continuous_id.sub continuous_const)
+
+/-- In strictly positive elapsed coordinates, the glued extension is exactly
+the adjacent chart. -/
+theorem criticalMildTwoIntervalExtension_shift_apply
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    {s : ℝ} (hs : 0 < s) (hsS : s ≤ S) :
+    criticalMildTwoIntervalExtension hT hS u v (T + s) = v.1 ⟨s, ⟨hs.le, hsS⟩⟩ := by
+  classical
+  unfold criticalMildTwoIntervalExtension
+  have hnot : T + s ∉ Iic T := by
+    show ¬ T + s ≤ T
+    linarith
+  simp [Set.piecewise, hnot]
+  exact criticalMildPathExtension_apply S hS v.1 ⟨hs.le, hsS⟩
+
+/-- The nonlinear integrand in the glued chart translates exactly to the
+adjacent chart under `s ↦ T+s`. -/
+theorem criticalMildTwoIntervalIntegrand_shift_eq
+    (ν : ℝ) (hν : 0 < ν) {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (hglue : ∀ x, LatticeDivergenceFree (criticalMildTwoIntervalExtension hT hS u v x))
+    {r s : ℝ} (hs : s ∈ Ioc (0 : ℝ) r) (hrS : r ≤ S) :
+    criticalMildPathIntegrand ν hν
+      (criticalMildTwoIntervalExtension hT hS u v) hglue (T + r) (T + s) =
+      criticalMildPathIntegrand ν hν
+        (criticalMildPathExtension S hS v.1)
+        (criticalMildPathBallExtension_divergenceFree hS v) r s := by
+  have hsS : s ≤ S := le_trans hs.2 hrS
+  unfold criticalMildPathIntegrand
+  have heq : criticalMildTwoIntervalExtension hT hS u v (T + s) =
+      v.1 ⟨s, ⟨hs.1.le, hsS⟩⟩ :=
+    criticalMildTwoIntervalExtension_shift_apply hT hS u v hjoin hs.1 hsS
+  have hev : criticalMildPathExtension S hS v.1 s =
+      v.1 ⟨s, ⟨hs.1.le, hsS⟩⟩ :=
+    criticalMildPathExtension_apply S hS v.1 ⟨hs.1.le, hsS⟩
+  simp only [heq, hev]
+  congr 1 <;> ring
+
+/-- The glued restart tail is precisely the adjacent chart's local Duhamel
+integral. -/
+theorem criticalMildDuhamelRestartTail_glued_eq_adjacent
+    (ν : ℝ) (hν : 0 < ν) {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (hglue : ∀ x, LatticeDivergenceFree (criticalMildTwoIntervalExtension hT hS u v x))
+    {r : ℝ} (hrS : r ≤ S) :
+    Navier.Analysis.CriticalMildRestart.criticalMildDuhamelRestartTail ν hν
+      (criticalMildTwoIntervalExtension hT hS u v) hglue T r =
+      criticalMildDuhamel ν hν (criticalMildPathExtension S hS v.1)
+        (criticalMildPathBallExtension_divergenceFree hS v) r := by
+  unfold Navier.Analysis.CriticalMildRestart.criticalMildDuhamelRestartTail
+    criticalMildDuhamel
+  apply integral_congr_ae
+  filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+  exact criticalMildTwoIntervalIntegrand_shift_eq ν hν hT hS u v hjoin hglue hs hrS
 
 /-- The joined continuous local path on the combined closed horizon. -/
 def criticalMildTwoIntervalPath
@@ -254,3 +314,4 @@ end Navier.Analysis.CriticalMildLocalSelection
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_terminal_continuation
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_adjacent_local_trajectory
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_glued_twoInterval
+#print axioms Navier.Analysis.CriticalMildLocalSelection.criticalMildDuhamelRestartTail_glued_eq_adjacent
