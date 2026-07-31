@@ -220,6 +220,39 @@ theorem criticalMildDuhamel_canonicalTwoInterval_eq_glued
   unfold criticalMildPathIntegrand
   simpa only [heq]
 
+/-- On the prefix ending at the join, the Duhamel integral of the canonical
+combined path is the original local-chart Duhamel integral. -/
+theorem criticalMildDuhamel_canonicalTwoInterval_eq_old
+    (ν : ℝ) (hν : 0 < ν) {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (hcanonical : ∀ x, LatticeDivergenceFree
+      (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+        (criticalMildTwoIntervalPath hT hS u v hjoin) x))
+    {t : ℝ} (ht : 0 ≤ t) (htT : t ≤ T) :
+    criticalMildDuhamel ν hν
+      (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+        (criticalMildTwoIntervalPath hT hS u v hjoin)) hcanonical t =
+      criticalMildDuhamel ν hν (criticalMildPathExtension T hT u.1)
+        (criticalMildPathBallExtension_divergenceFree hT u) t := by
+  unfold criticalMildDuhamel
+  apply integral_congr_ae
+  filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+  have hsIcc : s ∈ Icc (0 : ℝ) (T + S) := by
+    constructor
+    · exact hs.1.le
+    · linarith [hs.2, htT, hS]
+  have hsOld : s ∈ Icc (0 : ℝ) T := ⟨hs.1.le, le_trans hs.2 htT⟩
+  have hcanonical_eq :=
+    criticalMildPathExtension_twoInterval_eq_glued hT hS u v hjoin hsIcc
+  have hglued_eq : criticalMildTwoIntervalExtension hT hS u v s =
+      criticalMildPathExtension T hT u.1 s := by
+    classical
+    unfold criticalMildTwoIntervalExtension
+    rw [Set.piecewise_eq_of_mem (Iic T) _ _ hsOld.2]
+  unfold criticalMildPathIntegrand
+  simpa only [hcanonical_eq, hglued_eq]
+
 /-- Before the join, the combined path is literally the original local path. -/
 theorem criticalMildTwoIntervalPath_apply_of_le
     {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
@@ -263,6 +296,110 @@ theorem criticalMildTwoIntervalPath_join
   rw [criticalMildTwoIntervalPath_apply_of_le hT hS u v hjoin
     ⟨T, ⟨hT, by linarith⟩⟩ le_rfl]
   exact hjoin.symm
+
+/-- The continuous path obtained by adjoining one locally selected chart
+satisfies the original-data mild equation on its entire combined interval.
+The proof is a restart argument: the prefix Duhamel integral is unchanged,
+while the post-join value is transported through the restart image. -/
+theorem criticalMildTwoIntervalPath_satisfies_original_mild
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (hu : ∀ τ : Icc (0 : ℝ) T,
+      u.1 τ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+        (criticalMildPathExtension T hT u.1)
+        (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1)
+    (hv : ∀ σ : Icc (0 : ℝ) S,
+      v.1 σ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν
+        (u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+        (criticalMildPathExtension S hS v.1)
+        (criticalMildPathBallExtension_divergenceFree hS v) σ.1 σ.2.1)
+    (hcanonical : ∀ x, LatticeDivergenceFree
+      (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+        (criticalMildTwoIntervalPath hT hS u v hjoin) x))
+    (τ : Icc (0 : ℝ) (T + S)) :
+    criticalMildTwoIntervalPath hT hS u v hjoin τ =
+      Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+        (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+          (criticalMildTwoIntervalPath hT hS u v hjoin)) hcanonical τ.1 τ.2.1 := by
+  by_cases hτ : τ.1 ≤ T
+  · rw [criticalMildTwoIntervalPath_apply_of_le hT hS u v hjoin τ hτ]
+    rw [hu ⟨τ.1, ⟨τ.2.1, hτ⟩⟩]
+    unfold Navier.Analysis.CriticalMildSelfMap.criticalMildImage
+    rw [criticalMildDuhamel_canonicalTwoInterval_eq_old ν hν hT hS u v hjoin
+      hcanonical τ.2.1 hτ]
+  · let r : ℝ := τ.1 - T
+    have hr : 0 < r := sub_pos.mpr (lt_of_not_ge hτ)
+    have hrS : r ≤ S := by
+      dsimp [r]
+      linarith [τ.2.2]
+    have htr : T + r = τ.1 := by
+      dsimp [r]
+      ring
+    have hresult :
+        criticalMildTwoIntervalExtension hT hS u v (T + r) =
+          Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+            (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+              (criticalMildTwoIntervalPath hT hS u v hjoin)) hcanonical
+            (T + r) (add_nonneg hT hr.le) := by
+      have hRnonneg : 0 ≤ R := by
+        exact le_trans (norm_nonneg (u.1 ⟨0, ⟨le_rfl, hT⟩⟩))
+          (criticalMildPathBall_norm_le u ⟨0, ⟨le_rfl, hT⟩⟩)
+      rw [criticalMildTwoIntervalExtension_eq_restartImage ν hν hT hS u v hjoin hv
+        hr hrS]
+      rw [Navier.Analysis.CriticalMildRestart.criticalMildRestartImage_eq_mildImage_of_mild_at_t
+        ν hν u₀ (criticalMildTwoIntervalExtension hT hS u v)
+        (continuous_criticalMildTwoIntervalExtension hT hS u v hjoin)
+        (criticalMildTwoIntervalExtension_divergenceFree hT hS u v)
+        (le_trans hRnonneg (le_max_left R Q)) hT hr.le]
+      · unfold Navier.Analysis.CriticalMildSelfMap.criticalMildImage
+        rw [criticalMildDuhamel_canonicalTwoInterval_eq_glued ν hν hT hS u v hjoin
+          hcanonical hr.le hrS]
+      · intro s hs
+        exact norm_criticalMildTwoIntervalExtension_le_max hT hS u v s
+      · have huT := hu ⟨T, ⟨hT, le_rfl⟩⟩
+        have hterminal : criticalMildTwoIntervalExtension hT hS u v T =
+            u.1 ⟨T, ⟨hT, le_rfl⟩⟩ := by
+          classical
+          unfold criticalMildTwoIntervalExtension
+          rw [Set.piecewise_eq_of_mem (Iic T) _ _ (by simp)]
+          exact criticalMildPathExtension_apply T hT u.1 ⟨hT, le_rfl⟩
+        have hgluedDuhamel :
+            criticalMildDuhamel ν hν
+              (criticalMildTwoIntervalExtension hT hS u v)
+              (criticalMildTwoIntervalExtension_divergenceFree hT hS u v) T =
+              criticalMildDuhamel ν hν (criticalMildPathExtension T hT u.1)
+                (criticalMildPathBallExtension_divergenceFree hT u) T := by
+          have hcanGl :=
+            criticalMildDuhamel_canonicalTwoInterval_eq_glued ν hν hT hS u v hjoin
+              hcanonical (r := 0) le_rfl hS
+          have hcanOld :=
+            criticalMildDuhamel_canonicalTwoInterval_eq_old ν hν hT hS u v hjoin
+              hcanonical (t := T) hT le_rfl
+          calc
+            criticalMildDuhamel ν hν
+                (criticalMildTwoIntervalExtension hT hS u v)
+                (criticalMildTwoIntervalExtension_divergenceFree hT hS u v) T =
+                criticalMildDuhamel ν hν
+                  (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+                    (criticalMildTwoIntervalPath hT hS u v hjoin)) hcanonical T := by
+                      simpa using hcanGl.symm
+            _ = criticalMildDuhamel ν hν (criticalMildPathExtension T hT u.1)
+                  (criticalMildPathBallExtension_divergenceFree hT u) T := hcanOld
+        calc
+          criticalMildTwoIntervalExtension hT hS u v T =
+              u.1 ⟨T, ⟨hT, le_rfl⟩⟩ := hterminal
+          _ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+              (criticalMildPathExtension T hT u.1)
+              (criticalMildPathBallExtension_divergenceFree hT u) T hT := huT
+          _ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+              (criticalMildTwoIntervalExtension hT hS u v)
+              (criticalMildTwoIntervalExtension_divergenceFree hT hS u v) T hT := by
+                unfold Navier.Analysis.CriticalMildSelfMap.criticalMildImage
+                rw [hgluedDuhamel]
+    change criticalMildTwoIntervalExtension hT hS u v τ.1 = _
+    simpa only [htr] using hresult
 
 /-- The mild equation appropriate to a joined pair of local charts: the old
 equation holds through the join and the terminal-data equation holds strictly
@@ -416,3 +553,5 @@ end Navier.Analysis.CriticalMildLocalSelection
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_adjacent_local_trajectory
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_glued_twoInterval
 #print axioms Navier.Analysis.CriticalMildLocalSelection.criticalMildDuhamelRestartTail_glued_eq_adjacent
+#print axioms Navier.Analysis.CriticalMildLocalSelection.criticalMildDuhamel_canonicalTwoInterval_eq_old
+#print axioms Navier.Analysis.CriticalMildLocalSelection.criticalMildTwoIntervalPath_satisfies_original_mild
