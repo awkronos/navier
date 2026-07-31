@@ -314,6 +314,26 @@ theorem tendsto_positiveTimeHeatOutputSingle
   simpa [g, positiveTimeHeatOutputSingle_of_pos ν τ₀ hν hτ₀ u v hu k,
     heatRegularizedSpectralOutput_apply] using hlim
 
+/-- Tannery summation of the total heat-coordinate family at a strictly
+positive lag. -/
+theorem tendsto_tsum_positiveTimeHeatOutputSingle
+    (ν τ₀ : ℝ) (hν : 0 < ν) (hτ₀ : 0 < τ₀)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    Filter.Tendsto (fun τ : ℝ => ∑' k : LatticeMode,
+      positiveTimeHeatOutputSingle ν hν u v hu k τ)
+      (𝓝 τ₀) (𝓝 (∑' k : LatticeMode,
+        positiveTimeHeatOutputSingle ν hν u v hu k τ₀)) := by
+  apply tendsto_tsum_of_dominated_convergence
+    (summable_outputHeatFiberMajorant ν (τ₀ / 2) u v)
+  · intro k
+    exact tendsto_positiveTimeHeatOutputSingle ν τ₀ hν hτ₀ u v hu k
+  · filter_upwards [eventually_ge_nhds (show τ₀ / 2 < τ₀ by linarith)] with τ hlag k
+    have hτ : 0 < τ := lt_of_lt_of_le (by linarith) hlag
+    rw [positiveTimeHeatOutputSingle_of_pos ν τ hν hτ u v hu k]
+    exact (norm_single_heatRegularizedSpectralOutput_le_outputHeatFiberMajorant
+      ν τ hν hτ u v hu k).trans
+      (outputHeatFiberMajorant_le_of_half_delta_le ν τ₀ τ hν hτ₀ hlag u v k)
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
