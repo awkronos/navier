@@ -24,6 +24,13 @@ def reachableHorizons (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) : Se
         (criticalMildPathBallExtension_divergenceFree hT u)
         τ.1 τ.2.1}
 
+/-- The order-theoretic continuation boundary of the actually reachable
+horizons.  This is a real supremum only when the reachable set is bounded
+above; it is deliberately not identified with a global solution time. -/
+def criticalMildMaximalTime
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) : ℝ :=
+  sSup (reachableHorizons ν hν a)
+
 /-- Local selection produces a strictly positive reachable horizon. -/
 theorem exists_pos_reachableHorizon
     (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) :
@@ -77,8 +84,50 @@ theorem no_reachableHorizon_isGreatest
   obtain ⟨T', hT', hlt⟩ := exists_larger_reachableHorizon ν hν a hT
   exact (not_le_of_gt hlt) (hgreatest hT')
 
+/-- If the reachable set is bounded above, every reached horizon lies
+strictly below its continuation boundary. -/
+theorem reachableHorizon_lt_criticalMildMaximalTime
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (hbounded : BddAbove (reachableHorizons ν hν a))
+    {T : ℝ} (hT : T ∈ reachableHorizons ν hν a) :
+    T < criticalMildMaximalTime ν hν a := by
+  obtain ⟨T', hT', hlt⟩ := exists_larger_reachableHorizon ν hν a hT
+  exact lt_of_lt_of_le hlt (by
+    simpa [criticalMildMaximalTime] using le_csSup hbounded hT')
+
+/-- A finite bounded continuation boundary is not itself a reached horizon.
+Thus the strict local-extension theorem yields an exact finite-boundary
+alternative, but does not supply a path at that boundary. -/
+theorem criticalMildMaximalTime_not_reachable
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (hbounded : BddAbove (reachableHorizons ν hν a)) :
+    criticalMildMaximalTime ν hν a ∉ reachableHorizons ν hν a := by
+  intro hmax
+  have hlt := reachableHorizon_lt_criticalMildMaximalTime ν hν a hbounded hmax
+  exact (lt_irrefl _) (by simpa [criticalMildMaximalTime] using hlt)
+
+/-- Precise continuation alternative supplied by the local construction:
+either reachable horizons are unbounded, or their bounded supremum is an
+unreached boundary strictly above every reached horizon. -/
+theorem criticalMild_continuation_alternative
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) :
+    (¬ BddAbove (reachableHorizons ν hν a)) ∨
+      (BddAbove (reachableHorizons ν hν a) ∧
+        (∀ T ∈ reachableHorizons ν hν a, T < criticalMildMaximalTime ν hν a) ∧
+        criticalMildMaximalTime ν hν a ∉ reachableHorizons ν hν a) := by
+  classical
+  by_cases hbounded : BddAbove (reachableHorizons ν hν a)
+  · right
+    exact ⟨hbounded,
+      fun T hT => reachableHorizon_lt_criticalMildMaximalTime ν hν a hbounded hT,
+      criticalMildMaximalTime_not_reachable ν hν a hbounded⟩
+  · exact Or.inl hbounded
+
 end Navier.Analysis.CriticalMildReachableTimes
 
 #print axioms Navier.Analysis.CriticalMildReachableTimes.exists_pos_reachableHorizon
 #print axioms Navier.Analysis.CriticalMildReachableTimes.exists_larger_reachableHorizon
 #print axioms Navier.Analysis.CriticalMildReachableTimes.no_reachableHorizon_isGreatest
+#print axioms Navier.Analysis.CriticalMildReachableTimes.reachableHorizon_lt_criticalMildMaximalTime
+#print axioms Navier.Analysis.CriticalMildReachableTimes.criticalMildMaximalTime_not_reachable
+#print axioms Navier.Analysis.CriticalMildReachableTimes.criticalMild_continuation_alternative
