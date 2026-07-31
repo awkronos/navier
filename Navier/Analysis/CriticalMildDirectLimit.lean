@@ -367,6 +367,36 @@ theorem totalExtension_eq_stage {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBa
   rw [totalExtension, dif_pos hdom]
   exact C.value_eq_stage hdom n ht
 
+theorem pathIntegrand_totalExtension_eq_stage {ν : ℝ} {hν : 0 < ν}
+    {a : WeightedLatticeBanach} (C : CriticalMildCoherentChain ν hν a) (n : ℕ)
+    {t s : ℝ} (ht : t ∈ Icc (0 : ℝ) (C.horizon n)) (hs : s ∈ Ioc (0 : ℝ) t) :
+    criticalMildPathIntegrand ν hν (C.totalExtension)
+      (C.totalExtension_divergenceFree) t s =
+      criticalMildPathIntegrand ν hν
+        (criticalMildPathExtension (C.horizon n) (C.horizon_nonneg n) (C.path n).1)
+        (criticalMildPathBallExtension_divergenceFree (C.horizon_nonneg n) (C.path n)) t s := by
+  have hsIcc : s ∈ Icc (0 : ℝ) (C.horizon n) :=
+    ⟨hs.1.le, le_trans hs.2 ht.2⟩
+  have heq := C.totalExtension_eq_stage n hsIcc
+  have hstage := criticalMildPathExtension_apply (C.horizon n) (C.horizon_nonneg n)
+    (C.path n).1 hsIcc
+  unfold criticalMildPathIntegrand
+  congr 1
+  · exact heq.trans hstage.symm
+  · exact heq.trans hstage.symm
+
+theorem duhamel_totalExtension_eq_stage {ν : ℝ} {hν : 0 < ν}
+    {a : WeightedLatticeBanach} (C : CriticalMildCoherentChain ν hν a) (n : ℕ)
+    {t : ℝ} (ht : t ∈ Icc (0 : ℝ) (C.horizon n)) :
+    criticalMildDuhamel ν hν C.totalExtension C.totalExtension_divergenceFree t =
+      criticalMildDuhamel ν hν
+        (criticalMildPathExtension (C.horizon n) (C.horizon_nonneg n) (C.path n).1)
+        (criticalMildPathBallExtension_divergenceFree (C.horizon_nonneg n) (C.path n)) t := by
+  unfold criticalMildDuhamel
+  apply integral_congr_ae
+  filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+  exact C.pathIntegrand_totalExtension_eq_stage n ht hs
+
 end CriticalMildCoherentChain
 
 end Navier.Analysis.CriticalMildDirectLimit
