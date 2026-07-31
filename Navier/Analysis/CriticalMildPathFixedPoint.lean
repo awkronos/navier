@@ -48,7 +48,7 @@ theorem criticalMildPathExtension_apply
 
 /-- The radius/divergence-free local ball, represented as a subtype of the
 complete continuous path carrier. -/
-def CriticalMildPathBall (T R : ℝ) :=
+abbrev CriticalMildPathBall (T R : ℝ) :=
   {u : CriticalMildPath T //
     ∀ t : Icc (0 : ℝ) T,
       LatticeDivergenceFree (u t) ∧ ‖u t‖ ≤ R}
