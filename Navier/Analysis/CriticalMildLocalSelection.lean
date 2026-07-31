@@ -139,6 +139,36 @@ theorem norm_criticalMildTwoIntervalExtension_le_max
     simp [Set.piecewise, hnot]
     exact Or.inr (criticalMildPathBallExtension_norm_le hS v (x - T))
 
+/-- The adjacent chart's local mild equation is exactly the restart-image
+equation for the glued representative at every positive elapsed time. -/
+theorem criticalMildTwoIntervalExtension_eq_restartImage
+    (ν : ℝ) (hν : 0 < ν) {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (hv : ∀ σ : Icc (0 : ℝ) S,
+      v.1 σ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν
+        (u.1 ⟨T, ⟨hT, le_rfl⟩⟩) (criticalMildPathExtension S hS v.1)
+        (criticalMildPathBallExtension_divergenceFree hS v) σ.1 σ.2.1)
+    {r : ℝ} (hr : 0 < r) (hrS : r ≤ S) :
+    criticalMildTwoIntervalExtension hT hS u v (T + r) =
+      Navier.Analysis.CriticalMildRestart.criticalMildRestartImage ν hν
+        (criticalMildTwoIntervalExtension hT hS u v)
+        (criticalMildTwoIntervalExtension_divergenceFree hT hS u v) T r hr.le := by
+  rw [criticalMildTwoIntervalExtension_shift_apply hT hS u v hjoin hr hrS]
+  rw [hv ⟨r, ⟨hr.le, hrS⟩⟩]
+  unfold Navier.Analysis.CriticalMildSelfMap.criticalMildImage
+    Navier.Analysis.CriticalMildRestart.criticalMildRestartImage
+    Navier.Analysis.CriticalMildRestart.criticalMildTerminalData
+  rw [criticalMildDuhamelRestartTail_glued_eq_adjacent ν hν hT hS u v hjoin
+    (criticalMildTwoIntervalExtension_divergenceFree hT hS u v) hrS]
+  have hterminal : criticalMildTwoIntervalExtension hT hS u v T =
+      u.1 ⟨T, ⟨hT, le_rfl⟩⟩ := by
+    classical
+    unfold criticalMildTwoIntervalExtension
+    rw [Set.piecewise_eq_of_mem (Iic T) _ _ (by simp)]
+    exact criticalMildPathExtension_apply T hT u.1 ⟨hT, le_rfl⟩
+  rw [hterminal]
+
 /-- The joined continuous local path on the combined closed horizon. -/
 def criticalMildTwoIntervalPath
     {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
