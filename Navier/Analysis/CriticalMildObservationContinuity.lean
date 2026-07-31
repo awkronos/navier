@@ -17,6 +17,8 @@ namespace Navier.Analysis.CriticalMildObservationContinuity
 open MeasureTheory Set Topology
 open Navier
 open Navier.Analysis.CriticalMildWeightedBanach
+open Navier.Analysis.CriticalMildWeightedSpace
+open Navier.Analysis.ComplexLerayNorm
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildPathIntegrand
@@ -194,6 +196,29 @@ theorem inverseSqrtTime_le_of_half_delta_le
     inverseSqrtTime τ ≤ inverseSqrtTime (δ / 2) := by
   unfold inverseSqrtTime
   exact Real.rpow_le_rpow_of_nonpos (by linarith) hτ (by norm_num)
+
+/-- The full-pair output majorant is uniformly dominated on every positive
+lag neighborhood by its value at the lower lag `δ / 2`. -/
+theorem outputHeatPairMajorant_le_of_half_delta_le
+    (ν δ τ : ℝ) (hν : 0 < ν) (hδ : 0 < δ) (hτ : δ / 2 ≤ τ)
+    (u v : WeightedLatticeBanach) (ij : LatticeMode × LatticeMode) :
+    outputHeatPairMajorant ν τ u v ij ≤ outputHeatPairMajorant ν (δ / 2) u v ij := by
+  have hτ0 : 0 < τ := lt_of_lt_of_le (by linarith) hτ
+  have hδ2 : 0 < δ / 2 := by linarith
+  have hscalar : (Real.sqrt (ν * τ))⁻¹ ≤ (Real.sqrt (ν * (δ / 2)))⁻¹ := by
+    rw [outputHeatGain_eq_inverseSqrtTime ν τ hν hτ0,
+      outputHeatGain_eq_inverseSqrtTime ν (δ / 2) hν hδ2]
+    exact mul_le_mul_of_nonneg_left
+      (inverseSqrtTime_le_of_half_delta_le hδ hτ)
+      (inv_nonneg.mpr (Real.sqrt_nonneg _))
+  unfold outputHeatPairMajorant latticeWeightedAmplitude
+  have ha : 0 ≤ latticeModeWeight ij.1 *
+      complexEuclideanNorm (weightedLatticeCoefficient u ij.1) :=
+    mul_nonneg (zero_le_one.trans (one_le_latticeModeWeight ij.1)) (norm_nonneg _)
+  have hb : 0 ≤ latticeModeWeight ij.2 *
+      complexEuclideanNorm (weightedLatticeCoefficient v ij.2) :=
+    mul_nonneg (zero_le_one.trans (one_le_latticeModeWeight ij.2)) (norm_nonneg _)
+  exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hscalar ha) hb
 
 end Navier.Analysis.CriticalMildObservationContinuity
 
