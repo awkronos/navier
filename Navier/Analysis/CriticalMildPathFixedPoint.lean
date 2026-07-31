@@ -223,6 +223,54 @@ def criticalMildPathBallImage
     · exact norm_criticalMildImage_le_radius ν hν u₀ ext hextc hextdf hR τ.2.1 τ.2.2
         (fun s hs => hextR s) hbudget
 
+/-- Uniform path-norm Lipschitz estimate for the local mild ball endomap. -/
+theorem norm_criticalMildPathBallImage_sub_le
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+    (hbudget : ‖u₀‖ + (2 * Real.sqrt T / Real.sqrt ν) * R ^ 2 ≤ R)
+    (u v : CriticalMildPathBall T R) :
+    ‖(criticalMildPathBallImage ν hν u₀ hT hR hbudget u).1 -
+        (criticalMildPathBallImage ν hν u₀ hT hR hbudget v).1‖ ≤
+      (4 * Real.sqrt T / Real.sqrt ν) * R * ‖u.1 - v.1‖ := by
+  apply (ContinuousMap.norm_le _ (by positivity)).2
+  intro τ
+  let pu : CriticalMildPath T := u.1
+  let pv : CriticalMildPath T := v.1
+  let eu : ℝ → WeightedLatticeBanach := criticalMildPathExtension T hT pu
+  let ev : ℝ → WeightedLatticeBanach := criticalMildPathExtension T hT pv
+  have heuc : Continuous eu := continuous_criticalMildPathExtension T hT pu
+  have hevc : Continuous ev := continuous_criticalMildPathExtension T hT pv
+  have heudf : ∀ s, LatticeDivergenceFree (eu s) := by
+    intro s
+    exact criticalMildPathBallExtension_divergenceFree hT u s
+  have hevdf : ∀ s, LatticeDivergenceFree (ev s) := by
+    intro s
+    exact criticalMildPathBallExtension_divergenceFree hT v s
+  have heuR : ∀ s, ‖eu s‖ ≤ R := by
+    intro s
+    exact criticalMildPathBallExtension_norm_le hT u s
+  have hevR : ∀ s, ‖ev s‖ ≤ R := by
+    intro s
+    exact criticalMildPathBallExtension_norm_le hT v s
+  have hD : ∀ s, ‖eu s - ev s‖ ≤ ‖u.1 - v.1‖ := by
+    intro s
+    exact norm_criticalMildPathExtension_sub_le T hT pu pv s
+  have hpoint := norm_criticalMildImage_sub_le ν hν u₀ eu ev heuc hevc heudf hevdf
+    hR (norm_nonneg _) τ.2.1 (fun s hs => heuR s) (fun s hs => hevR s)
+    (fun s hs => hD s)
+  have hsqrt : Real.sqrt τ.1 ≤ Real.sqrt T := Real.sqrt_le_sqrt τ.2.2
+  have hcoef : 0 ≤ (4 / Real.sqrt ν) * R * ‖u.1 - v.1‖ := by positivity
+  change ‖criticalMildImage ν hν u₀ eu heudf τ.1 τ.2.1 -
+      criticalMildImage ν hν u₀ ev hevdf τ.1 τ.2.1‖ ≤ _
+  calc
+    ‖criticalMildImage ν hν u₀ eu heudf τ.1 τ.2.1 -
+        criticalMildImage ν hν u₀ ev hevdf τ.1 τ.2.1‖ ≤
+        (4 * Real.sqrt τ.1 / Real.sqrt ν) * R * ‖u.1 - v.1‖ := hpoint
+    _ = ((4 / Real.sqrt ν) * R * ‖u.1 - v.1‖) * Real.sqrt τ.1 := by ring
+    _ ≤ ((4 / Real.sqrt ν) * R * ‖u.1 - v.1‖) * Real.sqrt T :=
+      mul_le_mul_of_nonneg_left hsqrt hcoef
+    _ = (4 * Real.sqrt T / Real.sqrt ν) * R * ‖u.1 - v.1‖ := by ring
+
 end Navier.Analysis.CriticalMildPathFixedPoint
 
 #print axioms Navier.Analysis.CriticalMildPathFixedPoint.continuous_criticalMildPathExtension
