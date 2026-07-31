@@ -114,6 +114,7 @@ import Navier.Analysis.CriticalMildPathFixedPoint
 import Navier.Analysis.CriticalMildRestart
 import Navier.Analysis.CriticalMildRestartFixedPoint
 import Navier.Analysis.CriticalMildLocalSelection
+import Navier.Analysis.GlobalRegularityCrownCore
 
 /-!
 # Navier

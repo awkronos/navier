@@ -31,6 +31,7 @@ theorem criticalMildBoundedHorizon_restart_budget
       (criticalMildBoundedRadius M) ^ 2 ≤ criticalMildBoundedRadius M := by
   let R := criticalMildBoundedRadius M
   let T := criticalMildBoundedHorizon ν M
+  have hRM : R = M + 1 := rfl
   have hR : 1 ≤ R := by
     dsimp [R, criticalMildBoundedRadius]
     linarith
@@ -47,7 +48,7 @@ theorem criticalMildBoundedHorizon_restart_budget
     show criticalMildBoundedRadius M = R by rfl, hsqrt]
   have hs : Real.sqrt ν ≠ 0 := ne_of_gt hνsqrt
   field_simp
-  nlinarith [sq_nonneg R]
+  nlinarith [sq_nonneg R, hRM]
 
 /-- On one restart interval, the actual terminal-data heat evolution and the
 literal shifted Duhamel integral propagate a radius bound by the explicit
