@@ -99,7 +99,7 @@ theorem criticalMildChainTotalExtension_divergenceFree
   · rw [criticalMildChainTotalExtension, dif_neg ht]
     unfold LatticeDivergenceFree
     intro m
-    simp [weightedLatticeCoefficient]
+    simp [weightedLatticeCoefficient, ComplexLerayNorm.complexEuclideanPoint]
 
 /-- On every reached stage interval, the total representative is exactly that
 stage's path. -/
@@ -112,6 +112,56 @@ theorem criticalMildChainTotalExtension_eq_stage
   have hdom : t ∈ criticalMildChainDomain ν hν a := ⟨n, ht⟩
   rw [criticalMildChainTotalExtension, dif_pos hdom]
   exact criticalMildChainValue_eq_stage ν hν a hdom n ht
+
+/-- The nonlinear integrands agree on the actual integration interval of any
+containing stage. -/
+theorem criticalMildPathIntegrand_totalExtension_eq_stage
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) (n : ℕ)
+    {t s : ℝ}
+    (ht : t ∈ Icc (0 : ℝ) (criticalMildCompatibleChain ν hν a n).horizon)
+    (hs : s ∈ Ioc (0 : ℝ) t) :
+    criticalMildPathIntegrand ν hν (criticalMildChainTotalExtension ν hν a)
+      (criticalMildChainTotalExtension_divergenceFree ν hν a) t s =
+      criticalMildPathIntegrand ν hν
+        (criticalMildPathExtension
+          (criticalMildCompatibleChain ν hν a n).horizon
+          (criticalMildCompatibleChain ν hν a n).horizon_nonneg
+          (criticalMildCompatibleChain ν hν a n).path.1)
+        (criticalMildPathBallExtension_divergenceFree
+          (criticalMildCompatibleChain ν hν a n).horizon_nonneg
+          (criticalMildCompatibleChain ν hν a n).path) t s := by
+  have hsIcc : s ∈ Icc (0 : ℝ)
+      (criticalMildCompatibleChain ν hν a n).horizon :=
+    ⟨hs.1.le, le_trans hs.2 ht.2⟩
+  have heq := criticalMildChainTotalExtension_eq_stage ν hν a n hsIcc
+  have hstage := criticalMildPathExtension_apply
+    (criticalMildCompatibleChain ν hν a n).horizon
+    (criticalMildCompatibleChain ν hν a n).horizon_nonneg
+    (criticalMildCompatibleChain ν hν a n).path.1 hsIcc
+  unfold criticalMildPathIntegrand
+  congr 1
+  · exact heq.trans hstage.symm
+  · exact heq.trans hstage.symm
+
+/-- The literal Duhamel integral of the total union extension agrees with
+every stage containing its observation time. -/
+theorem criticalMildDuhamel_totalExtension_eq_stage
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) (n : ℕ) {t : ℝ}
+    (ht : t ∈ Icc (0 : ℝ) (criticalMildCompatibleChain ν hν a n).horizon) :
+    criticalMildDuhamel ν hν (criticalMildChainTotalExtension ν hν a)
+      (criticalMildChainTotalExtension_divergenceFree ν hν a) t =
+      criticalMildDuhamel ν hν
+        (criticalMildPathExtension
+          (criticalMildCompatibleChain ν hν a n).horizon
+          (criticalMildCompatibleChain ν hν a n).horizon_nonneg
+          (criticalMildCompatibleChain ν hν a n).path.1)
+        (criticalMildPathBallExtension_divergenceFree
+          (criticalMildCompatibleChain ν hν a n).horizon_nonneg
+          (criticalMildCompatibleChain ν hν a n).path) t := by
+  unfold criticalMildDuhamel
+  apply integral_congr_ae
+  filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+  exact criticalMildPathIntegrand_totalExtension_eq_stage ν hν a n ht hs
 
 
 /-- Locally, a union-domain value is represented by the canonical extension
@@ -176,3 +226,5 @@ end Navier.Analysis.CriticalMildDirectLimit
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainValue_eq_stage
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainValue_divergenceFree
 #print axioms Navier.Analysis.CriticalMildDirectLimit.continuous_criticalMildChainPath
+#print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildPathIntegrand_totalExtension_eq_stage
+#print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildDuhamel_totalExtension_eq_stage
