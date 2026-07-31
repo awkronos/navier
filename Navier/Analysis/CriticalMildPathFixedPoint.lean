@@ -23,6 +23,7 @@ open Navier.Analysis.CriticalMildPathContraction
 open Navier.Analysis.CriticalMildHeatFlow
 open Navier.Analysis.CriticalMildPathIntegrand
 open Navier.Analysis.CriticalMildSelfMap
+open Navier.Analysis.CriticalMildObservationContinuity
 
 /-- The complete local carrier used for a critical mild fixed point. -/
 abbrev CriticalMildPath (T : ℝ) := WeightedMildPath T
@@ -100,6 +101,41 @@ theorem continuousAt_criticalMildImage_zero_on_Icc
         congr
       · simp [time]
   simpa [ContinuousAt, criticalMildImage, criticalMildDuhamel] using hsum
+
+/-- The full image is continuous on the closed local horizon: the zero branch
+uses the preceding endpoint lemma and every other point uses positive-time
+observation continuity. -/
+theorem continuous_criticalMildImage_on_Icc
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R T : ℝ} (hR : 0 ≤ R) (hT : 0 ≤ T) (huR : ∀ s, ‖u s‖ ≤ R) :
+    Continuous fun τ : Icc (0 : ℝ) T =>
+      criticalMildImage ν hν u₀ u hu τ.1 τ.2.1 := by
+  rw [continuous_iff_continuousAt]
+  intro τ
+  rcases eq_or_lt_of_le τ.2.1 with hzero | hpos
+  · have hτ : τ = ⟨0, ⟨le_rfl, hT⟩⟩ := Subtype.ext hzero.symm
+    rw [hτ]
+    exact continuousAt_criticalMildImage_zero_on_Icc
+      ν hν u₀ u huc hu hR hT huR
+  · unfold criticalMildImage
+    apply ContinuousAt.add
+    · let time : Icc (0 : ℝ) T → NNReal := fun σ => ⟨σ.1, σ.2.1⟩
+      have htime : Continuous time :=
+        continuous_subtype_val.subtype_mk fun σ => σ.2.1
+      have hheat := (continuous_weightedHeatFlow_nnreal ν hν.le u₀).continuousAt
+        (x := time τ)
+      have hcomp := Filter.Tendsto.comp hheat htime.continuousAt
+      change Filter.Tendsto
+        (fun σ : Icc (0 : ℝ) T => weightedHeatFlow ν σ.1 hν.le σ.2.1 u₀)
+        (𝓝 τ) (𝓝 (weightedHeatFlow ν τ.1 hν.le τ.2.1 u₀))
+      convert hcomp using 1
+      · funext σ
+        congr
+      · congr
+    · exact (tendsto_criticalMildDuhamel_observation ν hν u huc hu hR hpos huR).comp
+        continuous_subtype_val.continuousAt
 
 end Navier.Analysis.CriticalMildPathFixedPoint
 
