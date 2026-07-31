@@ -220,6 +220,20 @@ theorem outputHeatPairMajorant_le_of_half_delta_le
     mul_nonneg (zero_le_one.trans (one_le_latticeModeWeight ij.2)) (norm_nonneg _)
   exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hscalar ha) hb
 
+/-- Reindexing the uniform pair estimate gives a summable uniform bound on
+every actual output coordinate. -/
+theorem outputHeatFiberMajorant_le_of_half_delta_le
+    (ν δ τ : ℝ) (hν : 0 < ν) (hδ : 0 < δ) (hτ : δ / 2 ≤ τ)
+    (u v : WeightedLatticeBanach) (k : LatticeMode) :
+    outputHeatFiberMajorant ν τ u v k ≤
+      outputHeatFiberMajorant ν (δ / 2) u v k := by
+  unfold outputHeatFiberMajorant
+  exact Summable.tsum_le_tsum
+    (fun ij => outputHeatPairMajorant_le_of_half_delta_le
+      ν δ τ hν hδ hτ u v ij.1)
+    ((summable_outputHeatPairMajorant ν τ u v).subtype _)
+    ((summable_outputHeatPairMajorant ν (δ / 2) u v).subtype _)
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
