@@ -286,6 +286,55 @@ theorem continuous_criticalMildChainPath
       (criticalMildCompatibleChain ν hν a (n + 1)).path.1).comp
         continuous_subtype_val).continuousAt hevent
 
+/-- The exact finite-stage interface consumed by the direct-limit carrier.
+It deliberately contains no analytic bound or continuation conclusion. -/
+structure CriticalMildCoherentChain (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) where
+  horizon : ℕ → ℝ
+  radius : ℕ → ℝ
+  horizon_nonneg : ∀ n, 0 ≤ horizon n
+  path : ∀ n, CriticalMildPathBall (horizon n) (radius n)
+  horizon_mono : Monotone horizon
+  pairwise : ∀ {m n : ℕ} (hmn : m ≤ n),
+    criticalMildPathRestrict (horizon_mono hmn) (path n).1 = (path m).1
+
+namespace CriticalMildCoherentChain
+
+def domain {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) : Set ℝ :=
+  {t | ∃ n : ℕ, t ∈ Icc (0 : ℝ) (C.horizon n)}
+
+def index {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) (t : ℝ) (ht : t ∈ C.domain) : ℕ :=
+  Classical.choose ht
+
+theorem index_spec {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) (t : ℝ) (ht : t ∈ C.domain) :
+    t ∈ Icc (0 : ℝ) (C.horizon (C.index t ht)) :=
+  Classical.choose_spec ht
+
+def value {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) (t : ℝ) (ht : t ∈ C.domain) :
+    WeightedLatticeBanach :=
+  (C.path (C.index t ht)).1 ⟨t, C.index_spec t ht⟩
+
+theorem value_eq_stage {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) {t : ℝ} (ht : t ∈ C.domain)
+    (n : ℕ) (hn : t ∈ Icc (0 : ℝ) (C.horizon n)) :
+    C.value t ht = (C.path n).1 ⟨t, hn⟩ := by
+  let k := C.index t ht
+  have hk := C.index_spec t ht
+  change (C.path k).1 ⟨t, hk⟩ = _
+  rcases le_total k n with hkn | hnk
+  · have hpair := C.pairwise hkn
+    rw [← hpair]
+    rfl
+  · have hpair := C.pairwise hnk
+    have happ := ContinuousMap.congr_fun hpair ⟨t, hn⟩
+    simpa [criticalMildPathRestrict, criticalMildTimeInclusion] using happ
+
+end CriticalMildCoherentChain
+
 end Navier.Analysis.CriticalMildDirectLimit
 
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainValue_eq_stage
@@ -297,3 +346,4 @@ end Navier.Analysis.CriticalMildDirectLimit
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainTotalExtension_satisfies_mild_of_cofinal
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainTotalExtension_zero_of_cofinal
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChain_cofinal_of_linearLifespanBound
+#print axioms Navier.Analysis.CriticalMildDirectLimit.CriticalMildCoherentChain.value_eq_stage
