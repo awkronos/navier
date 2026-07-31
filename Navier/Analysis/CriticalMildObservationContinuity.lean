@@ -334,6 +334,27 @@ theorem tendsto_tsum_positiveTimeHeatOutputSingle
       ν τ hν hτ u v hu k).trans
       (outputHeatFiberMajorant_le_of_half_delta_le ν τ₀ τ hν hτ₀ hlag u v k)
 
+/-- Reconstruction of the total zero-extended completed heat output from its
+`lp.single` coordinates. -/
+theorem tsum_positiveTimeHeatOutputSingle
+    (ν τ : ℝ) (hν : 0 < ν)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    (∑' k : LatticeMode, positiveTimeHeatOutputSingle ν hν u v hu k τ) =
+      positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ := by
+  exact (lp.hasSum_single (E := fun _ : LatticeMode => ComplexE3)
+    (p := 1) (by norm_num : (1 : ENNReal) ≠ ⊤)
+    (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ)).tsum_eq
+
+/-- Completed-carrier positive-lag continuity of the actual nonlinear heat
+output, obtained by Tannery over its `lp.single` coordinates. -/
+theorem tendsto_positiveTimeHeatRegularizedSpectralOutput
+    (ν τ₀ : ℝ) (hν : 0 < ν) (hτ₀ : 0 < τ₀)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    Filter.Tendsto (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu)
+      (𝓝 τ₀) (𝓝 (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ₀)) := by
+  have h := tendsto_tsum_positiveTimeHeatOutputSingle ν τ₀ hν hτ₀ u v hu
+  simpa only [tsum_positiveTimeHeatOutputSingle] using h
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
