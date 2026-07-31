@@ -355,6 +355,21 @@ theorem tendsto_positiveTimeHeatRegularizedSpectralOutput
   have h := tendsto_tsum_positiveTimeHeatOutputSingle ν τ₀ hν hτ₀ u v hu
   simpa only [tsum_positiveTimeHeatOutputSingle] using h
 
+/-- Completed-carrier pointwise observation-time convergence of the literal
+evolving integrand at every common-interval integration time. -/
+theorem tendsto_criticalMildPathIntegrand_observation
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {s t : ℝ} (hst : s < t) :
+    Filter.Tendsto (fun t' : ℝ => criticalMildPathIntegrand ν hν u hu t' s)
+      (𝓝 t) (𝓝 (criticalMildPathIntegrand ν hν u hu t s)) := by
+  unfold criticalMildPathIntegrand
+  have hlag : Filter.Tendsto (fun t' : ℝ => t' - s) (𝓝 t) (𝓝 (t - s)) :=
+    (continuous_id.sub continuous_const).continuousAt
+  exact (tendsto_positiveTimeHeatRegularizedSpectralOutput
+    ν (t - s) hν (sub_pos.mpr hst) (u s) (u s) (hu s)).comp hlag
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
