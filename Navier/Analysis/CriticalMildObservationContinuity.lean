@@ -234,6 +234,18 @@ theorem outputHeatFiberMajorant_le_of_half_delta_le
     ((summable_outputHeatPairMajorant ν τ u v).subtype _)
     ((summable_outputHeatPairMajorant ν (δ / 2) u v).subtype _)
 
+/-- The completed output-frequency heat carrier is exactly the `tsum` of its
+actual `lp.single` output coordinates. -/
+theorem tsum_single_heatRegularizedSpectralOutput
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    (∑' k : LatticeMode, lp.single (E := fun _ : LatticeMode => ComplexE3)
+      1 k (heatRegularizedSpectralOutput ν τ hν hτ u v hu k)) =
+      heatRegularizedSpectralOutput ν τ hν hτ u v hu := by
+  exact (lp.hasSum_single (E := fun _ : LatticeMode => ComplexE3)
+    (p := 1) (by norm_num : (1 : ENNReal) ≠ ⊤)
+    (heatRegularizedSpectralOutput ν τ hν hτ u v hu)).tsum_eq
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
