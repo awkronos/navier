@@ -28,6 +28,7 @@ open Navier.Analysis.FrequencyHeatLeray
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedSpace
 open Navier.Analysis.CriticalMildWeightedBanach
+open Navier.Analysis.CriticalMildWeightedBilinear
 open Navier.Analysis.CriticalMildHeatCoefficientLift
 open Navier.Analysis.CriticalMildHeatSmoothing
 open Navier.Analysis.CriticalMildDuhamel
@@ -413,6 +414,33 @@ theorem heatRegularizedSpectralOutput_apply (ν τ : ℝ) (hν : 0 < ν) (hτ : 
   exact constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
     ν τ hν hτ u v hu k
 
+/-- The completed output-heat carrier is additive in the transported input.
+This is an exact identity of the actual global `ℓ¹` output, not merely a
+majorant estimate. -/
+theorem heatRegularizedSpectralOutput_add_right (ν τ : ℝ)
+    (hν : 0 < ν) (hτ : 0 < τ)
+    (u v w : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    heatRegularizedSpectralOutput ν τ hν hτ u (v + w) hu =
+      heatRegularizedSpectralOutput ν τ hν hτ u v hu +
+        heatRegularizedSpectralOutput ν τ hν hτ u w hu := by
+  apply Subtype.ext
+  funext k
+  rw [heatRegularizedSpectralOutput_apply,
+    show (heatRegularizedSpectralOutput ν τ hν hτ u v hu +
+        heatRegularizedSpectralOutput ν τ hν hτ u w hu) k =
+      heatRegularizedSpectralOutput ν τ hν hτ u v hu k +
+        heatRegularizedSpectralOutput ν τ hν hτ u w hu k by rfl,
+    heatRegularizedSpectralOutput_apply, heatRegularizedSpectralOutput_apply]
+  unfold heatRegularizedSpectralOutputFiber spectralOutputCoefficient
+  rw [weightedLatticeSpectralConvolution_add_right]
+  simp
+  have hpoint (a b : ComplexSpace) :
+      complexEuclideanPoint (a + b) =
+        complexEuclideanPoint a + complexEuclideanPoint b := by
+    ext i
+    rfl
+  rw [hpoint, smul_add]
+
 /-- Summing the fiber majorants is exactly summing the original full-pair
 majorant. -/
 theorem tsum_outputHeatFiberMajorant_eq_pair (ν τ : ℝ)
@@ -548,6 +576,21 @@ theorem positiveTimeHeatRegularizedSpectralOutput_of_pos (ν : ℝ) (hν : 0 < �
     positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ =
       heatRegularizedSpectralOutput ν τ hν hτ u v hu := by
   simp [positiveTimeHeatRegularizedSpectralOutput, hτ]
+
+/-- The zero-extended positive-time nonlinear integrand remains exactly
+additive in its transported input. -/
+theorem positiveTimeHeatRegularizedSpectralOutput_add_right
+    (ν : ℝ) (hν : 0 < ν)
+    (u v w : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    positiveTimeHeatRegularizedSpectralOutput ν hν u (v + w) hu =
+      positiveTimeHeatRegularizedSpectralOutput ν hν u v hu +
+        positiveTimeHeatRegularizedSpectralOutput ν hν u w hu := by
+  funext τ
+  by_cases hτ : 0 < τ
+  · simp only [positiveTimeHeatRegularizedSpectralOutput_of_pos ν hν _ _ hu hτ,
+      Pi.add_apply]
+    exact heatRegularizedSpectralOutput_add_right ν τ hν hτ u v w hu
+  · simp [positiveTimeHeatRegularizedSpectralOutput, hτ]
 
 /-- The positive-time output heat gain is the viscosity-scaled inverse square
 root time singularity used by the Bochner budget. -/
@@ -742,6 +785,20 @@ def positiveTimeHeatRegularizedSpectralOutputIntegral
     WeightedLatticeBanach :=
   ∫ τ in Ioc 0 T, positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ
 
+/-- Bochner integration preserves the exact right-input additivity of the
+completed nonlinear heat output. -/
+theorem positiveTimeHeatRegularizedSpectralOutputIntegral_add_right
+    (ν T : ℝ) (hν : 0 < ν) (hT : 0 ≤ T)
+    (u v w : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    positiveTimeHeatRegularizedSpectralOutputIntegral ν T hν hT u (v + w) hu =
+      positiveTimeHeatRegularizedSpectralOutputIntegral ν T hν hT u v hu +
+        positiveTimeHeatRegularizedSpectralOutputIntegral ν T hν hT u w hu := by
+  unfold positiveTimeHeatRegularizedSpectralOutputIntegral
+  rw [positiveTimeHeatRegularizedSpectralOutput_add_right]
+  exact integral_add
+    (integrableOn_positiveTimeHeatRegularizedSpectralOutput ν T hν hT u v hu)
+    (integrableOn_positiveTimeHeatRegularizedSpectralOutput ν T hν hT u w hu)
+
 /-- The genuine nonlinear Duhamel Bochner integral has the exact
 inverse-square-root finite-time budget. -/
 theorem norm_positiveTimeHeatRegularizedSpectralOutputIntegral_le
@@ -778,6 +835,18 @@ def positiveTimeHeatRegularizedSpectralOutputPath
   positiveTimeHeatRegularizedSpectralOutputIntegral
     ν T hν T.property u v hu
 
+/-- The completed nonlinear Duhamel path is additive in its transported
+input at every nonnegative elapsed time. -/
+theorem positiveTimeHeatRegularizedSpectralOutputPath_add_right
+    (ν : ℝ) (hν : 0 < ν)
+    (u v w : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    positiveTimeHeatRegularizedSpectralOutputPath ν hν u (v + w) hu =
+      positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu +
+        positiveTimeHeatRegularizedSpectralOutputPath ν hν u w hu := by
+  funext T
+  exact positiveTimeHeatRegularizedSpectralOutputIntegral_add_right
+    ν T hν T.property u v w hu
+
 @[simp] theorem positiveTimeHeatRegularizedSpectralOutputPath_zero
     (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
     (hu : LatticeDivergenceFree u) :
@@ -795,7 +864,39 @@ theorem norm_positiveTimeHeatRegularizedSpectralOutputPath_le
   exact norm_positiveTimeHeatRegularizedSpectralOutputIntegral_le
     ν T hν T.property u v hu
 
+/-- The difference of two transported-input Duhamel paths is exactly the
+Duhamel path of the input difference. -/
+theorem positiveTimeHeatRegularizedSpectralOutputPath_sub_right
+    (ν : ℝ) (hν : 0 < ν)
+    (u v w : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu -
+        positiveTimeHeatRegularizedSpectralOutputPath ν hν u w hu =
+      positiveTimeHeatRegularizedSpectralOutputPath ν hν u (v - w) hu := by
+  have hadd := positiveTimeHeatRegularizedSpectralOutputPath_add_right
+    ν hν u (v - w) w hu
+  rw [sub_add_cancel] at hadd
+  rw [hadd]
+  abel
+
+/-- Genuine right-input Lipschitz estimate for the completed nonlinear
+Duhamel path on every finite horizon. -/
+theorem norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_right_le
+    (ν : ℝ) (hν : 0 < ν)
+    (u v w : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (T : NNReal) :
+    ‖positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu T -
+        positiveTimeHeatRegularizedSpectralOutputPath ν hν u w hu T‖ ≤
+      (2 * Real.sqrt (T : ℝ) / Real.sqrt ν) * ‖u‖ * ‖v - w‖ := by
+  have hsub := congrFun
+    (positiveTimeHeatRegularizedSpectralOutputPath_sub_right ν hν u v w hu) T
+  change ‖(positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu -
+      positiveTimeHeatRegularizedSpectralOutputPath ν hν u w hu) T‖ ≤ _
+  rw [hsub]
+  exact norm_positiveTimeHeatRegularizedSpectralOutputPath_le
+    ν hν u (v - w) hu T
+
 end Navier.Analysis.CriticalMildDuhamelBochner
 
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.positiveTimeHeatRegularizedSpectralOutputPath_zero
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_le
+#print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_right_le
