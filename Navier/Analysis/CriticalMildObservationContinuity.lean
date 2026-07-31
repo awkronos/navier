@@ -246,6 +246,22 @@ theorem tsum_single_heatRegularizedSpectralOutput
     (p := 1) (by norm_num : (1 : ENNReal) ≠ ⊤)
     (heatRegularizedSpectralOutput ν τ hν hτ u v hu)).tsum_eq
 
+/-- The `lp.single` coordinate terms used by Tannery inherit the exact
+summable output-fiber majorant. -/
+theorem norm_single_heatRegularizedSpectralOutput_le_outputHeatFiberMajorant
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    ‖lp.single (E := fun _ : LatticeMode => ComplexE3) 1 k
+        (heatRegularizedSpectralOutput ν τ hν hτ u v hu k)‖ ≤
+      outputHeatFiberMajorant ν τ u v k := by
+  rw [lp.norm_single (by norm_num : 0 < (1 : ENNReal))]
+  rw [heatRegularizedSpectralOutput_apply]
+  rw [← constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
+    ν τ hν hτ u v hu k]
+  exact norm_constrainedHeatRegularizedFiber_le_outputHeatFiberMajorant
+    ν τ hν hτ u v hu k
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
