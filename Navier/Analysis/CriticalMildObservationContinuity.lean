@@ -449,6 +449,58 @@ theorem criticalMildDuhamel_eq_truncated_add_tail
     ← intervalIntegral.integral_of_le hat]
   exact (intervalIntegral.integral_add_adjacent_intervals hleft' hright').symm
 
+/-- Metric epsilon--delta gluing for a family of common-interval
+approximants.  The two error terms may be controlled by any scalar budget
+which can be made arbitrarily small by taking a positive cutoff small. -/
+theorem tendsto_of_truncated_gluing
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (F : ℝ → E) (G : ℝ → ℝ → E) (t : ℝ) (B : ℝ → ℝ)
+    (hG : ∀ δ, 0 < δ → Filter.Tendsto (G δ) (𝓝 t) (𝓝 (G δ t)))
+    (hnear : ∀ δ, 0 < δ → ∀ᶠ t' in 𝓝 t, ‖F t' - G δ t'‖ ≤ B δ)
+    (hbase : ∀ δ, 0 < δ → ‖F t - G δ t‖ ≤ B δ)
+    (hsmall : ∀ ε > 0, ∃ δ > 0, B δ < ε) :
+    Filter.Tendsto F (𝓝 t) (𝓝 (F t)) := by
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  obtain ⟨δ, hδ, hB⟩ := hsmall (ε / 3) (by linarith)
+  have hcommon : ∀ᶠ t' in 𝓝 t, dist (G δ t') (G δ t) < ε / 3 :=
+    (Metric.tendsto_nhds.mp (hG δ hδ)) (ε / 3) (by linarith)
+  filter_upwards [hnear δ hδ, hcommon] with t' ht' hcommon'
+  have hcommon'' : ‖G δ t' - G δ t‖ < ε / 3 := by
+    simpa [dist_eq_norm_sub] using hcommon'
+  have hbase' : ‖G δ t - F t‖ ≤ B δ := by
+    simpa [norm_sub_rev] using hbase δ hδ
+  calc
+    dist (F t') (F t) = ‖F t' - F t‖ := dist_eq_norm_sub _ _
+    _ = ‖(F t' - G δ t') + (G δ t' - G δ t) + (G δ t - F t)‖ := by
+      congr 1
+      abel
+    _ ≤ ‖(F t' - G δ t') + (G δ t' - G δ t)‖ + ‖G δ t - F t‖ :=
+      norm_add_le _ _
+    _ ≤ (‖F t' - G δ t'‖ + ‖G δ t' - G δ t‖) + ‖G δ t - F t‖ := by
+      gcongr
+      exact norm_add_le _ _
+    _ < ε := by linarith
+
+/-- A nonnegative square-root tail budget can always be made smaller than a
+prescribed positive epsilon. -/
+theorem exists_pos_mul_sqrt_lt
+    {C ε : ℝ} (hC : 0 ≤ C) (hε : 0 < ε) :
+    ∃ δ > 0, C * Real.sqrt δ < ε := by
+  let q : ℝ := ε / (C + 1)
+  have hq : 0 < q := by
+    dsimp [q]
+    positivity
+  refine ⟨q ^ 2, sq_pos_of_pos hq, ?_⟩
+  rw [Real.sqrt_sq_eq_abs, abs_of_pos hq]
+  dsimp [q]
+  have hden : 0 < C + 1 := by linarith
+  have hlt : C / (C + 1) < 1 := (div_lt_one hden).mpr (by linarith)
+  calc
+    C * (ε / (C + 1)) = ε * (C / (C + 1)) := by ring
+    _ < ε * 1 := mul_lt_mul_of_pos_left hlt hε
+    _ = ε := mul_one _
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
