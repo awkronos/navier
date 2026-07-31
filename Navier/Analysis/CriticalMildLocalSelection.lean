@@ -109,6 +109,36 @@ theorem criticalMildDuhamelRestartTail_glued_eq_adjacent
   filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
   exact criticalMildTwoIntervalIntegrand_shift_eq ν hν hT hS u v hjoin hglue hs hrS
 
+/-- The joined real-line representative preserves the divergence-free
+constraint on both charts. -/
+theorem criticalMildTwoIntervalExtension_divergenceFree
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q) (x : ℝ) :
+    LatticeDivergenceFree (criticalMildTwoIntervalExtension hT hS u v x) := by
+  classical
+  unfold criticalMildTwoIntervalExtension
+  by_cases hx : x ≤ T
+  · rw [Set.piecewise_eq_of_mem (Iic T) _ _ hx]
+    exact criticalMildPathBallExtension_divergenceFree hT u x
+  · have hnot : x ∉ Iic T := by exact hx
+    simp [Set.piecewise, hnot]
+    exact criticalMildPathBallExtension_divergenceFree hS v (x - T)
+
+/-- A single `max R Q` bound controls the joined representative, hence also
+its restriction to every finite restart interval. -/
+theorem norm_criticalMildTwoIntervalExtension_le_max
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q) (x : ℝ) :
+    ‖criticalMildTwoIntervalExtension hT hS u v x‖ ≤ max R Q := by
+  classical
+  unfold criticalMildTwoIntervalExtension
+  by_cases hx : x ≤ T
+  · rw [Set.piecewise_eq_of_mem (Iic T) _ _ hx]
+    exact le_trans (criticalMildPathBallExtension_norm_le hT u x) (le_max_left _ _)
+  · have hnot : x ∉ Iic T := by exact hx
+    simp [Set.piecewise, hnot]
+    exact Or.inr (criticalMildPathBallExtension_norm_le hS v (x - T))
+
 /-- The joined continuous local path on the combined closed horizon. -/
 def criticalMildTwoIntervalPath
     {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
