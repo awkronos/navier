@@ -8,9 +8,13 @@ critical-mild fixed-point equation.  It neither asserts maximality nor an
 unbounded continuation theorem.
 -/
 
+noncomputable section
+
 namespace Navier.Analysis.CriticalMildReachableTimes
 
+open Navier
 open Navier.Analysis.CriticalMildLocalSelection
+open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildPathFixedPoint
 
@@ -53,24 +57,24 @@ theorem exists_larger_reachableHorizon
   obtain ⟨S, Q, hS, v, hv, hjoin⟩ :=
     exists_criticalMild_adjacent_local_trajectory ν hν u
       ⟨T, ⟨hT, le_rfl⟩⟩
-  let w : CriticalMildPath (T + S) :=
-    criticalMildTwoIntervalPath hT hS.le u v hjoin
   have hTS : 0 ≤ T + S := add_nonneg hT hS.le
-  have hwball : CriticalMildPathBall (T + S) (max R Q) := by
-    refine ⟨w, ?_⟩
-    intro τ
-    change LatticeDivergenceFree
-        (criticalMildTwoIntervalExtension hT hS.le u v τ.1) ∧
-      ‖criticalMildTwoIntervalExtension hT hS.le u v τ.1‖ ≤ max R Q
-    exact ⟨criticalMildTwoIntervalExtension_divergenceFree hT hS.le u v τ.1,
-      norm_criticalMildTwoIntervalExtension_le_max hT hS.le u v τ.1⟩
+  let hwball : CriticalMildPathBall (T + S) (max R Q) :=
+    ⟨criticalMildTwoIntervalPath hT hS.le u v hjoin, by
+      intro τ
+      change LatticeDivergenceFree
+          (criticalMildTwoIntervalExtension hT hS.le u v τ.1) ∧
+        ‖criticalMildTwoIntervalExtension hT hS.le u v τ.1‖ ≤ max R Q
+      exact ⟨criticalMildTwoIntervalExtension_divergenceFree hT hS.le u v τ.1,
+        norm_criticalMildTwoIntervalExtension_le_max hT hS.le u v τ.1⟩⟩
   have hcanonical : ∀ x, LatticeDivergenceFree
-      (criticalMildPathExtension (T + S) hTS w x) := by
+      (criticalMildPathExtension (T + S) hTS
+        (criticalMildTwoIntervalPath hT hS.le u v hjoin) x) := by
     intro x
-    exact criticalMildPathBallExtension_divergenceFree hTS hwball x
-  refine ⟨T + S, ⟨hTS, max R Q, w, ?_⟩, ?_⟩
+    simpa only [hwball] using
+      (criticalMildPathBallExtension_divergenceFree hTS hwball x)
+  refine ⟨T + S, ⟨hTS, max R Q, hwball, ?_⟩, ?_⟩
   · intro τ
-    simpa [w] using
+    simpa only [hwball] using
       (criticalMildTwoIntervalPath_satisfies_original_mild ν hν a hT hS.le
         u v hjoin hu hv hcanonical τ)
   · linarith
@@ -104,7 +108,7 @@ theorem criticalMildMaximalTime_not_reachable
     criticalMildMaximalTime ν hν a ∉ reachableHorizons ν hν a := by
   intro hmax
   have hlt := reachableHorizon_lt_criticalMildMaximalTime ν hν a hbounded hmax
-  exact (lt_irrefl _) (by simpa [criticalMildMaximalTime] using hlt)
+  exact (lt_irrefl _) hlt
 
 /-- Precise continuation alternative supplied by the local construction:
 either reachable horizons are unbounded, or their bounded supremum is an
