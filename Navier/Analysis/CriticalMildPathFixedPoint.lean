@@ -18,6 +18,7 @@ namespace Navier.Analysis.CriticalMildPathFixedPoint
 open Set Topology
 open Navier
 open Navier.Analysis.CriticalMildWeightedBanach
+open Navier.Analysis.ComplexLerayProjection
 open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildPathContraction
@@ -270,6 +271,51 @@ theorem norm_criticalMildPathBallImage_sub_le
     _ ≤ ((4 / Real.sqrt ν) * R * ‖u.1 - v.1‖) * Real.sqrt T :=
       mul_le_mul_of_nonneg_left hsqrt hcoef
     _ = (4 * Real.sqrt T / Real.sqrt ν) * R * ‖u.1 - v.1‖ := by ring
+
+/-- Under the explicit small-time coefficient condition, the local mild ball
+endomap is a strict contraction in its inherited uniform path metric. -/
+theorem criticalMildPathBallImage_contractingWith
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+    (hbudget : ‖u₀‖ + (2 * Real.sqrt T / Real.sqrt ν) * R ^ 2 ≤ R)
+    (hcontr : (4 * Real.sqrt T / Real.sqrt ν) * R < 1) :
+    ContractingWith
+      ⟨(4 * Real.sqrt T / Real.sqrt ν) * R, by positivity⟩
+      (criticalMildPathBallImage ν hν u₀ hT hR hbudget) := by
+  constructor
+  · exact hcontr
+  · apply LipschitzWith.of_dist_le_mul
+    intro u v
+    rw [Subtype.dist_eq, Subtype.dist_eq, dist_eq_norm_sub, dist_eq_norm_sub]
+    exact norm_criticalMildPathBallImage_sub_le ν hν u₀ hT hR hbudget u v
+
+theorem zero_mem_criticalMildPathBall (T R : ℝ) (hR : 0 ≤ R) :
+    (0 : CriticalMildPath T) ∈
+      {u : CriticalMildPath T | ∀ t : Icc (0 : ℝ) T,
+        LatticeDivergenceFree (u t) ∧ ‖u t‖ ≤ R} := by
+  intro t
+  constructor
+  · intro m
+    simp [weightedLatticeCoefficient]
+    rw [show ComplexLerayNorm.complexEuclideanPoint (0 : ComplexSpace) = 0 by
+      ext j
+      rfl, inner_zero_right]
+  · simpa using hR
+
+/-- Banach fixed-point existence for the critical mild ball endomap on a
+strictly contracting local horizon. -/
+theorem exists_criticalMildPathBall_fixedPoint
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+    (hbudget : ‖u₀‖ + (2 * Real.sqrt T / Real.sqrt ν) * R ^ 2 ≤ R)
+    (hcontr : (4 * Real.sqrt T / Real.sqrt ν) * R < 1) :
+    ∃ u : CriticalMildPathBall T R,
+      Function.IsFixedPt (criticalMildPathBallImage ν hν u₀ hT hR hbudget) u := by
+  let z : CriticalMildPathBall T R :=
+    ⟨0, zero_mem_criticalMildPathBall T R hR⟩
+  have hc := criticalMildPathBallImage_contractingWith ν hν u₀ hT hR hbudget hcontr
+  obtain ⟨u, hu, -, -⟩ := ContractingWith.exists_fixedPoint hc z (edist_ne_top _ _)
+  exact ⟨u, hu⟩
 
 end Navier.Analysis.CriticalMildPathFixedPoint
 
