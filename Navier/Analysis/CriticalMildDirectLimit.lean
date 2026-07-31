@@ -78,6 +78,39 @@ def criticalMildChainPath (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) 
     criticalMildChainDomain ν hν a → WeightedLatticeBanach :=
   fun t => criticalMildChainValue ν hν a t.1 t.2
 
+/-- A total representative of the union path, set to zero outside the literal
+union-domain.  The zero branch is only an integration carrier; no equation is
+asserted there. -/
+def criticalMildChainTotalExtension (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) :
+    ℝ → WeightedLatticeBanach := by
+  classical
+  exact fun t => if ht : t ∈ criticalMildChainDomain ν hν a then
+    criticalMildChainValue ν hν a t ht else 0
+
+theorem criticalMildChainTotalExtension_divergenceFree
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) (t : ℝ) :
+    LatticeDivergenceFree (criticalMildChainTotalExtension ν hν a t) := by
+  classical
+  by_cases ht : t ∈ criticalMildChainDomain ν hν a
+  · rw [criticalMildChainTotalExtension, dif_pos ht]
+    exact criticalMildChainValue_divergenceFree ν hν a ht
+  · rw [criticalMildChainTotalExtension, dif_neg ht]
+    unfold LatticeDivergenceFree
+    intro m
+    rfl
+
+/-- On every reached stage interval, the total representative is exactly that
+stage's path. -/
+theorem criticalMildChainTotalExtension_eq_stage
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) (n : ℕ) {t : ℝ}
+    (ht : t ∈ Icc (0 : ℝ) (criticalMildCompatibleChain ν hν a n).horizon) :
+    criticalMildChainTotalExtension ν hν a t =
+      (criticalMildCompatibleChain ν hν a n).path.1 ⟨t, ht⟩ := by
+  classical
+  have hdom : t ∈ criticalMildChainDomain ν hν a := ⟨n, ht⟩
+  rw [criticalMildChainTotalExtension, dif_pos hdom]
+  exact criticalMildChainValue_eq_stage ν hν a hdom n ht
+
 /-- Locally, a union-domain value is represented by the canonical extension
 of one strict successor stage. -/
 theorem criticalMildChainPath_eventually_eq_successorExtension
