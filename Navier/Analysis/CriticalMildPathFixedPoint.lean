@@ -19,6 +19,7 @@ open Set Topology
 open Navier
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildDuhamelBochner
+open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildPathContraction
 open Navier.Analysis.CriticalMildHeatFlow
 open Navier.Analysis.CriticalMildPathIntegrand
@@ -62,6 +63,49 @@ theorem criticalMildPathBall_norm_le
     {T R : ℝ} (u : CriticalMildPathBall T R) (t : Icc (0 : ℝ) T) :
     ‖u.1 t‖ ≤ R :=
   (u.2 t).2
+
+/-- The divergence-free radius predicate is closed in the uniform metric on
+continuous paths: it is an intersection of coordinate equalizers and norm
+sublevel sets at each time. -/
+theorem isClosed_criticalMildPathBall (T R : ℝ) :
+    IsClosed {u : CriticalMildPath T |
+      ∀ t : Icc (0 : ℝ) T,
+        LatticeDivergenceFree (u t) ∧ ‖u t‖ ≤ R} := by
+  rw [show {u : CriticalMildPath T | ∀ t : Icc (0 : ℝ) T,
+      LatticeDivergenceFree (u t) ∧ ‖u t‖ ≤ R} =
+      ⋂ t : Icc (0 : ℝ) T,
+        (⋂ m : LatticeMode, {u | latticeDivergenceCLM m (u t) = 0}) ∩
+          {u | ‖u t‖ ≤ R} by
+      ext u
+      simp only [mem_setOf_eq, mem_iInter, mem_inter_iff]
+      constructor
+      · intro hu t
+        exact ⟨fun m => hu t |>.1 m, hu t |>.2⟩
+      · intro hu t
+        exact ⟨fun m => hu t |>.1 m, hu t |>.2⟩]
+  apply isClosed_iInter
+  intro t
+  apply IsClosed.inter
+  · apply isClosed_iInter
+    intro m
+    exact isClosed_eq
+      ((latticeDivergenceCLM m).continuous.comp (continuous_eval_const t))
+      continuous_const
+  · exact isClosed_le
+      (continuous_norm.comp (continuous_eval_const t)) continuous_const
+
+instance criticalMildPathBall_isClosed (T R : ℝ) :
+    IsClosed ({u : CriticalMildPath T |
+      ∀ t : Icc (0 : ℝ) T,
+        LatticeDivergenceFree (u t) ∧ ‖u t‖ ≤ R} : Set (CriticalMildPath T)) :=
+  isClosed_criticalMildPathBall T R
+
+instance criticalMildPathBall_completeSpace (T R : ℝ) :
+    CompleteSpace (CriticalMildPathBall T R) := by
+  change CompleteSpace ↑{u : CriticalMildPath T |
+    ∀ t : Icc (0 : ℝ) T,
+      LatticeDivergenceFree (u t) ∧ ‖u t‖ ≤ R}
+  infer_instance
 
 theorem criticalMildPathBallExtension_divergenceFree
     {T R : ℝ} (hT : 0 ≤ T) (u : CriticalMildPathBall T R) (s : ℝ) :
