@@ -18,6 +18,7 @@ open scoped Topology
 open Navier
 open Navier.Analysis.CriticalMildCompatibleSuccessor
 open Navier.Analysis.CriticalMildDuhamelBochner
+open Navier.Analysis.CriticalMildHeatFlowLinear
 open Navier.Analysis.CriticalMildPathIntegrand
 open Navier.Analysis.CriticalMildPathFixedPoint
 open Navier.Analysis.CriticalMildRestrictionCompatibility
@@ -184,6 +185,33 @@ def CriticalMildChainCofinalLifespan (ν : ℝ) (hν : 0 < ν)
     (a : WeightedLatticeBanach) : Prop :=
   ∀ t : ℝ, 0 ≤ t → t ∈ criticalMildChainDomain ν hν a
 
+/-- Conditional global-in-time mild identity: cofinal lifespan is exactly what
+turns the union-domain construction into an all-nonnegative-time solution. -/
+theorem criticalMildChainTotalExtension_satisfies_mild_of_cofinal
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (hcofinal : CriticalMildChainCofinalLifespan ν hν a) :
+    ∀ t : ℝ, ∀ ht : 0 ≤ t,
+      criticalMildChainTotalExtension ν hν a t = criticalMildImage ν hν a
+        (criticalMildChainTotalExtension ν hν a)
+        (criticalMildChainTotalExtension_divergenceFree ν hν a) t ht := by
+  intro t ht
+  have hdom := hcofinal t ht
+  rw [criticalMildChainTotalExtension, dif_pos hdom]
+  exact criticalMildChainValue_satisfies_original_mild ν hν a hdom ht
+
+/-- With divergence-free initial data, the cofinal total extension has exactly
+the prescribed initial value. -/
+theorem criticalMildChainTotalExtension_zero_of_cofinal
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (ha : LatticeDivergenceFree a)
+    (hcofinal : CriticalMildChainCofinalLifespan ν hν a) :
+    criticalMildChainTotalExtension ν hν a 0 = a := by
+  have hmild := criticalMildChainTotalExtension_satisfies_mild_of_cofinal
+    ν hν a hcofinal 0 le_rfl
+  rw [criticalMildImage_zero_nonlinear] at hmild
+  rw [weightedHeatFlow_zero_of_divergenceFree ν hν.le a ha] at hmild
+  exact hmild
+
 
 /-- Locally, a union-domain value is represented by the canonical extension
 of one strict successor stage. -/
@@ -250,3 +278,5 @@ end Navier.Analysis.CriticalMildDirectLimit
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildPathIntegrand_totalExtension_eq_stage
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildDuhamel_totalExtension_eq_stage
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainValue_satisfies_original_mild
+#print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainTotalExtension_satisfies_mild_of_cofinal
+#print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainTotalExtension_zero_of_cofinal
