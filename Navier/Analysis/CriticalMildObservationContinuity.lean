@@ -186,6 +186,15 @@ theorem tendsto_criticalMildPathIntegrand_observation_apply
       (𝓝 t) (𝓝 (criticalMildPathIntegrand ν hν u hu t s k)) :=
   (continuousAt_criticalMildPathIntegrand_observation_apply ν hν u hu hst k).tendsto
 
+/-- Uniform positive-lag domination for the singular scalar: on a
+neighborhood with lag at least `δ / 2`, the inverse square root is bounded by
+the fixed value at `δ / 2`. -/
+theorem inverseSqrtTime_le_of_half_delta_le
+    {δ τ : ℝ} (hδ : 0 < δ) (hτ : δ / 2 ≤ τ) :
+    inverseSqrtTime τ ≤ inverseSqrtTime (δ / 2) := by
+  unfold inverseSqrtTime
+  exact Real.rpow_le_rpow_of_nonpos (by linarith) hτ (by norm_num)
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
