@@ -370,6 +370,85 @@ theorem tendsto_criticalMildPathIntegrand_observation
   exact (tendsto_positiveTimeHeatRegularizedSpectralOutput
     ν (t - s) hν (sub_pos.mpr hst) (u s) (u s) (hu s)).comp hlag
 
+/-- On a common interval kept a positive distance `δ` from the observation
+time, the literal Bochner integrals converge by a constant positive-lag
+majorant. -/
+theorem tendsto_integral_criticalMildPathIntegrand_truncated
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t δ : ℝ} (hR : 0 ≤ R) (hδ : 0 < δ)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) (t + δ / 2), ‖u s‖ ≤ R) :
+    Filter.Tendsto
+      (fun t' : ℝ => ∫ s in Ioc 0 (t - δ),
+        criticalMildPathIntegrand ν hν u hu t' s)
+      (𝓝 t)
+      (𝓝 (∫ s in Ioc 0 (t - δ),
+        criticalMildPathIntegrand ν hν u hu t s)) := by
+  let C : ℝ := (Real.sqrt ν)⁻¹ * inverseSqrtTime (δ / 2) * R ^ 2
+  apply tendsto_integral_filter_of_dominated_convergence (fun _ : ℝ => C)
+  · exact Filter.Eventually.of_forall fun t' =>
+      (stronglyMeasurable_criticalMildPathIntegrand ν hν u huc hu t').aestronglyMeasurable
+  · filter_upwards [eventually_gt_nhds (show t - δ / 2 < t by linarith)] with t' ht'
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+    have hlag : δ / 2 ≤ t' - s := by linarith [hs.2]
+    have hst' : s < t' := by linarith
+    have hus : ‖u s‖ ≤ R := huR s ⟨hs.1, by linarith [hs.2]⟩
+    calc
+      ‖criticalMildPathIntegrand ν hν u hu t' s‖ ≤
+          (Real.sqrt ν)⁻¹ * inverseSqrtTime (t' - s) * R ^ 2 :=
+        norm_criticalMildPathIntegrand_le_of_norm_le ν hν u hu hR hst' hus
+      _ ≤ C := by
+        dsimp [C]
+        simpa [mul_assoc, mul_left_comm, mul_comm] using mul_le_mul_of_nonneg_left
+          (mul_le_mul_of_nonneg_left
+            (inverseSqrtTime_le_of_half_delta_le hδ hlag)
+            (inv_nonneg.mpr (Real.sqrt_nonneg ν)))
+          (sq_nonneg R)
+  · exact integrableOn_const (s := Ioc 0 (t - δ)) measure_Ioc_lt_top.ne
+  · filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+    exact tendsto_criticalMildPathIntegrand_observation ν hν u hu
+      (by linarith [hs.2])
+
+/-- The fixed boundary strip left after a `δ`-truncation has the same
+explicit square-root budget as a moving tail. -/
+theorem norm_criticalMildDuhamel_boundaryStrip_le_sqrt
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t δ : ℝ} (hR : 0 ≤ R) (hδ : 0 < δ) (hδt : δ ≤ t)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s‖ ≤ R) :
+    ‖criticalMildDuhamelTail ν hν u hu (t - δ) t‖ ≤
+      (2 * Real.sqrt δ / Real.sqrt ν) * R ^ 2 := by
+  simpa using norm_criticalMildDuhamelTail_le_sqrt_sub
+    ν hν u huc hu hR (sub_nonneg.mpr hδt) (sub_le_self t hδ.le) huR
+
+/-- Splitting the actual Duhamel integral at a common truncation time. -/
+theorem criticalMildDuhamel_eq_truncated_add_tail
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R a t : ℝ} (hR : 0 ≤ R) (ha : 0 ≤ a) (hat : a ≤ t)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s‖ ≤ R) :
+    criticalMildDuhamel ν hν u hu t =
+      (∫ s in Ioc 0 a, criticalMildPathIntegrand ν hν u hu t s) +
+        criticalMildDuhamelTail ν hν u hu a t := by
+  have hfull := integrableOn_criticalMildPathIntegrand
+    ν hν u huc hu hR (le_trans ha hat) huR
+  have hleft : IntegrableOn (criticalMildPathIntegrand ν hν u hu t) (Ioc 0 a) volume :=
+    hfull.mono_set (Ioc_subset_Ioc_right hat)
+  have hright : IntegrableOn (criticalMildPathIntegrand ν hν u hu t) (Ioc a t) volume :=
+    hfull.mono_set (fun s hs => ⟨lt_of_le_of_lt ha hs.1, hs.2⟩)
+  have hleft' : IntervalIntegrable (criticalMildPathIntegrand ν hν u hu t) volume 0 a :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le ha).mpr hleft
+  have hright' : IntervalIntegrable (criticalMildPathIntegrand ν hν u hu t) volume a t :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le hat).mpr hright
+  unfold criticalMildDuhamel criticalMildDuhamelTail
+  rw [← intervalIntegral.integral_of_le (le_trans ha hat),
+    ← intervalIntegral.integral_of_le ha,
+    ← intervalIntegral.integral_of_le hat]
+  exact (intervalIntegral.integral_add_adjacent_intervals hleft' hright').symm
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
