@@ -108,6 +108,11 @@ import Navier.ProblemFrontier
 import Navier.AxiomAudit
 import Navier.Analysis.CriticalMildSelfMap
 import Navier.Analysis.CriticalMildDuhamelBochner
+import Navier.Analysis.CriticalMildHeatCarrierAlgebra
+import Navier.Analysis.CriticalMildHeatFlowLinear
+import Navier.Analysis.CriticalMildPathFixedPoint
+import Navier.Analysis.CriticalMildRestart
+import Navier.Analysis.CriticalMildRestartFixedPoint
 
 /-!
 # Navier

@@ -125,8 +125,9 @@ theorem criticalMildRestartImage_eq_shifted_trajectory
     (hu : ∀ s, LatticeDivergenceFree (u s))
     {R t r : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t) (hr : 0 ≤ r)
     (huR : ∀ s ∈ Ioc (0 : ℝ) (t + r), ‖u s‖ ≤ R)
-    (hmild : ∀ (τ : ℝ) (hτ : 0 ≤ τ),
-      u τ = criticalMildImage ν hν u₀ u hu τ hτ) :
+    (hmild_t : u t = criticalMildImage ν hν u₀ u hu t ht)
+    (hmild_tr : u (t + r) =
+      criticalMildImage ν hν u₀ u hu (t + r) (add_nonneg ht hr)) :
     criticalMildRestartImage ν hν u hu t r hr = u (t + r) := by
   have hprefix :
       weightedHeatFlow ν r hν.le hr (criticalMildDuhamel ν hν u hu t) =
@@ -146,7 +147,7 @@ theorem criticalMildRestartImage_eq_shifted_trajectory
     exact weightedHeatFlow_criticalMildPathIntegrand_covariant
       ν hν u hu t s r hr (lt_of_le_of_ne hs.2 hst)
   unfold criticalMildRestartImage criticalMildTerminalData
-  rw [hmild t ht]
+  rw [hmild_t]
   unfold criticalMildImage
   rw [show weightedHeatFlow ν r hν.le hr
       (weightedHeatFlow ν t hν.le ht u₀ + criticalMildDuhamel ν hν u hu t) =
@@ -160,7 +161,7 @@ theorem criticalMildRestartImage_eq_shifted_trajectory
         weightedHeatFlow ν (t + r) hν.le (add_nonneg ht hr) u₀ := by
     congr 1 <;> ring
   rw [hlinear]
-  rw [hmild (t + r) (add_nonneg ht hr)]
+  rw [hmild_tr]
   unfold criticalMildImage
   rw [criticalMildDuhamel_split_restart ν hν u huc hu hR ht hr huR]
   abel
