@@ -43,7 +43,7 @@ nonlinear cascade that constitutes the global-regularity difficulty.  The REDIRE
 records: a multi-frequency regularity route must **control** cross-mode transport
 (an energy / a-priori estimate — e.g. the Beale–Kato–Majda vorticity bound in
 `Navier.Analysis.BealeKatoMajda`), never eliminate it by cancellation.  The R2
-wall (numbered in `.claude/ladder.md`) stands; this file delimits one exhausted
+wall remains; this file delimits one exhausted
 technique.
 -/
 
