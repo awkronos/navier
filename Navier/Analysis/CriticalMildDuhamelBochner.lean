@@ -768,4 +768,34 @@ theorem norm_positiveTimeHeatRegularizedSpectralOutputIntegral_le
     _ = (2 * Real.sqrt T / Real.sqrt ν) * ‖u‖ * ‖v‖ :=
       integral_duhamelHeatTimeMajorant ν T hν hT u v
 
+/-- The actual nonlinear Duhamel integral, indexed by nonnegative elapsed
+time.  This is the carrier-valued path rung; no self-map or contraction is
+asserted here. -/
+def positiveTimeHeatRegularizedSpectralOutputPath
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) :
+    NNReal → WeightedLatticeBanach := fun T =>
+  positiveTimeHeatRegularizedSpectralOutputIntegral
+    ν T hν T.property u v hu
+
+@[simp] theorem positiveTimeHeatRegularizedSpectralOutputPath_zero
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) :
+    positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu 0 = 0 := by
+  simp [positiveTimeHeatRegularizedSpectralOutputPath,
+    positiveTimeHeatRegularizedSpectralOutputIntegral]
+
+/-- Every point of the nonlinear Duhamel path obeys the exact
+inverse-square-root finite-time budget. -/
+theorem norm_positiveTimeHeatRegularizedSpectralOutputPath_le
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) (T : NNReal) :
+    ‖positiveTimeHeatRegularizedSpectralOutputPath ν hν u v hu T‖ ≤
+      (2 * Real.sqrt (T : ℝ) / Real.sqrt ν) * ‖u‖ * ‖v‖ := by
+  exact norm_positiveTimeHeatRegularizedSpectralOutputIntegral_le
+    ν T hν T.property u v hu
+
 end Navier.Analysis.CriticalMildDuhamelBochner
+
+#print axioms Navier.Analysis.CriticalMildDuhamelBochner.positiveTimeHeatRegularizedSpectralOutputPath_zero
+#print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_le
