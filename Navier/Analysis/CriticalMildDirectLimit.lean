@@ -439,7 +439,7 @@ theorem continuous_totalExtension_on_nonneg_of_cofinal {ν : ℝ} {hν : 0 < ν}
     have hmargin : 0 < C.horizon (n + 1) - x.1 := by
       linarith [hxn.2, hnext]
     dsimp [ε]
-    linarith
+    positivity
   apply ContinuousAt.congr_of_eventuallyEq
     ((continuous_criticalMildPathExtension _ (C.horizon_nonneg (n + 1))
       (C.path (n + 1)).1).comp continuous_subtype_val).continuousAt
@@ -451,8 +451,15 @@ theorem continuous_totalExtension_on_nonneg_of_cofinal {ν : ℝ} {hν : 0 < ν}
       simpa [Real.dist_eq] using hy
     dsimp [ε] at habs
     have hupper := (abs_lt.mp habs).2
+    have hxnext : x.1 < C.horizon (n + 1) := lt_of_le_of_lt hxn.2 hnext
+    have hhalf : (C.horizon (n + 1) - x.1) / 2 <
+        C.horizon (n + 1) - x.1 := half_lt_self (sub_pos.mpr hxnext)
+    have hyGap : y.1 - x.1 < C.horizon (n + 1) - x.1 := lt_trans hupper hhalf
     linarith
   have hyIcc : y.1 ∈ Icc (0 : ℝ) (C.horizon (n + 1)) := ⟨y.2, hysucc⟩
+  change C.totalExtension y.1 =
+    criticalMildPathExtension (C.horizon (n + 1))
+      (C.horizon_nonneg (n + 1)) (C.path (n + 1)).1 y.1
   rw [C.totalExtension_eq_stage (n + 1) hyIcc]
   rw [criticalMildPathExtension_apply _ (C.horizon_nonneg (n + 1)) _ hyIcc]
 
@@ -470,3 +477,4 @@ end Navier.Analysis.CriticalMildDirectLimit
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainTotalExtension_zero_of_cofinal
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChain_cofinal_of_linearLifespanBound
 #print axioms Navier.Analysis.CriticalMildDirectLimit.CriticalMildCoherentChain.value_eq_stage
+#print axioms Navier.Analysis.CriticalMildDirectLimit.CriticalMildCoherentChain.continuous_totalExtension_on_nonneg_of_cofinal
