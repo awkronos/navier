@@ -238,6 +238,63 @@ theorem boundedContinuationChain_cofinal (ν : ℝ) (hν : 0 < ν)
       apply mul_le_mul_of_nonneg_right _ hnonneg
       exact_mod_cast Nat.le_succ n
 
+theorem boundedContinuationChain_strictMono (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) (M : ℝ) (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
+    (hbound : CriticalMildTerminalNormBound ν hν a M) :
+    StrictMono (fun n => (boundedContinuationChain ν hν a M hM ha hbound n).horizon) := by
+  apply strictMono_nat_of_lt_succ
+  intro n
+  exact (boundedContinuationChain_adjacent_compatible ν hν a M hM ha hbound n).choose
+
+theorem boundedContinuationChain_pairwise (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) (M : ℝ) (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
+    (hbound : CriticalMildTerminalNormBound ν hν a M) {m n : ℕ} (hmn : m ≤ n) :
+    criticalMildPathRestrict ((boundedContinuationChain_strictMono ν hν a M hM ha hbound).monotone hmn)
+      (boundedContinuationChain ν hν a M hM ha hbound n).path.1 =
+        (boundedContinuationChain ν hν a M hM ha hbound m).path.1 := by
+  induction n, hmn using Nat.le_induction with
+  | base => apply ContinuousMap.ext; intro τ; rfl
+  | @succ n hmn ih =>
+      obtain ⟨hnext, hcompat⟩ := boundedContinuationChain_adjacent_compatible ν hν a M hM ha hbound n
+      have htrans := criticalMildPathRestrict_trans
+        ((boundedContinuationChain_strictMono ν hν a M hM ha hbound).monotone hmn) hnext.le
+        (boundedContinuationChain ν hν a M hM ha hbound (n + 1)).path.1
+      calc
+        _ = criticalMildPathRestrict ((boundedContinuationChain_strictMono ν hν a M hM ha hbound).monotone hmn)
+          (criticalMildPathRestrict hnext.le (boundedContinuationChain ν hν a M hM ha hbound (n + 1)).path.1) := by simpa using htrans.symm
+        _ = _ := by rw [hcompat]; exact ih
+
+noncomputable def boundedCoherentChain (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) (M : ℝ) (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
+    (hbound : CriticalMildTerminalNormBound ν hν a M) :
+    CriticalMildCoherentChain ν hν a where
+  horizon n := (boundedContinuationChain ν hν a M hM ha hbound n).horizon
+  radius n := (boundedContinuationChain ν hν a M hM ha hbound n).radius
+  horizon_nonneg n := (boundedContinuationChain ν hν a M hM ha hbound n).horizon_nonneg
+  path n := (boundedContinuationChain ν hν a M hM ha hbound n).path
+  mild n := (boundedContinuationChain ν hν a M hM ha hbound n).mild
+  horizon_mono := (boundedContinuationChain_strictMono ν hν a M hM ha hbound).monotone
+  pairwise hmn := boundedContinuationChain_pairwise ν hν a M hM ha hbound hmn
+  strict_local_extension n := (boundedContinuationChain_adjacent_compatible ν hν a M hM ha hbound n).choose
+
+theorem boundedCoherentChain_cofinal (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) (M : ℝ) (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
+    (hbound : CriticalMildTerminalNormBound ν hν a M) :
+    (boundedCoherentChain ν hν a M hM ha hbound).CofinalLifespan := by
+  intro t ht
+  obtain ⟨n, hn⟩ := boundedContinuationChain_cofinal ν hν a M hM ha hbound t ht
+  exact ⟨n, ht, hn⟩
+
+theorem bounded_global_mild_of_terminalNormBound (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) (M : ℝ) (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
+    (hbound : CriticalMildTerminalNormBound ν hν a M) :
+    ∀ t : ℝ, ∀ ht : 0 ≤ t,
+      (boundedCoherentChain ν hν a M hM ha hbound).totalExtension t =
+        criticalMildImage ν hν a (boundedCoherentChain ν hν a M hM ha hbound).totalExtension
+          (boundedCoherentChain ν hν a M hM ha hbound).totalExtension_divergenceFree t ht :=
+  (boundedCoherentChain ν hν a M hM ha hbound).totalExtension_satisfies_mild_of_cofinal
+    (boundedCoherentChain_cofinal ν hν a M hM ha hbound)
+
 end Navier.Analysis.CriticalMildBoundedContinuation
 
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.exists_bounded_successor
