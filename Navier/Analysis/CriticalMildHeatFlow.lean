@@ -14,10 +14,13 @@ noncomputable section
 
 namespace Navier.Analysis.CriticalMildHeatFlow
 
+open Topology
+open scoped ENNReal
 open Navier
 open Navier.Analysis.ComplexLerayProjection
 open Navier.Analysis.ComplexLerayNorm
 open Navier.Analysis.ComplexFrequencyHeatLeray
+open Navier.Analysis.FrequencyHeatLeray
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedSpace
 open Navier.Analysis.CriticalMildWeightedBanach
@@ -125,7 +128,83 @@ theorem weightedHeatFlow_divergenceFree
   exact complexFrequencyHeatLeray_hermitian_transverse ν τ (latticeFrequency m)
     (weightedLatticeCoefficient u m)
 
+/-- The same-weight heat--Leray evolution is strongly continuous in
+nonnegative time in the completed weighted `ℓ¹` norm.  This is the linear-path
+continuity leaf required by the critical mild fixed-point map.  Reference:
+Tannery dominated convergence in Mathlib,
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/Analysis/Normed/Group/Tannery.html. -/
+theorem continuous_weightedHeatFlow_nnreal
+    (ν : ℝ) (hν : 0 ≤ ν) (u : WeightedLatticeBanach) :
+    Continuous fun τ : NNReal =>
+      weightedHeatFlow ν τ hν τ.property u := by
+  rw [continuous_iff_continuousAt]
+  intro τ₀
+  apply tendsto_iff_norm_sub_tendsto_zero.mpr
+  have hcoordinate (m : LatticeMode) :
+      Continuous fun τ : NNReal => weightedHeatFlowCoordinate ν τ u m := by
+    unfold weightedHeatFlowCoordinate
+    apply Continuous.const_smul
+    apply CriticalMildHeatBochner.continuous_complexEuclideanPoint.comp
+    rw [show (fun τ : NNReal =>
+        complexFrequencyHeatLeray ν τ (latticeFrequency m)
+          (weightedLatticeCoefficient u m)) =
+      fun τ : NNReal => (complexHeatDecay ν (τ : ℝ) (latticeFrequency m) : ℂ) •
+        complexLeray (latticeFrequency m) (weightedLatticeCoefficient u m) by
+          funext τ
+          exact complexFrequencyHeatLeray_apply ν τ (latticeFrequency m)
+            (weightedLatticeCoefficient u m)]
+    unfold complexHeatDecay heatDecay
+    fun_prop
+  have hpointwise (m : LatticeMode) :
+      Filter.Tendsto
+        (fun τ : NNReal =>
+          ‖weightedHeatFlowCoordinate ν τ u m -
+            weightedHeatFlowCoordinate ν τ₀ u m‖)
+        (𝓝 τ₀) (𝓝 0) := by
+    exact tendsto_iff_norm_sub_tendsto_zero.mp (hcoordinate m).continuousAt
+  have hdominated :
+      ∀ᶠ τ : NNReal in 𝓝 τ₀, ∀ m : LatticeMode,
+        ‖(‖weightedHeatFlowCoordinate ν τ u m -
+            weightedHeatFlowCoordinate ν τ₀ u m‖ : ℝ)‖ ≤
+          2 * ‖u m‖ := by
+    refine Filter.Eventually.of_forall ?_
+    intro (τ : NNReal)
+    intro m
+    rw [Real.norm_of_nonneg (norm_nonneg _)]
+    calc
+      ‖weightedHeatFlowCoordinate ν τ u m -
+          weightedHeatFlowCoordinate ν τ₀ u m‖ ≤
+        ‖weightedHeatFlowCoordinate ν τ u m‖ +
+          ‖weightedHeatFlowCoordinate ν τ₀ u m‖ :=
+        norm_sub_le _ _
+      _ ≤ ‖u m‖ + ‖u m‖ :=
+        add_le_add
+          (norm_weightedHeatFlowCoordinate_le ν τ hν τ.property u m)
+          (norm_weightedHeatFlowCoordinate_le ν τ₀ hν τ₀.property u m)
+      _ = 2 * ‖u m‖ := by ring
+  have hsum : Summable (fun m : LatticeMode => 2 * ‖u m‖) := by
+    have huSum : Summable (fun m : LatticeMode => ‖u m‖) := by
+      simpa using u.2.summable
+    exact huSum.mul_left 2
+  have htannery :
+      Filter.Tendsto
+        (fun τ : NNReal =>
+          ∑' m : LatticeMode,
+            ‖weightedHeatFlowCoordinate ν τ u m -
+              weightedHeatFlowCoordinate ν τ₀ u m‖)
+        (𝓝 τ₀) (𝓝 0) := by
+    simpa using tendsto_tsum_of_dominated_convergence
+      hsum hpointwise hdominated
+  convert htannery using 1
+  funext τ
+  rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+  simp only [ENNReal.toReal_one, one_div, inv_one, Real.rpow_one]
+  apply congrArg tsum
+  funext m
+  rfl
+
 end Navier.Analysis.CriticalMildHeatFlow
 
 #print axioms Navier.Analysis.CriticalMildHeatFlow.norm_weightedHeatFlow_le
 #print axioms Navier.Analysis.CriticalMildHeatFlow.weightedHeatFlow_divergenceFree
+#print axioms Navier.Analysis.CriticalMildHeatFlow.continuous_weightedHeatFlow_nnreal
