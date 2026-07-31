@@ -13,13 +13,15 @@ noncomputable section
 
 namespace Navier.Analysis.CriticalMildDirectLimit
 
-open Set Filter
+open Set Filter MeasureTheory
 open scoped Topology
 open Navier
 open Navier.Analysis.CriticalMildCompatibleSuccessor
 open Navier.Analysis.CriticalMildDuhamelBochner
+open Navier.Analysis.CriticalMildPathIntegrand
 open Navier.Analysis.CriticalMildPathFixedPoint
 open Navier.Analysis.CriticalMildRestrictionCompatibility
+open Navier.Analysis.CriticalMildSelfMap
 open Navier.Analysis.CriticalMildWeightedBanach
 
 /-- The literal union of all finite closed horizons in the compatible chain. -/
@@ -97,7 +99,7 @@ theorem criticalMildChainTotalExtension_divergenceFree
   · rw [criticalMildChainTotalExtension, dif_neg ht]
     unfold LatticeDivergenceFree
     intro m
-    rfl
+    simp [weightedLatticeCoefficient]
 
 /-- On every reached stage interval, the total representative is exactly that
 stage's path. -/
@@ -110,6 +112,7 @@ theorem criticalMildChainTotalExtension_eq_stage
   have hdom : t ∈ criticalMildChainDomain ν hν a := ⟨n, ht⟩
   rw [criticalMildChainTotalExtension, dif_pos hdom]
   exact criticalMildChainValue_eq_stage ν hν a hdom n ht
+
 
 /-- Locally, a union-domain value is represented by the canonical extension
 of one strict successor stage. -/
