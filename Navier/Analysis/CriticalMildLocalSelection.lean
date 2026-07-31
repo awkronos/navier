@@ -193,6 +193,33 @@ theorem criticalMildPathExtension_twoInterval_eq_glued
     (criticalMildTwoIntervalPath hT hS u v hjoin) hx]
   rfl
 
+/-- On every subsequent local horizon, the literal Duhamel integral computed
+with the canonical combined-path extension equals that computed with the
+explicit glued representative. -/
+theorem criticalMildDuhamel_canonicalTwoInterval_eq_glued
+    (ν : ℝ) (hν : 0 < ν) {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (hcanonical : ∀ x, LatticeDivergenceFree
+      (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+        (criticalMildTwoIntervalPath hT hS u v hjoin) x))
+    {r : ℝ} (hr : 0 ≤ r) (hrS : r ≤ S) :
+    criticalMildDuhamel ν hν
+      (criticalMildPathExtension (T + S) (add_nonneg hT hS)
+        (criticalMildTwoIntervalPath hT hS u v hjoin)) hcanonical (T + r) =
+      criticalMildDuhamel ν hν (criticalMildTwoIntervalExtension hT hS u v)
+        (criticalMildTwoIntervalExtension_divergenceFree hT hS u v) (T + r) := by
+  unfold criticalMildDuhamel
+  apply integral_congr_ae
+  filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+  have hsIcc : s ∈ Icc (0 : ℝ) (T + S) := by
+    constructor
+    · exact hs.1.le
+    · linarith [hs.2, hrS]
+  have heq := criticalMildPathExtension_twoInterval_eq_glued hT hS u v hjoin hsIcc
+  unfold criticalMildPathIntegrand
+  simpa only [heq]
+
 /-- Before the join, the combined path is literally the original local path. -/
 theorem criticalMildTwoIntervalPath_apply_of_le
     {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
