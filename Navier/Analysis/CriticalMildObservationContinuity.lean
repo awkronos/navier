@@ -290,6 +290,30 @@ theorem eventually_positiveTimeHeatOutputSingle_eq
     ∀ᶠ τ in 𝓝 τ₀, 0 < τ :=
   eventually_gt_nhds hτ₀
 
+/-- Each total zero-extended `lp.single` coordinate converges at every
+strictly positive lag to its actual heat-output coordinate. -/
+theorem tendsto_positiveTimeHeatOutputSingle
+    (ν τ₀ : ℝ) (hν : 0 < ν) (hτ₀ : 0 < τ₀)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    Filter.Tendsto (positiveTimeHeatOutputSingle ν hν u v hu k)
+      (𝓝 τ₀) (𝓝 (positiveTimeHeatOutputSingle ν hν u v hu k τ₀)) := by
+  let g : ℝ → WeightedLatticeBanach := fun τ =>
+    lp.single (E := fun _ : LatticeMode => ComplexE3) 1 k
+      (heatRegularizedSpectralOutputFiber ν τ k u v)
+  have hg : Continuous g := by
+    exact (continuous_duhamelOutputSingleLinear k).comp
+      (continuous_heatRegularizedSpectralOutputFiber_apply ν k u v)
+  have heq : positiveTimeHeatOutputSingle ν hν u v hu k =ᶠ[𝓝 τ₀] g := by
+    filter_upwards [eventually_positiveTimeHeatOutputSingle_eq ν τ₀ hν hτ₀ u v hu k] with τ hτ
+    rw [positiveTimeHeatOutputSingle_of_pos ν τ hν hτ u v hu k,
+      heatRegularizedSpectralOutput_apply]
+  have hbase : Filter.Tendsto g (𝓝 τ₀) (𝓝 (g τ₀)) :=
+    hg.continuousAt
+  have hlim := hbase.congr' heq.symm
+  simpa [g, positiveTimeHeatOutputSingle_of_pos ν τ₀ hν hτ₀ u v hu k,
+    heatRegularizedSpectralOutput_apply] using hlim
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
