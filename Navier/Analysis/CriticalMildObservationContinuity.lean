@@ -501,6 +501,93 @@ theorem exists_pos_mul_sqrt_lt
     _ < ε * 1 := mul_lt_mul_of_pos_left hlt hε
     _ = ε := mul_one _
 
+/-- Positive-time observation continuity of the actual nonlinear Duhamel
+integral on a globally radius-bounded continuous path. -/
+theorem tendsto_criticalMildDuhamel_observation
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t : ℝ} (hR : 0 ≤ R) (ht : 0 < t)
+    (huR : ∀ s, ‖u s‖ ≤ R) :
+    Filter.Tendsto (criticalMildDuhamel ν hν u hu) (𝓝 t)
+      (𝓝 (criticalMildDuhamel ν hν u hu t)) := by
+  let d : ℝ → ℝ := fun δ => min δ (t / 2)
+  let A : ℝ := (2 / Real.sqrt ν) * R ^ 2
+  let G : ℝ → ℝ → WeightedLatticeBanach := fun δ t' =>
+    ∫ s in Ioc 0 (t - d δ), criticalMildPathIntegrand ν hν u hu t' s
+  let B : ℝ → ℝ := fun δ => A * Real.sqrt (2 * d δ)
+  have hA : 0 ≤ A := by
+    dsimp [A]
+    positivity
+  have hd_pos : ∀ {δ : ℝ}, 0 < δ → 0 < d δ := by
+    intro δ hδ
+    dsimp [d]
+    exact lt_min hδ (by linarith)
+  have hd_le : ∀ δ, d δ ≤ t / 2 := by
+    intro δ
+    exact min_le_right _ _
+  apply tendsto_of_truncated_gluing (criticalMildDuhamel ν hν u hu) G t B
+  · intro δ hδ
+    exact tendsto_integral_criticalMildPathIntegrand_truncated ν hν u huc hu hR
+      (hd_pos hδ) (fun s hs => huR s)
+  · intro δ hδ
+    have hd0 := hd_pos hδ
+    filter_upwards [eventually_gt_nhds (show t - d δ < t by linarith [hd0]),
+      eventually_lt_nhds (show t < t + d δ by linarith [hd0])] with t' hlow hupp
+    have ha : 0 ≤ t - d δ := by linarith [hd_le δ]
+    have hat' : t - d δ ≤ t' := by linarith
+    rw [criticalMildDuhamel_eq_truncated_add_tail
+      ν hν u huc hu hR ha hat' (fun s hs => huR s)]
+    have htail := norm_criticalMildDuhamelTail_le_sqrt_sub
+      ν hν u huc hu hR ha hat' (fun s hs => huR s)
+    have hgap : t' - (t - d δ) ≤ 2 * d δ := by linarith
+    have hsqrt : Real.sqrt (t' - (t - d δ)) ≤ Real.sqrt (2 * d δ) :=
+      Real.sqrt_le_sqrt hgap
+    dsimp [B, A]
+    simpa [G] using (calc
+      ‖criticalMildDuhamelTail ν hν u hu (t - d δ) t'‖ ≤
+          (2 * Real.sqrt (t' - (t - d δ)) / Real.sqrt ν) * R ^ 2 := htail
+      _ ≤ (2 * Real.sqrt (2 * d δ) / Real.sqrt ν) * R ^ 2 := by
+        gcongr
+      _ = A * Real.sqrt (2 * d δ) := by
+        dsimp [A]
+        ring)
+  · intro δ hδ
+    have hd0 := hd_pos hδ
+    have ha : 0 ≤ t - d δ := by linarith [hd_le δ]
+    have htail := norm_criticalMildDuhamel_boundaryStrip_le_sqrt
+      ν hν u huc hu (R := R) (t := t) (δ := d δ)
+      hR hd0 (by linarith [hd_le δ]) (fun s hs => huR s)
+    rw [criticalMildDuhamel_eq_truncated_add_tail
+      ν hν u huc hu hR ha (by linarith [hd_le δ]) (fun s hs => huR s)]
+    have hsqrt : Real.sqrt (d δ) ≤ Real.sqrt (2 * d δ) :=
+      Real.sqrt_le_sqrt (by nlinarith [hd0])
+    dsimp [B, A]
+    simpa [G] using (calc
+      ‖criticalMildDuhamelTail ν hν u hu (t - d δ) t‖ ≤
+          (2 * Real.sqrt (d δ) / Real.sqrt ν) * R ^ 2 := htail
+      _ ≤ (2 * Real.sqrt (2 * d δ) / Real.sqrt ν) * R ^ 2 := by
+        gcongr
+      _ = A * Real.sqrt (2 * d δ) := by
+        dsimp [A]
+        ring)
+  · intro ε hε
+    obtain ⟨δ, hδ, hsmall⟩ := exists_pos_mul_sqrt_lt
+      (C := A * Real.sqrt 2) (ε := ε) (by positivity) hε
+    refine ⟨δ, hδ, ?_⟩
+    have hmin : d δ ≤ δ := by
+      dsimp [d]
+      exact min_le_left _ _
+    have hsqrt : Real.sqrt (2 * d δ) ≤ Real.sqrt 2 * Real.sqrt δ := by
+      rw [← Real.sqrt_mul (by positivity : 0 ≤ (2 : ℝ))]
+      exact Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left hmin (by norm_num))
+    dsimp [B]
+    calc
+      A * Real.sqrt (2 * d δ) ≤ A * (Real.sqrt 2 * Real.sqrt δ) :=
+        mul_le_mul_of_nonneg_left hsqrt hA
+      _ = (A * Real.sqrt 2) * Real.sqrt δ := by ring
+      _ < ε := hsmall
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
