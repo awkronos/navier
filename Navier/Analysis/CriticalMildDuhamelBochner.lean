@@ -705,6 +705,86 @@ theorem norm_positiveTimeHeatRegularizedSpectralOutput_le (ν : ℝ) (hν : 0 < 
       unfold duhamelHeatTimeMajorant
       rw [outputHeatGain_eq_inverseSqrtTime ν τ hν hτ]
 
+/-- Two-input Lipschitz estimate for the actual positive-lag nonlinear heat
+output.  This is the pointwise contraction leaf consumed by the evolving-path
+Bochner integral. -/
+theorem norm_positiveTimeHeatRegularizedSpectralOutput_sub_le
+    (ν : ℝ) (hν : 0 < ν)
+    (u u' v v' : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) (hu' : LatticeDivergenceFree u')
+    {τ : ℝ} (hτ : 0 < τ) :
+    ‖positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ -
+        positiveTimeHeatRegularizedSpectralOutput ν hν u' v' hu' τ‖ ≤
+      (Real.sqrt ν)⁻¹ * inverseSqrtTime τ *
+        (‖u‖ * ‖v - v'‖ + ‖u - u'‖ * ‖v'‖) := by
+  have hright :
+      positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ -
+          positiveTimeHeatRegularizedSpectralOutput ν hν u v' hu τ =
+        positiveTimeHeatRegularizedSpectralOutput ν hν u (v - v') hu τ := by
+    have hadd := congrFun
+      (positiveTimeHeatRegularizedSpectralOutput_add_right
+        ν hν u (v - v') v' hu) τ
+    rw [sub_add_cancel] at hadd
+    have hadd' :
+        positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ =
+          positiveTimeHeatRegularizedSpectralOutput ν hν u (v - v') hu τ +
+            positiveTimeHeatRegularizedSpectralOutput ν hν u v' hu τ := by
+      simpa only [Pi.add_apply] using hadd
+    rw [hadd']
+    abel
+  have hleft :
+      positiveTimeHeatRegularizedSpectralOutput ν hν u v' hu τ -
+          positiveTimeHeatRegularizedSpectralOutput ν hν u' v' hu' τ =
+        positiveTimeHeatRegularizedSpectralOutput ν hν
+          (u - u') v' (hu.sub hu') τ := by
+    have hsum : LatticeDivergenceFree (u - u' + u') := by
+      simpa only [sub_add_cancel] using hu
+    have hadd := congrFun
+      (positiveTimeHeatRegularizedSpectralOutput_add_left
+        ν hν (u - u') u' v' (hu.sub hu') hu' hsum) τ
+    have hproof :
+        positiveTimeHeatRegularizedSpectralOutput ν hν
+            (u - u' + u') v' hsum τ =
+          positiveTimeHeatRegularizedSpectralOutput ν hν u v' hu τ := by
+      congr 2
+      exact sub_add_cancel u u'
+    have hadd' :
+        positiveTimeHeatRegularizedSpectralOutput ν hν u v' hu τ =
+          positiveTimeHeatRegularizedSpectralOutput ν hν
+              (u - u') v' (hu.sub hu') τ +
+            positiveTimeHeatRegularizedSpectralOutput ν hν u' v' hu' τ := by
+      rw [← hproof]
+      simpa only [Pi.add_apply] using hadd
+    rw [hadd']
+    abel
+  have hdecomp :
+      positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ -
+          positiveTimeHeatRegularizedSpectralOutput ν hν u' v' hu' τ =
+        (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ -
+          positiveTimeHeatRegularizedSpectralOutput ν hν u v' hu τ) +
+        (positiveTimeHeatRegularizedSpectralOutput ν hν u v' hu τ -
+          positiveTimeHeatRegularizedSpectralOutput ν hν u' v' hu' τ) := by
+    abel
+  rw [hdecomp, hright, hleft]
+  calc
+    ‖positiveTimeHeatRegularizedSpectralOutput ν hν u (v - v') hu τ +
+        positiveTimeHeatRegularizedSpectralOutput ν hν
+          (u - u') v' (hu.sub hu') τ‖ ≤
+      ‖positiveTimeHeatRegularizedSpectralOutput ν hν u (v - v') hu τ‖ +
+        ‖positiveTimeHeatRegularizedSpectralOutput ν hν
+          (u - u') v' (hu.sub hu') τ‖ := norm_add_le _ _
+    _ ≤ duhamelHeatTimeMajorant ν u (v - v') τ +
+        duhamelHeatTimeMajorant ν (u - u') v' τ :=
+      add_le_add
+        (norm_positiveTimeHeatRegularizedSpectralOutput_le
+          ν hν u (v - v') hu hτ)
+        (norm_positiveTimeHeatRegularizedSpectralOutput_le
+          ν hν (u - u') v' (hu.sub hu') hτ)
+    _ = (Real.sqrt ν)⁻¹ * inverseSqrtTime τ *
+        (‖u‖ * ‖v - v'‖ + ‖u - u'‖ * ‖v'‖) := by
+      unfold duhamelHeatTimeMajorant
+      ring
+
 /-- The nonlinear Duhamel scalar majorant is interval-integrable on every
 nonnegative finite horizon. -/
 theorem intervalIntegrable_duhamelHeatTimeMajorant (ν T : ℝ) (hν : 0 < ν)
@@ -1162,4 +1242,5 @@ end Navier.Analysis.CriticalMildDuhamelBochner
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_right_le
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_left_le
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutputPath_sub_le
+#print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_positiveTimeHeatRegularizedSpectralOutput_sub_le
 #print axioms Navier.Analysis.CriticalMildDuhamelBochner.norm_nonlinearDuhamelPath_sub_le

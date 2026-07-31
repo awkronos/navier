@@ -114,6 +114,27 @@ theorem norm_criticalMildImage_le_radius
   exact (norm_criticalMildImage_le ν hν u₀ u huc hu hR ht huR).trans
     ((add_le_add_right htime ‖u₀‖).trans hbudget)
 
+/-- Two continuous divergence-free paths in the radius-`R` ball are sent,
+pointwise, at most `4 sqrt(t) R / sqrt(ν)` times their uniform separation
+apart by the actual assembled mild map. -/
+theorem norm_criticalMildImage_sub_le
+    (ν : ℝ) (hν : 0 < ν)
+    (u₀ : WeightedLatticeBanach)
+    (u v : ℝ → WeightedLatticeBanach)
+    (huc : Continuous u) (hvc : Continuous v)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    (hv : ∀ s, LatticeDivergenceFree (v s))
+    {R D t : ℝ} (hR : 0 ≤ R) (hD : 0 ≤ D) (ht : 0 ≤ t)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s‖ ≤ R)
+    (hvR : ∀ s ∈ Ioc (0 : ℝ) t, ‖v s‖ ≤ R)
+    (huvD : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s - v s‖ ≤ D) :
+    ‖criticalMildImage ν hν u₀ u hu t ht -
+        criticalMildImage ν hν u₀ v hv t ht‖ ≤
+      (4 * Real.sqrt t / Real.sqrt ν) * R * D := by
+  simpa only [criticalMildImage, add_sub_add_left_eq_sub] using
+    norm_criticalMildDuhamel_sub_le
+      ν hν u v huc hvc hu hv hR hD ht huR hvR huvD
+
 /-- At observation time zero the assembled mild image has no nonlinear
 Duhamel contribution: the literal Bochner interval is empty. -/
 theorem criticalMildImage_zero_nonlinear
@@ -130,4 +151,5 @@ end Navier.Analysis.CriticalMildSelfMap
 
 #print axioms Navier.Analysis.CriticalMildSelfMap.criticalMildImage_divergenceFree
 #print axioms Navier.Analysis.CriticalMildSelfMap.norm_criticalMildImage_le_radius
+#print axioms Navier.Analysis.CriticalMildSelfMap.norm_criticalMildImage_sub_le
 #print axioms Navier.Analysis.CriticalMildSelfMap.criticalMildImage_zero_nonlinear

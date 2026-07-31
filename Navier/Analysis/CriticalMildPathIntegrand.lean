@@ -479,6 +479,143 @@ theorem norm_criticalMildPathIntegrand_le_of_norm_le
   exact hbase.trans (mul_le_mul_of_nonneg_left
     ((sq_le_sq₀ (norm_nonneg _) hR).2 huR) hcoef)
 
+/-- Pointwise two-path difference estimate for the literal evolving
+nonlinear integrand. -/
+theorem norm_criticalMildPathIntegrand_sub_le
+    (ν : ℝ) (hν : 0 < ν)
+    (u v : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    (hv : ∀ s, LatticeDivergenceFree (v s))
+    {t s : ℝ} (hst : s ≤ t) :
+    ‖criticalMildPathIntegrand ν hν u hu t s -
+        criticalMildPathIntegrand ν hν v hv t s‖ ≤
+      (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) *
+        (‖u s‖ + ‖v s‖) * ‖u s - v s‖ := by
+  rcases hst.eq_or_lt with hst | hst
+  · subst t
+    simp [criticalMildPathIntegrand,
+      positiveTimeHeatRegularizedSpectralOutput, inverseSqrtTime]
+  unfold criticalMildPathIntegrand
+  have hlag : 0 < t - s := sub_pos.mpr hst
+  have h := norm_positiveTimeHeatRegularizedSpectralOutput_sub_le
+    ν hν (u s) (v s) (u s) (v s) (hu s) (hv s) hlag
+  calc
+    ‖positiveTimeHeatRegularizedSpectralOutput ν hν
+          (u s) (u s) (hu s) (t - s) -
+        positiveTimeHeatRegularizedSpectralOutput ν hν
+          (v s) (v s) (hv s) (t - s)‖ ≤
+      (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) *
+        (‖u s‖ * ‖u s - v s‖ + ‖u s - v s‖ * ‖v s‖) := h
+    _ = (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) *
+        (‖u s‖ + ‖v s‖) * ‖u s - v s‖ := by ring
+
+/-- Scalar majorant for the difference of two radius-`R` paths separated by
+at most `D`. -/
+def criticalMildPathDifferenceMajorant
+    (ν R D t : ℝ) : ℝ → ℝ := fun s =>
+  (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * (2 * R) * D
+
+theorem intervalIntegrable_criticalMildPathDifferenceMajorant
+    (ν R D t : ℝ) :
+    IntervalIntegrable
+      (criticalMildPathDifferenceMajorant ν R D t) volume 0 t := by
+  unfold criticalMildPathDifferenceMajorant
+  have hlag : IntervalIntegrable
+      (fun s => inverseSqrtTime (t - s)) volume t 0 := by
+    simpa using (inverseSqrtTime_intervalIntegrable t).comp_sub_left t
+  exact (((hlag.symm.const_mul _).mul_const _).mul_const _)
+
+theorem integral_criticalMildPathDifferenceMajorant
+    (ν R D t : ℝ) (hν : 0 < ν) (ht : 0 ≤ t) :
+    (∫ s in (0 : ℝ)..t, criticalMildPathDifferenceMajorant ν R D t s) =
+      (4 * Real.sqrt t / Real.sqrt ν) * R * D := by
+  unfold criticalMildPathDifferenceMajorant
+  rw [show (fun s : ℝ =>
+      (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) * (2 * R) * D) =
+        fun s => (Real.sqrt ν)⁻¹ *
+          (inverseSqrtTime (t - s) * ((2 * R) * D)) by
+      funext s
+      ring,
+    intervalIntegral.integral_const_mul,
+    intervalIntegral.integral_mul_const,
+    intervalIntegral.integral_comp_sub_left,
+    sub_self, sub_zero,
+    integral_inverseSqrtTime_zero t ht]
+  field_simp [ne_of_gt hν]
+  ring
+
+/-- The genuine evolving-path Duhamel operator is locally Lipschitz on a
+finite radius ball, with the exact `4 sqrt(t) R / sqrt(ν)` contraction
+coefficient. -/
+theorem norm_criticalMildDuhamel_sub_le
+    (ν : ℝ) (hν : 0 < ν)
+    (u v : ℝ → WeightedLatticeBanach)
+    (huc : Continuous u) (hvc : Continuous v)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    (hv : ∀ s, LatticeDivergenceFree (v s))
+    {R D t : ℝ} (hR : 0 ≤ R) (hD : 0 ≤ D) (ht : 0 ≤ t)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s‖ ≤ R)
+    (hvR : ∀ s ∈ Ioc (0 : ℝ) t, ‖v s‖ ≤ R)
+    (huvD : ∀ s ∈ Ioc (0 : ℝ) t, ‖u s - v s‖ ≤ D) :
+    ‖criticalMildDuhamel ν hν u hu t -
+        criticalMildDuhamel ν hν v hv t‖ ≤
+      (4 * Real.sqrt t / Real.sqrt ν) * R * D := by
+  have hintu :=
+    integrableOn_criticalMildPathIntegrand ν hν u huc hu hR ht huR
+  have hintv :=
+    integrableOn_criticalMildPathIntegrand ν hν v hvc hv hR ht hvR
+  have hscalar :
+      IntegrableOn (criticalMildPathDifferenceMajorant ν R D t)
+        (Ioc 0 t) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le ht).mp
+      (intervalIntegrable_criticalMildPathDifferenceMajorant ν R D t)
+  have hmono :
+      (fun s => ‖criticalMildPathIntegrand ν hν u hu t s -
+        criticalMildPathIntegrand ν hν v hv t s‖) ≤ᵐ[
+          volume.restrict (Ioc 0 t)]
+        criticalMildPathDifferenceMajorant ν R D t := by
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+    have hbase :=
+      norm_criticalMildPathIntegrand_sub_le ν hν u v hu hv hs.2
+    have hsum : ‖u s‖ + ‖v s‖ ≤ 2 * R := by
+      linarith [huR s hs, hvR s hs]
+    have hcoef :
+        0 ≤ (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) := by
+      exact mul_nonneg (inv_nonneg.mpr (Real.sqrt_nonneg _))
+        (Real.rpow_nonneg (sub_nonneg.mpr hs.2) _)
+    calc
+      ‖criticalMildPathIntegrand ν hν u hu t s -
+          criticalMildPathIntegrand ν hν v hv t s‖ ≤
+        (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) *
+          (‖u s‖ + ‖v s‖) * ‖u s - v s‖ := hbase
+      _ ≤ (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) *
+          (2 * R) * ‖u s - v s‖ := by
+        exact mul_le_mul_of_nonneg_right
+          (mul_le_mul_of_nonneg_left hsum hcoef) (norm_nonneg _)
+      _ ≤ (Real.sqrt ν)⁻¹ * inverseSqrtTime (t - s) *
+          (2 * R) * D := by
+        exact mul_le_mul_of_nonneg_left (huvD s hs)
+          (mul_nonneg hcoef (mul_nonneg (by norm_num) hR))
+      _ = criticalMildPathDifferenceMajorant ν R D t s := rfl
+  unfold criticalMildDuhamel
+  rw [← integral_sub hintu hintv]
+  calc
+    ‖∫ s in Ioc 0 t,
+        (criticalMildPathIntegrand ν hν u hu t s -
+          criticalMildPathIntegrand ν hν v hv t s)‖ ≤
+      ∫ s in Ioc 0 t,
+        ‖criticalMildPathIntegrand ν hν u hu t s -
+          criticalMildPathIntegrand ν hν v hv t s‖ :=
+      norm_integral_le_integral_norm _
+    _ ≤ ∫ s in Ioc 0 t,
+        criticalMildPathDifferenceMajorant ν R D t s :=
+      integral_mono_ae (hintu.sub hintv).norm hscalar hmono
+    _ = ∫ s in (0 : ℝ)..t,
+        criticalMildPathDifferenceMajorant ν R D t s := by
+      rw [← intervalIntegral.integral_of_le ht]
+    _ = (4 * Real.sqrt t / Real.sqrt ν) * R * D :=
+      integral_criticalMildPathDifferenceMajorant ν R D t hν ht
+
 end Navier.Analysis.CriticalMildPathIntegrand
 
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.norm_criticalMildPathIntegrand_le
@@ -489,3 +626,5 @@ end Navier.Analysis.CriticalMildPathIntegrand
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.criticalMildDuhamel_divergenceFree
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.norm_criticalMildDuhamel_le
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.tendsto_criticalMildDuhamel_nnreal_zero
+#print axioms Navier.Analysis.CriticalMildPathIntegrand.norm_criticalMildPathIntegrand_sub_le
+#print axioms Navier.Analysis.CriticalMildPathIntegrand.norm_criticalMildDuhamel_sub_le
