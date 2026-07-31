@@ -317,6 +317,42 @@ theorem exists_criticalMildPathBall_fixedPoint
   obtain ⟨u, hu, -, -⟩ := ContractingWith.exists_fixedPoint hc z (edist_ne_top _ _)
   exact ⟨u, hu⟩
 
+/-- The Banach witness is an actual continuous local trajectory: it is
+divergence-free and radius bounded by construction, and satisfies the literal
+pointwise critical mild equation on the whole closed horizon. -/
+theorem exists_criticalMild_trajectory
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+    (hbudget : ‖u₀‖ + (2 * Real.sqrt T / Real.sqrt ν) * R ^ 2 ≤ R)
+    (hcontr : (4 * Real.sqrt T / Real.sqrt ν) * R < 1) :
+    ∃ u : CriticalMildPathBall T R,
+      (∀ τ : Icc (0 : ℝ) T,
+        u.1 τ = criticalMildImage ν hν u₀
+          (criticalMildPathExtension T hT u.1)
+          (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) := by
+  obtain ⟨u, hu⟩ := exists_criticalMildPathBall_fixedPoint
+    ν hν u₀ hT hR hbudget hcontr
+  refine ⟨u, ?_⟩
+  intro τ
+  have hτ := congrArg (fun w : CriticalMildPathBall T R => w.1 τ) hu
+  simpa [Function.IsFixedPt, criticalMildPathBallImage] using hτ.symm
+
+/-- Strict contraction gives uniqueness of the critical mild trajectory within
+the divergence-free radius ball. -/
+theorem criticalMildPathBall_fixedPoint_unique
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+    (hbudget : ‖u₀‖ + (2 * Real.sqrt T / Real.sqrt ν) * R ^ 2 ≤ R)
+    (hcontr : (4 * Real.sqrt T / Real.sqrt ν) * R < 1)
+    {u v : CriticalMildPathBall T R}
+    (hu : Function.IsFixedPt (criticalMildPathBallImage ν hν u₀ hT hR hbudget) u)
+    (hv : Function.IsFixedPt (criticalMildPathBallImage ν hν u₀ hT hR hbudget) v) :
+    u = v := by
+  letI : Nonempty (CriticalMildPathBall T R) :=
+    ⟨⟨0, zero_mem_criticalMildPathBall T R hR⟩⟩
+  have hc := criticalMildPathBallImage_contractingWith ν hν u₀ hT hR hbudget hcontr
+  exact (hc.fixedPoint_unique hu).trans (hc.fixedPoint_unique hv).symm
+
 end Navier.Analysis.CriticalMildPathFixedPoint
 
 #print axioms Navier.Analysis.CriticalMildPathFixedPoint.continuous_criticalMildPathExtension
