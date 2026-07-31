@@ -17,6 +17,7 @@ namespace Navier.Analysis.CriticalMildObservationContinuity
 open MeasureTheory Set
 open Navier
 open Navier.Analysis.CriticalMildWeightedBanach
+open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildPathIntegrand
 open Navier.Analysis.CriticalMildHeatTimeKernel
@@ -131,6 +132,47 @@ theorem norm_criticalMildDuhamelTail_le_sqrt_sub
       norm_criticalMildDuhamelTail_le ν hν u huc hu hR ht htt' huR
     _ = (2 * Real.sqrt (t' - t) / Real.sqrt ν) * R ^ 2 :=
       integral_criticalMildPathMajorant_tail ν R t t' hν htt'
+
+/-- For a fixed integration time, every literal output coordinate of the
+positive-lag nonlinear heat integrand is continuous in observation time. -/
+theorem continuous_heatRegularizedSpectralOutputFiber_observation
+    (ν s : ℝ) (u : ℝ → WeightedLatticeBanach) (k : LatticeMode) :
+    Continuous fun t : ℝ =>
+      heatRegularizedSpectralOutputFiber ν (t - s) k (u s) (u s) := by
+  exact (continuous_heatRegularizedSpectralOutputFiber_apply ν k (u s) (u s)).comp
+    (continuous_id.sub continuous_const)
+
+/-- On the common interval strictly before the observation time, the actual
+zero-extended evolving Duhamel integrand has continuous lattice coordinates
+as the observation time moves. -/
+theorem continuousOn_criticalMildPathIntegrand_observation_apply
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    (s : ℝ) (k : LatticeMode) :
+    ContinuousOn (fun t : ℝ => criticalMildPathIntegrand ν hν u hu t s k)
+      (Ioi s) := by
+  apply ContinuousOn.congr
+    (continuous_heatRegularizedSpectralOutputFiber_observation ν s u k).continuousOn
+  intro t ht
+  have hlag : 0 < t - s := sub_pos.mpr ht
+  unfold criticalMildPathIntegrand
+  change positiveTimeHeatRegularizedSpectralOutput ν hν (u s) (u s) (hu s)
+      (t - s) k = heatRegularizedSpectralOutputFiber ν (t - s) k (u s) (u s)
+  rw [positiveTimeHeatRegularizedSpectralOutput_of_pos ν hν _ _ (hu s) hlag]
+  exact heatRegularizedSpectralOutput_apply
+    ν (t - s) hν hlag (u s) (u s) (hu s) k
+
+/-- Hence every common-interval coordinate has genuine pointwise observation
+time convergence at every strictly positive heat lag. -/
+theorem continuousAt_criticalMildPathIntegrand_observation_apply
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {s t : ℝ} (hst : s < t) (k : LatticeMode) :
+    ContinuousAt (fun t' : ℝ => criticalMildPathIntegrand ν hν u hu t' s k) t :=
+  (continuousOn_criticalMildPathIntegrand_observation_apply ν hν u hu s k).continuousAt
+    (isOpen_Ioi.mem_nhds hst)
 
 end Navier.Analysis.CriticalMildObservationContinuity
 
