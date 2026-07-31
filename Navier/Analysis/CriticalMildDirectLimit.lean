@@ -163,6 +163,27 @@ theorem criticalMildDuhamel_totalExtension_eq_stage
   filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
   exact criticalMildPathIntegrand_totalExtension_eq_stage ν hν a n ht hs
 
+/-- At every time in the literal union-domain, the direct-limit value obeys
+the original-data mild equation for the total extension. -/
+theorem criticalMildChainValue_satisfies_original_mild
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) {t : ℝ}
+    (ht : t ∈ criticalMildChainDomain ν hν a) (ht0 : 0 ≤ t) :
+    criticalMildChainValue ν hν a t ht = criticalMildImage ν hν a
+      (criticalMildChainTotalExtension ν hν a)
+      (criticalMildChainTotalExtension_divergenceFree ν hν a) t ht0 := by
+  have hdom := ht
+  obtain ⟨n, htn⟩ := ht
+  rw [criticalMildChainValue_eq_stage ν hν a hdom n htn]
+  rw [(criticalMildCompatibleChain ν hν a n).mild ⟨t, htn⟩]
+  unfold criticalMildImage
+  rw [criticalMildDuhamel_totalExtension_eq_stage ν hν a n htn]
+
+/-- The exact additional lifespan condition needed to upgrade the local-union
+mild identity to all nonnegative times. -/
+def CriticalMildChainCofinalLifespan (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) : Prop :=
+  ∀ t : ℝ, 0 ≤ t → t ∈ criticalMildChainDomain ν hν a
+
 
 /-- Locally, a union-domain value is represented by the canonical extension
 of one strict successor stage. -/
@@ -228,3 +249,4 @@ end Navier.Analysis.CriticalMildDirectLimit
 #print axioms Navier.Analysis.CriticalMildDirectLimit.continuous_criticalMildChainPath
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildPathIntegrand_totalExtension_eq_stage
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildDuhamel_totalExtension_eq_stage
+#print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainValue_satisfies_original_mild
