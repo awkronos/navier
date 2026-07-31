@@ -14,7 +14,7 @@ noncomputable section
 
 namespace Navier.Analysis.CriticalMildObservationContinuity
 
-open MeasureTheory Set
+open MeasureTheory Set Topology
 open Navier
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildSeries
@@ -173,6 +173,18 @@ theorem continuousAt_criticalMildPathIntegrand_observation_apply
     ContinuousAt (fun t' : ℝ => criticalMildPathIntegrand ν hν u hu t' s k) t :=
   (continuousOn_criticalMildPathIntegrand_observation_apply ν hν u hu s k).continuousAt
     (isOpen_Ioi.mem_nhds hst)
+
+/-- Filter form of the common-interval pointwise convergence used by
+dominated convergence: every coordinate converges as the observation time
+approaches a strictly later target time. -/
+theorem tendsto_criticalMildPathIntegrand_observation_apply
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {s t : ℝ} (hst : s < t) (k : LatticeMode) :
+    Filter.Tendsto (fun t' : ℝ => criticalMildPathIntegrand ν hν u hu t' s k)
+      (𝓝 t) (𝓝 (criticalMildPathIntegrand ν hν u hu t s k)) :=
+  (continuousAt_criticalMildPathIntegrand_observation_apply ν hν u hu hst k).tendsto
 
 end Navier.Analysis.CriticalMildObservationContinuity
 
