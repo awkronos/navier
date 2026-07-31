@@ -106,6 +106,8 @@ import Navier.Disposition
 import Navier.Frontier
 import Navier.ProblemFrontier
 import Navier.AxiomAudit
+import Navier.Analysis.CriticalMildSelfMap
+import Navier.Analysis.CriticalMildDuhamelBochner
 
 /-!
 # Navier
