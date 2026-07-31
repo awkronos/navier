@@ -397,6 +397,32 @@ theorem duhamel_totalExtension_eq_stage {ν : ℝ} {hν : 0 < ν}
   filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
   exact C.pathIntegrand_totalExtension_eq_stage n ht hs
 
+theorem value_satisfies_original_mild {ν : ℝ} {hν : 0 < ν}
+    {a : WeightedLatticeBanach} (C : CriticalMildCoherentChain ν hν a)
+    {t : ℝ} (ht : t ∈ C.domain) (ht0 : 0 ≤ t) :
+    C.value t ht = criticalMildImage ν hν a C.totalExtension
+      C.totalExtension_divergenceFree t ht0 := by
+  have hdom := ht
+  obtain ⟨n, htn⟩ := ht
+  rw [C.value_eq_stage hdom n htn]
+  rw [C.mild n ⟨t, htn⟩]
+  unfold criticalMildImage
+  rw [C.duhamel_totalExtension_eq_stage n htn]
+
+def CofinalLifespan {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) : Prop :=
+  ∀ t : ℝ, 0 ≤ t → t ∈ C.domain
+
+theorem totalExtension_satisfies_mild_of_cofinal {ν : ℝ} {hν : 0 < ν}
+    {a : WeightedLatticeBanach} (C : CriticalMildCoherentChain ν hν a)
+    (hcofinal : C.CofinalLifespan) : ∀ t : ℝ, ∀ ht : 0 ≤ t,
+      C.totalExtension t = criticalMildImage ν hν a C.totalExtension
+        C.totalExtension_divergenceFree t ht := by
+  intro t ht
+  have hdom := hcofinal t ht
+  rw [totalExtension, dif_pos hdom]
+  exact C.value_satisfies_original_mild hdom ht
+
 end CriticalMildCoherentChain
 
 end Navier.Analysis.CriticalMildDirectLimit
