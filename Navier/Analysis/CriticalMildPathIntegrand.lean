@@ -419,6 +419,27 @@ theorem norm_criticalMildDuhamel_le
         integral_inverseSqrtTime_zero t ht]
       field_simp [ne_of_gt hν]
 
+/-- The actual evolving nonlinear Duhamel integral is continuous at the
+initial observation time from the nonnegative time side.  This uses the
+literal Bochner integral and its checked `O(sqrt t)` bound, not a continuity
+assumption on a payload. -/
+theorem tendsto_criticalMildDuhamel_nnreal_zero
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R : ℝ} (hR : 0 ≤ R) (huR : ∀ s, ‖u s‖ ≤ R) :
+    Filter.Tendsto (fun t : NNReal => criticalMildDuhamel ν hν u hu t)
+      (𝓝 0) (𝓝 0) := by
+  apply squeeze_zero_norm (a := fun t : NNReal =>
+    (2 * Real.sqrt (t : ℝ) / Real.sqrt ν) * R ^ 2)
+  · intro t
+    exact norm_criticalMildDuhamel_le ν hν u huc hu hR t.2
+      (fun s _ => huR s)
+  · have hcont : Continuous fun t : NNReal =>
+        (2 * Real.sqrt (t : ℝ) / Real.sqrt ν) * R ^ 2 := by
+      fun_prop
+    simpa using hcont.tendsto 0
+
 /-- Before the observation time, the actual path-dependent integrand obeys
 the checked inverse-square-root heat-lag majorant. -/
 theorem norm_criticalMildPathIntegrand_le
