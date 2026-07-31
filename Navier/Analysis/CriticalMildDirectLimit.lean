@@ -185,6 +185,22 @@ def CriticalMildChainCofinalLifespan (ν : ℝ) (hν : 0 < ν)
     (a : WeightedLatticeBanach) : Prop :=
   ∀ t : ℝ, 0 ≤ t → t ∈ criticalMildChainDomain ν hν a
 
+/-- A quantitative sufficient lifespan estimate: the selected horizons grow
+at least linearly in their stage number. -/
+def CriticalMildChainLinearLifespanBound (ν : ℝ) (hν : 0 < ν)
+    (a : WeightedLatticeBanach) : Prop :=
+  ∀ n : ℕ, (n : ℝ) ≤ (criticalMildCompatibleChain ν hν a n).horizon
+
+/-- A linear quantitative horizon lower bound forces the chain domain to be
+cofinal in all nonnegative times. -/
+theorem criticalMildChain_cofinal_of_linearLifespanBound
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (hlinear : CriticalMildChainLinearLifespanBound ν hν a) :
+    CriticalMildChainCofinalLifespan ν hν a := by
+  intro t ht
+  obtain ⟨n, hn⟩ := exists_nat_ge t
+  exact ⟨n, ht, le_trans hn (hlinear n)⟩
+
 /-- Conditional global-in-time mild identity: cofinal lifespan is exactly what
 turns the union-domain construction into an all-nonnegative-time solution. -/
 theorem criticalMildChainTotalExtension_satisfies_mild_of_cofinal
@@ -280,3 +296,4 @@ end Navier.Analysis.CriticalMildDirectLimit
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainValue_satisfies_original_mild
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainTotalExtension_satisfies_mild_of_cofinal
 #print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChainTotalExtension_zero_of_cofinal
+#print axioms Navier.Analysis.CriticalMildDirectLimit.criticalMildChain_cofinal_of_linearLifespanBound
