@@ -294,9 +294,14 @@ structure CriticalMildCoherentChain (ν : ℝ) (hν : 0 < ν)
   radius : ℕ → ℝ
   horizon_nonneg : ∀ n, 0 ≤ horizon n
   path : ∀ n, CriticalMildPathBall (horizon n) (radius n)
+  mild : ∀ n (τ : Icc (0 : ℝ) (horizon n)),
+    (path n).1 τ = criticalMildImage ν hν a
+      (criticalMildPathExtension (horizon n) (horizon_nonneg n) (path n).1)
+      (criticalMildPathBallExtension_divergenceFree (horizon_nonneg n) (path n)) τ.1 τ.2.1
   horizon_mono : Monotone horizon
   pairwise : ∀ {m n : ℕ} (hmn : m ≤ n),
     criticalMildPathRestrict (horizon_mono hmn) (path n).1 = (path m).1
+  strict_local_extension : ∀ n, horizon n < horizon (n + 1)
 
 namespace CriticalMildCoherentChain
 
@@ -332,6 +337,26 @@ theorem value_eq_stage {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
   · have hpair := C.pairwise hnk
     have happ := ContinuousMap.congr_fun hpair ⟨t, hn⟩
     simpa [criticalMildPathRestrict, criticalMildTimeInclusion] using happ
+
+def totalExtension {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) : ℝ → WeightedLatticeBanach := by
+  classical
+  exact fun t => if ht : t ∈ C.domain then C.value t ht else 0
+
+theorem totalExtension_divergenceFree {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) (t : ℝ) :
+    LatticeDivergenceFree (C.totalExtension t) := by
+  classical
+  by_cases ht : t ∈ C.domain
+  · rw [totalExtension, dif_pos ht]
+    have hdom := ht
+    obtain ⟨n, hn⟩ := ht
+    rw [C.value_eq_stage hdom n hn]
+    exact criticalMildPathBall_divergenceFree (C.path n) ⟨t, hn⟩
+  · rw [totalExtension, dif_neg ht]
+    unfold LatticeDivergenceFree
+    intro m
+    simp [weightedLatticeCoefficient, ComplexLerayNorm.complexEuclideanPoint]
 
 end CriticalMildCoherentChain
 
