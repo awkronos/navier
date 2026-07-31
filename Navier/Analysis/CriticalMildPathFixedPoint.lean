@@ -20,6 +20,9 @@ open Navier
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildPathContraction
+open Navier.Analysis.CriticalMildHeatFlow
+open Navier.Analysis.CriticalMildPathIntegrand
+open Navier.Analysis.CriticalMildSelfMap
 
 /-- The complete local carrier used for a critical mild fixed point. -/
 abbrev CriticalMildPath (T : ℝ) := WeightedMildPath T
@@ -58,6 +61,45 @@ theorem criticalMildPathBall_norm_le
     {T R : ℝ} (u : CriticalMildPathBall T R) (t : Icc (0 : ℝ) T) :
     ‖u.1 t‖ ≤ R :=
   (u.2 t).2
+
+theorem criticalMildPathBallExtension_divergenceFree
+    {T R : ℝ} (hT : 0 ≤ T) (u : CriticalMildPathBall T R) (s : ℝ) :
+    LatticeDivergenceFree (criticalMildPathExtension T hT u.1 s) := by
+  let p : CriticalMildPath T := u.1
+  change LatticeDivergenceFree (p (projIcc (0 : ℝ) T hT s))
+  exact criticalMildPathBall_divergenceFree u _
+
+/-- At the zero endpoint, the full mild image is continuous along any closed
+nonnegative horizon.  The linear and nonlinear terms are composed through the
+nonnegative-time subtype separately. -/
+theorem continuousAt_criticalMildImage_zero_on_Icc
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R T : ℝ} (hR : 0 ≤ R) (hT : 0 ≤ T) (huR : ∀ s, ‖u s‖ ≤ R) :
+    ContinuousAt (fun τ : Icc (0 : ℝ) T =>
+      criticalMildImage ν hν u₀ u hu τ.1 τ.2.1) ⟨0, ⟨le_rfl, hT⟩⟩ := by
+  let time : Icc (0 : ℝ) T → NNReal := fun τ => ⟨τ.1, τ.2.1⟩
+  have htime0 : Filter.Tendsto time (𝓝 ⟨0, ⟨le_rfl, hT⟩⟩) (𝓝 0) := by
+    have htime : Continuous time :=
+      continuous_subtype_val.subtype_mk fun τ => τ.2.1
+    convert htime.continuousAt using 1
+    rfl
+  have hheat := (continuous_weightedHeatFlow_nnreal ν hν.le u₀).continuousAt (x := 0)
+  have hduhamel := tendsto_criticalMildDuhamel_nnreal_zero ν hν u huc hu hR huR
+  have hsum : Filter.Tendsto
+    (fun τ : Icc (0 : ℝ) T =>
+      weightedHeatFlow ν τ.1 hν.le τ.2.1 u₀ + criticalMildDuhamel ν hν u hu τ.1)
+    (𝓝 ⟨0, ⟨le_rfl, hT⟩⟩)
+    (𝓝 (weightedHeatFlow ν 0 hν.le le_rfl u₀ + 0))
+    := by
+      have hheat' := Filter.Tendsto.comp hheat htime0
+      have hduhamel' := Filter.Tendsto.comp hduhamel htime0
+      convert Filter.Tendsto.add hheat' hduhamel' using 1
+      · funext σ
+        congr
+      · simp [time]
+  simpa [ContinuousAt, criticalMildImage, criticalMildDuhamel] using hsum
 
 end Navier.Analysis.CriticalMildPathFixedPoint
 
