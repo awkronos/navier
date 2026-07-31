@@ -358,6 +358,15 @@ theorem totalExtension_divergenceFree {ν : ℝ} {hν : 0 < ν} {a : WeightedLat
     intro m
     simp [weightedLatticeCoefficient, ComplexLerayNorm.complexEuclideanPoint]
 
+theorem totalExtension_eq_stage {ν : ℝ} {hν : 0 < ν} {a : WeightedLatticeBanach}
+    (C : CriticalMildCoherentChain ν hν a) (n : ℕ) {t : ℝ}
+    (ht : t ∈ Icc (0 : ℝ) (C.horizon n)) :
+    C.totalExtension t = (C.path n).1 ⟨t, ht⟩ := by
+  classical
+  have hdom : t ∈ C.domain := ⟨n, ht⟩
+  rw [totalExtension, dif_pos hdom]
+  exact C.value_eq_stage hdom n ht
+
 end CriticalMildCoherentChain
 
 end Navier.Analysis.CriticalMildDirectLimit
