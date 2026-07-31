@@ -423,6 +423,39 @@ theorem totalExtension_satisfies_mild_of_cofinal {ν : ℝ} {hν : 0 < ν}
   rw [totalExtension, dif_pos hdom]
   exact C.value_satisfies_original_mild hdom ht
 
+/-- If a coherent chain reaches every nonnegative time, its total extension
+is continuous on the nonnegative-time subtype.  This makes no assertion about
+the zero branch on negative times. -/
+theorem continuous_totalExtension_on_nonneg_of_cofinal {ν : ℝ} {hν : 0 < ν}
+    {a : WeightedLatticeBanach} (C : CriticalMildCoherentChain ν hν a)
+    (hcofinal : C.CofinalLifespan) :
+    Continuous (fun t : Ici (0 : ℝ) => C.totalExtension t.1) := by
+  rw [continuous_iff_continuousAt]
+  intro x
+  obtain ⟨n, hxn⟩ := hcofinal x.1 x.2
+  have hnext := C.strict_local_extension n
+  let ε : ℝ := (C.horizon (n + 1) - x.1) / 2
+  have hε : 0 < ε := by
+    have hmargin : 0 < C.horizon (n + 1) - x.1 := by
+      linarith [hxn.2, hnext]
+    dsimp [ε]
+    linarith
+  apply ContinuousAt.congr_of_eventuallyEq
+    ((continuous_criticalMildPathExtension _ (C.horizon_nonneg (n + 1))
+      (C.path (n + 1)).1).comp continuous_subtype_val).continuousAt
+  refine Metric.eventually_nhds_iff.2 ⟨ε, hε, ?_⟩
+  intro y hy
+  have hysucc : y.1 ≤ C.horizon (n + 1) := by
+    have habs : |y.1 - x.1| < ε := by
+      change dist y.1 x.1 < ε at hy
+      simpa [Real.dist_eq] using hy
+    dsimp [ε] at habs
+    have hupper := (abs_lt.mp habs).2
+    linarith
+  have hyIcc : y.1 ∈ Icc (0 : ℝ) (C.horizon (n + 1)) := ⟨y.2, hysucc⟩
+  rw [C.totalExtension_eq_stage (n + 1) hyIcc]
+  rw [criticalMildPathExtension_apply _ (C.horizon_nonneg (n + 1)) _ hyIcc]
+
 end CriticalMildCoherentChain
 
 end Navier.Analysis.CriticalMildDirectLimit

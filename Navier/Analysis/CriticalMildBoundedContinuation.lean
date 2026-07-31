@@ -295,8 +295,21 @@ theorem bounded_global_mild_of_terminalNormBound (ν : ℝ) (hν : 0 < ν)
   (boundedCoherentChain ν hν a M hM ha hbound).totalExtension_satisfies_mild_of_cofinal
     (boundedCoherentChain_cofinal ν hν a M hM ha hbound)
 
+/-- Under the explicit terminal critical-norm bound, the constructed global
+mild representative is continuous on nonnegative time.  Its zero extension
+to all real times is deliberately not claimed continuous at zero. -/
+theorem continuous_bounded_global_mild_on_nonneg_of_terminalNormBound
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) (M : ℝ)
+    (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
+    (hbound : CriticalMildTerminalNormBound ν hν a M) :
+    Continuous (fun t : Ici (0 : ℝ) =>
+      (boundedCoherentChain ν hν a M hM ha hbound).totalExtension t.1) :=
+  (boundedCoherentChain ν hν a M hM ha hbound).continuous_totalExtension_on_nonneg_of_cofinal
+    (boundedCoherentChain_cofinal ν hν a M hM ha hbound)
+
 end Navier.Analysis.CriticalMildBoundedContinuation
 
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.exists_bounded_successor
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.boundedContinuationChain_horizon_lower
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.boundedContinuationChain_cofinal
+#print axioms Navier.Analysis.CriticalMildBoundedContinuation.continuous_bounded_global_mild_on_nonneg_of_terminalNormBound
