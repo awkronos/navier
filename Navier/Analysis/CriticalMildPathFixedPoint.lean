@@ -70,6 +70,13 @@ theorem criticalMildPathBallExtension_divergenceFree
   change LatticeDivergenceFree (p (projIcc (0 : ℝ) T hT s))
   exact criticalMildPathBall_divergenceFree u _
 
+theorem criticalMildPathBallExtension_norm_le
+    {T R : ℝ} (hT : 0 ≤ T) (u : CriticalMildPathBall T R) (s : ℝ) :
+    ‖criticalMildPathExtension T hT u.1 s‖ ≤ R := by
+  let p : CriticalMildPath T := u.1
+  change ‖p (projIcc (0 : ℝ) T hT s)‖ ≤ R
+  exact criticalMildPathBall_norm_le u _
+
 /-- At the zero endpoint, the full mild image is continuous along any closed
 nonnegative horizon.  The linear and nonlinear terms are composed through the
 nonnegative-time subtype separately. -/
@@ -136,6 +143,31 @@ theorem continuous_criticalMildImage_on_Icc
       · congr
     · exact (tendsto_criticalMildDuhamel_observation ν hν u huc hu hR hpos huR).comp
         continuous_subtype_val.continuousAt
+
+/-- The actual mild map packaged as an endomap of the divergence-free radius
+ball. -/
+def criticalMildPathBallImage
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+    (hbudget : ‖u₀‖ + (2 * Real.sqrt T / Real.sqrt ν) * R ^ 2 ≤ R)
+    (u : CriticalMildPathBall T R) : CriticalMildPathBall T R := by
+  let p : CriticalMildPath T := u.1
+  let ext : ℝ → WeightedLatticeBanach := criticalMildPathExtension T hT p
+  have hextc : Continuous ext := continuous_criticalMildPathExtension T hT p
+  have hextdf : ∀ s, LatticeDivergenceFree (ext s) := by
+    intro s
+    exact criticalMildPathBallExtension_divergenceFree hT u s
+  have hextR : ∀ s, ‖ext s‖ ≤ R := by
+    intro s
+    exact criticalMildPathBallExtension_norm_le hT u s
+  refine ⟨⟨fun τ => criticalMildImage ν hν u₀ ext hextdf τ.1 τ.2.1, ?_⟩, ?_⟩
+  · exact continuous_criticalMildImage_on_Icc ν hν u₀ ext hextc hextdf hR hT hextR
+  · intro τ
+    constructor
+    · exact criticalMildImage_divergenceFree ν hν u₀ ext hextc hextdf hR τ.2.1
+        (fun s hs => hextR s)
+    · exact norm_criticalMildImage_le_radius ν hν u₀ ext hextc hextdf hR τ.2.1 τ.2.2
+        (fun s hs => hextR s) hbudget
 
 end Navier.Analysis.CriticalMildPathFixedPoint
 
