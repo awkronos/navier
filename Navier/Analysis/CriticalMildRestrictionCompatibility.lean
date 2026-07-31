@@ -43,6 +43,16 @@ def criticalMildPathRestrict {T T' : ℝ} (hTT' : T ≤ T')
     (u : CriticalMildPath T') (τ : Icc (0 : ℝ) T) :
     criticalMildPathRestrict hTT' u τ = u (criticalMildTimeInclusion hTT' τ) := rfl
 
+/-- Restricting along two nested time inclusions is the same underlying path
+as restricting once along their composite inclusion. -/
+theorem criticalMildPathRestrict_trans {T₀ T₁ T₂ : ℝ}
+    (h₀₁ : T₀ ≤ T₁) (h₁₂ : T₁ ≤ T₂) (u : CriticalMildPath T₂) :
+    criticalMildPathRestrict h₀₁ (criticalMildPathRestrict h₁₂ u) =
+      criticalMildPathRestrict (le_trans h₀₁ h₁₂) u := by
+  apply ContinuousMap.ext
+  intro τ
+  rfl
+
 /-- Restriction preserves the divergence-free and radius constraints. -/
 def criticalMildPathBallRestrict {T T' R : ℝ} (hTT' : T ≤ T')
     (u : CriticalMildPathBall T' R) : CriticalMildPathBall T R :=

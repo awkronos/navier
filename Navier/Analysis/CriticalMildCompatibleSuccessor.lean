@@ -71,6 +71,124 @@ theorem exists_criticalMild_compatible_successor
       (criticalMildTwoIntervalPath_satisfies_original_mild ν hν a hT hS.le
         u v hjoin hu hv hcanonical τ)
 
+/-- A finite-horizon witness with the exact original-data mild equation. -/
+structure CriticalMildSuccessorState
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) where
+  horizon : ℝ
+  radius : ℝ
+  horizon_nonneg : 0 ≤ horizon
+  path : CriticalMildPathBall horizon radius
+  mild : ∀ τ : Icc (0 : ℝ) horizon,
+    path.1 τ = criticalMildImage ν hν a
+      (criticalMildPathExtension horizon horizon_nonneg path.1)
+      (criticalMildPathBallExtension_divergenceFree horizon_nonneg path) τ.1 τ.2.1
+
+theorem exists_criticalMild_initialState
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) :
+    Nonempty (CriticalMildSuccessorState ν hν a) := by
+  obtain ⟨T, R, hT, u, hu⟩ := exists_criticalMild_local_trajectory ν hν a
+  exact ⟨⟨T, R, hT.le, u, fun τ => by simpa using hu τ⟩⟩
+
+theorem exists_criticalMild_successorState
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (x : CriticalMildSuccessorState ν hν a) :
+    ∃ y : CriticalMildSuccessorState ν hν a, ∃ hxy : x.horizon < y.horizon,
+      criticalMildPathRestrict (le_of_lt hxy)
+        y.path.1 = x.path.1 := by
+  obtain ⟨T', R', w, hTT', hrestrict, hmild⟩ :=
+    exists_criticalMild_compatible_successor ν hν a x.horizon_nonneg x.path x.mild
+  let y : CriticalMildSuccessorState ν hν a :=
+    ⟨T', R', le_trans x.horizon_nonneg hTT'.le, w, by
+      intro τ
+      simpa using hmild τ⟩
+  refine ⟨y, hTT', ?_⟩
+  simpa [y] using hrestrict
+
+noncomputable def criticalMildInitialState
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) :
+    CriticalMildSuccessorState ν hν a :=
+  Classical.choice (exists_criticalMild_initialState ν hν a)
+
+noncomputable def criticalMildSuccessorState.next
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (x : CriticalMildSuccessorState ν hν a) : CriticalMildSuccessorState ν hν a :=
+  Classical.choose (exists_criticalMild_successorState ν hν a x)
+
+theorem criticalMildSuccessorState.next_spec
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    (x : CriticalMildSuccessorState ν hν a) :
+    ∃ hxy : x.horizon < (criticalMildSuccessorState.next ν hν a x).horizon,
+      criticalMildPathRestrict (le_of_lt hxy)
+        (criticalMildSuccessorState.next ν hν a x).path.1 = x.path.1 :=
+  Classical.choose_spec (exists_criticalMild_successorState ν hν a x)
+
+/-- A recursively selected sequence of actual finite mild witnesses. -/
+noncomputable def criticalMildCompatibleChain
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) : ℕ →
+    CriticalMildSuccessorState ν hν a
+  | 0 => criticalMildInitialState ν hν a
+  | n + 1 => criticalMildSuccessorState.next ν hν a
+      (criticalMildCompatibleChain ν hν a n)
+
+/-- Consecutive members of the recursively selected chain have strictly
+increasing horizons and compatible restricted underlying paths. -/
+theorem criticalMildCompatibleChain_adjacent
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) (n : ℕ) :
+    ∃ hxy : (criticalMildCompatibleChain ν hν a n).horizon <
+      (criticalMildCompatibleChain ν hν a (n + 1)).horizon,
+    criticalMildPathRestrict (le_of_lt hxy)
+      (criticalMildCompatibleChain ν hν a (n + 1)).path.1 =
+      (criticalMildCompatibleChain ν hν a n).path.1 := by
+  exact criticalMildSuccessorState.next_spec ν hν a
+    (criticalMildCompatibleChain ν hν a n)
+
+/-- The selected finite-horizon chain is strictly increasing in its horizons. -/
+theorem criticalMildCompatibleChain_strictMono
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) :
+    StrictMono (fun n => (criticalMildCompatibleChain ν hν a n).horizon) := by
+  apply strictMono_nat_of_lt_succ
+  intro n
+  exact (criticalMildCompatibleChain_adjacent ν hν a n).choose
+
+/-- Compatibility propagates across every pair of stages by restriction
+transitivity.  This is coherence of the finite chain only; it does not form a
+direct-limit path. -/
+theorem criticalMildCompatibleChain_pairwise
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    {m n : ℕ} (hmn : m ≤ n) :
+    criticalMildPathRestrict
+      ((criticalMildCompatibleChain_strictMono ν hν a).monotone hmn)
+      (criticalMildCompatibleChain ν hν a n).path.1 =
+      (criticalMildCompatibleChain ν hν a m).path.1 := by
+  induction n, hmn using Nat.le_induction with
+  | base =>
+      apply ContinuousMap.ext
+      intro τ
+      rfl
+  | @succ n hmn ih =>
+      obtain ⟨hnext, hcompat⟩ := criticalMildCompatibleChain_adjacent ν hν a n
+      have htrans := criticalMildPathRestrict_trans
+        ((criticalMildCompatibleChain_strictMono ν hν a).monotone hmn)
+        hnext.le (criticalMildCompatibleChain ν hν a (n + 1)).path.1
+      calc
+        criticalMildPathRestrict
+            ((criticalMildCompatibleChain_strictMono ν hν a).monotone
+              (Nat.le_succ_of_le hmn))
+            (criticalMildCompatibleChain ν hν a (n + 1)).path.1 =
+            criticalMildPathRestrict
+              ((criticalMildCompatibleChain_strictMono ν hν a).monotone hmn)
+              (criticalMildPathRestrict hnext.le
+                (criticalMildCompatibleChain ν hν a (n + 1)).path.1) := by
+                  simpa using htrans.symm
+        _ = criticalMildPathRestrict
+              ((criticalMildCompatibleChain_strictMono ν hν a).monotone hmn)
+              (criticalMildCompatibleChain ν hν a n).path.1 := by
+                rw [hcompat]
+        _ = (criticalMildCompatibleChain ν hν a m).path.1 := ih
+
 end Navier.Analysis.CriticalMildCompatibleSuccessor
 
 #print axioms Navier.Analysis.CriticalMildCompatibleSuccessor.exists_criticalMild_compatible_successor
+#print axioms Navier.Analysis.CriticalMildCompatibleSuccessor.criticalMildCompatibleChain_adjacent
+#print axioms Navier.Analysis.CriticalMildCompatibleSuccessor.criticalMildCompatibleChain_strictMono
+#print axioms Navier.Analysis.CriticalMildCompatibleSuccessor.criticalMildCompatibleChain_pairwise
