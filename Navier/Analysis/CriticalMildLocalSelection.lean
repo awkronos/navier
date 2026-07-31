@@ -13,7 +13,139 @@ open Navier
 open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildHeatFlowLinear
 open Navier.Analysis.CriticalMildWeightedBanach
+open Set
 open Navier.Analysis.CriticalMildPathFixedPoint
+
+/-- The real-line representative obtained by joining an old local path to a
+subsequent local path.  At the join it takes the old branch; the compatibility
+proof below identifies that value with the new branch at elapsed time zero. -/
+def criticalMildTwoIntervalExtension
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q) :
+    ℝ → WeightedLatticeBanach :=
+  (Iic T).piecewise
+    (criticalMildPathExtension T hT u.1)
+    (fun x => criticalMildPathExtension S hS v.1 (x - T))
+
+/-- The two real-line branches are continuous once the second local path is
+initialized by the old terminal carrier. -/
+theorem continuous_criticalMildTwoIntervalExtension
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩) :
+    Continuous (criticalMildTwoIntervalExtension hT hS u v) := by
+  unfold criticalMildTwoIntervalExtension
+  apply Continuous.piecewise
+  · intro x hx
+    rw [frontier_Iic] at hx
+    have hxT : x = T := hx
+    subst x
+    rw [criticalMildPathExtension_apply T hT u.1 ⟨hT, le_rfl⟩]
+    have hv0 : criticalMildPathExtension S hS v.1 0 =
+        v.1 ⟨0, ⟨le_rfl, hS⟩⟩ :=
+      criticalMildPathExtension_apply S hS v.1 ⟨le_rfl, hS⟩
+    simpa [hv0] using hjoin.symm
+  · exact continuous_criticalMildPathExtension T hT u.1
+  · exact (continuous_criticalMildPathExtension S hS v.1).comp
+      (continuous_id.sub continuous_const)
+
+/-- The joined continuous local path on the combined closed horizon. -/
+def criticalMildTwoIntervalPath
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩) :
+    CriticalMildPath (T + S) :=
+  ⟨fun τ => criticalMildTwoIntervalExtension hT hS u v τ.1,
+    (continuous_criticalMildTwoIntervalExtension hT hS u v hjoin).comp
+      continuous_subtype_val⟩
+
+/-- Before the join, the combined path is literally the original local path. -/
+theorem criticalMildTwoIntervalPath_apply_of_le
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (τ : Icc (0 : ℝ) (T + S)) (hτ : τ.1 ≤ T) :
+    criticalMildTwoIntervalPath hT hS u v hjoin τ =
+      u.1 ⟨τ.1, ⟨τ.2.1, hτ⟩⟩ := by
+  classical
+  change criticalMildTwoIntervalExtension hT hS u v τ.1 = _
+  unfold criticalMildTwoIntervalExtension
+  rw [Set.piecewise_eq_of_mem (Iic T) _ _ hτ]
+  exact criticalMildPathExtension_apply T hT u.1 ⟨τ.2.1, hτ⟩
+
+/-- Strictly after the join, the combined path is the subsequent local path
+in elapsed-time coordinates. -/
+theorem criticalMildTwoIntervalPath_apply_of_lt
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (τ : Icc (0 : ℝ) (T + S)) (hτ : T < τ.1) :
+    criticalMildTwoIntervalPath hT hS u v hjoin τ =
+      v.1 ⟨τ.1 - T, ⟨sub_nonneg.mpr hτ.le,
+        by linarith [τ.2.2]⟩⟩ := by
+  classical
+  rw [show criticalMildTwoIntervalPath hT hS u v hjoin τ =
+      criticalMildTwoIntervalExtension hT hS u v τ.1 by rfl]
+  unfold criticalMildTwoIntervalExtension
+  have hnot : τ.1 ∉ Iic T := not_le.mpr hτ
+  simp [Set.piecewise, hnot]
+  exact criticalMildPathExtension_apply S hS v.1
+    ⟨sub_nonneg.mpr hτ.le, by linarith [τ.2.2]⟩
+
+/-- The two continuous charts agree at their common endpoint. -/
+theorem criticalMildTwoIntervalPath_join
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩) :
+    criticalMildTwoIntervalPath hT hS u v hjoin
+      ⟨T, ⟨hT, by linarith⟩⟩ = v.1 ⟨0, ⟨le_rfl, hS⟩⟩ := by
+  rw [criticalMildTwoIntervalPath_apply_of_le hT hS u v hjoin
+    ⟨T, ⟨hT, by linarith⟩⟩ le_rfl]
+  exact hjoin.symm
+
+/-- The mild equation appropriate to a joined pair of local charts: the old
+equation holds through the join and the terminal-data equation holds strictly
+after it in elapsed coordinates. -/
+def SatisfiesCriticalMildTwoInterval
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (w : CriticalMildPath (T + S)) : Prop :=
+  (∀ τ : Icc (0 : ℝ) (T + S), τ.1 ≤ T →
+    w τ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+      (criticalMildPathExtension T hT u.1)
+      (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) ∧
+  (∀ τ : Icc (0 : ℝ) (T + S), (hτ : T < τ.1) →
+    w τ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν
+      (u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+      (criticalMildPathExtension S hS v.1)
+      (criticalMildPathBallExtension_divergenceFree hS v)
+      (τ.1 - T) (sub_nonneg.mpr hτ.le))
+
+/-- The explicitly joined path satisfies the two-chart mild equation. -/
+theorem criticalMildTwoIntervalPath_satisfies
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    (hu : ∀ τ : Icc (0 : ℝ) T,
+      u.1 τ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+        (criticalMildPathExtension T hT u.1)
+        (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1)
+    (hv : ∀ σ : Icc (0 : ℝ) S,
+      v.1 σ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν
+        (u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+        (criticalMildPathExtension S hS v.1)
+        (criticalMildPathBallExtension_divergenceFree hS v) σ.1 σ.2.1) :
+    SatisfiesCriticalMildTwoInterval ν hν u₀ hT hS u v
+      (criticalMildTwoIntervalPath hT hS u v hjoin) := by
+  constructor
+  · intro τ hτ
+    rw [criticalMildTwoIntervalPath_apply_of_le hT hS u v hjoin τ hτ]
+    exact hu ⟨τ.1, ⟨τ.2.1, hτ⟩⟩
+  · intro τ hτ
+    rw [criticalMildTwoIntervalPath_apply_of_lt hT hS u v hjoin τ hτ]
+    exact hv ⟨τ.1 - T, ⟨sub_nonneg.mpr hτ.le, by linarith [τ.2.2]⟩⟩
 
 /-- Every completed terminal datum admits an explicit positive radius and
 horizon satisfying the local-ball budget and contraction inequalities. -/
@@ -98,8 +230,27 @@ theorem exists_criticalMild_adjacent_local_trajectory
   exact exists_criticalMild_terminal_continuation ν hν (u.1 t)
     (criticalMildPathBall_divergenceFree u t)
 
+/-- Every fixed-point local path has a selected adjacent chart and hence a
+continuous two-interval trajectory satisfying the joined mild equation. -/
+theorem exists_criticalMild_glued_twoInterval
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (u : CriticalMildPathBall T R)
+    (hu : ∀ τ : Icc (0 : ℝ) T,
+      u.1 τ = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+        (criticalMildPathExtension T hT u.1)
+        (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) :
+    ∃ S Q : ℝ, ∃ hS : 0 < S, ∃ v : CriticalMildPathBall S Q,
+      ∃ w : CriticalMildPath (T + S),
+        SatisfiesCriticalMildTwoInterval ν hν u₀ hT hS.le u v w := by
+  obtain ⟨S, Q, hS, v, hv, hjoin⟩ :=
+    exists_criticalMild_adjacent_local_trajectory ν hν u
+      ⟨T, ⟨hT, le_rfl⟩⟩
+  refine ⟨S, Q, hS, v, criticalMildTwoIntervalPath hT hS.le u v hjoin, ?_⟩
+  exact criticalMildTwoIntervalPath_satisfies ν hν u₀ hT hS.le u v hjoin hu hv
+
 end Navier.Analysis.CriticalMildLocalSelection
 
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_local_selection
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_terminal_continuation
 #print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_adjacent_local_trajectory
+#print axioms Navier.Analysis.CriticalMildLocalSelection.exists_criticalMild_glued_twoInterval
