@@ -116,6 +116,54 @@ theorem criticalMildRestartImage_zero
   simp [criticalMildRestartImage, criticalMildDuhamelRestartTail,
     criticalMildPathIntegrand, positiveTimeHeatRegularizedSpectralOutput]
 
+/-- A mild identity at the restart time reconstructs the original-data mild
+image at a later time from the terminal-data restart image.  Unlike the
+trajectory comparison below, this direction does not assume the later mild
+identity. -/
+theorem criticalMildRestartImage_eq_mildImage_of_mild_at_t
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t r : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t) (hr : 0 ≤ r)
+    (huR : ∀ s ∈ Ioc (0 : ℝ) (t + r), ‖u s‖ ≤ R)
+    (hmild_t : u t = criticalMildImage ν hν u₀ u hu t ht) :
+    criticalMildRestartImage ν hν u hu t r hr =
+      criticalMildImage ν hν u₀ u hu (t + r) (add_nonneg ht hr) := by
+  have hprefix :
+      weightedHeatFlow ν r hν.le hr (criticalMildDuhamel ν hν u hu t) =
+        ∫ s in Ioc 0 t, criticalMildPathIntegrand ν hν u hu (t + r) s := by
+    have hint : IntegrableOn (criticalMildPathIntegrand ν hν u hu t)
+        (Ioc 0 t) volume :=
+      integrableOn_criticalMildPathIntegrand ν hν u huc hu hR ht
+        (fun s hs => huR s ⟨hs.1, le_trans hs.2 (by linarith)⟩)
+    unfold criticalMildDuhamel
+    rw [weightedHeatFlow_integral_comm (volume.restrict (Ioc 0 t))
+      ν r hν.le hr hint]
+    apply integral_congr_ae
+    have hne : ∀ᵐ s ∂volume, s ≠ t := by
+      simp [ae_iff, measure_singleton]
+    filter_upwards [ae_restrict_mem measurableSet_Ioc,
+      ae_restrict_of_ae hne] with s hs hst
+    exact weightedHeatFlow_criticalMildPathIntegrand_covariant
+      ν hν u hu t s r hr (lt_of_le_of_ne hs.2 hst)
+  unfold criticalMildRestartImage criticalMildTerminalData
+  rw [hmild_t]
+  unfold criticalMildImage
+  rw [show weightedHeatFlow ν r hν.le hr
+      (weightedHeatFlow ν t hν.le ht u₀ + criticalMildDuhamel ν hν u hu t) =
+        weightedHeatFlow ν r hν.le hr (weightedHeatFlow ν t hν.le ht u₀) +
+          weightedHeatFlow ν r hν.le hr (criticalMildDuhamel ν hν u hu t) by
+        exact (weightedHeatFlowCLM ν r hν.le hr).map_add _ _]
+  rw [hprefix]
+  rw [← weightedHeatFlow_semigroup ν r t hν.le hr ht u₀]
+  have hlinear :
+      weightedHeatFlow ν (r + t) hν.le (add_nonneg hr ht) u₀ =
+        weightedHeatFlow ν (t + r) hν.le (add_nonneg ht hr) u₀ := by
+    congr 1 <;> ring
+  rw [hlinear]
+  rw [criticalMildDuhamel_split_restart ν hν u huc hu hR ht hr huR]
+  abel
+
 /-- If a continuous divergence-free path obeys the mild equation at `t` and
 `t + r`, then its terminal-data restart candidate is exactly its shifted
 trajectory value. -/
@@ -172,4 +220,5 @@ end Navier.Analysis.CriticalMildRestart
 #print axioms Navier.Analysis.CriticalMildRestart.criticalMildDuhamelRestartTail_eq_tail
 #print axioms Navier.Analysis.CriticalMildRestart.criticalMildDuhamel_split_restart
 #print axioms Navier.Analysis.CriticalMildRestart.criticalMildRestartImage_zero
+#print axioms Navier.Analysis.CriticalMildRestart.criticalMildRestartImage_eq_mildImage_of_mild_at_t
 #print axioms Navier.Analysis.CriticalMildRestart.criticalMildRestartImage_eq_shifted_trajectory
