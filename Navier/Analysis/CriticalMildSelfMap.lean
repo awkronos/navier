@@ -114,6 +114,18 @@ theorem norm_criticalMildImage_le_radius
   exact (norm_criticalMildImage_le ν hν u₀ u huc hu hR ht huR).trans
     ((add_le_add_right htime ‖u₀‖).trans hbudget)
 
+/-- At observation time zero the assembled mild image has no nonlinear
+Duhamel contribution: the literal Bochner interval is empty. -/
+theorem criticalMildImage_zero_nonlinear
+    (ν : ℝ) (hν : 0 < ν)
+    (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s)) :
+    criticalMildImage ν hν u₀ u hu 0 le_rfl =
+      weightedHeatFlow ν 0 hν.le le_rfl u₀ := by
+  unfold criticalMildImage criticalMildDuhamel
+  simp
+
 end Navier.Analysis.CriticalMildSelfMap
 
 #print axioms Navier.Analysis.CriticalMildSelfMap.criticalMildImage_divergenceFree
