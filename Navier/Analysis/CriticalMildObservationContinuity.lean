@@ -19,6 +19,7 @@ open Navier
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildPathIntegrand
+open Navier.Analysis.CriticalMildHeatTimeKernel
 
 /-- The literal moving observation-time tail, over the part of the later
 interval not present at the earlier observation time. -/
@@ -86,6 +87,50 @@ theorem norm_criticalMildDuhamelTail_le
       norm_integral_le_integral_norm _
     _ ≤ ∫ s in Ioc t t', criticalMildPathMajorant ν R t' s :=
       integral_mono_ae hactual.norm hscalar hmono
+
+/-- Exact shifted inverse-square-root budget on the moving tail interval. -/
+theorem integral_inverseSqrtTime_tail
+    {t t' : ℝ} (htt' : t ≤ t') :
+    (∫ s in Ioc t t', inverseSqrtTime (t' - s)) =
+      2 * Real.sqrt (t' - t) := by
+  rw [← intervalIntegral.integral_of_le htt',
+    intervalIntegral.integral_comp_sub_left,
+    sub_self]
+  exact integral_inverseSqrtTime_zero (t' - t) (sub_nonneg.mpr htt')
+
+/-- Exact scalar evaluation of the shifted heat majorant over the moving
+tail. -/
+theorem integral_criticalMildPathMajorant_tail
+    (ν R t t' : ℝ) (hν : 0 < ν) (htt' : t ≤ t') :
+    (∫ s in Ioc t t', criticalMildPathMajorant ν R t' s) =
+      (2 * Real.sqrt (t' - t) / Real.sqrt ν) * R ^ 2 := by
+  unfold criticalMildPathMajorant
+  rw [show (fun s : ℝ =>
+      (Real.sqrt ν)⁻¹ * inverseSqrtTime (t' - s) * R ^ 2) =
+      fun s => (Real.sqrt ν)⁻¹ * (inverseSqrtTime (t' - s) * R ^ 2) by
+      funext s
+      ring,
+    MeasureTheory.integral_const_mul,
+    MeasureTheory.integral_mul_const,
+    integral_inverseSqrtTime_tail htt']
+  field_simp [ne_of_gt hν]
+
+/-- The actual moving Duhamel tail has the explicit vanishing
+`O(sqrt (t' - t))` modulus. -/
+theorem norm_criticalMildDuhamelTail_le_sqrt_sub
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t t' : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t) (htt' : t ≤ t')
+    (huR : ∀ s ∈ Ioc (0 : ℝ) t', ‖u s‖ ≤ R) :
+    ‖criticalMildDuhamelTail ν hν u hu t t'‖ ≤
+      (2 * Real.sqrt (t' - t) / Real.sqrt ν) * R ^ 2 := by
+  calc
+    ‖criticalMildDuhamelTail ν hν u hu t t'‖ ≤
+        ∫ s in Ioc t t', criticalMildPathMajorant ν R t' s :=
+      norm_criticalMildDuhamelTail_le ν hν u huc hu hR ht htt' huR
+    _ = (2 * Real.sqrt (t' - t) / Real.sqrt ν) * R ^ 2 :=
+      integral_criticalMildPathMajorant_tail ν R t t' hν htt'
 
 end Navier.Analysis.CriticalMildObservationContinuity
 
