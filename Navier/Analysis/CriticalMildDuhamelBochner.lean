@@ -568,6 +568,29 @@ theorem norm_heatRegularizedSpectralOutput_le (ν τ : ℝ)
     _ = (Real.sqrt (ν * τ))⁻¹ * ‖u‖ * ‖v‖ :=
       tsum_outputHeatPairMajorant_eq ν τ u v
 
+/-- Difference majorant for the actual output-frequency heat multiplier at
+two positive lags.  This is the reusable shared-interval bound for moving
+Duhamel observation times; no continuity is assumed. -/
+theorem norm_heatRegularizedSpectralOutput_sub_le
+    (ν τ σ : ℝ) (hν : 0 < ν) (hτ : 0 < τ) (hσ : 0 < σ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    ‖heatRegularizedSpectralOutput ν τ hν hτ u v hu -
+        heatRegularizedSpectralOutput ν σ hν hσ u v hu‖ ≤
+      ((Real.sqrt (ν * τ))⁻¹ + (Real.sqrt (ν * σ))⁻¹) * ‖u‖ * ‖v‖ := by
+  calc
+    ‖heatRegularizedSpectralOutput ν τ hν hτ u v hu -
+        heatRegularizedSpectralOutput ν σ hν hσ u v hu‖ ≤
+        ‖heatRegularizedSpectralOutput ν τ hν hτ u v hu‖ +
+          ‖heatRegularizedSpectralOutput ν σ hν hσ u v hu‖ :=
+      norm_sub_le _ _
+    _ ≤ (Real.sqrt (ν * τ))⁻¹ * ‖u‖ * ‖v‖ +
+        (Real.sqrt (ν * σ))⁻¹ * ‖u‖ * ‖v‖ :=
+      add_le_add
+        (norm_heatRegularizedSpectralOutput_le ν τ hν hτ u v hu)
+        (norm_heatRegularizedSpectralOutput_le ν σ hν hσ u v hu)
+    _ = ((Real.sqrt (ν * τ))⁻¹ + (Real.sqrt (ν * σ))⁻¹) * ‖u‖ * ‖v‖ := by
+      ring
+
 /-- The physical output coefficient has exactly the norm of the existing
 completed convolution fiber. -/
 theorem complexEuclideanNorm_spectralOutputCoefficient (k : LatticeMode)
