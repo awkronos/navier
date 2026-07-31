@@ -488,3 +488,4 @@ end Navier.Analysis.CriticalMildPathIntegrand
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.integrableOn_criticalMildPathIntegrand
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.criticalMildDuhamel_divergenceFree
 #print axioms Navier.Analysis.CriticalMildPathIntegrand.norm_criticalMildDuhamel_le
+#print axioms Navier.Analysis.CriticalMildPathIntegrand.tendsto_criticalMildDuhamel_nnreal_zero
