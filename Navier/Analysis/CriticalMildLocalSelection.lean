@@ -179,6 +179,20 @@ def criticalMildTwoIntervalPath
     (continuous_criticalMildTwoIntervalExtension hT hS u v hjoin).comp
       continuous_subtype_val⟩
 
+/-- On its combined closed horizon, the canonical extension of the glued path
+is the explicitly glued real-line representative. -/
+theorem criticalMildPathExtension_twoInterval_eq_glued
+    {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
+    (u : CriticalMildPathBall T R) (v : CriticalMildPathBall S Q)
+    (hjoin : v.1 ⟨0, ⟨le_rfl, hS⟩⟩ = u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
+    {x : ℝ} (hx : x ∈ Icc (0 : ℝ) (T + S)) :
+    criticalMildPathExtension (T + S) (add_nonneg hT hS)
+      (criticalMildTwoIntervalPath hT hS u v hjoin) x =
+      criticalMildTwoIntervalExtension hT hS u v x := by
+  rw [criticalMildPathExtension_apply (T + S) (add_nonneg hT hS)
+    (criticalMildTwoIntervalPath hT hS u v hjoin) hx]
+  rfl
+
 /-- Before the join, the combined path is literally the original local path. -/
 theorem criticalMildTwoIntervalPath_apply_of_le
     {T R S Q : ℝ} (hT : 0 ≤ T) (hS : 0 ≤ S)
