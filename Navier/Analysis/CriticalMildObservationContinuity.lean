@@ -262,6 +262,34 @@ theorem norm_single_heatRegularizedSpectralOutput_le_outputHeatFiberMajorant
   exact norm_constrainedHeatRegularizedFiber_le_outputHeatFiberMajorant
     ν τ hν hτ u v hu k
 
+/-- Total zero-extended `lp.single` heat coordinate family for use with
+filter-based dominated convergence. -/
+def positiveTimeHeatOutputSingle
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) (k : LatticeMode) :
+    ℝ → WeightedLatticeBanach := fun τ =>
+  lp.single (E := fun _ : LatticeMode => ComplexE3) 1 k
+    (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ k)
+
+theorem positiveTimeHeatOutputSingle_of_pos
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    positiveTimeHeatOutputSingle ν hν u v hu k τ =
+      lp.single (E := fun _ : LatticeMode => ComplexE3) 1 k
+        (heatRegularizedSpectralOutput ν τ hν hτ u v hu k) := by
+  unfold positiveTimeHeatOutputSingle
+  rw [positiveTimeHeatRegularizedSpectralOutput_of_pos ν hν u v hu hτ]
+
+/-- Near every strictly positive lag, the total `lp.single` family selects
+the actual positive-time completed heat output coordinate. -/
+theorem eventually_positiveTimeHeatOutputSingle_eq
+    (ν τ₀ : ℝ) (hν : 0 < ν) (hτ₀ : 0 < τ₀)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (k : LatticeMode) :
+    ∀ᶠ τ in 𝓝 τ₀, 0 < τ :=
+  eventually_gt_nhds hτ₀
+
 end Navier.Analysis.CriticalMildObservationContinuity
 
 #print axioms Navier.Analysis.CriticalMildObservationContinuity.integrableOn_criticalMildDuhamelTailIntegrand
