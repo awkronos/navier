@@ -1731,6 +1731,44 @@ private theorem lintegral_enorm_sq_eq (v : VelocityField)
   rw [ofReal_integral_eq_lintegral_ofReal h (Filter.Eventually.of_forall fun x => by positivity)]
   exact lintegral_congr fun x => by rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
 
+/-!
+### The nested-to-product bridge
+
+`TimeEquicontinuous` and `SpaceEquicontinuous` are stated as *nested* integrals
+`∫_t ∫_x`, while `sum_cellError_le_modulus_of_memL2` consumes a single integral against
+`volume.prod volume`.  The two are equal on a slab `S ×ˢ univ` once the integrand is
+product-integrable, which `integrable_prod_iff` supplies from slicewise integrability
+plus integrability of the inner integral in `t` — the same bookkeeping as
+`windowError_eq_setIntegral_prod` and `integrableOn_winQ` above, with the spatial ball
+replaced by all of `Space` (the equicontinuity hypotheses integrate over all of `x`).
+-/
+
+private theorem integrableOn_prod_univ (F : ℝ × Space → ℝ) (hFmeas : Measurable F)
+    (S : Set ℝ) (hS : MeasurableSet S) (hnn : ∀ z, 0 ≤ F z)
+    (hslice : ∀ t : ℝ, Integrable fun x : Space => F (t, x))
+    (hOuter : IntegrableOn (fun t : ℝ => ∫ x : Space, F (t, x)) S) :
+    IntegrableOn F (S ×ˢ (univ : Set Space)) (volume.prod volume) := by
+  have hrestrict : (volume.restrict S).prod (volume.restrict (univ : Set Space))
+      = (volume.prod volume).restrict (S ×ˢ (univ : Set Space)) := Measure.prod_restrict _ _
+  rw [IntegrableOn, ← hrestrict, Measure.restrict_univ]
+  refine (integrable_prod_iff hFmeas.aestronglyMeasurable).mpr ⟨?_, ?_⟩
+  · exact (MeasureTheory.ae_restrict_iff' hS).mpr
+      (Filter.Eventually.of_forall fun t _ => hslice t)
+  · refine hOuter.congr_fun (fun t _ => ?_) hS
+    refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+    show F (t, x) = ‖F (t, x)‖
+    rw [Real.norm_eq_abs, abs_of_nonneg (hnn _)]
+
+private theorem setIntegral_prod_univ_eq_nested (F : ℝ × Space → ℝ) (hFmeas : Measurable F)
+    (S : Set ℝ) (hS : MeasurableSet S) (hnn : ∀ z, 0 ≤ F z)
+    (hslice : ∀ t : ℝ, Integrable fun x : Space => F (t, x))
+    (hOuter : IntegrableOn (fun t : ℝ => ∫ x : Space, F (t, x)) S) :
+    (∫ z in S ×ˢ (univ : Set Space), F z ∂(volume.prod volume))
+      = ∫ t in S, ∫ x : Space, F (t, x) := by
+  rw [MeasureTheory.setIntegral_prod F
+    (integrableOn_prod_univ F hFmeas S hS hnn hslice hOuter)]
+  exact setIntegral_congr_fun hS fun t _ => by rw [Measure.restrict_univ]
+
 /-- **(i) The window modulus: the two-leg split, with the negative-time overhang
 resolved.**  A spacetime shift `k = (a, y)` with `‖k‖ ≤ h` is split
 `τ_{(a,y)}f − f = (τ_{(a,y)}f − τ_{(a,0)}f) + (τ_{(a,0)}f − f)`, so the squared error
@@ -1826,6 +1864,49 @@ private theorem nested_window_modulus
       (HasSubset.Subset.eventuallyLE ?_)) hT
     exact Set.Ioc_subset_Ioc hc0 le_rfl
   linarith
+
+/-- **(i) in product form** — the exact `hmod` hypothesis of
+`sum_cellError_le_modulus_of_memL2`, obtained from `nested_window_modulus` through the
+bridge.  The shift `k : ℝ × Space` has product (sup) norm, so `‖k‖ ≤ h` gives both
+`|k.1| ≤ h` and `‖k.2‖ ≤ h`, which is precisely what the two legs need. -/
+private theorem prod_window_modulus
+    (v : VelocityEvolution) (k : ℝ × Space) (c T h ε₁ ε₂ : ℝ)
+    (hcT : c ≤ T) (hh : 0 < h) (hhc : h ≤ c) (hk : ‖k‖ ≤ h)
+    (hvmeas : Measurable fun z : ℝ × Space => v z.1 z.2)
+    (hInnerA : ∀ t : ℝ, Integrable fun x : Space => ‖v (t + k.1) (x + k.2) - v t x‖ ^ 2)
+    (hInnerB1 : ∀ t : ℝ,
+      Integrable fun x : Space => ‖v (t + k.1) (x + k.2) - v (t + k.1) x‖ ^ 2)
+    (hInnerB2 : ∀ t : ℝ, Integrable fun x : Space => ‖v (t + k.1) x - v t x‖ ^ 2)
+    (hOutA : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + k.1) (x + k.2) - v t x‖ ^ 2) (Set.Ioc c T))
+    (hOutB1 : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + k.1) (x + k.2) - v (t + k.1) x‖ ^ 2) (Set.Ioc c T))
+    (hOutB2 : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + k.1) x - v t x‖ ^ 2) (Set.Ioc c T))
+    (hOutS : IntegrableOn
+      (fun s : ℝ => ∫ x : Space, ‖v s (x + k.2) - v s x‖ ^ 2) (Set.Ioc (0:ℝ) (T + h)))
+    (hOutT : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + k.1) x - v t x‖ ^ 2) (Set.Ioc (0:ℝ) T))
+    (hS : (∫ s in Set.Ioc (0:ℝ) (T + h), ∫ x : Space, ‖v s (x + k.2) - v s x‖ ^ 2) ≤ ε₁)
+    (hT : (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖v (t + k.1) x - v t x‖ ^ 2) ≤ ε₂) :
+    (∫ z in Set.Ioc c T ×ˢ (univ : Set Space),
+        ‖v (z + k).1 (z + k).2 - v z.1 z.2‖ ^ 2 ∂(volume.prod volume))
+      ≤ 2 * ε₁ + 2 * ε₂ := by
+  have hka : |k.1| ≤ h := by
+    refine le_trans ?_ hk
+    simp [Prod.norm_def, Real.norm_eq_abs]
+  have hky : ‖k.2‖ ≤ h := by
+    refine le_trans ?_ hk
+    simp [Prod.norm_def, Real.norm_eq_abs]
+  have hFmeas : Measurable fun z : ℝ × Space => ‖v (z + k).1 (z + k).2 - v z.1 z.2‖ ^ 2 :=
+    (((hvmeas.comp (measurable_id.add_const k)).sub hvmeas).norm).pow_const 2
+  have hbridge := setIntegral_prod_univ_eq_nested
+    (fun z : ℝ × Space => ‖v (z + k).1 (z + k).2 - v z.1 z.2‖ ^ 2) hFmeas
+    (Set.Ioc c T) measurableSet_Ioc (fun z => by positivity)
+    (fun t => hInnerA t) hOutA
+  rw [hbridge]
+  exact nested_window_modulus v k.1 k.2 c T h ε₁ ε₂ hcT hh hhc hka
+    hInnerA hInnerB1 hInnerB2 hOutA hOutB1 hOutB2 hOutS hOutT hS hT
 
 /-- **The middle step, in the form the Leray bundle can actually feed.**  Summing the
 per-cell oscillation bound over a finite family of spacetime cells of side `h`, with
@@ -1973,13 +2054,11 @@ The discarded slab `(0,c]` costs `4Cc`, driven to zero by taking `c = h → 0`.
 `window_subset_closedBall`) to `exists_subseq_cauchy_of_bounded_pi_finiteDim`.
 (iii) *three-leg assembly* — `setIntegral_norm_sub_sq_le_three_legs` on
 `f_j − E_h f_j`, `E_h f_j − E_h f_k`, `E_h f_k − f_k`, then a diagonal over `h = 1/m`.
-*Bridge* — convert `nested_window_modulus`'s nested form into the product-measure
-`∫_W ‖f(·+k) − f‖²` that `sum_cellError_le_modulus_of_memL2` consumes, plus the
-displacement-integral integrability side conditions; this is the same
-`integrable_prod_iff` bookkeeping already done in `windowError_eq_setIntegral_prod`
-and in `integrableOn_winQ`.
-[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~180 LOC for (ii), (iii) and the
-bridge.] -/
+The *bridge* is certified: `setIntegral_prod_univ_eq_nested` and
+`prod_window_modulus` deliver `∫_W ‖f(·+k) − f‖² ≤ 2ε₁ + 2ε₂` against
+`volume.prod volume` on the slab `W = Ioc c T ×ˢ univ`, which is verbatim the `hmod`
+hypothesis of `sum_cellError_le_modulus_of_memL2`.
+[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~140 LOC for (ii) and (iii).] -/
 theorem exists_subseq_windowCauchy
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C)
