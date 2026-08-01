@@ -546,11 +546,106 @@ theorem integral_le_besselWeightMass_mul_sqrt
   rw [Real.sqrt_eq_rpow, Real.sqrt_eq_rpow]
   simpa [besselWeightMass, inv_pow] using key
 
+open scoped FourierTransform
+
+/-!
+### Euclidean/complex model transport for the Fourier majorant (certified, no sorry)
+
+`Space = Fin 3 → ℝ` carries the Pi (sup) norm, so it has **no** `InnerProductSpace ℝ`
+instance and no `NormedSpace ℂ` instance — both verified against the compiler:
+`example : InnerProductSpace ℝ Space := by infer_instance` and
+`example : NormedSpace ℂ Space := by infer_instance` each fail with
+`failed to synthesize instance`.  Mathlib's Schwartz Fourier transform
+(`SchwartzMap.instFourierTransform` in
+`Mathlib/Analysis/Distribution/SchwartzSpace/Fourier.lean`) requires
+`[InnerProductSpace ℝ V] [FiniteDimensional ℝ V] [MeasurableSpace V] [BorelSpace V]`
+on the domain and `[NormedSpace ℂ E]` on the codomain, so it does not apply to
+`𝓢(Space, Space)` on the nose.  The transport built here is the fix: the domain
+moves to `EuclideanSpace ℝ (Fin 3)` (definitionally `PiLp 2 fun _ : Fin 3 => ℝ`,
+same carrier, ℓ² norm, volume-preserving by `PiLp.volume_preserving_ofLp`) and the
+codomain to `EuclideanSpace ℂ (Fin 3)`, via Mathlib's
+`SchwartzMap.compCLMOfContinuousLinearEquiv` and `SchwartzMap.postcompCLM`.
+-/
+
+/-- The Euclidean (ℓ²) model of `Space`, on the same carrier `Fin 3 → ℝ`. -/
+abbrev EuclSpace := EuclideanSpace ℝ (Fin 3)
+
+/-- The complex Euclidean codomain, needed because Mathlib's Fourier transform
+takes values in a `ℂ`-normed space. -/
+abbrev CxSpace := EuclideanSpace ℂ (Fin 3)
+
+/-- The coordinate identification `EuclideanSpace ℝ (Fin 3) ≃L[ℝ] Space`.  It is the
+identity on carriers and changes only the norm. -/
+def euclCoords : EuclSpace ≃L[ℝ] Space := EuclideanSpace.equiv (Fin 3) ℝ
+
+/-- Componentwise inclusion `ℝ³ ↪ ℂ³`, landing in the complex Euclidean space. -/
+def realToCx : Space →L[ℝ] CxSpace :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun a => (WithLp.toLp 2 (fun i => ((a i : ℂ))) : CxSpace)
+      map_add' := by intro a b; ext i; simp
+      map_smul' := by intro c a; ext i; simp }
+
+@[simp] theorem realToCx_apply (a : Space) (i : Fin 3) : realToCx a i = (a i : ℂ) := by
+  simp [realToCx]
+
+/-- The Pi (sup) norm of `ℝ³` is dominated by the ℓ² norm of its complex image.
+This is the direction the majorant bound needs: it lets the sup-norm conclusion
+`‖u x‖ ≤ ∫ h` be read off from the Euclidean model. -/
+theorem norm_le_norm_realToCx (a : Space) : ‖a‖ ≤ ‖realToCx a‖ := by
+  refine (pi_norm_le_iff_of_nonneg (norm_nonneg _)).mpr fun i => ?_
+  have h1 : ‖(realToCx a) i‖ ≤ ‖realToCx a‖ := by
+    rw [EuclideanSpace.norm_eq]
+    refine (Real.le_sqrt (norm_nonneg _) (by positivity)).mpr ?_
+    exact Finset.single_le_sum (f := fun j => ‖(realToCx a) j‖ ^ 2)
+      (fun j _ => by positivity) (Finset.mem_univ i)
+  rw [realToCx_apply] at h1
+  simpa using h1
+
+/-- The Euclidean/complex model of a Schwartz velocity field: precompose with the
+coordinate identification (`compCLMOfContinuousLinearEquiv`) and postcompose with the
+componentwise complexification (`postcompCLM`).  Both are Mathlib's own Schwartz-space
+operations, so the result is a genuine `SchwartzMap EuclSpace CxSpace` and Mathlib's Fourier
+transform applies to it. -/
+def euclModel (u : SchwartzVelocity) : SchwartzMap EuclSpace CxSpace :=
+  SchwartzMap.postcompCLM (𝕜 := ℝ) realToCx
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℝ euclCoords u)
+
+@[simp] theorem euclModel_apply (u : SchwartzVelocity) (y : EuclSpace) :
+    euclModel u y = realToCx (u (euclCoords y)) := rfl
+
+/-- **Fourier-inversion majorant on the Euclidean model (certified, no sorry).**
+For a Schwartz map into a complex Hilbert space, the sup norm is dominated by the
+`L¹` mass of its Fourier transform: `‖v y‖ = ‖𝓕⁻(𝓕 v) y‖ ≤ ∫ ‖𝓕 v‖`.  This is the
+inversion half of `exists_besselFourierMajorant`; the Schwartz-level inversion pair
+is Mathlib's `FourierPair.fourierInv_fourier_eq`
+(Hörmander, *The Analysis of Linear PDO I*, 2nd ed. Springer 1990, Thm 7.1.5). -/
+theorem norm_le_integral_norm_fourier (v : SchwartzMap EuclSpace CxSpace) (y : EuclSpace) :
+    ‖v y‖ ≤ ∫ ξ : EuclSpace, ‖(𝓕 v) ξ‖ := by
+  have hinv : (𝓕⁻ (𝓕 v) : SchwartzMap EuclSpace CxSpace) = v := FourierPair.fourierInv_fourier_eq v
+  have h1 : v y = 𝓕⁻ ((𝓕 v : SchwartzMap EuclSpace CxSpace) : EuclSpace → CxSpace) y := by
+    conv_lhs => rw [← hinv]
+    rw [SchwartzMap.fourierInv_coe]
+  rw [h1, Real.fourierInv_eq_fourier_neg]
+  exact VectorFourier.norm_fourierIntegral_le_integral_norm _ _ _ _ _
+
+/-- **Volume transport between the two models (certified, no sorry).**  `Space` and
+`EuclSpace` share a carrier and the coordinate map is volume preserving
+(`PiLp.volume_preserving_ofLp`), so every Lebesgue integral transports verbatim. -/
+theorem integral_space_eq_euclSpace (f : Space → ℝ) :
+    ∫ ξ : Space, f ξ = ∫ y : EuclSpace, f (euclCoords y) := by
+  have hmp : MeasureTheory.MeasurePreserving (@WithLp.ofLp 2 (Fin 3 → ℝ))
+      (volume : Measure EuclSpace) (volume : Measure Space) :=
+    PiLp.volume_preserving_ofLp (Fin 3)
+  rw [← hmp.integral_comp (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).symm.measurableEmbedding]
+  rfl
+
 /-- **[NAMED RESIDUAL — Fourier inversion + Plancherel + Bessel-symbol
 bookkeeping for `SchwartzMap Space Space`; Stein, *Singular Integrals and
 Differentiability Properties of Functions*, Princeton 1970, Ch. V §3;
 L. Hörmander, *The Analysis of Linear Partial Differential Operators I*,
-2nd ed. Springer 1990, §7.1 and §7.9; est ~300 LOC.]**
+2nd ed. Springer 1990, §7.1 and §7.9.  Residual now reduced to the two leaves
+named at the end of this docstring; est ~450 LOC, revised up from an earlier
+~300 LOC estimate that predated the model-transport audit below.]**
 
 Every Schwartz velocity field admits a nonnegative **Fourier majorant density**
 `h` — classically `h = ‖û‖` in the convention `u(x) = ∫ e^{2πi⟨x,ξ⟩} û(ξ) dξ` —
@@ -568,13 +663,49 @@ the Cauchy–Schwarz that turns that into the embedding — is discharged above 
 What remains here is pure Fourier bookkeeping, provable without any reference
 to `exists_agmonSupBound`.
 
-**Dependencies (Mathlib-absent as stated).**  `Space = Fin 3 → ℝ` carries the
-Pi (sup) norm and hence no `InnerProductSpace ℝ` instance, so Mathlib's
-`SchwartzMap.fourierTransformCLE` does not apply on the nose; the transform has
-to be transported along `Fin 3 → ℝ ≃L[ℝ] EuclideanSpace ℝ (Fin 3)` together
-with `iteratedFDeriv` and `volume`.  On top of that: Fourier inversion for
-Schwartz maps, Plancherel, and the derivative-to-symbol identity, with the
-finite-dimensional norm-equivalence constants absorbed into `C`. -/
+**The obstruction, verified against the compiler.**  `Space = Fin 3 → ℝ` carries
+the Pi (sup) norm, so both
+`example : InnerProductSpace ℝ Space := by infer_instance` and
+`example : NormedSpace ℂ Space := by infer_instance` fail with
+`failed to synthesize instance`.  Mathlib's Schwartz Fourier transform
+(`SchwartzMap.instFourierTransform`) needs `[InnerProductSpace ℝ V]
+[FiniteDimensional ℝ V] [MeasurableSpace V] [BorelSpace V]` on the domain and
+`[NormedSpace ℂ E]` on the codomain, so it does not apply to `𝓢(Space, Space)`
+on the nose.  That is the whole of the obstruction: it is an instance mismatch,
+not a missing theorem.
+
+**What is now built (certified above, no sorry).**  The transport is in place —
+`euclCoords`, `realToCx`, `norm_le_norm_realToCx`, `euclModel`,
+`integral_space_eq_euclSpace` — and so is the inversion half,
+`norm_le_integral_norm_fourier`.  The correction to the earlier dependency list:
+Fourier inversion and Plancherel are **not** Mathlib-absent.  Inversion for
+Schwartz maps is `FourierPair.fourierInv_fourier_eq`, and Plancherel is
+`SchwartzMap.integral_norm_sq_fourier : ∫ ξ, ‖𝓕 f ξ‖ ^ 2 = ∫ x, ‖f x‖ ^ 2`
+(`Mathlib/Analysis/Distribution/SchwartzSpace/Fourier.lean`).  The transport API
+is `SchwartzMap.compCLMOfContinuousLinearEquiv` and `SchwartzMap.postcompCLM`.
+
+**The two remaining leaves.**
+
+* *Weighted Plancherel on the Euclidean model* [Stein Ch. V §3; est ~300 LOC]:
+  `∃ C > 0, ∀ v : 𝓢(EuclSpace, CxSpace),
+   ∫ y, ((1 + ‖y‖²)·‖𝓕 v y‖)² ≤ C · ∑_{n < 3} ∫ y, ‖iteratedFDeriv ℝ n v y‖²`,
+  together with `MemLp ((1 + ‖·‖²)·‖𝓕 v ·‖) 2`.  Route: expand
+  `(1 + r²)² = 1 + 2r² + r⁴`, and get each `∫ ‖y‖^{2n}‖𝓕 v y‖²` from
+  `SchwartzMap.integral_norm_sq_fourier` applied to the coordinate derivatives
+  `∂_{i₁}…∂_{i_n} v` — summing over `(i₁,…,i_n)` turns the symbol product into
+  `‖y‖^{2n}` because `∑_{i₁…i_n} y_{i₁}²⋯y_{i_n}² = (∑_i y_i²)^n`.  Working with
+  coordinate derivatives rather than `iteratedFDeriv` directly is what keeps the
+  codomain an inner-product space, which Plancherel requires; the passage back to
+  the `iteratedFDeriv` operator norm is the finite-dimensional multilinear-norm
+  comparison and carries the constant.
+* *Model comparison* [finite-dimensional norm equivalence; est ~150 LOC]:
+  `∃ C > 0, ∀ u, ∑_{n < 3} ∫ y, ‖iteratedFDeriv ℝ n (euclModel u) y‖² ≤
+   C · sobolevH2NormSq u`.  Only norm equivalence on `Fin 3 → ℝ` and on the
+  spaces of `n`-linear maps out of it, plus `integral_space_eq_euclSpace`.
+
+Given those two, the assembly is `h ξ = ‖𝓕 (euclModel u) (euclCoords.symm ξ)‖`
+with `norm_le_norm_realToCx` and `norm_le_integral_norm_fourier` supplying
+`‖u x‖ ≤ ∫ h`. -/
 theorem exists_besselFourierMajorant :
     ∃ C : ℝ, 0 < C ∧
       ∀ u : SchwartzVelocity, ∃ h : Space → ℝ,
