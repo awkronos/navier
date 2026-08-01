@@ -34,8 +34,12 @@ exactly `gronwall_log_apriori`; unwinding gives the doubly-exponential bound
   the `H¹` weight `(1 + |ξ|²)⁻¹` is *not* integrable on `ℝ³`, so the `H²` order
   in `exists_agmonSupBound` is load-bearing, not decoration.
 * `integral_le_besselWeightMass_mul_sqrt` — the weighted Cauchy–Schwarz step.
-* `exists_agmonSupBound` — now **derived** from the two above plus the strictly
-  lower Fourier residual `exists_besselFourierMajorant`.
+* `exists_besselFourierMajorant` — the Fourier majorant itself, certified via
+  the Euclidean/complex model transport, `exists_weighted_plancherel` and
+  `exists_euclModel_h2_bound`.
+* `exists_agmonSupBound` — the Agmon/Sobolev embedding `H²(ℝ³) ↪ L^∞`, now
+  **kernel-clean end to end** (`#print axioms` shows only `propext`,
+  `Classical.choice`, `Quot.sound`).
 * the four analytic inputs below are **derived**, each from one named residual
   plus a certified leaf in `Navier/Analysis/BKMLogLeaves.lean`.
 
@@ -49,7 +53,7 @@ bookkeeping between the two is certified in `BKMLogLeaves`:
 | consumer | named residual | certified leaf |
 |---|---|---|
 | `biotSavartLogInequality` | `exists_biotSavartLogTextbook` (textbook `log(e+‖u‖_{H³})` shape) | `bkm_log_shape_transfer` |
-| `sobolevEmbeddingDomination` | `exists_besselFourierMajorant` (Fourier inversion + Plancherel symbol bookkeeping) | `integrable_inv_one_add_normSq_sq` + `integral_le_besselWeightMass_mul_sqrt` + `le_mul_sqrt_of_le_majorant` |
+| `sobolevEmbeddingDomination` | `exists_besselFourierMajorant` — **now CERTIFIED** (Fourier inversion + Plancherel symbol bookkeeping) | `integrable_inv_one_add_normSq_sq` + `integral_le_besselWeightMass_mul_sqrt` + `le_mul_sqrt_of_le_majorant` |
 | `sobolevControlContinuity` | `sobolevOrderIntegralContinuity` (one derivative order) | `continuousOn_sum_range` |
 | `katoCommutatorEstimate` | `exists_sobolevOrderEnergyEstimate` (one derivative order) | `exists_hasDerivAt_sum_range_le` |
 
@@ -923,13 +927,140 @@ theorem exists_weighted_plancherel :
   rw [hsplit, hA, hsum]
   linarith
 
-/-- **[NAMED RESIDUAL — Fourier inversion + Plancherel + Bessel-symbol
-bookkeeping for `SchwartzMap Space Space`; Stein, *Singular Integrals and
-Differentiability Properties of Functions*, Princeton 1970, Ch. V §3;
-L. Hörmander, *The Analysis of Linear Partial Differential Operators I*,
-2nd ed. Springer 1990, §7.1 and §7.9.  Residual now reduced to the two leaves
-named at the end of this docstring; est ~450 LOC, revised up from an earlier
-~300 LOC estimate that predated the model-transport audit below.]**
+/-!
+### Leaf 2: model comparison, and the assembly (certified, no sorry)
+
+`euclModel u = realToCx ∘ u ∘ euclCoords` is a composition with two continuous
+linear maps, so `ContinuousLinearMap.iteratedFDeriv_comp_left` and
+`ContinuousLinearMap.iteratedFDeriv_comp_right` give
+`‖D^n (euclModel u) y‖ ≤ ‖realToCx‖ · ‖euclCoords‖^n · ‖D^n u (euclCoords y)‖`.
+Since `n < 3` the operator-norm powers are absorbed into a single constant, and
+`integral_space_eq_euclSpace` transports the resulting integrals back to `Space`.
+Only finite-dimensional norm equivalence is used; no analysis.
+-/
+
+private theorem norm_le_norm_toEucl (ξ : Space) : ‖ξ‖ ≤ ‖euclCoords.symm ξ‖ := by
+  refine (pi_norm_le_iff_of_nonneg (norm_nonneg _)).mpr fun i => ?_
+  have h1 : ‖(euclCoords.symm ξ) i‖ ≤ ‖euclCoords.symm ξ‖ := by
+    rw [EuclideanSpace.norm_eq]
+    refine (Real.le_sqrt (norm_nonneg _) (by positivity)).mpr ?_
+    exact Finset.single_le_sum (f := fun j => ‖(euclCoords.symm ξ) j‖ ^ 2)
+      (fun j _ => by positivity) (Finset.mem_univ i)
+  have h2 : (euclCoords.symm ξ) i = ξ i := rfl
+  rw [h2] at h1
+  exact h1
+
+private theorem iteratedFDeriv_euclModel_le (u : SchwartzVelocity) (n : ℕ) (y : EuclSpace) :
+    ‖iteratedFDeriv ℝ n (⇑(euclModel u)) y‖
+      ≤ ‖realToCx‖ * (‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖
+          * ∏ _i : Fin n, ‖(euclCoords : EuclSpace →L[ℝ] Space)‖) := by
+  have hu : ContDiff ℝ (⊤ : ℕ∞) (⇑u) := u.smooth ⊤
+  have hcomp : ContDiff ℝ (⊤ : ℕ∞) ((⇑u) ∘ (euclCoords : EuclSpace →L[ℝ] Space)) :=
+    hu.comp (euclCoords : EuclSpace →L[ℝ] Space).contDiff
+  have heq : (⇑(euclModel u)) = (⇑realToCx) ∘ ((⇑u) ∘ (euclCoords : EuclSpace →L[ℝ] Space)) := by
+    funext z; simp [euclModel_apply]
+  rw [heq]
+  calc ‖iteratedFDeriv ℝ n ((⇑realToCx) ∘ ((⇑u) ∘ (euclCoords : EuclSpace →L[ℝ] Space))) y‖
+      = ‖realToCx.compContinuousMultilinearMap
+          (iteratedFDeriv ℝ n ((⇑u) ∘ (euclCoords : EuclSpace →L[ℝ] Space)) y)‖ := by
+        rw [ContinuousLinearMap.iteratedFDeriv_comp_left realToCx hcomp.contDiffAt
+          (by exact_mod_cast le_top)]
+    _ ≤ ‖realToCx‖ * ‖iteratedFDeriv ℝ n ((⇑u) ∘ (euclCoords : EuclSpace →L[ℝ] Space)) y‖ :=
+        realToCx.norm_compContinuousMultilinearMap_le _
+    _ ≤ ‖realToCx‖ * (‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖
+          * ∏ _i : Fin n, ‖(euclCoords : EuclSpace →L[ℝ] Space)‖) := by
+        gcongr
+        rw [ContinuousLinearMap.iteratedFDeriv_comp_right
+          (euclCoords : EuclSpace →L[ℝ] Space) hu y (by exact_mod_cast le_top)]
+        exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+private theorem integrable_normSq_iteratedFDeriv_space (u : SchwartzVelocity) (n : ℕ) :
+    Integrable (fun x : Space => ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2) := by
+  have hM : ∀ x, ‖iteratedFDeriv ℝ n (⇑u) x‖ ≤ (SchwartzMap.seminorm ℝ 0 n) u :=
+    fun x => u.norm_iteratedFDeriv_le_seminorm ℝ n x
+  have hM0 : (0:ℝ) ≤ (SchwartzMap.seminorm ℝ 0 n) u := le_trans (norm_nonneg _) (hM 0)
+  have hcont : Continuous fun x : Space => ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2 :=
+    ((ContDiff.continuous_iteratedFDeriv (m := n) (hf := u.smooth ⊤)
+      (by exact_mod_cast le_top)).norm).pow 2
+  refine ((SchwartzMap.integrable_pow_mul_iteratedFDeriv volume u 0 n).const_mul
+    ((SchwartzMap.seminorm ℝ 0 n) u)).mono' hcont.aestronglyMeasurable
+    (Filter.Eventually.of_forall fun x => ?_)
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have hsq : ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2
+      = ‖iteratedFDeriv ℝ n (⇑u) x‖ * ‖iteratedFDeriv ℝ n (⇑u) x‖ := by ring
+  rw [hsq]
+  calc ‖iteratedFDeriv ℝ n (⇑u) x‖ * ‖iteratedFDeriv ℝ n (⇑u) x‖
+      ≤ (SchwartzMap.seminorm ℝ 0 n) u * (‖x‖ ^ 0 * ‖iteratedFDeriv ℝ n (⇑u) x‖) := by
+        simp only [pow_zero, one_mul]
+        exact mul_le_mul_of_nonneg_right (hM x) (norm_nonneg _)
+    _ = _ := rfl
+
+theorem exists_euclModel_h2_bound :
+    ∃ C : ℝ, 0 < C ∧ ∀ u : SchwartzVelocity,
+      (∑ n ∈ Finset.range 3, ∫ y : EuclSpace, ‖iteratedFDeriv ℝ n (⇑(euclModel u)) y‖ ^ 2)
+        ≤ C * sobolevH2NormSq u := by
+  set k := ‖realToCx‖ with hk
+  set e := ‖(euclCoords : EuclSpace →L[ℝ] Space)‖ with he
+  have hk0 : 0 ≤ k := norm_nonneg _
+  have he0 : 0 ≤ e := norm_nonneg _
+  set M := k * (1 + e) ^ 2 with hM
+  have hM0 : 0 ≤ M := by positivity
+  refine ⟨M ^ 2 + 1, by positivity, fun u => ?_⟩
+  have hmp : MeasureTheory.MeasurePreserving (@WithLp.ofLp 2 (Fin 3 → ℝ))
+      (volume : Measure EuclSpace) (volume : Measure Space) :=
+    PiLp.volume_preserving_ofLp (Fin 3)
+  have key : ∀ n : ℕ, n ≤ 2 →
+      (∫ y : EuclSpace, ‖iteratedFDeriv ℝ n (⇑(euclModel u)) y‖ ^ 2)
+        ≤ M ^ 2 * ∫ x : Space, ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2 := by
+    intro n hn
+    have hint : Integrable
+        (fun y : EuclSpace => M ^ 2 * ‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖ ^ 2) :=
+      (hmp.integrable_comp_of_integrable (integrable_normSq_iteratedFDeriv_space u n)).const_mul (M ^ 2)
+    have htrans : (∫ y : EuclSpace, M ^ 2 * ‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖ ^ 2)
+        = M ^ 2 * ∫ x : Space, ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2 := by
+      rw [MeasureTheory.integral_const_mul,
+        integral_space_eq_euclSpace (fun x : Space => ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2)]
+    rw [← htrans]
+    refine integral_mono_of_nonneg (Filter.Eventually.of_forall fun y => by positivity) hint
+      (Filter.Eventually.of_forall fun y => ?_)
+    have hb := iteratedFDeriv_euclModel_le u n y
+    rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin, ← hk, ← he] at hb
+    have hen : e ^ n ≤ (1 + e) ^ 2 := by
+      interval_cases n <;> nlinarith
+    have hb2 : ‖iteratedFDeriv ℝ n (⇑(euclModel u)) y‖
+        ≤ M * ‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖ := by
+      refine hb.trans ?_
+      rw [hM]
+      calc k * (‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖ * e ^ n)
+          ≤ k * (‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖ * (1 + e) ^ 2) := by gcongr
+        _ = k * (1 + e) ^ 2 * ‖iteratedFDeriv ℝ n (⇑u) (euclCoords y)‖ := by ring
+    have h0 := norm_nonneg (iteratedFDeriv ℝ n (⇑(euclModel u)) y)
+    have h1 := norm_nonneg (iteratedFDeriv ℝ n (⇑u) (euclCoords y))
+    nlinarith
+  have hnn : ∀ n : ℕ, (0:ℝ) ≤ ∫ x : Space, ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2 :=
+    fun n => integral_nonneg fun x => by positivity
+  have hsum : sobolevH2NormSq u
+      = (∫ x : Space, ‖iteratedFDeriv ℝ 0 (⇑u) x‖ ^ 2)
+        + (∫ x : Space, ‖iteratedFDeriv ℝ 1 (⇑u) x‖ ^ 2)
+        + ∫ x : Space, ‖iteratedFDeriv ℝ 2 (⇑u) x‖ ^ 2 := by
+    simp [sobolevH2NormSq, Finset.sum_range_succ]
+  rw [show (∑ n ∈ Finset.range 3, ∫ y : EuclSpace, ‖iteratedFDeriv ℝ n (⇑(euclModel u)) y‖ ^ 2)
+      = (∫ y : EuclSpace, ‖iteratedFDeriv ℝ 0 (⇑(euclModel u)) y‖ ^ 2)
+        + (∫ y : EuclSpace, ‖iteratedFDeriv ℝ 1 (⇑(euclModel u)) y‖ ^ 2)
+        + ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 2 (⇑(euclModel u)) y‖ ^ 2 from by
+      simp [Finset.sum_range_succ], hsum]
+  have k0 := key 0 (by norm_num)
+  have k1 := key 1 (by norm_num)
+  have k2 := key 2 (by norm_num)
+  nlinarith [hnn 0, hnn 1, hnn 2, hM0]
+
+private theorem euclCoords_symm_coe : (⇑euclCoords.symm : Space → EuclSpace)
+    = (WithLp.toLp 2 : (Fin 3 → ℝ) → EuclSpace) := rfl
+
+/-- **[CERTIFIED — Fourier inversion + Plancherel + Bessel-symbol bookkeeping
+for `SchwartzMap Space Space`; Stein, *Singular Integrals and Differentiability
+Properties of Functions*, Princeton 1970, Ch. V §3; L. Hörmander, *The Analysis
+of Linear Partial Differential Operators I*, 2nd ed. Springer 1990, §7.1 and
+§7.9.]**
 
 Every Schwartz velocity field admits a nonnegative **Fourier majorant density**
 `h` — classically `h = ‖û‖` in the convention `u(x) = ∫ e^{2πi⟨x,ξ⟩} û(ξ) dξ` —
@@ -968,9 +1099,10 @@ Schwartz maps is `FourierPair.fourierInv_fourier_eq`, and Plancherel is
 (`Mathlib/Analysis/Distribution/SchwartzSpace/Fourier.lean`).  The transport API
 is `SchwartzMap.compCLMOfContinuousLinearEquiv` and `SchwartzMap.postcompCLM`.
 
-**The two remaining leaves.**
+**The two leaves, both certified above.**
 
-* *Weighted Plancherel on the Euclidean model* [Stein Ch. V §3; est ~300 LOC]:
+* `exists_weighted_plancherel` — *weighted Plancherel on the Euclidean model*
+  [Stein Ch. V §3]:
   `∃ C > 0, ∀ v : 𝓢(EuclSpace, CxSpace),
    ∫ y, ((1 + ‖y‖²)·‖𝓕 v y‖)² ≤ C · ∑_{n < 3} ∫ y, ‖iteratedFDeriv ℝ n v y‖²`,
   together with `MemLp ((1 + ‖·‖²)·‖𝓕 v ·‖) 2`.  Route: expand
@@ -982,14 +1114,17 @@ is `SchwartzMap.compCLMOfContinuousLinearEquiv` and `SchwartzMap.postcompCLM`.
   codomain an inner-product space, which Plancherel requires; the passage back to
   the `iteratedFDeriv` operator norm is the finite-dimensional multilinear-norm
   comparison and carries the constant.
-* *Model comparison* [finite-dimensional norm equivalence; est ~150 LOC]:
+* `exists_euclModel_h2_bound` — *model comparison* [finite-dimensional norm
+  equivalence]:
   `∃ C > 0, ∀ u, ∑_{n < 3} ∫ y, ‖iteratedFDeriv ℝ n (euclModel u) y‖² ≤
    C · sobolevH2NormSq u`.  Only norm equivalence on `Fin 3 → ℝ` and on the
   spaces of `n`-linear maps out of it, plus `integral_space_eq_euclSpace`.
 
-Given those two, the assembly is `h ξ = ‖𝓕 (euclModel u) (euclCoords.symm ξ)‖`
-with `norm_le_norm_realToCx` and `norm_le_integral_norm_fourier` supplying
-`‖u x‖ ≤ ∫ h`. -/
+The assembly below takes `h ξ = ‖𝓕 (euclModel u) (euclCoords.symm ξ)‖`, with
+`norm_le_norm_realToCx` and `norm_le_integral_norm_fourier` supplying
+`‖u x‖ ≤ ∫ h`, `norm_le_norm_toEucl` (Pi sup norm ≤ ℓ² norm) making the weight
+transport monotone in the right direction, and `integral_space_eq_euclSpace`
+moving the integrals between the two models. -/
 theorem exists_besselFourierMajorant :
     ∃ C : ℝ, 0 < C ∧
       ∀ u : SchwartzVelocity, ∃ h : Space → ℝ,
@@ -997,12 +1132,84 @@ theorem exists_besselFourierMajorant :
         MemLp (fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) 2 ∧
         (∀ x : Space, ‖(⇑u) x‖ ≤ ∫ ξ : Space, h ξ) ∧
         (∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) ^ 2) ≤ C * sobolevH2NormSq u := by
-  sorry
+  obtain ⟨C₁, hC₁, hplan⟩ := exists_weighted_plancherel
+  obtain ⟨C₂, hC₂, hmod⟩ := exists_euclModel_h2_bound
+  refine ⟨C₁ * C₂, by positivity, fun u => ?_⟩
+  set v : SchwartzMap EuclSpace CxSpace := euclModel u with hv
+  have hmpT : MeasureTheory.MeasurePreserving
+      (WithLp.toLp 2 : (Fin 3 → ℝ) → EuclSpace) (volume : Measure Space)
+      (volume : Measure EuclSpace) := PiLp.volume_preserving_toLp (Fin 3)
+  have hcontF : Continuous fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖ := by
+    fun_prop
+  refine ⟨fun ξ => ‖𝓕 v (euclCoords.symm ξ)‖, fun ξ => norm_nonneg _, ?_, ?_, ?_⟩
+  · have hG : MemLp (fun ξ : Space =>
+        ((1 : ℝ) + ‖euclCoords.symm ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) 2 volume := by
+      rw [euclCoords_symm_coe]
+      exact (memLp_weight_fourier v).comp_measurePreserving hmpT
+    refine hG.of_le hcontF.aestronglyMeasurable (Filter.Eventually.of_forall fun ξ => ?_)
+    have hle := norm_le_norm_toEucl ξ
+    have h1 : (0:ℝ) ≤ ‖𝓕 v (euclCoords.symm ξ)‖ := norm_nonneg _
+    rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_of_nonneg (by positivity),
+      abs_of_nonneg (by positivity)]
+    have h2 : ‖ξ‖ ^ 2 ≤ ‖euclCoords.symm ξ‖ ^ 2 := by
+      have := norm_nonneg ξ; nlinarith
+    nlinarith
+  · intro x
+    have h1 : ‖(⇑u) x‖ ≤ ‖v (euclCoords.symm x)‖ := by
+      rw [hv, euclModel_apply]
+      simp only [ContinuousLinearEquiv.apply_symm_apply]
+      exact norm_le_norm_realToCx (u x)
+    have h2 : ‖v (euclCoords.symm x)‖ ≤ ∫ ξ : EuclSpace, ‖𝓕 v ξ‖ :=
+      norm_le_integral_norm_fourier v _
+    have h3 : (∫ ξ : Space, ‖𝓕 v (euclCoords.symm ξ)‖) = ∫ ξ : EuclSpace, ‖𝓕 v ξ‖ := by
+      rw [integral_space_eq_euclSpace (fun ξ : Space => ‖𝓕 v (euclCoords.symm ξ)‖)]
+      simp
+    rw [h3]; linarith
+  · have hintE : Integrable
+        (fun y : EuclSpace => (((1 : ℝ) + ‖y‖ ^ 2) * ‖𝓕 v y‖) ^ 2) := by
+      refine (memLp_two_iff_integrable_sq ?_).mp (memLp_weight_fourier v)
+      exact ((by fun_prop : Continuous fun y : EuclSpace =>
+        ((1 : ℝ) + ‖y‖ ^ 2) * ‖𝓕 v y‖)).aestronglyMeasurable
+    have hint : Integrable (fun ξ : Space =>
+        (((1 : ℝ) + ‖euclCoords.symm ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2) := by
+      rw [euclCoords_symm_coe]
+      exact hmpT.integrable_comp_of_integrable hintE
+    have hstep1 : (∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2)
+        ≤ ∫ ξ : Space,
+            (((1 : ℝ) + ‖euclCoords.symm ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2 := by
+      refine integral_mono_of_nonneg (Filter.Eventually.of_forall fun ξ => by positivity) hint
+        (Filter.Eventually.of_forall fun ξ => ?_)
+      show (((1 : ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2
+          ≤ (((1 : ℝ) + ‖euclCoords.symm ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2
+      have hle := norm_le_norm_toEucl ξ
+      have h1 : (0:ℝ) ≤ ‖𝓕 v (euclCoords.symm ξ)‖ := norm_nonneg _
+      have h2 : ‖ξ‖ ^ 2 ≤ ‖euclCoords.symm ξ‖ ^ 2 := by
+        have := norm_nonneg ξ; nlinarith
+      have hmul : ((1 : ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖
+          ≤ ((1 : ℝ) + ‖euclCoords.symm ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖ := by gcongr
+      have hnn : (0:ℝ) ≤ ((1 : ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖ := by positivity
+      nlinarith
+    have hstep2 : (∫ ξ : Space,
+          (((1 : ℝ) + ‖euclCoords.symm ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2)
+        = ∫ y : EuclSpace, (((1 : ℝ) + ‖y‖ ^ 2) * ‖𝓕 v y‖) ^ 2 := by
+      rw [integral_space_eq_euclSpace (fun ξ : Space =>
+        (((1 : ℝ) + ‖euclCoords.symm ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2)]
+      simp
+    have hS : (0:ℝ) ≤ sobolevH2NormSq u := sobolevH2NormSq_nonneg u
+    calc (∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v (euclCoords.symm ξ)‖) ^ 2)
+        ≤ ∫ y : EuclSpace, (((1 : ℝ) + ‖y‖ ^ 2) * ‖𝓕 v y‖) ^ 2 := hstep1.trans_eq hstep2
+      _ ≤ C₁ * ∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+            ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2 := hplan v
+      _ ≤ C₁ * (C₂ * sobolevH2NormSq u) := by
+          have hh := hmod u
+          rw [← hv] at hh
+          nlinarith
+      _ = C₁ * C₂ * sobolevH2NormSq u := by ring
 
 /-- Concrete non-vacuous base case for the Fourier-majorant interface: the
-zero Schwartz velocity is represented by the zero Fourier majorant.  The
-universal Fourier inversion/Plancherel statement above remains the genuine
-open leaf; this theorem proves only the datum that needs no transform bridge. -/
+zero Schwartz velocity is represented by the zero Fourier majorant.  Retained as
+a Step-0e non-vacuity anchor for the majorant interface; the universal statement
+above is now certified, so this is no longer the only inhabitant. -/
 theorem besselFourierMajorant_zero :
     ∃ h : Space → ℝ,
       (∀ ξ : Space, 0 ≤ h ξ) ∧
