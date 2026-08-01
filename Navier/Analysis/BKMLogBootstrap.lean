@@ -584,6 +584,26 @@ theorem exists_besselFourierMajorant :
         (∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) ^ 2) ≤ C * sobolevH2NormSq u := by
   sorry
 
+/-- Concrete non-vacuous base case for the Fourier-majorant interface: the
+zero Schwartz velocity is represented by the zero Fourier majorant.  The
+universal Fourier inversion/Plancherel statement above remains the genuine
+open leaf; this theorem proves only the datum that needs no transform bridge. -/
+theorem besselFourierMajorant_zero :
+    ∃ h : Space → ℝ,
+      (∀ ξ : Space, 0 ≤ h ξ) ∧
+      MemLp (fun ξ : Space => ((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) 2 ∧
+      (∀ x : Space, ‖((0 : SchwartzVelocity) : Space → Space) x‖ ≤
+        ∫ ξ : Space, h ξ) ∧
+      (∫ ξ : Space, (((1 : ℝ) + ‖ξ‖ ^ 2) * h ξ) ^ 2) ≤
+        sobolevH2NormSq (0 : SchwartzVelocity) := by
+  refine ⟨fun _ => 0, ?_, ?_, ?_, ?_⟩
+  · intro ξ
+    exact le_rfl
+  · simpa using (MemLp.zero (μ := volume) (p := (2 : ENNReal)))
+  · intro x
+    simp
+  · simpa using sobolevH2NormSq_nonneg (0 : SchwartzVelocity)
+
 /-- **[DERIVED from `exists_besselFourierMajorant`.]**  Agmon / Sobolev
 embedding `H²(ℝ³) ↪ L^∞` (`s = 2 > 3/2 = n/2`); Majda–Bertozzi Lemma 3.2;
 Agmon, *Lectures on Elliptic Boundary Value Problems*, Van Nostrand 1965;
@@ -1038,7 +1058,7 @@ theorem logBKMControl_of_schwartzSliced
 
 end Navier.Analysis.BealeKatoMajda
 
-
+#print axioms Navier.Analysis.BealeKatoMajda.besselFourierMajorant_zero
 
 
 
