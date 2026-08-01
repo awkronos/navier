@@ -1731,6 +1731,102 @@ private theorem lintegral_enorm_sq_eq (v : VelocityField)
   rw [ofReal_integral_eq_lintegral_ofReal h (Filter.Eventually.of_forall fun x => by positivity)]
   exact lintegral_congr fun x => by rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
 
+/-- **(i) The window modulus: the two-leg split, with the negative-time overhang
+resolved.**  A spacetime shift `k = (a, y)` with `‖k‖ ≤ h` is split
+`τ_{(a,y)}f − f = (τ_{(a,y)}f − τ_{(a,0)}f) + (τ_{(a,0)}f − f)`, so the squared error
+is at most twice the space leg plus twice the time leg.
+
+**The design content is the working window.**  The space leg is a *space* shift taken
+at the shifted time `t + a`, so after the change of variables `s = t + a`
+(`intervalIntegral.integral_comp_add_right`) it lives on `Ioc (c+a) (T+a)`.  With
+`|a| ≤ h` that set reaches back to `c − h`, and `SpaceEquicontinuous` says nothing for
+`s ≤ 0` — `VelocityEvolution` is a bare function type with no obligation at negative
+time, so the naive window `(0,T]` makes this step FALSE-as-stated, not merely
+unprovable.  The repair is the hypothesis `h ≤ c`: the working window starts at `c`,
+the shifted window `Ioc (c+a) (T+a)` then sits inside `Ioc 0 (T+h)`, and the space
+modulus at horizon `T + h` covers it.  The discarded initial slab `(0,c]` is not lost
+— `UniformKineticBound` bounds its contribution by `4Cc`, which the consumer drives to
+zero along with `h` by taking `c = h → 0`.
+
+The time leg needs no change of variables: `Ioc c T ⊆ Ioc 0 T` and
+`TimeEquicontinuous` applies directly.
+
+Integrability of the displacement integrals is taken as hypotheses, following the
+convention of `Navier.Analysis.RieszKolmogorov`; each is discharged from
+`JointlyMeasurable` plus slicewise square-integrability at the call site. -/
+private theorem nested_window_modulus
+    (v : VelocityEvolution) (a : ℝ) (y : Space) (c T h ε₁ ε₂ : ℝ)
+    (hcT : c ≤ T) (hh : 0 < h) (hhc : h ≤ c) (ha : |a| ≤ h)
+    (hInnerA : ∀ t : ℝ, Integrable fun x : Space => ‖v (t + a) (x + y) - v t x‖ ^ 2)
+    (hInnerB1 : ∀ t : ℝ, Integrable fun x : Space => ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2)
+    (hInnerB2 : ∀ t : ℝ, Integrable fun x : Space => ‖v (t + a) x - v t x‖ ^ 2)
+    (hOutA : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + a) (x + y) - v t x‖ ^ 2) (Set.Ioc c T))
+    (hOutB1 : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2) (Set.Ioc c T))
+    (hOutB2 : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + a) x - v t x‖ ^ 2) (Set.Ioc c T))
+    (hOutS : IntegrableOn
+      (fun s : ℝ => ∫ x : Space, ‖v s (x + y) - v s x‖ ^ 2) (Set.Ioc (0:ℝ) (T + h)))
+    (hOutT : IntegrableOn
+      (fun t : ℝ => ∫ x : Space, ‖v (t + a) x - v t x‖ ^ 2) (Set.Ioc (0:ℝ) T))
+    (hS : (∫ s in Set.Ioc (0:ℝ) (T + h), ∫ x : Space, ‖v s (x + y) - v s x‖ ^ 2) ≤ ε₁)
+    (hT : (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖v (t + a) x - v t x‖ ^ 2) ≤ ε₂) :
+    (∫ t in Set.Ioc c T, ∫ x : Space, ‖v (t + a) (x + y) - v t x‖ ^ 2) ≤ 2 * ε₁ + 2 * ε₂ := by
+  have hc0 : 0 ≤ c := le_trans hh.le hhc
+  have habs : -h ≤ a ∧ a ≤ h := abs_le.mp ha
+  -- (1) pointwise + inner monotonicity
+  have hinner : ∀ t : ℝ, (∫ x : Space, ‖v (t + a) (x + y) - v t x‖ ^ 2)
+      ≤ 2 * (∫ x : Space, ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2)
+        + 2 * ∫ x : Space, ‖v (t + a) x - v t x‖ ^ 2 := by
+    intro t
+    have hpt : ∀ x : Space, ‖v (t + a) (x + y) - v t x‖ ^ 2
+        ≤ 2 * ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2 + 2 * ‖v (t + a) x - v t x‖ ^ 2 := by
+      intro x
+      have hsplit : v (t + a) (x + y) - v t x
+          = (v (t + a) (x + y) - v (t + a) x) + (v (t + a) x - v t x) := by abel
+      have hn := norm_add_le (v (t + a) (x + y) - v (t + a) x) (v (t + a) x - v t x)
+      rw [← hsplit] at hn
+      nlinarith [norm_nonneg (v (t + a) (x + y) - v (t + a) x),
+        norm_nonneg (v (t + a) x - v t x), norm_nonneg (v (t + a) (x + y) - v t x),
+        sq_nonneg (‖v (t + a) (x + y) - v (t + a) x‖ - ‖v (t + a) x - v t x‖)]
+    have hsum : Integrable (fun x : Space =>
+        2 * ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2 + 2 * ‖v (t + a) x - v t x‖ ^ 2) :=
+      ((hInnerB1 t).const_mul 2).add ((hInnerB2 t).const_mul 2)
+    have hmono := integral_mono (hInnerA t) hsum hpt
+    rwa [integral_add ((hInnerB1 t).const_mul 2) ((hInnerB2 t).const_mul 2),
+      MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hmono
+  -- (2) outer monotonicity on the working window
+  have houter : (∫ t in Set.Ioc c T, ∫ x : Space, ‖v (t + a) (x + y) - v t x‖ ^ 2)
+      ≤ 2 * (∫ t in Set.Ioc c T, ∫ x : Space, ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2)
+        + 2 * ∫ t in Set.Ioc c T, ∫ x : Space, ‖v (t + a) x - v t x‖ ^ 2 := by
+    have hsum2 : IntegrableOn (fun t : ℝ =>
+        2 * (∫ x : Space, ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2)
+          + 2 * ∫ x : Space, ‖v (t + a) x - v t x‖ ^ 2) (Set.Ioc c T) :=
+      (hOutB1.const_mul 2).add (hOutB2.const_mul 2)
+    have hmono := integral_mono hOutA hsum2 (fun t => hinner t)
+    rwa [integral_add (hOutB1.const_mul 2) (hOutB2.const_mul 2),
+      MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hmono
+  -- (3) the space leg: translate the time variable, then enlarge the time window
+  have hleg1 : (∫ t in Set.Ioc c T, ∫ x : Space, ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2) ≤ ε₁ := by
+    have htrans : (∫ t in Set.Ioc c T, ∫ x : Space, ‖v (t + a) (x + y) - v (t + a) x‖ ^ 2)
+        = ∫ s in Set.Ioc (c + a) (T + a), ∫ x : Space, ‖v s (x + y) - v s x‖ ^ 2 := by
+      rw [← intervalIntegral.integral_of_le hcT, ← intervalIntegral.integral_of_le (by linarith)]
+      exact intervalIntegral.integral_comp_add_right
+        (fun s => ∫ x : Space, ‖v s (x + y) - v s x‖ ^ 2) a
+    rw [htrans]
+    refine le_trans (setIntegral_mono_set hOutS
+      (Filter.Eventually.of_forall fun s => integral_nonneg fun x => by positivity)
+      (HasSubset.Subset.eventuallyLE ?_)) hS
+    exact Set.Ioc_subset_Ioc (by linarith) (by linarith)
+  -- (4) the time leg: just enlarge the time window
+  have hleg2 : (∫ t in Set.Ioc c T, ∫ x : Space, ‖v (t + a) x - v t x‖ ^ 2) ≤ ε₂ := by
+    refine le_trans (setIntegral_mono_set hOutT
+      (Filter.Eventually.of_forall fun s => integral_nonneg fun x => by positivity)
+      (HasSubset.Subset.eventuallyLE ?_)) hT
+    exact Set.Ioc_subset_Ioc hc0 le_rfl
+  linarith
+
 /-- **The middle step, in the form the Leray bundle can actually feed.**  Summing the
 per-cell oscillation bound over a finite family of spacetime cells of side `h`, with
 the `L^∞` hypothesis of `RieszKolmogorov.sum_cellError_le_modulus` replaced by
@@ -1863,18 +1959,27 @@ neither — it is not uniformly bounded, and `VelocityEvolution` is uncontrolled
 `experiments/riesz_kolmogorov_dyadic_core.py`, and the summation inequality itself in
 `experiments/riesz_kolmogorov_cell_sum_toy.py`.
 
-**What is left, stated exactly.**  Three steps, none of them the summation:
-(i) *window modulus* — turn `TimeEquicontinuous` + `SpaceEquicontinuous` into the
-single spacetime bound `∀ k ∈ B̄(0,h), ∫_W ‖f(·+k) − f‖² ≤ Mmod(h)` with
-`Mmod(h) → 0`, via `‖τ_{(h,y)}f − f‖ ≤ ‖τ_{(h,0)}f − f‖ + ‖τ_{(0,y)}f − f‖`; the
-negative-time overhang of the time shift is the one genuine design choice, and is
-handled by taking `W ⊇ (0,n] × B̄(0,n)` an enlarged window and restricting `|k| ≤ h`
-with `h` small.  (ii) *cell-average vector* — feed the finitely many cells meeting the
-window (`finite_prodGridIndices`, `closedBall_subset_biUnion_prodGridCell`,
+**Step (i) is now certified too.**  `nested_window_modulus` (above) turns
+`TimeEquicontinuous` + `SpaceEquicontinuous` into the single spacetime bound
+`∫_{Ioc c T} ∫_x ‖v(t+a)(x+y) − v(t)(x)‖² ≤ 2ε₁ + 2ε₂` for `|a| ≤ h`, `‖y‖ ≤ h`.  The
+negative-time overhang — the only genuine design choice in the whole criterion — is
+resolved there by the hypothesis `h ≤ c`: the working window starts at `c`, so the
+time-shifted space leg lands inside `Ioc 0 (T+h)` where `SpaceEquicontinuous` speaks.
+The discarded slab `(0,c]` costs `4Cc`, driven to zero by taking `c = h → 0`.
+
+**What is left, stated exactly.**  Two mechanical steps plus one bridge:
+(ii) *cell-average vector* — feed the finitely many cells meeting the window
+(`finite_prodGridIndices`, `closedBall_subset_biUnion_prodGridCell`,
 `window_subset_closedBall`) to `exists_subseq_cauchy_of_bounded_pi_finiteDim`.
 (iii) *three-leg assembly* — `setIntegral_norm_sub_sq_le_three_legs` on
 `f_j − E_h f_j`, `E_h f_j − E_h f_k`, `E_h f_k − f_k`, then a diagonal over `h = 1/m`.
-[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~250 LOC for (i)–(iii).] -/
+*Bridge* — convert `nested_window_modulus`'s nested form into the product-measure
+`∫_W ‖f(·+k) − f‖²` that `sum_cellError_le_modulus_of_memL2` consumes, plus the
+displacement-integral integrability side conditions; this is the same
+`integrable_prod_iff` bookkeeping already done in `windowError_eq_setIntegral_prod`
+and in `integrableOn_winQ`.
+[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~180 LOC for (ii), (iii) and the
+bridge.] -/
 theorem exists_subseq_windowCauchy
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C)
