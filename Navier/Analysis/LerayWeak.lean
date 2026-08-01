@@ -1731,6 +1731,100 @@ private theorem lintegral_enorm_sq_eq (v : VelocityField)
   rw [ofReal_integral_eq_lintegral_ofReal h (Filter.Eventually.of_forall fun x => by positivity)]
   exact lintegral_congr fun x => by rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
 
+/-- **The middle step, in the form the Leray bundle can actually feed.**  Summing the
+per-cell oscillation bound over a finite family of spacetime cells of side `h`, with
+the `L^∞` hypothesis of `RieszKolmogorov.sum_cellError_le_modulus` replaced by
+square-integrability on an enlarged window `W`, and with the disjointness step
+localized to `W` rather than to all of `ℝ × ℝ³`.
+
+Both replacements are forced, not cosmetic.  A Leray field is **not** uniformly
+bounded, so the `∀ z, ‖f z‖ ≤ M` hypothesis is not dischargeable from
+`UniformKineticBound`; and `VelocityEvolution` is uncontrolled for `t < 0`, so
+`∀ k, Integrable fun x => ‖f (x + k) − f x‖²` over the whole spacetime is not
+dischargeable either.  The two upstream lemmas that make the swap possible are
+`RieszKolmogorov.setIntegral_cellError_le_displacement_of_memL2` (per cell) and
+`RieszKolmogorov.sum_finset_setIntegral_le_setIntegral_of_disjoint` (disjointness on
+a window); both are certified there.
+
+The constant is the same `ν(B_h)/h^{d}` as in the bounded case — for the sup-norm ball
+in `ℝ × ℝ³` this is `(2h)⁴/h⁴ = 2⁴`, independent of `h`, which is what lets `h → 0`
+drive the cell error to zero uniformly over an equicontinuous family.
+
+Truth-checked before formalization at `experiments/riesz_kolmogorov_cell_sum_toy.py`:
+in `d = 1` on an off-grid step function (so the cell error is nonzero), at four dyadic
+scales and two grid resolutions, both `∑_cells ≤ h^{-d}∫_{|k|≤h}` and
+`h^{-d}∫_{|k|≤h} ≤ 2^d·sup_{|k|≤h}` hold with slack, and the left side tends to `0`
+as `h → 0`. -/
+private theorem sum_cellError_le_modulus_of_memL2
+    {h : ℝ} (hh : 0 < h) (S : Finset (ℤ × (Fin 3 → ℤ)))
+    (f : ℝ × Space → Space) (hmeas : Measurable f)
+    (W : Set (ℝ × Space)) (_hWm : MeasurableSet W)
+    (hcellW : ∀ p ∈ S, prodGridCell h p.1 p.2 ⊆ W)
+    (hcellWB : ∀ p ∈ S, ∀ x ∈ prodGridCell h p.1 p.2,
+      ∀ k ∈ Metric.closedBall (0 : ℝ × Space) h, x + k ∈ W)
+    (hL2 : IntegrableOn (fun z => ‖f z‖ ^ 2) W)
+    (Mmod : ℝ)
+    (hmod : ∀ k ∈ Metric.closedBall (0 : ℝ × Space) h,
+      (∫ x in W, ‖f (x + k) - f x‖ ^ 2) ≤ Mmod)
+    (hglobW : ∀ k, IntegrableOn (fun x => ‖f (x + k) - f x‖ ^ 2) W)
+    (hFp : ∀ p ∈ S, IntegrableOn
+      (fun k => ∫ x in prodGridCell h p.1 p.2, ‖f (x + k) - f x‖ ^ 2)
+      (Metric.closedBall (0 : ℝ × Space) h))
+    (hG : IntegrableOn (fun k => ∫ x in W, ‖f (x + k) - f x‖ ^ 2)
+      (Metric.closedBall (0 : ℝ × Space) h)) :
+    ∑ p ∈ S, (∫ x in prodGridCell h p.1 p.2,
+        ‖f x - ⨍ y in prodGridCell h p.1 p.2, f y‖ ^ 2)
+      ≤ (h ^ 4)⁻¹ * (volume.real (Metric.closedBall (0 : ℝ × Space) h) * Mmod) := by
+  classical
+  haveI : (volume : Measure (ℝ × Space)).IsAddLeftInvariant := by
+    rw [MeasureTheory.Measure.volume_eq_prod]; infer_instance
+  set B := Metric.closedBall (0 : ℝ × Space) h with hBdef
+  have hdpos : (0:ℝ) < h ^ 4 := by positivity
+  have hvolcell : ∀ p : ℤ × (Fin 3 → ℤ), volume (prodGridCell h p.1 p.2)
+      = ENNReal.ofReal (h ^ 4) := by
+    intro p
+    have := volume_prodGridCell (ι := Fin 3) hh.le p.1 p.2
+    simpa using this
+  have hne : ∀ p : ℤ × (Fin 3 → ℤ), volume (prodGridCell h p.1 p.2) ≠ 0 := by
+    intro p; rw [hvolcell p, Ne, ENNReal.ofReal_eq_zero]; exact not_le.mpr hdpos
+  have hfin : ∀ p : ℤ × (Fin 3 → ℤ), volume (prodGridCell h p.1 p.2) ≠ ⊤ := by
+    intro p; rw [hvolcell p]; exact ENNReal.ofReal_ne_top
+  have hreal : ∀ p : ℤ × (Fin 3 → ℤ), volume.real (prodGridCell h p.1 p.2) = h ^ 4 := by
+    intro p; rw [Measure.real, hvolcell p, ENNReal.toReal_ofReal hdpos.le]
+  have hBfin : volume B ≠ ⊤ := measure_closedBall_lt_top.ne
+  have hcell : ∀ p ∈ S, (∫ x in prodGridCell h p.1 p.2,
+      ‖f x - ⨍ y in prodGridCell h p.1 p.2, f y‖ ^ 2)
+      ≤ (h ^ 4)⁻¹ * ∫ k in B, (∫ x in prodGridCell h p.1 p.2,
+          ‖f (x + k) - f x‖ ^ 2) := by
+    intro p hp
+    have hres := setIntegral_cellError_le_displacement_of_memL2
+      (prodGridCell h p.1 p.2) W (measurableSet_prodGridCell h p.1 p.2) _hWm h f hmeas
+      (hne p) (hfin p) hBfin (hcellW p hp) (hcellWB p hp) hL2
+      (fun x hx y hy => norm_sub_le_of_mem_prodGridCell hh.le hy hx)
+    rwa [hreal p] at hres
+  calc ∑ p ∈ S, (∫ x in prodGridCell h p.1 p.2,
+          ‖f x - ⨍ y in prodGridCell h p.1 p.2, f y‖ ^ 2)
+      ≤ ∑ p ∈ S, (h ^ 4)⁻¹ * ∫ k in B, (∫ x in prodGridCell h p.1 p.2,
+          ‖f (x + k) - f x‖ ^ 2) := Finset.sum_le_sum hcell
+    _ = (h ^ 4)⁻¹ * ∑ p ∈ S, ∫ k in B, (∫ x in prodGridCell h p.1 p.2,
+          ‖f (x + k) - f x‖ ^ 2) := by rw [← Finset.mul_sum]
+    _ = (h ^ 4)⁻¹ * ∫ k in B, (∑ p ∈ S, ∫ x in prodGridCell h p.1 p.2,
+          ‖f (x + k) - f x‖ ^ 2) := by
+        rw [MeasureTheory.integral_finsetSum S hFp]
+    _ ≤ (h ^ 4)⁻¹ * ∫ k in B, (∫ x in W, ‖f (x + k) - f x‖ ^ 2) := by
+        refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+        refine setIntegral_mono_on (integrable_finsetSum S hFp) hG
+          measurableSet_closedBall fun k _ => ?_
+        exact sum_finset_setIntegral_le_setIntegral_of_disjoint S
+          (fun p => prodGridCell h p.1 p.2) W hcellW
+          (fun p => measurableSet_prodGridCell h p.1 p.2)
+          (fun p q hpq => prodGridCell_disjoint hh (by simpa [Prod.ext_iff] using hpq))
+          _ (fun x => by positivity) (hglobW k)
+    _ ≤ (h ^ 4)⁻¹ * (volume.real B * Mmod) := by
+        refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+        exact setIntegral_le_measureReal_mul_const measurableSet_closedBall hBfin
+          _ Mmod (fun k hk => hmod k hk) hG
+
 /-- **[NAMED RESIDUAL — Riesz–Fréchet–Kolmogorov compactness on one window;
 Brezis, *Functional Analysis, Sobolev Spaces and PDE*, Springer 2011, Thm 4.26
 + Cor 4.27; Simon, *Ann. Mat. Pura Appl.* **146** (1987) 65–96, Thm 1; est ~400
@@ -1756,12 +1850,31 @@ bound `‖(⨍_Q f) − f x‖² ≤ ⨍_Q ‖f y − f x‖²` that makes the c
 `f` uniformly over the family.  Engine 2 is `exists_subseq_cauchy_of_bounded_pi`,
 Bolzano–Weierstrass on the cell-average vector — legitimate because `E_h f` lives
 in the finite-dimensional span of the finitely many cell indicators, so no
-infinite-dimensional compactness is invoked anywhere.  What is left is the middle
-step: summing the cell-oscillation bound over a partition of `(0,n] × B̄(0,n)`
-into cells of side `h` and converting it by Fubini plus translation-invariance of
-Lebesgue measure into `2⁴ · sup_{|k|_∞ ≤ h} ‖τ_k f − f‖²_{L²}`, then feeding the
-two supplied moduli.  The `2^d` constant is checked numerically in
-`experiments/riesz_kolmogorov_dyadic_core.py`. -/
+infinite-dimensional compactness is invoked anywhere.
+
+**The middle step is now certified too.**  `sum_cellError_le_modulus_of_memL2`
+(immediately above) sums the cell-oscillation bound over a finite family of spacetime
+cells of side `h` and converts it into `2⁴ · sup_{|k|_∞ ≤ h} ‖τ_k f − f‖²_{L²(W)}`.
+Its `L²`-on-a-window hypotheses are the ones this bundle can discharge: the earlier
+`RieszKolmogorov.sum_cellError_le_modulus` asks for a global sup bound `∀ z, ‖f z‖ ≤ M`
+and for `‖τ_k f − f‖²` integrable over **all** of `ℝ × ℝ³`, and a Leray field supplies
+neither — it is not uniformly bounded, and `VelocityEvolution` is uncontrolled for
+`t < 0`.  The `2^d` constant is checked numerically in
+`experiments/riesz_kolmogorov_dyadic_core.py`, and the summation inequality itself in
+`experiments/riesz_kolmogorov_cell_sum_toy.py`.
+
+**What is left, stated exactly.**  Three steps, none of them the summation:
+(i) *window modulus* — turn `TimeEquicontinuous` + `SpaceEquicontinuous` into the
+single spacetime bound `∀ k ∈ B̄(0,h), ∫_W ‖f(·+k) − f‖² ≤ Mmod(h)` with
+`Mmod(h) → 0`, via `‖τ_{(h,y)}f − f‖ ≤ ‖τ_{(h,0)}f − f‖ + ‖τ_{(0,y)}f − f‖`; the
+negative-time overhang of the time shift is the one genuine design choice, and is
+handled by taking `W ⊇ (0,n] × B̄(0,n)` an enlarged window and restricting `|k| ≤ h`
+with `h` small.  (ii) *cell-average vector* — feed the finitely many cells meeting the
+window (`finite_prodGridIndices`, `closedBall_subset_biUnion_prodGridCell`,
+`window_subset_closedBall`) to `exists_subseq_cauchy_of_bounded_pi_finiteDim`.
+(iii) *three-leg assembly* — `setIntegral_norm_sub_sq_le_three_legs` on
+`f_j − E_h f_j`, `E_h f_j − E_h f_k`, `E_h f_k − f_k`, then a diagonal over `h = 1/m`.
+[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~250 LOC for (i)–(iii).] -/
 theorem exists_subseq_windowCauchy
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C)
