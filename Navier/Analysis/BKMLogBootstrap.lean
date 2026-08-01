@@ -546,7 +546,7 @@ theorem integral_le_besselWeightMass_mul_sqrt
   rw [Real.sqrt_eq_rpow, Real.sqrt_eq_rpow]
   simpa [besselWeightMass, inv_pow] using key
 
-open scoped FourierTransform
+open scoped FourierTransform LineDeriv
 
 /-!
 ### Euclidean/complex model transport for the Fourier majorant (certified, no sorry)
@@ -638,6 +638,290 @@ theorem integral_space_eq_euclSpace (f : Space → ℝ) :
     PiLp.volume_preserving_ofLp (Fin 3)
   rw [← hmp.integral_comp (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).symm.measurableEmbedding]
   rfl
+
+/-!
+### Leaf 1: weighted Plancherel on the Euclidean model (certified, no sorry)
+
+The coordinate-derivative route.  Mathlib's Plancherel for Schwartz maps
+(`SchwartzMap.integral_norm_sq_fourier`) needs an inner-product codomain, which
+`iteratedFDeriv` does not have (it lands in a space of multilinear maps).  So the
+symbol identity is run on **line derivatives** `∂_{eᵢ}` instead
+(`SchwartzMap.fourier_lineDerivOp_eq`: `𝓕(∂_m f) = (2πi)⟪·,m⟫ · 𝓕 f`), whose
+codomain is still `CxSpace`.  Summing over the orthonormal basis turns the symbol
+product into a power of `‖ξ‖` because `∑_{i₁…i_n} ⟪ξ,e_{i₁}⟫²⋯⟪ξ,e_{i_n}⟫² =
+(∑_i ξ_i²)^n = ‖ξ‖^{2n}`, and the passage back to the `iteratedFDeriv` operator
+norm is one application of `ContinuousMultilinearMap.le_opNorm` at unit vectors.
+Stein, *Singular Integrals*, Princeton 1970, Ch. V §3.
+-/
+
+private abbrev SV := SchwartzMap EuclSpace CxSpace
+
+private theorem norm_fourier_lineDeriv (v : SV) (m ξ : EuclSpace) :
+    ‖𝓕 (∂_{m} v) ξ‖ = 2 * Real.pi * |inner ℝ ξ m| * ‖𝓕 v ξ‖ := by
+  have h : (inner ℝ · m : EuclSpace → ℝ).HasTemperateGrowth := by fun_prop
+  rw [SchwartzMap.fourier_lineDerivOp_eq]
+  simp [h, norm_smul, abs_of_pos Real.pi_pos]
+  ring
+
+private noncomputable def eucBasis (i : Fin 3) : EuclSpace := EuclideanSpace.single i (1:ℝ)
+
+@[simp] private theorem norm_eucBasis (i : Fin 3) : ‖eucBasis i‖ = 1 := by
+  simp [eucBasis]
+
+@[simp] private theorem inner_eucBasis (ξ : EuclSpace) (i : Fin 3) :
+    (inner ℝ ξ (eucBasis i) : ℝ) = ξ i := by
+  simp [eucBasis, EuclideanSpace.inner_single_right]
+
+private theorem sum_inner_eucBasis_sq (ξ : EuclSpace) :
+    ∑ i : Fin 3, (inner ℝ ξ (eucBasis i) : ℝ) ^ 2 = ‖ξ‖ ^ 2 := by
+  simp only [inner_eucBasis]
+  rw [EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity)]
+  simp [sq_abs]
+
+private theorem integrable_pow_mul_normSq (f : SV) (k : ℕ) :
+    Integrable (fun ξ : EuclSpace => ‖ξ‖ ^ k * ‖f ξ‖ ^ 2) := by
+  have hM : ∀ x, ‖f x‖ ≤ (SchwartzMap.seminorm ℝ 0 0) f := fun x => f.norm_le_seminorm ℝ x
+  have hM0 : (0:ℝ) ≤ (SchwartzMap.seminorm ℝ 0 0) f := le_trans (norm_nonneg _) (hM 0)
+  refine ((f.integrable_pow_mul volume k).const_mul ((SchwartzMap.seminorm ℝ 0 0) f)).mono'
+    ((by fun_prop : Continuous fun ξ : EuclSpace => ‖ξ‖ ^ k * ‖f ξ‖ ^ 2).aestronglyMeasurable)
+    (Filter.Eventually.of_forall fun ξ => ?_)
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have : ‖ξ‖ ^ k * ‖f ξ‖ ^ 2 = (‖ξ‖ ^ k * ‖f ξ‖) * ‖f ξ‖ := by ring
+  rw [this]
+  exact mul_le_mul_of_nonneg_left (hM ξ) (by positivity) |>.trans_eq (by ring)
+
+private theorem integrable_weight_mul_normSq (f : SV) (k : ℕ) (g : EuclSpace → ℝ)
+    (hg : Continuous g) (hgb : ∀ ξ, |g ξ| ≤ ‖ξ‖ ^ k) :
+    Integrable (fun ξ : EuclSpace => g ξ * ‖f ξ‖ ^ 2) := by
+  refine (integrable_pow_mul_normSq f k).mono'
+    ((by fun_prop : Continuous fun ξ : EuclSpace => g ξ * ‖f ξ‖ ^ 2).aestronglyMeasurable)
+    (Filter.Eventually.of_forall fun ξ => ?_)
+  rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (by positivity : (0:ℝ) ≤ ‖f ξ‖ ^ 2)]
+  exact mul_le_mul_of_nonneg_right (hgb ξ) (by positivity)
+
+private theorem integral_lineDeriv_sq (v : SV) (m : EuclSpace) :
+    ∫ x : EuclSpace, ‖(∂_{m} v) x‖ ^ 2
+      = 4 * Real.pi ^ 2 * ∫ ξ : EuclSpace, (inner ℝ ξ m : ℝ) ^ 2 * ‖𝓕 v ξ‖ ^ 2 := by
+  rw [← SchwartzMap.integral_norm_sq_fourier (∂_{m} v), ← MeasureTheory.integral_const_mul]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
+  show ‖𝓕 (∂_{m} v) ξ‖ ^ 2 = 4 * Real.pi ^ 2 * ((inner ℝ ξ m : ℝ) ^ 2 * ‖𝓕 v ξ‖ ^ 2)
+  rw [norm_fourier_lineDeriv]
+  rw [mul_pow, mul_pow, mul_pow, sq_abs]
+  ring
+
+private theorem integrable_inner_sq (v : SV) (m : EuclSpace) (hm : ‖m‖ ≤ 1) :
+    Integrable (fun ξ : EuclSpace => (inner ℝ ξ m : ℝ) ^ 2 * ‖𝓕 v ξ‖ ^ 2) := by
+  refine integrable_weight_mul_normSq (𝓕 v) 2 _ (by fun_prop) fun ξ => ?_
+  rw [abs_of_nonneg (by positivity)]
+  have h := abs_real_inner_le_norm ξ m
+  calc (inner ℝ ξ m : ℝ) ^ 2 = |(inner ℝ ξ m : ℝ)| ^ 2 := by rw [sq_abs]
+    _ ≤ (‖ξ‖ * ‖m‖) ^ 2 := by gcongr
+    _ = ‖ξ‖ ^ 2 * ‖m‖ ^ 2 := by ring
+    _ ≤ ‖ξ‖ ^ 2 * 1 ^ 2 := by gcongr
+    _ = ‖ξ‖ ^ 2 := by ring
+
+private theorem sum_integral_lineDeriv_sq (v : SV) :
+    ∑ i : Fin 3, ∫ x : EuclSpace, ‖(∂_{eucBasis i} v) x‖ ^ 2
+      = 4 * Real.pi ^ 2 * ∫ ξ : EuclSpace, ‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2 := by
+  simp_rw [integral_lineDeriv_sq]
+  rw [← Finset.mul_sum, ← integral_finsetSum _ (fun i _ => integrable_inner_sq v (eucBasis i) (by simp))]
+  congr 1
+  refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
+  show (∑ i : Fin 3, (inner ℝ ξ (eucBasis i) : ℝ) ^ 2 * ‖𝓕 v ξ‖ ^ 2) = ‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2
+  rw [← Finset.sum_mul, sum_inner_eucBasis_sq]
+
+private theorem integrable_normSq_iteratedFDeriv (v : SV) (n : ℕ) :
+    Integrable (fun x : EuclSpace => ‖iteratedFDeriv ℝ n (⇑v) x‖ ^ 2) := by
+  have hM : ∀ x, ‖iteratedFDeriv ℝ n (⇑v) x‖ ≤ (SchwartzMap.seminorm ℝ 0 n) v :=
+    fun x => v.norm_iteratedFDeriv_le_seminorm ℝ n x
+  have hM0 : (0:ℝ) ≤ (SchwartzMap.seminorm ℝ 0 n) v := le_trans (norm_nonneg _) (hM 0)
+  have hcont : Continuous fun x : EuclSpace => ‖iteratedFDeriv ℝ n (⇑v) x‖ ^ 2 :=
+    ((ContDiff.continuous_iteratedFDeriv (m := n) (hf := v.smooth ⊤)
+      (by exact_mod_cast le_top)).norm).pow 2
+  refine ((SchwartzMap.integrable_pow_mul_iteratedFDeriv volume v 0 n).const_mul
+    ((SchwartzMap.seminorm ℝ 0 n) v)).mono' hcont.aestronglyMeasurable
+    (Filter.Eventually.of_forall fun x => ?_)
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have : ‖iteratedFDeriv ℝ n (⇑v) x‖ ^ 2
+      = ‖iteratedFDeriv ℝ n (⇑v) x‖ * ‖iteratedFDeriv ℝ n (⇑v) x‖ := by ring
+  rw [this]
+  calc ‖iteratedFDeriv ℝ n (⇑v) x‖ * ‖iteratedFDeriv ℝ n (⇑v) x‖
+      ≤ (SchwartzMap.seminorm ℝ 0 n) v * (‖x‖ ^ 0 * ‖iteratedFDeriv ℝ n (⇑v) x‖) := by
+        simp only [pow_zero, one_mul]
+        exact mul_le_mul_of_nonneg_right (hM x) (norm_nonneg _)
+    _ = _ := rfl
+
+private theorem integrable_quartic_weight (v : SV) (j : Fin 3) :
+    Integrable (fun ξ : EuclSpace =>
+      (‖ξ‖ ^ 2 * (inner ℝ ξ (eucBasis j) : ℝ) ^ 2) * ‖𝓕 v ξ‖ ^ 2) := by
+  refine integrable_weight_mul_normSq (𝓕 v) 4 _ (by fun_prop) fun ξ => ?_
+  rw [abs_of_nonneg (by positivity)]
+  have h := abs_real_inner_le_norm ξ (eucBasis j)
+  have h2 : (inner ℝ ξ (eucBasis j) : ℝ) ^ 2 ≤ ‖ξ‖ ^ 2 := by
+    calc (inner ℝ ξ (eucBasis j) : ℝ) ^ 2 = |(inner ℝ ξ (eucBasis j) : ℝ)| ^ 2 := by rw [sq_abs]
+      _ ≤ (‖ξ‖ * ‖eucBasis j‖) ^ 2 := by gcongr
+      _ = ‖ξ‖ ^ 2 := by simp
+  calc ‖ξ‖ ^ 2 * (inner ℝ ξ (eucBasis j) : ℝ) ^ 2 ≤ ‖ξ‖ ^ 2 * ‖ξ‖ ^ 2 := by gcongr
+    _ = ‖ξ‖ ^ 4 := by ring
+
+private theorem sum_integral_lineDeriv2_sq (v : SV) :
+    ∑ j : Fin 3, ∑ i : Fin 3,
+        ∫ x : EuclSpace, ‖(∂_{eucBasis i} (∂_{eucBasis j} v)) x‖ ^ 2
+      = 16 * Real.pi ^ 4 * ∫ ξ : EuclSpace, ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2 := by
+  have step : ∀ j : Fin 3,
+      (∑ i : Fin 3, ∫ x : EuclSpace, ‖(∂_{eucBasis i} (∂_{eucBasis j} v)) x‖ ^ 2)
+        = 16 * Real.pi ^ 4 * ∫ ξ : EuclSpace,
+            (‖ξ‖ ^ 2 * (inner ℝ ξ (eucBasis j) : ℝ) ^ 2) * ‖𝓕 v ξ‖ ^ 2 := by
+    intro j
+    have hpt : ∀ ξ : EuclSpace, ‖ξ‖ ^ 2 * ‖𝓕 (∂_{eucBasis j} v) ξ‖ ^ 2
+        = 4 * Real.pi ^ 2 * ((‖ξ‖ ^ 2 * (inner ℝ ξ (eucBasis j) : ℝ) ^ 2) * ‖𝓕 v ξ‖ ^ 2) := by
+      intro ξ
+      rw [norm_fourier_lineDeriv, mul_pow, mul_pow, mul_pow, sq_abs]
+      ring
+    rw [sum_integral_lineDeriv_sq (∂_{eucBasis j} v),
+      integral_congr_ae (Filter.Eventually.of_forall hpt), MeasureTheory.integral_const_mul]
+    ring
+  rw [Finset.sum_congr rfl (fun j _ => step j), ← Finset.mul_sum,
+    ← integral_finsetSum _ (fun j _ => integrable_quartic_weight v j)]
+  congr 1
+  refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
+  show (∑ j : Fin 3, (‖ξ‖ ^ 2 * (inner ℝ ξ (eucBasis j) : ℝ) ^ 2) * ‖𝓕 v ξ‖ ^ 2)
+      = ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2
+  rw [← Finset.sum_mul]
+  have : (∑ j : Fin 3, ‖ξ‖ ^ 2 * (inner ℝ ξ (eucBasis j) : ℝ) ^ 2) = ‖ξ‖ ^ 4 := by
+    rw [← Finset.mul_sum, sum_inner_eucBasis_sq]; ring
+  rw [this]
+
+private theorem norm_lineDeriv_le (v : SV) (m x : EuclSpace) :
+    ‖(∂_{m} v) x‖ ≤ ‖iteratedFDeriv ℝ 1 (⇑v) x‖ * ‖m‖ := by
+  rw [SchwartzMap.lineDerivOp_apply_eq_fderiv, norm_iteratedFDeriv_one]
+  exact (fderiv ℝ (⇑v) x).le_opNorm m
+
+private theorem lineDeriv2_eq (v : SV) (m m' x : EuclSpace) :
+    (∂_{m} (∂_{m'} v)) x = iteratedFDeriv ℝ 2 (⇑v) x ![m, m'] := by
+  have hdiff : Differentiable ℝ (fderiv ℝ (⇑v)) :=
+    (ContDiff.fderiv_right (m := (1 : ℕ∞)) (v.smooth 2) (by norm_num)).differentiable (by norm_num)
+  have hfun : ((∂_{m'} v : SV) : EuclSpace → CxSpace)
+      = fun y : EuclSpace => (fderiv ℝ (⇑v) y) m' := by
+    funext y; exact SchwartzMap.lineDerivOp_apply_eq_fderiv m' v y
+  rw [iteratedFDeriv_two_apply, SchwartzMap.lineDerivOp_apply_eq_fderiv, hfun,
+    fderiv_clm_apply (hdiff x) (differentiableAt_const m')]
+  simp
+
+private theorem norm_lineDeriv2_le (v : SV) (m m' x : EuclSpace) :
+    ‖(∂_{m} (∂_{m'} v)) x‖ ≤ ‖iteratedFDeriv ℝ 2 (⇑v) x‖ * (‖m‖ * ‖m'‖) := by
+  rw [lineDeriv2_eq]
+  refine le_trans ((iteratedFDeriv ℝ 2 (⇑v) x).le_opNorm ![m, m']) ?_
+  simp [Fin.prod_univ_two]
+
+private theorem sum3_const (c : ℝ) : (∑ _i : Fin 3, c) = 3 * c := by
+  rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]; ring
+
+private theorem sum33_const (c : ℝ) : (∑ _j : Fin 3, ∑ _i : Fin 3, c) = 9 * c := by
+  rw [sum3_const, Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+  ring
+
+private theorem weight_sq_expand (v : SV) (ξ : EuclSpace) :
+    (((1:ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v ξ‖) ^ 2
+      = ‖ξ‖ ^ 0 * ‖𝓕 v ξ‖ ^ 2 + (2 * (‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2) + ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2) := by
+  simp only [pow_zero, one_mul]
+  ring
+
+private theorem integrable_weight_sq (v : SV) :
+    Integrable (fun ξ : EuclSpace => (((1:ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v ξ‖) ^ 2) := by
+  have h0 := integrable_pow_mul_normSq (𝓕 v) 0
+  have h2 := integrable_pow_mul_normSq (𝓕 v) 2
+  have h4 := integrable_pow_mul_normSq (𝓕 v) 4
+  have h24 : Integrable (fun ξ : EuclSpace =>
+      2 * (‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2) + ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2) := (h2.const_mul 2).add h4
+  have hall : Integrable (fun ξ : EuclSpace =>
+      ‖ξ‖ ^ 0 * ‖𝓕 v ξ‖ ^ 2 + (2 * (‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2) + ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2)) := h0.add h24
+  exact hall.congr (Filter.Eventually.of_forall fun ξ => (weight_sq_expand v ξ).symm)
+
+theorem memLp_weight_fourier (v : SV) :
+    MemLp (fun ξ : EuclSpace => ((1:ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v ξ‖) 2 volume := by
+  refine (memLp_two_iff_integrable_sq ?_).mpr (integrable_weight_sq v)
+  exact ((by fun_prop : Continuous fun ξ : EuclSpace =>
+    ((1:ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v ξ‖)).aestronglyMeasurable
+
+set_option maxHeartbeats 1000000 in
+theorem exists_weighted_plancherel :
+    ∃ C : ℝ, 0 < C ∧ ∀ v : SV,
+      (∫ ξ : EuclSpace, (((1:ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v ξ‖) ^ 2)
+        ≤ C * ∑ n ∈ Finset.range 3, ∫ y : EuclSpace, ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2 := by
+  refine ⟨3, by norm_num, fun v => ?_⟩
+  have hA0nn : (0:ℝ) ≤ ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 0 (⇑v) y‖ ^ 2 :=
+    integral_nonneg fun y => by positivity
+  have hA1nn : (0:ℝ) ≤ ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 1 (⇑v) y‖ ^ 2 :=
+    integral_nonneg fun y => by positivity
+  have hA2nn : (0:ℝ) ≤ ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 2 (⇑v) y‖ ^ 2 :=
+    integral_nonneg fun y => by positivity
+  have h0 := integrable_pow_mul_normSq (𝓕 v) 0
+  have h2 := integrable_pow_mul_normSq (𝓕 v) 2
+  have h4 := integrable_pow_mul_normSq (𝓕 v) 4
+  have hsplit : (∫ ξ : EuclSpace, (((1:ℝ) + ‖ξ‖ ^ 2) * ‖𝓕 v ξ‖) ^ 2)
+      = (∫ ξ : EuclSpace, ‖𝓕 v ξ‖ ^ 2)
+        + (2 * (∫ ξ : EuclSpace, ‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2)
+          + ∫ ξ : EuclSpace, ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2) := by
+    have h24 : Integrable (fun ξ : EuclSpace =>
+        2 * (‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2) + ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2) := (h2.const_mul 2).add h4
+    have h2c : Integrable (fun ξ : EuclSpace => 2 * (‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2)) := h2.const_mul 2
+    rw [integral_congr_ae (Filter.Eventually.of_forall (weight_sq_expand v)),
+      integral_add h0 h24, integral_add h2c h4, MeasureTheory.integral_const_mul]
+    simp
+  have hA : (∫ ξ : EuclSpace, ‖𝓕 v ξ‖ ^ 2)
+      = ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 0 (⇑v) y‖ ^ 2 := by
+    rw [SchwartzMap.integral_norm_sq_fourier]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
+    show ‖v y‖ ^ 2 = ‖iteratedFDeriv ℝ 0 (⇑v) y‖ ^ 2
+    rw [norm_iteratedFDeriv_zero]
+  have hle1 : ∀ i : Fin 3, (∫ x : EuclSpace, ‖(∂_{eucBasis i} v) x‖ ^ 2)
+      ≤ ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 1 (⇑v) y‖ ^ 2 := by
+    intro i
+    refine integral_mono_of_nonneg (Filter.Eventually.of_forall fun x => by positivity)
+      (integrable_normSq_iteratedFDeriv v 1) (Filter.Eventually.of_forall fun x => ?_)
+    have hb := norm_lineDeriv_le v (eucBasis i) x
+    simp only [norm_eucBasis, mul_one] at hb
+    have h0' := norm_nonneg ((∂_{eucBasis i} v) x)
+    nlinarith
+  have hS1 : 4 * Real.pi ^ 2 * (∫ ξ : EuclSpace, ‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2)
+      ≤ 3 * ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 1 (⇑v) y‖ ^ 2 := by
+    rw [← sum_integral_lineDeriv_sq v, ← sum3_const (∫ y : EuclSpace,
+      ‖iteratedFDeriv ℝ 1 (⇑v) y‖ ^ 2)]
+    exact Finset.sum_le_sum fun i _ => hle1 i
+  have hle2 : ∀ i j : Fin 3,
+      (∫ x : EuclSpace, ‖(∂_{eucBasis i} (∂_{eucBasis j} v)) x‖ ^ 2)
+        ≤ ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 2 (⇑v) y‖ ^ 2 := by
+    intro i j
+    refine integral_mono_of_nonneg (Filter.Eventually.of_forall fun x => by positivity)
+      (integrable_normSq_iteratedFDeriv v 2) (Filter.Eventually.of_forall fun x => ?_)
+    have hb := norm_lineDeriv2_le v (eucBasis i) (eucBasis j) x
+    simp only [norm_eucBasis, mul_one] at hb
+    have h0' := norm_nonneg ((∂_{eucBasis i} (∂_{eucBasis j} v)) x)
+    nlinarith
+  have hS2 : 16 * Real.pi ^ 4 * (∫ ξ : EuclSpace, ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2)
+      ≤ 9 * ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 2 (⇑v) y‖ ^ 2 := by
+    rw [← sum_integral_lineDeriv2_sq v, ← sum33_const (∫ y : EuclSpace,
+      ‖iteratedFDeriv ℝ 2 (⇑v) y‖ ^ 2)]
+    exact Finset.sum_le_sum fun j _ => Finset.sum_le_sum fun i _ => hle2 i j
+  have hpi : (3:ℝ) < Real.pi := Real.pi_gt_three
+  have hBnn : (0:ℝ) ≤ ∫ ξ : EuclSpace, ‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2 :=
+    integral_nonneg fun ξ => by positivity
+  have hDnn : (0:ℝ) ≤ ∫ ξ : EuclSpace, ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2 :=
+    integral_nonneg fun ξ => by positivity
+  have hpi2 : (9:ℝ) < Real.pi ^ 2 := by nlinarith
+  have hpi4 : (81:ℝ) < Real.pi ^ 4 := by nlinarith
+  have hB' : 2 * (∫ ξ : EuclSpace, ‖ξ‖ ^ 2 * ‖𝓕 v ξ‖ ^ 2)
+      ≤ 3 * ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 1 (⇑v) y‖ ^ 2 := by nlinarith
+  have hD' : (∫ ξ : EuclSpace, ‖ξ‖ ^ 4 * ‖𝓕 v ξ‖ ^ 2)
+      ≤ 3 * ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 2 (⇑v) y‖ ^ 2 := by nlinarith
+  have hsum : (∑ n ∈ Finset.range 3, ∫ y : EuclSpace, ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2)
+      = (∫ y : EuclSpace, ‖iteratedFDeriv ℝ 0 (⇑v) y‖ ^ 2)
+        + (∫ y : EuclSpace, ‖iteratedFDeriv ℝ 1 (⇑v) y‖ ^ 2)
+        + ∫ y : EuclSpace, ‖iteratedFDeriv ℝ 2 (⇑v) y‖ ^ 2 := by
+    simp [Finset.sum_range_succ]
+  rw [hsplit, hA, hsum]
+  linarith
 
 /-- **[NAMED RESIDUAL — Fourier inversion + Plancherel + Bessel-symbol
 bookkeeping for `SchwartzMap Space Space`; Stein, *Singular Integrals and
