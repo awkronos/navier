@@ -83,9 +83,10 @@ Galerkin/compactness tower has a home with no floating restatement.
   FALSE as stated — no divergence-freeness, hence no spatial control, and no
   joint measurability; the checked curl-free witness is in that theorem's
   docstring and in `experiments/aubin_lions_curlfree_witness.py`.
-* `exists_limit_of_forall_windowCauchy` — Fischer–Riesz limit extraction from
-  window-Cauchy, with the pointwise-limit-or-zero representative that makes the
-  slicewise clauses true at **every** `t ≥ 0` [Brezis 2011 Thm 4.8; est ~150 LOC].
+(`exists_limit_of_forall_windowCauchy` — Fischer–Riesz limit extraction from
+window-Cauchy, with the pointwise-limit-or-zero representative that makes the
+slicewise clauses true at **every** `t ≥ 0` [Brezis 2011 Thm 4.8] — is CERTIFIED
+below.)
 * `exists_lerayLimitData` — limit passage in the weak form, stated for `t > 0`
   [Leray 1934 §§21–23; Temam III.3.3; est ~700 LOC].
 -/
@@ -1604,6 +1605,132 @@ theorem windowError_eq_setIntegral_prod (v w : VelocityEvolution) (n : ℕ) (C :
       rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
   exact (MeasureTheory.setIntegral_prod _ hprod).symm
 
+section FischerRiesz
+
+open Filter
+open scoped ENNReal NNReal Topology
+
+/-- The integer spacetime window. -/
+private def winQ (n : ℕ) : Set (ℝ × Space) :=
+  Set.Ioc (0:ℝ) (n:ℝ) ×ˢ Metric.closedBall (0:Space) (n:ℝ)
+
+private theorem winQ_mono {m n : ℕ} (h : m ≤ n) : winQ m ⊆ winQ n := by
+  have hr : (m:ℝ) ≤ (n:ℝ) := by exact_mod_cast h
+  exact Set.prod_mono (Set.Ioc_subset_Ioc_right hr) (Metric.closedBall_subset_closedBall hr)
+
+private theorem eLpNorm_two_lt_of_lintegral_lt {α : Type*} [MeasurableSpace α]
+    {ν : Measure α} (F : α → Space) (c : ℝ≥0∞)
+    (h : ∫⁻ z, ‖F z‖ₑ ^ 2 ∂ν < c ^ 2) : eLpNorm F 2 ν < c := by
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num)]
+  have h2 : (2 : ℝ≥0∞).toReal = 2 := by norm_num
+  rw [h2]
+  have hz : ∀ z, ‖F z‖ₑ ^ (2:ℝ) = ‖F z‖ₑ ^ (2:ℕ) := by
+    intro z; rw [← ENNReal.rpow_natCast]; norm_num
+  simp_rw [hz]
+  calc (∫⁻ z, ‖F z‖ₑ ^ (2:ℕ) ∂ν) ^ (1 / (2:ℝ))
+      < (c ^ (2:ℕ)) ^ (1 / (2:ℝ)) := ENNReal.rpow_lt_rpow h (by norm_num)
+    _ = c := by rw [← ENNReal.rpow_natCast c 2, ← ENNReal.rpow_mul]; norm_num
+
+private theorem windowError_nonneg (v w : VelocityEvolution) (n : ℕ) :
+    0 ≤ windowError v w n := by
+  refine integral_nonneg fun t => ?_
+  exact setIntegral_nonneg measurableSet_closedBall fun x _ => by positivity
+
+private theorem integrableOn_winQ (v w : VelocityEvolution) (n : ℕ) (C : ℝ)
+    (hv : Measurable fun z : ℝ × Space => v z.1 z.2)
+    (hw : Measurable fun z : ℝ × Space => w z.1 z.2)
+    (hvi : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖v t x‖ ^ 2)
+    (hwi : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖w t x‖ ^ 2)
+    (hvb : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖v t x‖ ^ 2) ≤ C)
+    (hwb : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖w t x‖ ^ 2) ≤ C) :
+    IntegrableOn (fun z : ℝ × Space => ‖v z.1 z.2 - w z.1 z.2‖ ^ 2) (winQ n)
+      (volume.prod volume) := by
+  classical
+  set T := Set.Ioc (0:ℝ) (n:ℝ) with hTdef
+  set Bn := Metric.closedBall (0:Space) (n:ℝ) with hBdef
+  have hFmeas : Measurable fun z : ℝ × Space => ‖v z.1 z.2 - w z.1 z.2‖ ^ 2 :=
+    ((hv.sub hw).norm).pow_const 2
+  have hslice : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖v t x - w t x‖ ^ 2 := by
+    intro t ht
+    exact integrable_norm_sub_sq (v t) (w t)
+      ((hv.comp measurable_prodMk_left).sub (hw.comp measurable_prodMk_left))
+      (hvi t ht) (hwi t ht)
+  have hglob : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖v t x - w t x‖ ^ 2) ≤ 4 * C := by
+    intro t ht
+    have hb : (∫ x : Space, ‖v t x - w t x‖ ^ 2)
+        ≤ ∫ x : Space, (2 * ‖v t x‖ ^ 2 + 2 * ‖w t x‖ ^ 2) := by
+      refine integral_mono (hslice t ht)
+        (((hvi t ht).const_mul 2).add ((hwi t ht).const_mul 2)) fun x => ?_
+      nlinarith [norm_nonneg (v t x), norm_nonneg (w t x), norm_nonneg (v t x - w t x),
+        norm_sub_le (v t x) (w t x), sq_nonneg (‖v t x‖ - ‖w t x‖)]
+    rw [integral_add ((hvi t ht).const_mul 2) ((hwi t ht).const_mul 2),
+      MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hb
+    linarith [hvb t ht, hwb t ht]
+  have hsm : StronglyMeasurable fun t : ℝ => ∫ x in Bn, ‖v t x - w t x‖ ^ 2 :=
+    hFmeas.stronglyMeasurable.integral_prod_right' (ν := volume.restrict Bn)
+  have hInner : IntegrableOn (fun t => ∫ x in Bn, ‖v t x - w t x‖ ^ 2) T volume := by
+    refine MeasureTheory.Measure.integrableOn_of_bounded (measure_Ioc_lt_top).ne
+      hsm.aestronglyMeasurable (M := 4 * C) ?_
+    refine (MeasureTheory.ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    have hnn' : 0 ≤ ∫ x in Bn, ‖v t x - w t x‖ ^ 2 :=
+      setIntegral_nonneg measurableSet_closedBall fun x _ => by positivity
+    rw [Real.norm_eq_abs, abs_of_nonneg hnn']
+    calc (∫ x in Bn, ‖v t x - w t x‖ ^ 2)
+        ≤ ∫ x : Space, ‖v t x - w t x‖ ^ 2 :=
+          setIntegral_le_integral (hslice t ht.1.le)
+            (Filter.Eventually.of_forall fun x => by positivity)
+      _ ≤ 4 * C := hglob t ht.1.le
+  have hrestrict : (volume.restrict T).prod (volume.restrict Bn)
+      = (volume.prod volume).restrict (T ×ˢ Bn) := Measure.prod_restrict _ _
+  rw [winQ, IntegrableOn, ← hTdef, ← hBdef, ← hrestrict]
+  refine (integrable_prod_iff hFmeas.aestronglyMeasurable).mpr ⟨?_, ?_⟩
+  · refine (MeasureTheory.ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    exact (hslice t ht.1.le).restrict
+  · refine hInner.congr_fun (fun t _ => ?_) measurableSet_Ioc
+    refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+    show ‖v t x - w t x‖ ^ 2 = ‖‖v t x - w t x‖ ^ 2‖
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+
+
+private theorem lintegral_winQ_eq (v w : VelocityEvolution) (n : ℕ) (C : ℝ)
+    (hv : Measurable fun z : ℝ × Space => v z.1 z.2)
+    (hw : Measurable fun z : ℝ × Space => w z.1 z.2)
+    (hvi : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖v t x‖ ^ 2)
+    (hwi : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖w t x‖ ^ 2)
+    (hvb : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖v t x‖ ^ 2) ≤ C)
+    (hwb : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖w t x‖ ^ 2) ≤ C) :
+    ∫⁻ z in winQ n, ‖v z.1 z.2 - w z.1 z.2‖ₑ ^ 2 ∂(volume.prod volume)
+      = ENNReal.ofReal (windowError v w n) := by
+  have hI := integrableOn_winQ v w n C hv hw hvi hwi hvb hwb
+  rw [windowError_eq_setIntegral_prod v w n C hv hw hvi hwi hvb hwb,
+    show (Set.Ioc (0:ℝ) (n:ℝ) ×ˢ Metric.closedBall (0:Space) (n:ℝ)) = winQ n from rfl,
+    ofReal_integral_eq_lintegral_ofReal hI
+      (Filter.Eventually.of_forall fun z => by positivity)]
+  refine lintegral_congr fun z => ?_
+  rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
+
+private theorem continuous_enorm_sq :
+    Continuous fun y : Space => ‖y‖ₑ ^ 2 := by
+  have he : (fun y : Space => ‖y‖ₑ ^ 2) = fun y : Space => ENNReal.ofReal (‖y‖ ^ 2) := by
+    funext y; rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
+  rw [he]
+  exact ENNReal.continuous_ofReal.comp (continuous_norm.pow 2)
+
+private theorem ofReal_quarter_pow (N : ℕ) :
+    ENNReal.ofReal (((4:ℝ)⁻¹) ^ N) = (((2:ℝ≥0∞)⁻¹) ^ N) ^ 2 := by
+  rw [ENNReal.ofReal_pow (by norm_num), ← pow_mul, mul_comm, pow_mul]
+  congr 1
+  rw [ENNReal.ofReal_inv_of_pos (by norm_num), ← ENNReal.inv_pow]
+  norm_num
+
+private theorem lintegral_enorm_sq_eq (v : VelocityField)
+    (h : Integrable fun x : Space => ‖v x‖ ^ 2) :
+    ∫⁻ x : Space, ‖v x‖ₑ ^ 2 = ENNReal.ofReal (∫ x : Space, ‖v x‖ ^ 2) := by
+  rw [ofReal_integral_eq_lintegral_ofReal h (Filter.Eventually.of_forall fun x => by positivity)]
+  exact lintegral_congr fun x => by rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
+
 /-- **[NAMED RESIDUAL — Riesz–Fréchet–Kolmogorov compactness on one window;
 Brezis, *Functional Analysis, Sobolev Spaces and PDE*, Springer 2011, Thm 4.26
 + Cor 4.27; Simon, *Ann. Mat. Pura Appl.* **146** (1987) 65–96, Thm 1; est ~400
@@ -1645,8 +1772,8 @@ theorem exists_subseq_windowCauchy
     ∃ ρ : ℕ → ℕ, StrictMono ρ ∧ WindowCauchy uSeq n (τ ∘ ρ) := by
   sorry
 
-/-- **[NAMED RESIDUAL — Fischer–Riesz limit extraction; Brezis, *Functional
-Analysis*, Springer 2011, Thm 4.8; est ~150 LOC.]**  A sequence of jointly
+/-- **[CERTIFIED — Fischer–Riesz limit extraction; Brezis, *Functional
+Analysis*, Springer 2011, Thm 4.8.]**  A sequence of jointly
 measurable velocity evolutions that is `L²`-Cauchy on every integer window has
 an `L²`-limit on every window, realized by a genuine `VelocityEvolution`.
 
@@ -1655,12 +1782,24 @@ merely a.e.**  An `L²` limit is pinned only off `(t,x)`-null sets, so a bare
 "some limit" would leave the slicewise clauses false on a null set of times.
 They are recovered by *choosing* the representative
 `u t x = lim_k v_{k_j} t x` on the measurable set where a fast subsequence
-converges pointwise and `u t x = 0` off it (`measurableSet_exists_tendsto`,
-`measurable_limUnder`, which is why `JointlyMeasurable` is needed here too).
+converges pointwise and `u t x = 0` off it (`MeasureTheory.measurableSet_exists_tendsto`
+for the convergence set, `MeasureTheory.StronglyMeasurable.limUnder` for the
+representative, which is why `JointlyMeasurable` is needed here too).
 With that choice every slice is a pointwise-limit-or-zero, so Fatou gives
 `∫ ‖u t‖² ≤ liminf ∫ ‖v_k t‖² ≤ C` and hence integrability **at every `t ≥ 0`**,
-the bad times contributing the zero field.  The full sequence — not just the
-fast subsequence — converges to that `u` on each window, by completeness. -/
+the bad times contributing the zero field.
+
+**Proof, as certified.**  The fast subsequence is `φ j = j + ∑_{i ≤ j} N_i`,
+where `N_n` is the Cauchy index for window `n` at tolerance `4⁻ⁿ`; `φ` is
+strictly monotone and dominates every `N_n` from index `n` on.  Almost-everywhere
+convergence on the window `Q_n = (0,n] × B̄(0,n)` comes from Mathlib's Riesz–Fischer
+core `MeasureTheory.Lp.ae_tendsto_of_cauchy_eLpNorm` applied to the *shifted*
+sequence `j ↦ v_{φ(j+n)}` on `μ.restrict Q_n`, with `B N = 2⁻ᴺ`: the shift is what
+makes the controlled-Cauchy hypothesis available at **every** `N`, since indices
+`≥ N + n` are controlled on the larger window `Q_{N+n} ⊇ Q_n`.  The full sequence
+— not just the fast subsequence — converges to that `u` on each window by Fatou:
+`∫_{Q_n} ‖v_k − u‖² ≤ liminf_j ∫_{Q_n} ‖v_k − v_{φ j}‖² ≤ ε/2` for `k` past the
+window-`n` Cauchy index, so no second completeness argument is needed. -/
 theorem exists_limit_of_forall_windowCauchy
     (vSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound vSeq C)
@@ -1672,7 +1811,178 @@ theorem exists_limit_of_forall_windowCauchy
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
       (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C) ∧
       (∀ n : ℕ, Filter.Tendsto (fun k => windowError (vSeq k) u n) Filter.atTop (nhds 0)) := by
-  sorry
+  classical
+  have hbnd : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → (∫ x : Space, ‖vSeq m t x‖ ^ 2) ≤ C :=
+    fun m t ht => hkin m t ht
+  have hstep : ∀ n : ℕ, ∃ N : ℕ, ∀ j k : ℕ, N ≤ j → N ≤ k →
+      windowError (vSeq j) (vSeq k) n < ((4:ℝ)⁻¹) ^ n := by
+    intro n
+    obtain ⟨N, hN⟩ := hcauchy n (((4:ℝ)⁻¹) ^ n) (by positivity)
+    exact ⟨N, fun j k hj hk => hN j k hj hk⟩
+  choose Nf hNf using hstep
+  set φ : ℕ → ℕ := fun j => j + ∑ i ∈ Finset.range (j+1), Nf i with hφdef
+  have hφstrict : StrictMono φ := by
+    refine strictMono_nat_of_lt_succ fun j => ?_
+    simp only [hφdef]
+    have hs : ∑ i ∈ Finset.range (j+1+1), Nf i = (∑ i ∈ Finset.range (j+1), Nf i) + Nf (j+1) :=
+      Finset.sum_range_succ _ _
+    omega
+  have hφge : ∀ j, Nf j ≤ φ j := by
+    intro j
+    have hs : Nf j ≤ ∑ i ∈ Finset.range (j+1), Nf i :=
+      Finset.single_le_sum (f := Nf) (fun i _ => Nat.zero_le _) (Finset.self_mem_range_succ j)
+    simp only [hφdef]; omega
+  have hφid : ∀ j, j ≤ φ j := fun j => hφstrict.le_apply
+  set g : ℕ → ℝ × Space → Space := fun j z => vSeq (φ j) z.1 z.2 with hgdef
+  have hgmeas : ∀ j, Measurable (g j) := fun j => hmeas (φ j)
+  set S : Set (ℝ × Space) := {z | ∃ c, Tendsto (fun j => g j z) atTop (𝓝 c)} with hSdef
+  have hSmeas : MeasurableSet S := measurableSet_exists_tendsto hgmeas
+  set L : ℝ × Space → Space := fun z => limUnder atTop (fun j => g j z) with hLdef
+  have hLmeas : Measurable L :=
+    (MeasureTheory.StronglyMeasurable.limUnder
+      (fun j => (hgmeas j).stronglyMeasurable)).measurable
+  set u : VelocityEvolution := fun t x => S.indicator L (t, x) with hudef
+  have humeas : Measurable fun z : ℝ × Space => u z.1 z.2 := by
+    have he : (fun z : ℝ × Space => u z.1 z.2) = S.indicator L := by
+      funext z; simp [hudef]
+    rw [he]; exact hLmeas.indicator hSmeas
+  have hutend : ∀ z : ℝ × Space, z ∈ S → Tendsto (fun j => g j z) atTop (𝓝 (u z.1 z.2)) := by
+    intro z hz
+    obtain ⟨c, hc⟩ := hz
+    have hv : u z.1 z.2 = c := by
+      have hmem : z ∈ S := ⟨c, hc⟩
+      simp only [hudef, Prod.mk.eta]
+      rw [Set.indicator_of_mem hmem, hLdef]
+      exact hc.limUnder_eq
+    rw [hv]; exact hc
+  have huzero : ∀ z : ℝ × Space, z ∉ S → u z.1 z.2 = 0 := by
+    intro z hz
+    simp only [hudef, Prod.mk.eta]
+    exact Set.indicator_of_notMem hz _
+  have hslicemeas : ∀ t : ℝ, Measurable fun x : Space => u t x := fun t =>
+    humeas.comp measurable_prodMk_left
+  have hFatou : ∀ t : ℝ, 0 ≤ t → ∫⁻ x : Space, ‖u t x‖ₑ ^ 2 ≤ ENNReal.ofReal C := by
+    intro t ht
+    have hpt : ∀ x : Space, ‖u t x‖ₑ ^ 2
+        ≤ atTop.liminf (fun j => ‖vSeq (φ j) t x‖ₑ ^ 2) := by
+      intro x
+      by_cases hx : (t, x) ∈ S
+      · have h1 : Tendsto (fun j => g j (t, x)) atTop (𝓝 (u t x)) := hutend (t, x) hx
+        have h2 : Tendsto (fun j => ‖vSeq (φ j) t x‖ₑ ^ 2) atTop (𝓝 (‖u t x‖ₑ ^ 2)) :=
+          (continuous_enorm_sq.tendsto _).comp h1
+        rw [h2.liminf_eq]
+      · rw [huzero (t, x) hx]; simp
+    calc ∫⁻ x : Space, ‖u t x‖ₑ ^ 2
+        ≤ ∫⁻ x : Space, atTop.liminf (fun j => ‖vSeq (φ j) t x‖ₑ ^ 2) := lintegral_mono hpt
+      _ ≤ atTop.liminf (fun j => ∫⁻ x : Space, ‖vSeq (φ j) t x‖ₑ ^ 2) :=
+          lintegral_liminf_le (fun j =>
+            ((((hmeas (φ j)).comp measurable_prodMk_left)).enorm).pow_const 2)
+      _ ≤ ENNReal.ofReal C := by
+          refine Filter.liminf_le_of_frequently_le' (Filter.Frequently.of_forall fun j => ?_)
+          rw [lintegral_enorm_sq_eq _ (hint (φ j) t ht)]
+          exact ENNReal.ofReal_le_ofReal (hbnd (φ j) t ht)
+  have huint : ∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2) := by
+    intro t ht
+    refine ⟨((hslicemeas t).norm.pow_const 2).aestronglyMeasurable, ?_⟩
+    rw [hasFiniteIntegral_iff_enorm]
+    have he : ∀ x : Space, ‖(‖u t x‖ ^ 2)‖ₑ = ‖u t x‖ₑ ^ 2 := by
+      intro x
+      rw [← ofReal_norm, Real.norm_eq_abs, abs_of_nonneg (by positivity),
+        ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
+    simp_rw [he]
+    exact lt_of_le_of_lt (hFatou t ht) ENNReal.ofReal_lt_top
+  have hukin : ∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C := by
+    intro t ht
+    have h1 : (∫ x : Space, ‖u t x‖ ^ 2) = (∫⁻ x : Space, ‖u t x‖ₑ ^ 2).toReal := by
+      rw [lintegral_enorm_sq_eq (u t) (huint t ht),
+        ENNReal.toReal_ofReal (integral_nonneg fun x => by positivity)]
+    rw [kineticEnergy, h1]
+    calc (∫⁻ x : Space, ‖u t x‖ₑ ^ 2).toReal ≤ (ENNReal.ofReal C).toReal :=
+          ENNReal.toReal_mono ENNReal.ofReal_ne_top (hFatou t ht)
+      _ = C := ENNReal.toReal_ofReal hC
+  refine ⟨u, humeas, huint, hukin, ?_⟩
+
+  -- (C) almost-everywhere convergence of the fast subsequence on each window
+  have hae : ∀ n : ℕ, ∀ᵐ z ∂((volume.prod volume).restrict (winQ n)), z ∈ S := by
+    intro n
+    have hBsum : ∑' (N : ℕ), ((2:ℝ≥0∞)⁻¹) ^ N ≠ ⊤ := by
+      rw [ENNReal.tsum_geometric]; simp
+    have hcau : ∀ N j k : ℕ, N ≤ j → N ≤ k →
+        eLpNorm ((fun z => g (j + n) z) - (fun z => g (k + n) z)) 2
+          ((volume.prod volume).restrict (winQ n)) < ((2:ℝ≥0∞)⁻¹) ^ N := by
+      intro N j k hj hk
+      refine eLpNorm_two_lt_of_lintegral_lt _ _ ?_
+      have hstep1 : ∫⁻ z, ‖((fun z => g (j + n) z) - (fun z => g (k + n) z)) z‖ₑ ^ 2
+            ∂((volume.prod volume).restrict (winQ n))
+          ≤ ∫⁻ z in winQ (N + n),
+              ‖vSeq (φ (j + n)) z.1 z.2 - vSeq (φ (k + n)) z.1 z.2‖ₑ ^ 2
+              ∂(volume.prod volume) := by
+        refine lintegral_mono' (Measure.restrict_mono (winQ_mono (Nat.le_add_left _ _)) le_rfl) ?_
+        intro z
+        simp [hgdef]
+      have hstep2 : ∫⁻ z in winQ (N + n),
+            ‖vSeq (φ (j + n)) z.1 z.2 - vSeq (φ (k + n)) z.1 z.2‖ₑ ^ 2 ∂(volume.prod volume)
+          = ENNReal.ofReal (windowError (vSeq (φ (j + n))) (vSeq (φ (k + n))) (N + n)) :=
+        lintegral_winQ_eq _ _ _ C (hmeas _) (hmeas _) (hint _) (hint _) (hbnd _) (hbnd _)
+      have hidx : ∀ i : ℕ, N ≤ i → Nf (N + n) ≤ φ (i + n) := by
+        intro i hi
+        exact le_trans (hφge (N + n)) (hφstrict.monotone (by omega))
+      have hlt : windowError (vSeq (φ (j + n))) (vSeq (φ (k + n))) (N + n)
+          < ((4:ℝ)⁻¹) ^ N := by
+        refine lt_of_lt_of_le (hNf (N + n) _ _ (hidx j hj) (hidx k hk)) ?_
+        exact pow_le_pow_of_le_one (by norm_num) (by norm_num) (Nat.le_add_right _ _)
+      calc ∫⁻ z, ‖((fun z => g (j + n) z) - (fun z => g (k + n) z)) z‖ₑ ^ 2
+            ∂((volume.prod volume).restrict (winQ n))
+          ≤ ENNReal.ofReal (windowError (vSeq (φ (j + n))) (vSeq (φ (k + n))) (N + n)) := by
+            rw [← hstep2]; exact hstep1
+        _ < ENNReal.ofReal (((4:ℝ)⁻¹) ^ N) := by
+            exact (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hlt
+        _ = (((2:ℝ≥0∞)⁻¹) ^ N) ^ 2 := ofReal_quarter_pow N
+    have hres := MeasureTheory.Lp.ae_tendsto_of_cauchy_eLpNorm
+      (μ := (volume.prod volume).restrict (winQ n)) (p := 2)
+      (f := fun j => g (j + n)) (fun j => (hgmeas (j + n)).aestronglyMeasurable)
+      (by norm_num) hBsum hcau
+    filter_upwards [hres] with z hz
+    obtain ⟨l, hl⟩ := hz
+    exact ⟨l, (Filter.tendsto_add_atTop_iff_nat n).mp hl⟩
+  -- (D) the full sequence converges to `u` on every window
+  intro n
+  rw [NormedAddGroup.tendsto_nhds_zero]
+  intro ε hε
+  obtain ⟨N, hN⟩ := hcauchy n (ε / 2) (by linarith)
+  filter_upwards [eventually_ge_atTop N] with k hk
+  have hnn := windowError_nonneg (vSeq k) u n
+  rw [Real.norm_eq_abs, abs_of_nonneg hnn]
+  have key : ENNReal.ofReal (windowError (vSeq k) u n) ≤ ENNReal.ofReal (ε / 2) := by
+    rw [← lintegral_winQ_eq (vSeq k) u n C (hmeas k) humeas (hint k) huint (hbnd k) hukin]
+    have hcongr : ∫⁻ z in winQ n, ‖vSeq k z.1 z.2 - u z.1 z.2‖ₑ ^ 2 ∂(volume.prod volume)
+        = ∫⁻ z in winQ n,
+            atTop.liminf (fun j => ‖vSeq k z.1 z.2 - g j z‖ₑ ^ 2) ∂(volume.prod volume) := by
+      refine lintegral_congr_ae ?_
+      filter_upwards [hae n] with z hz
+      have h1 : Tendsto (fun j => g j z) atTop (𝓝 (u z.1 z.2)) := hutend z hz
+      have h2 : Tendsto (fun j => ‖vSeq k z.1 z.2 - g j z‖ₑ ^ 2) atTop
+          (𝓝 (‖vSeq k z.1 z.2 - u z.1 z.2‖ₑ ^ 2)) :=
+        (continuous_enorm_sq.tendsto _).comp (tendsto_const_nhds.sub h1)
+      exact (h2.liminf_eq).symm
+    rw [hcongr]
+    refine le_trans (lintegral_liminf_le
+      (fun j => ((((hmeas k).sub (hgmeas j))).enorm).pow_const 2)) ?_
+    refine Filter.liminf_le_of_frequently_le'
+      ((eventually_ge_atTop N).frequently.mono fun j hj => ?_)
+    have hcalc : ∫⁻ z in winQ n, ‖vSeq k z.1 z.2 - g j z‖ₑ ^ 2 ∂(volume.prod volume)
+        = ENNReal.ofReal (windowError (vSeq k) (vSeq (φ j)) n) := by
+      have := lintegral_winQ_eq (vSeq k) (vSeq (φ j)) n C (hmeas k) (hmeas _) (hint k)
+        (hint _) (hbnd k) (hbnd _)
+      rw [← this]
+    rw [hcalc]
+    exact ENNReal.ofReal_le_ofReal
+      (le_of_lt (hN k (φ j) hk (le_trans hj (hφid j))))
+  have hle : windowError (vSeq k) u n ≤ ε / 2 :=
+    (ENNReal.ofReal_le_ofReal_iff (by linarith)).mp key
+  linarith
+
+end FischerRiesz
 
 /-- **[NAMED RESIDUAL — Aubin–Lions–Simon compactness, PATTERN-A REPAIRED
 STATEMENT; Aubin (*C. R. Acad. Sci.* **256**, 1963); Lions (*Quelques méthodes de
@@ -1748,10 +2058,11 @@ the `L²` bound, giving an `L²`-Cauchy refinement of any subsequence
 Cantor diagonal over the countable exhaustion — `exists_diagonal_subseq` /
 `exists_subseq_forall_window_tendsto` (CERTIFIED in
 `Navier.Analysis.RieszKolmogorov`), with
-`StrongL2LocLimit.comp_strictMono` for the bookkeeping; **(iv)** Riesz–Fischer:
-an `L²`-Cauchy sequence of jointly measurable fields has a jointly measurable
-pointwise-a.e. limit with vanishing window errors, slicewise square-integrable by
-Fatou [Brezis Thm 4.8; est ~150 LOC]; then `strongL2LocLimit_of_natWindows`
+`StrongL2LocLimit.comp_strictMono` for the bookkeeping; **(iv)** Riesz–Fischer
+(`exists_limit_of_forall_windowCauchy`, CERTIFIED above): an `L²`-Cauchy sequence
+of jointly measurable fields has a jointly measurable pointwise-a.e. limit with
+vanishing window errors, slicewise square-integrable by Fatou [Brezis Thm 4.8];
+then `strongL2LocLimit_of_natWindows`
 (CERTIFIED above) turns the integer windows into the real ones. -/
 theorem aubin_lions_l2loc_compactness
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
