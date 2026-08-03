@@ -131,3 +131,4 @@ solution of the global regularity problem.
 -/
 import Navier.Analysis.LeiLinCriticalMechanism
 import Navier.Analysis.WienerAlgebraConvolution
+import Navier.Analysis.LeiLinSpace
