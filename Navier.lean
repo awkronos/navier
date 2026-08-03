@@ -129,3 +129,4 @@ dispositions, finite frontier map, and raw public axiom audit.
 The problem endpoint remains conjectural; importing this module does not claim a
 solution of the global regularity problem.
 -/
+import Navier.Analysis.LeiLinCriticalMechanism
