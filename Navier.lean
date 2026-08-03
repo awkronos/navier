@@ -116,6 +116,13 @@ import Navier.Analysis.CriticalMildRestartFixedPoint
 import Navier.Analysis.CriticalMildLocalSelection
 import Navier.Analysis.CriticalMildReachableTimes
 import Navier.Analysis.GlobalRegularityCrownCore
+import Navier.Analysis.LeiLinCriticalMechanism
+import Navier.Analysis.WienerAlgebraConvolution
+import Navier.Analysis.LeiLinSpace
+import Navier.Analysis.LeiLinLinearEstimate
+import Navier.Analysis.GlobalRegularityEndpoint
+import Navier.Analysis.LeiLinBilinear
+import Navier.Analysis.LeiLinFixedPoint
 
 /-!
 # Navier
@@ -129,10 +136,3 @@ dispositions, finite frontier map, and raw public axiom audit.
 The problem endpoint remains conjectural; importing this module does not claim a
 solution of the global regularity problem.
 -/
-import Navier.Analysis.LeiLinCriticalMechanism
-import Navier.Analysis.WienerAlgebraConvolution
-import Navier.Analysis.LeiLinSpace
-import Navier.Analysis.LeiLinLinearEstimate
-import Navier.Analysis.GlobalRegularityEndpoint
-import Navier.Analysis.LeiLinBilinear
-import Navier.Analysis.LeiLinFixedPoint
