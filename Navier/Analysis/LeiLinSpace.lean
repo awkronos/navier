@@ -126,6 +126,63 @@ theorem normXm1_deriv_le {σ f : G → ℝ} (hσ : ∀ k, 0 ≤ σ k)
       (fun k => mul_nonneg (inv_nonneg.mpr (hσ k)) (abs_nonneg _)) hle h0
   exact hsum.tsum_le_tsum hle h0
 
+
+/-- **Interpolation for mean-zero families.**
+
+The same Cauchy-Schwarz interpolation as `interpolation_tsum`, but with the
+weight allowed to vanish, provided the family vanishes wherever the weight does.
+This is the form the mode lattice actually needs: on `G = ℤ³` the zero mode has
+`σ 0 = 0`, and a mean-zero velocity field has no zero mode, so `hz` holds.
+Without `hz` the inequality is false at the zero mode, where the left side sees
+`|f 0|` and the right side weights it by `0⁻¹ = 0`. -/
+theorem interpolation_tsum_meanZero {σ f : G → ℝ} (hσ : ∀ k, 0 ≤ σ k)
+    (hz : ∀ k, σ k = 0 → f k = 0)
+    (h0 : Summable fun k => |f k|)
+    (hm : InW (fun k => (σ k)⁻¹) f) (hp : InW σ f) :
+    normX0 f ^ 2 ≤ normXm1 σ f * normX1 σ f := by
+  have hfinite : ∀ s : Finset G,
+      (∑ i ∈ s, |f i|) ^ 2 ≤ normXm1 σ f * normX1 σ f := by
+    intro s
+    classical
+    have hsub : s.filter (fun i => σ i ≠ 0) ⊆ s := Finset.filter_subset _ s
+    have hzero : ∀ i ∈ s, i ∉ s.filter (fun i => σ i ≠ 0) → |f i| = 0 := by
+      intro i hi hni
+      have : σ i = 0 := by
+        by_contra hne
+        exact hni (Finset.mem_filter.mpr ⟨hi, hne⟩)
+      rw [hz i this, abs_zero]
+    have hsum_eq : (∑ i ∈ s.filter (fun i => σ i ≠ 0), |f i|) = ∑ i ∈ s, |f i| :=
+      Finset.sum_subset hsub hzero
+    have hpos : ∀ i ∈ s.filter (fun i => σ i ≠ 0), 0 < σ i := by
+      intro i hi
+      exact lt_of_le_of_ne (hσ i) (Ne.symm (Finset.mem_filter.mp hi).2)
+    rw [← hsum_eq]
+    refine le_trans (LeiLinCriticalMechanism.interpolation_sq_le
+      (s.filter (fun i => σ i ≠ 0)) (fun i => |f i|) σ
+      (fun i _ => abs_nonneg _) hpos) ?_
+    have h1 : (∑ i ∈ s.filter (fun i => σ i ≠ 0), (σ i)⁻¹ * |f i|) ≤ normXm1 σ f :=
+      hm.sum_le_tsum _ (fun i _ => mul_nonneg (inv_nonneg.mpr (hσ i)) (abs_nonneg _))
+    have h2 : (∑ i ∈ s.filter (fun i => σ i ≠ 0), σ i * |f i|) ≤ normX1 σ f :=
+      hp.sum_le_tsum _ (fun i _ => mul_nonneg (hσ i) (abs_nonneg _))
+    have hn2 : 0 ≤ ∑ i ∈ s.filter (fun i => σ i ≠ 0), σ i * |f i| :=
+      Finset.sum_nonneg fun i _ => mul_nonneg (hσ i) (abs_nonneg _)
+    exact mul_le_mul h1 h2 hn2 (normXm1_nonneg hσ f)
+  have hbase : Tendsto (fun s : Finset G => ∑ i ∈ s, |f i|) atTop (𝓝 (normX0 f)) :=
+    h0.hasSum
+  exact le_of_tendsto (hbase.pow 2) (Eventually.of_forall hfinite)
+
+/-- `‖f‖_{𝒳⁰} ≤ (‖f‖_{𝒳^{-1}} ‖f‖_{𝒳¹})^{1/2}`, the square-root form of the
+interpolation, which is what the bilinear estimate consumes. -/
+theorem normX0_le_sqrt {σ f : G → ℝ} (hσ : ∀ k, 0 ≤ σ k)
+    (hz : ∀ k, σ k = 0 → f k = 0)
+    (h0 : Summable fun k => |f k|)
+    (hm : InW (fun k => (σ k)⁻¹) f) (hp : InW σ f) :
+    normX0 f ≤ Real.sqrt (normXm1 σ f * normX1 σ f) := by
+  have hsq := interpolation_tsum_meanZero hσ hz h0 hm hp
+  have hy : 0 ≤ normXm1 σ f * normX1 σ f :=
+    mul_nonneg (normXm1_nonneg hσ f) (normX1_nonneg hσ f)
+  exact (Real.le_sqrt (normX0_nonneg f) hy).mpr hsq
+
 end Navier.Analysis.LeiLinSpace
 
 #print axioms Navier.Analysis.LeiLinSpace.interpolation_tsum

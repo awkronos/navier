@@ -145,6 +145,28 @@ theorem wienerNorm_conv_le {f g : G → ℝ} (hf : InWiener f) (hg : InWiener g)
     _ = ∑' p : G × G, shiftedFamily f g p := hfib.tsum_eq
     _ = wienerNorm f * wienerNorm g := tsum_shiftedFamily hf hg
 
+
+/-- **The convolution is absolutely summable.**
+
+The companion to `wienerNorm_conv_le`: the convolution of two Wiener-algebra
+elements is itself in the Wiener algebra, not merely bounded in it.  Consumers
+of the bilinear estimate need this to apply weighted-norm monotonicity. -/
+theorem summable_abs_conv {f g : G → ℝ} (hf : InWiener f) (hg : InWiener g) :
+    Summable fun k => |conv f g k| := by
+  have hF := summable_shiftedFamily hf hg
+  have hfib : HasSum (fun k : G => ∑' j, shiftedFamily f g (k, j))
+      (∑' p : G × G, shiftedFamily f g p) :=
+    hF.hasSum.prod_fiberwise fun k => (hF.prod_factor k).hasSum
+  have hbound : ∀ k : G, |conv f g k| ≤ ∑' j, shiftedFamily f g (k, j) := by
+    intro k
+    have hs : Summable (fun j => shiftedFamily f g (k, j)) := hF.prod_factor k
+    have hs' : Summable fun j => ‖f j * g (k - j)‖ := by
+      refine hs.congr fun j => ?_
+      simp [shiftedFamily, Real.norm_eq_abs, abs_mul]
+    refine (norm_tsum_le_tsum_norm hs').trans_eq ?_
+    exact tsum_congr fun j => by simp [shiftedFamily, Real.norm_eq_abs, abs_mul]
+  exact Summable.of_nonneg_of_le (fun _ => abs_nonneg _) hbound hfib.summable
+
 end Navier.Analysis.WienerAlgebraConvolution
 
 #print axioms Navier.Analysis.WienerAlgebraConvolution.summable_prod_abs
@@ -153,3 +175,4 @@ end Navier.Analysis.WienerAlgebraConvolution
 #print axioms Navier.Analysis.WienerAlgebraConvolution.tsum_shiftedFamily
 #print axioms Navier.Analysis.WienerAlgebraConvolution.summable_conv_mode
 #print axioms Navier.Analysis.WienerAlgebraConvolution.wienerNorm_conv_le
+#print axioms Navier.Analysis.WienerAlgebraConvolution.summable_abs_conv
