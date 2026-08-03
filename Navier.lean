@@ -130,3 +130,4 @@ The problem endpoint remains conjectural; importing this module does not claim a
 solution of the global regularity problem.
 -/
 import Navier.Analysis.LeiLinCriticalMechanism
+import Navier.Analysis.WienerAlgebraConvolution
