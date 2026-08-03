@@ -133,3 +133,4 @@ import Navier.Analysis.LeiLinCriticalMechanism
 import Navier.Analysis.WienerAlgebraConvolution
 import Navier.Analysis.LeiLinSpace
 import Navier.Analysis.LeiLinLinearEstimate
+import Navier.Analysis.GlobalRegularityEndpoint
