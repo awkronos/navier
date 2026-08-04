@@ -1292,6 +1292,137 @@ structure SchwartzSlicedSolution (ν : ℝ) (u₀ : SchwartzVelocity) where
   slice_eq : ∀ t : ℝ, 0 ≤ t → ⇑(slice t) = velocity t
   solution : IsClassicalSolution ν zeroForce u₀ velocity pressure
 
+open scoped ContDiff Pointwise in
+/-- **Slice–joint derivative transfer (certified, no sorry).**  At a
+nonnegative time `t`, the full iterated spatial derivative of the slice
+`velocity t` equals the joint within-derivative of the spacetime map on the
+closed half-space `Ici 0 ×ˢ univ`, composed with the spatial inclusion
+`y ↦ (0, y)`.  The proof factors the slice as
+`joint ∘ ((t, 0) + ·) ∘ ContinuousLinearMap.inr` and combines
+`ContinuousLinearMap.iteratedFDerivWithin_comp_right` with the translation
+invariance `iteratedFDerivWithin_comp_add_left`; the shifted set
+`{z | (t, 0) + z ∈ Ici 0 ×ˢ univ} = Ici (-t) ×ˢ univ` keeps unique
+differentiability. -/
+theorem iteratedFDeriv_slice_eq_within_compContinuousLinearMap
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
+    (n : ℕ) {t : ℝ} (ht : 0 ≤ t) (x : Space) :
+    iteratedFDeriv ℝ n (S.velocity t) x =
+      (iteratedFDerivWithin ℝ n (fun z : ℝ × Space => S.velocity z.1 z.2)
+        (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) (t, x)).compContinuousLinearMap
+          (fun _ => ContinuousLinearMap.inr ℝ ℝ Space) := by
+  classical
+  have hf : ContDiffOn ℝ ∞ (fun z : ℝ × Space => S.velocity z.1 z.2)
+      (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) :=
+    S.solution.velocity_smooth
+  set a : ℝ × Space := (t, 0) with hadef
+  set σ : Set (ℝ × Space) :=
+    (fun z : ℝ × Space => a + z) ⁻¹'
+      (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) with hσdef
+  have hσ : σ = Set.Ici (-t) ×ˢ (Set.univ : Set Space) := by
+    ext ⟨t', y⟩
+    simp only [hσdef, Set.mem_preimage, Set.mem_prod, Set.mem_Ici, Set.mem_univ,
+      and_true, hadef, Prod.mk_add_mk]
+    constructor <;> intro h <;> linarith
+  have hσuniq : UniqueDiffOn ℝ σ := by
+    rw [hσ]
+    exact (uniqueDiffOn_Ici _).prod uniqueDiffOn_univ
+  have hmem : ∀ y : Space, (ContinuousLinearMap.inr ℝ ℝ Space) y ∈ σ := by
+    intro y
+    rw [hσ, ContinuousLinearMap.inr_apply]
+    exact Set.mem_prod.mpr ⟨by simpa using neg_nonpos.mpr ht, Set.mem_univ y⟩
+  have hpre : (ContinuousLinearMap.inr ℝ ℝ Space) ⁻¹' σ = Set.univ :=
+    eq_univ_of_forall hmem
+  have hpreuniq : UniqueDiffOn ℝ ((ContinuousLinearMap.inr ℝ ℝ Space) ⁻¹' σ) := by
+    rw [hpre]; exact uniqueDiffOn_univ
+  have hmap : (ContinuousLinearMap.inr ℝ ℝ Space) x ∈ σ := hmem x
+  have hsmooth : ContDiffOn ℝ ∞
+      ((fun z : ℝ × Space => S.velocity z.1 z.2) ∘ fun z => a + z) σ :=
+    hf.comp (contDiffOn_const.add contDiffOn_id) (Subset.refl _)
+  have hcomp := (ContinuousLinearMap.inr ℝ ℝ Space).iteratedFDerivWithin_comp_right
+      hsmooth hσuniq hpreuniq hmap (show n ≤ ∞ from mod_cast le_top)
+  have hfun : (((fun z : ℝ × Space => S.velocity z.1 z.2) ∘ (fun z => a + z)) ∘
+      (ContinuousLinearMap.inr ℝ ℝ Space)) = S.velocity t := by
+    funext y
+    simp [Function.comp_apply, hadef, ContinuousLinearMap.inr_apply,
+      Prod.mk_add_mk]
+  have hshift : iteratedFDerivWithin ℝ n
+      ((fun z : ℝ × Space => S.velocity z.1 z.2) ∘ (fun z => a + z)) σ
+      ((ContinuousLinearMap.inr ℝ ℝ Space) x)
+      = iteratedFDerivWithin ℝ n (fun z : ℝ × Space => S.velocity z.1 z.2)
+        (a +ᵥ σ) (a + (ContinuousLinearMap.inr ℝ ℝ Space) x) := by
+    have h := iteratedFDerivWithin_comp_add_left (𝕜 := ℝ)
+      (f := fun z : ℝ × Space => S.velocity z.1 z.2) (s := σ) n a
+      ((ContinuousLinearMap.inr ℝ ℝ Space) x)
+    simpa [Function.comp_def] using h
+  have hσs : a +ᵥ σ = (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) := by
+    rw [hσdef]
+    ext z
+    constructor
+    · intro hz
+      rcases Set.mem_vadd_set.mp hz with ⟨w, hw, rfl⟩
+      exact hw
+    · intro hz
+      apply Set.mem_vadd_set.mpr
+      exact ⟨z - a, by simpa using hz, by simp [vadd_eq_add]⟩
+  have hpoint : a + (ContinuousLinearMap.inr ℝ ℝ Space) x = (t, x) := by
+    rw [hadef, ContinuousLinearMap.inr_apply, Prod.mk_add_mk]
+    simp
+  rw [hpre, iteratedFDerivWithin_univ, hfun, hshift, hσs, hpoint] at hcomp
+  exact hcomp
+
+open scoped ContDiff in
+/-- **Fixed-point time continuity of every spatial slice derivative
+(certified, no sorry).**  For a Schwartz-sliced classical solution, each
+fixed `x` the map `t ↦ ‖D^n u(t, x)‖²` is continuous on nonnegative time.
+This uses only joint half-space smoothness: the joint within-derivative is
+continuous on the closed half-space
+(`ContDiffOn.continuousOn_iteratedFDerivWithin`), post-composition with the
+spatial inclusion is continuous (`compContinuousLinearMapL`), restriction to
+the curve `t ↦ (t, x)` preserves continuity, and
+`iteratedFDeriv_slice_eq_within_compContinuousLinearMap` identifies the
+result with the slice's own iterated derivative; `slice_eq` transports to the
+Schwartz slices.  No PDE input — the genuinely PDE-dependent half of
+`exists_locallyUniformSliceDecay` is the uniform decay bound. -/
+theorem sliceIteratedFDeriv_continuousOn
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
+    (n : ℕ) (x : Space) :
+    ContinuousOn (fun t => ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2)
+      (Set.Ici 0) := by
+  have hA : ContinuousOn
+      (iteratedFDerivWithin ℝ n (fun z : ℝ × Space => S.velocity z.1 z.2)
+        (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)))
+      (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) :=
+    S.solution.velocity_smooth.continuousOn_iteratedFDerivWithin
+      (show n ≤ ∞ from mod_cast le_top)
+      ((uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ)
+  have hB : ContinuousOn
+      (fun z : ℝ × Space => (iteratedFDerivWithin ℝ n
+          (fun z : ℝ × Space => S.velocity z.1 z.2)
+          (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) z).compContinuousLinearMap
+            (fun _ => ContinuousLinearMap.inr ℝ ℝ Space))
+      (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) :=
+    (ContinuousMultilinearMap.compContinuousLinearMapL
+      (fun _ => ContinuousLinearMap.inr ℝ ℝ Space)).continuous.comp_continuousOn hA
+  have hC : ContinuousOn
+      (fun t : ℝ => (iteratedFDerivWithin ℝ n
+          (fun z : ℝ × Space => S.velocity z.1 z.2)
+          (Set.Ici (0:ℝ) ×ˢ (Set.univ : Set Space)) (t, x)).compContinuousLinearMap
+            (fun _ => ContinuousLinearMap.inr ℝ ℝ Space))
+      (Set.Ici 0) := by
+    apply hB.comp (continuousOn_id.prodMk continuousOn_const)
+    intro t ht
+    exact ⟨ht, Set.mem_univ x⟩
+  have hD : ContinuousOn (fun t : ℝ => iteratedFDeriv ℝ n (S.velocity t) x)
+      (Set.Ici 0) := by
+    apply hC.congr
+    intro t ht
+    exact iteratedFDeriv_slice_eq_within_compContinuousLinearMap S n ht x
+  apply ((hD.norm).pow 2).congr
+  intro t ht
+  show ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 =
+    ‖iteratedFDeriv ℝ n (S.velocity t) x‖ ^ 2
+  rw [S.slice_eq t ht]
+
 /-- **[NAMED RESIDUAL — the dominated-convergence *data* for one derivative
 order; Majda–Bertozzi §3.2.3; est ~250 LOC.]**  Along a Schwartz-sliced
 classical solution, for one order `n < 4`, there is a single integrable
@@ -1324,9 +1455,12 @@ seminorms along the flow (this is where the PDE enters), plus identification of
 `iteratedFDeriv` of the slice with the spatial partial derivatives of the joint
 map on the half-space product `Ici 0 ×ˢ univ`.
 
-**What is no longer residual.**  The dominated-convergence step itself, the
-measurability of every integrand, and the assembly of the four orders into the
-`H³` norm (`BKMLogLeaves.continuousOn_sum_range`) are all certified. -/
+**What is no longer residual.**  The fixed-`x` time continuity
+(`sliceIteratedFDeriv_continuousOn` above, from joint half-space smoothness
+alone), the dominated-convergence step itself, the measurability of every
+integrand, and the assembly of the four orders into the `H³` norm
+(`BKMLogLeaves.continuousOn_sum_range`) are all certified.  Only the locally
+uniform decay bound — the genuinely PDE-dependent conjunct — remains below. -/
 theorem exists_locallyUniformSliceDecay
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
     (∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ r K : ℝ, 0 < r ∧
@@ -1334,6 +1468,7 @@ theorem exists_locallyUniformSliceDecay
           ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ)) ∧
       (∀ n : ℕ, n < 4 → ∀ x : Space, ContinuousOn
         (fun t => ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0)) := by
+  refine ⟨?_, fun n _ x => sliceIteratedFDeriv_continuousOn S n x⟩
   sorry
 
 /-- **[DERIVED from `exists_locallyUniformSliceDecay`.]**  Per-derivative-order
@@ -1346,8 +1481,8 @@ The derivation is
 the shared decay gap; the measurability of every integrand and the
 nonnegativity are supplied here, kernel-clean, from smoothness of the Schwartz
 slice (`ContDiff.continuous_iteratedFDeriv`).  Nothing about continuity of the
-integral remains open — only the decay bound and the fixed-`x` time
-continuity. -/
+integral remains open — only the decay bound remains residual; the fixed-`x`
+time continuity is certified as `sliceIteratedFDeriv_continuousOn`. -/
 theorem sobolevOrderIntegralContinuity
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
     {n : ℕ} (hn : n < 4) :
