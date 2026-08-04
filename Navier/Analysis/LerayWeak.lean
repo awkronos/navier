@@ -1196,6 +1196,18 @@ basis is not a blocker for this leaf; whoever closes it either supplies the mode
 as *data* at the point of use, or the leaf relocates downstream of `GalerkinBasis`.
 `initial_converges_L2` is stated in the Euclidean seminorm because that is the
 shape a projection layer delivers, not because a projection is imported here.
+**Basis status: CERTIFIED, but downstream.**  The divergence-free basis now exists —
+`Navier.Analysis.GalerkinBasis.exists_denseIndependentDivFreeFamily` (countable,
+independent, divergence-free Schwartz family, dense among divergence-free Schwartz
+fields for `schwartzL2Inner`), proved from the `GalerkinRawFamily` reservoir via the
+hoisted `SchwartzL2Pairing` layer — so the relocation route is unblocked and no
+*basis* mathematics is missing.  What remains after relocation is the finite-mode
+construction itself: the projected field `F_m = −ν A_m + P_m B` is dissipative by
+skew-symmetry of `B`, `finiteDim_dissipative_ode_global` (BANKED, above) gives the
+global coefficient curve, `galerkin_apriori_bound` and
+`EnergyDissipation.dissipation_integral_le_forward` give the two uniform bounds,
+basis density gives `initial_converges_L2`, and the Galerkin equation against test
+functions gives `weak_consistent`.
 (ii) `time_equicontinuous` and `weak_consistent` from the finite-mode energy
 identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (est ~100 LOC).
 (iii) The two Pattern-A fields added in the Aubin–Lions repair are **both
@@ -2058,7 +2070,40 @@ The *bridge* is certified: `setIntegral_prod_univ_eq_nested` and
 `prod_window_modulus` deliver `∫_W ‖f(·+k) − f‖² ≤ 2ε₁ + 2ε₂` against
 `volume.prod volume` on the slab `W = Ioc c T ×ˢ univ`, which is verbatim the `hmod`
 hypothesis of `sum_cellError_le_modulus_of_memL2`.
-[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~140 LOC for (ii) and (iii).] -/
+
+**Audit of that plan found two gaps; both repairs are recorded here.**  (a) *Cell
+family.*  `closedBall_subset_biUnion_prodGridCell` yields the cells meeting the
+*spacetime* ball `closedBall 0 n`, which reaches down to time `−n − h`; on those
+negative-time cells the modulus bridge says nothing, and bounding the displacement
+there by the kinetic bound costs `≈ 4Cn` — not `→ 0` in `h`.  The cell family must
+instead be the cells meeting the window `Q_n = (0,n] ×ˢ B̄(0,n)` itself — finite as a
+subset of the ball family, and covering `Q_n` by `mem_prodGridCell_floor` — with
+enclosure `W := Ioc (−2h) (n+2h) ×ˢ B̄(0,n+2h)`: a cell meeting `Q_n` has times in
+`(−h, n+h)`, and a further `h`-shift stays in `W`.  The `hmod` integral over `W` then
+splits at `c = h`: the collar `(−2h, h]` costs `≤ 12 C h` from the kinetic bound
+(slab length `3h`, integrand `≤ 4C` by `‖a−b‖² ≤ 2‖a‖² + 2‖b‖²` and translation
+invariance of `volume`), and the main window `(h, n+2h]` is `prod_window_modulus` at
+`c = h`, `T = n+2h` — so `Mmod(h) = 12Ch + 2ε₁(h) + 2ε₂(h) → 0` as `h → 0`, with
+`ε₁`, `ε₂` taken at the fixed horizon `n + 3` for all `h ≤ 1`.
+(b) *The `∀ t` integrability legs.*  `nested_window_modulus` quantifies its
+inner/outer integrability hypotheses over **all** `t : ℝ`, but `hint`/`hkin` hold
+only for `t ≥ 0`.  Repair: run the whole argument on the forward extension
+`v m t x := uSeq m (max t 0) x`.  `windowError` on `(0,n]` is unchanged
+(`max t 0 = t` there), so `WindowCauchy` transfers back verbatim; slicewise
+square-integrability and the kinetic bound `C` now hold at *every* `t`;
+`SpaceEquicontinuous` is preserved verbatim on `(0,T]`; `TimeEquicontinuous`
+survives with an extra `4C|h|` slab on `(0,|h|)`, absorbed by shrinking `δ`.
+With `Mmod(h) → 0` the cell error is
+`≤ h⁻⁴ · volume.real (closedBall 0 h) · Mmod(h) = volume.real (closedBall 0 1) · Mmod(h)`
+(finite-dimensional `addHaar` scaling of the sup-norm ball), the middle leg is
+Engine 2 on the cell-average vector in `Fin (#S) → Space` — norm-bounded by
+`2(n+2h)C/h⁴` from `sq_setAverage_le` and cell disjointness, Cauchy in the pi norm,
+feeding leg two through `∑_p h⁴‖d_p‖² ≤ h⁴·#S·ε'²` — and the diagonal over `h ↓ 0`
+is `exists_diagonal_subseq` with `Q l σ` = cell-average Cauchyness at scale `l`
+(`hsub` = restriction to a subsequence, `htail` = index shift), exactly the shape
+`exists_subseq_forall_windowCauchy` already consumes.  The degenerate case `n = 0`
+has `Ioc 0 0 = ∅`, hence `windowError = 0`.
+[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~300 LOC with the two repairs.] -/
 theorem exists_subseq_windowCauchy
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C)
@@ -2550,7 +2595,35 @@ Stated at `0 < t` rather than `0 ≤ t`: the limit of an `L²`-convergent
 subsequence is pinned only off null sets in time, so requiring the clauses at
 the single instant `t = 0` would be a strictly stronger — and false-for-the-
 constructed-object — demand.  The `t = 0` bookkeeping is now carried by the
-certified `isLerayHopfWeakSolution_patchInitial`. -/
+certified `isLerayHopfWeakSolution_patchInitial`.
+
+**Audit findings: one structural gap plus the itemized analytic residue.**
+(0) *`energy_le` is NOT derivable from the packaged bundle.*  The compactness
+route bounds the limit by the bundle's constant: `kineticEnergy u t ≤ G.bound`
+(`exists_limit_of_forall_windowCauchy` proves exactly this, though
+`aubin_lions_l2loc_compactness` does not re-export the conjunct — strengthen its
+conclusion or call the internal steps directly).  But `energy_le` demands the
+*exact* datum constant `∫ ‖u₀‖²`, and no field of `GalerkinApproximation`
+relates `bound` to `u₀`: `initial_converges` pins only the `t = 0` slices, and
+nothing records energy monotonicity of the approximants.  Repair (one line each):
+add `bound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2` to `GalerkinApproximation` and to
+`GalerkinModeData` — true with equality in the finite-mode construction
+(`bound = ‖u₀‖²_{L²}`), true in `zeroGalerkinModeData` (`0 ≤ 0`), carried
+verbatim by `galerkinApproximation_of_modeData`.  With (0) in place,
+`sq_integrable`, `datum_sq_integrable` (`integrable_norm_sq_schwartz`),
+`energy_le` and `pairing_integrable` (Cauchy–Schwarz against the Schwartz test
+factors) are immediate from the compactness output.  The genuine residue is
+`weak_form`: (a) spacetime Cauchy–Schwarz on windows `(0,T₀] ×ˢ B̄(0,R)`, with
+`T₀` from `φ.compact_time`; (b) uniform-in-`m` spatial tails
+`∫_{|x|>R} ‖u_m‖²·ψ ≤ C·sup_{|x|>R} ψ → 0` for each bounded Schwartz test factor
+`ψ` — mathlib's `SchwartzMap.decay` gives the decay, the uniform kinetic bound
+the rest; (c) the convection split
+`⟨u,(u·∇)φ⟩ − ⟨u_m,(u_m·∇)φ⟩ = ⟨u−u_m,(u·∇)φ⟩ + ⟨u_m,((u−u_m)·∇)φ⟩`, each leg
+`≤ (∫_{window}‖u−u_m‖²)^{1/2}·(∫‖·‖²ψ)^{1/2}` by (a), the first factor `→ 0`
+by `StrongL2LocLimit`, the second uniformly bounded by (b) and `energy_le`;
+(d) assembly of the linear terms by the same estimate, then `m → ∞` along `σ`
+against `G.weak_consistent φ` composed with `hσ.tendsto_atTop`.  None of (a)–(d)
+is banked; each is standard. -/
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
     (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
     (G : GalerkinApproximation ν u₀) :
