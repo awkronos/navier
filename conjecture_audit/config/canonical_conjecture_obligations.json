@@ -3,7 +3,7 @@
   "entries": [
     {
       "file": "Navier/ProblemFrontier.lean",
-      "declaration": "statementADisposition",
+      "declaration": "wholeSpaceGlobalRegularityDisposition",
       "kind": "scientific_disposition",
       "resolution": "conjectural",
       "evidence_class": "none_declared",
