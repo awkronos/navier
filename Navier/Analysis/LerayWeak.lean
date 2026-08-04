@@ -2014,6 +2014,362 @@ private theorem sum_cellError_le_modulus_of_memL2
         exact setIntegral_le_measureReal_mul_const measurableSet_closedBall hBfin
           _ Mmod (fun k hk => hmod k hk) hG
 
+/-!
+### The forward extension layer for the window criterion (certified)
+
+`exists_subseq_windowCauchy` is run on the *forward extension*
+`fwd uSeq m t x := uSeq m (max t 0) x` of the sequence, per repair (b) of the
+residual plan below: `hint`/`hkin` hold only for `t ≥ 0`, while
+`nested_window_modulus` quantifies its integrability hypotheses over all `t : ℝ`.
+This section certifies that the forward extension preserves every hypothesis of
+the criterion — slicewise square-integrability and the kinetic bound `C` now at
+*every* `t` (`fwd_int`, `fwd_kin`), joint measurability (`fwd_meas`),
+space-equicontinuity verbatim (`fwd_space`), and time-equicontinuity with an
+extra `4C|h|` slab on `(0, |h|)` absorbed by shrinking `δ` (`fwd_time`) — and
+that `windowError` is unchanged by the extension (`windowError_fwd`), so the
+criterion's conclusion transfers back verbatim.  The displacement
+integrability/bound lemmas (`fwd_disp2_*`, `fwd_tdisp_*`) are the slicewise
+side conditions the modulus lemmas consume.
+-/
+
+noncomputable def fwd (uSeq : ℕ → VelocityEvolution) (m : ℕ) : VelocityEvolution :=
+  fun t x => uSeq m (max t 0) x
+
+theorem fwd_kin (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C) (m : ℕ) (t : ℝ) :
+    kineticEnergy (fwd uSeq m) t ≤ C := by
+  unfold kineticEnergy fwd
+  exact hkin m (max t 0) (le_max_right t 0)
+
+theorem fwd_int (uSeq : ℕ → VelocityEvolution)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (m : ℕ) (t : ℝ) : Integrable (fun x : Space => ‖fwd uSeq m t x‖ ^ 2) := by
+  unfold fwd
+  exact hint m (max t 0) (le_max_right t 0)
+
+theorem fwd_meas (uSeq : ℕ → VelocityEvolution) (hmeas : JointlyMeasurable uSeq) (m : ℕ) :
+    Measurable (fun z : ℝ × Space => fwd uSeq m z.1 z.2) := by
+  show Measurable ((fun z : ℝ × Space => uSeq m z.1 z.2) ∘ (fun z : ℝ × Space => (max z.1 0, z.2)))
+  exact (hmeas m).comp
+    ((continuous_fst.max continuous_const).measurable.prodMk measurable_snd)
+
+theorem sq_norm_sub_le_two {E : Type*} [NormedAddCommGroup E] (a b : E) :
+    ‖a - b‖ ^ 2 ≤ 2 * ‖a‖ ^ 2 + 2 * ‖b‖ ^ 2 := by
+  have h := norm_sub_le a b
+  nlinarith [sq_nonneg (‖a‖ - ‖b‖), norm_nonneg a, norm_nonneg b,
+    mul_self_le_mul_self (norm_nonneg (a - b)) h]
+
+/-- generic: a measurable nonnegative function bounded by `M` is integrable on any
+finite-interval window. -/
+theorem integrableOn_Ioc_of_le {F : ℝ → ℝ} (hFm : Measurable F) (a b M : ℝ)
+    (hnn : ∀ t, 0 ≤ F t) (hM : ∀ t, F t ≤ M) :
+    IntegrableOn F (Set.Ioc a b) := by
+  have hb : IntegrableOn (fun _ : ℝ => M) (Set.Ioc a b) :=
+    integrableOn_const (hs := measure_Ioc_lt_top.ne)
+  refine hb.mono' hFm.aestronglyMeasurable ?_
+  exact Filter.Eventually.of_forall fun t => by
+    rw [Real.norm_eq_abs, abs_of_nonneg (hnn t)]; exact hM t
+
+/-- inner-integral measurability via Tonelli -/
+theorem inner_sq_measurable {G : ℝ × Space → ℝ} (hG : Measurable G)
+    (hnn : ∀ z, 0 ≤ G z) (hGi : ∀ t : ℝ, Integrable (fun x : Space => G (t, x))) :
+    Measurable (fun t : ℝ => ∫ x : Space, G (t, x)) := by
+  have hG' : Measurable (fun z : ℝ × Space => ENNReal.ofReal (G z)) := hG.ennreal_ofReal
+  have hlint : Measurable (fun t : ℝ => ∫⁻ x : Space, ENNReal.ofReal (G (t, x))) := by
+    exact Measurable.lintegral_prod_right
+      (ν := volume) (f := fun (t : ℝ) (x : Space) => ENNReal.ofReal (G (t, x))) hG'
+  have heq : (fun t : ℝ => ∫ x : Space, G (t, x))
+      = fun t : ℝ => (∫⁻ x : Space, ENNReal.ofReal (G (t, x))).toReal := by
+    funext t
+    rw [← ofReal_integral_eq_lintegral_ofReal (hGi t)
+        (Filter.Eventually.of_forall fun x => hnn (t, x)),
+      ENNReal.toReal_ofReal (integral_nonneg fun x => hnn (t, x))]
+  rw [heq]
+  exact hlint.ennreal_toReal
+
+/-- joint measurability of a two-term displacement of `fwd`. -/
+theorem fwd_disp2_meas (uSeq : ℕ → VelocityEvolution) (hmeas : JointlyMeasurable uSeq)
+    (m : ℕ) (a₁ a₂ : ℝ) (w₁ w₂ : Space) :
+    Measurable (fun z : ℝ × Space =>
+      ‖fwd uSeq m (z.1 + a₁) (z.2 + w₁) - fwd uSeq m (z.1 + a₂) (z.2 + w₂)‖ ^ 2) := by
+  have h1 : Measurable (fun z : ℝ × Space => fwd uSeq m (z.1 + a₁) (z.2 + w₁)) :=
+    (fwd_meas uSeq hmeas m).comp
+      ((measurable_fst.add_const a₁).prodMk (measurable_snd.add_const w₁))
+  have h2 : Measurable (fun z : ℝ × Space => fwd uSeq m (z.1 + a₂) (z.2 + w₂)) :=
+    (fwd_meas uSeq hmeas m).comp
+      ((measurable_fst.add_const a₂).prodMk (measurable_snd.add_const w₂))
+  exact (h1.sub h2).norm.pow_const 2
+
+/-- slicewise integrability of a two-term displacement of `fwd`. -/
+theorem fwd_disp2_int (uSeq : ℕ → VelocityEvolution)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq)
+    (m : ℕ) (t₁ t₂ : ℝ) (w₁ w₂ : Space) :
+    Integrable (fun x : Space =>
+      ‖fwd uSeq m t₁ (x + w₁) - fwd uSeq m t₂ (x + w₂)‖ ^ 2) := by
+  haveI : (volume : Measure Space).IsAddRightInvariant := by infer_instance
+  have h1 : Integrable (fun x : Space => ‖fwd uSeq m t₁ (x + w₁)‖ ^ 2) :=
+    (fwd_int uSeq hint m t₁).comp_add_right w₁
+  have h2 : Integrable (fun x : Space => ‖fwd uSeq m t₂ (x + w₂)‖ ^ 2) :=
+    (fwd_int uSeq hint m t₂).comp_add_right w₂
+  refine ((h1.const_mul 2).add (h2.const_mul 2)).mono' ?_ ?_
+  · have hm1 : Measurable (fun x : Space => fwd uSeq m t₁ (x + w₁)) :=
+      (fwd_meas uSeq hmeas m).comp (measurable_const.prodMk (measurable_id.add_const w₁))
+    have hm2 : Measurable (fun x : Space => fwd uSeq m t₂ (x + w₂)) :=
+      (fwd_meas uSeq hmeas m).comp (measurable_const.prodMk (measurable_id.add_const w₂))
+    exact ((hm1.sub hm2).norm.pow_const 2).aestronglyMeasurable
+  · exact Filter.Eventually.of_forall fun x => by
+      rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+      exact sq_norm_sub_le_two _ _
+
+
+
+theorem fwd_disp2_inner_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq)
+    (m : ℕ) (t₁ t₂ : ℝ) (w₁ w₂ : Space) :
+    (∫ x : Space, ‖fwd uSeq m t₁ (x + w₁) - fwd uSeq m t₂ (x + w₂)‖ ^ 2) ≤ 4 * C := by
+  haveI : (volume : Measure Space).IsAddRightInvariant := inferInstance
+  have h1 : (∫ x : Space, ‖fwd uSeq m t₁ (x + w₁)‖ ^ 2) ≤ C := by
+    show (∫ x : Space, (fun x : Space => ‖fwd uSeq m t₁ x‖ ^ 2) (x + w₁)) ≤ C
+    rw [integral_add_right_eq_self (μ := volume) (fun x : Space => ‖fwd uSeq m t₁ x‖ ^ 2) w₁]
+    exact fwd_kin uSeq C hkin m t₁
+  have h2 : (∫ x : Space, ‖fwd uSeq m t₂ (x + w₂)‖ ^ 2) ≤ C := by
+    show (∫ x : Space, (fun x : Space => ‖fwd uSeq m t₂ x‖ ^ 2) (x + w₂)) ≤ C
+    rw [integral_add_right_eq_self (μ := volume) (fun x : Space => ‖fwd uSeq m t₂ x‖ ^ 2) w₂]
+    exact fwd_kin uSeq C hkin m t₂
+  have hi1 : Integrable (fun x : Space => ‖fwd uSeq m t₁ (x + w₁)‖ ^ 2) :=
+    (fwd_int uSeq hint m t₁).comp_add_right w₁
+  have hi2 : Integrable (fun x : Space => ‖fwd uSeq m t₂ (x + w₂)‖ ^ 2) :=
+    (fwd_int uSeq hint m t₂).comp_add_right w₂
+  have hmono := integral_mono (fwd_disp2_int uSeq hint hmeas m t₁ t₂ w₁ w₂)
+    ((hi1.const_mul 2).add (hi2.const_mul 2)) (fun x => sq_norm_sub_le_two _ _)
+  simp only [Pi.add_apply] at hmono
+  rw [integral_add (hi1.const_mul 2) (hi2.const_mul 2),
+    MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hmono
+  nlinarith [hmono, h1, h2]
+
+theorem fwd_disp2_outer (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq)
+    (m : ℕ) (a₁ a₂ : ℝ) (w₁ w₂ : Space) (p q : ℝ) :
+    IntegrableOn (fun t : ℝ => ∫ x : Space,
+      ‖fwd uSeq m (t + a₁) (x + w₁) - fwd uSeq m (t + a₂) (x + w₂)‖ ^ 2) (Set.Ioc p q) := by
+  refine integrableOn_Ioc_of_le ?_ p q (4 * C)
+    (fun t => integral_nonneg fun x => by positivity)
+    (fun t => fwd_disp2_inner_le uSeq C hkin hint hmeas m (t + a₁) (t + a₂) w₁ w₂)
+  have hG : Measurable (fun z : ℝ × Space =>
+      ‖fwd uSeq m (z.1 + a₁) (z.2 + w₁) - fwd uSeq m (z.1 + a₂) (z.2 + w₂)‖ ^ 2) :=
+    fwd_disp2_meas uSeq hmeas m a₁ a₂ w₁ w₂
+  exact inner_sq_measurable hG (fun z => by positivity)
+    (fun t => fwd_disp2_int uSeq hint hmeas m (t + a₁) (t + a₂) w₁ w₂)
+
+/-- plain inner integral is measurable and bounded by `C` -/
+theorem fwd_inner_measurable (uSeq : ℕ → VelocityEvolution)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) :
+    Measurable (fun t : ℝ => ∫ x : Space, ‖fwd uSeq m t x‖ ^ 2) := by
+  have hG : Measurable (fun z : ℝ × Space => ‖fwd uSeq m z.1 z.2‖ ^ 2) :=
+    (fwd_meas uSeq hmeas m).norm.pow_const 2
+  exact inner_sq_measurable hG (fun z => by positivity) (fun t => fwd_int uSeq hint m t)
+
+theorem fwd_inner_integrableOn (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (p q : ℝ) :
+    IntegrableOn (fun t : ℝ => ∫ x : Space, ‖fwd uSeq m t x‖ ^ 2) (Set.Ioc p q) := by
+  refine integrableOn_Ioc_of_le (fwd_inner_measurable uSeq hint hmeas m) p q C
+    (fun t => integral_nonneg fun x => by positivity) (fun t => ?_)
+  exact fwd_kin uSeq C hkin m t
+
+
+
+/-- time-only displacement: slicewise integrability -/
+theorem fwd_tdisp_int (uSeq : ℕ → VelocityEvolution)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (h t : ℝ) :
+    Integrable (fun x : Space => ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2) := by
+  have h2 := fwd_disp2_int uSeq hint hmeas m (t + h) t 0 0
+  simpa [add_zero] using h2
+
+/-- time-only displacement: `4C` bound on the inner integral -/
+theorem fwd_tdisp_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (h t : ℝ) :
+    (∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2) ≤ 4 * C := by
+  have h2 := fwd_disp2_inner_le uSeq C hkin hint hmeas m (t + h) t 0 0
+  rwa [show (∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2)
+      = ∫ x : Space, ‖fwd uSeq m (t + h) (x + 0) - fwd uSeq m t (x + 0)‖ ^ 2 from
+    by simp [add_zero]]
+
+/-- time-only displacement: outer integrability on any finite window -/
+theorem fwd_tdisp_outer (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (h p q : ℝ) :
+    IntegrableOn (fun t : ℝ => ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2)
+      (Set.Ioc p q) := by
+  refine (fwd_disp2_outer uSeq C hkin hint hmeas m h 0 0 0 p q).congr_fun
+    (fun t _ => ?_) measurableSet_Ioc
+  simp [add_zero]
+
+/-- windowError transfer: on `(0,n]`, `max t 0 = t`. -/
+theorem windowError_fwd (uSeq : ℕ → VelocityEvolution) (a b : ℕ) (n : ℕ) :
+    windowError (fwd uSeq a) (fwd uSeq b) n = windowError (uSeq a) (uSeq b) n := by
+  unfold windowError
+  apply setIntegral_congr_fun measurableSet_Ioc
+  intro t ht
+  have ht0 : 0 ≤ t := le_of_lt ht.1
+  simp only [fwd, max_eq_left ht0]
+
+/-- SpaceEquicontinuous transfers verbatim. -/
+theorem fwd_space (uSeq : ℕ → VelocityEvolution) (hspace : SpaceEquicontinuous uSeq) :
+    SpaceEquicontinuous (fwd uSeq) := by
+  intro T ε hε
+  obtain ⟨δ, hδ, hh⟩ := hspace T ε hε
+  refine ⟨δ, hδ, fun m y hy => ?_⟩
+  have h2 := hh m y hy
+  rwa [show (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖fwd uSeq m t (x + y) - fwd uSeq m t x‖ ^ 2)
+      = ∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖uSeq m t (x + y) - uSeq m t x‖ ^ 2 from ?_]
+  apply setIntegral_congr_fun measurableSet_Ioc
+  intro t ht
+  simp only [fwd, max_eq_left (le_of_lt ht.1)]
+
+/-- **TimeEquicontinuous survives forward extension**, with an extra `4C|h|`
+slab on `(0, |h|)` absorbed by shrinking `δ`. -/
+theorem fwd_time (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq)
+    (htime : TimeEquicontinuous uSeq) :
+    TimeEquicontinuous (fwd uSeq) := by
+  intro T ε hε
+  by_cases hT0 : T ≤ 0
+  · exact ⟨1, one_pos, fun m h _ => by
+      rw [Set.Ioc_eq_empty (by simpa using hT0), setIntegral_empty]; exact hε.le⟩
+  have hT : 0 < T := lt_of_not_ge hT0
+  obtain ⟨δ₀, hδ₀, hδ₀b⟩ := htime T (ε / 2) (half_pos hε)
+  have hC8 : (0:ℝ) < 8 * C + 1 := by nlinarith [hC]
+  refine ⟨min δ₀ (ε / (8 * C + 1)), lt_min hδ₀ (by positivity), fun m h hh => ?_⟩
+  have hhδ₀ : |h| < δ₀ := lt_of_lt_of_le hh (min_le_left _ _)
+  have hhε : |h| < ε / (8 * C + 1) := lt_of_lt_of_le hh (min_le_right _ _)
+  by_cases hh0 : 0 ≤ h
+  · -- case A: `0 ≤ h`, everything reduces to `uSeq` directly
+    have heq : (∫ t in Set.Ioc (0:ℝ) T,
+        ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2)
+        = ∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, ‖uSeq m (t + h) x - uSeq m t x‖ ^ 2 := by
+      apply setIntegral_congr_fun measurableSet_Ioc
+      intro t ht
+      have ht0 : 0 ≤ t := le_of_lt ht.1
+      have hth : 0 ≤ t + h := le_trans ht0 (by linarith)
+      simp only [fwd, max_eq_left ht0, max_eq_left hth]
+    rw [heq]
+    exact le_trans (hδ₀b m h hhδ₀) (half_le_self hε.le)
+  · -- case B: `h < 0`; split at `c = min T (-h)`
+    have hh0' : h < 0 := lt_of_not_ge hh0
+    have hneg : 0 < -h := neg_pos.mpr hh0' 
+    set c := min T (-h) with hcdef
+    have h0c : 0 ≤ c := le_min hT.le hneg.le
+    have hcT : c ≤ T := min_le_left _ _
+    have hch : c ≤ -h := min_le_right _ _
+    have hunion : Set.Ioc (0:ℝ) c ∪ Set.Ioc c T = Set.Ioc (0:ℝ) T :=
+      Set.Ioc_union_Ioc_eq_Ioc h0c hcT
+    have hdisj : Disjoint (Set.Ioc (0:ℝ) c) (Set.Ioc c T) := by
+      rw [Set.Ioc_disjoint_Ioc]
+      exact le_trans (min_le_left _ _) (le_max_right _ _)
+    have hsplit : (∫ t in Set.Ioc (0:ℝ) T,
+        ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2)
+        = (∫ t in Set.Ioc (0:ℝ) c,
+            ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2)
+          + ∫ t in Set.Ioc c T,
+            ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2 := by
+      rw [← hunion, setIntegral_union hdisj measurableSet_Ioc
+        (fwd_tdisp_outer uSeq C hkin hint hmeas m h 0 c)
+        (fwd_tdisp_outer uSeq C hkin hint hmeas m h c T)]
+    rw [hsplit]
+    -- slab leg
+    have hleg1 : (∫ t in Set.Ioc (0:ℝ) c,
+        ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2) ≤ 4 * C * (-h) := by
+      calc _ ≤ ∫ _ in Set.Ioc (0:ℝ) c, (4 * C) :=
+            setIntegral_mono_on (fwd_tdisp_outer uSeq C hkin hint hmeas m h 0 c)
+              (integrableOn_const (hs := measure_Ioc_lt_top.ne)) measurableSet_Ioc
+              (fun t _ => fwd_tdisp_le uSeq C hkin hint hmeas m h t)
+        _ = (volume.real (Set.Ioc (0:ℝ) c)) * (4 * C) := by
+            rw [setIntegral_const]; simp [smul_eq_mul]
+        _ = c * (4 * C) := by
+            rw [show volume.real (Set.Ioc (0:ℝ) c) = c from by
+              rw [Measure.real, Real.volume_Ioc,
+                ENNReal.toReal_ofReal (by linarith : (0:ℝ) ≤ c - 0), sub_zero]]
+        _ ≤ (-h) * (4 * C) := by
+            apply mul_le_mul_of_nonneg_right hch (by nlinarith [hC])
+        _ = 4 * C * (-h) := by ring
+    -- main leg
+    have hleg2 : (∫ t in Set.Ioc c T,
+        ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2) ≤ ε / 2 := by
+      by_cases hTh : T ≤ -h
+      · rw [hcdef, min_eq_left hTh, Set.Ioc_self, setIntegral_empty]
+        exact (half_pos hε).le
+      · push_neg at hTh
+        rw [hcdef, min_eq_right hTh.le]
+        -- substitute `s = t + h`
+        have hsub : (∫ t in Set.Ioc (-h) T,
+            ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2)
+            = ∫ s in Set.Ioc (0:ℝ) (T + h),
+              ∫ x : Space, ‖fwd uSeq m s x - fwd uSeq m (s + -h) x‖ ^ 2 := by
+          rw [← intervalIntegral.integral_of_le hTh.le,
+            ← intervalIntegral.integral_of_le (by linarith : (0:ℝ) ≤ T + h)]
+          have key := intervalIntegral.integral_comp_add_right (a := (0:ℝ)) (b := T + h)
+            (fun t => ∫ x : Space, ‖fwd uSeq m (t + h) x - fwd uSeq m t x‖ ^ 2) (-h)
+          rw [show (0:ℝ) + -h = -h from by ring, show T + h + -h = T from by ring] at key
+          rw [← key]
+          apply intervalIntegral.integral_congr
+          intro t _
+          have hrw : t + -h + h = t := by ring
+          simp only [hrw]
+        rw [hsub]
+        -- identify with the `uSeq` modulus on `(0, T+h]`
+        have hident : (∫ s in Set.Ioc (0:ℝ) (T + h),
+            ∫ x : Space, ‖fwd uSeq m s x - fwd uSeq m (s + -h) x‖ ^ 2)
+            = ∫ s in Set.Ioc (0:ℝ) (T + h),
+              ∫ x : Space, ‖uSeq m (s + -h) x - uSeq m s x‖ ^ 2 := by
+          apply setIntegral_congr_fun measurableSet_Ioc
+          intro s hs
+          have hs0 : 0 ≤ s := le_of_lt hs.1
+          have hsh : 0 ≤ s + -h := by linarith [hs.1, hneg]
+          simp only [fwd, max_eq_left hs0, max_eq_left hsh, norm_sub_rev]
+        rw [hident]
+        -- enlarge the window to `(0, T]` and apply `htime`
+        have hmono : (∫ s in Set.Ioc (0:ℝ) (T + h),
+            ∫ x : Space, ‖uSeq m (s + -h) x - uSeq m s x‖ ^ 2)
+            ≤ ∫ s in Set.Ioc (0:ℝ) T,
+              ∫ x : Space, ‖uSeq m (s + -h) x - uSeq m s x‖ ^ 2 := by
+          apply setIntegral_mono_set
+          · -- integrability on the big window, via the fwd version
+            have hfi := fwd_tdisp_outer uSeq C hkin hint hmeas m (-h) 0 T
+            refine hfi.congr_fun (fun s hs => ?_) measurableSet_Ioc
+            have hs0 : 0 ≤ s := le_of_lt hs.1
+            have hsh : 0 ≤ s + -h := by linarith [hs.1, hneg]
+            simp only [fwd, max_eq_left hs0, max_eq_left hsh]
+          · exact Filter.Eventually.of_forall fun s =>
+              integral_nonneg fun x => by positivity
+          · exact HasSubset.Subset.eventuallyLE
+              (Set.Ioc_subset_Ioc le_rfl (by linarith))
+        exact le_trans hmono (hδ₀b m (-h) (by rwa [abs_neg]))
+    -- close: `4C|h| + ε/2 ≤ ε`
+    have hbound : 4 * C * (-h) ≤ ε / 2 := by
+      have habs : -h = |h| := (abs_of_neg hh0').symm
+      rw [habs]
+      have h1 : 4 * C * |h| ≤ 4 * C * (ε / (8 * C + 1)) :=
+        mul_le_mul_of_nonneg_left hhε.le (by nlinarith [hC])
+      have h2 : 4 * C * (ε / (8 * C + 1)) ≤ ε / 2 := by
+        rw [← mul_div_assoc, div_le_iff₀ hC8]
+        nlinarith [hC, hε.le]
+      linarith
+    linarith [hleg1, hleg2, hbound]
+
 /-- **[NAMED RESIDUAL — Riesz–Fréchet–Kolmogorov compactness on one window;
 Brezis, *Functional Analysis, Sobolev Spaces and PDE*, Springer 2011, Thm 4.26
 + Cor 4.27; Simon, *Ann. Mat. Pura Appl.* **146** (1987) 65–96, Thm 1; est ~400
@@ -2088,11 +2444,16 @@ invariance of `volume`), and the main window `(h, n+2h]` is `prod_window_modulus
 (b) *The `∀ t` integrability legs.*  `nested_window_modulus` quantifies its
 inner/outer integrability hypotheses over **all** `t : ℝ`, but `hint`/`hkin` hold
 only for `t ≥ 0`.  Repair: run the whole argument on the forward extension
-`v m t x := uSeq m (max t 0) x`.  `windowError` on `(0,n]` is unchanged
-(`max t 0 = t` there), so `WindowCauchy` transfers back verbatim; slicewise
-square-integrability and the kinetic bound `C` now hold at *every* `t`;
-`SpaceEquicontinuous` is preserved verbatim on `(0,T]`; `TimeEquicontinuous`
-survives with an extra `4C|h|` slab on `(0,|h|)`, absorbed by shrinking `δ`.
+`v m t x := uSeq m (max t 0) x`.  **This repair is now CERTIFIED** as the
+forward-extension layer immediately above this docstring: `fwd` is the
+extension; `windowError_fwd` shows `windowError` on `(0,n]` is unchanged
+(`max t 0 = t` there), so `WindowCauchy` transfers back verbatim; `fwd_int` and
+`fwd_kin` give slicewise square-integrability and the kinetic bound `C` at
+*every* `t`; `fwd_space` preserves `SpaceEquicontinuous` verbatim; and
+`fwd_time` shows `TimeEquicontinuous` survives with an extra `4C|h|` slab on
+`(0,|h|)`, absorbed by shrinking `δ` — with `fwd_disp2_*`/`fwd_tdisp_*`
+discharging the slicewise and outer integrability side conditions that
+`nested_window_modulus`/`prod_window_modulus` quantify over all `t : ℝ`.
 With `Mmod(h) → 0` the cell error is
 `≤ h⁻⁴ · volume.real (closedBall 0 h) · Mmod(h) = volume.real (closedBall 0 1) · Mmod(h)`
 (finite-dimensional `addHaar` scaling of the sup-norm ball), the middle leg is
