@@ -680,7 +680,18 @@ semigroup turns the per-slice `L^p` control into decay at spatial infinity
 Giga–Miyakawa, Arch. Ration. Mech. Anal. 89 (1985) 267–281].
 Depends on: the heat semigroup on `ℝ³` with its `L^p → L^∞` smoothing
 estimates, the Leray projector, and Duhamel/Gronwall — none currently in
-Mathlib. -/
+Mathlib.
+
+Frontier status: `HeatSemigroupSmoothing` now lands the Gaussian kernel and
+its `L^s` norms (`integral_heatKernel_rpow`, `heatKernel_Lr_scaling`), the
+scaling behind the smoothing estimate.  Still missing: a convolution (Young)
+layer turning those norms into pointwise kernel-convolution bounds on
+`Space`; a Duhamel representation of an arbitrary `PartialClassicalSolution`
+— integration by parts against the kernel, with the boundary terms at
+spatial infinity controlled by the per-slice integrability — noting that the
+in-repo Duhamel developments `FrequencyDuhamel`/`CriticalMild*` act on
+one-frequency or lattice encodings, not on pointwise classical solutions;
+and the Leray projector as a pointwise bounded kernel. -/
 theorem prodiSerrin_layer_farField_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -738,7 +749,14 @@ estimate uniform in the cylinder centre [Serrin, Arch. Ration. Mech. Anal. 9
 (1962) 187–195; Struwe, Comm. Pure Appl. Math. 41 (1988) 437–458].
 Depends on: parabolic Moser/De Giorgi iteration, the Caccioppoli inequality
 for the local energy, and the Biot–Savart representation of the pressure —
-none currently in Mathlib. -/
+none currently in Mathlib.
+
+Frontier status: no parabolic Caccioppoli or Moser/De Giorgi layer exists
+in-repo or in Mathlib.  `BiotSavartKernel` lands the kernel's elementary
+algebra and its pointwise far-field `L²` tail bound, with the
+Calderón–Zygmund near-field cancellation named as an honest residual in
+`SingularIntegralPrelims`, so the pressure representation is not yet
+available either. -/
 theorem prodiSerrin_interior_outerRegion_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -805,7 +823,13 @@ Classical route: the same Kato mild-solution short-time `L^∞` bound as in
 `prodiSerrin_layer_farField_bounded`, with the `L²` mass replacing the `L^p`
 slice control in the Duhamel estimate [Kato, Math. Z. 187 (1984) 471–480].
 Depends on: the heat semigroup `L² → L^∞` smoothing estimate, the Leray
-projector, and Gronwall — none currently in Mathlib. -/
+projector, and Gronwall — none currently in Mathlib.
+
+Frontier status: identical to `prodiSerrin_layer_farField_bounded` with the
+uniform `L²` mass bracket replacing the per-slice `L^p` control — the
+kernel's `L^s` norms exist (`HeatSemigroupSmoothing`); the convolution
+layer, the Duhamel representation for an arbitrary
+`PartialClassicalSolution`, and the pointwise Leray projector do not. -/
 theorem constantinFefferman_layer_farField_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -882,7 +906,15 @@ Constantin, SIAM Rev. 36 (1994) 73–98].
 Depends on: the Biot–Savart singular integral and its Calderón–Zygmund
 bounds, the enstrophy identity from `Navier.Analysis.Enstrophy`, and the
 `H² ↪ L^∞` Sobolev embedding on `ℝ³` — the singular-integral layer is the
-same Mathlib gap as in the Beale–Kato–Majda tower. -/
+same Mathlib gap as in the Beale–Kato–Majda tower.
+
+Frontier status: `Enstrophy` lands the pointwise vortex-stretching identity
+(`vorticityTransportEquation`) while the integral enstrophy budget remains
+open; `BiotSavartKernel` stops at the elementary kernel algebra and the
+far-field `L²` tail, with the near-field cancellation named as an honest
+residual in `SingularIntegralPrelims`; and `SobolevEmbedding`'s `H³ ↪ L^∞`
+assembly still carries its disclosed Plancherel `sorryAx`, so even the
+closing embedding is not yet residual-free. -/
 theorem constantinFefferman_interior_outerRegion_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
