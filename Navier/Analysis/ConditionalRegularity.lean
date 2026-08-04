@@ -682,16 +682,19 @@ Depends on: the heat semigroup on `ℝ³` with its `L^p → L^∞` smoothing
 estimates, the Leray projector, and Duhamel/Gronwall — none currently in
 Mathlib.
 
-Frontier status: `HeatSemigroupSmoothing` now lands the Gaussian kernel and
-its `L^s` norms (`integral_heatKernel_rpow`, `heatKernel_Lr_scaling`), the
-scaling behind the smoothing estimate.  Still missing: a convolution (Young)
-layer turning those norms into pointwise kernel-convolution bounds on
-`Space`; a Duhamel representation of an arbitrary `PartialClassicalSolution`
-— integration by parts against the kernel, with the boundary terms at
-spatial infinity controlled by the per-slice integrability — noting that the
-in-repo Duhamel developments `FrequencyDuhamel`/`CriticalMild*` act on
-one-frequency or lattice encodings, not on pointwise classical solutions;
-and the Leray projector as a pointwise bounded kernel. -/
+Frontier status: `HeatSemigroupSmoothing` now lands the Gaussian kernel, its
+`L^s` norms (`integral_heatKernel_rpow`, `heatKernel_Lr_scaling`), and the
+convolution (Young) layer — `heatKernel_convolution_abs_le` and
+`heatKernel_convolution_smoothing_le` give the pointwise smoothing bound
+`|∫ G_t^ν(x−y) f(y)| ≤ C(r,ν) t^{-3/(2r)} ‖f‖_r`.  Still missing: a Duhamel
+representation of an arbitrary `PartialClassicalSolution` — integration by
+parts against the kernel, with the boundary terms at spatial infinity
+controlled by decay of the solution *and its first spatial derivatives* (the
+per-slice `L^p` hypothesis alone does not supply derivative decay; narrow
+bump constructions defeat it) — noting that the in-repo Duhamel developments
+`FrequencyDuhamel`/`CriticalMild*` act on one-frequency or lattice encodings,
+not on pointwise classical solutions; and the Leray projector as a pointwise
+bounded kernel. -/
 theorem prodiSerrin_layer_farField_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -827,9 +830,11 @@ projector, and Gronwall — none currently in Mathlib.
 
 Frontier status: identical to `prodiSerrin_layer_farField_bounded` with the
 uniform `L²` mass bracket replacing the per-slice `L^p` control — the
-kernel's `L^s` norms exist (`HeatSemigroupSmoothing`); the convolution
-layer, the Duhamel representation for an arbitrary
-`PartialClassicalSolution`, and the pointwise Leray projector do not. -/
+kernel's `L^s` norms and the convolution (Young) layer exist
+(`HeatSemigroupSmoothing`, in particular
+`heatKernel_convolution_smoothing_le`); the Duhamel representation for an
+arbitrary `PartialClassicalSolution` and the pointwise Leray projector do
+not. -/
 theorem constantinFefferman_layer_farField_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
