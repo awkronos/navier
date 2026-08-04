@@ -1,6 +1,8 @@
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogLeaves
 import Navier.Analysis.UniformDecayDominated
+import Navier.Analysis.BiotSavartKernel
+import Navier.Analysis.EnergyNormBridge
 
 /-!
 # BKM log bootstrap: from the Biot–Savart log inequality to the criterion
@@ -40,6 +42,10 @@ exactly `gronwall_log_apriori`; unwinding gives the doubly-exponential bound
 * `exists_agmonSupBound` — the Agmon/Sobolev embedding `H²(ℝ³) ↪ L^∞`, now
   **kernel-clean end to end** (`#print axioms` shows only `propext`,
   `Classical.choice`, `Quot.sound`).
+* `integrableOn_bsKernelScalar_sq_farField` — the Biot–Savart kernel tail is
+  square-integrable on `{1 ≤ ‖z‖}` (the far-field half of the Calderón–Zygmund
+  size layer for `exists_biotSavartLogTextbook`), by comparison with the
+  certified Bessel weight.
 * the four analytic inputs below are **derived**, each from one named residual
   plus a certified leaf in `Navier/Analysis/BKMLogLeaves.lean`.
 
@@ -79,6 +85,8 @@ open Navier
 open Navier.Analysis.BKMLogLeaves
 open Navier.Analysis.UniformDecayDominated
 open Navier.Analysis.Vorticity
+open Navier.Analysis.BiotSavartKernel
+open Navier.Analysis.EnergyNormBridge
 open Navier.Analysis.OfficialABEncoding
 open Navier.Breakdown
 
@@ -1812,6 +1820,106 @@ theorem logBKMControl_of_schwartzSliced
       intervalIntegral.integral_const_mul _ _
     rw [this]
     exact mul_le_mul_of_nonneg_left (hB t ht) (le_of_lt hMpos)
+
+/-!
+## The Biot–Savart kernel far field (certified, no sorry)
+
+The Calderón–Zygmund size layer for `exists_biotSavartLogTextbook` splits the
+convolution `∇K ∗ ω` into a near field (`|z| < ρ`, controlled by `ρ·‖∇ω‖_∞`),
+a logarithmic shell (`ρ < |z| < 1`, controlled by `‖ω‖_∞·log(1/ρ)`), and a far
+field (`|z| > 1`, where the kernel is `L²` and pairs with `‖ω‖_{L²}` by
+Cauchy–Schwarz).  The far-field `L²` integrability is certified here; the
+near-field/shell bounds and the Biot–Savart representation itself remain
+residual (see the dependency list of `exists_biotSavartLogTextbook`).
+-/
+
+/-- **Far-field `L²` integrability of the Biot–Savart kernel (certified, no
+sorry).**  On `{z | 1 ≤ ‖z‖}` the kernel tail `bsKernelScalar²` — bounded
+pointwise by `(16π²·|z|⁶)⁻¹` via `bsKernelScalar_sq_le` — is integrable: in
+three dimensions the radial tail `∫₁^∞ ρ²/ρ⁶ dρ` converges.  This is the
+far-field half of the Calderón–Zygmund size layer feeding
+`exists_biotSavartLogTextbook`: the tail convolution against the vorticity is
+then controlled by `‖ω‖_{L²}` through Cauchy–Schwarz.
+
+The proof compares against the certified Bessel weight `(1 + ‖z‖²)⁻²`
+(`integrable_inv_one_add_normSq_sq`) through
+`‖z‖ ≤ officialEuclideanNorm z` and `(1 + ‖z‖²)³ ≤ 8‖z‖⁶` for `‖z‖ ≥ 1`. -/
+theorem integrableOn_bsKernelScalar_sq_farField :
+    IntegrableOn (fun z : Space => bsKernelScalar z ^ 2) {z : Space | 1 ≤ ‖z‖}
+      volume := by
+  set s : Set Space := {z : Space | 1 ≤ ‖z‖} with hsdef
+  have hs : MeasurableSet s :=
+    measurableSet_le measurable_const continuous_norm.measurable
+  have hne : ∀ z : Space, z ∈ s → z ≠ 0 := by
+    intro z hz h0
+    rw [h0, hsdef] at hz
+    simp only [Set.mem_setOf_eq, norm_zero] at hz
+    exact absurd hz (by norm_num)
+  have hcontK : ContinuousOn bsKernelScalar s := by
+    have hbr : ContinuousOn
+        (fun z : Space => 1 / (4 * Real.pi * officialEuclideanNorm z ^ 3)) s := by
+      refine ContinuousOn.div continuousOn_const ?_ ?_
+      · exact continuousOn_const.mul
+          (continuous_officialEuclideanNorm.continuousOn.pow 3)
+      · intro z hz
+        have hone : (0 : ℝ) < ‖z‖ := lt_of_lt_of_le one_pos hz
+        have hpos : (0 : ℝ) < officialEuclideanNorm z :=
+          lt_of_lt_of_le hone (norm_le_officialEuclideanNorm z)
+        exact mul_ne_zero (mul_ne_zero (by norm_num) Real.pi_ne_zero)
+          (pow_ne_zero 3 (ne_of_gt hpos))
+    exact hbr.congr fun z hz => bsKernelScalar_apply_of_ne_zero (hne z hz)
+  have haes : AEStronglyMeasurable (fun z : Space => bsKernelScalar z ^ 2)
+      (volume.restrict s) :=
+    (hcontK.pow 2).aestronglyMeasurable hs
+  have hg : Integrable
+      (fun z : Space => (1 / (2 * Real.pi ^ 2)) * (((1 : ℝ) + ‖z‖ ^ 2) ^ 2)⁻¹) :=
+    integrable_inv_one_add_normSq_sq.const_mul _
+  refine (hg.integrableOn).mono' haes ?_
+  rw [ae_restrict_iff' hs]
+  filter_upwards with z hz
+  have hz' : (1 : ℝ) ≤ ‖z‖ := by rw [hsdef] at hz; exact hz
+  have hone : (0 : ℝ) < ‖z‖ := lt_of_lt_of_le one_pos hz'
+  have hoge : ‖z‖ ≤ officialEuclideanNorm z := norm_le_officialEuclideanNorm z
+  have hker := bsKernelScalar_sq_le (hne z hz)
+  have ho6pos : (0 : ℝ) < officialEuclideanNorm z ^ 6 :=
+    pow_pos (lt_of_lt_of_le hone hoge) 6
+  have h6pos : (0 : ℝ) < ‖z‖ ^ 6 := pow_pos hone 6
+  have h12pos : (0 : ℝ) < 1 + ‖z‖ ^ 2 := by positivity
+  have hstep2 : (officialEuclideanNorm z ^ 6)⁻¹ ≤ (‖z‖ ^ 6)⁻¹ :=
+    inv_anti₀ h6pos (pow_le_pow_left₀ (norm_nonneg _) hoge 6)
+  have hw : (1 : ℝ) + ‖z‖ ^ 2 ≤ 2 * ‖z‖ ^ 2 := by
+    nlinarith [sq_nonneg ‖z‖, hz', hone]
+  have hpow : ((1 : ℝ) + ‖z‖ ^ 2) ^ 3 ≤ (2 * ‖z‖ ^ 2) ^ 3 :=
+    pow_le_pow_left₀ h12pos.le hw 3
+  have hinv3 : ((2 * ‖z‖ ^ 2) ^ 3)⁻¹ ≤ (((1 : ℝ) + ‖z‖ ^ 2) ^ 3)⁻¹ :=
+    inv_anti₀ (pow_pos h12pos 3) hpow
+  have h23 : ((2 * ‖z‖ ^ 2) ^ 3)⁻¹ = (1 / 8) * (‖z‖ ^ 6)⁻¹ := by
+    have he : (2 * ‖z‖ ^ 2) ^ 3 = 8 * ‖z‖ ^ 6 := by ring
+    rw [he, mul_inv]
+    norm_num
+  have hbase : (1 : ℝ) ≤ 1 + ‖z‖ ^ 2 := by nlinarith [sq_nonneg ‖z‖]
+  have h32 : (((1 : ℝ) + ‖z‖ ^ 2) ^ 3)⁻¹ ≤ (((1 : ℝ) + ‖z‖ ^ 2) ^ 2)⁻¹ :=
+    inv_anti₀ (pow_pos h12pos 2) (pow_le_pow_right₀ hbase (by norm_num))
+  have h6 : (‖z‖ ^ 6)⁻¹ ≤ 8 * (((1 : ℝ) + ‖z‖ ^ 2) ^ 2)⁻¹ := by
+    rw [show (‖z‖ ^ 6)⁻¹ = 8 * ((2 * ‖z‖ ^ 2) ^ 3)⁻¹ from by rw [h23]; ring]
+    exact mul_le_mul_of_nonneg_left (le_trans hinv3 h32) (by norm_num)
+  have hbound : bsKernelScalar z ^ 2 ≤
+      (1 / (2 * Real.pi ^ 2)) * (((1 : ℝ) + ‖z‖ ^ 2) ^ 2)⁻¹ :=
+  calc bsKernelScalar z ^ 2
+      ≤ 1 / (16 * Real.pi ^ 2 * officialEuclideanNorm z ^ 6) := hker
+    _ = (1 / (16 * Real.pi ^ 2)) * (officialEuclideanNorm z ^ 6)⁻¹ := by
+        rw [div_eq_mul_inv, one_mul, mul_inv, div_eq_mul_inv, one_mul]
+    _ ≤ (1 / (16 * Real.pi ^ 2)) * (‖z‖ ^ 6)⁻¹ :=
+        mul_le_mul_of_nonneg_left hstep2 (by positivity)
+    _ ≤ (1 / (16 * Real.pi ^ 2)) * (8 * (((1 : ℝ) + ‖z‖ ^ 2) ^ 2)⁻¹) :=
+        mul_le_mul_of_nonneg_left h6 (by positivity)
+    _ = (1 / (2 * Real.pi ^ 2)) * (((1 : ℝ) + ‖z‖ ^ 2) ^ 2)⁻¹ := by
+        field_simp
+        ring
+  have hgnn : (0 : ℝ) ≤ 1 / (2 * Real.pi ^ 2) * (((1 : ℝ) + ‖z‖ ^ 2) ^ 2)⁻¹ := by
+    positivity
+  have hknn : (0 : ℝ) ≤ bsKernelScalar z ^ 2 := pow_nonneg (bsKernelScalar_nonneg z) 2
+  simpa only [Real.norm_eq_abs, abs_of_nonneg hknn, abs_of_nonneg hgnn] using hbound
 
 end Navier.Analysis.BealeKatoMajda
 
