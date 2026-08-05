@@ -32,6 +32,12 @@ Euclidean square `∑ i, x i ^ 2` is written out explicitly here rather than as
   the pointwise Hölder bound
   `|∫ G_t^ν(x−y) f(y) dy| ≤ ‖G_t^ν‖_{L^{r'}} · ‖f‖_{L^r}` and its composed
   `L^r → L^∞` smoothing form `|∫ G_t^ν(x−y) f(y)| ≤ C(r,ν) t^{-3/(2r)} ‖f‖_r`.
+* `hasDerivAt_heatKernel_time`, `hasFDerivAt_heatKernel_space`,
+  `fderiv_heatKernel_space_apply`, `fderiv_fderiv_heatKernel_space_apply`,
+  `heatKernel_solves_heat_equation` — the differentiation layer: the kernel's
+  time derivative, its first and second spatial coordinate derivatives, and
+  the heat equation `∂ₜ G_t^ν = ν Δ G_t^ν` itself, the engine of every Duhamel
+  representation.
 
 ## Scaling (the reason this module exists)
 
@@ -410,5 +416,199 @@ theorem heatKernel_convolution_smoothing_le {ν : ℝ} (hν : 0 < ν) {r : ℝ} 
         heatKernel_convolution_abs_le hν ht hr hfr hfm x
     _ = C * t ^ (-(3 : ℝ) / (2 * r)) * (∫ y : Space, |f y| ^ r) ^ (1 / r) := by
         rw [hC t ht]
+
+/-! ### The kernel solves the heat equation -/
+
+/-- **Time derivative of the heat kernel.**  For `0 < ν` and `0 < t`,
+
+`∂ₜ G_t^ν(x) = G_t^ν(x) · (|x|²/(4νt²) − 3/(2t))`,
+
+computed from the explicit Gaussian: the prefactor contributes `−3/(2t)` and
+the exponential contributes `|x|²/(4νt²)`. -/
+theorem hasDerivAt_heatKernel_time {ν : ℝ} (hν : 0 < ν) {t : ℝ} (ht : 0 < t)
+    (x : Space) :
+    HasDerivAt (fun s => heatKernel ν s x)
+      (heatKernel ν t x * ((∑ i : Fin 3, x i ^ 2) / (4 * ν * t ^ 2) - 3 / (2 * t))) t := by
+  have hApos : (0:ℝ) < 4 * π * ν * t := by positivity
+  have hν4 : (0:ℝ) < 4 * ν := by positivity
+  have ht' : t ≠ 0 := ne_of_gt ht
+  set S : ℝ := ∑ i : Fin 3, x i ^ 2 with hS
+  have key : (fun s => heatKernel ν s x)
+      = fun s : ℝ => (4 * π * ν * s) ^ (-(3:ℝ)/2) * Real.exp ((-(S) / (4 * ν)) * s⁻¹) := by
+    funext s
+    rw [heatKernel, hS]
+    congr 2
+    rw [mul_inv]
+    field_simp
+  rw [key]
+  have hval : heatKernel ν t x
+      = (4 * π * ν * t) ^ (-(3:ℝ)/2) * Real.exp ((-(S) / (4 * ν)) * t⁻¹) := by
+    rw [heatKernel, hS]
+    congr 2
+    rw [mul_inv]
+    field_simp
+  rw [hval]
+  have hA : HasDerivAt (fun s : ℝ => 4 * π * ν * s) (4 * π * ν) t := by
+    simpa [mul_comm] using (hasDerivAt_id t).const_mul (4 * π * ν)
+  have hAr : HasDerivAt (fun s : ℝ => (4 * π * ν * s) ^ (-(3:ℝ)/2))
+      ((4 * π * ν) * (-(3:ℝ)/2) * (4 * π * ν * t) ^ (-(3:ℝ)/2 - 1)) t :=
+    hA.rpow_const (Or.inl (ne_of_gt hApos))
+  have hInv : HasDerivAt (fun s : ℝ => s⁻¹) (-(t ^ 2)⁻¹) t := hasDerivAt_inv ht'
+  have hC : HasDerivAt (fun s : ℝ => (-(S) / (4 * ν)) * s⁻¹)
+      ((-(S) / (4 * ν)) * -(t ^ 2)⁻¹) t := hInv.const_mul _
+  have hE : HasDerivAt (fun s : ℝ => Real.exp ((-(S) / (4 * ν)) * s⁻¹))
+      (Real.exp ((-(S) / (4 * ν)) * t⁻¹) * ((-(S) / (4 * ν)) * -(t ^ 2)⁻¹)) t := hC.exp
+  have hMain := hAr.mul hE
+  have heq : (4 * π * ν) * (-(3:ℝ)/2) * (4 * π * ν * t) ^ (-(3:ℝ)/2 - 1) *
+        Real.exp ((-(S) / (4 * ν)) * t⁻¹) +
+      (4 * π * ν * t) ^ (-(3:ℝ)/2) *
+        (Real.exp ((-(S) / (4 * ν)) * t⁻¹) * ((-(S) / (4 * ν)) * -(t ^ 2)⁻¹))
+      = (4 * π * ν * t) ^ (-(3:ℝ)/2) * Real.exp ((-(S) / (4 * ν)) * t⁻¹) *
+        (S / (4 * ν * t ^ 2) - 3 / (2 * t)) := by
+    have hrw : (4 * π * ν * t) ^ (-(3:ℝ)/2 - 1)
+        = (4 * π * ν * t) ^ (-(3:ℝ)/2) * (4 * π * ν * t)⁻¹ := by
+      rw [show (-(3:ℝ)/2 - 1) = -(3:ℝ)/2 + (-1) by ring, Real.rpow_add hApos,
+        Real.rpow_neg_one]
+    rw [hrw]
+    field_simp
+    ring
+  rw [← heq]
+  exact hMain
+
+/-- **Spatial derivative of the heat kernel (Fréchet form).**  The spatial
+gradient of `G_t^ν` is `G_t^ν(x) · (−(4νt)⁻¹) · 2x`, written here as the full
+Fréchet derivative.  The space variable enters only through the exponential,
+so no hypotheses on `ν` or `t` are needed. -/
+theorem hasFDerivAt_heatKernel_space (ν : ℝ) (t : ℝ) (x : Space) :
+    HasFDerivAt (fun y : Space => heatKernel ν t y)
+      ((4 * π * ν * t) ^ (-(3:ℝ)/2) •
+        (Real.exp (-(4 * ν * t)⁻¹ * ∑ j : Fin 3, x j ^ 2) •
+          ((-(4 * ν * t)⁻¹) •
+            ∑ j : Fin 3, (x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ) +
+              x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ))))) x := by
+  have hsq : ∀ j : Fin 3, j ∈ Finset.univ → HasFDerivAt (fun y : Space => y j ^ 2)
+      (x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ) +
+        x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ)) x := by
+    intro j _
+    have h1 : HasFDerivAt (fun y : Space => y j)
+        (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ) x := hasFDerivAt_apply j x
+    have h := h1.mul h1
+    apply h.congr_of_eventuallyEq
+    exact Filter.Eventually.of_forall (fun y => by simp [Pi.mul_apply, pow_two])
+  have hS := HasFDerivAt.sum hsq
+  have hS2 : HasFDerivAt (fun y : Space => ∑ j : Fin 3, y j ^ 2)
+      (∑ j : Fin 3, (x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ) +
+        x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ))) x := by
+    apply hS.congr_of_eventuallyEq
+    exact Filter.Eventually.of_forall (fun y => by simp [Finset.sum_apply])
+  have hg := hS2.const_mul (-(4 * ν * t)⁻¹)
+  have hE := hg.exp
+  exact hE.const_mul _
+
+/-- **First spatial partial derivative of the heat kernel.**
+`∂ᵢ G_t^ν(x) = G_t^ν(x) · (−xᵢ/(2νt))`, evaluated in the `i`-th coordinate
+direction `basisVector i`. -/
+theorem fderiv_heatKernel_space_apply (ν : ℝ) (t : ℝ)
+    (i : Fin 3) (x : Space) :
+    fderiv ℝ (fun y : Space => heatKernel ν t y) x (basisVector i)
+      = heatKernel ν t x * (-(4 * ν * t)⁻¹ * (2 * x i)) := by
+  have hK2 := hasFDerivAt_heatKernel_space ν t x
+  rw [hK2.fderiv]
+  simp only [basisVector, smul_apply, add_apply,
+    _root_.sum_apply, ContinuousLinearMap.proj_apply, smul_eq_mul]
+  have hsum : (∑ j : Fin 3,
+      (x j * (Pi.single i 1 : Space) j + x j * (Pi.single i 1 : Space) j)) = 2 * x i := by
+    have h1 : ∀ j : Fin 3, (x j * (Pi.single i 1 : Space) j + x j * (Pi.single i 1 : Space) j)
+        = if j = i then 2 * x j else 0 := by
+      intro j
+      rw [Pi.single_apply]
+      by_cases h : j = i
+      · simp [h]; ring
+      · simp [h]
+    rw [Finset.sum_congr rfl (fun j _ => h1 j), Finset.sum_ite_eq' Finset.univ i]
+    simp
+  rw [hsum, heatKernel]
+  ring
+
+/-- **Second spatial partial derivative of the heat kernel.**
+`∂ᵢᵢ G_t^ν(x) = G_t^ν(x) · (xᵢ²/(4ν²t²) − 1/(2νt))`, in the division-free form
+`G_t^ν(x) · ((−(4νt)⁻¹·2xᵢ)² + 2·(−(4νt)⁻¹))` obtained directly from the
+product rule applied to `fderiv_heatKernel_space_apply`. -/
+theorem fderiv_fderiv_heatKernel_space_apply (ν : ℝ) (t : ℝ)
+    (i : Fin 3) (x : Space) :
+    fderiv ℝ (fun y : Space => fderiv ℝ (fun z : Space => heatKernel ν t z) y
+        (basisVector i)) x (basisVector i)
+      = heatKernel ν t x *
+          ((-(4 * ν * t)⁻¹ * (2 * x i)) * (-(4 * ν * t)⁻¹ * (2 * x i)) +
+            -(4 * ν * t)⁻¹ * 2) := by
+  have hrewrite : (fun y : Space => fderiv ℝ (fun z : Space => heatKernel ν t z) y
+        (basisVector i))
+      = fun y : Space => heatKernel ν t y * (-(4 * ν * t)⁻¹ * (2 * y i)) := by
+    funext y
+    exact fderiv_heatKernel_space_apply ν t i y
+  rw [hrewrite]
+  have hcoord : HasFDerivAt (fun y : Space => -(4 * ν * t)⁻¹ * (2 * y i))
+      ((-(4 * ν * t)⁻¹ * 2) • (ContinuousLinearMap.proj i : Space →L[ℝ] ℝ)) x := by
+    have h1 : HasFDerivAt (fun y : Space => y i) (ContinuousLinearMap.proj i : Space →L[ℝ] ℝ) x :=
+      hasFDerivAt_apply i x
+    have h2 := h1.const_mul (2 : ℝ)
+    have h3 := h2.const_mul (-(4 * ν * t)⁻¹)
+    rw [smul_smul] at h3
+    exact h3
+  have hprod := (hasFDerivAt_heatKernel_space ν t x).mul hcoord
+  have hprod2 : HasFDerivAt (fun y : Space => heatKernel ν t y * (-(4 * ν * t)⁻¹ * (2 * y i)))
+      (heatKernel ν t x • ((-(4 * ν * t)⁻¹ * 2) • (ContinuousLinearMap.proj i : Space →L[ℝ] ℝ)) +
+        (-(4 * ν * t)⁻¹ * (2 * x i)) •
+          ((4 * π * ν * t) ^ (-(3:ℝ)/2) •
+            (Real.exp (-(4 * ν * t)⁻¹ * ∑ j : Fin 3, x j ^ 2) •
+              ((-(4 * ν * t)⁻¹) •
+                ∑ j : Fin 3, (x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ) +
+                  x j • (ContinuousLinearMap.proj j : Space →L[ℝ] ℝ)))))) x := by
+    apply hprod.congr_of_eventuallyEq
+    exact Filter.Eventually.of_forall (fun y => rfl)
+  rw [hprod2.fderiv]
+  rw [← (hasFDerivAt_heatKernel_space ν t x).fderiv]
+  simp only [add_apply, smul_apply, smul_eq_mul]
+  rw [fderiv_heatKernel_space_apply ν t i x]
+  simp only [ContinuousLinearMap.proj_apply, basisVector, Pi.single_apply, if_true]
+  ring
+
+/-- **The heat kernel solves the heat equation.**  For `0 < ν` and `0 < t`,
+
+`∂ₜ G_t^ν(x) = ν · Δ G_t^ν(x)`,
+
+with the spatial Laplacian written as the sum of the pure second coordinate
+derivatives along `basisVector i`.  This is the engine of every Duhamel
+representation: differentiating `s ↦ ∫ G_{t−s}^ν(x−y) u(s,y) dy` under the
+integral produces `−νΔG` against `u`, which this lemma converts into the time
+derivative of the kernel. -/
+theorem heatKernel_solves_heat_equation {ν : ℝ} (hν : 0 < ν) {t : ℝ} (ht : 0 < t)
+    (x : Space) :
+    deriv (fun s => heatKernel ν s x) t
+      = ν * ∑ i : Fin 3,
+          fderiv ℝ (fun y : Space => fderiv ℝ (fun z : Space => heatKernel ν t z) y
+            (basisVector i)) x (basisVector i) := by
+  rw [(hasDerivAt_heatKernel_time hν ht x).deriv, Finset.mul_sum]
+  simp_rw [fderiv_fderiv_heatKernel_space_apply ν t]
+  have hsum : ∑ i : Fin 3,
+      ((-(4 * ν * t)⁻¹ * (2 * x i)) * (-(4 * ν * t)⁻¹ * (2 * x i)) + -(4 * ν * t)⁻¹ * 2)
+      = 4 * (4 * ν * t)⁻¹ ^ 2 * (∑ i : Fin 3, x i ^ 2) + 3 * (-(4 * ν * t)⁻¹ * 2) := by
+    rw [Finset.sum_add_distrib]
+    congr 1
+    · have e : ∀ j : Fin 3,
+          -(4 * ν * t)⁻¹ * (2 * x j) * (-(4 * ν * t)⁻¹ * (2 * x j))
+            = (4 * (4 * ν * t)⁻¹ ^ 2) * x j ^ 2 := fun j => by ring
+      rw [Finset.sum_congr rfl (fun j _ => e j), ← Finset.mul_sum]
+    · simp [Finset.sum_const, Finset.card_univ]
+  have hsum2 : ∑ i : Fin 3, ν * (heatKernel ν t x *
+      (-(4 * ν * t)⁻¹ * (2 * x i) * (-(4 * ν * t)⁻¹ * (2 * x i)) + -(4 * ν * t)⁻¹ * 2))
+      = ν * heatKernel ν t x * (4 * (4 * ν * t)⁻¹ ^ 2 * (∑ i : Fin 3, x i ^ 2) +
+        3 * (-(4 * ν * t)⁻¹ * 2)) := by
+    rw [← Finset.mul_sum, ← Finset.mul_sum, hsum]
+    ring
+  rw [hsum2]
+  have ht4 : (4 * ν * t) ≠ 0 := ne_of_gt (by positivity)
+  field_simp [ht4, hν.ne', ne_of_gt ht]
+  ring
 
 end Navier.Analysis.HeatSemigroupSmoothing
