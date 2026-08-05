@@ -1,4 +1,5 @@
 import Navier.Analysis.BealeKatoMajda
+import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Scaling
 
 /-!
