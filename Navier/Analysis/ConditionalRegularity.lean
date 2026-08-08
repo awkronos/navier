@@ -755,10 +755,15 @@ Depends on: parabolic Moser/De Giorgi iteration, the Caccioppoli inequality
 for the local energy, and the Biot–Savart representation of the pressure —
 none currently in Mathlib.
 
-Frontier status: no parabolic Caccioppoli or Moser/De Giorgi layer exists
-in-repo or in Mathlib.  `BiotSavartKernel` lands the kernel's elementary
-algebra and its pointwise far-field `L²` tail bound, with the
-Calderón–Zygmund near-field cancellation named as an honest residual in
+Frontier status: `ParabolicCaccioppoli` now lands the first two rungs —
+the pointwise local energy identity `local_energy_balance` and the
+De Giorgi–Moser numeric engine `deGiorgiMoser_tendsto_zero` — but not the
+integrated Caccioppoli inequality `cutoff_local_energy_inequality` itself,
+which is blocked on (a) cutoff integration by parts against the local
+energy identity and (b) an `L^r` pressure bound.  `BiotSavartKernel` lands
+the kernel's elementary algebra and its pointwise far-field `L²` tail
+bound, with the Calderón–Zygmund near-field cancellation — exactly the
+missing pressure-bound ingredient (b) — named as an honest residual in
 `SingularIntegralPrelims`, so the pressure representation is not yet
 available either. -/
 theorem prodiSerrin_interior_outerRegion_bounded
