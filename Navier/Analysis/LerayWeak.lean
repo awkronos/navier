@@ -2533,32 +2533,32 @@ theorem exists_subseq_windowCauchy
     set N := S.card with hNdef
     set e : Fin N → S := S.orderEmbOfFin (by dsimp [N]; rfl) with hedef
     let cellAvg (k : ℕ) (p : Fin N) : Space :=
-      ⨍ z in prodGridCell h ((e p).1) ((e p).2), vSeq (τ' k) z.1 z.2
+      ⨍ z in prodGridCell h ((e p).val.1) ((e p).val.2), vSeq (τ' k) z.1 z.2
     have hcellAvgBound : ∀ (k : ℕ) (p : Fin N), ‖cellAvg k p‖ ≤ 1 + (h ^ 4)⁻¹ * h * C := by
       intro k p
-      have hnorm : ‖cellAvg k p‖ ≤ ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ := by
-        simpa [cellAvg] using norm_setAverage_le (vSeq (τ' k)) (prodGridCell h ((e p).1) ((e p).2))
+      have hnorm : ‖cellAvg k p‖ ≤ ⨍ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ := by
+        simpa [cellAvg] using norm_setAverage_le (vSeq (τ' k)) (prodGridCell h ((e p).val.1) ((e p).val.2))
       have hsq : ∀ z, ‖vSeq (τ' k) z.1 z.2‖ ≤ 1 + ‖vSeq (τ' k) z.1 z.2‖ ^ 2 := by
         intro z; nlinarith [sq_nonneg (‖vSeq (τ' k) z.1 z.2‖ - 1)]
-      have hsqAvg : ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖
-          ≤ 1 + ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2 := by
-        have hpos : 0 ≤ volume.real (prodGridCell h ((e p).1) ((e p).2)) := ENNReal.toReal_nonneg
+      have hsqAvg : ⨍ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖
+          ≤ 1 + ⨍ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2 := by
+        have hpos : 0 ≤ volume.real (prodGridCell h ((e p).val.1) ((e p).val.2)) := ENNReal.toReal_nonneg
         have hle : (⨍ z, ‖vSeq (τ' k) z.1 z.2‖) ≤ (⨍ z, (1 + ‖vSeq (τ' k) z.1 z.2‖ ^ 2)) :=
           setAverage_le_setAverage (fun z => by positivity) (fun z => hsq z) hpos
         simpa [setAverage_add_const, setAverage_const] using hle
-      have hvol : volume.real (prodGridCell h ((e p).1) ((e p).2)) = h ^ 4 := by
-        have hv := volume_prodGridCell (ι := Fin 3) hhpos.le ((e p).1) ((e p).2)
+      have hvol : volume.real (prodGridCell h ((e p).val.1) ((e p).val.2)) = h ^ 4 := by
+        have hv := volume_prodGridCell (ι := Fin 3) hhpos.le ((e p).val.1) ((e p).val.2)
         rw [hv, ENNReal.toReal_ofReal (by positivity : 0 ≤ h ^ 4)]
-      have hintegral : ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2
-          = (h ^ 4)⁻¹ * (∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) := by
+      have hintegral : ⨍ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2
+          = (h ^ 4)⁻¹ * (∫ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) := by
         rw [setAverage_eq, hvol, smul_eq_mul, mul_comm]
-      have hbound : (∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) ≤ h * C := by
+      have hbound : (∫ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) ≤ h * C := by
         have hslice : ∀ t : ℝ, (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2) ≤ C :=
           fwd_kin uSeq C hkin (τ' k)
-        have hcellInt : ∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2
+        have hcellInt : ∫ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2
             = ∫ t in Set.Ico (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ)),
                 (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2) ∂volume := by
-          have hprod : prodGridCell h ((e p).1) ((e p).2) =
+          have hprod : prodGridCell h ((e p).val.1) ((e p).val.2) =
               Set.Ico (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ)) ×ˢ gridCell h ((e p).2) := rfl
           rw [hprod, MeasureTheory.integral_prod]
           · refine setIntegral_congr_fun measurableSet_Ico (fun t ht => ?_)
@@ -2586,9 +2586,9 @@ theorem exists_subseq_windowCauchy
           (fun t _ => hnonneg t) (fun t _ => hbnd t)).trans ?_
         simp [hlen]
       calc
-        ‖cellAvg k p‖ ≤ ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ := hnorm
-        _ ≤ 1 + ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2 := hsqAvg
-        _ = 1 + (h ^ 4)⁻¹ * (∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) := by
+        ‖cellAvg k p‖ ≤ ⨍ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ := hnorm
+        _ ≤ 1 + ⨍ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2 := hsqAvg
+        _ = 1 + (h ^ 4)⁻¹ * (∫ z in prodGridCell h ((e p).val.1) ((e p).val.2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) := by
           rw [hintegral]
         _ ≤ 1 + (h ^ 4)⁻¹ * (h * C) := by
           refine add_le_add_left (mul_le_mul_of_nonneg_left hbound (by positivity)) _
