@@ -76,6 +76,17 @@ theorem integrable_norm_sq_iff_officialEuclideanNorm_sq
     rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
     exact norm_sq_le_officialEuclideanNorm_sq (f x)
 
+/-- The Euclidean norm squared equals the component-wise sum of squares. -/
+theorem officialEuclideanNorm_sq_eq_sum_sq (x : Space) :
+    officialEuclideanNorm x ^ 2 = ∑ i : Fin 3, x i ^ 2 := by
+  simp [officialEuclideanNorm, officialEuclideanPoint, norm_sq_eq_sum]
+
+/-- The sup norm squared is bounded by the sum of squares. -/
+theorem norm_sq_le_sum_sq (x : Space) : ‖x‖ ^ 2 ≤ ∑ i : Fin 3, x i ^ 2 := by
+  calc
+    ‖x‖ ^ 2 ≤ officialEuclideanNorm x ^ 2 := norm_sq_le_officialEuclideanNorm_sq x
+    _ = ∑ i : Fin 3, x i ^ 2 := officialEuclideanNorm_sq_eq_sum_sq x
+
 /-- The inherited kinetic energy is bounded by the official Euclidean one. -/
 theorem kineticEnergy_le_officialKineticEnergy
     (u : VelocityEvolution) (t : ℝ)
@@ -83,11 +94,15 @@ theorem kineticEnergy_le_officialKineticEnergy
     (hoff : Integrable
       (fun x => officialEuclideanNorm (u t x) ^ 2)) :
     kineticEnergy u t ≤ officialKineticEnergy u t := by
-  have hcur : Integrable (fun x => ‖u t x‖ ^ 2) :=
-    (integrable_norm_sq_iff_officialEuclideanNorm_sq (u t) hu).2 hoff
+  have hcur' : Integrable (fun x => ∑ i : Fin 3, (u t x i) ^ 2) := by
+    have h_eq : (fun x : Space => officialEuclideanNorm (u t x) ^ 2) =
+        (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) := by
+      ext x; simp [officialEuclideanNorm_sq_eq_sum_sq (u t x)]
+    simpa [h_eq] using hoff
   unfold kineticEnergy officialKineticEnergy
-  exact integral_mono hcur hoff
-    (fun x => norm_sq_le_officialEuclideanNorm_sq (u t x))
+  exact integral_mono hcur' hoff
+    (fun x => by
+      simp [officialEuclideanNorm_sq_eq_sum_sq (u t x)])
 
 /-- The official kinetic energy is at most three times the inherited one. -/
 theorem officialKineticEnergy_le_three_mul_kineticEnergy
@@ -98,13 +113,21 @@ theorem officialKineticEnergy_le_three_mul_kineticEnergy
   have hoff : Integrable
       (fun x => officialEuclideanNorm (u t x) ^ 2) :=
     (integrable_norm_sq_iff_officialEuclideanNorm_sq (u t) hu).1 hcur
+  have hsum : Integrable (fun x => ∑ i : Fin 3, (u t x i) ^ 2) := by
+    have h_eq : (fun x : Space => officialEuclideanNorm (u t x) ^ 2) =
+        (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) := by
+      ext x; simp [officialEuclideanNorm_sq_eq_sum_sq (u t x)]
+    simpa [h_eq] using hoff
   unfold kineticEnergy officialKineticEnergy
   calc
     (∫ x : Space, officialEuclideanNorm (u t x) ^ 2) ≤
-        ∫ x : Space, 3 * ‖u t x‖ ^ 2 :=
-      integral_mono hoff (hcur.const_mul 3)
-        (fun x => officialEuclideanNorm_sq_le_three_mul_norm_sq (u t x))
-    _ = 3 * ∫ x : Space, ‖u t x‖ ^ 2 := by
+        ∫ x : Space, 3 * ∑ i : Fin 3, (u t x i) ^ 2 :=
+      integral_mono hoff (hsum.const_mul 3)
+        (fun x => by
+          have : officialEuclideanNorm (u t x) ^ 2 = ∑ i : Fin 3, (u t x i) ^ 2 :=
+            officialEuclideanNorm_sq_eq_sum_sq (u t x)
+          rw [this])
+    _ = 3 * ∫ x : Space, ∑ i : Fin 3, (u t x i) ^ 2 := by
       rw [MeasureTheory.integral_const_mul]
 
 /-- Under slice measurability and the existing integrability clause, uniform

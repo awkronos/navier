@@ -108,9 +108,13 @@ def SmoothPressureOnNonnegativeTime (p : PressureEvolution) : Prop :=
   ContDiffOn ℝ ∞ (fun z : ℝ × Space => p z.1 z.2)
     ((Set.Ici (0 : ℝ)) ×ˢ (Set.univ : Set Space))
 
-/-- The Lebesgue kinetic-energy integral at time `t`. -/
+/-- The Lebesgue kinetic-energy integral at time `t` (Euclidean norm squared).
+The `currentSpaceNormEuclideanNormEquivalence` encoding residual is hereby
+closed: the physical kinetic energy `½∫|u|²` uses the Euclidean norm `|·|`,
+and `kineticEnergy` is `∫|u|²` (omitting the factor ½).  The sup-norm version
+was an encoding artifact of the default product norm on `Fin 3 → ℝ`. -/
 def kineticEnergy (u : VelocityEvolution) (t : ℝ) : ℝ :=
-  ∫ x : Space, ‖u t x‖ ^ 2
+  ∫ x : Space, ∑ i : Fin 3, (u t x i) ^ 2
 
 /-- A Schwartz initial velocity is divergence-free in the standard
 coordinates. -/
