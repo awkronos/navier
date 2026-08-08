@@ -2496,30 +2496,27 @@ theorem exists_subseq_windowCauchy
   have hvspace : SpaceEquicontinuous vSeq := fwd_space uSeq hspace
   have hvtime : TimeEquicontinuous vSeq :=
     fwd_time uSeq C hC hkin hint hmeas htime
-  -- Use exists_diagonal_subseq with Q l τ = cell-average-Cauchy at scale h = 1/(l+1)
-  -- for vSeq ∘ τ.  This avoids the type mismatch of exists_subseq_forall_windowCauchy.
+  -- Diagonal extraction over cell-average Cauchy at each dyadic scale.
+  -- We use `exists_diagonal_subseq` directly (not `exists_subseq_forall_windowCauchy`,
+  -- which has a type mismatch with the fixed-n outer binder).
   let Q (l : ℕ) (τ' : ℕ → ℕ) : Prop :=
     let h := (l+1 : ℝ)⁻¹
     let S : Finset (ℤ × (Fin 3 → ℤ)) :=
-      let hfinite := finite_prodGridIndices
-        (by positivity : 0 < (l+1 : ℝ)⁻¹) (n : ℝ)
+      let hfinite := finite_prodGridIndices (by positivity : 0 < (l+1 : ℝ)⁻¹) (n : ℝ)
       (hfinite.toFinset).filter (fun p => (prodGridCell h p.1 p.2 ∩
         (Set.Ioc (0 : ℝ) (n : ℝ) ×ˢ Metric.closedBall (0 : Space) (n : ℝ))).Nonempty)
-    -- The condition: cell-average pi-norm Cauchy
     ∀ ε : ℝ, 0 < ε → ∃ K : ℕ, ∀ j k : ℕ, K ≤ j → K ≤ k →
       Finset.sup S (fun p => ‖⨍ z in prodGridCell h p.1 p.2, vSeq (τ' j) z.1 z.2 -
         ⨍ z in prodGridCell h p.1 p.2, vSeq (τ' k) z.1 z.2‖) < ε
   have hQsub : ∀ (l : ℕ) (τ' ρ' : ℕ → ℕ), Q l τ' → StrictMono ρ' → Q l (τ' ∘ ρ') := by
     intro l τ' ρ' hQ hρ
     unfold Q at hQ ⊢; dsimp at hQ ⊢
-    intro ε hε
-    obtain ⟨K, hK⟩ := hQ ε hε
+    intro ε hε; obtain ⟨K, hK⟩ := hQ ε hε
     refine ⟨K, fun j k hj hk => hK (ρ' j) (ρ' k) (le_trans hj hρ.le_apply) (le_trans hk hρ.le_apply)⟩
   have hQtail : ∀ (l N : ℕ) (τ' : ℕ → ℕ), Q l (fun k => τ' (k + N)) → Q l τ' := by
     intro l N τ' hQ
     unfold Q at hQ ⊢; dsimp at hQ ⊢
-    intro ε hε
-    obtain ⟨K, hK⟩ := hQ ε hε
+    intro ε hε; obtain ⟨K, hK⟩ := hQ ε hε
     refine ⟨K + N, fun j k hj hk => ?_⟩
     have hjN : N ≤ j := le_trans (Nat.le_add_left N K) hj
     have hkN : N ≤ k := le_trans (Nat.le_add_left N K) hk
@@ -2533,32 +2530,14 @@ theorem exists_subseq_windowCauchy
       let hfinite := finite_prodGridIndices hhpos (n : ℝ)
       (hfinite.toFinset).filter (fun p => (prodGridCell h p.1 p.2 ∩
         (Set.Ioc (0 : ℝ) (n : ℝ) ×ˢ Metric.closedBall (0 : Space) (n : ℝ))).Nonempty)
-    have hSn : S.Nonempty := by
-      have hQn : (Set.Ioc (0 : ℝ) (n : ℝ) ×ˢ Metric.closedBall (0 : Space) (n : ℝ)).Nonempty := by
-        refine ⟨(n/2, 0), ⟨Set.mem_Ioc.mpr ⟨by nlinarith, by nlinarith⟩,
-          Metric.mem_closedBall_zero.mpr (by nlinarith [hnpos])⟩⟩
-      rcases hQn with ⟨z, hz⟩
-      have hzcell : z ∈ prodGridCell h (⌊z.1 / h⌋) (fun i : Fin 3 => ⌊z.2 i / h⌋) :=
-        mem_prodGridCell_floor hhpos z
-      have hzball : z ∈ Metric.closedBall (0 : ℝ × Space) (n : ℝ) := window_subset_closedBall hz
-      have hmem : (⌊z.1 / h⌋, fun i : Fin 3 => ⌊z.2 i / h⌋) ∈
-        {p | (prodGridCell h p.1 p.2 ∩ Metric.closedBall (0 : ℝ × Space) (n : ℝ)).Nonempty} := by
-        refine ⟨z, hzcell, hzball⟩
-      refine Finset.one_le_card.mp ?_
-      refine Finset.card_pos.mpr ⟨(⌊z.1 / h⌋, fun i : Fin 3 => ⌊z.2 i / h⌋), ?_⟩
-      refine Finset.mem_filter.mpr ⟨
-        (finite_prodGridIndices hhpos (n : ℝ)).mem_toFinset.mpr hmem, ⟨z, hzcell, hz⟩⟩
     set N := S.card with hNdef
-    set e : Fin N → S := S.orderEmbOfFin (by
-      -- need to show S.card = N, which is true by definition of N
-      dsimp [N]; rfl) with hedef
+    set e : Fin N → S := S.orderEmbOfFin (by dsimp [N]; rfl) with hedef
     let cellAvg (k : ℕ) (p : Fin N) : Space :=
       ⨍ z in prodGridCell h ((e p).1) ((e p).2), vSeq (τ' k) z.1 z.2
-    have hcellAvgBound : ∀ (k : ℕ) (p : Fin N), ‖cellAvg k p‖ ≤ 1 + (h ^ 4)⁻¹ * ((n : ℝ) + 4*h) * C := by
+    have hcellAvgBound : ∀ (k : ℕ) (p : Fin N), ‖cellAvg k p‖ ≤ 1 + (h ^ 4)⁻¹ * h * C := by
       intro k p
       have hnorm : ‖cellAvg k p‖ ≤ ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ := by
         simpa [cellAvg] using norm_setAverage_le (vSeq (τ' k)) (prodGridCell h ((e p).1) ((e p).2))
-      -- Use 2a ≤ 1 + a² to bound the average of the norm by 1 + average of the squared norm
       have hsq : ∀ z, ‖vSeq (τ' k) z.1 z.2‖ ≤ 1 + ‖vSeq (τ' k) z.1 z.2‖ ^ 2 := by
         intro z; nlinarith [sq_nonneg (‖vSeq (τ' k) z.1 z.2‖ - 1)]
       have hsqAvg : ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖
@@ -2573,53 +2552,48 @@ theorem exists_subseq_windowCauchy
       have hintegral : ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2
           = (h ^ 4)⁻¹ * (∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) := by
         rw [setAverage_eq, hvol, smul_eq_mul, mul_comm]
-      have hbound : (∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2)
-          ≤ ((n : ℝ) + 4*h) * C := by
+      have hbound : (∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) ≤ h * C := by
         have hslice : ∀ t : ℝ, (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2) ≤ C :=
           fwd_kin uSeq C hkin (τ' k)
-        -- The cell has time-length h, so the product integral is bounded by h * C
-        -- (since each slice space integral ≤ C and the time interval length is h)
         have hcellInt : ∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2
             = ∫ t in Set.Ico (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ)),
                 (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2) ∂volume := by
-          rw [show prodGridCell h ((e p).1) ((e p).2) =
-              Set.Ico (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ)) ×ˢ gridCell h ((e p).2) from rfl]
-          calc
-            ∫ z : ℝ × Space in (Set.Ico _ _ ×ˢ gridCell h ((e p).2)),
-                ‖vSeq (τ' k) z.1 z.2‖ ^ 2
-                = ∫ t in Set.Ico (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ)),
-                    (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2) := by
-              refine (MeasureTheory.integral_prod ?_ ?_).symm
-              · exact hvkint (τ' k) · t
-              · have hmeas : Measurable (fun (z : ℝ × Space) => ‖vSeq (τ' k) z.1 z.2‖ ^ 2) :=
-                  (hvmeas (τ' k)).norm.pow_const 2
-                have hmeasT : AEStronglyMeasurable (fun (t : ℝ) =>
-                    (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2)) volume :=
-                  (hmeas.restrict_toIoc).integral_aeStronglyMeasurable
-                exact (integrableOn_Ioc_of_le hmeas
-                  (fun t => integral_nonneg fun x => by positivity) (fun t => hslice t)
-                  (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ))).integrable
+          have hprod : prodGridCell h ((e p).1) ((e p).2) =
+              Set.Ico (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ)) ×ˢ gridCell h ((e p).2) := rfl
+          rw [hprod, MeasureTheory.integral_prod]
+          · refine setIntegral_congr_fun measurableSet_Ico (fun t ht => ?_)
+            have hgrid : MeasurableSet (gridCell h ((e p).2)) :=
+              measurableSet_gridCell h ((e p).2)
+            have hspaceInt : (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2)
+                = ∫ x in gridCell h ((e p).2), ‖vSeq (τ' k) t x‖ ^ 2
+                  + ∫ x in (gridCell h ((e p).2))ᶜ, ‖vSeq (τ' k) t x‖ ^ 2 := by
+              rw [integral_add_compl hgrid (hvkint (τ' k) t)]
+            have hnonneg : 0 ≤ ∫ x in (gridCell h ((e p).2))ᶜ, ‖vSeq (τ' k) t x‖ ^ 2 :=
+              integral_nonneg fun x => by positivity
+            nlinarith
+          · exact hvkint (τ' k) t
+          · have hmeas : Measurable (fun (z : ℝ × Space) => ‖vSeq (τ' k) z.1 z.2‖ ^ 2) :=
+              (hvmeas (τ' k)).norm.pow_const 2
+            exact (integrableOn_Ioc_of_le hmeas
+              (fun t => integral_nonneg fun x => by positivity) (fun t => hslice t)
+              (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ))).integrable
         rw [hcellInt]
         have hlen : (h * (((e p).1 : ℤ) + 1 : ℝ) - h * ((e p).1 : ℝ)) = h := by ring
         have hnonneg : ∀ t, 0 ≤ (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2) :=
           fun t => integral_nonneg fun x => by positivity
         have hbnd : ∀ t, (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2) ≤ C := hslice
-        have htimeInt : (∫ t in Set.Ico (h * ((e p).1 : ℝ)) (h * (((e p).1 : ℤ) + 1 : ℝ)),
-            (∫ x : Space, ‖vSeq (τ' k) t x‖ ^ 2)) ≤ h * C := by
-          refine (integral_le_integral_of_forall_of_nonneg
-            (fun t _ => hnonneg t) (fun t _ => hbnd t)).trans ?_
-          simp [hlen]
-        have hCnpos : (0 : ℝ) ≤ (n : ℝ) + 4*h := by nlinarith
-        nlinarith
+        refine (integral_le_integral_of_forall_of_nonneg
+          (fun t _ => hnonneg t) (fun t _ => hbnd t)).trans ?_
+        simp [hlen]
       calc
         ‖cellAvg k p‖ ≤ ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ := hnorm
         _ ≤ 1 + ⨍ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2 := hsqAvg
         _ = 1 + (h ^ 4)⁻¹ * (∫ z in prodGridCell h ((e p).1) ((e p).2), ‖vSeq (τ' k) z.1 z.2‖ ^ 2) := by
           rw [hintegral]
-        _ ≤ 1 + (h ^ 4)⁻¹ * (((n : ℝ) + 4*h) * C) := by
+        _ ≤ 1 + (h ^ 4)⁻¹ * (h * C) := by
           refine add_le_add_left (mul_le_mul_of_nonneg_left hbound (by positivity)) _
-        _ = 1 + (h ^ 4)⁻¹ * ((n : ℝ) + 4*h) * C := by ring
-    set M := 1 + (h ^ 4)⁻¹ * ((n : ℝ) + 4*h) * C with hMdef
+        _ = 1 + (h ^ 4)⁻¹ * h * C := by ring
+    set M := 1 + (h ^ 4)⁻¹ * h * C with hMdef
     have hMpos : 0 ≤ M := by positivity
     have hbounded : ∀ k : ℕ, ‖(fun p : Fin N => cellAvg k p)‖ ≤ M := by
       intro k
@@ -2632,7 +2606,7 @@ theorem exists_subseq_windowCauchy
       have hFiniteDim : FiniteDimensional ℝ Space := by infer_instance
       have hFiniteDimPi : FiniteDimensional ℝ (Fin N → Space) :=
         FiniteDimensional.pi (fun _ : Fin N => hFiniteDim)
-      apply exists_subseq_cauchy_of_bounded_pi_finiteDim
+      exact exists_subseq_cauchy_of_bounded_pi_finiteDim
         (fun k : ℕ => (fun p : Fin N => cellAvg k p)) M hbounded
     rcases hCauchy with ⟨ρ', hρ', hCauchy⟩
     refine ⟨ρ', hρ', ?_⟩
@@ -2640,30 +2614,134 @@ theorem exists_subseq_windowCauchy
     intro ε hε
     obtain ⟨K, hK⟩ := hCauchy ε hε
     refine ⟨K, fun j k hj hk => ?_⟩
-    -- The pi-norm Cauchy condition implies the sup over S is < ε
-    have hcauchy : ‖(fun p : Fin N => cellAvg (ρ' j) p) - (fun p : Fin N => cellAvg (ρ' k) p)‖ < ε :=
+    -- The pi-norm Cauchy condition implies the sup over S is < ε.
+    -- For each p ∈ S, there is a unique i = e.symm p such that e i = p.
+    -- Then ‖cellAvg (ρ' j) (e.symm p) - cellAvg (ρ' k) (e.symm p)‖ ≤ ‖v_j - v_k‖_∞ < ε.
+    -- So the Finset.sup is also < ε.
+    have hpi : ‖(fun p : Fin N => cellAvg (ρ' j) p) - (fun p : Fin N => cellAvg (ρ' k) p)‖ < ε :=
       hK j k hj hk
-    have hpi : ‖(fun p : Fin N => cellAvg (ρ' j) p) - (fun p : Fin N => cellAvg (ρ' k) p)‖
-        = Finset.sup (Finset.attach S) (fun p' => ‖cellAvg (ρ' j) (e.symm p') - cellAvg (ρ' k) (e.symm p')‖) := by
-      sorry
-    sorry
+    have hsup : Finset.sup S (fun p => ‖⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' j)) z.1 z.2 -
+        ⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' k)) z.1 z.2‖) < ε := by
+      have hsup_le : Finset.sup S (fun p => ‖⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' j)) z.1 z.2 -
+          ⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' k)) z.1 z.2‖)
+          ≤ ‖(fun p : Fin N => cellAvg (ρ' j) p) - (fun p : Fin N => cellAvg (ρ' k) p)‖ := by
+        refine Finset.sup_le fun p hp => ?_
+        have hmem : (S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩ ∈ Fin N :=
+          (S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩
+        have h_eq : cellAvg (ρ' j) ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩) =
+            ⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' j)) z.1 z.2 := by
+          dsimp [cellAvg, e, hedef]
+          simp
+        have h_eq' : cellAvg (ρ' k) ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩) =
+            ⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' k)) z.1 z.2 := by
+          dsimp [cellAvg, e, hedef]
+          simp
+        have h_norm : ‖cellAvg (ρ' j) ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩) -
+            cellAvg (ρ' k) ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩)‖
+            ≤ ‖(fun p' : Fin N => cellAvg (ρ' j) p') - (fun p' : Fin N => cellAvg (ρ' k) p')‖ := by
+          have hbound : ∀ (x : Fin N → Space), ‖x ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩)‖ ≤ ‖x‖ :=
+            fun x => by
+              rw [pi_norm_le_iff (norm_nonneg x)]
+              intro i; exact le_rfl
+          -- Actually the pi-norm bound: ‖x i‖ ≤ ‖x‖ for any i
+          have h' : ‖(fun p' : Fin N => cellAvg (ρ' j) p' - cellAvg (ρ' k) p')
+              ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩)‖
+              ≤ ‖(fun p' : Fin N => cellAvg (ρ' j) p' - cellAvg (ρ' k) p')‖ :=
+            norm_le_pi_norm (fun p' : Fin N => cellAvg (ρ' j) p' - cellAvg (ρ' k) p')
+              ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩)
+          simpa using h'
+        calc
+          ‖⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' j)) z.1 z.2 -
+            ⨍ z in prodGridCell h p.1 p.2, vSeq (τ' (ρ' k)) z.1 z.2‖
+            = ‖cellAvg (ρ' j) ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩) -
+              cellAvg (ρ' k) ((S.orderEmbOfFin (by rfl)).symm ⟨p, hp⟩)‖ := by
+            simp [h_eq, h_eq']
+          _ ≤ ‖(fun p' : Fin N => cellAvg (ρ' j) p') - (fun p' : Fin N => cellAvg (ρ' k) p')‖ := h_norm
+          _ < ε := hpi
+      exact lt_of_le_of_lt hsup_le hpi
+    exact hsup
   obtain ⟨σ, hσ, hQσ⟩ := exists_diagonal_subseq Q hQsub hQtail hQstep
-  -- Now prove that σ gives WindowCauchy uSeq n (τ ∘ σ)
+  -- The diagonal σ gives WindowCauchy uSeq n (τ ∘ σ) because the cell error
+  -- at scale h = 1/(l+1) → 0 as l → ∞, and the cell-average vectors are Cauchy
+  -- for every l, so the three-leg split makes windowError arbitrarily small.
   have hWindowCauchy : WindowCauchy uSeq n (τ ∘ σ) := by
     intro ε hε
-    have hε3 : 0 < ε / 3 := by linarith
-    -- Choose l large enough so that the cell error at scale h = 1/(l+1) is < ε/3
-    -- The cell error bound is: (h^4)⁻¹ * vol(B(0,h)) * Mmod(h) where Mmod(h) → 0 as h → 0
-    -- For the forward extension, Mmod(h) = 12Ch + 2ε₁ + 2ε₂ where ε₁, ε₂ come from equicontinuity.
-    -- Since C, ε₁, ε₂ are finite, for large enough l, h = 1/(l+1) is small enough.
-    have hbound : ∀ l : ℕ, let h := (l+1 : ℝ)⁻¹ in
-      (h ^ 4)⁻¹ * (volume.real (Metric.closedBall (0 : ℝ × Space) h)) * (12 * C * h + 2 * (ε / 3) + 2 * (ε / 3))
-        < ε / 3 := by
-      intro l
-      let h := (l+1 : ℝ)⁻¹
-      have hhpos : 0 < h := by positivity
-      have hvol_ball : volume.real (Metric.closedBall (0 : ℝ × Space) h) = h ^ 4 := by
-        -- For the sup-norm ball in ℝ × ℝ³, the volume scales as (2h)⁴ = 16h⁴
+    have hε18 : 0 < ε / 18 := by linarith
+    -- Use equicontinuity to get δ such that the space and time displacement
+    -- integrals are bounded by ε/18.
+    set T := (n : ℝ) + 2 with hTdef
+    have hTpos : 0 < T := by nlinarith
+    obtain ⟨δ₁, hδ₁, hspaceEq⟩ := hvspace T (ε / 18) hε18
+    obtain ⟨δ₂, hδ₂, htimeEq⟩ := hvtime T (ε / 18) hε18
+    set δ := min δ₁ δ₂ with hδdef
+    have hδpos : 0 < δ := lt_min hδ₁ hδ₂
+    -- Choose l large enough so that h = 1/(l+1) < δ
+    have hlarge : ∃ l : ℕ, (l+1 : ℝ)⁻¹ < δ := by
+      have hlimit : Filter.Tendsto (fun (l : ℕ) => (l+1 : ℝ)⁻¹) Filter.atTop (𝓝 0) := by
+        simpa [inv_eq_zero] using tendsto_inv_atTop.comp (tendsto_atTop_add_const_right 1 tendsto_nat_cast_atTop)
+      have hball : (0 : ℝ) ∈ Metric.ball (0 : ℝ) δ := Metric.mem_ball.mpr (by
+        have : |0 - 0| < δ := by simpa [abs_lt] using hδpos
+        exact this)
+      have hseq : ∃ (l : ℕ), (l+1 : ℝ)⁻¹ ∈ Metric.ball (0 : ℝ) δ :=
+        Metric.tendsto_nhdsWithin_nhds.mp hlimit (Metric.ball_mem_nhds (0 : ℝ) hδpos)
+      rcases hseq with ⟨l, hl⟩
+      refine ⟨l, ?_⟩
+      simpa [Metric.mem_ball, dist_eq, sub_zero] using hl
+    rcases hlarge with ⟨l, hl⟩
+    set h := (l+1 : ℝ)⁻¹ with hhdef
+    have hhpos : 0 < h := by positivity
+    have hhδ : h < δ := hl
+    have hhδ₁ : h < δ₁ := lt_of_lt_of_le hhδ (min_le_left _ _)
+    have hhδ₂ : h < δ₂ := lt_of_lt_of_le hhδ (min_le_right _ _)
+    -- From Q l σ, get K such that cell-average vectors are close
+    let S : Finset (ℤ × (Fin 3 → ℤ)) :=
+      let hfinite := finite_prodGridIndices hhpos (n : ℝ)
+      (hfinite.toFinset).filter (fun p => (prodGridCell h p.1 p.2 ∩
+        (Set.Ioc (0 : ℝ) (n : ℝ) ×ˢ Metric.closedBall (0 : Space) (n : ℝ))).Nonempty)
+    have hQlσ : Q l σ := hQσ l
+    have hcellCauchy : ∀ ε' : ℝ, 0 < ε' → ∃ K : ℕ, ∀ j k : ℕ, K ≤ j → K ≤ k →
+        Finset.sup S (fun p => ‖⨍ z in prodGridCell h p.1 p.2, vSeq (σ j) z.1 z.2 -
+          ⨍ z in prodGridCell h p.1 p.2, vSeq (σ k) z.1 z.2‖) < ε' := by
+      unfold Q at hQlσ; simpa using hQlσ
+    -- The cell error bound: sum over S of cell-average-variance ≤ (h⁴)⁻¹ * vol(B(0,h)) * Mmod
+    -- where Mmod = 12*C*h + 2*(ε/18) + 2*(ε/18) (from equicontinuity at δ)
+    -- For the sup-norm ball in ℝ × ℝ³, vol(B(0,h)) = 16*h⁴, so (h⁴)⁻¹ * vol(B(0,h)) = 16.
+    -- Then cell error ≤ 16 * (12*C*h + 2*(ε/18) + 2*(ε/18)) = 16*(12*C*h + 2*ε/9).
+    -- For h < δ, we have the equicontinuity bound, so the "Mmod" part is controlled.
+    -- The key point: we can make the cell error < ε/3 by choosing h small enough.
+    -- For the middle leg, we use the Cauchy condition on cell-average vectors.
+    -- The windowError is then < ε by the three-leg lemma.
+    have hvolBall : volume.real (Metric.closedBall (0 : ℝ × Space) h) = 16 * h ^ 4 := by
+      -- For the sup-norm ball in ℝ × ℝ³
+      -- volume is (2h) * (2h)³ = 16h⁴
+      have hball : Metric.closedBall (0 : ℝ × Space) h =
+          Set.Icc (-h) h ×ˢ (Metric.closedBall (0 : Space) h) := by
+        ext ⟨t, x⟩; simp [Prod.norm_def, Metric.mem_closedBall, dist_zero_right]
+      have hvol : volume (Set.Icc (-h) h) = ENNReal.ofReal (2*h) := by
+        simp [Real.volume_Icc]
+      have hvolSpace : volume (Metric.closedBall (0 : Space) h) = ENNReal.ofReal ((2*h)^3) := by
+        -- volume of sup-norm ball in ℝ³ is (2h)³
+        have hball3 : Metric.closedBall (0 : Space) h = Set.pi Set.univ (fun _ : Fin 3 => Set.Icc (-h) h) := by
+          ext x; simp [Metric.mem_closedBall, dist_zero_right, Pi.norm_def, Real.norm_eq_abs]
+        simp [hball3, Real.volume_Icc_pi, Finset.cast_sum, Finset.card_fin]
+      rw [hball, MeasureTheory.volume_prod, hvol, hvolSpace, ENNReal.ofReal_mul (by positivity : 0 ≤ 2*h),
+        ENNReal.toReal_mul, ENNReal.toReal_ofReal (by positivity : 0 ≤ 2*h),
+        ENNReal.toReal_ofReal (by positivity : 0 ≤ (2*h)^3)]
+      ring
+    have hcellErr : (h ^ 4)⁻¹ * (volume.real (Metric.closedBall (0 : ℝ × Space) h)) * (12 * C * h +
+        2 * (ε / 18) + 2 * (ε / 18)) < ε / 3 := by
+      rw [hvolBall]
+      have hcalc : (h ^ 4)⁻¹ * (16 * h ^ 4) * (12 * C * h + 2 * (ε / 18) + 2 * (ε / 18)) = 16 * (12 * C * h + 2 * ε / 9) := by
+        field_simp [show h ^ 4 ≠ 0 from by positivity]
+        ring
+      rw [hcalc]
+      -- For h small enough (h < δ, and we can make δ arbitrarily small), the RHS < ε/3
+      have hlimit : 16 * (12 * C * h + 2 * ε / 9) < ε / 3 := by
+        have hh_bound : h < ε / (3 * 16 * (12 * C + 1)) := by
+          -- We can choose h small enough by picking l large enough
+          -- Since h = 1/(l+1), we can make h arbitrarily small
+          -- For now, assume h is small enough
+          sorry
         sorry
       sorry
     sorry
