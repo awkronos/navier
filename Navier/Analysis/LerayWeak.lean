@@ -1,6 +1,7 @@
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.DissipativeODEGlobal
 import Navier.Analysis.RieszKolmogorov
+import Navier.Analysis.EnergyNormBridge
 
 /-!
 # Leray–Hopf weak solutions (rung 4 skeleton tower)
@@ -717,9 +718,12 @@ def StrongL2LocLimit (uSeq : ℕ → VelocityEvolution) (u : VelocityEvolution) 
     Filter.atTop (nhds 0)
 
 /-- Uniform `L^∞_t L²_x` kinetic-energy bound across the sequence (from the
-projected energy identity `‖u_m(t)‖² ≤ ‖u₀‖²`). -/
+projected energy identity `‖u_m(t)‖² ≤ ‖u₀‖²`).  This is the file's internal
+(inherited sup-norm) slice bound, not the official Euclidean `kineticEnergy` of
+`Navier.Problem` — the two differ by at most the dimension-`3` factor bridged
+in `Navier.Analysis.EnergyNormBridge`. -/
 def UniformKineticBound (uSeq : ℕ → VelocityEvolution) (C : ℝ) : Prop :=
-  ∀ (m : ℕ) (t : ℝ), 0 ≤ t → kineticEnergy (uSeq m) t ≤ C
+  ∀ (m : ℕ) (t : ℝ), 0 ≤ t → (∫ x : Space, ‖uSeq m t x‖ ^ 2) ≤ C
 
 /-- Uniform `L²(0,T; H¹)` dissipation bound (time-integrated enstrophy;
 for divergence-free fields `‖ω‖_{L²} = ‖∇u‖_{L²}`), from `∫ ν‖∇u_m‖² ≤ ½‖u₀‖²`. -/
@@ -1414,7 +1418,7 @@ theorem strongL2LocLimit_of_natWindows
     (hintSeq : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable fun x : Space => ‖uSeq m t x‖ ^ 2)
     (hintU : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
     (hkinSeq : UniformKineticBound uSeq C)
-    (hkinU : ∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C)
+    (hkinU : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ C)
     (hwin : ∀ n : ℕ, Filter.Tendsto
       (fun k => ∫ t in Set.Ioc (0:ℝ) (n:ℝ), ∫ x in Metric.closedBall (0:Space) (n:ℝ),
         ‖uSeq k t x - u t x‖ ^ 2) Filter.atTop (nhds 0)) :
@@ -1431,7 +1435,8 @@ theorem strongL2LocLimit_of_natWindows
     have hm2 : Measurable fun x : Space => u t x := hmeasU.comp measurable_prodMk_left
     exact integrable_norm_sub_sq (uSeq k t) (u t) (hm1.sub hm2) (hintSeq k t ht) (hintU t ht)
   -- the uniform slicewise bound `∫ ‖u_k(t) − u(t)‖² ≤ 4C`
-  have hCnn : 0 ≤ C := le_trans (kineticEnergy_nonneg (uSeq 0) 0) (hkinSeq 0 0 le_rfl)
+  have hCnn : 0 ≤ C :=
+    le_trans (integral_nonneg fun x => by positivity) (hkinSeq 0 0 le_rfl)
   have hglob : ∀ (k : ℕ) (t : ℝ), 0 ≤ t →
       (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2) ≤ 4 * C := by
     intro k t ht
@@ -2043,8 +2048,8 @@ noncomputable def fwd (uSeq : ℕ → VelocityEvolution) (m : ℕ) : VelocityEvo
 
 theorem fwd_kin (uSeq : ℕ → VelocityEvolution) (C : ℝ)
     (hkin : UniformKineticBound uSeq C) (m : ℕ) (t : ℝ) :
-    kineticEnergy (fwd uSeq m) t ≤ C := by
-  unfold kineticEnergy fwd
+    (∫ x : Space, ‖fwd uSeq m t x‖ ^ 2) ≤ C := by
+  unfold fwd
   exact hkin m (max t 0) (le_max_right t 0)
 
 theorem fwd_int (uSeq : ℕ → VelocityEvolution)
@@ -2518,7 +2523,7 @@ theorem exists_limit_of_forall_windowCauchy
     ∃ u : VelocityEvolution,
       Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
-      (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C) ∧
+      (∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ C) ∧
       (∀ n : ℕ, Filter.Tendsto (fun k => windowError (vSeq k) u n) Filter.atTop (nhds 0)) := by
   classical
   have hbnd : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → (∫ x : Space, ‖vSeq m t x‖ ^ 2) ≤ C :=
@@ -2600,12 +2605,12 @@ theorem exists_limit_of_forall_windowCauchy
         ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
     simp_rw [he]
     exact lt_of_le_of_lt (hFatou t ht) ENNReal.ofReal_lt_top
-  have hukin : ∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C := by
+  have hukin : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ C := by
     intro t ht
     have h1 : (∫ x : Space, ‖u t x‖ ^ 2) = (∫⁻ x : Space, ‖u t x‖ₑ ^ 2).toReal := by
       rw [lintegral_enorm_sq_eq (u t) (huint t ht),
         ENNReal.toReal_ofReal (integral_nonneg fun x => by positivity)]
-    rw [kineticEnergy, h1]
+    rw [h1]
     calc (∫⁻ x : Space, ‖u t x‖ₑ ^ 2).toReal ≤ (ENNReal.ofReal C).toReal :=
           ENNReal.toReal_mono ENNReal.ofReal_ne_top (hFatou t ht)
       _ = C := ENNReal.toReal_ofReal hC
@@ -2782,7 +2787,7 @@ theorem aubin_lions_l2loc_compactness
     ∃ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ ∧
       Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
-      (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C) ∧
+      (∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ C) ∧
       StrongL2LocLimit (fun k => uSeq (σ k)) u := by
   obtain ⟨σ, hσ, hσC⟩ := exists_subseq_forall_windowCauchy uSeq
     fun n τ hτ => exists_subseq_windowCauchy uSeq C hC hkin htime hspace hmeas hint n τ hτ
@@ -2857,7 +2862,8 @@ structure LerayLimitData (ν : ℝ) (u₀ : SchwartzVelocity) where
   /-- The datum is square-integrable (automatic for Schwartz data). -/
   datum_sq_integrable : Integrable (fun x : Space => ‖u₀ x‖ ^ 2)
   /-- The Leray energy bound for positive times. -/
-  energy_le : ∀ t : ℝ, 0 < t → kineticEnergy limit t ≤ ∫ x : Space, ‖u₀ x‖ ^ 2
+  energy_le : ∀ t : ℝ, 0 < t →
+    kineticEnergy limit t ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2
   /-- Integrability of the weak-form density for positive times. -/
   pairing_integrable : ∀ (φ : DivergenceFreeTestFunction) (t : ℝ), 0 < t →
     Integrable (fun x : Space => weakPairingDensity ν limit φ t x)
@@ -2887,7 +2893,8 @@ theorem isLerayHopfWeakSolution_patchInitial (ν : ℝ) (u₀ : SchwartzVelocity
   initial_attained := by intro x; simp [patchInitial]
   energy_nonincreasing := by
     intro t ht
-    have h0 : kineticEnergy (patchInitial D.limit u₀) 0 = ∫ x : Space, ‖u₀ x‖ ^ 2 := by
+    have h0 : kineticEnergy (patchInitial D.limit u₀) 0 =
+        ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2 := by
       unfold kineticEnergy; rw [patchInitial_apply_zero]
     rcases eq_or_lt_of_le ht with h | h
     · rw [← h]
@@ -3029,7 +3036,6 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
-
 
 
 

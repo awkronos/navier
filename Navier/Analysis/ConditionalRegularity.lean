@@ -1,6 +1,8 @@
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Scaling
+import Navier.Analysis.ESSInputs
+import Navier.Analysis.EnergyNormBridge
 
 /-!
 # Conditional regularity bridges: Prodi–Serrin and Constantin–Fefferman
@@ -167,6 +169,7 @@ open scoped Matrix
 open Navier
 open Navier.Analysis.Vorticity
 open Navier.Analysis.OfficialABEncoding
+open Navier.Analysis.EnergyNormBridge
 open Navier.Breakdown
 
 /-! ### Shared established leaves -/
@@ -231,21 +234,44 @@ theorem initialDatum_bounded_of_uniformBound
 /-- The uniform-in-time `L²` mass bracket carried by a hypothesis-carried
 energy bound: for every time in `[0,T)` the kinetic-energy integral lies in
 `[0, E]`.  The lower endpoint is new content — it does not appear among the
-hypotheses — and it is what makes `energyBound_nonneg` available downstream. -/
+hypotheses — and it is what makes `energyBound_nonneg` available downstream.
+
+**Pattern-A repair (this wave): the bracket was FALSE as previously
+stated.**  `kineticEnergy` is the *official* Euclidean sum-of-squares energy
+(`Navier.Problem.kineticEnergy`), whereas `Space`'s inherited norm is the
+finite-product sup norm — the two densities are neither equal nor `defeq`.
+Recovering the sup-norm mass bracket from a sum-of-squares bound needs the
+componentwise measurability of the slice (it is not implied by mere
+integrability of the sup-norm-squared density); `hmeas` is the added
+hypothesis, discharged at every call site by
+`PartialClassicalSolution.velocity_slice_aestronglyMeasurable`. -/
 theorem uniformL2Mass_of_energyBound {u : VelocityEvolution} {T E : ℝ}
     (henergy : ∀ t : ℝ, 0 ≤ t → t < T →
+      AEStronglyMeasurable (u t) volume ∧
       Integrable (fun x : Space => ‖u t x‖ ^ 2) ∧ kineticEnergy u t ≤ E) :
     ∀ t : ℝ, 0 ≤ t → t < T →
       (∫ x : Space, ‖u t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E := by
   intro t ht0 htT
+  obtain ⟨hmeas, hint, hk⟩ := henergy t ht0 htT
   refine ⟨integral_nonneg fun x => by positivity, ?_⟩
-  simpa [kineticEnergy] using (henergy t ht0 htT).2
+  have hoff : Integrable (fun x : Space => officialEuclideanNorm (u t x) ^ 2) :=
+    (integrable_norm_sq_iff_officialEuclideanNorm_sq (u t) hmeas).1 hint
+  have hsum : Integrable (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) := by
+    have heq : (fun x : Space => officialEuclideanNorm (u t x) ^ 2)
+        = (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) :=
+      funext fun x => officialEuclideanNorm_sq_eq_sum_sq (u t x)
+    rwa [heq] at hoff
+  calc (∫ x : Space, ‖u t x‖ ^ 2) ≤ ∫ x : Space, ∑ i : Fin 3, (u t x i) ^ 2 :=
+        integral_mono hint hsum (fun x => norm_sq_le_sum_sq (u t x))
+    _ = kineticEnergy u t := rfl
+    _ ≤ E := hk
 
 /-- A hypothesis-carried energy bound over a nonempty time interval is
 nonnegative.  Not assumed anywhere: it is forced by the nonnegativity of the
 kinetic-energy integrand at the admissible time `t = 0`. -/
 theorem energyBound_nonneg {u : VelocityEvolution} {T E : ℝ} (hT : 0 < T)
     (henergy : ∀ t : ℝ, 0 ≤ t → t < T →
+      AEStronglyMeasurable (u t) volume ∧
       Integrable (fun x : Space => ‖u t x‖ ^ 2) ∧ kineticEnergy u t ≤ E) :
     0 ≤ E := by
   obtain ⟨h0, hE⟩ := uniformL2Mass_of_energyBound henergy 0 le_rfl hT
@@ -258,10 +284,11 @@ Constantin–Fefferman leaves false as previously stated; see
 `massBracket_vacuous_of_infiniteMass`. -/
 theorem uniformL2Integrable_of_energyBound {u : VelocityEvolution} {T E : ℝ}
     (henergy : ∀ t : ℝ, 0 ≤ t → t < T →
+      AEStronglyMeasurable (u t) volume ∧
       Integrable (fun x : Space => ‖u t x‖ ^ 2) ∧ kineticEnergy u t ≤ E) :
     ∀ t : ℝ, 0 ≤ t → t < T →
       Integrable (fun x : Space => ‖u t x‖ ^ 2) :=
-  fun t ht0 htT => (henergy t ht0 htT).1
+  fun t ht0 htT => (henergy t ht0 htT).2.1
 
 /-! ### Falsification of the bare integral brackets -/
 
@@ -1060,9 +1087,15 @@ theorem constantinFefferman_velocity_bounded
     ∃ R : ℝ, ∀ t : ℝ, 0 ≤ t → t < T → ∀ x : Space,
       ‖sol.velocity t x‖ ≤ R := by
   have hT : 0 < T := sol.terminalTime_pos
-  have hE : 0 ≤ E := energyBound_nonneg hT henergy
-  have hL2 := uniformL2Integrable_of_energyBound henergy
-  have hmass := uniformL2Mass_of_energyBound henergy
+  have henergy' : ∀ t : ℝ, 0 ≤ t → t < T →
+      AEStronglyMeasurable (sol.velocity t) volume ∧
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2) ∧ kineticEnergy sol.velocity t ≤ E :=
+    fun t ht0 htT =>
+      ⟨Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_aestronglyMeasurable
+          sol ht0 htT, henergy t ht0 htT⟩
+  have hE : 0 ≤ E := energyBound_nonneg hT henergy'
+  have hL2 := uniformL2Integrable_of_energyBound henergy'
+  have hmass := uniformL2Mass_of_energyBound henergy'
   have hδ0 : 0 < T / 2 := by linarith
   have hδT : T / 2 < T := by linarith
   obtain ⟨R₁, hR₁⟩ :=
