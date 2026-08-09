@@ -79,7 +79,8 @@ theorem integrable_norm_sq_iff_officialEuclideanNorm_sq
 /-- The Euclidean norm squared equals the component-wise sum of squares. -/
 theorem officialEuclideanNorm_sq_eq_sum_sq (x : Space) :
     officialEuclideanNorm x ^ 2 = ∑ i : Fin 3, x i ^ 2 := by
-  simp [officialEuclideanNorm, officialEuclideanPoint, norm_sq_eq_sum]
+  simp [officialEuclideanNorm, officialEuclideanPoint,
+    EuclideanSpace.real_norm_sq_eq]
 
 /-- The sup norm squared is bounded by the sum of squares. -/
 theorem norm_sq_le_sum_sq (x : Space) : ‖x‖ ^ 2 ≤ ∑ i : Fin 3, x i ^ 2 := by
@@ -124,9 +125,10 @@ theorem officialKineticEnergy_le_three_mul_kineticEnergy
         ∫ x : Space, 3 * ∑ i : Fin 3, (u t x i) ^ 2 :=
       integral_mono hoff (hsum.const_mul 3)
         (fun x => by
-          have : officialEuclideanNorm (u t x) ^ 2 = ∑ i : Fin 3, (u t x i) ^ 2 :=
-            officialEuclideanNorm_sq_eq_sum_sq (u t x)
-          rw [this])
+          rw [officialEuclideanNorm_sq_eq_sum_sq (u t x)]
+          have hnn : (0 : ℝ) ≤ ∑ i : Fin 3, (u t x i) ^ 2 :=
+            Finset.sum_nonneg fun i _ => sq_nonneg _
+          linarith)
     _ = 3 * ∫ x : Space, ∑ i : Fin 3, (u t x i) ^ 2 := by
       rw [MeasureTheory.integral_const_mul]
 

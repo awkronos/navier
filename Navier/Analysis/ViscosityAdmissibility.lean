@@ -105,8 +105,8 @@ theorem kineticEnergy_viscosityScaled
     (a : ℝ) (ha : 0 < a) (u : VelocityEvolution) (t : ℝ) :
     kineticEnergy (viscosityScaledVelocity a u) t =
       a ^ 2 * kineticEnergy u (a * t) := by
-  simp only [kineticEnergy, viscosityScaledVelocity, norm_sq_smul a ha]
-  rw [integral_const_mul]
+  simp only [kineticEnergy, viscosityScaledVelocity, Pi.smul_apply,
+    smul_eq_mul, mul_pow, ← Finset.mul_sum, integral_const_mul]
 
 /-- Spatial energy integrability is preserved at corresponding times. -/
 theorem finiteEnergy_viscosityScaled
