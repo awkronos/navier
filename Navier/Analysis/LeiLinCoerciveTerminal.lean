@@ -282,6 +282,17 @@ theorem mixedCriticalQty_nonneg {ν : ℝ} (hν : 0 ≤ ν) (u : WeightedLattice
     normXm1_nonneg latticeModeSize_nonneg (weightedAmplitude u),
     mul_nonneg hν (normX1_nonneg latticeModeSize_nonneg (weightedAmplitude u))]
 
+/-- **Coercive control carrier** — the terminal mixed quantity scaled by the
+coercive constant.  This is the single scalar a mild terminal bound controls;
+`norm_weightedLattice_le_of_mixed` rewrites the critical norm as this carrier. -/
+def coerciveControlFunctional (ν : ℝ) (u : WeightedLatticeBanach) : ℝ :=
+  coerciveConstant ν * mixedCriticalQty ν u
+
+theorem coerciveControlFunctional_nonneg {ν : ℝ} (hν : 0 < ν) (u : WeightedLatticeBanach) :
+    0 ≤ coerciveControlFunctional ν u := by
+  unfold coerciveControlFunctional
+  exact mul_nonneg (coerciveConstant_pos hν).le (mixedCriticalQty_nonneg hν.le u)
+
 /-- Zero-mode-killed amplitude family. -/
 def amplitudeOffZero (u : WeightedLatticeBanach) (k : LatticeMode) : ℝ :=
   if k = 0 then 0 else weightedAmplitude u k
@@ -431,6 +442,12 @@ theorem norm_weightedLattice_le_of_mixed {ν : ℝ} (hν : 0 < ν)
     _ = coerciveConstant ν * mixedCriticalQty ν u := by
         rw [hmix]; ring
 
+theorem norm_weightedLattice_le_coerciveControlFunctional {ν : ℝ} (hν : 0 < ν)
+    (u : WeightedLatticeBanach) :
+    ‖u‖ ≤ coerciveControlFunctional ν u := by
+  unfold coerciveControlFunctional
+  exact norm_weightedLattice_le_of_mixed hν u
+
 /-- Every finite original-data mild chart has terminal mixed critical quantity
 at most `K`.  This is the scientific hypothesis replacing the disproved
 fixed-radius recurrence.  The `𝒳¹`/`𝒳^{-1}` membership side conditions from
@@ -445,6 +462,18 @@ def CriticalMildMixedTerminalBound (ν : ℝ) (hν : 0 < ν)
         (criticalMildPathExtension T hT u.1)
         (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) →
     mixedCriticalQty ν (u.1 ⟨T, ⟨hT, le_rfl⟩⟩) ≤ K
+
+theorem coerciveControlFunctional_le_of_mixedTerminalBound
+    {ν : ℝ} (hν : 0 < ν) (a : WeightedLatticeBanach) (K : ℝ)
+    (hmixed : CriticalMildMixedTerminalBound ν hν a K)
+    {T R : ℝ} (hT : 0 ≤ T) (u : CriticalMildPathBall T R)
+    (hmild : ∀ τ : Set.Icc (0 : ℝ) T,
+      u.1 τ = criticalMildImage ν hν a
+        (criticalMildPathExtension T hT u.1)
+        (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) :
+    coerciveControlFunctional ν (u.1 ⟨T, ⟨hT, le_rfl⟩⟩) ≤ coerciveConstant ν * K := by
+  unfold coerciveControlFunctional
+  exact mul_le_mul_of_nonneg_left (hmixed hT u hmild) (coerciveConstant_pos hν).le
 
 /-- **Construction of the terminal CriticalMild bound from mixed control.**
 
