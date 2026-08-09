@@ -199,6 +199,76 @@ theorem latticeModeSize_eq_zero_iff (m : LatticeMode) :
     subst h
     exact latticeModeSize_zero
 
+/-- The lattice mode size of any nonzero mode is at least `1`: distinct
+integer lattice points are separated by at least unit Euclidean distance. -/
+theorem one_le_latticeModeSize_of_ne_zero {m : LatticeMode} (hm : m ≠ 0) :
+    1 ≤ latticeModeSize m := by
+  have hsq : latticeModeSize m ^ 2 =
+      (m.1 : ℝ) ^ 2 + (m.2.1 : ℝ) ^ 2 + (m.2.2 : ℝ) ^ 2 := by
+    unfold latticeModeSize
+    rw [EuclideanSpace.norm_sq_eq]
+    simp [complexFrequency_apply, latticeFrequency, Fin.sum_univ_three,
+      RCLike.norm_ofReal, sq_abs]
+  have hone : (1 : ℝ) ≤
+      (m.1 : ℝ) ^ 2 + (m.2.1 : ℝ) ^ 2 + (m.2.2 : ℝ) ^ 2 := by
+    rcases show m.1 ≠ 0 ∨ m.2.1 ≠ 0 ∨ m.2.2 ≠ 0 by
+        by_contra h
+        push_neg at h
+        exact hm (Prod.ext h.1 (Prod.ext h.2.1 h.2.2))
+      with h1 | h1 | h1
+    · have : (1 : ℝ) ≤ (m.1 : ℝ) ^ 2 := by
+        have : (1 : ℤ) ≤ m.1 ^ 2 := by
+          have := Int.one_le_abs h1
+          nlinarith [sq_abs m.1]
+        exact_mod_cast this
+      nlinarith [sq_nonneg (m.2.1 : ℝ), sq_nonneg (m.2.2 : ℝ)]
+    · have : (1 : ℝ) ≤ (m.2.1 : ℝ) ^ 2 := by
+        have : (1 : ℤ) ≤ m.2.1 ^ 2 := by
+          have := Int.one_le_abs h1
+          nlinarith [sq_abs m.2.1]
+        exact_mod_cast this
+      nlinarith [sq_nonneg (m.1 : ℝ), sq_nonneg (m.2.2 : ℝ)]
+    · have : (1 : ℝ) ≤ (m.2.2 : ℝ) ^ 2 := by
+        have : (1 : ℤ) ≤ m.2.2 ^ 2 := by
+          have := Int.one_le_abs h1
+          nlinarith [sq_abs m.2.2]
+        exact_mod_cast this
+      nlinarith [sq_nonneg (m.1 : ℝ), sq_nonneg (m.2.1 : ℝ)]
+  nlinarith [latticeModeSize_nonneg m, hsq, hone]
+
+/-- Every physical mode amplitude family is unconditionally `𝒳¹`-summable:
+the lattice weight `1 + |k|` already dominates `|k|` in the ambient
+`WeightedLatticeBanach` norm, so no extra membership hypothesis is needed. -/
+theorem InW_latticeModeSize (u : WeightedLatticeBanach) :
+    InW latticeModeSize (weightedAmplitude u) := by
+  refine Summable.of_nonneg_of_le
+    (fun k => mul_nonneg (latticeModeSize_nonneg k) (abs_nonneg _))
+    (fun k => ?_) (summable_norm_weighted u)
+  have ha := weightedAmplitude_nonneg u k
+  rw [norm_apply_eq_weight_mul_amplitude u k, abs_of_nonneg ha]
+  nlinarith [latticeModeSize_nonneg k]
+
+/-- Every physical mode amplitude family is unconditionally `𝒳^{-1}`-summable:
+the inverse weight is bounded by `1` off the zero mode (lattice separation),
+and vanishes at the zero mode. -/
+theorem InW_inv_latticeModeSize (u : WeightedLatticeBanach) :
+    InW (fun k => (latticeModeSize k)⁻¹) (weightedAmplitude u) := by
+  refine Summable.of_nonneg_of_le
+    (fun k => mul_nonneg (inv_nonneg.mpr (latticeModeSize_nonneg k)) (abs_nonneg _))
+    (fun k => ?_) (summable_norm_weighted u)
+  have ha := weightedAmplitude_nonneg u k
+  rw [norm_apply_eq_weight_mul_amplitude u k, abs_of_nonneg ha]
+  by_cases hk : k = 0
+  · subst hk
+    simpa [latticeModeSize_zero] using ha
+  · have hge := one_le_latticeModeSize_of_ne_zero hk
+    have hinv : (latticeModeSize k)⁻¹ ≤ 1 :=
+      (inv_le_one_iff₀).2 (Or.inr hge)
+    have hw : (1 : ℝ) ≤ 1 + latticeModeSize k := by
+      linarith [latticeModeSize_nonneg k]
+    nlinarith [mul_le_mul_of_nonneg_right hinv ha,
+      mul_le_mul_of_nonneg_right hw ha]
+
 /-- Mixed Lei–Lin quantity, including zero-mode mass. -/
 def mixedCriticalQty (ν : ℝ) (u : WeightedLatticeBanach) : ℝ :=
   weightedAmplitude u 0 +
@@ -307,12 +377,16 @@ theorem normXm1_offZero (u : WeightedLatticeBanach) :
     simp [amplitudeOffZero, latticeModeSize_zero]
   · simp [amplitudeOffZero, hk]
 
-/-- **CriticalMild norm controlled by the mixed coercive quantity.** -/
+/-- **CriticalMild norm controlled by the mixed coercive quantity.**
+Unconditional: both `𝒳¹` and `𝒳^{-1}` membership of the amplitude family
+follow automatically from `u : WeightedLatticeBanach` via
+`InW_latticeModeSize` / `InW_inv_latticeModeSize`, so no side hypothesis on
+`u` is needed beyond viscosity positivity. -/
 theorem norm_weightedLattice_le_of_mixed {ν : ℝ} (hν : 0 < ν)
-    (u : WeightedLatticeBanach)
-    (hm : InW (fun k => (latticeModeSize k)⁻¹) (weightedAmplitude u))
-    (hp : InW latticeModeSize (weightedAmplitude u)) :
+    (u : WeightedLatticeBanach) :
     ‖u‖ ≤ coerciveConstant ν * mixedCriticalQty ν u := by
+  have hm := InW_inv_latticeModeSize u
+  have hp := InW_latticeModeSize u
   set f := weightedAmplitude u
   set f' := amplitudeOffZero u
   have hσ : ∀ k, 0 ≤ latticeModeSize k := latticeModeSize_nonneg
@@ -359,7 +433,10 @@ theorem norm_weightedLattice_le_of_mixed {ν : ℝ} (hν : 0 < ν)
 
 /-- Every finite original-data mild chart has terminal mixed critical quantity
 at most `K`.  This is the scientific hypothesis replacing the disproved
-fixed-radius recurrence. -/
+fixed-radius recurrence.  The `𝒳¹`/`𝒳^{-1}` membership side conditions from
+earlier drafts are dropped: they hold unconditionally for every
+`WeightedLatticeBanach` element (`InW_latticeModeSize`,
+`InW_inv_latticeModeSize`), so this is the sharp remaining hypothesis. -/
 def CriticalMildMixedTerminalBound (ν : ℝ) (hν : 0 < ν)
     (a : WeightedLatticeBanach) (K : ℝ) : Prop :=
   ∀ {T R : ℝ} (hT : 0 ≤ T) (u : CriticalMildPathBall T R),
@@ -367,9 +444,7 @@ def CriticalMildMixedTerminalBound (ν : ℝ) (hν : 0 < ν)
       u.1 τ = criticalMildImage ν hν a
         (criticalMildPathExtension T hT u.1)
         (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) →
-    (InW (fun k => (latticeModeSize k)⁻¹) (weightedAmplitude (u.1 ⟨T, ⟨hT, le_rfl⟩⟩)) ∧
-      InW latticeModeSize (weightedAmplitude (u.1 ⟨T, ⟨hT, le_rfl⟩⟩)) ∧
-      mixedCriticalQty ν (u.1 ⟨T, ⟨hT, le_rfl⟩⟩) ≤ K)
+    mixedCriticalQty ν (u.1 ⟨T, ⟨hT, le_rfl⟩⟩) ≤ K
 
 /-- **Construction of the terminal CriticalMild bound from mixed control.**
 
@@ -381,15 +456,17 @@ theorem criticalMildTerminalNormBound_of_mixed
     (hmixed : CriticalMildMixedTerminalBound ν hν a K) :
     CriticalMildTerminalNormBound ν hν a (coerciveConstant ν * K) := by
   intro T R hT u hmild
-  obtain ⟨hm, hp, hqty⟩ := hmixed hT u hmild
-  have hbound :=
-    norm_weightedLattice_le_of_mixed hν (u.1 ⟨T, ⟨hT, le_rfl⟩⟩) hm hp
+  have hqty := hmixed hT u hmild
+  have hbound := norm_weightedLattice_le_of_mixed hν (u.1 ⟨T, ⟨hT, le_rfl⟩⟩)
   exact hbound.trans
     (mul_le_mul_of_nonneg_left hqty (coerciveConstant_pos hν).le)
 
 end Navier.Analysis.LeiLinCoerciveTerminal
 
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_eq_normX0_add_normX1
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.one_le_latticeModeSize_of_ne_zero
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.InW_latticeModeSize
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.InW_inv_latticeModeSize
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX0_add_normX1_le_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_weightedLattice_le_of_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed
