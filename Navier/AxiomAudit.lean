@@ -5,6 +5,7 @@ import Navier.Analysis.EnergyOfficialClause
 import Navier.Analysis.ForceCoordinateBridge
 import Navier.Analysis.ForceCoordinateDecayBridge
 import Navier.Analysis.ForceMultiIndexConvention
+import Navier.Analysis.TypedCoordinateEndpoints
 import Navier.Analysis.FrequencyHeatLeray
 import Navier.Analysis.ComplexLerayProjection
 import Navier.Analysis.ComplexLerayNorm
@@ -285,6 +286,7 @@ finite-frontier facts.
 #print axioms Navier.Analysis.ForceMultiIndexConvention.iteratedCoordinateDerivativeWithin_component_eq_coordinateForceDerivative
 #print axioms Navier.Analysis.ForceMultiIndexConvention.wholeSpaceCoordinatewise_bound_orderedMultiIndex
 #print axioms Navier.Analysis.ForceMultiIndexConvention.periodicCoordinatewise_bound_orderedMultiIndex
+#print axioms Navier.Analysis.TypedCoordinateEndpoints.wholeSpaceBreakdownAtViscosityOne_iff_typedCoordinate
 
 #print axioms Navier.Routes.R7.dot_lerayNumerator
 #print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero
