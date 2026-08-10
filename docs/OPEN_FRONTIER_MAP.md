@@ -23,11 +23,20 @@ are not an endpoint certificate.
 
 ### Official energy representation
 
-The inherited Pi-norm energy, official Euclidean energy, and literal sum of
-the three coordinate squares are now related exactly.  Smooth classical
-solution slices supply the measurability needed for those integral transports.
-This closes the whole-space kinetic-energy representation mismatch; it does
-not generate an energy estimate or a solution.
+The official Euclidean energy and the literal sum of the three coordinate
+squares are related *exactly*: `kineticEnergy` is now defined by the Euclidean
+density, so `officialKineticEnergy = kineticEnergy` is an identity
+(`EnergyNormBridge.officialKineticEnergy_eq_kineticEnergy`).  Smooth classical
+solution slices supply the measurability needed for the integral transports.
+
+The inherited Pi-norm (supremum) energy is **not** related exactly: it is
+two-sided but lossy, `supKineticEnergy ≤ kineticEnergy ≤ 3 * supKineticEnergy`,
+and the constant three is attained pointwise
+(`EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`).  So
+the whole-space kinetic-energy *integrand* mismatch is closed, while the
+sup-norm side of `currentSpaceNormEuclideanNormEquivalence` stays open — the
+`finite_energy` field and the spatial-decay clauses still use the product norm.
+None of this generates an energy estimate or a solution.
 
 Key files:
 

@@ -113,14 +113,34 @@ inductive OfficialSurfaceEncodingResidual where
   | schwartzDatumCoordinatewiseEquivalence
   | forceFrechetCoordinatewiseEquivalence
   | halfSpaceSmoothnessEquivalence
+  /-- The product sup norm inherited by `Space` versus the Euclidean norm on
+  `R^3`.
+
+  This residual is *strictly wider* here than its `Navier.Problem` namesake.
+  Making `Navier.kineticEnergy` Euclidean discharged the whole-space energy
+  integrand, but alternatives B and D carry no energy clause at all, and the
+  force-decay predicates `ForcedDataRapidDecay` and
+  `PeriodicForcedDataRapidDecay` above still weight by `‖x‖` and measure
+  `iteratedFDerivWithin` bundles in the inherited operator norm.  So nothing in
+  this file's norm residual has been closed. -/
   | currentSpaceNormEuclideanNormEquivalence
   | problemFrechetCoordinatePDEEquivalence
   | wholeSpaceEnergyClauseEquivalence
   | periodicLiftQuotientEquivalence
   deriving DecidableEq, Repr, Fintype
 
+/-- All seven alternative-surface representation obligations remain explicitly
+visible; none has been retired. -/
 def officialSurfaceEncodingResiduals : Finset OfficialSurfaceEncodingResidual :=
   Finset.univ
+
+/-- The A--D surface exposes exactly seven representation bridges, two more than
+the statement-A-only list in `Navier.Problem` (the coordinatewise force clause
+and the periodic quotient lift).  Stated so that a silent retirement of any
+alternative-side residual breaks the build. -/
+theorem officialSurfaceEncodingResiduals_card :
+    officialSurfaceEncodingResiduals.card = 7 := by
+  decide
 
 namespace ProblemStatements
 

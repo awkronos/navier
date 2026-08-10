@@ -13,6 +13,11 @@ proof-program argument whose result is the problem endpoint.
 The five statement-A representation residuals from `Problem.lean` occur as
 explicit frontier nodes.  The global analytic obstruction remains the
 critical-control/global-continuation branch.
+
+Node count is unchanged by the switch of `Navier.kineticEnergy` to the Euclidean
+density: that discharged one clause of `currentSpaceNormBridge`, not the node.
+Partially discharged bridges stay in `dependencies .statementA`, so this map
+never reports a bridge as closed while any of its clauses is open.
 -/
 
 set_option autoImplicit false
@@ -23,6 +28,11 @@ namespace Navier.Frontier
 inductive FrontierNode where
   | schwartzConventionBridge
   | halfSpaceSmoothnessBridge
+  /-- The sup-norm/Euclidean-norm bridge.  Still a live leaf: the energy
+  integrand clause is discharged (`Navier.kineticEnergy` is Euclidean), but
+  `IsClassicalSolution.finite_energy` and the spatial-decay clauses still use the
+  inherited product norm, and the two norms provably differ.  See
+  `ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence`. -/
   | currentSpaceNormBridge
   | frechetCoordinatePDEBridge
   | wholeSpaceEnergyBridge

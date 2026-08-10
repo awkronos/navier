@@ -17,6 +17,11 @@ Fréchet derivatives, and a Lebesgue integral encode Fefferman's coordinatewise
 clauses.  Their comparison with the official derivative, Euclidean-norm, PDE,
 and energy wording is deliberately retained in `ProblemEncodingResidual`; no
 unproved representation equivalence is asserted here.
+
+`kineticEnergy` uses the Euclidean density `∑ᵢ uᵢ²`, which discharges the
+energy-integrand clause of the norm residual.  All five residuals nevertheless
+remain listed, because each still names at least one open clause; see
+`currentSpaceNormEuclideanNormEquivalence` for exactly what survives there.
 -/
 
 set_option autoImplicit false
@@ -108,11 +113,20 @@ def SmoothPressureOnNonnegativeTime (p : PressureEvolution) : Prop :=
   ContDiffOn ℝ ∞ (fun z : ℝ × Space => p z.1 z.2)
     ((Set.Ici (0 : ℝ)) ×ˢ (Set.univ : Set Space))
 
-/-- The Lebesgue kinetic-energy integral at time `t` (Euclidean norm squared).
-The `currentSpaceNormEuclideanNormEquivalence` encoding residual is hereby
-closed: the physical kinetic energy `½∫|u|²` uses the Euclidean norm `|·|`,
-and `kineticEnergy` is `∫|u|²` (omitting the factor ½).  The sup-norm version
-was an encoding artifact of the default product norm on `Fin 3 → ℝ`. -/
+/-- The Lebesgue kinetic-energy integral at time `t`, using the Euclidean
+squared norm `∑ᵢ uᵢ²`.  The physical kinetic energy is `½∫|u|²`; this omits the
+factor `½`.
+
+Choosing the Euclidean density here discharges *one clause* of the
+`currentSpaceNormEuclideanNormEquivalence` residual below — the energy integrand
+itself, which previously used the sup norm inherited by `Fin 3 → ℝ`.  It does
+**not** close that residual, which remains listed: `finite_energy` below still
+asserts integrability of the *inherited sup norm* `‖u t x‖²`, and the Schwartz
+and force-decay clauses (here and in `Navier.OfficialProblem`) still measure `x`
+and derivative bundles in the product norm.  The two norms provably differ
+(`Analysis.EnergyNormBridge.norm_sq_lt_officialEuclideanNorm_sq_witness`) and the
+dimension constant relating them is attained, so the remaining gap is real
+rather than notational. -/
 def kineticEnergy (u : VelocityEvolution) (t : ℝ) : ℝ :=
   ∫ x : Space, ∑ i : Fin 3, (u t x i) ^ 2
 
@@ -142,7 +156,15 @@ classical solution emanating from `u₀`.
 
 The explicit `Integrable` field prevents Lean's convention for integrals of
 nonintegrable functions from making the energy clause vacuous.  The uniform
-strict bound is Fefferman's condition (7). -/
+strict bound is Fefferman's condition (7).
+
+Note the deliberate norm mismatch between the two energy fields: `finite_energy`
+integrates the *inherited* sup norm `‖u t x‖²`, while `uniformly_bounded_energy`
+bounds the *Euclidean* `kineticEnergy`.  The two are interderivable only up to
+the dimension factor three
+(`Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup`), and that factor is
+attained, which is why `currentSpaceNormEuclideanNormEquivalence` stays on the
+residual list. -/
 structure IsClassicalSolution (ν : ℝ) (f : ForceField)
     (u₀ : SchwartzVelocity) (u : VelocityEvolution)
     (p : PressureEvolution) : Prop where
@@ -163,14 +185,38 @@ These are metamathematical encoding residuals, not hypotheses of
 `ProblemStatements.WholeSpaceGlobalRegularity`; consequently they cannot be used to project a proof of the
 problem endpoint. -/
 inductive ProblemEncodingResidual where
+  /-- Mathlib's `SchwartzMap` seminorm convention versus Fefferman's
+  multi-index decay wording for the initial datum. -/
   | schwartzConventionEquivalence
+  /-- `ContDiffOn` on `Ici 0 ×ˢ univ` versus the official `C^∞` on
+  `R^3 × [0,∞)`. -/
   | halfSpaceSmoothnessEquivalence
+  /-- The product sup norm inherited by `Space = Fin 3 → ℝ` versus the
+  Euclidean norm on `R^3`.
+
+  **Partially discharged, deliberately not retired.**  `kineticEnergy` now uses
+  the Euclidean density `∑ᵢ uᵢ²`, so the energy *integrand* matches the official
+  wording.  Still open in this residual: `IsClassicalSolution.finite_energy`
+  states integrability in the inherited sup norm, and the spatial-decay clauses
+  for data and force measure `x` and derivative bundles in the product norm.
+  The gap is not notational — the two norms differ at the all-ones point and the
+  dimension constant three is attained
+  (`Analysis.EnergyNormBridge.norm_sq_lt_officialEuclideanNorm_sq_witness`,
+  `Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`). -/
   | currentSpaceNormEuclideanNormEquivalence
+  /-- Total Frechet derivatives versus Fefferman's coordinatewise partial
+  derivatives in the momentum equation. -/
   | problemFrechetCoordinatePDEEquivalence
+  /-- The Bochner-integral reading of clause (7) versus the official
+  whole-space energy wording. -/
   | wholeSpaceEnergyClauseEquivalence
   deriving DecidableEq, Repr, Fintype
 
-/-- All five statement-A representation obligations remain explicitly visible. -/
+/-- All five statement-A representation obligations remain explicitly visible.
+
+`currentSpaceNormEuclideanNormEquivalence` is retained even though its
+energy-integrand clause is now discharged: a residual is removed only when every
+clause it names is closed, never when one is. -/
 def problemEncodingResiduals : Finset ProblemEncodingResidual := Finset.univ
 
 /-- The statement-A surface currently exposes exactly five representation

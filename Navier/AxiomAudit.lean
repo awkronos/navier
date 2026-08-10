@@ -371,8 +371,13 @@ These are support theorems, not inhabitants of an official problem endpoint.
 #print axioms Navier.Analysis.EnergyNormBridge.norm_sq_le_officialEuclideanNorm_sq
 #print axioms Navier.Analysis.EnergyNormBridge.officialEuclideanNorm_sq_le_three_mul_norm_sq
 #print axioms Navier.Analysis.EnergyNormBridge.integrable_norm_sq_iff_officialEuclideanNorm_sq
-#print axioms Navier.Analysis.EnergyNormBridge.kineticEnergy_le_officialKineticEnergy
-#print axioms Navier.Analysis.EnergyNormBridge.officialKineticEnergy_le_three_mul_kineticEnergy
+#print axioms Navier.Analysis.EnergyNormBridge.norm_onesPoint
+#print axioms Navier.Analysis.EnergyNormBridge.norm_sq_lt_officialEuclideanNorm_sq_witness
+#print axioms Navier.Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness
+#print axioms Navier.Analysis.EnergyNormBridge.officialKineticEnergy_eq_kineticEnergy
+#print axioms Navier.Analysis.EnergyNormBridge.supKineticEnergy_le_kineticEnergy
+#print axioms Navier.Analysis.EnergyNormBridge.kineticEnergy_le_three_mul_supKineticEnergy
+#print axioms Navier.Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup
 #print axioms Navier.Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_official
 #print axioms Navier.Analysis.EnergyOfficialClause.officialEuclideanNorm_sq_eq_sum_sq
 #print axioms Navier.Analysis.EnergyOfficialClause.officialKineticEnergy_eq_coordinateKineticEnergy
