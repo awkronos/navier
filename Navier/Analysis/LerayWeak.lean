@@ -725,6 +725,27 @@ in `Navier.Analysis.EnergyNormBridge`. -/
 def UniformKineticBound (uSeq : ℕ → VelocityEvolution) (C : ℝ) : Prop :=
   ∀ (m : ℕ) (t : ℝ), 0 ≤ t → (∫ x : Space, ‖uSeq m t x‖ ^ 2) ≤ C
 
+/-- Uniform slice bound in the **official Euclidean** energy `kineticEnergy`
+(`∫ ∑ᵢ uᵢ²`) rather than the inherited sup-norm energy of `UniformKineticBound`.
+
+**Why both predicates are needed, and why one does not reduce to the other.**
+`Space = Fin 3 → ℝ` carries the product *sup* norm, so `UniformKineticBound` and
+this predicate differ by the dimension factor `3`
+(`EnergyNormBridge.norm_sq_le_sum_sq` and
+`EnergyNormBridge.officialEuclideanNorm_sq_le_three_mul_norm_sq`).  Every
+Leray-side consumer that has to reproduce Fefferman's energy clause with its
+*exact* datum constant — `LerayLimitData.energy_le`, whose right-hand side is
+literally `∫ ∑ᵢ (u₀)ᵢ²` — therefore cannot be served by the sup-norm bound:
+routing `∫ ∑ᵢ uᵢ² ≤ 3∫‖u‖² ≤ 3C ≤ 3∫‖u₀‖² ≤ 3∫ ∑ᵢ (u₀)ᵢ²` loses a factor `3`
+and lands on a strictly weaker inequality.  The gap is closed by carrying the
+Euclidean bound as data from the finite-mode construction (where it is the
+genuine projected energy identity `‖u_m(t)‖²_{L²} ≤ ‖P_m u₀‖²_{L²} ≤
+‖u₀‖²_{L²}`, all three in the Euclidean `L²` norm) and transporting it through
+Fischer–Riesz by the same Fatou step that transports the sup-norm bound
+(`exists_limit_of_forall_windowCauchy`). -/
+def UniformOfficialKineticBound (uSeq : ℕ → VelocityEvolution) (B : ℝ) : Prop :=
+  ∀ (m : ℕ) (t : ℝ), 0 ≤ t → kineticEnergy (uSeq m) t ≤ B
+
 /-- Uniform `L²(0,T; H¹)` dissipation bound (time-integrated enstrophy;
 for divergence-free fields `‖ω‖_{L²} = ‖∇u‖_{L²}`), from `∫ ν‖∇u_m‖² ≤ ½‖u₀‖²`. -/
 def UniformEnstrophyBound (uSeq : ℕ → VelocityEvolution) (C : ℝ) : Prop :=
@@ -806,6 +827,16 @@ structure GalerkinApproximation (ν : ℝ) (u₀ : SchwartzVelocity) where
   bound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2
   /-- Uniform `L^∞_t L²_x` bound. -/
   kinetic_bounded : UniformKineticBound approx bound
+  /-- **Uniform slice bound in the official Euclidean energy, at the exact datum
+  constant.**  In the finite-mode construction this is the projected energy
+  identity read in the Euclidean `L²` norm: `‖u_m(t)‖²_{L²} ≤ ‖P_m u₀‖²_{L²} ≤
+  ‖u₀‖²_{L²}`.  It is *not* implied by `kinetic_bounded` + `bound_le`, which only
+  give the same inequality with an extra factor `3` — see
+  `UniformOfficialKineticBound`.  This is the field that makes
+  `LerayLimitData.energy_le` derivable rather than residual
+  (`galerkinLimit_energy_le`). -/
+  official_kinetic_bounded :
+    UniformOfficialKineticBound approx (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
   /-- Uniform `L²(0,T; H¹)` dissipation bound. -/
   enstrophy_bounded : UniformEnstrophyBound approx bound
   /-- Uniform time-translation equicontinuity (Simon time-regularity). -/
@@ -949,6 +980,11 @@ structure GalerkinModeData (ν : ℝ) (u₀ : SchwartzVelocity) where
   bound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2
   /-- Uniform `L^∞_t L²_x` bound. -/
   kinetic_bounded : UniformKineticBound approx bound
+  /-- Uniform slice bound in the official Euclidean energy at the exact datum
+  constant — the projected energy identity read in the Euclidean `L²` norm.  Not
+  implied by `kinetic_bounded` + `bound_le`; see `UniformOfficialKineticBound`. -/
+  official_kinetic_bounded :
+    UniformOfficialKineticBound approx (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
   /-- Uniform `L²(0,T; H¹)` dissipation bound. -/
   enstrophy_bounded : UniformEnstrophyBound approx bound
   /-- Uniform time-translation equicontinuity. -/
@@ -980,7 +1016,9 @@ theorem galerkinApproximation_of_modeData (ν : ℝ) (u₀ : SchwartzVelocity)
     (D : GalerkinModeData ν u₀) : Nonempty (GalerkinApproximation ν u₀) := by
   refine ⟨{ approx := D.approx, bound := D.bound, bound_nonneg := D.bound_nonneg,
             bound_le := D.bound_le,
-            kinetic_bounded := D.kinetic_bounded, enstrophy_bounded := D.enstrophy_bounded,
+            kinetic_bounded := D.kinetic_bounded,
+            official_kinetic_bounded := D.official_kinetic_bounded,
+            enstrophy_bounded := D.enstrophy_bounded,
             time_equicontinuous := D.time_equicontinuous,
             space_equicontinuous := D.space_equicontinuous,
             jointly_measurable := D.jointly_measurable,
@@ -1008,6 +1046,7 @@ def zeroGalerkinModeData (ν : ℝ) : GalerkinModeData ν (0 : SchwartzVelocity)
   bound_nonneg := le_rfl
   bound_le := by simp
   kinetic_bounded := by intro m t _; simp [kineticEnergy]
+  official_kinetic_bounded := by intro m t _; simp [kineticEnergy]
   enstrophy_bounded := by intro m T _; simp only [enstrophy_zero_velocity]; simp
   time_equicontinuous := by
     intro T ε hε
@@ -1740,6 +1779,24 @@ private theorem continuous_enorm_sq :
     funext y; rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
   rw [he]
   exact ENNReal.continuous_ofReal.comp (continuous_norm.pow 2)
+
+/-- The official Euclidean squared norm, read into `ℝ≥0∞`, is continuous.  This is
+the Euclidean counterpart of `continuous_enorm_sq`, and it is what lets the Fatou
+step of Fischer–Riesz transport a `kineticEnergy` bound (not merely the sup-norm
+bound) to the limit. -/
+private theorem continuous_official_ofReal_sq :
+    Continuous fun y : Space => ENNReal.ofReal (officialEuclideanNorm y ^ 2) :=
+  ENNReal.continuous_ofReal.comp
+    ((Navier.Analysis.EnergyNormBridge.continuous_officialEuclideanNorm).pow 2)
+
+/-- `kineticEnergy` written through the official Euclidean norm, so that the
+pointwise Fatou comparison can be run against a continuous function of the
+velocity vector. -/
+private theorem kineticEnergy_eq_integral_official (v : VelocityEvolution) (t : ℝ) :
+    kineticEnergy v t = ∫ x : Space, officialEuclideanNorm (v t x) ^ 2 := by
+  unfold kineticEnergy
+  exact integral_congr_ae (Filter.Eventually.of_forall fun x =>
+    (Navier.Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_sum_sq (v t x)).symm)
 
 private theorem ofReal_quarter_pow (N : ℕ) :
     ENNReal.ofReal (((4:ℝ)⁻¹) ^ N) = (((2:ℝ≥0∞)⁻¹) ^ N) ^ 2 := by
@@ -2519,11 +2576,13 @@ theorem exists_limit_of_forall_windowCauchy
     (hkin : UniformKineticBound vSeq C)
     (hmeas : JointlyMeasurable vSeq)
     (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖vSeq m t x‖ ^ 2))
-    (hcauchy : ∀ n : ℕ, WindowCauchy vSeq n id) :
+    (hcauchy : ∀ n : ℕ, WindowCauchy vSeq n id)
+    (B : ℝ) (hB : 0 ≤ B) (hofficial : UniformOfficialKineticBound vSeq B) :
     ∃ u : VelocityEvolution,
       Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
       (∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ C) ∧
+      (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ B) ∧
       (∀ n : ℕ, Filter.Tendsto (fun k => windowError (vSeq k) u n) Filter.atTop (nhds 0)) := by
   classical
   have hbnd : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → (∫ x : Space, ‖vSeq m t x‖ ^ 2) ≤ C :=
@@ -2614,7 +2673,59 @@ theorem exists_limit_of_forall_windowCauchy
     calc (∫⁻ x : Space, ‖u t x‖ₑ ^ 2).toReal ≤ (ENNReal.ofReal C).toReal :=
           ENNReal.toReal_mono ENNReal.ofReal_ne_top (hFatou t ht)
       _ = C := ENNReal.toReal_ofReal hC
-  refine ⟨u, humeas, huint, hukin, ?_⟩
+  -- (B') the *same* Fatou step run against the official Euclidean density, which
+  -- transports the exact-constant `kineticEnergy` bound to the limit.  Off the
+  -- convergence set `S` the limit is `0`, so the pointwise comparison is trivial
+  -- there; on `S` it is continuity of `y ↦ ofReal (officialEuclideanNorm y ^ 2)`.
+  have hofficialLimit : ∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ B := by
+    intro t ht
+    have hmeasOff : ∀ j : ℕ,
+        Measurable fun x : Space => ENNReal.ofReal (officialEuclideanNorm (vSeq (φ j) t x) ^ 2) :=
+      fun j => continuous_official_ofReal_sq.measurable.comp
+        ((hmeas (φ j)).comp measurable_prodMk_left)
+    have hintOff : ∀ j : ℕ,
+        Integrable fun x : Space => officialEuclideanNorm (vSeq (φ j) t x) ^ 2 := by
+      intro j
+      exact (Navier.Analysis.EnergyNormBridge.integrable_norm_sq_iff_officialEuclideanNorm_sq
+        (vSeq (φ j) t)
+        (((hmeas (φ j)).comp measurable_prodMk_left).aestronglyMeasurable)).1 (hint (φ j) t ht)
+    have huintOff : Integrable fun x : Space => officialEuclideanNorm (u t x) ^ 2 :=
+      (Navier.Analysis.EnergyNormBridge.integrable_norm_sq_iff_officialEuclideanNorm_sq
+        (u t) (hslicemeas t).aestronglyMeasurable).1 (huint t ht)
+    have hpt : ∀ x : Space, ENNReal.ofReal (officialEuclideanNorm (u t x) ^ 2)
+        ≤ atTop.liminf
+            (fun j => ENNReal.ofReal (officialEuclideanNorm (vSeq (φ j) t x) ^ 2)) := by
+      intro x
+      by_cases hx : (t, x) ∈ S
+      · have h1 : Tendsto (fun j => g j (t, x)) atTop (𝓝 (u t x)) := hutend (t, x) hx
+        have h2 : Tendsto
+            (fun j => ENNReal.ofReal (officialEuclideanNorm (vSeq (φ j) t x) ^ 2)) atTop
+            (𝓝 (ENNReal.ofReal (officialEuclideanNorm (u t x) ^ 2))) :=
+          (continuous_official_ofReal_sq.tendsto _).comp h1
+        rw [h2.liminf_eq]
+      · rw [huzero (t, x) hx]
+        simp [officialEuclideanNorm, officialEuclideanPoint]
+    have hFatouOff : ENNReal.ofReal (∫ x : Space, officialEuclideanNorm (u t x) ^ 2)
+        ≤ ENNReal.ofReal B := by
+      rw [ofReal_integral_eq_lintegral_ofReal huintOff
+        (Filter.Eventually.of_forall fun x => by positivity)]
+      calc ∫⁻ x : Space, ENNReal.ofReal (officialEuclideanNorm (u t x) ^ 2)
+          ≤ ∫⁻ x : Space, atTop.liminf
+              (fun j => ENNReal.ofReal (officialEuclideanNorm (vSeq (φ j) t x) ^ 2)) :=
+            lintegral_mono hpt
+        _ ≤ atTop.liminf (fun j => ∫⁻ x : Space,
+              ENNReal.ofReal (officialEuclideanNorm (vSeq (φ j) t x) ^ 2)) :=
+            lintegral_liminf_le hmeasOff
+        _ ≤ ENNReal.ofReal B := by
+            refine Filter.liminf_le_of_frequently_le' (Filter.Frequently.of_forall fun j => ?_)
+            rw [← ofReal_integral_eq_lintegral_ofReal (hintOff j)
+              (Filter.Eventually.of_forall fun x => by positivity)]
+            refine ENNReal.ofReal_le_ofReal ?_
+            rw [← kineticEnergy_eq_integral_official (vSeq (φ j)) t]
+            exact hofficial (φ j) t ht
+    rw [kineticEnergy_eq_integral_official u t]
+    exact (ENNReal.ofReal_le_ofReal_iff hB).mp hFatouOff
+  refine ⟨u, humeas, huint, hukin, hofficialLimit, ?_⟩
 
   -- (C) almost-everywhere convergence of the fast subsequence on each window
   have hae : ∀ n : ℕ, ∀ᵐ z ∂((volume.prod volume).restrict (winQ n)), z ∈ S := by
@@ -2783,11 +2894,13 @@ theorem aubin_lions_l2loc_compactness
     (hkin : UniformKineticBound uSeq C) (_hens : UniformEnstrophyBound uSeq C)
     (htime : TimeEquicontinuous uSeq) (hspace : SpaceEquicontinuous uSeq)
     (hmeas : JointlyMeasurable uSeq)
-    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2)) :
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (B : ℝ) (hB : 0 ≤ B) (hofficial : UniformOfficialKineticBound uSeq B) :
     ∃ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ ∧
       Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
       (∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ C) ∧
+      (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ B) ∧
       StrongL2LocLimit (fun k => uSeq (σ k)) u := by
   obtain ⟨σ, hσ, hσC⟩ := exists_subseq_forall_windowCauchy uSeq
     fun n τ hτ => exists_subseq_windowCauchy uSeq C hC hkin htime hspace hmeas hint n τ hτ
@@ -2795,10 +2908,12 @@ theorem aubin_lions_l2loc_compactness
   have hint' : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
       Integrable (fun x : Space => ‖uSeq (σ m) t x‖ ^ 2) := fun m t ht => hint (σ m) t ht
   have hkin' : UniformKineticBound (fun k => uSeq (σ k)) C := fun m t ht => hkin (σ m) t ht
-  obtain ⟨u, humeas, huint, hukin, huwin⟩ :=
+  have hoff' : UniformOfficialKineticBound (fun k => uSeq (σ k)) B :=
+    fun m t ht => hofficial (σ m) t ht
+  obtain ⟨u, humeas, huint, hukin, huoff, huwin⟩ :=
     exists_limit_of_forall_windowCauchy (fun k => uSeq (σ k)) C hC hkin' hmeas' hint'
-      fun n => hσC n
-  refine ⟨u, σ, hσ, humeas, huint, hukin,
+      (fun n => hσC n) B hB hoff'
+  refine ⟨u, σ, hσ, humeas, huint, hukin, huoff,
     strongL2LocLimit_of_natWindows (fun k => uSeq (σ k)) u C hmeas' humeas hint' huint
       hkin' hukin huwin⟩
 
@@ -2954,6 +3069,93 @@ def zeroLerayLimitData (ν : ℝ) : LerayLimitData ν (0 : SchwartzVelocity) whe
     intro φ
     simp [weakPairingDensity, officialInner_zero_left]
 
+/-- **The datum energy in Fefferman's Euclidean form is nonnegative.**  The
+right-hand side of `LerayLimitData.energy_le`, needed as the constant fed to the
+compactness step. -/
+theorem datumOfficialEnergy_nonneg (u₀ : SchwartzVelocity) :
+    0 ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2 :=
+  integral_nonneg fun x => by positivity
+
+/-- **[CERTIFIED — audit item (0) of `exists_lerayLimitData`, discharged.]**  From
+a Galerkin approximation, the compactness step produces a strong `L²_loc` limit
+that is jointly measurable, slicewise square-integrable, and satisfies the Leray
+energy inequality **at the exact datum constant**
+`kineticEnergy u t ≤ ∫ ∑ᵢ (u₀)ᵢ²` — Fefferman's Euclidean energy clause, not a
+constant-degraded surrogate.
+
+**What was actually missing, and what fixed it.**  An earlier revision of the
+`exists_lerayLimitData` docstring recorded item (0) as "add `bound_le : bound ≤
+∫ ‖u₀‖²` to the two Galerkin structures, then `energy_le` is immediate".  Both
+halves of that were wrong.  `bound_le` was already present, and
+`aubin_lions_l2loc_compactness` already re-exported the kinetic conjunct — yet
+`energy_le` still did not follow, because `UniformKineticBound` and `bound_le`
+both live in the inherited **sup** norm on `Space = Fin 3 → ℝ` while
+`kineticEnergy` is the **Euclidean** `∫ ∑ᵢ uᵢ²`.  Routing the sup bound through
+`EnergyNormBridge` gives `kineticEnergy u t ≤ 3 ∫ ∑ᵢ (u₀)ᵢ²`: the dimension
+factor `3` is irreducible on that hypothesis bundle, and no amount of extra
+sup-norm bookkeeping removes it.  The repair is therefore to carry the Euclidean
+bound as data — `GalerkinApproximation.official_kinetic_bounded`, true with the
+exact constant in the finite-mode construction — and to transport it through
+Fischer–Riesz by the same Fatou step that transports the sup-norm bound
+(the `hofficialLimit` block of `exists_limit_of_forall_windowCauchy`).
+
+With this theorem, `LerayLimitData.sq_integrable`, `datum_sq_integrable` and
+`energy_le` are all discharged for the compactness limit, and the residue of
+`exists_lerayLimitData` is exactly the three weak-form clauses — which is what
+`exists_lerayLimitData_of_weakClauses` below makes formal. -/
+theorem exists_galerkinLimit_energy_le (ν : ℝ) (u₀ : SchwartzVelocity)
+    (G : GalerkinApproximation ν u₀) :
+    ∃ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ ∧
+      Measurable (fun z : ℝ × Space => u z.1 z.2) ∧
+      (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
+      (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2) ∧
+      StrongL2LocLimit (fun k => G.approx (σ k)) u := by
+  obtain ⟨u, σ, hσ, humeas, huint, _hukin, huoff, hlim⟩ :=
+    aubin_lions_l2loc_compactness G.approx G.bound G.bound_nonneg G.kinetic_bounded
+      G.enstrophy_bounded G.time_equicontinuous G.space_equicontinuous
+      G.jointly_measurable G.sq_integrable
+      (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2) (datumOfficialEnergy_nonneg u₀)
+      G.official_kinetic_bounded
+  exact ⟨u, σ, hσ, humeas, huint, huoff, hlim⟩
+
+/-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once the
+three *pairing-side* clauses are supplied for some compactness limit of the
+Galerkin sequence, `LerayLimitData` follows: the energy-side clauses
+`sq_integrable`, `datum_sq_integrable` and `energy_le` are discharged here from
+`exists_galerkinLimit_energy_le` and `integrable_norm_sq_schwartz`.
+
+So the residual below no longer contains any energy or integrability
+bookkeeping: what is left of it is exactly items (a)–(d) of its docstring, the
+weak-form passage.  The hypothesis is stated over the compactness *output*
+rather than over a bare `u` so that a closer may use the strong `L²_loc`
+convergence, which is the whole point of the compactness step for the quadratic
+convection term.  `datum_pairing_integrable` is kept in the hypothesis bundle
+rather than claimed here: it is a Schwartz–Cauchy–Schwarz estimate on the test
+factors, independent of the limit, and it is not banked. -/
+theorem exists_lerayLimitData_of_weakClauses (ν : ℝ) (u₀ : SchwartzVelocity)
+    (G : GalerkinApproximation ν u₀)
+    (hdatum : ∀ φ : DivergenceFreeTestFunction,
+      Integrable (fun x : Space => weakPairingDensity ν (fun _ y => u₀ y) φ 0 x))
+    (hweak : ∀ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ →
+      Measurable (fun z : ℝ × Space => u z.1 z.2) →
+      (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) →
+      StrongL2LocLimit (fun k => G.approx (σ k)) u →
+      (∀ (φ : DivergenceFreeTestFunction) (t : ℝ), 0 < t →
+          Integrable (fun x : Space => weakPairingDensity ν u φ t x)) ∧
+        (∀ φ : DivergenceFreeTestFunction,
+          (∫ t in Set.Ici (0:ℝ), ∫ x : Space, weakPairingDensity ν u φ t x) =
+            -(∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)))) :
+    Nonempty (LerayLimitData ν u₀) := by
+  obtain ⟨u, σ, hσ, humeas, huint, huoff, hlim⟩ := exists_galerkinLimit_energy_le ν u₀ G
+  obtain ⟨hpair, hform⟩ := hweak u σ hσ humeas huint hlim
+  exact ⟨{ limit := u
+           sq_integrable := fun t ht => huint t ht.le
+           datum_sq_integrable := integrable_norm_sq_schwartz u₀
+           energy_le := fun t ht => huoff t ht.le
+           pairing_integrable := hpair
+           datum_pairing_integrable := hdatum
+           weak_form := hform }⟩
+
 /-- **[NAMED RESIDUAL — Galerkin limit passage; Leray, Acta Math. 63 (1934)
 §§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a
 Galerkin approximation, `aubin_lions_l2loc_compactness` (invoked on the
@@ -2972,23 +3174,29 @@ the single instant `t = 0` would be a strictly stronger — and false-for-the-
 constructed-object — demand.  The `t = 0` bookkeeping is now carried by the
 certified `isLerayHopfWeakSolution_patchInitial`.
 
-**Audit findings: one structural gap plus the itemized analytic residue.**
-(0) *`energy_le` is NOT derivable from the packaged bundle.*  The compactness
-route bounds the limit by the bundle's constant: `kineticEnergy u t ≤ G.bound`
-(`exists_limit_of_forall_windowCauchy` proves exactly this, though
-`aubin_lions_l2loc_compactness` does not re-export the conjunct — strengthen its
-conclusion or call the internal steps directly).  But `energy_le` demands the
-*exact* datum constant `∫ ‖u₀‖²`, and no field of `GalerkinApproximation`
-relates `bound` to `u₀`: `initial_converges` pins only the `t = 0` slices, and
-nothing records energy monotonicity of the approximants.  Repair (one line each):
-add `bound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2` to `GalerkinApproximation` and to
-`GalerkinModeData` — true with equality in the finite-mode construction
-(`bound = ‖u₀‖²_{L²}`), true in `zeroGalerkinModeData` (`0 ≤ 0`), carried
-verbatim by `galerkinApproximation_of_modeData`.  With (0) in place,
-`sq_integrable`, `datum_sq_integrable` (`integrable_norm_sq_schwartz`),
-`energy_le` and `pairing_integrable` (Cauchy–Schwarz against the Schwartz test
-factors) are immediate from the compactness output.  The genuine residue is
-`weak_form`: (a) spacetime Cauchy–Schwarz on windows `(0,T₀] ×ˢ B̄(0,R)`, with
+**Audit item (0) is now CLOSED, and its earlier diagnosis was wrong twice
+over.**  That item read: "`energy_le` is not derivable; repair by adding
+`bound_le : bound ≤ ∫ ‖u₀‖²` to the two Galerkin structures, and strengthen
+`aubin_lions_l2loc_compactness`, which does not re-export the kinetic
+conjunct."  Both premises were false when written: `bound_le` was already a
+field of `GalerkinApproximation` and `GalerkinModeData`, and
+`aubin_lions_l2loc_compactness` already re-exported `∫‖u t‖² ≤ C`.  And the
+prescription would not have worked anyway: `UniformKineticBound` and `bound_le`
+are stated in the inherited **sup** norm of `Space = Fin 3 → ℝ`, whereas
+`kineticEnergy` is the **Euclidean** `∫ ∑ᵢ uᵢ²`, so that route delivers only
+`kineticEnergy u t ≤ 3 ∫ ∑ᵢ (u₀)ᵢ²` — the dimension factor `3` from
+`EnergyNormBridge` is irreducible on a sup-norm bundle, and `energy_le` demands
+the exact constant.  The actual repair, now in place, is the Euclidean bound
+carried as data (`official_kinetic_bounded`, true at the exact constant in the
+finite-mode construction) and transported through Fischer–Riesz by the same
+Fatou step as the sup-norm bound.  `energy_le`, `sq_integrable` and
+`datum_sq_integrable` are consequently **discharged** —
+`exists_galerkinLimit_energy_le` and `exists_lerayLimitData_of_weakClauses`
+(both CERTIFIED, immediately above) reduce this residual to the pairing-side
+clauses alone.  The genuine residue is
+`weak_form`, together with `pairing_integrable`/`datum_pairing_integrable`
+(Cauchy–Schwarz against the Schwartz test factors, not banked):
+(a) spacetime Cauchy–Schwarz on windows `(0,T₀] ×ˢ B̄(0,R)`, with
 `T₀` from `φ.compact_time`; (b) uniform-in-`m` spatial tails
 `∫_{|x|>R} ‖u_m‖²·ψ ≤ C·sup_{|x|>R} ψ → 0` for each bounded Schwartz test factor
 `ψ` — mathlib's `SchwartzMap.decay` gives the decay, the uniform kinetic bound
