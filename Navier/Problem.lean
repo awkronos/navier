@@ -198,38 +198,6 @@ inductive ProblemEncodingResidual where
   /-- `ContDiffOn` on `Ici 0 ×ˢ univ` versus the official `C^∞` on
   `R^3 × [0,∞)`. -/
   | halfSpaceSmoothnessEquivalence
-  /-- The product sup norm inherited by `Space = Fin 3 → ℝ` versus the
-  Euclidean norm on `R^3`.
-
-  **No clause of this surface is open in this residual any more, and neither is
-  any statement built from them.**  `WholeSpaceGlobalRegularity` is provably the
-  same proposition as its fully Euclidean form
-  (`Analysis.ForceNormBridge.wholeSpaceGlobalRegularity_iff_official`, via
-  `isClassicalSolution_iff_official`, whose slice measurability comes from
-  `velocity_smooth` rather than from a new hypothesis), and so are Fefferman's
-  alternatives C and D
-  (`Analysis.ForceNormBridge.wholeSpaceBreakdown_iff_official`,
-  `Analysis.ForceNormBridge.periodicBreakdown_iff_official`).  Underneath: the
-  energy integrand is Euclidean by definition, the energy pair transports by
-  `Analysis.EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_official`, the
-  Schwartz datum decay clause in all three of its norms by
-  `Analysis.EnergyNormBridge.feffermanRapidDecayBound_iff_fullyEuclidean`, and
-  the force clauses of `Navier.OfficialProblem` by
-  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
-  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`.
-
-  Two things survive, and they are all that this residual now asserts.  First,
-  no *definition* on this surface has been restated in Euclidean form: the
-  transports above compare a project definition with an official one, they do
-  not replace it, so reading `IsClassicalSolution` still means reading the
-  inherited norm.  Second, the identifications are of *classes*: each moves an
-  existentially quantified constant through a power of `√3`, and none can be
-  made an identity, because the two norms differ at the all-ones point and the
-  dimension constant three is attained
-  (`Analysis.EnergyNormBridge.norm_sq_lt_officialEuclideanNorm_sq_witness`,
-  `Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`).
-  A consumer needing a bound with a named constant still pays that factor. -/
-  | currentSpaceNormEuclideanNormEquivalence
   /-- Total Frechet derivatives versus Fefferman's coordinatewise partial
   derivatives in the momentum equation. -/
   | problemFrechetCoordinatePDEEquivalence
@@ -238,20 +206,14 @@ inductive ProblemEncodingResidual where
   | wholeSpaceEnergyClauseEquivalence
   deriving DecidableEq, Repr, Fintype
 
-/-- All five statement-A representation obligations remain explicitly visible.
-
-`currentSpaceNormEuclideanNormEquivalence` is retained even though every clause
-it names is transported and every statement built from them is provably
-norm-independent.  What remains is that no definition here has been *restated*
-in Euclidean form, and that each identification is class-level rather than
-quantitative because of the attained factor-`3` loss.  A residual is removed
-only when nothing it names is open in any sense, never merely when its clause
-list has been worked through. -/
+/-- The four remaining statement-A representation obligations.  The inherited
+and Euclidean norm forms have been transported through every consumer, including
+the force alternatives, so the former norm residual is retired. -/
 def problemEncodingResiduals : Finset ProblemEncodingResidual := Finset.univ
 
 /-- The statement-A surface currently exposes exactly five representation
 bridges, independently of its separate analytic existence frontier. -/
-theorem problemEncodingResiduals_card : problemEncodingResiduals.card = 5 := by
+theorem problemEncodingResiduals_card : problemEncodingResiduals.card = 4 := by
   decide
 
 namespace ProblemStatements
@@ -265,7 +227,7 @@ incompressible, and have uniformly bounded finite kinetic energy.
 
 This is the repository's scientific-frontier surface.  It is a proposition,
 not a theorem and not a conclusion hidden in a payload or proof-program
-argument.  The five `ProblemEncodingResidual` bridges above must close before
+argument.  The four `ProblemEncodingResidual` bridges above must close before
 this surface may be identified with the official textual conventions without
 qualification. -/
 def WholeSpaceGlobalRegularity : Prop :=

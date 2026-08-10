@@ -119,38 +119,12 @@ inductive OfficialSurfaceEncodingResidual where
   | schwartzDatumCoordinatewiseEquivalence
   | forceFrechetCoordinatewiseEquivalence
   | halfSpaceSmoothnessEquivalence
-  /-- The product sup norm inherited by `Space` versus the Euclidean norm on
-  `R^3`.
-
-  This residual used to be *strictly wider* here than its `Navier.Problem`
-  namesake, because the force-decay predicates above weight by `‖x‖` and measure
-  `iteratedFDerivWithin` bundles in the inherited operator norm, and alternatives
-  B and D carry no energy clause whose Euclidean form could stand in.  Both force
-  predicates are now transported in every norm they use — weight, bundle value,
-  and spacetime argument slots — by
-  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
-  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`, and the
-  substitution provably leaves alternatives C and D unchanged
-  (`Analysis.ForceNormBridge.wholeSpaceBreakdown_iff_official`,
-  `Analysis.ForceNormBridge.periodicBreakdown_iff_official`).  Fefferman's text
-  fixes no norm on spacetime slots, so those transports quantify over every
-  compatible slot measurement and
-  `Analysis.ForceNormBridge.slotNorm_irrelevant` shows the class does not depend
-  on the choice.
-
-  So this residual is no longer wider than the `Navier.Problem` one, and it is
-  retained for the same reason: each transport moves an existentially quantified
-  constant through a power of `√3`, a factor the witnesses in
-  `Analysis.EnergyNormBridge` show is attained, so the identification is
-  class-level and not quantitative. -/
-  | currentSpaceNormEuclideanNormEquivalence
   | problemFrechetCoordinatePDEEquivalence
   | wholeSpaceEnergyClauseEquivalence
   | periodicLiftQuotientEquivalence
   deriving DecidableEq, Repr, Fintype
 
-/-- All seven alternative-surface representation obligations remain explicitly
-visible; none has been retired. -/
+/-- The six remaining alternative-surface representation obligations. -/
 def officialSurfaceEncodingResiduals : Finset OfficialSurfaceEncodingResidual :=
   Finset.univ
 
@@ -159,7 +133,7 @@ the statement-A-only list in `Navier.Problem` (the coordinatewise force clause
 and the periodic quotient lift).  Stated so that a silent retirement of any
 alternative-side residual breaks the build. -/
 theorem officialSurfaceEncodingResiduals_card :
-    officialSurfaceEncodingResiduals.card = 7 := by
+    officialSurfaceEncodingResiduals.card = 6 := by
   decide
 
 namespace ProblemStatements

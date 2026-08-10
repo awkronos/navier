@@ -10,19 +10,13 @@ surface.  The map is planning data: it does not assert that arbitrary proofs of
 the listed nodes compose to `ProblemStatements.WholeSpaceGlobalRegularity`, and it intentionally defines no
 proof-program argument whose result is the problem endpoint.
 
-The five statement-A representation residuals from `Problem.lean` occur as
+The four remaining statement-A representation residuals from `Problem.lean` occur as
 explicit frontier nodes.  The global analytic obstruction remains the
 critical-control/global-continuation branch.
 
-Node count is unchanged by the successive discharges of `currentSpaceNormBridge`
-clauses — the Euclidean energy density, the energy transport, the decay weight,
-the decay derivative bundle, the force side, and now statement A itself.  What
-that node still names has shrunk accordingly, and is recorded on the node: it is
-no longer any clause of the surface, only the fact that the surface's own
-definitions are written in the inherited norm.  The node stays in
-`dependencies .statementA` because this map reports a bridge as closed when
-nothing it names is open in any sense, not when its clause list has been worked
-through.
+The Euclidean energy density, energy transport, decay weight, decay derivative
+bundle, force side, and statement-A consumer are now connected by certified
+transports, so the former norm bridge is retired from this map.
 -/
 
 set_option autoImplicit false
@@ -33,30 +27,6 @@ namespace Navier.Frontier
 inductive FrontierNode where
   | schwartzConventionBridge
   | halfSpaceSmoothnessBridge
-  /-- The sup-norm/Euclidean-norm bridge, now reduced to its narrowest form.
-
-  **All three official surfaces are provably norm-independent propositions.**
-  Statement A by
-  `Analysis.ForceNormBridge.wholeSpaceGlobalRegularity_iff_official`, and
-  Fefferman's alternatives C and D by
-  `Analysis.ForceNormBridge.wholeSpaceBreakdown_iff_official` and
-  `Analysis.ForceNormBridge.periodicBreakdown_iff_official`.  Every clause
-  underneath them is transported too: the energy pair by
-  `Analysis.EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_official`, the
-  data decay clause in all three of its norms by
-  `Analysis.EnergyNormBridge.feffermanRapidDecayBound_iff_fullyEuclidean`, and
-  both force decay predicates by
-  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
-  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`.
-
-  What remains is not a clause and not an estimate: no *definition* on this
-  surface has been restated in Euclidean form — `IsClassicalSolution` still
-  writes its integrability field in the norm `Space` inherits — and any
-  identification with a named constant, as opposed to membership in an
-  existentially bounded class, still pays the attained factor `√3`.  A leaf on
-  that ground alone.  See
-  `ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence`. -/
-  | currentSpaceNormBridge
   | frechetCoordinatePDEBridge
   | wholeSpaceEnergyBridge
   | localClassicalExistence
@@ -72,7 +42,6 @@ been proved. -/
 def dependencies : FrontierNode → Finset FrontierNode
   | .schwartzConventionBridge => ∅
   | .halfSpaceSmoothnessBridge => ∅
-  | .currentSpaceNormBridge => ∅
   | .frechetCoordinatePDEBridge => ∅
   | .wholeSpaceEnergyBridge => ∅
   | .localClassicalExistence => ∅
@@ -83,7 +52,7 @@ def dependencies : FrontierNode → Finset FrontierNode
         .aPrioriCriticalControl }
   | .statementA =>
       { .schwartzConventionBridge, .halfSpaceSmoothnessBridge,
-        .currentSpaceNormBridge, .frechetCoordinatePDEBridge,
+        .frechetCoordinatePDEBridge,
         .wholeSpaceEnergyBridge, .globalContinuation }
 
 /-- A rank used only to certify that the finite dependency graph points
@@ -91,7 +60,6 @@ strictly downward. -/
 def rank : FrontierNode → Nat
   | .schwartzConventionBridge => 0
   | .halfSpaceSmoothnessBridge => 0
-  | .currentSpaceNormBridge => 0
   | .frechetCoordinatePDEBridge => 0
   | .wholeSpaceEnergyBridge => 0
   | .localClassicalExistence => 0
@@ -111,9 +79,7 @@ theorem dependency_rank_decreases {parent child : FrontierNode}
       decide
     · subst child
       decide
-  · rcases h with h | h | h | h | h | h
-    · subst child
-      decide
+  · rcases h with h | h | h | h | h
     · subst child
       decide
     · subst child
@@ -135,14 +101,13 @@ theorem not_mem_own_dependencies (node : FrontierNode) :
 def nodes : Finset FrontierNode := Finset.univ
 
 /-- This overview currently has ten explicitly named nodes. -/
-theorem nodes_card : nodes.card = 10 := by
+theorem nodes_card : nodes.card = 9 := by
   decide
 
 /-- Embed each problem-encoding residual into the finite frontier. -/
 def nodeForEncodingResidual : ProblemEncodingResidual → FrontierNode
   | .schwartzConventionEquivalence => .schwartzConventionBridge
   | .halfSpaceSmoothnessEquivalence => .halfSpaceSmoothnessBridge
-  | .currentSpaceNormEuclideanNormEquivalence => .currentSpaceNormBridge
   | .problemFrechetCoordinatePDEEquivalence => .frechetCoordinatePDEBridge
   | .wholeSpaceEnergyClauseEquivalence => .wholeSpaceEnergyBridge
 
@@ -155,7 +120,7 @@ theorem encodingResidual_is_tracked (residual : ProblemEncodingResidual) :
 theorem wholeSpaceGlobalRegularity_dependencies :
     dependencies .statementA =
       { .schwartzConventionBridge, .halfSpaceSmoothnessBridge,
-        .currentSpaceNormBridge, .frechetCoordinatePDEBridge,
+        .frechetCoordinatePDEBridge,
         .wholeSpaceEnergyBridge, .globalContinuation } := rfl
 
 end Navier.Frontier

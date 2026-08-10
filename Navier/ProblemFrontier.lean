@@ -35,12 +35,12 @@ def wholeSpaceGlobalRegularityDisposition : ScientificDisposition WholeSpaceGlob
 def wholeSpaceGlobalRegularityFrontier : Finset Frontier.FrontierNode :=
   Frontier.dependencies .statementA
 
-/-- The frontier keeps all five statement-A encoding comparisons and the
+/-- The frontier keeps the four remaining statement-A encoding comparisons and the
 analytic global-continuation branch visible. -/
 theorem wholeSpaceGlobalRegularityFrontier_eq :
     wholeSpaceGlobalRegularityFrontier =
       { .schwartzConventionBridge, .halfSpaceSmoothnessBridge,
-        .currentSpaceNormBridge, .frechetCoordinatePDEBridge,
+        .frechetCoordinatePDEBridge,
         .wholeSpaceEnergyBridge, .globalContinuation } :=
   Frontier.wholeSpaceGlobalRegularity_dependencies
 
