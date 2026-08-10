@@ -1,12 +1,14 @@
 import Navier.Analysis.OfficialABEncoding
 
 /-!
-# Inherited sup-norm versus Euclidean kinetic energy
+# Inherited sup-norm versus Euclidean norm: energy and derivative bundles
 
 `Navier.Space = Fin 3 → ℝ` inherits Mathlib's finite-product **supremum** norm,
-whereas Fefferman's clause (7) uses the **Euclidean** norm on `R^3`.  This file
-carries that single pointwise discrepancy up to integrability and to the
-uniform energy bound.
+whereas Fefferman's clauses use the **Euclidean** norm on `R^3`.  This file
+carries that single pointwise discrepancy up to integrability, to the uniform
+energy bound, and — in the final section — to the operator norm of derivative
+bundles, which is the last clause the
+`currentSpaceNormEuclideanNormEquivalence` residual named.
 
 ## What changed, and why most of this file was rewritten
 
@@ -33,8 +35,9 @@ but **asymmetric in the constant**: `supKineticEnergy ≤ kineticEnergy ≤
 (`officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`), so it cannot be
 improved.  The strictness witness
 (`norm_sq_lt_officialEuclideanNorm_sq_witness`) machine-checks that the two
-norms really do differ, i.e. that the `currentSpaceNormEuclideanNormEquivalence`
-encoding residual disclosed in `Navier.Problem` is **live rather than vacuous**.
+norms really do differ, so none of the constants below is proof slack: each
+transport is stated *with* its constant, rather than as an identity, precisely
+because the pointwise gap is attained.
 
 Nothing here proves an energy identity or any a priori estimate.  The remaining
 representation step is to derive the slice measurability used below from the
@@ -245,5 +248,195 @@ theorem uniformlyBoundedEnergy_iff_sup
     exact lt_of_le_of_lt
       (supKineticEnergy_le_kineticEnergy u t (hmeas t ht) (hint t ht))
       (hbound t ht)
+
+/-! ### Beyond energy: the derivative-bundle operator norm
+
+With the energy clauses transported above, and the *spatial weight* `‖x‖ ^ k` of
+the data decay clause transported by
+`OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight`, the clause the
+`currentSpaceNormEuclideanNormEquivalence` residual still named for the data was
+the **derivative bundle** itself: `‖iteratedFDeriv ℝ n f x‖` is the operator norm
+induced by the inherited sup norm on the `n` argument slots *and* on the value,
+so fixing the weight alone does not make it Fefferman's quantity.
+
+The residual clause is about *measurement*, not about which map is
+differentiated, so everything below compares two norms of one fixed continuous
+multilinear map.  Stating it at that level — rather than for `iteratedFDeriv`
+specifically — is deliberate: the value-half lemma applies verbatim to the
+`iteratedFDerivWithin` spacetime bundles of the force clauses in
+`Navier.OfficialProblem`.
+
+The comparison costs `√3` on the value and a further `√3 ^ n` on the `n`
+argument slots.  Both factors are the single attained pointwise factor of
+`officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`, so neither is slack.
+
+**Not closed here:** the force decay clauses of `Navier.OfficialProblem`.  They
+differentiate on `ℝ × Space`, so their argument slots carry the product norm of
+`ℝ` with the sup norm on `Space`, and their weight `(1 + ‖x‖ + t) ^ K` still
+measures `x` in the sup norm.  Only the value half of those bundles is covered
+below; the slot half is entangled with the separate
+`problemFrechetCoordinatePDEEquivalence` residual (Fefferman's force clause is
+written in coordinate partial derivatives, not total Fréchet bundles), and no
+consumer in `Navier.OfficialProblem` is rewired by this file.
+-/
+
+/-- **Value half of the bundle comparison, for arbitrary argument types.**
+Measuring the value of a continuous multilinear map in Fefferman's Euclidean
+norm instead of the inherited sup norm costs one factor `√3`; the argument slots
+are untouched.  Stated for an arbitrary index type and arbitrary slot spaces so
+that it applies to the spacetime bundles `iteratedFDerivWithin ℝ n (fun
+z : ℝ × Space => f z.1 z.2)` of the official force clauses, not just to the
+`Space`-slot bundles of the data clause. -/
+theorem officialEuclideanNorm_apply_le_sqrt_three_mul_opNorm
+    {ι : Type*} [Fintype ι] {E : ι → Type*}
+    [∀ i, NormedAddCommGroup (E i)] [∀ i, NormedSpace ℝ (E i)]
+    (L : ContinuousMultilinearMap ℝ E Space) (v : ∀ i, E i) :
+    officialEuclideanNorm (L v) ≤ Real.sqrt 3 * ‖L‖ * ∏ i, ‖v i‖ := by
+  calc
+    officialEuclideanNorm (L v) ≤ Real.sqrt 3 * ‖L v‖ :=
+      officialEuclideanNorm_le (L v)
+    _ ≤ Real.sqrt 3 * (‖L‖ * ∏ i, ‖v i‖) :=
+      mul_le_mul_of_nonneg_left (L.le_opNorm v) (Real.sqrt_nonneg 3)
+    _ = Real.sqrt 3 * ‖L‖ * ∏ i, ‖v i‖ := by ring
+
+/-- Fefferman's fully Euclidean multilinear bound for a rank-`n` derivative
+bundle on `Space`: the constant `C` controls the **Euclidean** norm of the value
+against the product of the **Euclidean** norms of the arguments.  This is the
+quantity Fefferman's decay clauses bound; `‖L‖` is the quantity the project's
+clauses bound. -/
+def EuclideanBundleBound {n : ℕ}
+    (L : ContinuousMultilinearMap ℝ (fun _ : Fin n => Space) Space) (C : ℝ) :
+    Prop :=
+  ∀ v : Fin n → Space,
+    officialEuclideanNorm (L v) ≤ C * ∏ i : Fin n, officialEuclideanNorm (v i)
+
+/-- The inherited operator norm supplies a fully Euclidean bundle bound at the
+cost of a single factor `√3`, independently of the rank `n`: enlarging the
+argument norms only weakens the required conclusion. -/
+theorem euclideanBundleBound_sqrt_three_mul_opNorm {n : ℕ}
+    (L : ContinuousMultilinearMap ℝ (fun _ : Fin n => Space) Space) :
+    EuclideanBundleBound L (Real.sqrt 3 * ‖L‖) := by
+  intro v
+  have hprod : (∏ i : Fin n, ‖v i‖) ≤ ∏ i : Fin n, officialEuclideanNorm (v i) :=
+    Finset.prod_le_prod (fun i _ => norm_nonneg (v i))
+      (fun i _ => norm_le_officialEuclideanNorm (v i))
+  refine (officialEuclideanNorm_apply_le_sqrt_three_mul_opNorm L v).trans ?_
+  exact mul_le_mul_of_nonneg_left hprod
+    (mul_nonneg (Real.sqrt_nonneg 3) (norm_nonneg L))
+
+/-- Conversely a fully Euclidean bundle bound controls the inherited operator
+norm, now at the rank-dependent cost `√3 ^ n`: each of the `n` argument slots
+must be shrunk from the Euclidean norm back to the sup norm. -/
+theorem opNorm_le_of_euclideanBundleBound {n : ℕ}
+    {L : ContinuousMultilinearMap ℝ (fun _ : Fin n => Space) Space} {C : ℝ}
+    (hC : 0 ≤ C) (h : EuclideanBundleBound L C) :
+    ‖L‖ ≤ Real.sqrt 3 ^ n * C := by
+  refine ContinuousMultilinearMap.opNorm_le_bound
+    (mul_nonneg (pow_nonneg (Real.sqrt_nonneg 3) n) hC) fun v => ?_
+  have hstep : (∏ i : Fin n, officialEuclideanNorm (v i)) ≤
+      Real.sqrt 3 ^ n * ∏ i : Fin n, ‖v i‖ := by
+    refine (Finset.prod_le_prod
+      (fun i _ => officialEuclideanNorm_nonneg (v i))
+      (fun i _ => officialEuclideanNorm_le (v i))).trans_eq ?_
+    rw [Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ,
+      Fintype.card_fin]
+  calc
+    ‖L v‖ ≤ officialEuclideanNorm (L v) := norm_le_officialEuclideanNorm (L v)
+    _ ≤ C * ∏ i : Fin n, officialEuclideanNorm (v i) := h v
+    _ ≤ C * (Real.sqrt 3 ^ n * ∏ i : Fin n, ‖v i‖) :=
+      mul_le_mul_of_nonneg_left hstep hC
+    _ = Real.sqrt 3 ^ n * C * ∏ i : Fin n, ‖v i‖ := by ring
+
+/-- Fefferman's clause-(4) rapid decay with **every** norm Euclidean: the
+spatial weight, the derivative-bundle arguments, and the bundle value.
+
+Compare `OfficialABEncoding.FeffermanEuclideanWeightRapidDecayBound`, which
+fixes only the weight and still measures the bundle in the operator norm
+inherited from the sup norm.  That predicate discharged the `x`-half of the
+decay clause of the norm residual; this one discharges the bundle half. -/
+def FeffermanFullyEuclideanRapidDecayBound (f : Space → Space) : Prop :=
+  ∀ (k n : ℕ), ∃ C : ℝ, 0 ≤ C ∧ ∀ (x : Space) (v : Fin n → Space),
+    officialEuclideanNorm x ^ k *
+        officialEuclideanNorm (iteratedFDeriv ℝ n f x v) ≤
+      C * ∏ i : Fin n, officialEuclideanNorm (v i)
+
+/-- **The bundle clause of the norm residual, discharged.**  Replacing the
+inherited sup norm by the Euclidean norm in *all three* places the decay clause
+uses it — spatial weight, derivative-bundle arguments, bundle value — does not
+change the rapid-decay class.
+
+Neither direction is free: the forward one spends `√3 ^ (k + 1)` (one factor per
+weight power, one on the value) and the backward one spends `√3 ^ n` (one per
+argument slot).  The constants are invisible in the statement only because the
+clause quantifies existentially over `C`; a consumer needing a pinned constant
+must not route through here. -/
+theorem feffermanRapidDecayBound_iff_fullyEuclidean (f : Space → Space) :
+    Navier.ConventionBridges.FeffermanRapidDecayBound f ↔
+      FeffermanFullyEuclideanRapidDecayBound f := by
+  constructor
+  · intro h k n
+    obtain ⟨C, hC, hbound⟩ := h k n
+    refine ⟨Real.sqrt 3 ^ (k + 1) * C,
+      mul_nonneg (pow_nonneg (Real.sqrt_nonneg 3) _) hC, ?_⟩
+    intro x v
+    have hprod : (0 : ℝ) ≤ ∏ i : Fin n, officialEuclideanNorm (v i) :=
+      Finset.prod_nonneg fun i _ => officialEuclideanNorm_nonneg (v i)
+    have hweight : officialEuclideanNorm x ^ k ≤ Real.sqrt 3 ^ k * ‖x‖ ^ k := by
+      rw [← mul_pow]
+      exact pow_le_pow_left₀ (officialEuclideanNorm_nonneg x)
+        (officialEuclideanNorm_le x) k
+    calc
+      officialEuclideanNorm x ^ k *
+            officialEuclideanNorm (iteratedFDeriv ℝ n f x v)
+          ≤ (Real.sqrt 3 ^ k * ‖x‖ ^ k) *
+              (Real.sqrt 3 * ‖iteratedFDeriv ℝ n f x‖ *
+                ∏ i : Fin n, officialEuclideanNorm (v i)) :=
+        mul_le_mul hweight
+          (euclideanBundleBound_sqrt_three_mul_opNorm (iteratedFDeriv ℝ n f x) v)
+          (officialEuclideanNorm_nonneg _)
+          (mul_nonneg (pow_nonneg (Real.sqrt_nonneg 3) k)
+            (pow_nonneg (norm_nonneg x) k))
+      _ = Real.sqrt 3 ^ (k + 1) * (‖x‖ ^ k * ‖iteratedFDeriv ℝ n f x‖) *
+              ∏ i : Fin n, officialEuclideanNorm (v i) := by ring
+      _ ≤ Real.sqrt 3 ^ (k + 1) * C *
+              ∏ i : Fin n, officialEuclideanNorm (v i) :=
+        mul_le_mul_of_nonneg_right
+          (mul_le_mul_of_nonneg_left (hbound x)
+            (pow_nonneg (Real.sqrt_nonneg 3) _))
+          hprod
+  · intro h k n
+    obtain ⟨C, hC, hbound⟩ := h k n
+    refine ⟨Real.sqrt 3 ^ n * C,
+      mul_nonneg (pow_nonneg (Real.sqrt_nonneg 3) n) hC, ?_⟩
+    intro x
+    -- Absorb the spatial weight into the bundle, then apply the converse half of
+    -- the bundle comparison to the weighted bundle.
+    have hsmul : ∀ (c : ℝ) (y : Space),
+        officialEuclideanNorm (c • y) = |c| * officialEuclideanNorm y := by
+      intro c y
+      simp [officialEuclideanNorm, officialEuclideanPoint, norm_smul,
+        Real.norm_eq_abs]
+    have hweighted :
+        EuclideanBundleBound ((‖x‖ ^ k : ℝ) • iteratedFDeriv ℝ n f x) C := by
+      intro v
+      rw [ContinuousMultilinearMap.smul_apply, hsmul,
+        abs_of_nonneg (pow_nonneg (norm_nonneg x) k)]
+      refine le_trans (mul_le_mul_of_nonneg_right
+        (pow_le_pow_left₀ (norm_nonneg x) (norm_le_officialEuclideanNorm x) k)
+        (officialEuclideanNorm_nonneg _)) ?_
+      exact hbound x v
+    have key := opNorm_le_of_euclideanBundleBound hC hweighted
+    rwa [norm_smul, Real.norm_eq_abs,
+      abs_of_nonneg (pow_nonneg (norm_nonneg x) k)] at key
+
+/-- Every Mathlib Schwartz field on `ℝ³` satisfies Fefferman's decay clause with
+the spatial weight, the derivative-bundle arguments, and the bundle value all
+measured in the Euclidean norm.  This is the clause-(4) consumer of
+`feffermanRapidDecayBound_iff_fullyEuclidean`. -/
+theorem schwartzmap_satisfies_fullyEuclidean_rapidDecay
+    (s : SchwartzMap Space Space) :
+    FeffermanFullyEuclideanRapidDecayBound s.toFun :=
+  (feffermanRapidDecayBound_iff_fullyEuclidean s.toFun).1
+    (Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay s)
 
 end Navier.Analysis.EnergyNormBridge

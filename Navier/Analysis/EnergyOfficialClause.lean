@@ -241,7 +241,7 @@ theorem IsClassicalSolution.supWholeSpaceEnergyClause
     (sol : IsClassicalSolution ν f u₀ u p) :
     SupWholeSpaceEnergyClause u :=
   (supWholeSpaceEnergyClause_iff_official u
-    (fun t ht =>
+    (fun _t ht =>
       Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.velocity_slice_aestronglyMeasurable
         sol ht)).2
     (Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause
