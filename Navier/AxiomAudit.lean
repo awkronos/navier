@@ -287,6 +287,7 @@ finite-frontier facts.
 #print axioms Navier.Analysis.ForceMultiIndexConvention.wholeSpaceCoordinatewise_bound_orderedMultiIndex
 #print axioms Navier.Analysis.ForceMultiIndexConvention.periodicCoordinatewise_bound_orderedMultiIndex
 #print axioms Navier.Analysis.TypedCoordinateEndpoints.wholeSpaceBreakdownAtViscosityOne_iff_typedCoordinate
+#print axioms Navier.Analysis.TypedCoordinateEndpoints.periodicBreakdownAtViscosityOne_iff_typedCoordinate
 
 #print axioms Navier.Routes.R7.dot_lerayNumerator
 #print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero

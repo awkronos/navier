@@ -18,4 +18,26 @@ theorem wholeSpaceBreakdownAtViscosityOne_iff_typedCoordinate :
     exact ⟨u₀, hu₀, f, (forcedDataRapidDecay_iff_typedCoordinatewise f).1 hf, hno⟩
   · rintro ⟨u₀, hu₀, f, hf, hno⟩
     exact ⟨u₀, hu₀, f, (forcedDataRapidDecay_iff_typedCoordinatewise f).2 hf, hno⟩
+
+def PeriodicTypedCoordinateBreakdownAtViscosityOne : Prop :=
+  ∃ u₀ : VelocityField, PeriodicInitialDatum u₀ ∧
+    ∃ f : ForceField,
+      (SpatiallyPeriodicForce f ∧ SmoothForceOnNonnegativeTime f ∧
+        PeriodicCoordinatewiseForceDecay f) ∧
+      ¬ ∃ (u : VelocityEvolution) (p : PressureEvolution),
+        IsPeriodicClassicalSolution 1 f u₀ u p
+
+/-- Alternative D has the same exact interface replacement: periodic force
+admissibility is expressed by its periodicity, smoothness, and typed-coordinate
+decay fields, with the nonexistence witness unchanged. -/
+theorem periodicBreakdownAtViscosityOne_iff_typedCoordinate :
+    PeriodicBreakdownAtViscosityOne ↔
+      PeriodicTypedCoordinateBreakdownAtViscosityOne := by
+  constructor
+  · rintro ⟨u₀, hu₀, f, hf, hno⟩
+    exact ⟨u₀, hu₀, f,
+      (periodicForcedDataRapidDecay_iff_typedCoordinatewise f).1 hf, hno⟩
+  · rintro ⟨u₀, hu₀, f, hf, hno⟩
+    exact ⟨u₀, hu₀, f,
+      (periodicForcedDataRapidDecay_iff_typedCoordinatewise f).2 hf, hno⟩
 end Navier.Analysis.TypedCoordinateEndpoints
