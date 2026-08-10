@@ -36,9 +36,12 @@ def SmoothForceOnNonnegativeTime (f : ForceField) : Prop :=
 (5): all mixed spacetime derivatives decay faster than every polynomial in
 space and nonnegative time.
 
-The bridge from total Frechet derivatives and the current norm on `Space` to
-Fefferman's coordinatewise multi-index/Euclidean-norm wording remains an
-explicit semantic residual; no equivalence is claimed here. -/
+The norm half of the bridge to Fefferman's wording is discharged by
+`Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official`, which restates this
+predicate with the weight, the bundle value, and the spacetime argument slots all
+measured Fefferman's way.  The total-Frechet versus coordinatewise multi-index
+half remains an explicit semantic residual; no equivalence is claimed for it
+here. -/
 def ForcedDataRapidDecay (f : ForceField) : Prop :=
   SmoothForceOnNonnegativeTime f ∧
     ∀ (n K : ℕ), ∃ C : ℝ, 0 ≤ C ∧
@@ -80,8 +83,11 @@ def PeriodicInitialDatum (u₀ : VelocityField) : Prop :=
 `C∞` half-space regularity, and rapid decay in nonnegative time uniformly in
 space for every mixed derivative order.
 
-As for `ForcedDataRapidDecay`, the total-Frechet versus coordinatewise bridge
-is retained as a semantic residual rather than asserted. -/
+As for `ForcedDataRapidDecay`, the norm half of the bridge is discharged by
+`Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official` — cheaply on
+the weight side, since `(1 + t) ^ K` involves no spatial norm — while the
+total-Frechet versus coordinatewise bridge is retained as a semantic residual
+rather than asserted. -/
 def PeriodicForcedDataRapidDecay (f : ForceField) : Prop :=
   SpatiallyPeriodicForce f ∧
     SmoothForceOnNonnegativeTime f ∧
@@ -116,13 +122,27 @@ inductive OfficialSurfaceEncodingResidual where
   /-- The product sup norm inherited by `Space` versus the Euclidean norm on
   `R^3`.
 
-  This residual is *strictly wider* here than its `Navier.Problem` namesake.
-  Making `Navier.kineticEnergy` Euclidean discharged the whole-space energy
-  integrand, but alternatives B and D carry no energy clause at all, and the
-  force-decay predicates `ForcedDataRapidDecay` and
-  `PeriodicForcedDataRapidDecay` above still weight by `‖x‖` and measure
-  `iteratedFDerivWithin` bundles in the inherited operator norm.  So nothing in
-  this file's norm residual has been closed. -/
+  This residual used to be *strictly wider* here than its `Navier.Problem`
+  namesake, because the force-decay predicates above weight by `‖x‖` and measure
+  `iteratedFDerivWithin` bundles in the inherited operator norm, and alternatives
+  B and D carry no energy clause whose Euclidean form could stand in.  Both force
+  predicates are now transported in every norm they use — weight, bundle value,
+  and spacetime argument slots — by
+  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
+  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`, and the
+  substitution provably leaves alternatives C and D unchanged
+  (`Analysis.ForceNormBridge.wholeSpaceBreakdown_iff_official`,
+  `Analysis.ForceNormBridge.periodicBreakdown_iff_official`).  Fefferman's text
+  fixes no norm on spacetime slots, so those transports quantify over every
+  compatible slot measurement and
+  `Analysis.ForceNormBridge.slotNorm_irrelevant` shows the class does not depend
+  on the choice.
+
+  So this residual is no longer wider than the `Navier.Problem` one, and it is
+  retained for the same reason: each transport moves an existentially quantified
+  constant through a power of `√3`, a factor the witnesses in
+  `Analysis.EnergyNormBridge` show is attained, so the identification is
+  class-level and not quantitative. -/
   | currentSpaceNormEuclideanNormEquivalence
   | problemFrechetCoordinatePDEEquivalence
   | wholeSpaceEnergyClauseEquivalence

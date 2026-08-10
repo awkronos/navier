@@ -16,10 +16,11 @@ critical-control/global-continuation branch.
 
 Node count is unchanged by the successive discharges of `currentSpaceNormBridge`
 clauses — the Euclidean energy density, the energy transport, the decay weight,
-and now the decay derivative bundle.  Partially discharged bridges stay in
-`dependencies .statementA`, so this map never reports a bridge as closed while
-any of its clauses is open; what `currentSpaceNormBridge` still has open is the
-*force* side of the decay clauses, not the whole-space data side.
+the decay derivative bundle, and now the force side.  Every clause that node
+named is transported, but the node stays in `dependencies .statementA`: this map
+reports a bridge as closed only when the identification is unconditional, and
+each norm transport still moves an existentially quantified constant through an
+attained power of `√3`.
 -/
 
 set_option autoImplicit false
@@ -30,27 +31,28 @@ namespace Navier.Frontier
 inductive FrontierNode where
   | schwartzConventionBridge
   | halfSpaceSmoothnessBridge
-  /-- The sup-norm/Euclidean-norm bridge.  Still a leaf, but the clauses this
-  node named for the whole-space *data* are now all transported: the energy
-  integrand is Euclidean (`Navier.kineticEnergy`), the
-  `IsClassicalSolution.finite_energy` integrability and the uniform bound
-  transport by
+  /-- The sup-norm/Euclidean-norm bridge.  Still a leaf, but every clause this
+  node named is now transported.  Whole-space data: the energy integrand is
+  Euclidean (`Navier.kineticEnergy`), the `IsClassicalSolution.finite_energy`
+  integrability and the uniform bound transport by
   `Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause`
   and `Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup`, the decay
   clause's spatial weight by
   `Analysis.OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight`, and
   its derivative bundle by
-  `Analysis.EnergyNormBridge.feffermanRapidDecayBound_iff_fullyEuclidean`.
+  `Analysis.EnergyNormBridge.feffermanRapidDecayBound_iff_fullyEuclidean`.  Force
+  side: both decay predicates of `Navier.OfficialProblem` transport in weight,
+  bundle value, and spacetime argument slots by
+  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
+  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`, and
+  alternatives C and D are provably unchanged by the substitution.
 
-  What keeps the node open is the *force* decay clauses of
-  `Navier.OfficialProblem`.  Their `iteratedFDerivWithin` bundles differentiate
-  on `ℝ × Space`, so both their spacetime weight `(1 + ‖x‖ + t) ^ K` and their
-  argument slots are still in the inherited product norm; only the bundle value
-  is covered
-  (`Analysis.EnergyNormBridge.officialEuclideanNorm_apply_le_sqrt_three_mul_opNorm`),
-  and no consumer there is rewired.  The two norms still provably differ, so none
-  of the transport constants is slack.  See
-  `ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence`. -/
+  What keeps the node open is no longer any single clause but the *kind* of
+  identification available.  Every transport carries an existentially quantified
+  constant through a power of `√3`, the two norms provably differ, and the
+  dimension factor three is attained, so no clause of the surface is identified
+  with Fefferman's quantitatively and none has been restated in Euclidean form.
+  See `ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence`. -/
   | currentSpaceNormBridge
   | frechetCoordinatePDEBridge
   | wholeSpaceEnergyBridge

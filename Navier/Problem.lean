@@ -120,13 +120,14 @@ factor `½`.
 Choosing the Euclidean density here discharges *one clause* of the
 `currentSpaceNormEuclideanNormEquivalence` residual below — the energy integrand
 itself, which previously used the sup norm inherited by `Fin 3 → ℝ`.  It does
-**not** close that residual, which remains listed: `finite_energy` below still
-asserts integrability of the *inherited sup norm* `‖u t x‖²`, and the Schwartz
-and force-decay clauses (here and in `Navier.OfficialProblem`) still measure `x`
-and derivative bundles in the product norm.  The two norms provably differ
-(`Analysis.EnergyNormBridge.norm_sq_lt_officialEuclideanNorm_sq_witness`) and the
-dimension constant relating them is attained, so the remaining gap is real
-rather than notational. -/
+**not** close that residual, which remains listed.  `finite_energy` below still
+*states* integrability of the inherited sup norm `‖u t x‖²`, and the Schwartz and
+force-decay clauses (here and in `Navier.OfficialProblem`) still state their
+weights and derivative bundles in the product norm; each is now provably
+equivalent to its Euclidean form, but at a constant.  The two norms provably
+differ (`Analysis.EnergyNormBridge.norm_sq_lt_officialEuclideanNorm_sq_witness`)
+and the dimension constant relating them is attained, so the remaining gap is
+real rather than notational. -/
 def kineticEnergy (u : VelocityEvolution) (t : ℝ) : ℝ :=
   ∫ x : Space, ∑ i : Fin 3, (u t x i) ^ 2
 
@@ -194,15 +195,33 @@ inductive ProblemEncodingResidual where
   /-- The product sup norm inherited by `Space = Fin 3 → ℝ` versus the
   Euclidean norm on `R^3`.
 
-  **Partially discharged, deliberately not retired.**  `kineticEnergy` now uses
-  the Euclidean density `∑ᵢ uᵢ²`, so the energy *integrand* matches the official
-  wording.  Still open in this residual: `IsClassicalSolution.finite_energy`
-  states integrability in the inherited sup norm, and the spatial-decay clauses
-  for data and force measure `x` and derivative bundles in the product norm.
-  The gap is not notational — the two norms differ at the all-ones point and the
-  dimension constant three is attained
+  **Every clause this residual named is now transported; what survives is
+  quantitative, and it is not removable.**
+
+  Transported: the energy integrand (`kineticEnergy` is the Euclidean density
+  `∑ᵢ uᵢ²`); `IsClassicalSolution.finite_energy` together with
+  `uniformly_bounded_energy`, by
+  `Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause`
+  (slice measurability is derived from `velocity_smooth`, not assumed); the
+  Schwartz datum decay clause in all three of its norms, by
+  `Analysis.EnergyNormBridge.feffermanRapidDecayBound_iff_fullyEuclidean`; and
+  the force clauses of `Navier.OfficialProblem`, by
+  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
+  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`.
+  Statement A itself carries `zeroForce`, so the force clauses bear on the
+  alternative surfaces rather than on this list.
+
+  Not retired, and the reason is precise.  Each transport is an equivalence of
+  *classes*, obtained by moving an existentially quantified constant through a
+  power of `√3`.  No transport is an identity, and none can be made one: the two
+  norms differ at the all-ones point and the dimension constant three is
+  attained
   (`Analysis.EnergyNormBridge.norm_sq_lt_officialEuclideanNorm_sq_witness`,
-  `Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`). -/
+  `Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`).
+  So any *quantitative* identification of a clause of this surface with
+  Fefferman's — a bound with a named constant, as opposed to membership in a
+  bounded class — still pays that factor, and no definition on this surface has
+  been restated in Euclidean form. -/
   | currentSpaceNormEuclideanNormEquivalence
   /-- Total Frechet derivatives versus Fefferman's coordinatewise partial
   derivatives in the momentum equation. -/
@@ -214,9 +233,11 @@ inductive ProblemEncodingResidual where
 
 /-- All five statement-A representation obligations remain explicitly visible.
 
-`currentSpaceNormEuclideanNormEquivalence` is retained even though its
-energy-integrand clause is now discharged: a residual is removed only when every
-clause it names is closed, never when one is. -/
+`currentSpaceNormEuclideanNormEquivalence` is retained even though every clause
+it names is now transported: what remains is the attained factor-`3` constant
+loss carried by each transport, so the identification is class-level rather than
+quantitative.  A residual is removed only when nothing it names is open in any
+sense, never merely when its clause list has been worked through. -/
 def problemEncodingResiduals : Finset ProblemEncodingResidual := Finset.univ
 
 /-- The statement-A surface currently exposes exactly five representation

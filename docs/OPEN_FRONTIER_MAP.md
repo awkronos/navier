@@ -33,15 +33,32 @@ The inherited Pi-norm (supremum) energy is **not** related exactly: it is
 two-sided but lossy, `supKineticEnergy ≤ kineticEnergy ≤ 3 * supKineticEnergy`,
 and the constant three is attained pointwise
 (`EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`).  So
-the whole-space kinetic-energy *integrand* mismatch is closed, while the
-sup-norm side of `currentSpaceNormEuclideanNormEquivalence` stays open — the
-`finite_energy` field and the spatial-decay clauses still use the product norm.
-None of this generates an energy estimate or a solution.
+the whole-space kinetic-energy *integrand* mismatch is closed exactly, while
+every other clause of `currentSpaceNormEuclideanNormEquivalence` is closed only
+up to that attained constant.
+
+Those other clauses are now all transported.  The `finite_energy` field goes
+across with the uniform bound, using measurability derived from smoothness rather
+than assumed; the Schwartz datum decay clause goes across in its weight, its
+bundle value, and its argument slots; and the two force decay predicates of
+`OfficialProblem.lean` go across in weight, bundle value, and spacetime argument
+slots, which leaves Fefferman's alternatives C and D provably unchanged.  Since
+Fefferman fixes no norm on spacetime derivative slots, the force transports
+quantify over every slot measurement pinched between the inherited norm and `√3`
+times it, and the resulting class is independent of that choice.
+
+What keeps the residual listed is therefore not a missing clause but the kind of
+identification available: every transport moves an existentially quantified
+constant through a power of `√3`, so the surface matches Fefferman's clause
+*classes* without matching any of them quantitatively, and no definition has been
+restated in Euclidean form.  None of this generates an energy estimate, an a
+priori bound, or a solution.
 
 Key files:
 
 - [`EnergyNormBridge.lean`](../Navier/Analysis/EnergyNormBridge.lean)
 - [`EnergyOfficialClause.lean`](../Navier/Analysis/EnergyOfficialClause.lean)
+- [`ForceNormBridge.lean`](../Navier/Analysis/ForceNormBridge.lean)
 
 ### Frequencywise local-theory algebra
 

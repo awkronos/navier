@@ -14,6 +14,7 @@ import Navier.Analysis.CKNIntegralScaling
 import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyOfficialClause
+import Navier.Analysis.ForceNormBridge
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.FrequencyHeatLeray
 import Navier.Analysis.FrequencyDuhamel

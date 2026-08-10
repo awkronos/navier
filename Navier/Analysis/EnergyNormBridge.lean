@@ -270,14 +270,12 @@ The comparison costs `√3` on the value and a further `√3 ^ n` on the `n`
 argument slots.  Both factors are the single attained pointwise factor of
 `officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`, so neither is slack.
 
-**Not closed here:** the force decay clauses of `Navier.OfficialProblem`.  They
-differentiate on `ℝ × Space`, so their argument slots carry the product norm of
-`ℝ` with the sup norm on `Space`, and their weight `(1 + ‖x‖ + t) ^ K` still
-measures `x` in the sup norm.  Only the value half of those bundles is covered
-below; the slot half is entangled with the separate
-`problemFrechetCoordinatePDEEquivalence` residual (Fefferman's force clause is
-written in coordinate partial derivatives, not total Fréchet bundles), and no
-consumer in `Navier.OfficialProblem` is rewired by this file.
+**Not closed here, but closed downstream:** the force decay clauses of
+`Navier.OfficialProblem`.  They differentiate on `ℝ × Space`, so their argument
+slots carry the product norm of `ℝ` with the sup norm on `Space`, and their
+weight `(1 + ‖x‖ + t) ^ K` still measures `x` in the sup norm.  Only the value
+half of those bundles is covered below — `Analysis.ForceNormBridge` reuses that
+value half, adds the weight and slot halves, and rewires alternatives C and D.
 -/
 
 /-- **Value half of the bundle comparison, for arbitrary argument types.**
