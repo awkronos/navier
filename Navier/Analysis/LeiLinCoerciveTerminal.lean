@@ -490,6 +490,21 @@ theorem criticalMildTerminalNormBound_of_mixed
   exact hbound.trans
     (mul_le_mul_of_nonneg_left hqty (coerciveConstant_pos hν).le)
 
+/-- A mixed terminal control closes the bounded-chain continuity consumer once
+the initial datum lies in its induced coercive radius. -/
+theorem continuous_bounded_global_mild_on_nonneg_of_mixedTerminalBound
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach) (K : ℝ)
+    (hK : 0 ≤ K) (ha : ‖a‖ ≤ coerciveConstant ν * K)
+    (hmixed : CriticalMildMixedTerminalBound ν hν a K) :
+    Continuous (fun t : Set.Ici (0 : ℝ) =>
+      (boundedCoherentChain ν hν a (coerciveConstant ν * K)
+        (mul_nonneg (coerciveConstant_pos hν).le hK) ha
+        (criticalMildTerminalNormBound_of_mixed ν hν a K hK hmixed)).totalExtension t.1) :=
+  continuous_bounded_global_mild_on_nonneg_of_terminalNormBound
+    ν hν a (coerciveConstant ν * K)
+    (mul_nonneg (coerciveConstant_pos hν).le hK) ha
+    (criticalMildTerminalNormBound_of_mixed ν hν a K hK hmixed)
+
 end Navier.Analysis.LeiLinCoerciveTerminal
 
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_eq_normX0_add_normX1
@@ -499,3 +514,4 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX0_add_normX1_le_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_weightedLattice_le_of_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.continuous_bounded_global_mild_on_nonneg_of_mixedTerminalBound
