@@ -1,4 +1,5 @@
 import Navier.Analysis.ViscosityTransport
+import Navier.Analysis.EnergyOfficialClause
 
 /-!
 # Admissibility and solution-contract transport across viscosity
@@ -132,6 +133,22 @@ theorem uniformEnergy_viscosityScaled
   exact mul_lt_mul_of_pos_left
     (hbound (a * t) (mul_nonneg ha.le ht)) (sq_pos_of_pos ha)
 
+/-- The same exact `a^2` scaling law read in **Fefferman's Euclidean energy**
+rather than in the project `kineticEnergy`.
+
+No dimension constant appears: the scaling is exact in the official norm because
+`officialKineticEnergy` and `kineticEnergy` are equal
+(`EnergyNormBridge.officialKineticEnergy_eq_kineticEnergy`), the viscosity scaling
+being a codomain dilation that the Euclidean norm respects exactly. -/
+theorem officialKineticEnergy_viscosityScaled
+    (a : ℝ) (ha : 0 < a) (u : VelocityEvolution) (t : ℝ) :
+    Navier.Analysis.EnergyNormBridge.officialKineticEnergy
+        (viscosityScaledVelocity a u) t =
+      a ^ 2 * Navier.Analysis.EnergyNormBridge.officialKineticEnergy u (a * t) := by
+  rw [Navier.Analysis.EnergyNormBridge.officialKineticEnergy_eq_kineticEnergy,
+    Navier.Analysis.EnergyNormBridge.officialKineticEnergy_eq_kineticEnergy,
+    kineticEnergy_viscosityScaled a ha]
+
 /-- Complete periodic classical solutions transport from viscosity `mu` to
 viscosity `a * mu`. -/
 theorem isPeriodicClassicalSolution_viscosityScaled_mul
@@ -174,6 +191,34 @@ theorem isClassicalSolution_viscosityScaled_mul
       (h.finite_energy (a * t) (mul_nonneg ha.le ht))
   uniformly_bounded_energy :=
     uniformEnergy_viscosityScaled a ha u h.uniformly_bounded_energy
+
+/-- The viscosity-scaled solution satisfies **Fefferman's** whole-space
+finite/uniform Euclidean energy clause, not merely the project energy fields.
+
+This is the honest end of the viscosity-transport chain: rather than restating the
+mixed-norm fields of `IsClassicalSolution`, it composes the transported solution
+with `EnergyOfficialClause`, so the conclusion is the official clause (7)
+verbatim. -/
+theorem officialWholeSpaceEnergyClause_viscosityScaled
+    (a : ℝ) (ha : 0 < a) (mu : ℝ) (f : ForceField)
+    (u₀ : SchwartzVelocity) (u : VelocityEvolution) (p : PressureEvolution)
+    (h : IsClassicalSolution mu f u₀ u p) :
+    Navier.Analysis.EnergyOfficialClause.OfficialWholeSpaceEnergyClause
+      (viscosityScaledVelocity a u) :=
+  Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause
+    (isClassicalSolution_viscosityScaled_mul a ha mu f u₀ u p h)
+
+/-- The same transported solution also satisfies the **fully sup-normed** energy
+clause, which differs from the official one by the sharp dimension factor `3`
+(`EnergyOfficialClause.supWholeSpaceEnergyClause_iff_official`). -/
+theorem supWholeSpaceEnergyClause_viscosityScaled
+    (a : ℝ) (ha : 0 < a) (mu : ℝ) (f : ForceField)
+    (u₀ : SchwartzVelocity) (u : VelocityEvolution) (p : PressureEvolution)
+    (h : IsClassicalSolution mu f u₀ u p) :
+    Navier.Analysis.EnergyOfficialClause.SupWholeSpaceEnergyClause
+      (viscosityScaledVelocity a u) :=
+  Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.supWholeSpaceEnergyClause
+    (isClassicalSolution_viscosityScaled_mul a ha mu f u₀ u p h)
 
 /-- Viscosity-one periodic solutions transport to every positive
 viscosity. -/

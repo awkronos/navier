@@ -16,9 +16,11 @@ provably **equal** (`officialKineticEnergy_eq_kineticEnergy`), and the former
 `kineticEnergy_le_officialKineticEnergy` / `officialKineticEnergy_le_three_mul_
 kineticEnergy` / `uniformlyBoundedEnergy_iff_official` trio degenerated into
 `X ≤ X`, `X ≤ 3X` and `P ↔ P` — inequalities whose analytic-looking measurability
-and integrability hypotheses did no work.  Those two inequalities are deleted in
-favour of the equality; the `iff` is retained only as a transport shim for its
-existing call site and is documented as trivial.
+and integrability hypotheses did no work.  All three are now deleted in favour of
+the equality: an inequality, or an `iff`, between two provably equal quantities
+carries no information, and keeping one as a "transport shim" only disguises the
+identity as an analytic step.  Consumers rewrite with
+`officialKineticEnergy_eq_kineticEnergy` directly.
 
 ## Where the genuine content now lives
 
@@ -243,26 +245,5 @@ theorem uniformlyBoundedEnergy_iff_sup
     exact lt_of_le_of_lt
       (supKineticEnergy_le_kineticEnergy u t (hmeas t ht) (hint t ht))
       (hbound t ht)
-
-/-- Transport of the uniform energy bound between `kineticEnergy` and
-`officialKineticEnergy`.
-
-**This equivalence is trivial and is retained only as a compatibility shim for
-`EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_official`.**  By
-`officialKineticEnergy_eq_kineticEnergy` the two sides are the same proposition;
-the measurability and integrability arguments are ignored, and are kept solely
-so the existing call site continues to typecheck.  New code should use the
-equality directly, and should use `uniformlyBoundedEnergy_iff_sup` for the
-comparison that carries actual content. -/
-theorem uniformlyBoundedEnergy_iff_official
-    (u : VelocityEvolution)
-    (_hmeas : ∀ t : ℝ, 0 ≤ t → AEStronglyMeasurable (u t))
-    (_hint : ∀ t : ℝ, 0 ≤ t →
-      Integrable (fun x => ‖u t x‖ ^ 2)) :
-    (∃ E : ℝ, 0 < E ∧
-      ∀ t : ℝ, 0 ≤ t → kineticEnergy u t < E) ↔
-      ∃ E : ℝ, 0 < E ∧
-        ∀ t : ℝ, 0 ≤ t → officialKineticEnergy u t < E := by
-  simp only [officialKineticEnergy_eq_kineticEnergy]
 
 end Navier.Analysis.EnergyNormBridge

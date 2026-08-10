@@ -221,6 +221,9 @@ finite-frontier facts.
 #print axioms Navier.Analysis.ViscosityAdmissibility.isPeriodicClassicalSolution_viscosityScaled_mul
 #print axioms Navier.Analysis.ViscosityAdmissibility.isClassicalSolution_viscosityScaled_mul
 #print axioms Navier.Analysis.ViscosityAdmissibility.kineticEnergy_viscosityScaled
+#print axioms Navier.Analysis.ViscosityAdmissibility.officialKineticEnergy_viscosityScaled
+#print axioms Navier.Analysis.ViscosityAdmissibility.officialWholeSpaceEnergyClause_viscosityScaled
+#print axioms Navier.Analysis.ViscosityAdmissibility.supWholeSpaceEnergyClause_viscosityScaled
 #print axioms Navier.Analysis.ViscosityAdmissibility.forcedDataRapidDecay_zeroForce
 #print axioms Navier.Analysis.ViscosityAdmissibility.periodicForcedDataRapidDecay_zeroForce
 
@@ -378,15 +381,18 @@ These are support theorems, not inhabitants of an official problem endpoint.
 #print axioms Navier.Analysis.EnergyNormBridge.supKineticEnergy_le_kineticEnergy
 #print axioms Navier.Analysis.EnergyNormBridge.kineticEnergy_le_three_mul_supKineticEnergy
 #print axioms Navier.Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup
-#print axioms Navier.Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_official
 #print axioms Navier.Analysis.EnergyOfficialClause.officialEuclideanNorm_sq_eq_sum_sq
 #print axioms Navier.Analysis.EnergyOfficialClause.officialKineticEnergy_eq_coordinateKineticEnergy
 #print axioms Navier.Analysis.EnergyOfficialClause.officialWholeSpaceEnergyClause_iff_coordinate
+#print axioms Navier.Analysis.EnergyOfficialClause.uniformBound_current_eq_official
 #print axioms Navier.Analysis.EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_official
+#print axioms Navier.Analysis.EnergyOfficialClause.supWholeSpaceEnergyClause_iff_official
+#print axioms Navier.Analysis.EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_sup
 #print axioms Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.velocity_slice_continuous
 #print axioms Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.velocity_slice_aestronglyMeasurable
 #print axioms Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause
 #print axioms Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.coordinateWholeSpaceEnergyClause
+#print axioms Navier.Analysis.EnergyOfficialClause.IsClassicalSolution.supWholeSpaceEnergyClause
 #print axioms Navier.Analysis.FrequencyHeatLeray.frequencyHeatLeray_apply
 #print axioms Navier.Analysis.FrequencyHeatLeray.frequencyHeatLeray_zero_time
 #print axioms Navier.Analysis.FrequencyHeatLeray.frequencyHeatLeray_zero_frequency
