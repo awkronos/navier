@@ -1,5 +1,6 @@
 import Navier.OfficialProblem
 import Navier.Analysis.EnergyNormBridge
+import Navier.Analysis.EnergyOfficialClause
 
 /-!
 # The force clauses in Fefferman's Euclidean norms
@@ -44,7 +45,11 @@ Closed: both force decay predicates are **equivalent** to fully Euclidean
 forms (`forcedDataRapidDecay_iff_official`,
 `periodicForcedDataRapidDecay_iff_official`), and Fefferman's alternatives C and
 D are unchanged when the Euclidean force predicate is substituted
-(`wholeSpaceBreakdown_iff_official`, `periodicBreakdown_iff_official`).  Every
+(`wholeSpaceBreakdown_iff_official`, `periodicBreakdown_iff_official`).  The
+final section does the same for statement A, whose only inherited-norm
+measurement is the integrability half of `IsClassicalSolution.finite_energy`
+(`wholeSpaceGlobalRegularity_iff_official`), so all three official surfaces are
+now provably norm-independent propositions.  Every
 constant is exhibited: `√3 ^ (K + 1)` forward, `√3 ^ n` backward, each a power
 of the single attained pointwise factor of
 `EnergyNormBridge.officialEuclideanNorm_sq_eq_three_mul_norm_sq_witness`, so
@@ -415,5 +420,114 @@ theorem periodicBreakdown_iff_official (N : SlotNorm) :
     ProblemStatements.PeriodicBreakdown ↔ OfficialPeriodicBreakdown N := by
   simp only [ProblemStatements.PeriodicBreakdown, OfficialPeriodicBreakdown,
     periodicForcedDataRapidDecay_iff_official N]
+
+/-! ### Statement A is unchanged by the substitution
+
+Alternatives C and D depend on the norm through their admissible-force clause.
+Statement A carries `zeroForce`, so it has exactly one inherited-norm
+measurement left: the integrability half of `IsClassicalSolution.finite_energy`,
+which asserts `∫ ‖u t x‖ ^ 2 < ∞` in the norm `Space` inherits while
+`uniformly_bounded_energy` already bounds the Euclidean `kineticEnergy`.  That
+half was transported clause-wise by
+`Analysis.EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_official`; what
+follows carries it up to the endpoint proposition itself.
+
+The transport needs slice measurability, which the solution predicate supplies
+from its own smoothness field rather than as a new hypothesis, so both surfaces
+below are stated with no extra assumption.  As with C and D, no analytic content
+is added: a proof of either side is a proof of the other.
+-/
+
+/-- A nonnegative-time spatial slice of a spacetime-smooth velocity is
+continuous.  `EnergyOfficialClause.IsClassicalSolution.velocity_slice_continuous`
+proves this for a complete classical solution; the reverse direction below has
+only the smoothness field in hand, so the hypothesis is weakened here. -/
+theorem continuousSlice_of_smooth {u : VelocityEvolution}
+    (hu : SmoothVelocityOnNonnegativeTime u) {t : ℝ} (ht : 0 ≤ t) :
+    Continuous (u t) := by
+  rw [← continuousOn_univ]
+  exact hu.continuousOn.comp
+    (continuous_const.prodMk continuous_id).continuousOn
+    (fun x _ => ⟨ht, Set.mem_univ x⟩)
+
+theorem aestronglyMeasurableSlice_of_smooth {u : VelocityEvolution}
+    (hu : SmoothVelocityOnNonnegativeTime u) {t : ℝ} (ht : 0 ≤ t) :
+    MeasureTheory.AEStronglyMeasurable (u t) :=
+  (continuousSlice_of_smooth hu ht).aestronglyMeasurable
+
+/-- `Navier.IsClassicalSolution` with its two energy fields replaced by
+Fefferman's Euclidean whole-space energy clause.  Every other field is copied
+unchanged, because no other field mentions a norm on `R^3`. -/
+structure OfficialIsClassicalSolution (ν : ℝ) (f : ForceField)
+    (u₀ : SchwartzVelocity) (u : VelocityEvolution) (p : PressureEvolution) :
+    Prop where
+  velocity_smooth : SmoothVelocityOnNonnegativeTime u
+  pressure_smooth : SmoothPressureOnNonnegativeTime p
+  initial_condition : ∀ x : Space, u 0 x = u₀ x
+  incompressible : Incompressible u
+  equation : SatisfiesNavierStokes ν f u p
+  official_energy :
+    Analysis.EnergyOfficialClause.OfficialWholeSpaceEnergyClause u
+
+/-- **The solution predicate is norm-independent.**  Stating the energy clause
+in Fefferman's Euclidean norm rather than in the mixed form
+`IsClassicalSolution` uses does not change the predicate.
+
+Unlike the clause transports above, no constant is spent in either direction:
+the uniform-bound halves are literally the same proposition, and the
+integrability halves are equivalent outright by
+`EnergyNormBridge.integrable_norm_sq_iff_officialEuclideanNorm_sq`.  The
+attained factor `3` between the two energies is still there, but it is absorbed
+by the existential over the bound `E`, which is Fefferman's own quantification —
+so a consumer needing a *named* energy bound must not route through here. -/
+theorem isClassicalSolution_iff_official (ν : ℝ) (f : ForceField)
+    (u₀ : SchwartzVelocity) (u : VelocityEvolution) (p : PressureEvolution) :
+    IsClassicalSolution ν f u₀ u p ↔ OfficialIsClassicalSolution ν f u₀ u p := by
+  constructor
+  · intro sol
+    exact
+      { velocity_smooth := sol.velocity_smooth
+        pressure_smooth := sol.pressure_smooth
+        initial_condition := sol.initial_condition
+        incompressible := sol.incompressible
+        equation := sol.equation
+        official_energy :=
+          Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause
+            sol }
+  · intro sol
+    obtain ⟨hint, hbound⟩ :=
+      (Analysis.EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_official u
+        (fun _t ht => aestronglyMeasurableSlice_of_smooth sol.velocity_smooth ht)).2
+        sol.official_energy
+    exact
+      { velocity_smooth := sol.velocity_smooth
+        pressure_smooth := sol.pressure_smooth
+        initial_condition := sol.initial_condition
+        incompressible := sol.incompressible
+        equation := sol.equation
+        finite_energy := hint
+        uniformly_bounded_energy := hbound }
+
+/-- Statement A with Fefferman's Euclidean energy clause substituted. -/
+def OfficialWholeSpaceGlobalRegularity : Prop :=
+  ∀ ν : ℝ, 0 < ν →
+    ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
+      ∃ (u : VelocityEvolution) (p : PressureEvolution),
+        OfficialIsClassicalSolution ν zeroForce u₀ u p
+
+/-- **Statement A is norm-independent.**  The endpoint proposition
+`ProblemStatements.WholeSpaceGlobalRegularity` does not change when its energy
+clause is restated in Fefferman's Euclidean norm.
+
+This settles the last clause of
+`ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence` that bore on
+statement A itself.  It proves nothing about whether either side holds, and it
+does not restate any *definition* of the surface in Euclidean form — the
+residual survives on that narrower ground. -/
+theorem wholeSpaceGlobalRegularity_iff_official :
+    ProblemStatements.WholeSpaceGlobalRegularity ↔
+      OfficialWholeSpaceGlobalRegularity := by
+  simp only [ProblemStatements.WholeSpaceGlobalRegularity,
+    OfficialWholeSpaceGlobalRegularity, isClassicalSolution_iff_official]
 
 end Navier.Analysis.ForceNormBridge

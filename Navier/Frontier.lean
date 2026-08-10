@@ -16,11 +16,13 @@ critical-control/global-continuation branch.
 
 Node count is unchanged by the successive discharges of `currentSpaceNormBridge`
 clauses — the Euclidean energy density, the energy transport, the decay weight,
-the decay derivative bundle, and now the force side.  Every clause that node
-named is transported, but the node stays in `dependencies .statementA`: this map
-reports a bridge as closed only when the identification is unconditional, and
-each norm transport still moves an existentially quantified constant through an
-attained power of `√3`.
+the decay derivative bundle, the force side, and now statement A itself.  What
+that node still names has shrunk accordingly, and is recorded on the node: it is
+no longer any clause of the surface, only the fact that the surface's own
+definitions are written in the inherited norm.  The node stays in
+`dependencies .statementA` because this map reports a bridge as closed when
+nothing it names is open in any sense, not when its clause list has been worked
+through.
 -/
 
 set_option autoImplicit false
@@ -31,28 +33,29 @@ namespace Navier.Frontier
 inductive FrontierNode where
   | schwartzConventionBridge
   | halfSpaceSmoothnessBridge
-  /-- The sup-norm/Euclidean-norm bridge.  Still a leaf, but every clause this
-  node named is now transported.  Whole-space data: the energy integrand is
-  Euclidean (`Navier.kineticEnergy`), the `IsClassicalSolution.finite_energy`
-  integrability and the uniform bound transport by
-  `Analysis.EnergyOfficialClause.IsClassicalSolution.officialWholeSpaceEnergyClause`
-  and `Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup`, the decay
-  clause's spatial weight by
-  `Analysis.OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight`, and
-  its derivative bundle by
-  `Analysis.EnergyNormBridge.feffermanRapidDecayBound_iff_fullyEuclidean`.  Force
-  side: both decay predicates of `Navier.OfficialProblem` transport in weight,
-  bundle value, and spacetime argument slots by
-  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
-  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`, and
-  alternatives C and D are provably unchanged by the substitution.
+  /-- The sup-norm/Euclidean-norm bridge, now reduced to its narrowest form.
 
-  What keeps the node open is no longer any single clause but the *kind* of
-  identification available.  Every transport carries an existentially quantified
-  constant through a power of `√3`, the two norms provably differ, and the
-  dimension factor three is attained, so no clause of the surface is identified
-  with Fefferman's quantitatively and none has been restated in Euclidean form.
-  See `ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence`. -/
+  **All three official surfaces are provably norm-independent propositions.**
+  Statement A by
+  `Analysis.ForceNormBridge.wholeSpaceGlobalRegularity_iff_official`, and
+  Fefferman's alternatives C and D by
+  `Analysis.ForceNormBridge.wholeSpaceBreakdown_iff_official` and
+  `Analysis.ForceNormBridge.periodicBreakdown_iff_official`.  Every clause
+  underneath them is transported too: the energy pair by
+  `Analysis.EnergyOfficialClause.currentWholeSpaceEnergyClause_iff_official`, the
+  data decay clause in all three of its norms by
+  `Analysis.EnergyNormBridge.feffermanRapidDecayBound_iff_fullyEuclidean`, and
+  both force decay predicates by
+  `Analysis.ForceNormBridge.forcedDataRapidDecay_iff_official` and
+  `Analysis.ForceNormBridge.periodicForcedDataRapidDecay_iff_official`.
+
+  What remains is not a clause and not an estimate: no *definition* on this
+  surface has been restated in Euclidean form — `IsClassicalSolution` still
+  writes its integrability field in the norm `Space` inherits — and any
+  identification with a named constant, as opposed to membership in an
+  existentially bounded class, still pays the attained factor `√3`.  A leaf on
+  that ground alone.  See
+  `ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence`. -/
   | currentSpaceNormBridge
   | frechetCoordinatePDEBridge
   | wholeSpaceEnergyBridge

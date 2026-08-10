@@ -7,8 +7,8 @@ import Navier.Analysis.OfficialABEncoding
 whereas Fefferman's clauses use the **Euclidean** norm on `R^3`.  This file
 carries that single pointwise discrepancy up to integrability, to the uniform
 energy bound, and — in the final section — to the operator norm of derivative
-bundles, which is the last clause the
-`currentSpaceNormEuclideanNormEquivalence` residual named.
+bundles.  `Analysis.ForceNormBridge` builds on this file to reach the force
+clauses and, from there, the official surfaces themselves.
 
 ## What changed, and why most of this file was rewritten
 
@@ -143,8 +143,9 @@ theorem norm_onesPoint : ‖(![1, 1, 1] : Space)‖ = 1 := by
 /-- **The sup/Euclidean gap is not vacuous.**  At the all-ones point the
 inherited squared norm is `1` while the Euclidean squared norm is `3`, so
 `norm_sq_le_officialEuclideanNorm_sq` is a strict inequality somewhere.  This is
-the machine-checked reason the `currentSpaceNormEuclideanNormEquivalence`
-residual of `Navier.Problem` may not be retired. -/
+the machine-checked reason every transport below is class-level rather than an
+identity, and hence why the `currentSpaceNormEuclideanNormEquivalence` residual
+of `Navier.Problem` is retained. -/
 theorem norm_sq_lt_officialEuclideanNorm_sq_witness :
     ∃ x : Space, ‖x‖ ^ 2 < officialEuclideanNorm x ^ 2 := by
   refine ⟨![1, 1, 1], ?_⟩
