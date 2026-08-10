@@ -746,6 +746,55 @@ Fischer–Riesz by the same Fatou step that transports the sup-norm bound
 def UniformOfficialKineticBound (uSeq : ℕ → VelocityEvolution) (B : ℝ) : Prop :=
   ∀ (m : ℕ) (t : ℝ), 0 ≤ t → kineticEnergy (uSeq m) t ≤ B
 
+/-- **The Euclidean bound implies the sup-norm bound at the *same* constant.**
+Half of the machine-checked record that `UniformOfficialKineticBound` is
+strictly the stronger hypothesis (`‖·‖² ≤ ∑ᵢ ·ᵢ²` pointwise). -/
+theorem uniformKineticBound_of_official {uSeq : ℕ → VelocityEvolution} {B : ℝ}
+    (hmeas : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → AEStronglyMeasurable (uSeq m t))
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (h : UniformOfficialKineticBound uSeq B) :
+    UniformKineticBound uSeq B := by
+  intro m t ht
+  refine le_trans ?_ (h m t ht)
+  have hoff : Integrable fun x : Space => officialEuclideanNorm (uSeq m t x) ^ 2 :=
+    (Navier.Analysis.EnergyNormBridge.integrable_norm_sq_iff_officialEuclideanNorm_sq
+      (uSeq m t) (hmeas m t ht)).1 (hint m t ht)
+  have hsum : Integrable fun x : Space => ∑ i : Fin 3, (uSeq m t x i) ^ 2 :=
+    hoff.congr (Filter.Eventually.of_forall fun x =>
+      Navier.Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_sum_sq (uSeq m t x))
+  exact integral_mono (hint m t ht) hsum
+    fun x => Navier.Analysis.EnergyNormBridge.norm_sq_le_sum_sq (uSeq m t x)
+
+/-- **The converse costs the dimension factor `3`, and that loss is real.**  This
+is the machine-checked form of the obstruction recorded in
+`UniformOfficialKineticBound`: a sup-norm bundle bounds the Euclidean energy only
+by `3C`, so it cannot serve `LerayLimitData.energy_le`, whose right-hand side is
+the datum energy with constant exactly `1`.  Together with
+`uniformKineticBound_of_official` this pins the exact strength gap between the
+two predicates. -/
+theorem officialKineticBound_of_uniformKineticBound {uSeq : ℕ → VelocityEvolution} {C : ℝ}
+    (hmeas : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → AEStronglyMeasurable (uSeq m t))
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (h : UniformKineticBound uSeq C) :
+    UniformOfficialKineticBound uSeq (3 * C) := by
+  intro m t ht
+  have hoff : Integrable fun x : Space => officialEuclideanNorm (uSeq m t x) ^ 2 :=
+    (Navier.Analysis.EnergyNormBridge.integrable_norm_sq_iff_officialEuclideanNorm_sq
+      (uSeq m t) (hmeas m t ht)).1 (hint m t ht)
+  have hsum : Integrable fun x : Space => ∑ i : Fin 3, (uSeq m t x i) ^ 2 :=
+    hoff.congr (Filter.Eventually.of_forall fun x =>
+      Navier.Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_sum_sq (uSeq m t x))
+  have hstep : kineticEnergy (uSeq m) t ≤ ∫ x : Space, 3 * ‖uSeq m t x‖ ^ 2 := by
+    refine integral_mono hsum ((hint m t ht).const_mul 3) fun x => ?_
+    have := Navier.Analysis.EnergyNormBridge.officialEuclideanNorm_sq_le_three_mul_norm_sq
+      (uSeq m t x)
+    rwa [Navier.Analysis.EnergyNormBridge.officialEuclideanNorm_sq_eq_sum_sq
+      (uSeq m t x)] at this
+  calc kineticEnergy (uSeq m) t ≤ ∫ x : Space, 3 * ‖uSeq m t x‖ ^ 2 := hstep
+    _ = 3 * ∫ x : Space, ‖uSeq m t x‖ ^ 2 := integral_const_mul 3 _
+    _ ≤ 3 * C := by
+        exact mul_le_mul_of_nonneg_left (h m t ht) (by norm_num)
+
 /-- Uniform `L²(0,T; H¹)` dissipation bound (time-integrated enstrophy;
 for divergence-free fields `‖ω‖_{L²} = ‖∇u‖_{L²}`), from `∫ ν‖∇u_m‖² ≤ ½‖u₀‖²`. -/
 def UniformEnstrophyBound (uSeq : ℕ → VelocityEvolution) (C : ℝ) : Prop :=
@@ -1045,7 +1094,7 @@ def zeroGalerkinModeData (ν : ℝ) : GalerkinModeData ν (0 : SchwartzVelocity)
   bound := 0
   bound_nonneg := le_rfl
   bound_le := by simp
-  kinetic_bounded := by intro m t _; simp [kineticEnergy]
+  kinetic_bounded := by intro m t _; simp
   official_kinetic_bounded := by intro m t _; simp [kineticEnergy]
   enstrophy_bounded := by intro m T _; simp only [enstrophy_zero_velocity]; simp
   time_equicontinuous := by
@@ -1324,7 +1373,7 @@ theorem aubinLions_zero_instance :
       Integrable (fun x : Space => ‖(fun (_ : ℝ) (_ : Space) => (0:Space)) t x‖ ^ 2)) ∧
     StrongL2LocLimit (fun (_ : ℕ) (_ : ℝ) (_ : Space) => (0 : Space)) (fun _ _ => 0) := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · intro m t _; simp [kineticEnergy]
+  · intro m t _; simp
   · intro m T _; simp only [enstrophy_zero_velocity]; simp
   · intro T ε hε
     exact ⟨1, one_pos, fun m h _ => by simp only [sub_self, norm_zero]; simp [hε.le]⟩
