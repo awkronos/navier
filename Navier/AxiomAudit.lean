@@ -2,6 +2,7 @@ import Navier.ProblemFrontier
 import Navier.Analysis.CKNIntegralScaling
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyOfficialClause
+import Navier.Analysis.ForceCoordinateBridge
 import Navier.Analysis.FrequencyHeatLeray
 import Navier.Analysis.ComplexLerayProjection
 import Navier.Analysis.ComplexLerayNorm
@@ -265,6 +266,10 @@ finite-frontier facts.
 #print axioms Navier.Breakdown.OfficialCDEncoding.abs_coordinateForceDerivativeWithin_le
 #print axioms Navier.Breakdown.OfficialCDEncoding.forcedDataRapidDecay_implies_coordinatewise
 #print axioms Navier.Breakdown.OfficialCDEncoding.periodicForcedDataRapidDecay_implies_coordinatewise
+#print axioms Navier.Analysis.ForceCoordinateBridge.spacetime_eq_sum_coordinateDirections
+#print axioms Navier.Analysis.ForceCoordinateBridge.continuousMultilinearMap_apply_eq_sum_coordinateDirections
+#print axioms Navier.Analysis.ForceCoordinateBridge.iteratedFDerivWithin_apply_eq_sum_coordinateDirections
+#print axioms Navier.Analysis.ForceCoordinateBridge.iteratedFDerivWithin_eq_zero_of_coordinateForceDerivativeWithin_eq_zero
 
 #print axioms Navier.Routes.R7.dot_lerayNumerator
 #print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero
