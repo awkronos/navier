@@ -3,6 +3,7 @@ import Navier.Analysis.CKNIntegralScaling
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyOfficialClause
 import Navier.Analysis.ForceCoordinateBridge
+import Navier.Analysis.ForceCoordinateDecayBridge
 import Navier.Analysis.FrequencyHeatLeray
 import Navier.Analysis.ComplexLerayProjection
 import Navier.Analysis.ComplexLerayNorm
@@ -275,6 +276,10 @@ finite-frontier facts.
 #print axioms Navier.Analysis.ForceCoordinateBridge.exists_weighted_iteratedFDerivWithin_opNorm_bound
 #print axioms Navier.Analysis.ForceCoordinateBridge.iteratedFDerivWithin_apply_eq_sum_coordinateDirections
 #print axioms Navier.Analysis.ForceCoordinateBridge.iteratedFDerivWithin_eq_zero_of_coordinateForceDerivativeWithin_eq_zero
+#print axioms Navier.Analysis.ForceCoordinateDecayBridge.periodicCoordinatewiseForceDecay_implies_bundleDecay
+#print axioms Navier.Analysis.ForceCoordinateDecayBridge.periodicForcedDataRapidDecay_iff_typedCoordinatewise
+#print axioms Navier.Analysis.ForceCoordinateDecayBridge.wholeSpaceCoordinatewiseForceDecay_implies_bundleDecay
+#print axioms Navier.Analysis.ForceCoordinateDecayBridge.forcedDataRapidDecay_iff_typedCoordinatewise
 
 #print axioms Navier.Routes.R7.dot_lerayNumerator
 #print axioms Navier.Routes.R7.divergenceFree_singleMode_selfInteraction_zero
