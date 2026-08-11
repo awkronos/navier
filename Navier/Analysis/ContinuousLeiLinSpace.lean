@@ -516,6 +516,28 @@ theorem complexE3_measurableSpace_coherent :
   rw [complexE3PiMeasurableSpace_eq_borel]
   exact complexE3EuclideanMeasurableSpace_eq_borel.symm
 
+/-- The same two Borel-instance paths on the real frequency carrier. -/
+@[reducible] def esPiMeasurableSpace : MeasurableSpace ES :=
+  WithLp.measurableSpace 2 (Fin 3 → ℝ)
+
+@[reducible] def esEuclideanMeasurableSpace : MeasurableSpace ES :=
+  measureSpaceOfInnerProductSpace.toMeasurableSpace
+
+theorem esPiMeasurableSpace_eq_borel :
+    esPiMeasurableSpace = borel ES := by
+  exact @BorelSpace.measurable_eq ES _ esPiMeasurableSpace (PiLp.borelSpace 2)
+
+theorem esEuclideanMeasurableSpace_eq_borel :
+    esEuclideanMeasurableSpace = borel ES := by
+  exact @BorelSpace.measurable_eq ES _ esEuclideanMeasurableSpace _
+
+/-- Coherence needed when continuous PiLp coordinates are combined with
+convolutions integrated against Euclidean Lebesgue volume. -/
+theorem es_measurableSpace_coherent :
+    esPiMeasurableSpace = esEuclideanMeasurableSpace := by
+  rw [esPiMeasurableSpace_eq_borel]
+  exact esEuclideanMeasurableSpace_eq_borel.symm
+
 /-- An `ℓ²` coordinate vector is bounded by its finite `ℓ¹` coordinate mass. -/
 theorem euclidean_norm_le_coordinate_sum (z : ComplexSpace) :
     complexEuclideanNorm z ≤ ∑ i : Fin 3, ‖z i‖ := by
