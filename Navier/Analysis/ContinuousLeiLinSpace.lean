@@ -16,7 +16,7 @@ noncomputable section
 namespace Navier.Analysis.ContinuousLeiLinSpace
 
 open MeasureTheory Set
-open scoped FourierTransform SchwartzMap
+open scoped FourierTransform SchwartzMap Convolution
 open Navier.Analysis.FourierWeightedPlancherel
 
 abbrev ES := EuclideanSpace ℝ (Fin 3)
@@ -27,7 +27,21 @@ def normXm1 (f : ES → ℂ) : ℝ :=
 
 /-- Fourier-side heat evolution on the continuous carrier. -/
 def heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) : ℂ :=
-  (Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℝ) • f ξ
+  ((Real.exp (-(ν * ((‖ξ‖ : ℝ) ^ 2) * t)) : ℝ) : ℂ) * f ξ
+
+/-- Scalar continuous Fourier convolution, with Lebesgue measure on `R³`. -/
+def convolution (f g : ES → ℝ) : ES → ℝ :=
+  f ⋆[ContinuousLinearMap.mul ℝ ℝ, volume] g
+
+/-- The continuous `X⁰` (Wiener) mass for a nonnegative Fourier density. -/
+def normX0 (f : ES → ℝ) : ℝ := ∫ ξ : ES, f ξ
+
+/-- Fubini/Tonelli's exact convolution mass identity on the actual continuous
+carrier.  This is the continuous replacement for the lattice `tsum` identity
+used by the discrete Lei--Lin prototype. -/
+theorem normX0_convolution_eq (f g : ES → ℝ) (hf : Integrable f) (hg : Integrable g) :
+    normX0 (convolution f g) = normX0 f * normX0 g := by
+  exact integral_convolution (ContinuousLinearMap.mul ℝ ℝ) hf hg
 
 /-- A Schwartz function on three-dimensional Euclidean space is integrable
 against the critical singular Fourier weight.  The proof splits at the unit
@@ -43,9 +57,11 @@ theorem schwartz_integrable_norm_inv_mul (g : SchwartzMap ES ℂ) :
     refine locallyIntegrable_of_norm_le_rpow (μ := volume) (E := ES)
       (F := ℝ) (by norm_num) (C := C) (α := (1 : ℝ)) (by norm_num) ?_ ?_
     · filter_upwards with ξ
-      rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg (inv_nonneg.mpr (norm_nonneg _))
-        (norm_nonneg _)), Real.rpow_neg_one]
-      exact mul_le_mul_of_nonneg_left (hbound ξ) (inv_nonneg.mpr (norm_nonneg _))
+      have hle := mul_le_mul_of_nonneg_left (hbound ξ)
+        (inv_nonneg.mpr (norm_nonneg ξ))
+      simpa [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg
+        (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg (g ξ))),
+        Real.rpow_neg_one, mul_comm] using hle
     · exact ((continuous_norm.aestronglyMeasurable.inv₀).mul
         (g.continuous.norm.aestronglyMeasurable))
   have hnear : IntegrableOn (fun ξ : ES => ‖ξ‖⁻¹ * ‖g ξ‖)
@@ -60,11 +76,12 @@ theorem schwartz_integrable_norm_inv_mul (g : SchwartzMap ES ℂ) :
     · exact ((continuous_norm.aestronglyMeasurable.inv₀).mul
         (g.continuous.norm.aestronglyMeasurable))
     · filter_upwards [ae_restrict_mem measurableSet_closedBall.compl] with ξ hξ
-      have h1 : 1 ≤ ‖ξ‖ := by
+      have h1' : 1 < ‖ξ‖ := by
         simpa [Metric.mem_closedBall, dist_zero_right] using hξ
+      have h1 : 1 ≤ ‖ξ‖ := h1'.le
       have hi : ‖ξ‖⁻¹ ≤ ‖ξ‖ := by
-        rw [inv_le_iff₀ (lt_of_lt_of_le zero_lt_one h1)]
-        nlinarith [sq_nonneg (‖ξ‖ - 1)]
+        rw [inv_le_iff_one_le_mul₀ (lt_of_lt_of_le zero_lt_one h1)]
+        nlinarith
       simpa using mul_le_mul_of_nonneg_right hi (norm_nonneg (g ξ))
   rw [← integrableOn_univ, ← compl_union_self (Metric.closedBall (0 : ES) 1),
     integrableOn_union]
@@ -81,25 +98,45 @@ theorem fourier_schwartz_integrable_Xm1 (f : SchwartzMap ES ℂ) :
 theorem heat_contracts_Xm1 {ν t : ℝ} (hν : 0 ≤ ν) (ht : 0 ≤ t)
     (f : ES → ℂ) (hf : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖f ξ‖)) :
     normXm1 (heatMode ν t f) ≤ normXm1 f := by
+  have heat_norm : ∀ ξ : ES,
+      ‖heatMode ν t f ξ‖ = Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * ‖f ξ‖ := by
+    intro ξ
+    rw [heatMode, norm_mul, Complex.norm_real]
+    simp [abs_of_nonneg (Real.exp_nonneg _)]
   have hpoint : ∀ ξ : ES,
       ‖ξ‖⁻¹ * ‖heatMode ν t f ξ‖ ≤ ‖ξ‖⁻¹ * ‖f ξ‖ := by
     intro ξ
     have harg : 0 ≤ ν * ‖ξ‖ ^ 2 * t := by positivity
     have hexp : Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) ≤ 1 :=
       Real.exp_le_one_iff.mpr (by linarith)
-    rw [heatMode, norm_smul, Real.norm_eq_abs, abs_of_nonneg (Real.exp_nonneg _)]
-    exact mul_le_mul_of_nonneg_left
-      (mul_le_mul_of_nonneg_right hexp (norm_nonneg _))
-      (inv_nonneg.mpr (norm_nonneg _))
+    have hprod : Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * ‖f ξ‖ ≤ ‖f ξ‖ := by
+      simpa using mul_le_mul_of_nonneg_right hexp (norm_nonneg (f ξ))
+    rw [heat_norm]
+    exact mul_le_mul_of_nonneg_left hprod (inv_nonneg.mpr (norm_nonneg _))
   have hheat : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖heatMode ν t f ξ‖) := by
-    refine hf.mono' ?_ (Filter.Eventually.of_forall hpoint)
-    exact ((Real.continuous_exp.comp
-      ((continuous_const.mul (continuous_norm.pow 2)).mul continuous_const).neg).aestronglyMeasurable
-      .mul hf.aestronglyMeasurable)
-  exact integral_mono hheat hf (Filter.Eventually.of_forall hpoint)
+    have heq : (fun ξ : ES => ‖ξ‖⁻¹ * ‖heatMode ν t f ξ‖) =
+        fun ξ : ES => Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * (‖ξ‖⁻¹ * ‖f ξ‖) := by
+      funext ξ
+      rw [heat_norm]
+      ring
+    rw [heq]
+    refine hf.mono' ?_ ?_
+    · have hmeas : AEStronglyMeasurable
+          (fun ξ : ES => Real.exp (-(ν * ‖ξ‖ ^ 2 * t))) :=
+        (Real.continuous_exp.comp
+          ((continuous_const.mul (continuous_norm.pow 2)).mul continuous_const).neg).aestronglyMeasurable
+      exact hmeas.mul hf.aestronglyMeasurable
+    · filter_upwards with ξ
+      have h := hpoint ξ
+      rw [heat_norm] at h
+      simpa [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg
+        (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg (f ξ))),
+        mul_assoc, mul_left_comm, mul_comm] using h
+  exact integral_mono hheat hf hpoint
 
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_Xm1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.heat_contracts_Xm1
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_convolution_eq
