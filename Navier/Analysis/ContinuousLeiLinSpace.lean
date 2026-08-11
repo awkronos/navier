@@ -1,4 +1,5 @@
 import Navier.Analysis.FourierMajorant
+import Navier.Analysis.ComplexLerayNorm
 import Mathlib.Analysis.SpecialFunctions.Pow.Integral
 
 /-!
@@ -18,8 +19,12 @@ namespace Navier.Analysis.ContinuousLeiLinSpace
 open MeasureTheory Set
 open scoped FourierTransform SchwartzMap Convolution
 open Navier.Analysis.FourierWeightedPlancherel
+open Navier.Analysis.FourierMajorant
+open Navier.Analysis.ComplexLerayProjection
+open Navier.Analysis.ComplexLerayNorm
 
 abbrev ES := EuclideanSpace ℝ (Fin 3)
+abbrev ComplexSpace := Fin 3 → ℂ
 
 /-- The continuous homogeneous `X^{-1}` quantity. -/
 def normXm1 (f : ES → ℂ) : ℝ :=
@@ -32,6 +37,32 @@ def normX1 (f : ES → ℂ) : ℝ :=
 /-- Fourier-side heat evolution on the continuous carrier. -/
 def heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) : ℂ :=
   ((Real.exp (-(ν * ((‖ξ‖ : ℝ) ^ 2) * t)) : ℝ) : ℂ) * f ξ
+
+/-- The continuous Fourier Leray multiplier.  The frequency is transported
+from Euclidean `R³` to the coordinate carrier, and the underlying canonical
+projection is total at `ξ = 0` (where it is the identity). -/
+def continuousLeray (ξ : ES) (z : ComplexSpace) : ComplexSpace :=
+  complexLeray (spaceProj ξ) z
+
+/-- The continuous multiplier is exactly identity at zero frequency. -/
+@[simp] theorem continuousLeray_zero (z : ComplexSpace) :
+    continuousLeray 0 z = z := by
+  simp [continuousLeray, spaceProj]
+
+/-- Pointwise Hermitian norm contraction of the continuous Leray multiplier. -/
+theorem continuousLeray_norm_le (ξ : ES) (z : ComplexSpace) :
+    complexEuclideanNorm (continuousLeray ξ z) ≤ complexEuclideanNorm z := by
+  exact complexEuclideanNorm_complexLeray_le (spaceProj ξ) z
+
+/-- Every nonnegative Fourier weight is preserved under the continuous Leray
+multiplier pointwise.  This is the projection half of the future weighted
+convolution estimate; its analytic measurability/convolution half remains
+separate. -/
+theorem continuousLeray_weighted_norm_le (w : ES → ℝ) (ξ : ES) (z : ComplexSpace)
+    (hw : 0 ≤ w ξ) :
+    w ξ * complexEuclideanNorm (continuousLeray ξ z) ≤
+      w ξ * complexEuclideanNorm z :=
+  mul_le_mul_of_nonneg_left (continuousLeray_norm_le ξ z) hw
 
 /-- Scalar continuous Fourier convolution, with Lebesgue measure on `R³`. -/
 def convolution (f g : ES → ℝ) : ES → ℝ :=
@@ -167,3 +198,5 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.heat_contracts_Xm1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_convolution_eq
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_convolution_integrable
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_norm_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_weighted_norm_le
