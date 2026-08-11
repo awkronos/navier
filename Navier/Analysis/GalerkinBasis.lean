@@ -2419,6 +2419,97 @@ theorem proj_laplacianProjection_pairing_tendsto_of_commutator
     (by simpa only [coefficientField_initialCoefficients_eq_proj] using hcomm)
   simpa only [coefficientField_initialCoefficients_eq_proj] using h
 
+/-- The concrete nonlinear residual caused only by replacing a test `φ` by
+its modal projection.  It is linear in the test error, while retaining the
+actual (possibly varying) velocity in the two nonlinear slots. -/
+noncomputable def GalerkinBasisFamily.convectionTestProjectionCommutator
+    (W : GalerkinBasisFamily) (m : ℕ)
+    (u φ : SchwartzVelocity) : SchwartzVelocity :=
+  convectionSchwartzBilin u (W.proj m φ - φ)
+
+/-- Exact splitting of projected-test convection into the fixed-test term and
+the nonlinear test-projection commutator. -/
+theorem convectionTestProjection_pairing
+    (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (φ : SchwartzVelocity) :
+    schwartzL2Inner (W.coefficientField a)
+        (convectionSchwartzBilin (W.coefficientField a) (W.proj m φ)) =
+      schwartzL2Inner (W.coefficientField a)
+          (convectionSchwartzBilin (W.coefficientField a) φ) +
+        schwartzL2Inner (W.coefficientField a)
+          (W.convectionTestProjectionCommutator m
+            (W.coefficientField a) φ) := by
+  rw [show W.proj m φ = φ + (W.proj m φ - φ) by abel,
+    convectionSchwartzBilin_add_right, schwartzL2Inner_add_right]
+  rfl
+
+/-- An `L²`-small convection commutator gives a small scalar residual against
+uniformly `L²`-bounded modal fields. -/
+theorem convectionTestProjection_pairing_tendsto_zero_of_L2
+    (W : GalerkinBasisFamily)
+    (a : ∀ m : ℕ, EuclideanSpace ℝ (Fin m)) (φ : SchwartzVelocity)
+    (C : ℝ)
+    (hbound : ∀ m, ‖toL2 (W.coefficientField (a m))‖ ≤ C)
+    (hcommL2 : Filter.Tendsto
+      (fun m => ‖toL2 (W.convectionTestProjectionCommutator m
+        (W.coefficientField (a m)) φ)‖) Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (W.convectionTestProjectionCommutator m
+          (W.coefficientField (a m)) φ))
+      Filter.atTop (nhds 0) := by
+  apply squeeze_zero_norm
+  · intro m
+    calc
+      ‖schwartzL2Inner (W.coefficientField (a m))
+          (W.convectionTestProjectionCommutator m
+            (W.coefficientField (a m)) φ)‖ =
+          |schwartzL2Inner (W.coefficientField (a m))
+            (W.convectionTestProjectionCommutator m
+              (W.coefficientField (a m)) φ)| := Real.norm_eq_abs _
+      _ ≤ ‖toL2 (W.coefficientField (a m))‖ *
+          ‖toL2 (W.convectionTestProjectionCommutator m
+            (W.coefficientField (a m)) φ)‖ :=
+        abs_schwartzL2Inner_le _ _
+      _ ≤ C * ‖toL2 (W.convectionTestProjectionCommutator m
+          (W.coefficientField (a m)) φ)‖ :=
+        mul_le_mul_of_nonneg_right (hbound m) (norm_nonneg _)
+  · simpa using (tendsto_const_nhds.mul hcommL2 :
+      Filter.Tendsto
+        (fun m => C * ‖toL2 (W.convectionTestProjectionCommutator m
+          (W.coefficientField (a m)) φ)‖) Filter.atTop (nhds (C * 0)))
+
+/-- Conditional nonlinear limit passage consumed by the weak equation.  It
+requires only convergence of the fixed-test scalar pairing and vanishing of
+the one explicit test-projection residual, not the all-test weak-form crown. -/
+theorem coefficientField_convectionTestProjection_pairing_tendsto
+    (W : GalerkinBasisFamily)
+    (a : ∀ m : ℕ, EuclideanSpace ℝ (Fin m)) (φ : SchwartzVelocity) (L : ℝ)
+    (hfixed : Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (convectionSchwartzBilin (W.coefficientField (a m)) φ))
+      Filter.atTop (nhds L))
+    (hcomm : Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (W.convectionTestProjectionCommutator m
+          (W.coefficientField (a m)) φ)) Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (convectionSchwartzBilin (W.coefficientField (a m)) (W.proj m φ)))
+      Filter.atTop (nhds L) := by
+  have hadd := hfixed.add hcomm
+  have heq : (fun m => schwartzL2Inner (W.coefficientField (a m))
+      (convectionSchwartzBilin (W.coefficientField (a m)) (W.proj m φ))) =
+      fun m => schwartzL2Inner (W.coefficientField (a m))
+          (convectionSchwartzBilin (W.coefficientField (a m)) φ) +
+        schwartzL2Inner (W.coefficientField (a m))
+          (W.convectionTestProjectionCommutator m
+            (W.coefficientField (a m)) φ) := by
+    funext m
+    exact convectionTestProjection_pairing W (a m) φ
+  rw [heq]
+  simpa using hadd
+
 /-- Projecting both the datum and the fixed test has the same initial-pairing
 limit as the unprojected pair. -/
 theorem initialProjection_pairing_tendsto (W : GalerkinBasisFamily)
@@ -2906,6 +2997,68 @@ theorem modalFlow_projectedTest_splitLaplacianWeakEquation
     rw [schwartzL2Inner_add_right, schwartzL2Inner_smul_right,
       coefficientField_laplacianProjection_pairing,
       schwartzL2Inner_add_right, schwartzL2Inner_smul_right]
+    ring
+  rw [hintegral] at heq
+  exact heq
+
+/-- The projected-test equation with both projection effects isolated.  Its
+main integrand uses the unprojected physical test; the only remaining terms
+are the explicit Laplacian and convection projection commutators. -/
+theorem modalFlow_projectedTest_splitResidualWeakEquation
+    (W : GalerkinBasisFamily) (ν : ℝ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (φ : DivergenceFreeTestFunction) (φ' : ℝ → SchwartzVelocity) (m : ℕ)
+    (hmodal_deriv : ∀ t : ℝ,
+      HasDerivAt (W.modalTestCoefficients φ.field m)
+        (W.modalTestCoefficients φ' m t) t)
+    (hmodal_deriv_cont : Continuous (W.modalTestCoefficients φ' m)) :
+    ∃ T : ℝ, 0 < T ∧
+      (∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (φ.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (φ.field t)) +
+          ν * schwartzL2Inner (W.coefficientField (c m t))
+            (W.laplacianProjectionCommutator m (φ.field t)) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (W.convectionTestProjectionCommutator m
+              (W.coefficientField (c m t)) (φ.field t))) +
+        schwartzL2Inner (W.coefficientField (c m 0)) (φ.field 0) = 0 := by
+  obtain ⟨T, hT, heq⟩ :=
+    modalFlow_projectedTest_splitLaplacianWeakEquation W ν c hc φ φ' m
+      hmodal_deriv hmodal_deriv_cont
+  refine ⟨T, hT, ?_⟩
+  have hintegral :
+      (∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (φ.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (W.proj m (φ.field t))) +
+          ν * schwartzL2Inner (W.coefficientField (c m t))
+            (W.laplacianProjectionCommutator m (φ.field t))) =
+        ∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (φ.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (φ.field t)) +
+          ν * schwartzL2Inner (W.coefficientField (c m t))
+            (W.laplacianProjectionCommutator m (φ.field t)) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (W.convectionTestProjectionCommutator m
+              (W.coefficientField (c m t)) (φ.field t)) := by
+    apply intervalIntegral.integral_congr
+    intro t _
+    dsimp only
+    rw [schwartzL2Inner_add_right,
+      convectionTestProjection_pairing,
+      schwartzL2Inner_add_right]
     ring
   rw [hintegral] at heq
   exact heq
