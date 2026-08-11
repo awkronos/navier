@@ -1001,6 +1001,101 @@ def GalerkinBasisFamily.proj (W : GalerkinBasisFamily) (m : ℕ) (u : SchwartzVe
     SchwartzVelocity :=
   ∑ j ∈ Finset.range m, W.coeff u j • W.w j
 
+/-- The first `m` fields of a Galerkin basis, indexed by `Fin m` for the
+Euclidean coefficient-space ODE. -/
+def GalerkinBasisFamily.finiteModes (W : GalerkinBasisFamily) (m : ℕ) :
+    Fin m → SchwartzVelocity :=
+  fun i => W.w i
+
+/-- Realize a Euclidean coefficient vector as the corresponding finite
+Schwartz modal field.  This is the actual coefficient-to-field map used by
+`LerayWeak.galerkinModalApprox`. -/
+noncomputable def GalerkinBasisFamily.coefficientField (W : GalerkinBasisFamily)
+    {m : ℕ} (a : EuclideanSpace ℝ (Fin m)) : SchwartzVelocity :=
+  ∑ i, a i • W.finiteModes m i
+
+/-- The coefficient vector of the projected datum in the first `m` basis
+modes. -/
+noncomputable def GalerkinBasisFamily.initialCoefficients (W : GalerkinBasisFamily)
+    (u : SchwartzVelocity) (m : ℕ) : EuclideanSpace ℝ (Fin m) :=
+  WithLp.toLp 2 fun i => W.coeff u i
+
+private theorem schwartzL2Inner_finset_sum_left {ι : Type*} [DecidableEq ι]
+    (s : Finset ι) (F : ι → SchwartzVelocity) (g : SchwartzVelocity) :
+    schwartzL2Inner (∑ i ∈ s, F i) g = ∑ i ∈ s, schwartzL2Inner (F i) g := by
+  induction s using Finset.induction_on with
+  | empty => simp only [Finset.sum_empty, schwartzL2Inner_zero_left]
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha, schwartzL2Inner_add_left, ih, Finset.sum_insert ha]
+
+private theorem schwartzL2Inner_finset_sum_right {ι : Type*} [DecidableEq ι]
+    (s : Finset ι) (f : SchwartzVelocity) (G : ι → SchwartzVelocity) :
+    schwartzL2Inner f (∑ i ∈ s, G i) = ∑ i ∈ s, schwartzL2Inner f (G i) := by
+  rw [schwartzL2Inner_comm, schwartzL2Inner_finset_sum_left]
+  exact Finset.sum_congr rfl (fun i _ => schwartzL2Inner_comm _ _)
+
+/-- The finite coefficient realization is an exact Euclidean `L²` isometry:
+orthonormality of the genuine Galerkin modes turns the field pairing into the
+squared Euclidean coefficient norm. -/
+theorem coefficientField_l2_isometry (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) :
+    schwartzL2Inner (W.coefficientField a) (W.coefficientField a) = ‖a‖ ^ 2 := by
+  have hinner : ∀ j : Fin m,
+      schwartzL2Inner (W.w j) (W.coefficientField a) = a j := by
+    intro j
+    unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+    rw [schwartzL2Inner_finset_sum_right, Finset.sum_eq_single j]
+    · rw [schwartzL2Inner_smul_right, W.orthonormal j j, if_pos rfl, mul_one]
+    · intro i _ hij
+      rw [schwartzL2Inner_smul_right, W.orthonormal j i,
+        if_neg (fun h => hij (Fin.ext h.symm)), mul_zero]
+    · exact fun hj => (hj (Finset.mem_univ j)).elim
+  calc
+    schwartzL2Inner (W.coefficientField a) (W.coefficientField a) =
+        ∑ j : Fin m,
+          schwartzL2Inner (a j • W.w j) (W.coefficientField a) := by
+      unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+      rw [schwartzL2Inner_finset_sum_left]
+    _ = ∑ j : Fin m, a j ^ 2 := by
+      apply Finset.sum_congr rfl
+      intro j _
+      rw [schwartzL2Inner_smul_left, hinner j]
+      ring
+    _ = ‖a‖ ^ 2 := (EuclideanSpace.real_norm_sq_eq a).symm
+
+/-- Realizing the datum's coefficient vector recovers its genuine Galerkin
+projection. -/
+theorem coefficientField_initialCoefficients_eq_proj (W : GalerkinBasisFamily)
+    (u : SchwartzVelocity) (m : ℕ) :
+    W.coefficientField (W.initialCoefficients u m) = W.proj m u := by
+  unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.initialCoefficients
+    GalerkinBasisFamily.finiteModes GalerkinBasisFamily.proj
+  change (∑ i : Fin m, W.coeff u i • W.w i) = _
+  rw [← Fin.sum_univ_eq_sum_range (fun j => W.coeff u j • W.w j) m]
+
+/-- The modal evolution obtained by realizing coefficient curves against the
+first `m` fields of the certified Galerkin basis. -/
+noncomputable def GalerkinBasisFamily.modalApprox (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) : ℕ → VelocityEvolution :=
+  galerkinModalApprox (fun m => m) c (fun m => W.finiteModes m)
+
+/-- Exact energy transfer from the Euclidean coefficient ODE to the physical
+modal field.  The project `kineticEnergy` is the official Euclidean spatial
+energy, so orthonormality loses no dimension factor. -/
+theorem modalApprox_kineticEnergy_eq (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) (m : ℕ) (t : ℝ) :
+    kineticEnergy (W.modalApprox c m) t = ‖forwardExtend (c m) t‖ ^ 2 := by
+  rw [← coefficientField_l2_isometry W]
+  unfold GalerkinBasisFamily.modalApprox galerkinModalApprox
+    GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+    kineticEnergy schwartzL2Inner
+  apply integral_congr_ae
+  filter_upwards with x
+  rw [officialInner_eq_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  simp [pow_two]
+
 /-- **The projection fixes its own modes**: `P_m w_j = w_j` for `j < m`
 (pure orthonormality algebra). -/
 theorem proj_basis (W : GalerkinBasisFamily) {m j : ℕ} (hj : j < m) :
@@ -1216,5 +1311,81 @@ theorem proj_initial_converges (W : GalerkinBasisFamily) (u₀ : SchwartzVelocit
   have h := tendsto_integral_norm_sq_of_tendsto_officialInner_self
     (fun m => W.proj m u₀ - u₀) (proj_initial_converges_L2 W u₀ hu₀)
   simpa using h
+
+/-!
+## Certified-basis modal constructor
+
+This constructor exposes only the genuinely downstream analytic estimates.
+The basis realization itself, its initial projection, exact official energy,
+joint measurability, slice integrability, and initial convergence are all
+discharged here from the concrete coefficient curves and certified basis.
+-/
+
+/-- A coefficient curve initialized by the Galerkin coefficients realizes the
+genuine projected datum at `t = 0`. -/
+theorem modalApprox_initial_eq_proj (W : GalerkinBasisFamily)
+    (u₀ : SchwartzVelocity)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m) :
+    ∀ m : ℕ, W.modalApprox c m 0 = fun x => W.proj m u₀ x := by
+  intro m
+  rw [show W.modalApprox c m =
+      galerkinModalApprox (fun n => n) c (fun n => W.finiteModes n) m from rfl,
+    galerkinModalApprox_initial_eq]
+  funext x
+  change W.coefficientField (c m 0) x = W.proj m u₀ x
+  rw [hc0 m, coefficientField_initialCoefficients_eq_proj]
+
+/-- Build finite-mode Galerkin data from a certified divergence-free basis and
+actual Euclidean coefficient flows.  The constructor itself supplies the
+modal realization, projected initial slice, exact official-energy transfer,
+joint measurability, square-integrability, and Bessel convergence.  The
+remaining hypotheses are precisely the PDE estimates not implied by basis
+orthonormality: the inherited-sup kinetic bound, enstrophy, translations, and
+weak consistency. -/
+theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
+    (ν : ℝ) (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
+    (c F : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m) (F m t) (Set.Ici (0 : ℝ)) t)
+    (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m)
+    (bound : ℝ) (hbound : 0 ≤ bound)
+    (hbound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2)
+    (hkin : UniformKineticBound (W.modalApprox c) bound)
+    (henergy : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      ‖c m t‖ ^ 2 ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
+    (hens : UniformEnstrophyBound (W.modalApprox c) bound)
+    (htime : TimeEquicontinuous (W.modalApprox c))
+    (hspace : SpaceEquicontinuous (W.modalApprox c))
+    (hweak : ∀ φ : DivergenceFreeTestFunction,
+      Filter.Tendsto (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ)
+        Filter.atTop (nhds 0)) :
+    Nonempty (GalerkinModeData ν u₀) := by
+  refine ⟨{
+    approx := W.modalApprox c
+    initialMode := fun m => W.proj m u₀
+    initial_eq := modalApprox_initial_eq_proj W u₀ c hc0
+    bound := bound
+    bound_nonneg := hbound
+    bound_le := hbound_le
+    kinetic_bounded := hkin
+    official_kinetic_bounded := ?_
+    enstrophy_bounded := hens
+    time_equicontinuous := htime
+    space_equicontinuous := hspace
+    jointly_measurable := ?_
+    sq_integrable := ?_
+    initial_converges_L2 := proj_initial_converges_L2 W u₀ hu₀
+    weak_consistent := hweak }⟩
+  · intro m t ht
+    rw [modalApprox_kineticEnergy_eq W c m t,
+      forwardExtend_eq_of_nonneg (c m) ht]
+    exact henergy m t ht
+  · simpa [GalerkinBasisFamily.modalApprox] using
+      galerkinModalApprox_jointlyMeasurable (fun m => m) c F hc
+        (fun m => W.finiteModes m)
+  · simpa [GalerkinBasisFamily.modalApprox] using
+      galerkinModalApprox_sq_integrable (fun m => m) c
+        (fun m => W.finiteModes m)
 
 end Navier.Analysis.GalerkinBasis
