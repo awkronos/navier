@@ -361,6 +361,86 @@ theorem fourier_schwartz_integrable_right_frequency_kernel (f g : SchwartzMap ES
   integrable_right_frequency_kernel _ _ (𝓕 f).integrable.norm
     (fourier_schwartz_integrable_X1 g)
 
+/-- Product-space Fubini supplies an integrable (hence a.e. measurable)
+continuous convolution representative for scalar `L¹` profiles. -/
+theorem integrable_scalar_convolution (f g : ES → ℝ)
+    (hf : Integrable f) (hg : Integrable g) :
+    Integrable (convolution f g) := by
+  change Integrable (fun ξ : ES => ∫ η : ES, f η * g (ξ - η))
+  simpa using
+    (hf.convolution_integrand (L := ContinuousLinearMap.mul ℝ ℝ) hg).integral_prod_left
+
+/-- The weighted convolution inequality holds almost everywhere under the
+four `L¹` profile hypotheses.  This is the form appropriate for Bochner
+integration; demanding an everywhere representative is unnecessary. -/
+theorem ae_frequency_weighted_convolution_pointwise (f g : ES → ℝ)
+    (hf0 : Integrable f) (hg0 : Integrable g)
+    (hf1 : Integrable (fun η => ‖η‖ * f η))
+    (hg1 : Integrable (fun η => ‖η‖ * g η))
+    (hfn : ∀ η, 0 ≤ f η) (hgn : ∀ η, 0 ≤ g η) :
+    ∀ᵐ ξ : ES,
+      ‖ξ‖ * convolution f g ξ ≤
+        convolution (fun η => ‖η‖ * f η) g ξ +
+          convolution f (fun η => ‖η‖ * g η) ξ := by
+  have h0 := hf0.convolution_integrand (L := ContinuousLinearMap.mul ℝ ℝ) hg0
+  have hl := integrable_left_frequency_kernel f g hf1 hg0
+  have hr := integrable_right_frequency_kernel f g hf0 hg1
+  have h0ae : ∀ᵐ ξ : ES, Integrable (fun η : ES => f η * g (ξ - η)) :=
+    (integrable_prod_iff h0.aestronglyMeasurable).mp h0 |>.1
+  have hlae : ∀ᵐ ξ : ES, Integrable (fun η : ES => (‖η‖ * f η) * g (ξ - η)) :=
+    (integrable_prod_iff hl.aestronglyMeasurable).mp hl |>.1
+  have hrae : ∀ᵐ ξ : ES,
+      Integrable (fun η : ES => f η * (‖ξ - η‖ * g (ξ - η))) :=
+    (integrable_prod_iff hr.aestronglyMeasurable).mp hr |>.1
+  filter_upwards [h0ae, hlae, hrae] with ξ h0ξ hlξ hrξ
+  exact frequency_weighted_convolution_pointwise f g hfn hgn ξ h0ξ hlξ hrξ
+
+/-- Global continuous weighted convolution bound obtained by integrating the
+a.e. frequency allocation and using the two Tonelli factorizations. -/
+theorem weighted_convolution_mass_le (f g : ES → ℝ)
+    (hf0 : Integrable f) (hg0 : Integrable g)
+    (hf1 : Integrable (fun η => ‖η‖ * f η))
+    (hg1 : Integrable (fun η => ‖η‖ * g η))
+    (hfn : ∀ η, 0 ≤ f η) (hgn : ∀ η, 0 ≤ g η) :
+    (∫ ξ : ES, ‖ξ‖ * convolution f g ξ) ≤
+      (∫ η : ES, ‖η‖ * f η) * (∫ η : ES, g η) +
+        (∫ η : ES, f η) * (∫ η : ES, ‖η‖ * g η) := by
+  have hconv := integrable_scalar_convolution f g hf0 hg0
+  have hlconv := integrable_scalar_convolution (fun η => ‖η‖ * f η) g hf1 hg0
+  have hrconv := integrable_scalar_convolution f (fun η => ‖η‖ * g η) hf0 hg1
+  have hrhs : Integrable (fun ξ : ES =>
+      convolution (fun η => ‖η‖ * f η) g ξ +
+        convolution f (fun η => ‖η‖ * g η) ξ) := hlconv.add hrconv
+  have hae := ae_frequency_weighted_convolution_pointwise f g hf0 hg0 hf1 hg1 hfn hgn
+  have hconv_nonneg : ∀ ξ : ES, 0 ≤ convolution f g ξ := by
+    intro ξ
+    change 0 ≤ ∫ η : ES, f η * g (ξ - η)
+    apply integral_nonneg_of_ae
+    filter_upwards with η
+    exact mul_nonneg (hfn η) (hgn (ξ - η))
+  have hnorm : ∀ᵐ ξ : ES,
+      ‖‖ξ‖ * convolution f g ξ‖ ≤
+        convolution (fun η => ‖η‖ * f η) g ξ +
+          convolution f (fun η => ‖η‖ * g η) ξ := by
+    filter_upwards [hae] with ξ hξ
+    rw [Real.norm_eq_abs, abs_of_nonneg
+      (mul_nonneg (norm_nonneg ξ) (hconv_nonneg ξ))]
+    exact hξ
+  have hlhs : Integrable (fun ξ : ES => ‖ξ‖ * convolution f g ξ) :=
+    hrhs.mono' (continuous_norm.aestronglyMeasurable.mul hconv.aestronglyMeasurable) hnorm
+  calc
+    (∫ ξ : ES, ‖ξ‖ * convolution f g ξ) ≤
+        ∫ ξ : ES, convolution (fun η => ‖η‖ * f η) g ξ +
+          convolution f (fun η => ‖η‖ * g η) ξ := integral_mono_ae hlhs hrhs hae
+    _ = (∫ η : ES, ‖η‖ * f η) * (∫ η : ES, g η) +
+          (∫ η : ES, f η) * (∫ η : ES, ‖η‖ * g η) := by
+      rw [integral_add hlconv hrconv]
+      change normX0 (convolution (fun η => ‖η‖ * f η) g) +
+          normX0 (convolution f (fun η => ‖η‖ * g η)) = _
+      rw [normX0_convolution_eq (fun η => ‖η‖ * f η) g hf1 hg0,
+        normX0_convolution_eq f (fun η => ‖η‖ * g η) hf0 hg1]
+      rfl
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -383,3 +463,6 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.integral_right_frequency_kernel
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_left_frequency_kernel
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_right_frequency_kernel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_scalar_convolution
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.ae_frequency_weighted_convolution_pointwise
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.weighted_convolution_mass_le
