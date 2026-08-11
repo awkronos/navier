@@ -307,6 +307,60 @@ theorem frequency_weighted_convolution_pointwise (f g : ES → ℝ)
   intro η
   exact frequency_weighted_product_split ξ η (hf η) (hg (ξ - η))
 
+/-- The first derivative-allocation kernel is integrable on frequency space
+times frequency space.  This is the Tonelli input for the `X¹(f) X⁰(g)`
+term. -/
+theorem integrable_left_frequency_kernel (f g : ES → ℝ)
+    (hf : Integrable (fun η => ‖η‖ * f η)) (hg : Integrable g) :
+    Integrable (fun p : ES × ES => (‖p.2‖ * f p.2) * g (p.1 - p.2))
+      (volume.prod volume) := by
+  simpa using hf.convolution_integrand (L := ContinuousLinearMap.mul ℝ ℝ) hg
+
+/-- The second derivative-allocation kernel is integrable on the product
+frequency space. -/
+theorem integrable_right_frequency_kernel (f g : ES → ℝ)
+    (hf : Integrable f) (hg : Integrable (fun η => ‖η‖ * g η)) :
+    Integrable (fun p : ES × ES => f p.2 * (‖p.1 - p.2‖ * g (p.1 - p.2)))
+      (volume.prod volume) := by
+  simpa [mul_comm, mul_left_comm, mul_assoc] using
+    hf.convolution_integrand (L := ContinuousLinearMap.mul ℝ ℝ) hg
+
+/-- Tonelli and the continuous convolution identity factor the first product
+kernel into its two Fourier masses. -/
+theorem integral_left_frequency_kernel (f g : ES → ℝ)
+    (hf : Integrable (fun η => ‖η‖ * f η)) (hg : Integrable g) :
+    (∫ p : ES × ES, (‖p.2‖ * f p.2) * g (p.1 - p.2) ∂(volume.prod volume)) =
+      (∫ η : ES, ‖η‖ * f η) * normX0 g := by
+  rw [integral_prod _ (integrable_left_frequency_kernel f g hf hg)]
+  exact normX0_convolution_eq (fun η => ‖η‖ * f η) g hf hg
+
+/-- Tonelli and translation invariance factor the second product kernel. -/
+theorem integral_right_frequency_kernel (f g : ES → ℝ)
+    (hf : Integrable f) (hg : Integrable (fun η => ‖η‖ * g η)) :
+    (∫ p : ES × ES, f p.2 * (‖p.1 - p.2‖ * g (p.1 - p.2)) ∂(volume.prod volume)) =
+      normX0 f * (∫ η : ES, ‖η‖ * g η) := by
+  rw [integral_prod _ (integrable_right_frequency_kernel f g hf hg)]
+  exact normX0_convolution_eq f (fun η => ‖η‖ * g η) hf hg
+
+/-- For Fourier transforms of Schwartz data, the first Tonelli kernel is
+integrable on the actual continuous product frequency space. -/
+theorem fourier_schwartz_integrable_left_frequency_kernel (f g : SchwartzMap ES ℂ) :
+    Integrable
+      (fun p : ES × ES =>
+        (‖p.2‖ * ‖(𝓕 f) p.2‖) * ‖(𝓕 g) (p.1 - p.2)‖)
+      (volume.prod volume) :=
+  integrable_left_frequency_kernel _ _ (fourier_schwartz_integrable_X1 f)
+    (𝓕 g).integrable.norm
+
+/-- The symmetric Schwartz Fourier kernel is likewise Tonelli-integrable. -/
+theorem fourier_schwartz_integrable_right_frequency_kernel (f g : SchwartzMap ES ℂ) :
+    Integrable
+      (fun p : ES × ES => ‖(𝓕 f) p.2‖ *
+        (‖p.1 - p.2‖ * ‖(𝓕 g) (p.1 - p.2)‖))
+      (volume.prod volume) :=
+  integrable_right_frequency_kernel _ _ (𝓕 f).integrable.norm
+    (fourier_schwartz_integrable_X1 g)
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -323,3 +377,9 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_product_split
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_norm_product_split
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_convolution_pointwise
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_left_frequency_kernel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_right_frequency_kernel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integral_left_frequency_kernel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integral_right_frequency_kernel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_left_frequency_kernel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_right_frequency_kernel
