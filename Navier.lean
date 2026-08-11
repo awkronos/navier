@@ -128,6 +128,7 @@ import Navier.Analysis.LeiLinLinearEstimate
 import Navier.Analysis.GlobalRegularityEndpoint
 import Navier.Analysis.LeiLinBilinear
 import Navier.Analysis.LeiLinFixedPoint
+import Navier.Analysis.LeiLinSmallDataObstruction
 import Navier.Analysis.LeiLinCoerciveTerminal
 import Navier.Analysis.LeiLinTimeMixed
 
