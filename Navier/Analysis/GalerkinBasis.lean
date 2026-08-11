@@ -1436,6 +1436,83 @@ noncomputable def velocityPairingSchwartz (u v : SchwartzVelocity) :
     velocityPairingSchwartz u v x = officialInner (u x) (v x) := by
   simp [velocityPairingSchwartz, officialInner_eq_sum]
 
+/-- Pointwise cross product retained in the Schwartz class. -/
+noncomputable def crossSchwartz (u v : SchwartzVelocity) : SchwartzVelocity :=
+  ∑ i : Fin 3,
+    SchwartzMap.pairing (ContinuousLinearMap.lsmul ℝ ℝ)
+      (componentSchwartz u i)
+      (SchwartzMap.postcompCLM
+        (LinearMap.toContinuousLinearMap (crossProduct (basisVector i))) v)
+
+@[simp] theorem crossSchwartz_apply (u v : SchwartzVelocity) (x : Space) :
+    crossSchwartz u v x = crossProduct (u x) (v x) := by
+  ext k
+  fin_cases k <;>
+    simp [crossSchwartz, componentSchwartz, basisVector, cross_apply,
+      Fin.sum_univ_three, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_two, Matrix.head_cons] <;>
+    ring
+
+/-- Whole-space curl integration by parts for a divergence-free Schwartz test
+field: the curl pairing equals the negative Laplacian pairing. -/
+theorem schwartzL2Inner_curl_eq_neg_laplacian (u v : SchwartzVelocity)
+    (hv : DivergenceFreeInitial v) :
+    schwartzL2Inner (curlSchwartzCLM u) (curlSchwartzCLM v) =
+      -schwartzL2Inner u (laplacianSchwartz v) := by
+  let flux := crossSchwartz u (curlSchwartzCLM v)
+  have hflux : ∀ i : Fin 3, Integrable (fun x => flux x i) := by
+    intro i
+    refine (componentSchwartz flux i).integrable.congr ?_
+    filter_upwards with x
+    simp [flux]
+  have hfluxDeriv : ∀ i : Fin 3,
+      Integrable (fun x => fderiv ℝ (fun y => flux y i) x (basisVector i)) := by
+    intro i
+    have hint : Integrable
+        (fun x : Space => (∂_{basisVector i} (componentSchwartz flux i)) x)
+        (volume : Measure Space) :=
+      (∂_{basisVector i} (componentSchwartz flux i)).integrable
+    refine hint.congr ?_
+    filter_upwards with x
+    rw [SchwartzMap.lineDerivOp_apply_eq_fderiv]
+    congr 2
+  have hzero :=
+    Navier.Analysis.EnergyPressureIntegral.integral_staticDivergence_eq_zero
+      flux flux.differentiable hflux hfluxDeriv
+  have hpoint (x : Space) : staticDivergence flux x =
+      officialInner (curlSchwartzCLM u x) (curlSchwartzCLM v x) +
+        officialInner (u x) (laplacianSchwartz v x) := by
+    rw [show (flux : Space → Space) =
+        fun y => crossProduct (u y) (curlSchwartzCLM v y) by
+      funext y
+      simp [flux]]
+    rw [Navier.Analysis.CurlIdentities.staticDivergence_cross u
+      (curlSchwartzCLM v) x (schwartz_differentiableAt u x)
+      (schwartz_differentiableAt (curlSchwartzCLM v) x)]
+    rw [← curlSchwartzCLM_apply u x,
+      ← curlSchwartzCLM_apply (curlSchwartzCLM v) x,
+      curlCurlSchwartz_eq_neg_laplacian v hv]
+    rw [officialInner_comm (curlSchwartzCLM u x) (curlSchwartzCLM v x)]
+    simp [officialInner_eq_sum, dotProduct]
+  have hrewrite : (fun x => staticDivergence flux x) = fun x =>
+      officialInner (curlSchwartzCLM u x) (curlSchwartzCLM v x) +
+        officialInner (u x) (laplacianSchwartz v x) := funext hpoint
+  rw [hrewrite] at hzero
+  have hcurl : Integrable (fun x =>
+      officialInner (curlSchwartzCLM u x) (curlSchwartzCLM v x)) := by
+    refine (velocityPairingSchwartz (curlSchwartzCLM u)
+      (curlSchwartzCLM v)).integrable.congr ?_
+    filter_upwards with x
+    simp
+  have hlap : Integrable (fun x =>
+      officialInner (u x) (laplacianSchwartz v x)) := by
+    refine (velocityPairingSchwartz u (laplacianSchwartz v)).integrable.congr ?_
+    filter_upwards with x
+    simp
+  rw [MeasureTheory.integral_add hcurl hlap] at hzero
+  unfold schwartzL2Inner
+  linarith
+
 /-- The Schwartz flux whose divergence implements skew-adjointness of
 transport by a divergence-free field. -/
 noncomputable def transportPairingFluxSchwartz (u v : SchwartzVelocity) :
@@ -1763,6 +1840,64 @@ noncomputable def GalerkinBasisFamily.stokesOperator (W : GalerkinBasisFamily)
       schwartzL2Inner (curlSchwartzCLM (W.w i))
         (curlSchwartzCLM (W.coefficientField a)) := by
   simp [GalerkinBasisFamily.stokesOperator]
+
+/-- Pairing the concrete finite-mode Stokes operator against retained
+coefficients is exactly the physical weak Laplacian term. -/
+theorem stokesOperator_pairing (W : GalerkinBasisFamily) (m : ℕ)
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    schwartzL2Inner (W.coefficientField (W.stokesOperator m a))
+        (W.coefficientField b) =
+      -schwartzL2Inner (W.coefficientField a)
+        (laplacianSchwartz (W.coefficientField b)) := by
+  rw [coefficientField_l2_inner, PiLp.inner_apply]
+  simp only [stokesOperator_apply, RCLike.inner_apply, conj_trivial]
+  have hbfield : curlSchwartzCLM (W.coefficientField b) =
+      ∑ i : Fin m, b i • curlSchwartzCLM (W.w i) := by
+    rw [show W.coefficientField b = ∑ i : Fin m, b i • W.w i from rfl,
+      map_sum]
+    exact Finset.sum_congr rfl (fun i _ => by rw [map_smul])
+  calc
+    (∑ i : Fin m, b i *
+        schwartzL2Inner (curlSchwartzCLM (W.w i))
+          (curlSchwartzCLM (W.coefficientField a))) =
+        schwartzL2Inner
+          (∑ i : Fin m, b i • curlSchwartzCLM (W.w i))
+          (curlSchwartzCLM (W.coefficientField a)) := by
+      rw [schwartzL2Inner_finset_sum_left]
+      exact Finset.sum_congr rfl
+        (fun i _ => (schwartzL2Inner_smul_left _ _ _).symm)
+    _ = schwartzL2Inner (curlSchwartzCLM (W.coefficientField b))
+        (curlSchwartzCLM (W.coefficientField a)) := by rw [← hbfield]
+    _ = schwartzL2Inner (curlSchwartzCLM (W.coefficientField a))
+        (curlSchwartzCLM (W.coefficientField b)) :=
+      schwartzL2Inner_comm _ _
+    _ = -schwartzL2Inner (W.coefficientField a)
+        (laplacianSchwartz (W.coefficientField b)) :=
+      schwartzL2Inner_curl_eq_neg_laplacian _ _
+        (divergenceFreeInitial_sum_smul Finset.univ
+          (fun i : Fin m => b i) (fun i : Fin m => W.w i)
+          (fun i => W.divergence_free i))
+
+/-- The concrete projected vector field paired with a retained mode is the
+physical viscous-plus-convective weak spatial term. -/
+theorem projectedVectorField_pairing (W : GalerkinBasisFamily) (ν : ℝ)
+    (m : ℕ) (a b : EuclideanSpace ℝ (Fin m)) :
+    schwartzL2Inner
+        (W.coefficientField
+          (-(ν • W.stokesOperator m a) + W.convectionOperator m a))
+        (W.coefficientField b) =
+      schwartzL2Inner (W.coefficientField a)
+        (ν • laplacianSchwartz (W.coefficientField b) +
+          convectionSchwartzBilin (W.coefficientField a)
+            (W.coefficientField b)) := by
+  rw [coefficientField_add,
+    show -(ν • W.stokesOperator m a) =
+      (-ν) • W.stokesOperator m a by simp,
+    coefficientField_smul, schwartzL2Inner_add_left,
+    schwartzL2Inner_smul_left, stokesOperator_pairing,
+    convectionOperator_pairing, schwartzL2Inner_add_right,
+    schwartzL2Inner_smul_right]
+  ring
 
 /-- The Stokes quadratic form is exactly physical modal enstrophy. -/
 theorem stokesOperator_inner_eq_enstrophy (W : GalerkinBasisFamily) (m : ℕ)
@@ -2442,6 +2577,30 @@ theorem modalFlow_retainedSpan_weakEquation (W : GalerkinBasisFamily)
     rw [hb_zero T le_rfl, inner_zero_right, zero_sub] at hftc
     linarith
   simpa only [coefficientField_l2_inner, F] using hcoeff
+
+/-- The retained-span coefficient equation rewritten entirely as the physical
+weak-form integrand.  The test still lies in the first `m` basis modes; this
+statement makes no density or all-Schwartz-test assertion. -/
+theorem modalFlow_retainedSpan_physicalWeakEquation (W : GalerkinBasisFamily)
+    (ν : ℝ) (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) (b b' : ℝ → EuclideanSpace ℝ (Fin m))
+    (hb : ∀ t : ℝ, HasDerivAt b (b' t) t) (hb'_cont : Continuous b')
+    (T : ℝ) (hT : 0 ≤ T) (hb_zero : ∀ t : ℝ, T ≤ t → b t = 0) :
+    (∫ t in (0 : ℝ)..T,
+        schwartzL2Inner (W.coefficientField (c m t))
+          (W.coefficientField (b' t)) +
+        schwartzL2Inner (W.coefficientField (c m t))
+          (ν • laplacianSchwartz (W.coefficientField (b t)) +
+            convectionSchwartzBilin (W.coefficientField (c m t))
+              (W.coefficientField (b t)))) +
+      schwartzL2Inner (W.coefficientField (c m 0))
+        (W.coefficientField (b 0)) = 0 := by
+  simpa only [projectedVectorField_pairing] using
+    modalFlow_retainedSpan_weakEquation W ν c hc m b b' hb hb'_cont T hT hb_zero
 
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
