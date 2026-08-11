@@ -2241,6 +2241,120 @@ theorem proj_error_pairing_tendsto_zero (W : GalerkinBasisFamily)
       abs_schwartzL2Inner_le (u₀ - W.proj m u₀) v
   · simpa using hnorm.mul_const ‖toL2 v‖
 
+/-- A retained modal field pairs identically with a Schwartz field and with
+its projection onto the same retained span. -/
+theorem coefficientField_pairing_proj (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (v : SchwartzVelocity) :
+    schwartzL2Inner (W.coefficientField a) (W.proj m v) =
+      schwartzL2Inner (W.coefficientField a) v := by
+  rw [← coefficientField_initialCoefficients_eq_proj,
+    coefficientField_l2_inner, PiLp.inner_apply]
+  change (∑ i : Fin m, (W.initialCoefficients v m i) * a i) = _
+  rw [show W.coefficientField a = ∑ i : Fin m, a i • W.w i from rfl,
+    schwartzL2Inner_finset_sum_left]
+  apply Finset.sum_congr rfl
+  intro i _
+  change schwartzL2Inner v (W.w i) * a i =
+    schwartzL2Inner (a i • W.w i) v
+  rw [schwartzL2Inner_smul_left, schwartzL2Inner_comm v (W.w i)]
+  ring
+
+/-- Modal coefficients of a time-dependent Schwartz test slice. -/
+noncomputable def GalerkinBasisFamily.modalTestCoefficients
+    (W : GalerkinBasisFamily) (φ : ℝ → SchwartzVelocity) (m : ℕ) :
+    ℝ → EuclideanSpace ℝ (Fin m) :=
+  fun t => W.initialCoefficients (φ t) m
+
+theorem coefficientField_modalTestCoefficients
+    (W : GalerkinBasisFamily) (φ : ℝ → SchwartzVelocity) (m : ℕ) (t : ℝ) :
+    W.coefficientField (W.modalTestCoefficients φ m t) = W.proj m (φ t) := by
+  exact coefficientField_initialCoefficients_eq_proj W (φ t) m
+
+/-- Pairing a retained solution slice with the modal test projection is
+exactly pairing it with the original test slice. -/
+theorem coefficientField_pairing_modalTestCoefficients
+    (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (φ : ℝ → SchwartzVelocity) (t : ℝ) :
+    schwartzL2Inner (W.coefficientField a)
+        (W.coefficientField (W.modalTestCoefficients φ m t)) =
+      schwartzL2Inner (W.coefficientField a) (φ t) := by
+  rw [coefficientField_modalTestCoefficients,
+    coefficientField_pairing_proj]
+
+/-- Projection convergence tested against a fixed Schwartz field. -/
+theorem proj_pairing_tendsto (W : GalerkinBasisFamily)
+    (u : SchwartzVelocity) (hu : DivergenceFreeInitial u)
+    (v : SchwartzVelocity) :
+    Filter.Tendsto (fun m => schwartzL2Inner (W.proj m u) v)
+      Filter.atTop (nhds (schwartzL2Inner u v)) := by
+  have h := proj_error_pairing_tendsto_zero W u hu v
+  have hconst : Filter.Tendsto (fun _ : ℕ => schwartzL2Inner u v)
+      Filter.atTop (nhds (schwartzL2Inner u v)) := tendsto_const_nhds
+  have hsub := hconst.sub h
+  have heq : (fun m => schwartzL2Inner (W.proj m u) v) =
+      fun m => schwartzL2Inner u v -
+        schwartzL2Inner (u - W.proj m u) v := by
+    funext m
+    rw [schwartzL2Inner_sub_left]
+    ring
+  rw [heq]
+  simpa using hsub
+
+/-- Projection convergence in the second argument, by symmetry. -/
+theorem pairing_proj_tendsto (W : GalerkinBasisFamily)
+    (u v : SchwartzVelocity) (hv : DivergenceFreeInitial v) :
+    Filter.Tendsto (fun m => schwartzL2Inner u (W.proj m v))
+      Filter.atTop (nhds (schwartzL2Inner u v)) := by
+  simpa only [schwartzL2Inner_comm u, schwartzL2Inner_comm u v] using
+    proj_pairing_tendsto W v hv u
+
+/-- Fixed linear pairings against modal test projections converge by basis
+completeness. -/
+theorem modalTestProjection_pairing_tendsto (W : GalerkinBasisFamily)
+    (u : SchwartzVelocity) (φ : ℝ → SchwartzVelocity) (t : ℝ)
+    (hφ : DivergenceFreeInitial (φ t)) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner u
+        (W.coefficientField (W.modalTestCoefficients φ m t)))
+      Filter.atTop (nhds (schwartzL2Inner u (φ t))) := by
+  simpa only [coefficientField_modalTestCoefficients] using
+    pairing_proj_tendsto W u (φ t) hφ
+
+/-- Projecting both the datum and the fixed test has the same initial-pairing
+limit as the unprojected pair. -/
+theorem initialProjection_pairing_tendsto (W : GalerkinBasisFamily)
+    (u : SchwartzVelocity) (hu : DivergenceFreeInitial u)
+    (v : SchwartzVelocity) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner
+        (W.coefficientField (W.initialCoefficients u m))
+        (W.coefficientField (W.initialCoefficients v m)))
+      Filter.atTop (nhds (schwartzL2Inner u v)) := by
+  have h := proj_pairing_tendsto W u hu v
+  have heq : (fun m => schwartzL2Inner
+      (W.coefficientField (W.initialCoefficients u m))
+      (W.coefficientField (W.initialCoefficients v m))) =
+      fun m => schwartzL2Inner (W.proj m u) v := by
+    funext m
+    rw [coefficientField_initialCoefficients_eq_proj W v m,
+      coefficientField_pairing_proj,
+      coefficientField_initialCoefficients_eq_proj W u m]
+  rw [heq]
+  exact h
+
+/-- The initial linear pairing of a coefficient flow initialized by modal
+projection converges to the datum pairing. -/
+theorem modalInitial_pairing_tendsto (W : GalerkinBasisFamily)
+    (u : SchwartzVelocity) (hu : DivergenceFreeInitial u)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u m)
+    (v : SchwartzVelocity) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (c m 0)) v)
+      Filter.atTop (nhds (schwartzL2Inner u v)) := by
+  have h := proj_pairing_tendsto W u hu v
+  simpa only [hc0, coefficientField_initialCoefficients_eq_proj] using h
+
 /-!
 ## Certified-basis modal constructor
 
@@ -2601,6 +2715,46 @@ theorem modalFlow_retainedSpan_physicalWeakEquation (W : GalerkinBasisFamily)
         (W.coefficientField (b 0)) = 0 := by
   simpa only [projectedVectorField_pairing] using
     modalFlow_retainedSpan_weakEquation W ν c hc m b b' hb hb'_cont T hT hb_zero
+
+/-- Apply the retained-span physical equation to the actual first-`m` modal
+projection of a compactly time-supported Schwartz test.  The hypothesis
+`hmodal_deriv` is the explicit differentiation-under-the-spatial-integral
+seam: it identifies the coefficient derivative with the supplied Schwartz
+slice `φ'`. -/
+theorem modalFlow_projectedTest_physicalWeakEquation
+    (W : GalerkinBasisFamily) (ν : ℝ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (φ : DivergenceFreeTestFunction) (φ' : ℝ → SchwartzVelocity) (m : ℕ)
+    (hmodal_deriv : ∀ t : ℝ,
+      HasDerivAt (W.modalTestCoefficients φ.field m)
+        (W.modalTestCoefficients φ' m t) t)
+    (hmodal_deriv_cont : Continuous (W.modalTestCoefficients φ' m)) :
+    ∃ T : ℝ, 0 < T ∧
+      (∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (W.proj m (φ.field t)) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (W.proj m (φ.field t)))) +
+        schwartzL2Inner (W.coefficientField (c m 0))
+          (φ.field 0) = 0 := by
+  obtain ⟨T, hT, hφzero⟩ := φ.compact_time
+  refine ⟨T, hT, ?_⟩
+  have hbzero : ∀ t : ℝ, T ≤ t → W.modalTestCoefficients φ.field m t = 0 := by
+    intro t ht
+    ext i
+    simp [GalerkinBasisFamily.modalTestCoefficients, hφzero t ht,
+      GalerkinBasisFamily.initialCoefficients, GalerkinBasisFamily.coeff,
+      schwartzL2Inner_zero_left]
+  have h := modalFlow_retainedSpan_physicalWeakEquation W ν c hc m
+      (W.modalTestCoefficients φ.field m) (W.modalTestCoefficients φ' m)
+      hmodal_deriv hmodal_deriv_cont T hT.le hbzero
+  simp_rw [coefficientField_pairing_modalTestCoefficients] at h
+  simpa only [coefficientField_modalTestCoefficients] using h
 
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
