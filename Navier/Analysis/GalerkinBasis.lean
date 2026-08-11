@@ -3180,6 +3180,164 @@ theorem modalFlow_projectedTest_splitResidualWeakEquation
   rw [hintegral] at heq
   exact heq
 
+/-- Fixed-horizon version of the fully split projected-test equation.  This is
+the form consumed by the scalar commutator limit theorem below. -/
+theorem modalFlow_projectedTest_splitResidualWeakEquation_at
+    (W : GalerkinBasisFamily) (ν : ℝ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (φ : DivergenceFreeTestFunction) (φ' : ℝ → SchwartzVelocity)
+    (T : ℝ) (hT : 0 ≤ T) (hφzero : ∀ t, T ≤ t → φ.field t = 0)
+    (m : ℕ)
+    (hmodal_deriv : ∀ t : ℝ,
+      HasDerivAt (W.modalTestCoefficients φ.field m)
+        (W.modalTestCoefficients φ' m t) t)
+    (hmodal_deriv_cont : Continuous (W.modalTestCoefficients φ' m)) :
+    (∫ t in (0 : ℝ)..T,
+        schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+        schwartzL2Inner (W.coefficientField (c m t))
+          (ν • laplacianSchwartz (φ.field t) +
+            convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t)) +
+        ν * schwartzL2Inner (W.coefficientField (c m t))
+          (W.laplacianProjectionCommutator m (φ.field t)) +
+        schwartzL2Inner (W.coefficientField (c m t))
+          (W.convectionTestProjectionCommutator m
+            (W.coefficientField (c m t)) (φ.field t))) +
+      schwartzL2Inner (W.coefficientField (c m 0)) (φ.field 0) = 0 := by
+  have hbzero : ∀ t : ℝ, T ≤ t → W.modalTestCoefficients φ.field m t = 0 := by
+    intro t ht
+    ext i
+    simp [GalerkinBasisFamily.modalTestCoefficients, hφzero t ht,
+      GalerkinBasisFamily.initialCoefficients, GalerkinBasisFamily.coeff,
+      schwartzL2Inner_zero_left]
+  have h := modalFlow_retainedSpan_physicalWeakEquation W ν c hc m
+    (W.modalTestCoefficients φ.field m) (W.modalTestCoefficients φ' m)
+    hmodal_deriv hmodal_deriv_cont T hT hbzero
+  simp_rw [coefficientField_pairing_modalTestCoefficients] at h
+  simp only [coefficientField_modalTestCoefficients] at h
+  have hintegral :
+      (∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (W.proj m (φ.field t)) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (W.proj m (φ.field t)))) =
+        ∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (φ.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t)) +
+          ν * schwartzL2Inner (W.coefficientField (c m t))
+            (W.laplacianProjectionCommutator m (φ.field t)) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (W.convectionTestProjectionCommutator m
+              (W.coefficientField (c m t)) (φ.field t)) := by
+    apply intervalIntegral.integral_congr
+    intro t _
+    dsimp only
+    rw [schwartzL2Inner_add_right, schwartzL2Inner_smul_right,
+      coefficientField_laplacianProjection_pairing,
+      convectionTestProjection_pairing,
+      schwartzL2Inner_add_right, schwartzL2Inner_smul_right]
+    ring
+  rw [hintegral] at h
+  exact h
+
+/-- Direct fixed-test weak-residual limit.  The retained ODE supplies the
+split equation; after the finite-interval/`weakFormResidual` identification,
+only the two scalar projection-commutator integrals must vanish. -/
+theorem modalFlow_fixedTest_projectedResidual_tendsto_of_commutators
+    (W : GalerkinBasisFamily) (ν : ℝ) (u₀ : SchwartzVelocity)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (hc0 : ∀ m, c m 0 = W.initialCoefficients u₀ m)
+    (φ : DivergenceFreeTestFunction) (φ' : ℝ → SchwartzVelocity)
+    (T : ℝ) (hT : 0 ≤ T) (hφzero : ∀ t, T ≤ t → φ.field t = 0)
+    (hmodal_deriv : ∀ (m : ℕ) (t : ℝ),
+      HasDerivAt (W.modalTestCoefficients φ.field m)
+        (W.modalTestCoefficients φ' m t) t)
+    (hmodal_deriv_cont : ∀ m, Continuous (W.modalTestCoefficients φ' m))
+    (hidentify : ∀ m,
+      weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ =
+        (∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (φ.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t))) +
+        schwartzL2Inner (W.proj m u₀) (φ.field 0))
+    (hmainInt : ∀ m, IntervalIntegrable (fun t =>
+      schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+      schwartzL2Inner (W.coefficientField (c m t))
+        (ν • laplacianSchwartz (φ.field t) +
+          convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t)))
+      volume 0 T)
+    (hlapInt : ∀ m, IntervalIntegrable (fun t =>
+      ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (φ.field t))) volume 0 T)
+    (hconvInt : ∀ m, IntervalIntegrable (fun t =>
+      schwartzL2Inner (W.coefficientField (c m t))
+        (W.convectionTestProjectionCommutator m
+          (W.coefficientField (c m t)) (φ.field t))) volume 0 T)
+    (hlap : Filter.Tendsto (fun m =>
+      ∫ t in (0 : ℝ)..T, ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (φ.field t)))
+      Filter.atTop (nhds 0))
+    (hconv : Filter.Tendsto (fun m =>
+      ∫ t in (0 : ℝ)..T, schwartzL2Inner (W.coefficientField (c m t))
+        (W.convectionTestProjectionCommutator m
+          (W.coefficientField (c m t)) (φ.field t)))
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ)
+      Filter.atTop (nhds 0) := by
+  have heq (m : ℕ) := modalFlow_projectedTest_splitResidualWeakEquation_at
+    W ν c hc φ φ' T hT hφzero m (hmodal_deriv m) (hmodal_deriv_cont m)
+  have hresidual : (fun m =>
+      weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ) = fun m =>
+      -(∫ t in (0 : ℝ)..T, ν * schwartzL2Inner (W.coefficientField (c m t))
+          (W.laplacianProjectionCommutator m (φ.field t))) -
+      (∫ t in (0 : ℝ)..T, schwartzL2Inner (W.coefficientField (c m t))
+          (W.convectionTestProjectionCommutator m
+            (W.coefficientField (c m t)) (φ.field t))) := by
+    funext m
+    have heq' := heq m
+    rw [intervalIntegral.integral_add ((hmainInt m).add (hlapInt m)) (hconvInt m),
+      intervalIntegral.integral_add (hmainInt m) (hlapInt m)] at heq'
+    rw [hidentify m, ← coefficientField_initialCoefficients_eq_proj W u₀ m,
+      ← hc0 m]
+    linarith [heq']
+  rw [hresidual]
+  simpa using hlap.neg.sub hconv
+
+/-- Fixed-test form of the projected-datum correction.  Together with
+`modalFlow_fixedTest_projectedResidual_tendsto_of_commutators`, this supplies
+the exact fixed-test input consumed by Galerkin weak consistency. -/
+theorem modalApprox_fixedTest_weakConsistent_of_projectedDatum
+    (W : GalerkinBasisFamily) (ν : ℝ)
+    (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (φ : DivergenceFreeTestFunction)
+    (hprojected : Filter.Tendsto
+      (fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ)
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ)
+      Filter.atTop (nhds 0) := by
+  have heq : (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ) =
+      fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ +
+        schwartzL2Inner (u₀ - W.proj m u₀) (φ.field 0) := by
+    funext m
+    exact weakFormResidual_eq_projectedDatum_add W ν u₀ (W.modalApprox c m) φ m
+  rw [heq]
+  simpa using hprojected.add
+    (proj_error_pairing_tendsto_zero W u₀ hu₀ (φ.field 0))
+
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
 modal realization, projected initial slice, exact official-energy transfer,
