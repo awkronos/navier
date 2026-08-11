@@ -2320,6 +2320,105 @@ theorem modalTestProjection_pairing_tendsto (W : GalerkinBasisFamily)
   simpa only [coefficientField_modalTestCoefficients] using
     pairing_proj_tendsto W u (φ t) hφ
 
+/-- The commutator measuring the exact gap between projecting a test before
+and after applying the Schwartz Laplacian.  Plain `L²` completeness controls
+`Pₘ(Δφ)`, but does not make this commutator vanish. -/
+noncomputable def GalerkinBasisFamily.laplacianProjectionCommutator
+    (W : GalerkinBasisFamily) (m : ℕ) (φ : SchwartzVelocity) : SchwartzVelocity :=
+  laplacianSchwartz (W.proj m φ) - W.proj m (laplacianSchwartz φ)
+
+theorem laplacian_proj_eq_proj_laplacian_add_commutator
+    (W : GalerkinBasisFamily) (m : ℕ) (φ : SchwartzVelocity) :
+    laplacianSchwartz (W.proj m φ) =
+      W.proj m (laplacianSchwartz φ) +
+        W.laplacianProjectionCommutator m φ := by
+  unfold GalerkinBasisFamily.laplacianProjectionCommutator
+  abel
+
+/-- Against a retained modal field, the projected-test Laplacian splits into
+the fixed physical Laplacian plus exactly one commutator pairing. -/
+theorem coefficientField_laplacianProjection_pairing
+    (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (φ : SchwartzVelocity) :
+    schwartzL2Inner (W.coefficientField a)
+        (laplacianSchwartz (W.proj m φ)) =
+      schwartzL2Inner (W.coefficientField a) (laplacianSchwartz φ) +
+        schwartzL2Inner (W.coefficientField a)
+          (W.laplacianProjectionCommutator m φ) := by
+  rw [laplacian_proj_eq_proj_laplacian_add_commutator,
+    schwartzL2Inner_add_right, coefficientField_pairing_proj]
+
+/-- Linear Laplacian limit passage for retained fields.  The fixed-test term
+is separated from the sole graph-norm obstruction, the Laplacian/projection
+commutator. -/
+theorem coefficientField_laplacianProjection_pairing_tendsto
+    (W : GalerkinBasisFamily)
+    (a : ∀ m : ℕ, EuclideanSpace ℝ (Fin m)) (φ : SchwartzVelocity) (L : ℝ)
+    (hlinear : Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (laplacianSchwartz φ)) Filter.atTop (nhds L))
+    (hcomm : Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (W.laplacianProjectionCommutator m φ)) Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (laplacianSchwartz (W.proj m φ))) Filter.atTop (nhds L) := by
+  have hadd := hlinear.add hcomm
+  have heq : (fun m => schwartzL2Inner (W.coefficientField (a m))
+      (laplacianSchwartz (W.proj m φ))) = fun m =>
+      schwartzL2Inner (W.coefficientField (a m)) (laplacianSchwartz φ) +
+        schwartzL2Inner (W.coefficientField (a m))
+          (W.laplacianProjectionCommutator m φ) := by
+    funext m
+    exact coefficientField_laplacianProjection_pairing W (a m) φ
+  rw [heq]
+  simpa using hadd
+
+/-- Unconditional linear convergence with the Laplacian projected *after* it
+is taken.  This is the part supplied by ordinary `L²` basis completeness. -/
+theorem proj_projectedLaplacian_pairing_tendsto
+    (W : GalerkinBasisFamily) (u : SchwartzVelocity)
+    (hu : DivergenceFreeInitial u) (φ : SchwartzVelocity) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (W.proj m u)
+        (W.proj m (laplacianSchwartz φ)))
+      Filter.atTop (nhds (schwartzL2Inner u (laplacianSchwartz φ))) := by
+  have h := proj_pairing_tendsto W u hu (laplacianSchwartz φ)
+  have heq : (fun m => schwartzL2Inner (W.proj m u)
+      (W.proj m (laplacianSchwartz φ))) =
+      fun m => schwartzL2Inner (W.proj m u) (laplacianSchwartz φ) := by
+    funext m
+    rw [← coefficientField_initialCoefficients_eq_proj W u m,
+      coefficientField_pairing_proj]
+  rw [heq]
+  exact h
+
+/-- Specialization of the linear Laplacian limit to projected fixed data.
+Basis completeness proves the fixed-Laplacian term; only the displayed
+commutator limit remains as an assumption. -/
+theorem proj_laplacianProjection_pairing_tendsto_of_commutator
+    (W : GalerkinBasisFamily) (u : SchwartzVelocity)
+    (hu : DivergenceFreeInitial u) (φ : SchwartzVelocity)
+    (hcomm : Filter.Tendsto
+      (fun m => schwartzL2Inner (W.proj m u)
+        (W.laplacianProjectionCommutator m φ)) Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (W.proj m u)
+        (laplacianSchwartz (W.proj m φ)))
+      Filter.atTop (nhds (schwartzL2Inner u (laplacianSchwartz φ))) := by
+  have hlinear : Filter.Tendsto
+      (fun m => schwartzL2Inner
+        (W.coefficientField (W.initialCoefficients u m)) (laplacianSchwartz φ))
+      Filter.atTop (nhds (schwartzL2Inner u (laplacianSchwartz φ))) := by
+    simpa only [coefficientField_initialCoefficients_eq_proj] using
+      proj_pairing_tendsto W u hu (laplacianSchwartz φ)
+  have h := coefficientField_laplacianProjection_pairing_tendsto W
+    (fun m => W.initialCoefficients u m) φ
+    (schwartzL2Inner u (laplacianSchwartz φ))
+    hlinear
+    (by simpa only [coefficientField_initialCoefficients_eq_proj] using hcomm)
+  simpa only [coefficientField_initialCoefficients_eq_proj] using h
+
 /-- Projecting both the datum and the fixed test has the same initial-pairing
 limit as the unprojected pair. -/
 theorem initialProjection_pairing_tendsto (W : GalerkinBasisFamily)
@@ -2755,6 +2854,61 @@ theorem modalFlow_projectedTest_physicalWeakEquation
       hmodal_deriv hmodal_deriv_cont T hT.le hbzero
   simp_rw [coefficientField_pairing_modalTestCoefficients] at h
   simpa only [coefficientField_modalTestCoefficients] using h
+
+/-- The projected-test equation with its linear viscous term split into the
+unprojected physical Laplacian and the exact Laplacian/projection commutator.
+The convection test remains projected, so nonlinear convergence is not
+claimed here. -/
+theorem modalFlow_projectedTest_splitLaplacianWeakEquation
+    (W : GalerkinBasisFamily) (ν : ℝ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (φ : DivergenceFreeTestFunction) (φ' : ℝ → SchwartzVelocity) (m : ℕ)
+    (hmodal_deriv : ∀ t : ℝ,
+      HasDerivAt (W.modalTestCoefficients φ.field m)
+        (W.modalTestCoefficients φ' m t) t)
+    (hmodal_deriv_cont : Continuous (W.modalTestCoefficients φ' m)) :
+    ∃ T : ℝ, 0 < T ∧
+      (∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (φ.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (W.proj m (φ.field t))) +
+          ν * schwartzL2Inner (W.coefficientField (c m t))
+            (W.laplacianProjectionCommutator m (φ.field t))) +
+        schwartzL2Inner (W.coefficientField (c m 0)) (φ.field 0) = 0 := by
+  obtain ⟨T, hT, heq⟩ :=
+    modalFlow_projectedTest_physicalWeakEquation W ν c hc φ φ' m
+      hmodal_deriv hmodal_deriv_cont
+  refine ⟨T, hT, ?_⟩
+  have hintegral :
+      (∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (W.proj m (φ.field t)) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (W.proj m (φ.field t)))) =
+        ∫ t in (0 : ℝ)..T,
+          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (φ.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t))
+                (W.proj m (φ.field t))) +
+          ν * schwartzL2Inner (W.coefficientField (c m t))
+            (W.laplacianProjectionCommutator m (φ.field t)) := by
+    apply intervalIntegral.integral_congr
+    intro t _
+    dsimp only
+    rw [schwartzL2Inner_add_right, schwartzL2Inner_smul_right,
+      coefficientField_laplacianProjection_pairing,
+      schwartzL2Inner_add_right, schwartzL2Inner_smul_right]
+    ring
+  rw [hintegral] at heq
+  exact heq
 
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
