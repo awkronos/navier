@@ -70,6 +70,20 @@ Galerkin/compactness tower has a home with no floating restatement.
 * `leray_weak_existence`, `galerkin_approximation_exists`, and
   `leray_of_galerkinApproximation` are now **compositions**, with no `sorry` of
   their own.
+* `exists_subseq_windowCauchy` — Riesz–Fréchet–Kolmogorov total boundedness on
+  the single bounded window `(0,n] × B̄(0,n)` [Brezis 2011 Thm 4.26 + Cor 4.27;
+  Simon 1987 Thm 1] — now CERTIFIED: the dyadic-average projection route,
+  assembled from the cell family `winCellFinset`, the enclosure `encW`, the
+  uniform translation modulus `fwd_modulus_encW` (kinetic collar +
+  `nested_window_modulus`), `sum_cellError_le_modulus_of_memL2`, the
+  cell-average step function `cellStep` with the ε/3 assembly
+  `windowError_le_three_legs`, Bolzano–Weierstrass on the cell-average vector,
+  and the `exists_diagonal_subseq` diagonal over the scale ladder `1/(l+1)`.
+  With it, `aubin_lions_l2loc_compactness` is a complete composition.  This and
+  the Fischer–Riesz leaf replace the former monolithic
+  `aubin_lions_l2loc_compactness` residual, whose hypothesis list was FALSE as
+  stated; the checked curl-free witness is in that theorem's docstring and in
+  `experiments/aubin_lions_curlfree_witness.py`.
 
 ## Named residuals (honest `sorry`, strictly-lower leaves)
 
@@ -77,13 +91,6 @@ Galerkin/compactness tower has a home with no floating restatement.
   first `m` divergence-free modes + time-regularity bookkeeping); depends on
   `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily` [Temam III.3;
   Constantin–Foias II; Leray 1934 §§18–20; est ~350 LOC].
-* `exists_subseq_windowCauchy` — Riesz–Fréchet–Kolmogorov total boundedness on
-  the single bounded window `(0,n] × B̄(0,n)` [Brezis 2011 Thm 4.26 + Cor 4.27;
-  Simon 1987 Thm 1; est ~400 LOC].  This and the next leaf replace the former
-  monolithic `aubin_lions_l2loc_compactness` residual, whose hypothesis list was
-  FALSE as stated — no divergence-freeness, hence no spatial control, and no
-  joint measurability; the checked curl-free witness is in that theorem's
-  docstring and in `experiments/aubin_lions_curlfree_witness.py`.
 (`exists_limit_of_forall_windowCauchy` — Fischer–Riesz limit extraction from
 window-Cauchy, with the pointwise-limit-or-zero representative that makes the
 slicewise clauses true at **every** `t ≥ 0` [Brezis 2011 Thm 4.8] — is CERTIFIED
@@ -2595,10 +2602,846 @@ theorem fwd_time (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
       linarith
     linarith [hleg1, hleg2, hbound]
 
-/-- **[NAMED RESIDUAL — Riesz–Fréchet–Kolmogorov compactness on one window;
+/-!
+### Window compactness: the cell family, the enclosure, and the modulus
+
+Infrastructure for `exists_subseq_windowCauchy`.  `fwdFn` packages the forward
+extension as a single spacetime function; `winCellFinset` is the finite family
+of side-`h` spacetime cells meeting the window `Q_n`; `encW` is the enlarged
+enclosure `(−2h, n+2h] × B̄(0, n+2h)` containing each such cell together with
+all its `‖k‖ ≤ h` translates; `fwd_modulus_encW` is the uniform translation
+modulus on `encW` (kinetic collar on `(−2h, h]` plus `nested_window_modulus` at
+`c = h`); `fwd_cellError_sum_le` instantiates
+`sum_cellError_le_modulus_of_memL2`; `cellStep` is the cell-average step
+function of the ε/3 assembly; `windowError_le_three_legs` is the assembled
+comparison; and `exists_subseq_cauchy_of_bounded_finiteDim` is
+Bolzano–Weierstrass for the cell-average vector.
+-/
+
+/-- The forward extension, as a single spacetime function. -/
+private def fwdFn (uSeq : ℕ → VelocityEvolution) (m : ℕ) : ℝ × Space → Space :=
+  fun z => fwd uSeq m z.1 z.2
+
+private theorem fwdFn_meas (uSeq : ℕ → VelocityEvolution)
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) : Measurable (fwdFn uSeq m) :=
+  fwd_meas uSeq hmeas m
+
+/-- The enlarged enclosure `(−2h, n+2h] × B̄(0, n+2h)`. -/
+private def encW (n : ℕ) (h : ℝ) : Set (ℝ × Space) :=
+  Set.Ioc (-(2*h)) ((n:ℝ) + 2*h) ×ˢ Metric.closedBall (0 : Space) ((n:ℝ) + 2*h)
+
+private theorem measurableSet_encW (n : ℕ) (h : ℝ) : MeasurableSet (encW n h) := by
+  rw [encW]; exact measurableSet_Ioc.prod measurableSet_closedBall
+
+private theorem measurableSet_winQ (n : ℕ) : MeasurableSet (winQ n) := by
+  rw [winQ]; exact measurableSet_Ioc.prod measurableSet_closedBall
+
+private theorem volume_winQ_ne_top (n : ℕ) : volume (winQ n) ≠ ⊤ := by
+  rw [winQ, Measure.volume_eq_prod, Measure.prod_prod]
+  exact (ENNReal.mul_lt_top measure_Ioc_lt_top measure_closedBall_lt_top).ne
+
+/-- Spacetime cell volume in the `3+1`-dimensional instantiation. -/
+private theorem volume_cell {h : ℝ} (hh : 0 ≤ h) (p : ℤ × (Fin 3 → ℤ)) :
+    volume (prodGridCell h p.1 p.2) = ENNReal.ofReal (h ^ 4) := by
+  simpa using volume_prodGridCell (ι := Fin 3) hh p.1 p.2
+
+private theorem volume_cell_ne_zero {h : ℝ} (hh : 0 < h) (p : ℤ × (Fin 3 → ℤ)) :
+    volume (prodGridCell h p.1 p.2) ≠ 0 := by
+  rw [volume_cell hh.le p, Ne, ENNReal.ofReal_eq_zero]
+  exact not_le.mpr (by positivity)
+
+private theorem volume_cell_ne_top {h : ℝ} (hh : 0 < h) (p : ℤ × (Fin 3 → ℤ)) :
+    volume (prodGridCell h p.1 p.2) ≠ ⊤ := by
+  rw [volume_cell hh.le p]; exact ENNReal.ofReal_ne_top
+
+private theorem volume_real_cell {h : ℝ} (hh : 0 < h) (p : ℤ × (Fin 3 → ℤ)) :
+    volume.real (prodGridCell h p.1 p.2) = h ^ 4 := by
+  rw [Measure.real, volume_cell hh.le p, ENNReal.toReal_ofReal (by positivity)]
+
+/-- The indices of the side-`h` spacetime cells meeting the window `Q_n`. -/
+private def winCells (n : ℕ) (h : ℝ) : Set (ℤ × (Fin 3 → ℤ)) :=
+  {p | (prodGridCell h p.1 p.2 ∩ winQ n).Nonempty}
+
+private theorem winCells_finite {h : ℝ} (hh : 0 < h) (n : ℕ) : (winCells n h).Finite := by
+  refine (finite_prodGridIndices hh (n:ℝ)).subset ?_
+  rintro ⟨m, j⟩ ⟨z, hzc, hzQ⟩
+  refine ⟨z, hzc, ?_⟩
+  have hsub := window_subset_closedBall (ι := Fin 3) (T := (n:ℝ)) (R := (n:ℝ))
+  have hz := hsub hzQ
+  simpa [max_self] using hz
+
+/-- The finite family of side-`h` cells meeting `Q_n`. -/
+private noncomputable def winCellFinset (n : ℕ) {h : ℝ} (hh : 0 < h) :
+    Finset (ℤ × (Fin 3 → ℤ)) :=
+  (winCells_finite hh n).toFinset
+
+private theorem mem_winCellFinset {n : ℕ} {h : ℝ} {hh : 0 < h} {p : ℤ × (Fin 3 → ℤ)} :
+    p ∈ winCellFinset n hh ↔ (prodGridCell h p.1 p.2 ∩ winQ n).Nonempty := by
+  rw [winCellFinset, Set.Finite.mem_toFinset]
+  rfl
+
+set_option maxHeartbeats 800000 in
+/-- The cells meeting the window cover it. -/
+private theorem winQ_subset_biUnion {n : ℕ} {h : ℝ} (hh : 0 < h) :
+    winQ n ⊆ ⋃ p ∈ winCellFinset n hh, prodGridCell h p.1 p.2 := by
+  intro z hz
+  have hzc := mem_prodGridCell_floor hh z
+  have hpmem : (⌊z.1 / h⌋, fun i => ⌊z.2 i / h⌋) ∈ winCellFinset n hh :=
+    mem_winCellFinset.mpr ⟨z, hzc, hz⟩
+  exact Set.mem_biUnion (x := (⌊z.1 / h⌋, fun i => ⌊z.2 i / h⌋)) hpmem hzc
+
+/-- **The enclosure geometry**: a cell meeting `Q_n` stays inside `encW n h`
+under every shift of norm at most `h`. -/
+private theorem winCell_shift_mem_encW {n : ℕ} {h : ℝ} (hh : 0 < h)
+    {p : ℤ × (Fin 3 → ℤ)} (hp : p ∈ winCellFinset n hh)
+    {z : ℝ × Space} (hz : z ∈ prodGridCell h p.1 p.2)
+    {k : ℝ × Space} (hk : k ∈ Metric.closedBall (0 : ℝ × Space) h) :
+    z + k ∈ encW n h := by
+  obtain ⟨z₀, hz₀c, hz₀Q⟩ := mem_winCellFinset.mp hp
+  have hknorm : ‖k‖ ≤ h := by
+    simpa [Metric.mem_closedBall, dist_zero_right] using hk
+  have hdiam : ‖z - z₀‖ ≤ h := norm_sub_le_of_mem_prodGridCell hh.le hz hz₀c
+  have hd1 : |z.1 - z₀.1| ≤ h := by
+    refine le_trans ?_ hdiam
+    simp [Prod.norm_def, Real.norm_eq_abs]
+  have hd2 : ‖z.2 - z₀.2‖ ≤ h := by
+    refine le_trans ?_ hdiam
+    simp [Prod.norm_def]
+  have hk1 : |k.1| ≤ h := by
+    refine le_trans ?_ hknorm
+    simp [Prod.norm_def, Real.norm_eq_abs]
+  have hk2 : ‖k.2‖ ≤ h := by
+    refine le_trans ?_ hknorm
+    simp [Prod.norm_def]
+  have hz₀Q' : z₀.1 ∈ Set.Ioc (0:ℝ) (n:ℝ) ∧
+      z₀.2 ∈ Metric.closedBall (0 : Space) (n:ℝ) := hz₀Q
+  have hz₀2 : ‖z₀.2‖ ≤ (n:ℝ) := by
+    simpa [Metric.mem_closedBall, dist_zero_right] using hz₀Q'.2
+  obtain ⟨hd1a, hd1b⟩ := abs_le.mp hd1
+  obtain ⟨hk1a, hk1b⟩ := abs_le.mp hk1
+  have h01 : 0 < z₀.1 := hz₀Q'.1.1
+  have h02 : z₀.1 ≤ (n:ℝ) := hz₀Q'.1.2
+  rw [encW]
+  refine ⟨?_, ?_⟩
+  · simp only [Prod.fst_add, Set.mem_Ioc]
+    constructor
+    · linarith
+    · linarith
+  · simp only [Prod.snd_add, Metric.mem_closedBall, dist_zero_right]
+    have hrw : z.2 + k.2 = z₀.2 + ((z.2 - z₀.2) + k.2) := by abel
+    rw [hrw]
+    have hn1 := norm_add_le z₀.2 ((z.2 - z₀.2) + k.2)
+    have hn2 := norm_add_le (z.2 - z₀.2) k.2
+    linarith
+
+private theorem winCell_subset_encW {n : ℕ} {h : ℝ} (hh : 0 < h)
+    {p : ℤ × (Fin 3 → ℤ)} (hp : p ∈ winCellFinset n hh) :
+    prodGridCell h p.1 p.2 ⊆ encW n h := by
+  intro z hz
+  have h0 : (0 : ℝ × Space) ∈ Metric.closedBall (0 : ℝ × Space) h :=
+    Metric.mem_closedBall_self hh.le
+  have hmem := winCell_shift_mem_encW hh hp hz h0
+  simpa using hmem
+
+private theorem winQ_subset_encW {n : ℕ} {h : ℝ} (hh : 0 < h) : winQ n ⊆ encW n h := by
+  intro z hz
+  have hz' : z.1 ∈ Set.Ioc (0:ℝ) (n:ℝ) ∧
+      z.2 ∈ Metric.closedBall (0 : Space) (n:ℝ) := hz
+  have h1 : 0 < z.1 := hz'.1.1
+  have h2 : z.1 ≤ (n:ℝ) := hz'.1.2
+  have h3 : ‖z.2‖ ≤ (n:ℝ) := by
+    simpa [Metric.mem_closedBall, dist_zero_right] using hz'.2
+  rw [encW]
+  refine ⟨?_, ?_⟩
+  · simp only [Set.mem_Ioc]
+    constructor <;> linarith
+  · simp only [Metric.mem_closedBall, dist_zero_right]
+    linarith
+
+/-- Bridge: a set integral against the ambient product-space volume equals the
+same integral against `volume.prod volume`. -/
+private theorem setIntegral_eq_prod_volume (F : ℝ × Space → ℝ) (s : Set (ℝ × Space)) :
+    (∫ z in s, F z) = ∫ z in s, F z ∂(volume.prod volume) := by
+  rw [Measure.volume_eq_prod]
+
+/-- Displacement integrand of the forward extension: product-integrable on any
+time-slab. -/
+private theorem fwd_disp_integrableOn_slab (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (k : ℝ × Space) (p q : ℝ) :
+    IntegrableOn (fun z : ℝ × Space => ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      (Set.Ioc p q ×ˢ (univ : Set Space)) := by
+  have h1 := integrableOn_prod_univ
+    (fun z : ℝ × Space => ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+    (by simpa [fwdFn] using fwd_disp2_meas uSeq hmeas m k.1 0 k.2 0)
+    (Set.Ioc p q) measurableSet_Ioc (fun z => by positivity)
+    (fun t => by simpa [fwdFn] using fwd_disp2_int uSeq hint hmeas m (t + k.1) t k.2 0)
+    (by simpa [fwdFn] using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 k.2 0 p q)
+  rwa [IntegrableOn, ← Measure.volume_eq_prod] at h1
+
+private theorem fwd_disp_integrableOn_encW (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (k : ℝ × Space) (n : ℕ) (h : ℝ) :
+    IntegrableOn (fun z : ℝ × Space => ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      (encW n h) := by
+  refine (fwd_disp_integrableOn_slab uSeq C hkin hint hmeas m k
+    (-(2*h)) ((n:ℝ)+2*h)).mono_set ?_
+  rw [encW]
+  exact Set.prod_mono subset_rfl (Set.subset_univ _)
+
+private theorem fwd_L2_integrableOn_slab (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (p q : ℝ) :
+    IntegrableOn (fun z : ℝ × Space => ‖fwdFn uSeq m z‖ ^ 2)
+      (Set.Ioc p q ×ˢ (univ : Set Space)) := by
+  have h1 := integrableOn_prod_univ (fun z : ℝ × Space => ‖fwdFn uSeq m z‖ ^ 2)
+    ((fwdFn_meas uSeq hmeas m).norm.pow_const 2) (Set.Ioc p q) measurableSet_Ioc
+    (fun z => by positivity) (fun t => by simpa [fwdFn] using fwd_int uSeq hint m t)
+    (by simpa [fwdFn] using fwd_inner_integrableOn uSeq C hkin hint hmeas m p q)
+  rwa [IntegrableOn, ← Measure.volume_eq_prod] at h1
+
+private theorem fwd_L2_integrableOn_encW (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (n : ℕ) (h : ℝ) :
+    IntegrableOn (fun z : ℝ × Space => ‖fwdFn uSeq m z‖ ^ 2) (encW n h) := by
+  refine (fwd_L2_integrableOn_slab uSeq C hkin hint hmeas m (-(2*h)) ((n:ℝ)+2*h)).mono_set ?_
+  rw [encW]
+  exact Set.prod_mono subset_rfl (Set.subset_univ _)
+
+/-- The nested displacement integral over any finite time interval is at most
+`4C` times the interval length. -/
+private theorem fwd_disp_nested_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (k : ℝ × Space) {p q : ℝ} (hpq : p ≤ q) :
+    (∫ t in Set.Ioc p q, ∫ x : Space,
+        ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2) ≤ 4 * C * (q - p) := by
+  have houter : IntegrableOn (fun t : ℝ => ∫ x : Space,
+      ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2) (Set.Ioc p q) := by
+    simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 k.2 0 p q
+  calc (∫ t in Set.Ioc p q, ∫ x : Space,
+        ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2)
+      ≤ ∫ _ in Set.Ioc p q, (4 * C) := by
+        refine setIntegral_mono_on houter (integrableOn_const (hs := measure_Ioc_lt_top.ne))
+          measurableSet_Ioc (fun t _ => ?_)
+        simpa using fwd_disp2_inner_le uSeq C hkin hint hmeas m (t + k.1) t k.2 0
+    _ = (volume.real (Set.Ioc p q)) * (4 * C) := by
+        rw [setIntegral_const]; simp [smul_eq_mul]
+    _ = (q - p) * (4 * C) := by
+        rw [show volume.real (Set.Ioc p q) = q - p from by
+          rw [Measure.real, Real.volume_Ioc, ENNReal.toReal_ofReal (by linarith)]]
+    _ = 4 * C * (q - p) := by ring
+
+/-- The nested kinetic integral over any finite time interval is at most `C`
+times the interval length. -/
+private theorem fwd_L2_nested_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) {p q : ℝ} (hpq : p ≤ q) :
+    (∫ t in Set.Ioc p q, ∫ x : Space, ‖fwd uSeq m t x‖ ^ 2) ≤ C * (q - p) := by
+  calc (∫ t in Set.Ioc p q, ∫ x : Space, ‖fwd uSeq m t x‖ ^ 2)
+      ≤ ∫ _ in Set.Ioc p q, C := by
+        refine setIntegral_mono_on (fwd_inner_integrableOn uSeq C hkin hint hmeas m p q)
+          (integrableOn_const (hs := measure_Ioc_lt_top.ne)) measurableSet_Ioc
+          (fun t _ => fwd_kin uSeq C hkin m t)
+    _ = (volume.real (Set.Ioc p q)) * C := by
+        rw [setIntegral_const]; simp [smul_eq_mul]
+    _ = (q - p) * C := by
+        rw [show volume.real (Set.Ioc p q) = q - p from by
+          rw [Measure.real, Real.volume_Ioc, ENNReal.toReal_ofReal (by linarith)]]
+    _ = C * (q - p) := by ring
+
+/-- The displacement over the enclosure is at most `4C(n + 4h)` (kinetic bound
+alone, no equicontinuity). -/
+private theorem fwd_disp_encW_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (k : ℝ × Space) (n : ℕ) {h : ℝ} (hh : 0 ≤ h) :
+    (∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      ≤ 4 * C * ((n:ℝ) + 4 * h) := by
+  have hn0 : (0:ℝ) ≤ (n:ℝ) := Nat.cast_nonneg n
+  have hpq : -(2*h) ≤ (n:ℝ) + 2*h := by linarith
+  have hslab := fwd_disp_integrableOn_slab uSeq C hkin hint hmeas m k (-(2*h)) ((n:ℝ)+2*h)
+  have hmono : (∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      ≤ ∫ z in Set.Ioc (-(2*h)) ((n:ℝ)+2*h) ×ˢ (univ : Set Space),
+          ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2 := by
+    refine setIntegral_mono_set hslab
+      (Filter.Eventually.of_forall fun z => by positivity)
+      (HasSubset.Subset.eventuallyLE ?_)
+    rw [encW]
+    exact Set.prod_mono subset_rfl (Set.subset_univ _)
+  have hnested : (∫ z in Set.Ioc (-(2*h)) ((n:ℝ)+2*h) ×ˢ (univ : Set Space),
+      ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      = ∫ t in Set.Ioc (-(2*h)) ((n:ℝ)+2*h), ∫ x : Space,
+          ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2 := by
+    rw [setIntegral_eq_prod_volume]
+    have hbr := setIntegral_prod_univ_eq_nested
+      (fun z : ℝ × Space => ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      (by simpa [fwdFn] using fwd_disp2_meas uSeq hmeas m k.1 0 k.2 0)
+      (Set.Ioc (-(2*h)) ((n:ℝ)+2*h)) measurableSet_Ioc (fun z => by positivity)
+      (fun t => by simpa [fwdFn] using fwd_disp2_int uSeq hint hmeas m (t + k.1) t k.2 0)
+      (by simpa [fwdFn] using
+        fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 k.2 0 (-(2*h)) ((n:ℝ)+2*h))
+    exact hbr
+  rw [hnested] at hmono
+  calc (∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      ≤ ∫ t in Set.Ioc (-(2*h)) ((n:ℝ)+2*h), ∫ x : Space,
+          ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2 := hmono
+    _ ≤ 4 * C * (((n:ℝ) + 2*h) - (-(2*h))) :=
+        fwd_disp_nested_le uSeq C hkin hint hmeas m k hpq
+    _ = 4 * C * ((n:ℝ) + 4 * h) := by ring
+
+/-- The kinetic energy over the enclosure is at most `C(n + 4h)`. -/
+private theorem fwd_L2_encW_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (n : ℕ) {h : ℝ} (hh : 0 ≤ h) :
+    (∫ z in encW n h, ‖fwdFn uSeq m z‖ ^ 2) ≤ C * ((n:ℝ) + 4 * h) := by
+  have hn0 : (0:ℝ) ≤ (n:ℝ) := Nat.cast_nonneg n
+  have hpq : -(2*h) ≤ (n:ℝ) + 2*h := by linarith
+  have hslab := fwd_L2_integrableOn_slab uSeq C hkin hint hmeas m (-(2*h)) ((n:ℝ)+2*h)
+  have hmono : (∫ z in encW n h, ‖fwdFn uSeq m z‖ ^ 2)
+      ≤ ∫ z in Set.Ioc (-(2*h)) ((n:ℝ)+2*h) ×ˢ (univ : Set Space), ‖fwdFn uSeq m z‖ ^ 2 := by
+    refine setIntegral_mono_set hslab
+      (Filter.Eventually.of_forall fun z => by positivity)
+      (HasSubset.Subset.eventuallyLE ?_)
+    rw [encW]
+    exact Set.prod_mono subset_rfl (Set.subset_univ _)
+  have hnested : (∫ z in Set.Ioc (-(2*h)) ((n:ℝ)+2*h) ×ˢ (univ : Set Space),
+      ‖fwdFn uSeq m z‖ ^ 2)
+      = ∫ t in Set.Ioc (-(2*h)) ((n:ℝ)+2*h), ∫ x : Space, ‖fwd uSeq m t x‖ ^ 2 := by
+    rw [setIntegral_eq_prod_volume]
+    have hbr := setIntegral_prod_univ_eq_nested
+      (fun z : ℝ × Space => ‖fwdFn uSeq m z‖ ^ 2)
+      ((fwdFn_meas uSeq hmeas m).norm.pow_const 2)
+      (Set.Ioc (-(2*h)) ((n:ℝ)+2*h)) measurableSet_Ioc (fun z => by positivity)
+      (fun t => by simpa [fwdFn] using fwd_int uSeq hint m t)
+      (by simpa [fwdFn] using
+        fwd_inner_integrableOn uSeq C hkin hint hmeas m (-(2*h)) ((n:ℝ)+2*h))
+    exact hbr
+  rw [hnested] at hmono
+  calc (∫ z in encW n h, ‖fwdFn uSeq m z‖ ^ 2)
+      ≤ ∫ t in Set.Ioc (-(2*h)) ((n:ℝ)+2*h), ∫ x : Space, ‖fwd uSeq m t x‖ ^ 2 := hmono
+    _ ≤ C * (((n:ℝ) + 2*h) - (-(2*h))) := fwd_L2_nested_le uSeq C hkin hint hmeas m hpq
+    _ = C * ((n:ℝ) + 4 * h) := by ring
+
+/-- **The uniform translation modulus on the enclosure.**  For `‖k‖ ≤ h ≤ 1`
+the squared `L²(encW)` displacement of the forward extension is at most
+`12Ch` (the collar `(−2h, h]`, kinetic bound alone) plus `4εm` (the main window
+`(h, n+2h]` via `nested_window_modulus` at `c = h`), where `εm` bounds both
+equicontinuity moduli at the fixed horizon `n + 3`. -/
+private theorem fwd_modulus_encW (uSeq : ℕ → VelocityEvolution) (C : ℝ) (_hC : 0 ≤ C)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (n : ℕ) (m : ℕ) {h εm : ℝ}
+    (hh : 0 < h) (hh1 : h ≤ 1) (k : ℝ × Space) (hk : ‖k‖ ≤ h)
+    (hSb : (∫ s in Set.Ioc (0:ℝ) ((n:ℝ) + 3), ∫ x : Space,
+        ‖fwd uSeq m s (x + k.2) - fwd uSeq m s x‖ ^ 2) ≤ εm)
+    (hTb : (∫ t in Set.Ioc (0:ℝ) ((n:ℝ) + 3), ∫ x : Space,
+        ‖fwd uSeq m (t + k.1) x - fwd uSeq m t x‖ ^ 2) ≤ εm) :
+    (∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      ≤ 12 * C * h + 4 * εm := by
+  have hn0 : (0:ℝ) ≤ (n:ℝ) := Nat.cast_nonneg n
+  have hk1 : |k.1| ≤ h := by
+    refine le_trans ?_ hk
+    simp [Prod.norm_def, Real.norm_eq_abs]
+  have hslab := fwd_disp_integrableOn_slab uSeq C hkin hint hmeas m k (-(2*h)) ((n:ℝ)+2*h)
+  -- (1) enlarge to the slab
+  have hstep1 : (∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      ≤ ∫ z in Set.Ioc (-(2*h)) ((n:ℝ)+2*h) ×ˢ (univ : Set Space),
+          ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2 := by
+    refine setIntegral_mono_set hslab
+      (Filter.Eventually.of_forall fun z => by positivity)
+      (HasSubset.Subset.eventuallyLE ?_)
+    rw [encW]
+    exact Set.prod_mono subset_rfl (Set.subset_univ _)
+  -- (2) nested form
+  have hstep2 : (∫ z in Set.Ioc (-(2*h)) ((n:ℝ)+2*h) ×ˢ (univ : Set Space),
+      ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      = ∫ t in Set.Ioc (-(2*h)) ((n:ℝ)+2*h), ∫ x : Space,
+          ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2 := by
+    rw [setIntegral_eq_prod_volume]
+    have hbr := setIntegral_prod_univ_eq_nested
+      (fun z : ℝ × Space => ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      (by simpa [fwdFn] using fwd_disp2_meas uSeq hmeas m k.1 0 k.2 0)
+      (Set.Ioc (-(2*h)) ((n:ℝ)+2*h)) measurableSet_Ioc (fun z => by positivity)
+      (fun t => by simpa [fwdFn] using fwd_disp2_int uSeq hint hmeas m (t + k.1) t k.2 0)
+      (by simpa [fwdFn] using
+        fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 k.2 0 (-(2*h)) ((n:ℝ)+2*h))
+    exact hbr
+  -- (3) split the time interval at `h`
+  have hu : Set.Ioc (-(2*h)) h ∪ Set.Ioc h ((n:ℝ)+2*h) = Set.Ioc (-(2*h)) ((n:ℝ)+2*h) :=
+    Set.Ioc_union_Ioc_eq_Ioc (by linarith) (by linarith)
+  have hdisj : Disjoint (Set.Ioc (-(2*h)) h) (Set.Ioc h ((n:ℝ)+2*h)) := by
+    rw [Set.Ioc_disjoint_Ioc]
+    exact le_trans (min_le_left _ _) (le_max_right _ _)
+  have hOut1 : IntegrableOn (fun t : ℝ => ∫ x : Space,
+      ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2) (Set.Ioc (-(2*h)) h) := by
+    simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 k.2 0 (-(2*h)) h
+  have hOut2 : IntegrableOn (fun t : ℝ => ∫ x : Space,
+      ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2) (Set.Ioc h ((n:ℝ)+2*h)) := by
+    simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 k.2 0 h ((n:ℝ)+2*h)
+  have hstep3 : (∫ t in Set.Ioc (-(2*h)) ((n:ℝ)+2*h), ∫ x : Space,
+      ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2)
+      = (∫ t in Set.Ioc (-(2*h)) h, ∫ x : Space,
+          ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2)
+        + ∫ t in Set.Ioc h ((n:ℝ)+2*h), ∫ x : Space,
+            ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2 := by
+    rw [← hu, setIntegral_union hdisj measurableSet_Ioc hOut1 hOut2]
+  -- (4) the collar
+  have hcollar : (∫ t in Set.Ioc (-(2*h)) h, ∫ x : Space,
+      ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2) ≤ 12 * C * h := by
+    calc (∫ t in Set.Ioc (-(2*h)) h, ∫ x : Space,
+        ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2)
+        ≤ 4 * C * (h - (-(2*h))) :=
+          fwd_disp_nested_le uSeq C hkin hint hmeas m k (by linarith)
+      _ = 12 * C * h := by ring
+  -- (5) the main window, via the certified modulus
+  have hmain : (∫ t in Set.Ioc h ((n:ℝ)+2*h), ∫ x : Space,
+      ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2) ≤ 2 * εm + 2 * εm := by
+    refine nested_window_modulus (fwd uSeq m) k.1 k.2 h ((n:ℝ)+2*h) h εm εm
+      (by linarith) hh le_rfl hk1
+      (fun t => by simpa using fwd_disp2_int uSeq hint hmeas m (t + k.1) t k.2 0)
+      (fun t => by simpa using fwd_disp2_int uSeq hint hmeas m (t + k.1) (t + k.1) k.2 0)
+      (fun t => by simpa using fwd_disp2_int uSeq hint hmeas m (t + k.1) t 0 0)
+      (by simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 k.2 0 h ((n:ℝ)+2*h))
+      (by simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 k.1 k.2 0 h ((n:ℝ)+2*h))
+      (by simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 0 0 h ((n:ℝ)+2*h))
+      (by simpa using fwd_disp2_outer uSeq C hkin hint hmeas m 0 0 k.2 0 0 (((n:ℝ)+2*h)+h))
+      (by simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 0 0 0 ((n:ℝ)+2*h))
+      ?_ ?_
+    · refine le_trans (setIntegral_mono_set
+        (by simpa using fwd_disp2_outer uSeq C hkin hint hmeas m 0 0 k.2 0 0 ((n:ℝ)+3))
+        (Filter.Eventually.of_forall fun s => integral_nonneg fun x => by positivity)
+        (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc le_rfl (by linarith)))) hSb
+    · refine le_trans (setIntegral_mono_set
+        (by simpa using fwd_disp2_outer uSeq C hkin hint hmeas m k.1 0 0 0 0 ((n:ℝ)+3))
+        (Filter.Eventually.of_forall fun s => integral_nonneg fun x => by positivity)
+        (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc le_rfl (by linarith)))) hTb
+  calc (∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      ≤ ∫ z in Set.Ioc (-(2*h)) ((n:ℝ)+2*h) ×ˢ (univ : Set Space),
+          ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2 := hstep1
+    _ = _ := hstep2
+    _ = _ := hstep3
+    _ ≤ 12 * C * h + (2 * εm + 2 * εm) := by
+        have hnn : (0:ℝ) ≤ ∫ t in Set.Ioc h ((n:ℝ)+2*h), ∫ x : Space,
+            ‖fwd uSeq m (t + k.1) (x + k.2) - fwd uSeq m t x‖ ^ 2 :=
+          setIntegral_nonneg measurableSet_Ioc fun t _ =>
+            integral_nonneg fun x => by positivity
+        linarith [hcollar, hmain]
+    _ = 12 * C * h + 4 * εm := by ring
+
+/-- Integrability, in the shift variable, of the displacement integral over any
+subset of the enclosure. -/
+private theorem fwd_shiftIntegral_integrableOn_ball (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (n : ℕ) {h : ℝ} (hh : 0 < h)
+    {A : Set (ℝ × Space)} (hAW : A ⊆ encW n h) :
+    IntegrableOn (fun k : ℝ × Space => ∫ z in A,
+        ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      (Metric.closedBall (0 : ℝ × Space) h) := by
+  have hj : Measurable fun w : (ℝ × Space) × (ℝ × Space) =>
+      ‖fwdFn uSeq m (w.2 + w.1) - fwdFn uSeq m w.2‖ ^ 2 := by
+    have h1 : Measurable fun w : (ℝ × Space) × (ℝ × Space) => fwdFn uSeq m (w.2 + w.1) :=
+      (fwdFn_meas uSeq hmeas m).comp (measurable_snd.add measurable_fst)
+    have h2 : Measurable fun w : (ℝ × Space) × (ℝ × Space) => fwdFn uSeq m w.2 :=
+      (fwdFn_meas uSeq hmeas m).comp measurable_snd
+    exact ((h1.sub h2).norm).pow_const 2
+  have hsm : StronglyMeasurable fun k : ℝ × Space => ∫ z in A,
+      ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2 :=
+    hj.stronglyMeasurable.integral_prod_right' (ν := volume.restrict A)
+  refine Measure.integrableOn_of_bounded measure_closedBall_lt_top.ne
+    hsm.aestronglyMeasurable (M := 4 * C * ((n:ℝ) + 4 * h)) ?_
+  refine Filter.Eventually.of_forall fun k => ?_
+  have hIenc := fwd_disp_integrableOn_encW uSeq C hkin hint hmeas m k n h
+  have hnnI : (0:ℝ) ≤ ∫ z in A, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2 :=
+    integral_nonneg fun z => by positivity
+  rw [Real.norm_eq_abs, abs_of_nonneg hnnI]
+  calc (∫ z in A, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2)
+      ≤ ∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2 :=
+        setIntegral_mono_set hIenc
+          (Filter.Eventually.of_forall fun z => by positivity)
+          (HasSubset.Subset.eventuallyLE hAW)
+    _ ≤ 4 * C * ((n:ℝ) + 4 * h) :=
+        fwd_disp_encW_le uSeq C hkin hint hmeas m k n hh.le
+
+/-- **The cell-error sum at one scale**, from
+`sum_cellError_le_modulus_of_memL2` with `W := encW n h`. -/
+private theorem fwd_cellError_sum_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (n : ℕ) (m : ℕ) {h Mmod : ℝ} (hh : 0 < h)
+    (hmod : ∀ k ∈ Metric.closedBall (0 : ℝ × Space) h,
+      (∫ z in encW n h, ‖fwdFn uSeq m (z + k) - fwdFn uSeq m z‖ ^ 2) ≤ Mmod) :
+    ∑ p ∈ winCellFinset n hh, (∫ z in prodGridCell h p.1 p.2,
+        ‖fwdFn uSeq m z - ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq m y‖ ^ 2)
+      ≤ (h ^ 4)⁻¹ * (volume.real (Metric.closedBall (0 : ℝ × Space) h) * Mmod) :=
+  sum_cellError_le_modulus_of_memL2 hh (winCellFinset n hh)
+    (fwdFn uSeq m) (fwdFn_meas uSeq hmeas m)
+    (encW n h) (measurableSet_encW n h)
+    (fun _ hp => winCell_subset_encW hh hp)
+    (fun _ hp _ hz _ hk => winCell_shift_mem_encW hh hp hz hk)
+    (fwd_L2_integrableOn_encW uSeq C hkin hint hmeas m n h)
+    Mmod hmod
+    (fun k => fwd_disp_integrableOn_encW uSeq C hkin hint hmeas m k n h)
+    (fun _ hp => fwd_shiftIntegral_integrableOn_ball uSeq C hkin hint hmeas m n hh
+      (winCell_subset_encW hh hp))
+    (fwd_shiftIntegral_integrableOn_ball uSeq C hkin hint hmeas m n hh
+      (subset_refl (encW n h)))
+
+/-- **The cell-average norm bound**: Jensen against the kinetic energy over the
+enclosure. -/
+private theorem fwd_avg_sq_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (n : ℕ) (m : ℕ) {h : ℝ} (hh : 0 < h) (hh1 : h ≤ 1)
+    {p : ℤ × (Fin 3 → ℤ)} (hp : p ∈ winCellFinset n hh) :
+    ‖⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq m y‖ ^ 2
+      ≤ (h ^ 4)⁻¹ * (C * ((n:ℝ) + 4)) := by
+  have hC' : 0 ≤ C := le_trans (integral_nonneg fun x => by positivity) (hkin m 0 le_rfl)
+  have h0 := volume_cell_ne_zero hh p
+  have hfin := volume_cell_ne_top hh p
+  have hL2cell : IntegrableOn (fun z : ℝ × Space => ‖fwdFn uSeq m z‖ ^ 2)
+      (prodGridCell h p.1 p.2) :=
+    (fwd_L2_integrableOn_encW uSeq C hkin hint hmeas m n h).mono_set
+      (winCell_subset_encW hh hp)
+  have hfmeas := fwdFn_meas uSeq hmeas m
+  have hfi : IntegrableOn (fwdFn uSeq m) (prodGridCell h p.1 p.2) :=
+    (integrable_norm_iff hfmeas.aestronglyMeasurable.restrict).mp
+      (integrableOn_norm_of_sq hfin hfmeas.norm.aestronglyMeasurable hL2cell)
+  have hj := norm_setAverage_sub_sq_le h0 hfin (fwdFn uSeq m) 0 hfi
+    (by simpa using hL2cell)
+  simp only [sub_zero] at hj
+  have havg : (⨍ y in prodGridCell h p.1 p.2, ‖fwdFn uSeq m y‖ ^ 2)
+      = (h ^ 4)⁻¹ * ∫ y in prodGridCell h p.1 p.2, ‖fwdFn uSeq m y‖ ^ 2 := by
+    rw [setAverage_eq, volume_real_cell hh p, smul_eq_mul]
+  have hIb : (∫ y in prodGridCell h p.1 p.2, ‖fwdFn uSeq m y‖ ^ 2) ≤ C * ((n:ℝ) + 4) := by
+    calc (∫ y in prodGridCell h p.1 p.2, ‖fwdFn uSeq m y‖ ^ 2)
+        ≤ ∫ z in encW n h, ‖fwdFn uSeq m z‖ ^ 2 :=
+          setIntegral_mono_set (fwd_L2_integrableOn_encW uSeq C hkin hint hmeas m n h)
+            (Filter.Eventually.of_forall fun z => by positivity)
+            (HasSubset.Subset.eventuallyLE (winCell_subset_encW hh hp))
+      _ ≤ C * ((n:ℝ) + 4 * h) := fwd_L2_encW_le uSeq C hkin hint hmeas m n hh.le
+      _ ≤ C * ((n:ℝ) + 4) := by nlinarith
+  calc ‖⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq m y‖ ^ 2
+      ≤ ⨍ y in prodGridCell h p.1 p.2, ‖fwdFn uSeq m y‖ ^ 2 := hj
+    _ = (h ^ 4)⁻¹ * ∫ y in prodGridCell h p.1 p.2, ‖fwdFn uSeq m y‖ ^ 2 := havg
+    _ ≤ (h ^ 4)⁻¹ * (C * ((n:ℝ) + 4)) :=
+        mul_le_mul_of_nonneg_left hIb (by positivity)
+
+/-!
+### The cell-average step function and the ε/3 assembly
+-/
+
+/-- The cell-average step function over the finite cell family. -/
+private noncomputable def cellStep (h : ℝ) (S : Finset (ℤ × (Fin 3 → ℤ)))
+    (f : ℝ × Space → Space) : ℝ × Space → Space := fun z =>
+  ∑ p ∈ S, (prodGridCell h p.1 p.2).indicator
+    (fun _ => ⨍ y in prodGridCell h p.1 p.2, f y) z
+
+private theorem cellStep_measurable (h : ℝ) (S : Finset (ℤ × (Fin 3 → ℤ)))
+    (f : ℝ × Space → Space) : Measurable (cellStep h S f) := by
+  unfold cellStep
+  exact Finset.measurable_sum S fun p _ =>
+    Measurable.indicator measurable_const (measurableSet_prodGridCell h p.1 p.2)
+
+private theorem cellStep_eq_avg {h : ℝ} (hh : 0 < h) {S : Finset (ℤ × (Fin 3 → ℤ))}
+    {p : ℤ × (Fin 3 → ℤ)} (hp : p ∈ S) (f : ℝ × Space → Space)
+    {z : ℝ × Space} (hz : z ∈ prodGridCell h p.1 p.2) :
+    cellStep h S f z = ⨍ y in prodGridCell h p.1 p.2, f y := by
+  unfold cellStep
+  rw [Finset.sum_eq_single p ?_ (fun hpS => absurd hp hpS)]
+  · rw [Set.indicator_of_mem hz]
+  · intro q _ hqp
+    refine Set.indicator_of_notMem (fun hzq => ?_) _
+    have hne : (q.1, q.2) ≠ (p.1, p.2) := by
+      simpa using hqp
+    exact Set.disjoint_left.mp (prodGridCell_disjoint hh hne) hzq hz
+
+private theorem cellStep_norm_le (h : ℝ) (S : Finset (ℤ × (Fin 3 → ℤ)))
+    (f : ℝ × Space → Space) (z : ℝ × Space) :
+    ‖cellStep h S f z‖ ≤ ∑ p ∈ S, ‖⨍ y in prodGridCell h p.1 p.2, f y‖ := by
+  unfold cellStep
+  refine le_trans (norm_sum_le _ _) (Finset.sum_le_sum fun p _ => ?_)
+  exact norm_indicator_le_norm_self
+    (f := fun _ : ℝ × Space => ⨍ y in prodGridCell h p.1 p.2, f y) (a := z)
+
+/-- Bounded measurable difference is square-integrable on a finite-measure set. -/
+private theorem integrableOn_sq_norm_sub_of_bound {g₁ g₂ : ℝ × Space → Space}
+    (h₁ : Measurable g₁) (h₂ : Measurable g₂)
+    {s : Set (ℝ × Space)} (hsfin : volume s ≠ ⊤)
+    {M : ℝ} (hM : ∀ z, ‖g₁ z - g₂ z‖ ^ 2 ≤ M) :
+    IntegrableOn (fun z => ‖g₁ z - g₂ z‖ ^ 2) s := by
+  refine Measure.integrableOn_of_bounded hsfin
+    (((h₁.sub h₂).norm.pow_const 2).aestronglyMeasurable) (M := M) ?_
+  refine Filter.Eventually.of_forall fun z => ?_
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  exact hM z
+
+/-- `L²` against bounded: the difference is square-integrable on a
+finite-measure set. -/
+private theorem integrableOn_sq_norm_sub_of_L2 {f g : ℝ × Space → Space}
+    (hf : Measurable f) (hg : Measurable g)
+    {s : Set (ℝ × Space)} (hsfin : volume s ≠ ⊤)
+    (hL2 : IntegrableOn (fun z => ‖f z‖ ^ 2) s)
+    {M : ℝ} (hM : ∀ z, ‖g z‖ ≤ M) :
+    IntegrableOn (fun z => ‖f z - g z‖ ^ 2) s := by
+  refine Integrable.mono' ((hL2.const_mul 2).add
+      (integrableOn_const hsfin (C := 2 * M ^ 2)))
+    (((hf.sub hg).norm.pow_const 2).aestronglyMeasurable.restrict)
+    (Filter.Eventually.of_forall fun z => ?_)
+  simp only [Pi.add_apply]
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have h1 := sq_norm_sub_le_two (f z) (g z)
+  have h2 : ‖g z‖ ^ 2 ≤ M ^ 2 := by
+    have h3 := hM z
+    nlinarith [norm_nonneg (g z)]
+  linarith
+
+/-- The window integral of a nonnegative integrand is at most its sum over the
+covering cell family. -/
+private theorem setIntegral_winQ_le_sum_winCells {g : ℝ × Space → ℝ}
+    (hgnn : ∀ z, 0 ≤ g z) {h : ℝ} (hh : 0 < h) (n : ℕ)
+    (hcell : ∀ p ∈ winCellFinset n hh, IntegrableOn g (prodGridCell h p.1 p.2))
+    (_hwinQ : IntegrableOn g (winQ n)) :
+    (∫ z in winQ n, g z)
+      ≤ ∑ p ∈ winCellFinset n hh, ∫ z in prodGridCell h p.1 p.2, g z := by
+  have hUnion : IntegrableOn g (⋃ p ∈ winCellFinset n hh, prodGridCell h p.1 p.2) :=
+    integrableOn_finset_iUnion.mpr hcell
+  have hle : (∫ z in winQ n, g z)
+      ≤ ∫ z in ⋃ p ∈ winCellFinset n hh, prodGridCell h p.1 p.2, g z :=
+    setIntegral_mono_set hUnion (Filter.Eventually.of_forall hgnn)
+      (HasSubset.Subset.eventuallyLE (winQ_subset_biUnion hh))
+  rwa [MeasureTheory.integral_biUnion_finset _
+    (fun p _ => measurableSet_prodGridCell h p.1 p.2)
+    (fun p _ q _ hpq => prodGridCell_disjoint hh (by simpa using hpq)) hcell] at hle
+
+/-- **Bolzano–Weierstrass** in any finite-dimensional real normed space, in the
+Cauchy-subsequence form the diagonal consumes. -/
+private theorem exists_subseq_cauchy_of_bounded_finiteDim {F : Type*}
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
+    (v : ℕ → F) (M : ℝ) (hb : ∀ k : ℕ, ‖v k‖ ≤ M) :
+    ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
+      ∀ ε : ℝ, 0 < ε → ∃ K : ℕ, ∀ j k : ℕ, K ≤ j → K ≤ k →
+        ‖v (ρ j) - v (ρ k)‖ < ε := by
+  haveI : ProperSpace F := FiniteDimensional.proper_real F
+  obtain ⟨b, -, ρ, hρ, hconv⟩ :=
+    tendsto_subseq_of_bounded (Metric.isBounded_closedBall (x := (0 : F)) (r := M))
+      (fun k => by simpa [Metric.mem_closedBall, dist_zero_right] using hb k)
+  refine ⟨ρ, hρ, fun ε hε => ?_⟩
+  obtain ⟨K, hK⟩ := Metric.cauchySeq_iff.mp hconv.cauchySeq ε hε
+  exact ⟨K, fun j k hj hk => by simpa [dist_eq_norm] using hK j hj k hk⟩
+
+/-- Haar scaling of the spacetime ball: `vol(B̄(0,h)) = h⁴ · vol(B̄(0,1))`. -/
+private theorem volume_real_closedBall_prodSpace {h : ℝ} (hh : 0 ≤ h) :
+    volume.real (Metric.closedBall (0 : ℝ × Space) h)
+      = h ^ 4 * volume.real (Metric.closedBall (0 : ℝ × Space) 1) := by
+  haveI : (volume : Measure (ℝ × Space)).IsAddHaarMeasure := by
+    rw [MeasureTheory.Measure.volume_eq_prod]
+    infer_instance
+  have h4 : Module.finrank ℝ (ℝ × Space) = 4 := by
+    rw [Module.finrank_prod, Module.finrank_self, Module.finrank_fin_fun]
+  have hHaar := MeasureTheory.Measure.addHaar_real_closedBall'
+    (volume : Measure (ℝ × Space)) (0 : ℝ × Space) hh
+  rwa [h4] at hHaar
+
+/-- The scalar budget arithmetic of the final assembly, isolated so that the
+huge integral expressions enter only as opaque atoms. -/
+private theorem window_budget {W S1 S2 Sm κC C h εm ε' cardS ε : ℝ}
+    (hchain : W ≤ 3 * S1 + 3 * Sm + 3 * S2)
+    (hS1 : S1 ≤ κC * (12 * C * h + 4 * εm))
+    (hS2 : S2 ≤ κC * (12 * C * h + 4 * εm))
+    (hSm : Sm ≤ cardS * (h ^ 4 * ε' ^ 2))
+    (hε'sq : ε' ^ 2 * (12 * (h ^ 4 * cardS + 1)) = ε)
+    (hεmeq : εm * (400 * (κC + 1)) = ε)
+    (hhlin : h * (400 * (C * κC + 1)) < ε)
+    (hCκh0 : 0 ≤ C * κC * h)
+    (hh0 : 0 ≤ h) (hεm0 : 0 ≤ εm) :
+    W < ε := by nlinarith
+
+set_option maxHeartbeats 1600000 in
+/-- **The ε/3 assembly at one scale.**  The window error of two members of the
+forward-extended family is controlled by their two cell-average errors plus the
+finite-dimensional mid-leg on the cell-average vectors. -/
+private theorem windowError_le_three_legs (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq)
+    (n : ℕ) {h : ℝ} (hh : 0 < h) (a b : ℕ) :
+    windowError (uSeq a) (uSeq b) n
+      ≤ 3 * (∑ p ∈ winCellFinset n hh, ∫ z in prodGridCell h p.1 p.2,
+            ‖fwdFn uSeq a z - ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y‖ ^ 2)
+        + 3 * (∑ p ∈ winCellFinset n hh, h ^ 4 *
+            ‖(⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y) -
+              ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ ^ 2)
+        + 3 * (∑ p ∈ winCellFinset n hh, ∫ z in prodGridCell h p.1 p.2,
+            ‖fwdFn uSeq b z - ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ ^ 2) := by
+  classical
+  have hf₁m : Measurable (fwdFn uSeq a) := fwdFn_meas uSeq hmeas a
+  have hf₂m : Measurable (fwdFn uSeq b) := fwdFn_meas uSeq hmeas b
+  have hE₁m : Measurable (cellStep h (winCellFinset n hh) (fwdFn uSeq a)) :=
+    cellStep_measurable _ _ _
+  have hE₂m : Measurable (cellStep h (winCellFinset n hh) (fwdFn uSeq b)) :=
+    cellStep_measurable _ _ _
+  have hQfin : volume (winQ n) ≠ ⊤ := volume_winQ_ne_top n
+  have hL2₁ : IntegrableOn (fun z : ℝ × Space => ‖fwdFn uSeq a z‖ ^ 2) (winQ n) :=
+    (fwd_L2_integrableOn_encW uSeq C hkin hint hmeas a n h).mono_set (winQ_subset_encW hh)
+  have hL2₂ : IntegrableOn (fun z : ℝ × Space => ‖fwdFn uSeq b z‖ ^ 2) (winQ n) :=
+    (fwd_L2_integrableOn_encW uSeq C hkin hint hmeas b n h).mono_set (winQ_subset_encW hh)
+  have hE₁b : ∀ z, ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z‖
+      ≤ ∑ p ∈ winCellFinset n hh, ‖⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y‖ :=
+    fun z => cellStep_norm_le h _ _ z
+  have hE₂b : ∀ z, ‖cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖
+      ≤ ∑ p ∈ winCellFinset n hh, ‖⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ :=
+    fun z => cellStep_norm_le h _ _ z
+  have hE₁₂sq : ∀ z, ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+      cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2
+      ≤ ((∑ p ∈ winCellFinset n hh, ‖⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y‖) +
+          ∑ p ∈ winCellFinset n hh, ‖⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖) ^ 2 := by
+    intro z
+    have hn := norm_sub_le (cellStep h (winCellFinset n hh) (fwdFn uSeq a) z)
+      (cellStep h (winCellFinset n hh) (fwdFn uSeq b) z)
+    have h1 := hE₁b z
+    have h2 := hE₂b z
+    nlinarith [norm_nonneg (cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+      cellStep h (winCellFinset n hh) (fwdFn uSeq b) z),
+      norm_nonneg (cellStep h (winCellFinset n hh) (fwdFn uSeq a) z),
+      norm_nonneg (cellStep h (winCellFinset n hh) (fwdFn uSeq b) z)]
+  -- three-legs integrabilities on the window
+  have h1 : IntegrableOn (fun z : ℝ × Space =>
+      ‖fwdFn uSeq a z - fwdFn uSeq b z‖ ^ 2) (winQ n) := by
+    have h0 := integrableOn_winQ (fwd uSeq a) (fwd uSeq b) n C
+      (fwd_meas uSeq hmeas a) (fwd_meas uSeq hmeas b)
+      (fun t _ => fwd_int uSeq hint a t) (fun t _ => fwd_int uSeq hint b t)
+      (fun t _ => fwd_kin uSeq C hkin a t) (fun t _ => fwd_kin uSeq C hkin b t)
+    rwa [IntegrableOn, ← Measure.volume_eq_prod] at h0
+  have h2 : IntegrableOn (fun z : ℝ × Space =>
+      ‖fwdFn uSeq a z - cellStep h (winCellFinset n hh) (fwdFn uSeq a) z‖ ^ 2) (winQ n) :=
+    integrableOn_sq_norm_sub_of_L2 hf₁m hE₁m hQfin hL2₁ hE₁b
+  have h3 : IntegrableOn (fun z : ℝ × Space =>
+      ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+        cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2) (winQ n) :=
+    integrableOn_sq_norm_sub_of_bound hE₁m hE₂m hQfin hE₁₂sq
+  have h4' : IntegrableOn (fun z : ℝ × Space =>
+      ‖fwdFn uSeq b z - cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2) (winQ n) :=
+    integrableOn_sq_norm_sub_of_L2 hf₂m hE₂m hQfin hL2₂ hE₂b
+  have h4 : IntegrableOn (fun z : ℝ × Space =>
+      ‖cellStep h (winCellFinset n hh) (fwdFn uSeq b) z - fwdFn uSeq b z‖ ^ 2) (winQ n) :=
+    h4'.congr (Filter.Eventually.of_forall fun z => by
+      show ‖fwdFn uSeq b z - cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2
+          = ‖cellStep h (winCellFinset n hh) (fwdFn uSeq b) z - fwdFn uSeq b z‖ ^ 2
+      rw [norm_sub_rev])
+  -- the window error as a single product integral
+  have hwe : windowError (uSeq a) (uSeq b) n
+      = ∫ z in winQ n, ‖fwdFn uSeq a z - fwdFn uSeq b z‖ ^ 2 := by
+    rw [← windowError_fwd uSeq a b n,
+      windowError_eq_setIntegral_prod (fwd uSeq a) (fwd uSeq b) n C
+        (fwd_meas uSeq hmeas a) (fwd_meas uSeq hmeas b)
+        (fun t _ => fwd_int uSeq hint a t) (fun t _ => fwd_int uSeq hint b t)
+        (fun t _ => fwd_kin uSeq C hkin a t) (fun t _ => fwd_kin uSeq C hkin b t),
+      show (Set.Ioc (0:ℝ) (n:ℝ) ×ˢ Metric.closedBall (0:Space) (n:ℝ)) = winQ n from rfl,
+      ← Measure.volume_eq_prod]
+    rfl
+  -- three legs
+  have hthree := setIntegral_norm_sub_sq_le_three_legs (measurableSet_winQ n)
+    (fwdFn uSeq a) (cellStep h (winCellFinset n hh) (fwdFn uSeq a))
+    (cellStep h (winCellFinset n hh) (fwdFn uSeq b)) (fwdFn uSeq b) h1 h2 h3 h4
+  -- leg 1
+  have hcellint₁ : ∀ p ∈ winCellFinset n hh, IntegrableOn (fun z : ℝ × Space =>
+      ‖fwdFn uSeq a z - cellStep h (winCellFinset n hh) (fwdFn uSeq a) z‖ ^ 2)
+      (prodGridCell h p.1 p.2) := fun p hp =>
+    integrableOn_sq_norm_sub_of_L2 hf₁m hE₁m (volume_cell_ne_top hh p)
+      ((fwd_L2_integrableOn_encW uSeq C hkin hint hmeas a n h).mono_set
+        (winCell_subset_encW hh hp)) hE₁b
+  have hleg1 : (∫ z in winQ n,
+      ‖fwdFn uSeq a z - cellStep h (winCellFinset n hh) (fwdFn uSeq a) z‖ ^ 2)
+      ≤ ∑ p ∈ winCellFinset n hh, ∫ z in prodGridCell h p.1 p.2,
+          ‖fwdFn uSeq a z - ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y‖ ^ 2 := by
+    refine le_trans (setIntegral_winQ_le_sum_winCells (fun z => by positivity) hh n
+      hcellint₁ h2) (le_of_eq (Finset.sum_congr rfl fun p hp => ?_))
+    refine setIntegral_congr_fun (measurableSet_prodGridCell h p.1 p.2) fun z hz => ?_
+    show ‖fwdFn uSeq a z - cellStep h (winCellFinset n hh) (fwdFn uSeq a) z‖ ^ 2
+        = ‖fwdFn uSeq a z - ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y‖ ^ 2
+    rw [cellStep_eq_avg hh hp _ hz]
+  -- leg 3
+  have hcellint₂ : ∀ p ∈ winCellFinset n hh, IntegrableOn (fun z : ℝ × Space =>
+      ‖fwdFn uSeq b z - cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2)
+      (prodGridCell h p.1 p.2) := fun p hp =>
+    integrableOn_sq_norm_sub_of_L2 hf₂m hE₂m (volume_cell_ne_top hh p)
+      ((fwd_L2_integrableOn_encW uSeq C hkin hint hmeas b n h).mono_set
+        (winCell_subset_encW hh hp)) hE₂b
+  have hleg3 : (∫ z in winQ n,
+      ‖cellStep h (winCellFinset n hh) (fwdFn uSeq b) z - fwdFn uSeq b z‖ ^ 2)
+      ≤ ∑ p ∈ winCellFinset n hh, ∫ z in prodGridCell h p.1 p.2,
+          ‖fwdFn uSeq b z - ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ ^ 2 := by
+    have hswap : (∫ z in winQ n,
+        ‖cellStep h (winCellFinset n hh) (fwdFn uSeq b) z - fwdFn uSeq b z‖ ^ 2)
+        = ∫ z in winQ n,
+            ‖fwdFn uSeq b z - cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2 :=
+      setIntegral_congr_fun (measurableSet_winQ n) fun z _ => by
+        show ‖cellStep h (winCellFinset n hh) (fwdFn uSeq b) z - fwdFn uSeq b z‖ ^ 2
+            = ‖fwdFn uSeq b z - cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2
+        rw [norm_sub_rev]
+    rw [hswap]
+    refine le_trans (setIntegral_winQ_le_sum_winCells (fun z => by positivity) hh n
+      hcellint₂ h4') (le_of_eq (Finset.sum_congr rfl fun p hp => ?_))
+    refine setIntegral_congr_fun (measurableSet_prodGridCell h p.1 p.2) fun z hz => ?_
+    show ‖fwdFn uSeq b z - cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2
+        = ‖fwdFn uSeq b z - ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ ^ 2
+    rw [cellStep_eq_avg hh hp _ hz]
+  -- mid leg
+  have hcellint₃ : ∀ p ∈ winCellFinset n hh, IntegrableOn (fun z : ℝ × Space =>
+      ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+        cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2)
+      (prodGridCell h p.1 p.2) := fun p _ =>
+    integrableOn_sq_norm_sub_of_bound hE₁m hE₂m (volume_cell_ne_top hh p) hE₁₂sq
+  have hmid : (∫ z in winQ n,
+      ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+        cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2)
+      ≤ ∑ p ∈ winCellFinset n hh, h ^ 4 *
+          ‖(⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y) -
+            ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ ^ 2 := by
+    refine le_trans (setIntegral_winQ_le_sum_winCells (fun z => by positivity) hh n
+      hcellint₃ h3) (le_of_eq (Finset.sum_congr rfl fun p hp => ?_))
+    have hcongr : (∫ z in prodGridCell h p.1 p.2,
+        ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+          cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2)
+        = ∫ _ in prodGridCell h p.1 p.2,
+            ‖(⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y) -
+              ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ ^ 2 :=
+      setIntegral_congr_fun (measurableSet_prodGridCell h p.1 p.2) fun z hz => by
+        show ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+            cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2
+            = ‖(⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq a y) -
+                ⨍ y in prodGridCell h p.1 p.2, fwdFn uSeq b y‖ ^ 2
+        rw [cellStep_eq_avg hh hp _ hz, cellStep_eq_avg hh hp _ hz]
+    rw [hcongr, setIntegral_const, smul_eq_mul, volume_real_cell hh p]
+  rw [hwe]
+  calc (∫ z in winQ n, ‖fwdFn uSeq a z - fwdFn uSeq b z‖ ^ 2)
+      ≤ 3 * (∫ z in winQ n,
+            ‖fwdFn uSeq a z - cellStep h (winCellFinset n hh) (fwdFn uSeq a) z‖ ^ 2)
+          + 3 * (∫ z in winQ n,
+            ‖cellStep h (winCellFinset n hh) (fwdFn uSeq a) z -
+              cellStep h (winCellFinset n hh) (fwdFn uSeq b) z‖ ^ 2)
+          + 3 * ∫ z in winQ n,
+              ‖cellStep h (winCellFinset n hh) (fwdFn uSeq b) z - fwdFn uSeq b z‖ ^ 2 :=
+        hthree
+    _ ≤ _ := by
+        have hg1 := hleg1
+        have hg2 := hmid
+        have hg3 := hleg3
+        linarith
+
+set_option maxHeartbeats 1600000 in
+/-- **[CERTIFIED — Riesz–Fréchet–Kolmogorov compactness on one window;
 Brezis, *Functional Analysis, Sobolev Spaces and PDE*, Springer 2011, Thm 4.26
-+ Cor 4.27; Simon, *Ann. Mat. Pura Appl.* **146** (1987) 65–96, Thm 1; est ~400
-LOC.]**  On the single bounded window `Q = (0,n] × B̄(0,n) ⊂ ℝ × ℝ³`, a family
++ Cor 4.27; Simon, *Ann. Mat. Pura Appl.* **146** (1987) 65–96, Thm 1.]**
+On the single bounded window `Q = (0,n] × B̄(0,n) ⊂ ℝ × ℝ³`, a family
 that is `L²(Q)`-bounded and uniformly equicontinuous under translations in *both*
 variables is totally bounded in `L²(Q)`, so any subsequence has an `L²(Q)`-Cauchy
 refinement.
@@ -2641,7 +3484,8 @@ resolved there by the hypothesis `h ≤ c`: the working window starts at `c`, so
 time-shifted space leg lands inside `Ioc 0 (T+h)` where `SpaceEquicontinuous` speaks.
 The discarded slab `(0,c]` costs `4Cc`, driven to zero by taking `c = h → 0`.
 
-**What is left, stated exactly.**  Two mechanical steps plus one bridge:
+**The last two steps, now certified below as well.**  Two mechanical steps plus
+one bridge:
 (ii) *cell-average vector* — feed the finitely many cells meeting the window
 (`finite_prodGridIndices`, `closedBall_subset_biUnion_prodGridCell`,
 `window_subset_closedBall`) to `exists_subseq_cauchy_of_bounded_pi_finiteDim`.
@@ -2689,16 +3533,181 @@ is `exists_diagonal_subseq` with `Q l σ` = cell-average Cauchyness at scale `l`
 (`hsub` = restriction to a subsequence, `htail` = index shift), exactly the shape
 `exists_subseq_forall_windowCauchy` already consumes.  The degenerate case `n = 0`
 has `Ioc 0 0 = ∅`, hence `windowError = 0`.
-[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~300 LOC with the two repairs.] -/
+[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1.] -/
 theorem exists_subseq_windowCauchy
     (uSeq : ℕ → VelocityEvolution) (C : ℝ) (hC : 0 ≤ C)
     (hkin : UniformKineticBound uSeq C)
     (htime : TimeEquicontinuous uSeq) (hspace : SpaceEquicontinuous uSeq)
     (hmeas : JointlyMeasurable uSeq)
     (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
-    (n : ℕ) (τ : ℕ → ℕ) (hτ : StrictMono τ) :
+    (n : ℕ) (τ : ℕ → ℕ) (_hτ : StrictMono τ) :
     ∃ ρ : ℕ → ℕ, StrictMono ρ ∧ WindowCauchy uSeq n (τ ∘ ρ) := by
-  sorry
+  classical
+  -- transfer the hypotheses along `τ`
+  set vSeq : ℕ → VelocityEvolution := fun j => uSeq (τ j) with hvdef
+  have vkin : UniformKineticBound vSeq C := fun m t ht => hkin (τ m) t ht
+  have vint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable (fun x : Space => ‖vSeq m t x‖ ^ 2) := fun m t ht => hint (τ m) t ht
+  have vmeas : JointlyMeasurable vSeq := fun m => hmeas (τ m)
+  have vtime : TimeEquicontinuous vSeq := by
+    intro T ε hε
+    obtain ⟨δ, hδ, hb⟩ := htime T ε hε
+    exact ⟨δ, hδ, fun m e he => hb (τ m) e he⟩
+  have vspace : SpaceEquicontinuous vSeq := by
+    intro T ε hε
+    obtain ⟨δ, hδ, hb⟩ := hspace T ε hε
+    exact ⟨δ, hδ, fun m y hy => hb (τ m) y hy⟩
+  have wtime : TimeEquicontinuous (fwd vSeq) := fwd_time vSeq C hC vkin vint vmeas vtime
+  have wspace : SpaceEquicontinuous (fwd vSeq) := fwd_space vSeq vspace
+  -- the scale ladder
+  have hscale_pos : ∀ l : ℕ, 0 < 1 / ((l:ℝ) + 1) := fun l => by positivity
+  have hscale_le1 : ∀ l : ℕ, 1 / ((l:ℝ) + 1) ≤ 1 := fun l => by
+    rw [div_le_one (by positivity)]
+    have h0 : (0:ℝ) ≤ (l:ℝ) := Nat.cast_nonneg l
+    linarith
+  -- the per-scale cell-average Cauchy predicate
+  set Q : ℕ → (ℕ → ℕ) → Prop := fun l σ' =>
+    ∀ ε' : ℝ, 0 < ε' → ∃ K : ℕ, ∀ j k : ℕ, K ≤ j → K ≤ k →
+      ∀ p ∈ winCellFinset n (hscale_pos l),
+        ‖(⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) p.1 p.2, fwdFn vSeq (σ' j) y) -
+          ⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) p.1 p.2, fwdFn vSeq (σ' k) y‖ < ε'
+    with hQdef
+  have hQsub : ∀ (l : ℕ) (σ' ρ : ℕ → ℕ), Q l σ' → StrictMono ρ → Q l (σ' ∘ ρ) := by
+    intro l σ' ρ hQl hρ ε' hε'
+    obtain ⟨K, hK⟩ := hQl ε' hε'
+    exact ⟨K, fun j k hj hk => hK (ρ j) (ρ k)
+      (le_trans hj hρ.le_apply) (le_trans hk hρ.le_apply)⟩
+  have hQtail : ∀ (l N : ℕ) (σ' : ℕ → ℕ), Q l (fun k => σ' (k + N)) → Q l σ' := by
+    intro l N σ' hQl ε' hε'
+    obtain ⟨M, hM⟩ := hQl ε' hε'
+    refine ⟨M + N, fun j k hj hk => ?_⟩
+    have hjN : N ≤ j := le_trans (Nat.le_add_left N M) hj
+    have hkN : N ≤ k := le_trans (Nat.le_add_left N M) hk
+    have hres := hM (j - N) (k - N) (by omega) (by omega)
+    simpa [Nat.sub_add_cancel hjN, Nat.sub_add_cancel hkN] using hres
+  have hQstep : ∀ (l : ℕ) (σ' : ℕ → ℕ), StrictMono σ' →
+      ∃ ρ, StrictMono ρ ∧ Q l (σ' ∘ ρ) := by
+    intro l σ' _
+    have hbound : ∀ j : ℕ,
+        ‖(fun q : ↥(winCellFinset n (hscale_pos l)) =>
+          ⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) q.1.1 q.1.2, fwdFn vSeq (σ' j) y)‖
+        ≤ Real.sqrt (((1 / ((l:ℝ) + 1)) ^ 4)⁻¹ * (C * ((n:ℝ) + 4))) := by
+      intro j
+      refine (pi_norm_le_iff_of_nonneg (Real.sqrt_nonneg _)).mpr fun q => ?_
+      have hsq := fwd_avg_sq_le vSeq C vkin vint vmeas n (σ' j)
+        (hscale_pos l) (hscale_le1 l) q.2
+      calc ‖⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) q.1.1 q.1.2, fwdFn vSeq (σ' j) y‖
+          = Real.sqrt (‖⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) q.1.1 q.1.2,
+              fwdFn vSeq (σ' j) y‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
+        _ ≤ Real.sqrt (((1 / ((l:ℝ) + 1)) ^ 4)⁻¹ * (C * ((n:ℝ) + 4))) :=
+            Real.sqrt_le_sqrt hsq
+    obtain ⟨ρ, hρ, hcau⟩ := exists_subseq_cauchy_of_bounded_finiteDim
+      (fun j (q : ↥(winCellFinset n (hscale_pos l))) =>
+        ⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) q.1.1 q.1.2, fwdFn vSeq (σ' j) y)
+      (Real.sqrt (((1 / ((l:ℝ) + 1)) ^ 4)⁻¹ * (C * ((n:ℝ) + 4)))) hbound
+    refine ⟨ρ, hρ, fun ε' hε' => ?_⟩
+    obtain ⟨K, hK⟩ := hcau ε' hε'
+    refine ⟨K, fun j k hj hk p hp => ?_⟩
+    have hnp := norm_le_pi_norm
+      ((fun q : ↥(winCellFinset n (hscale_pos l)) =>
+          ⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) q.1.1 q.1.2, fwdFn vSeq (σ' (ρ j)) y) -
+        fun q : ↥(winCellFinset n (hscale_pos l)) =>
+          ⨍ y in prodGridCell (1 / ((l:ℝ) + 1)) q.1.1 q.1.2, fwdFn vSeq (σ' (ρ k)) y)
+      (⟨p, hp⟩ : ↥(winCellFinset n (hscale_pos l)))
+    exact lt_of_le_of_lt hnp (hK j k hj hk)
+  -- the diagonal
+  obtain ⟨σ, hσmono, hσQ⟩ := exists_diagonal_subseq Q hQsub hQtail hQstep
+  refine ⟨σ, hσmono, ?_⟩
+  intro ε hε
+  -- constants
+  have hκ0 : (0:ℝ) ≤ volume.real (Metric.closedBall (0 : ℝ × Space) 1) :=
+    ENNReal.toReal_nonneg
+  set κC := volume.real (Metric.closedBall (0 : ℝ × Space) 1) with hκdef
+  have h400κ : (0:ℝ) < 400 * (κC + 1) := by linarith
+  have h400Cκ : (0:ℝ) < 400 * (C * κC + 1) := by nlinarith [mul_nonneg hC hκ0]
+  set εm := ε / (400 * (κC + 1)) with hεmdef
+  have hεmpos : 0 < εm := div_pos hε h400κ
+  -- equicontinuity moduli at the fixed horizon `n + 3`
+  obtain ⟨δ₁, hδ₁, hδ₁b⟩ := wspace ((n:ℝ) + 3) εm hεmpos
+  obtain ⟨δ₂, hδ₂, hδ₂b⟩ := wtime ((n:ℝ) + 3) εm hεmpos
+  -- the scale choice
+  have hdpos : 0 < min δ₁ (min δ₂ (min 1 (ε / (400 * (C * κC + 1))))) :=
+    lt_min hδ₁ (lt_min hδ₂ (lt_min one_pos (div_pos hε h400Cκ)))
+  obtain ⟨l, hl⟩ := exists_nat_one_div_lt hdpos
+  have hQl := hσQ l
+  set h := 1 / ((l:ℝ) + 1) with hhdef
+  have hh : 0 < h := hscale_pos l
+  have hhδ₁ : h < δ₁ := lt_of_lt_of_le hl (min_le_left _ _)
+  have hhδ₂ : h < δ₂ :=
+    lt_of_lt_of_le hl (le_trans (min_le_right _ _) (min_le_left _ _))
+  have hh1 : h ≤ 1 := le_of_lt (lt_of_lt_of_le hl (le_trans (min_le_right _ _)
+    (le_trans (min_le_right _ _) (min_le_left _ _))))
+  have hhε : h < ε / (400 * (C * κC + 1)) :=
+    lt_of_lt_of_le hl (le_trans (min_le_right _ _)
+      (le_trans (min_le_right _ _) (min_le_right _ _)))
+  -- the uniform translation modulus at this scale
+  have hmod : ∀ m : ℕ, ∀ k ∈ Metric.closedBall (0 : ℝ × Space) h,
+      (∫ z in encW n h, ‖fwdFn vSeq m (z + k) - fwdFn vSeq m z‖ ^ 2)
+        ≤ 12 * C * h + 4 * εm := by
+    intro m k hk
+    have hknorm : ‖k‖ ≤ h := by
+      simpa [Metric.mem_closedBall, dist_zero_right] using hk
+    have hk1 : |k.1| ≤ h := by
+      refine le_trans ?_ hknorm
+      simp [Prod.norm_def, Real.norm_eq_abs]
+    have hk2 : ‖k.2‖ ≤ h := by
+      refine le_trans ?_ hknorm
+      simp [Prod.norm_def]
+    exact fwd_modulus_encW vSeq C hC vkin vint vmeas n m hh hh1 k hknorm
+      (hδ₁b m k.2 (lt_of_le_of_lt hk2 hhδ₁))
+      (hδ₂b m k.1 (lt_of_le_of_lt hk1 hhδ₂))
+  -- the two outer legs, uniformly over members
+  have hcellerr : ∀ m : ℕ,
+      (∑ p ∈ winCellFinset n hh, ∫ z in prodGridCell h p.1 p.2,
+        ‖fwdFn vSeq m z - ⨍ y in prodGridCell h p.1 p.2, fwdFn vSeq m y‖ ^ 2)
+      ≤ κC * (12 * C * h + 4 * εm) := by
+    intro m
+    have hs := fwd_cellError_sum_le vSeq C vkin vint vmeas n m hh (hmod m)
+    rw [volume_real_closedBall_prodSpace hh.le, ← hκdef] at hs
+    calc (∑ p ∈ winCellFinset n hh, ∫ z in prodGridCell h p.1 p.2,
+        ‖fwdFn vSeq m z - ⨍ y in prodGridCell h p.1 p.2, fwdFn vSeq m y‖ ^ 2)
+        ≤ (h ^ 4)⁻¹ * (h ^ 4 * κC * (12 * C * h + 4 * εm)) := hs
+      _ = κC * (12 * C * h + 4 * εm) := by
+          rw [show (h ^ 4)⁻¹ * (h ^ 4 * κC * (12 * C * h + 4 * εm))
+              = ((h ^ 4)⁻¹ * h ^ 4) * (κC * (12 * C * h + 4 * εm)) from by ring,
+            inv_mul_cancel₀ (ne_of_gt (by positivity : (0:ℝ) < h ^ 4)), one_mul]
+  -- the mid-leg tolerance
+  set ε' := Real.sqrt (ε / (12 * (h ^ 4 * ((winCellFinset n hh).card : ℝ) + 1)))
+    with hε'def
+  have hBpos : (0:ℝ) < 12 * (h ^ 4 * ((winCellFinset n hh).card : ℝ) + 1) := by
+    positivity
+  have hε'pos : 0 < ε' := Real.sqrt_pos.mpr (div_pos hε hBpos)
+  obtain ⟨K, hK⟩ := hQl ε' hε'pos
+  refine ⟨K, fun a b ha hb => ?_⟩
+  -- the three-leg estimate at this scale
+  have hchain := windowError_le_three_legs vSeq C vkin vint vmeas n hh (σ a) (σ b)
+  have hS1 := hcellerr (σ a)
+  have hS2 := hcellerr (σ b)
+  have hSmid : (∑ p ∈ winCellFinset n hh, h ^ 4 *
+      ‖(⨍ y in prodGridCell h p.1 p.2, fwdFn vSeq (σ a) y) -
+        ⨍ y in prodGridCell h p.1 p.2, fwdFn vSeq (σ b) y‖ ^ 2)
+      ≤ ((winCellFinset n hh).card : ℝ) * (h ^ 4 * ε' ^ 2) := by
+    refine le_trans (Finset.sum_le_card_nsmul _ _ (h ^ 4 * ε' ^ 2) fun p hp => ?_) ?_
+    · exact mul_le_mul_of_nonneg_left
+        (pow_le_pow_left₀ (norm_nonneg _) (hK a b ha hb p hp).le 2) (by positivity)
+    · rw [nsmul_eq_mul]
+  -- the numeric assembly
+  have hε'sq : ε' ^ 2 * (12 * (h ^ 4 * ((winCellFinset n hh).card : ℝ) + 1)) = ε := by
+    rw [hε'def, Real.sq_sqrt (le_of_lt (div_pos hε hBpos))]
+    exact div_mul_cancel₀ ε (ne_of_gt hBpos)
+  have hεmeq : εm * (400 * (κC + 1)) = ε := by
+    rw [hεmdef]
+    exact div_mul_cancel₀ ε (ne_of_gt h400κ)
+  have hhlin : h * (400 * (C * κC + 1)) < ε := (lt_div_iff₀ h400Cκ).mp hhε
+  have hCκh0 : (0:ℝ) ≤ C * κC * h := mul_nonneg (mul_nonneg hC hκ0) hh.le
+  have hfinal : windowError (vSeq (σ a)) (vSeq (σ b)) n < ε :=
+    window_budget hchain hS1 hS2 hSmid hε'sq hεmeq hhlin hCκh0 hh.le hεmpos.le
+  exact hfinal
 
 /-- **[CERTIFIED — Fischer–Riesz limit extraction; Brezis, *Functional
 Analysis*, Springer 2011, Thm 4.8.]**  A sequence of jointly
@@ -2966,8 +3975,8 @@ theorem exists_limit_of_forall_windowCauchy
 
 end FischerRiesz
 
-/-- **[NAMED RESIDUAL — Aubin–Lions–Simon compactness, PATTERN-A REPAIRED
-STATEMENT; Aubin (*C. R. Acad. Sci.* **256**, 1963); Lions (*Quelques méthodes de
+/-- **[CERTIFIED — Aubin–Lions–Simon compactness, Pattern-A repaired
+statement; Aubin (*C. R. Acad. Sci.* **256**, 1963); Lions (*Quelques méthodes de
 résolution des problèmes aux limites non linéaires*, Dunod 1969, Ch. 1 §5);
 Simon ("Compact sets in `L^p(0,T;B)`", *Ann. Mat. Pura Appl.* **146** (1987)
 65–96, Thm 1); Temam, *Navier–Stokes Equations*, AMS Chelsea 2001, III.2.3;
@@ -3033,10 +4042,11 @@ actually assumes.  `TimeEquicontinuous` is likewise load-bearing and does its jo
 (the family `u_m(t,x) = sin(m t)·w(x)` meets the kinetic and enstrophy bounds, has
 no strong `L²_loc` limit, and is excluded exactly by it).
 
-Remaining route, all four steps: **(i)+(ii)** Riesz–Fréchet–Kolmogorov total
-boundedness on the single window `(0,n] × B̄(0,n)` from (H-space) + (H-time) +
-the `L²` bound, giving an `L²`-Cauchy refinement of any subsequence
-[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1; est ~400 LOC]; **(iii)** the nested
+The route, all four steps now certified: **(i)+(ii)** Riesz–Fréchet–Kolmogorov
+total boundedness on the single window `(0,n] × B̄(0,n)` from (H-space) +
+(H-time) + the `L²` bound, giving an `L²`-Cauchy refinement of any subsequence
+(`exists_subseq_windowCauchy`, CERTIFIED above)
+[Brezis Thm 4.26 + Cor 4.27; Simon Thm 1]; **(iii)** the nested
 Cantor diagonal over the countable exhaustion — `exists_diagonal_subseq` /
 `exists_subseq_forall_window_tendsto` (CERTIFIED in
 `Navier.Analysis.RieszKolmogorov`), with
