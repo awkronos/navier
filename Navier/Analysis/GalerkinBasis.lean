@@ -1091,6 +1091,22 @@ theorem coefficientField_sub (W : GalerkinBasisFamily) {m : ℕ}
   rw [← Finset.sum_sub_distrib]
   exact Finset.sum_congr rfl (fun i _ => sub_smul (a i) (b i) (W.w i))
 
+/-- The coefficient realization preserves addition. -/
+theorem coefficientField_add (W : GalerkinBasisFamily) {m : ℕ}
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    W.coefficientField (a + b) = W.coefficientField a + W.coefficientField b := by
+  unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+  rw [← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl (fun i _ => add_smul (a i) (b i) (W.w i))
+
+/-- The coefficient realization preserves real scalar multiplication. -/
+theorem coefficientField_smul (W : GalerkinBasisFamily) {m : ℕ}
+    (r : ℝ) (a : EuclideanSpace ℝ (Fin m)) :
+    W.coefficientField (r • a) = r • W.coefficientField a := by
+  unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+  rw [Finset.smul_sum]
+  exact Finset.sum_congr rfl (fun i _ => by simp [smul_smul])
+
 /-- Realizing the datum's coefficient vector recovers its genuine Galerkin
 projection. -/
 theorem coefficientField_initialCoefficients_eq_proj (W : GalerkinBasisFamily)
@@ -1107,11 +1123,92 @@ noncomputable def GalerkinBasisFamily.modalApprox (W : GalerkinBasisFamily)
     (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) : ℕ → VelocityEvolution :=
   galerkinModalApprox (fun m => m) c (fun m => W.finiteModes m)
 
+/-- Curl as a genuine continuous linear operator on Schwartz velocity fields.
+Each summand differentiates in a coordinate direction and postcomposes with
+the linear cross product by that basis vector. -/
+noncomputable def curlSchwartzCLM : SchwartzVelocity →L[ℝ] SchwartzVelocity :=
+  ∑ i : Fin 3,
+    (SchwartzMap.postcompCLM (𝕜 := ℝ)
+      (crossProduct (basisVector i)).toContinuousLinearMap).comp
+      (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i))
+
+/-- The Schwartz curl agrees pointwise with the project coordinate curl. -/
+theorem curlSchwartzCLM_apply (u : SchwartzVelocity) (x : Space) :
+    curlSchwartzCLM u x = staticCurl u x := by
+  simp [curlSchwartzCLM, staticCurl, SchwartzMap.lineDerivOp_apply_eq_fderiv]
+
 /-- The physical enstrophy of a field realized from one finite coefficient
 vector.  A projected Stokes operator represents exactly this quadratic form. -/
 noncomputable def GalerkinBasisFamily.coefficientEnstrophy (W : GalerkinBasisFamily)
     {m : ℕ} (a : EuclideanSpace ℝ (Fin m)) : ℝ :=
   ∫ x : Space, officialEuclideanNorm (staticCurl (W.coefficientField a) x) ^ 2
+
+/-- Coefficient enstrophy is the Schwartz `L²` pairing of the concrete curl
+field with itself. -/
+theorem coefficientEnstrophy_eq_curlSchwartz (W : GalerkinBasisFamily)
+    {m : ℕ} (a : EuclideanSpace ℝ (Fin m)) :
+    W.coefficientEnstrophy a =
+      schwartzL2Inner (curlSchwartzCLM (W.coefficientField a))
+        (curlSchwartzCLM (W.coefficientField a)) := by
+  unfold GalerkinBasisFamily.coefficientEnstrophy schwartzL2Inner
+  apply integral_congr_ae
+  filter_upwards with x
+  rw [curlSchwartzCLM_apply, officialInner_self]
+
+/-- The concrete finite-mode Stokes operator: its `i`th coordinate is the
+curl-`L²` pairing of mode `i` with the realized coefficient field. -/
+noncomputable def GalerkinBasisFamily.stokesOperator (W : GalerkinBasisFamily)
+    (m : ℕ) : EuclideanSpace ℝ (Fin m) →L[ℝ] EuclideanSpace ℝ (Fin m) :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun a => WithLp.toLp 2 fun i =>
+        schwartzL2Inner (curlSchwartzCLM (W.w i))
+          (curlSchwartzCLM (W.coefficientField a))
+      map_add' := by
+        intro a b
+        ext i
+        simp [coefficientField_add, schwartzL2Inner_add_right]
+      map_smul' := by
+        intro r a
+        ext i
+        simp [coefficientField_smul, schwartzL2Inner_smul_right] }
+
+@[simp] theorem stokesOperator_apply (W : GalerkinBasisFamily) (m : ℕ)
+    (a : EuclideanSpace ℝ (Fin m)) (i : Fin m) :
+    W.stokesOperator m a i =
+      schwartzL2Inner (curlSchwartzCLM (W.w i))
+        (curlSchwartzCLM (W.coefficientField a)) := by
+  simp [GalerkinBasisFamily.stokesOperator]
+
+/-- The Stokes quadratic form is exactly physical modal enstrophy. -/
+theorem stokesOperator_inner_eq_enstrophy (W : GalerkinBasisFamily) (m : ℕ)
+    (a : EuclideanSpace ℝ (Fin m)) :
+    inner ℝ (W.stokesOperator m a) a = W.coefficientEnstrophy a := by
+  rw [PiLp.inner_apply, coefficientEnstrophy_eq_curlSchwartz]
+  have hfield : curlSchwartzCLM (W.coefficientField a) =
+      ∑ i : Fin m, a i • curlSchwartzCLM (W.w i) := by
+    rw [show W.coefficientField a = ∑ i : Fin m, a i • W.w i from rfl,
+      map_sum]
+    exact Finset.sum_congr rfl (fun i _ => by rw [map_smul])
+  simp only [stokesOperator_apply, RCLike.inner_apply, conj_trivial]
+  change (∑ i : Fin m, a i *
+      schwartzL2Inner (curlSchwartzCLM (W.w i))
+        (curlSchwartzCLM (W.coefficientField a))) = _
+  calc
+    (∑ i : Fin m, a i * schwartzL2Inner (curlSchwartzCLM (W.w i))
+        (curlSchwartzCLM (W.coefficientField a))) =
+      schwartzL2Inner (∑ i : Fin m, a i • curlSchwartzCLM (W.w i))
+        (curlSchwartzCLM (W.coefficientField a)) := by
+      rw [schwartzL2Inner_finset_sum_left]
+      exact Finset.sum_congr rfl (fun i _ => (schwartzL2Inner_smul_left _ _ _).symm)
+    _ = schwartzL2Inner (curlSchwartzCLM (W.coefficientField a))
+        (curlSchwartzCLM (W.coefficientField a)) := by rw [← hfield]
+
+/-- Positivity of the concrete finite-mode Stokes operator. -/
+theorem stokesOperator_nonneg (W : GalerkinBasisFamily) (m : ℕ)
+    (a : EuclideanSpace ℝ (Fin m)) :
+    0 ≤ inner ℝ (W.stokesOperator m a) a := by
+  rw [stokesOperator_inner_eq_enstrophy]
+  exact integral_nonneg fun x => by positivity
 
 /-- At every time, the modal flow is the Schwartz field represented by the
 forward-extended coefficient vector. -/
@@ -1645,16 +1742,13 @@ bound, a uniform projected-vector-field bound, spatial translations, and weak
 consistency. -/
 theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (ν : ℝ) (hν : 0 < ν) (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
-    (A : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) →L[ℝ] EuclideanSpace ℝ (Fin m))
     (B : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin m))
     (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
     (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
-      HasDerivWithinAt (c m) (-(ν • A m (c m t)) + B m (c m t))
+      HasDerivWithinAt (c m) (-(ν • W.stokesOperator m (c m t)) + B m (c m t))
         (Set.Ici (0 : ℝ)) t)
     (hB_skew : ∀ (m : ℕ) (a : EuclideanSpace ℝ (Fin m)),
       inner ℝ (B m a) a = 0)
-    (hA_enstrophy : ∀ (m : ℕ) (a : EuclideanSpace ℝ (Fin m)),
-      inner ℝ (A m a) a = W.coefficientEnstrophy a)
     (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m)
     (bound : ℝ) (hbound : 0 ≤ bound)
     (hbound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2)
@@ -1664,7 +1758,7 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (henstrophy_budget : ∀ m : ℕ, ‖c m 0‖ ^ 2 / (2 * ν) ≤ bound)
     (derivativeBound : ℝ) (hderivativeBound : 0 ≤ derivativeBound)
     (hderivative : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
-      ‖-(ν • A m (c m t)) + B m (c m t)‖ ≤ derivativeBound)
+      ‖-(ν • W.stokesOperator m (c m t)) + B m (c m t)‖ ≤ derivativeBound)
     (hspace : SpaceEquicontinuous (W.modalApprox c))
     (hprojectedWeak : ∀ φ : DivergenceFreeTestFunction,
       Filter.Tendsto
@@ -1680,10 +1774,12 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     bound_le := hbound_le
     kinetic_bounded := hkin
     official_kinetic_bounded := ?_
-    enstrophy_bounded := modalApprox_uniformEnstrophyBound W hν A B c hc
-      hB_skew hA_enstrophy bound henstrophy_budget
+    enstrophy_bounded := modalApprox_uniformEnstrophyBound W hν
+      (fun m => W.stokesOperator m) B c hc hB_skew
+      (stokesOperator_inner_eq_enstrophy W) bound henstrophy_budget
     time_equicontinuous := modalApprox_timeEquicontinuous_of_uniformDerivative
-      W A B c hc derivativeBound hderivativeBound hderivative bound hkin
+      W (fun m => W.stokesOperator m) B c hc derivativeBound
+      hderivativeBound hderivative bound hkin
     space_equicontinuous := hspace
     jointly_measurable := ?_
     sq_integrable := ?_
@@ -1696,7 +1792,7 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     exact henergy m t ht
   · simpa [GalerkinBasisFamily.modalApprox] using
       galerkinModalApprox_jointlyMeasurable (fun m => m) c
-        (fun m t => -(ν • A m (c m t)) + B m (c m t)) hc
+        (fun m t => -(ν • W.stokesOperator m (c m t)) + B m (c m t)) hc
         (fun m => W.finiteModes m)
   · simpa [GalerkinBasisFamily.modalApprox] using
       galerkinModalApprox_sq_integrable (fun m => m) c
