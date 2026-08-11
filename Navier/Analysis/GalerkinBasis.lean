@@ -1,4 +1,5 @@
 import Navier.Analysis.GalerkinRawFamily
+import Navier.Analysis.EnergyDissipation
 
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
@@ -123,6 +124,7 @@ open Navier
 open Navier.Analysis.Enstrophy
 open Navier.Analysis.LerayWeak
 open Navier.Analysis.OfficialABEncoding
+open Navier.Analysis.Vorticity
 
 /-!
 ## Divergence linearity toolkit
@@ -1079,6 +1081,30 @@ noncomputable def GalerkinBasisFamily.modalApprox (W : GalerkinBasisFamily)
     (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) : ℕ → VelocityEvolution :=
   galerkinModalApprox (fun m => m) c (fun m => W.finiteModes m)
 
+/-- The physical enstrophy of a field realized from one finite coefficient
+vector.  A projected Stokes operator represents exactly this quadratic form. -/
+noncomputable def GalerkinBasisFamily.coefficientEnstrophy (W : GalerkinBasisFamily)
+    {m : ℕ} (a : EuclideanSpace ℝ (Fin m)) : ℝ :=
+  ∫ x : Space, officialEuclideanNorm (staticCurl (W.coefficientField a) x) ^ 2
+
+/-- At nonnegative time, the forward-extended modal flow is exactly the
+Schwartz field represented by its current coefficient vector. -/
+theorem modalApprox_eq_coefficientField (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) (m : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    W.modalApprox c m t = fun x => W.coefficientField (c m t) x := by
+  funext x
+  simp [GalerkinBasisFamily.modalApprox, galerkinModalApprox,
+    GalerkinBasisFamily.coefficientField, GalerkinBasisFamily.finiteModes,
+    forwardExtend_eq_of_nonneg (c m) ht]
+
+/-- Exact transfer of physical enstrophy to the coefficient representation at
+nonnegative time. -/
+theorem modalApprox_enstrophy_eq (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) (m : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    enstrophy (W.modalApprox c m) t = W.coefficientEnstrophy (c m t) := by
+  unfold enstrophy vorticity GalerkinBasisFamily.coefficientEnstrophy
+  rw [modalApprox_eq_coefficientField W c m ht]
+
 /-- Exact energy transfer from the Euclidean coefficient ODE to the physical
 modal field.  The project `kineticEnergy` is the official Euclidean spatial
 energy, so orthonormality loses no dimension factor. -/
@@ -1336,25 +1362,73 @@ theorem modalApprox_initial_eq_proj (W : GalerkinBasisFamily)
   change W.coefficientField (c m 0) x = W.proj m u₀ x
   rw [hc0 m, coefficientField_initialCoefficients_eq_proj]
 
+/-- A projected coefficient ODE whose Stokes quadratic form is the physical
+modal enstrophy supplies the uniform enstrophy field.  This is the exact
+finite-dimensional energy-dissipation identity: skew convection contributes
+zero, while the Stokes term integrates to at most the initial coefficient
+energy divided by `2ν`. -/
+theorem modalApprox_uniformEnstrophyBound (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (A : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) →L[ℝ] EuclideanSpace ℝ (Fin m))
+    (B : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin m))
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m) (-(ν • A m (c m t)) + B m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (hB_skew : ∀ (m : ℕ) (a : EuclideanSpace ℝ (Fin m)),
+      inner ℝ (B m a) a = 0)
+    (hA_enstrophy : ∀ (m : ℕ) (a : EuclideanSpace ℝ (Fin m)),
+      inner ℝ (A m a) a = W.coefficientEnstrophy a)
+    (C : ℝ) (hbudget : ∀ m : ℕ, ‖c m 0‖ ^ 2 / (2 * ν) ≤ C) :
+    UniformEnstrophyBound (W.modalApprox c) C := by
+  intro m T hT
+  have hc_cont : ContinuousOn (c m) (Set.Ici (0 : ℝ)) :=
+    fun t ht => (hc m t ht).continuousWithinAt
+  have hA_cont : ContinuousOn (fun t => A m (c m t)) (Set.Ici (0 : ℝ)) :=
+    (A m).continuous.comp_continuousOn hc_cont
+  have hinner_cont : ContinuousOn
+      (fun t => (inner ℝ (A m (c m t)) (c m t) : ℝ)) (Set.Ici (0 : ℝ)) :=
+    hA_cont.inner hc_cont
+  have hdiss :=
+    Navier.Analysis.EnergyDissipation.dissipation_integral_le_forward
+      (ν := ν) hν (A m) (B m) (c m)
+        (fun t => -(ν • A m (c m t)) + B m (c m t))
+        (hc m) (fun _ _ => rfl) (fun t _ => hB_skew m (c m t)) hinner_cont hT
+  have henstrophy :
+      (∫ t in Set.Ioc (0 : ℝ) T, enstrophy (W.modalApprox c m) t) =
+        ∫ t in Set.Ioc (0 : ℝ) T, (inner ℝ (A m (c m t)) (c m t) : ℝ) := by
+    apply setIntegral_congr_fun measurableSet_Ioc
+    intro t ht
+    rw [modalApprox_enstrophy_eq W c m (le_of_lt ht.1), ← hA_enstrophy]
+  rw [henstrophy]
+  exact hdiss.trans (hbudget m)
+
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
 modal realization, projected initial slice, exact official-energy transfer,
 joint measurability, square-integrability, and Bessel convergence.  The
 remaining hypotheses are precisely the PDE estimates not implied by basis
-orthonormality: the inherited-sup kinetic bound, enstrophy, translations, and
-weak consistency. -/
+orthonormality or projected energy dissipation: the inherited-sup kinetic
+bound, translations, and weak consistency. -/
 theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
-    (ν : ℝ) (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
-    (c F : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (ν : ℝ) (hν : 0 < ν) (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
+    (A : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) →L[ℝ] EuclideanSpace ℝ (Fin m))
+    (B : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin m))
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
     (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
-      HasDerivWithinAt (c m) (F m t) (Set.Ici (0 : ℝ)) t)
+      HasDerivWithinAt (c m) (-(ν • A m (c m t)) + B m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (hB_skew : ∀ (m : ℕ) (a : EuclideanSpace ℝ (Fin m)),
+      inner ℝ (B m a) a = 0)
+    (hA_enstrophy : ∀ (m : ℕ) (a : EuclideanSpace ℝ (Fin m)),
+      inner ℝ (A m a) a = W.coefficientEnstrophy a)
     (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m)
     (bound : ℝ) (hbound : 0 ≤ bound)
     (hbound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2)
     (hkin : UniformKineticBound (W.modalApprox c) bound)
     (henergy : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
       ‖c m t‖ ^ 2 ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
-    (hens : UniformEnstrophyBound (W.modalApprox c) bound)
+    (henstrophy_budget : ∀ m : ℕ, ‖c m 0‖ ^ 2 / (2 * ν) ≤ bound)
     (htime : TimeEquicontinuous (W.modalApprox c))
     (hspace : SpaceEquicontinuous (W.modalApprox c))
     (hweak : ∀ φ : DivergenceFreeTestFunction,
@@ -1370,7 +1444,8 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     bound_le := hbound_le
     kinetic_bounded := hkin
     official_kinetic_bounded := ?_
-    enstrophy_bounded := hens
+    enstrophy_bounded := modalApprox_uniformEnstrophyBound W hν A B c hc
+      hB_skew hA_enstrophy bound henstrophy_budget
     time_equicontinuous := htime
     space_equicontinuous := hspace
     jointly_measurable := ?_
@@ -1382,7 +1457,8 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
       forwardExtend_eq_of_nonneg (c m) ht]
     exact henergy m t ht
   · simpa [GalerkinBasisFamily.modalApprox] using
-      galerkinModalApprox_jointlyMeasurable (fun m => m) c F hc
+      galerkinModalApprox_jointlyMeasurable (fun m => m) c
+        (fun m t => -(ν • A m (c m t)) + B m (c m t)) hc
         (fun m => W.finiteModes m)
   · simpa [GalerkinBasisFamily.modalApprox] using
       galerkinModalApprox_sq_integrable (fun m => m) c
