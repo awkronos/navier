@@ -211,7 +211,7 @@ and Euclidean norm forms have been transported through every consumer, including
 the force alternatives, so the former norm residual is retired. -/
 def problemEncodingResiduals : Finset ProblemEncodingResidual := Finset.univ
 
-/-- The statement-A surface currently exposes exactly five representation
+/-- The statement-A surface currently exposes exactly four representation
 bridges, independently of its separate analytic existence frontier. -/
 theorem problemEncodingResiduals_card : problemEncodingResiduals.card = 4 := by
   decide
