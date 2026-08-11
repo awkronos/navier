@@ -127,20 +127,18 @@ inductive OfficialSurfaceEncodingResidual where
   deriving DecidableEq, Repr, Fintype
 
 /-- The remaining alternative-surface representation obligations.  The
-periodic lift/quotient comparison is retired: the exact factorization theorem
-and its initial-data/classical-solution consumers are proved in
-`Analysis.PeriodicQuotientBridge`. -/
+periodic lift/quotient and half-space smoothness comparisons are retired: their
+exact representation theorems are consumed by the official data, force, and
+classical-solution contracts. -/
 def officialSurfaceEncodingResiduals : Finset OfficialSurfaceEncodingResidual :=
   { .schwartzDatumCoordinatewiseEquivalence,
     .forceFrechetCoordinatewiseEquivalence,
-    .halfSpaceSmoothnessEquivalence,
     .problemFrechetCoordinatePDEEquivalence,
     .wholeSpaceEnergyClauseEquivalence }
 
-/-- Five alternative-surface representation obligations remain active; the
-periodic quotient-lift obligation has been consumed. -/
+/-- Four alternative-surface representation obligations remain active. -/
 theorem officialSurfaceEncodingResiduals_card :
-    officialSurfaceEncodingResiduals.card = 5 := by
+    officialSurfaceEncodingResiduals.card = 4 := by
   decide
 
 namespace ProblemStatements
