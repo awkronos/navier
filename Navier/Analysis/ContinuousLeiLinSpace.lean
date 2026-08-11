@@ -486,6 +486,36 @@ derivative phase and the frequencywise Leray projection. -/
 def continuousNavierBilinear (u v : ES → ComplexSpace) (ξ : ES) : ComplexSpace :=
   continuousLeray ξ (Complex.I • rawNavierConvection u v ξ)
 
+/-- The PiLp/WithLp Borel structure on the Hermitian three-coordinate carrier.
+It is named explicitly because the finite-dimensional inner-product volume
+construction can otherwise expose the same Borel structure through a distinct
+instance path. -/
+@[reducible] def complexE3PiMeasurableSpace : MeasurableSpace ComplexE3 :=
+  WithLp.measurableSpace 2 (Fin 3 → ℂ)
+
+/-- The measurable-space path selected by the finite-dimensional Hermitian
+volume construction. -/
+@[reducible] def complexE3EuclideanMeasurableSpace : MeasurableSpace ComplexE3 :=
+  measureSpaceOfInnerProductSpace.toMeasurableSpace
+
+/-- The PiLp measurable structure is exactly the Borel σ-algebra. -/
+theorem complexE3PiMeasurableSpace_eq_borel :
+    complexE3PiMeasurableSpace = borel ComplexE3 := by
+  exact @BorelSpace.measurable_eq ComplexE3 _ complexE3PiMeasurableSpace
+    (PiLp.borelSpace 2)
+
+/-- The inner-product volume measurable structure is also exactly Borel. -/
+theorem complexE3EuclideanMeasurableSpace_eq_borel :
+    complexE3EuclideanMeasurableSpace = borel ComplexE3 := by
+  exact @BorelSpace.measurable_eq ComplexE3 _ complexE3EuclideanMeasurableSpace _
+
+/-- The two instance paths for the finite-dimensional complex Euclidean carrier
+are measurably coherent. -/
+theorem complexE3_measurableSpace_coherent :
+    complexE3PiMeasurableSpace = complexE3EuclideanMeasurableSpace := by
+  rw [complexE3PiMeasurableSpace_eq_borel]
+  exact complexE3EuclideanMeasurableSpace_eq_borel.symm
+
 /-- An `ℓ²` coordinate vector is bounded by its finite `ℓ¹` coordinate mass. -/
 theorem euclidean_norm_le_coordinate_sum (z : ComplexSpace) :
     complexEuclideanNorm z ≤ ∑ i : Fin 3, ‖z i‖ := by
@@ -629,6 +659,7 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_weighted_continuousLerayE
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.weighted_continuousLerayE_mass_le
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.norm_complex_convolution_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.complexE3_measurableSpace_coherent
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousNavierBilinear_majorant
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_pointwise
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le
