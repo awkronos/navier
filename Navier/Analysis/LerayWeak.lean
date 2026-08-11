@@ -995,6 +995,44 @@ theorem finiteDim_dissipative_ode_global
   rw [← hG_eq (u t) hconf]
   exact hu_deriv t ht
 
+/-- **Projected finite-mode coefficient flow.**  Let `A` be the finite-mode
+Stokes operator and `B` the projected convection field.  Positivity of `A`,
+energy-skewness of `B`, and nonnegative viscosity make the concrete Galerkin
+field `x ↦ -(ν • A x) + B x` dissipative.  Since a continuous linear `A` and a
+`C¹` field `B` make this field `C¹`, the cutoff/global ODE theorem supplies a
+forward trajectory; its squared coefficient norm is bounded by the initial
+coefficient norm.
+
+This is the ODE package consumed by the construction of
+`GalerkinModeData`: the remaining finite-mode work is to instantiate `A`, `B`,
+and the coefficient-to-Schwartz-field map from the divergence-free basis, not
+to prove global continuation again. -/
+theorem exists_forward_galerkinCoefficientFlow
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+    (ν : ℝ) (hν : 0 ≤ ν) (A : E →L[ℝ] E)
+    (hA : ∀ x : E, 0 ≤ inner ℝ (A x) x)
+    (B : E → E) (hB_C1 : ContDiff ℝ 1 B)
+    (hB_skew : ∀ x : E, inner ℝ (B x) x = 0) (x₀ : E) :
+    ∃ u : ℝ → E, u 0 = x₀ ∧
+      (∀ t : ℝ, 0 ≤ t →
+        HasDerivWithinAt u (-(ν • A (u t)) + B (u t)) (Set.Ici (0 : ℝ)) t) ∧
+      ∀ t : ℝ, 0 ≤ t → ‖u t‖ ^ 2 ≤ ‖x₀‖ ^ 2 := by
+  let F : E → E := fun x => -(ν • A x) + B x
+  have hF_C1 : ContDiff ℝ 1 F := by
+    dsimp only [F]
+    exact (A.contDiff.const_smul ν).neg.add hB_C1
+  have hF_diss : ∀ x : E, inner ℝ (F x) x ≤ 0 := by
+    intro x
+    dsimp only [F]
+    rw [inner_add_left, inner_neg_left, inner_smul_left, hB_skew]
+    simp only [conj_trivial, add_zero]
+    exact neg_nonpos.mpr (mul_nonneg hν (hA x))
+  obtain ⟨u, hu0, hu⟩ := finiteDim_dissipative_ode_global F hF_C1 hF_diss x₀
+  refine ⟨u, hu0, fun t ht => by simpa only [F] using hu t ht, fun t ht => ?_⟩
+  simpa only [hu0] using
+    norm_sq_le_initial_forward u (fun s => F (u s)) hu
+      (fun s _ => hF_diss (u s)) ht
+
 /-!
 ### Finite-mode Galerkin data and its transport to a `GalerkinApproximation`
 
@@ -3293,9 +3331,6 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
-
-
-
 
 
 
