@@ -1,4 +1,5 @@
 import Navier.Analysis.ContinuousLeiLinSpace
+import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 
 /-!
 # Time-Duhamel carrier for the continuous Lei--Lin symbol
@@ -33,6 +34,46 @@ def continuousNavierSource (u v : ℝ → ES → ComplexSpace) (t : ℝ) :
 finite-coordinate mass occurring in the proved continuous convolution bound. -/
 def coordinateX0Mass (u : ES → ComplexSpace) : ℝ :=
   ∑ i : Fin 3, ∫ ξ : ES, ‖u ξ i‖
+
+/-- The sum of the three continuous coordinate `X⁻¹` masses. -/
+def coordinateXm1Mass (u : ES → ComplexSpace) : ℝ :=
+  ∑ i : Fin 3, normXm1 (fun ξ : ES => u ξ i)
+
+/-- The sum of the three continuous coordinate `X¹` masses. -/
+def coordinateX1Mass (u : ES → ComplexSpace) : ℝ :=
+  ∑ i : Fin 3, normX1 (fun ξ : ES => u ξ i)
+
+/-- Finite-coordinate aggregation of the continuous `X⁰` interpolation
+estimate.  This is a genuine finite Cauchy--Schwarz step over the velocity
+coordinates, not a lattice-frequency estimate. -/
+theorem coordinateX0Mass_sq_le_coordinateXm1Mass_mul_coordinateX1Mass
+    (u : ES → ComplexSpace)
+    (hxm1 : ∀ i, Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖u ξ i‖))
+    (hx1 : ∀ i, Integrable (fun ξ : ES => ‖ξ‖ * ‖u ξ i‖)) :
+    coordinateX0Mass u ^ 2 ≤ coordinateXm1Mass u * coordinateX1Mass u := by
+  unfold coordinateX0Mass coordinateXm1Mass coordinateX1Mass normXm1 normX1
+  apply Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul Finset.univ
+  · intro i hi
+    exact integral_nonneg fun ξ =>
+      mul_nonneg (inv_nonneg.mpr (norm_nonneg _)) (norm_nonneg _)
+  · intro i hi
+    exact integral_nonneg fun ξ => mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  · intro i hi
+    exact Navier.Analysis.ContinuousLeiLinSpace.normX0_sq_le_normXm1_mul_normX1
+      (fun ξ => u ξ i) (hxm1 i) (hx1 i)
+
+/-- Spacetime `L¹` control of every coordinate gives the time integrability
+of the coordinate `X⁰` mass by Fubini.  It deliberately does not assert
+integrability of the square of that mass; the mixed time estimate needed for
+the Duhamel fixed-point bound is a separate hypothesis. -/
+theorem integrable_coordinateX0Mass_of_integrable_spacetime
+    (u : ℝ → ES → ComplexSpace)
+    (hu : ∀ i, Integrable (fun p : ℝ × ES => ‖u p.1 p.2 i‖)) :
+    Integrable (fun t => coordinateX0Mass (u t)) := by
+  unfold coordinateX0Mass
+  apply integrable_finsetSum Finset.univ
+  intro i hi
+  exact (hu i).integral_prod_left
 
 /-- The time-dependent continuous Duhamel operator.  The Bochner integral is
 taken coordinatewise over the causal interval `[0,t]`; no regularity of this
@@ -85,7 +126,40 @@ theorem integral_normXm1_continuousNavierSource_le
     (fun t ht => normXm1_continuousNavierSource_le_coordinateX0Mass
       u v t hu hv hu0 hv0)
 
+/-- The diagonal time-bilinear source estimate after continuous coordinate
+interpolation.  The two time-integrability hypotheses are explicit: Fubini
+can establish first-moment coordinate mass integrability, whereas the square
+and mixed endpoint product are the additional fixed-point inputs. -/
+theorem integral_normXm1_continuousNavierSource_self_le_coordinateXm1X1
+    (u : ℝ → ES → ComplexSpace) (s : Set ℝ)
+    (hu : ∀ t j, AEStronglyMeasurable (fun η : ES => u t η j))
+    (hu0 : ∀ t j, Integrable (fun η : ES => ‖u t η j‖))
+    (hum1 : ∀ t j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u t η j‖))
+    (hu1 : ∀ t j, Integrable (fun η : ES => ‖η‖ * ‖u t η j‖))
+    (hs : MeasurableSet s)
+    (hsource : IntegrableOn (fun t => ∫ ξ : ES, ‖ξ‖⁻¹ *
+      complexEuclideanNorm (continuousNavierSource u u t ξ)) s)
+    (h0sq : IntegrableOn (fun t => coordinateX0Mass (u t) ^ 2) s)
+    (hmixed : IntegrableOn (fun t =>
+      coordinateXm1Mass (u t) * coordinateX1Mass (u t)) s) :
+    (∫ t in s, ∫ ξ : ES, ‖ξ‖⁻¹ *
+      complexEuclideanNorm (continuousNavierSource u u t ξ)) ≤
+      ∫ t in s, coordinateXm1Mass (u t) * coordinateX1Mass (u t) := by
+  calc
+    (∫ t in s, ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource u u t ξ)) ≤
+        ∫ t in s, coordinateX0Mass (u t) ^ 2 := by
+      simpa [pow_two] using integral_normXm1_continuousNavierSource_le u u s
+        hu hu hu0 hu0 hs hsource (by simpa [pow_two] using h0sq)
+    _ ≤ ∫ t in s, coordinateXm1Mass (u t) * coordinateX1Mass (u t) := by
+      exact setIntegral_mono_on h0sq hmixed hs (fun t ht =>
+        coordinateX0Mass_sq_le_coordinateXm1Mass_mul_coordinateX1Mass (u t)
+          (hum1 t) (hu1 t))
+
 end Navier.Analysis.ContinuousLeiLinTimeDuhamel
 
 #print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.normXm1_continuousNavierSource_le_coordinateX0Mass
 #print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.integral_normXm1_continuousNavierSource_le
+#print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.coordinateX0Mass_sq_le_coordinateXm1Mass_mul_coordinateX1Mass
+#print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.integrable_coordinateX0Mass_of_integrable_spacetime
+#print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.integral_normXm1_continuousNavierSource_self_le_coordinateXm1X1
