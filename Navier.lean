@@ -20,6 +20,7 @@ import Navier.Analysis.ForceNormBridge
 import Navier.Analysis.ForceCoordinateBridge
 import Navier.Analysis.ForceCoordinateDecayBridge
 import Navier.Analysis.ForceMultiIndexConvention
+import Navier.Analysis.ForceMultiIndexObstruction
 import Navier.Analysis.TypedCoordinateEndpoints
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.FrequencyHeatLeray
