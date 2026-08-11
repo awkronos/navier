@@ -256,6 +256,37 @@ theorem heat_contracts_Xm1 {ν t : ℝ} (hν : 0 ≤ ν) (ht : 0 ≤ t)
         mul_assoc, mul_left_comm, mul_comm] using h
   exact integral_mono hheat hf hpoint
 
+/-- The frequency triangle inequality in the form used to distribute one
+derivative across a Fourier convolution. -/
+theorem frequency_triangle (ξ η : ES) :
+    ‖ξ‖ ≤ ‖η‖ + ‖ξ - η‖ := by
+  calc
+    ‖ξ‖ = ‖η + (ξ - η)‖ := by
+      congr 1
+      abel
+    _ ≤ ‖η‖ + ‖ξ - η‖ := norm_add_le _ _
+
+/-- Pointwise derivative allocation for nonnegative convolution profiles.
+This is the algebraic kernel of the continuous Lei--Lin bilinear estimate:
+the output frequency weight is assigned to either input frequency. -/
+theorem frequency_weighted_product_split (ξ η : ES) {a b : ℝ}
+    (ha : 0 ≤ a) (hb : 0 ≤ b) :
+    ‖ξ‖ * (a * b) ≤ (‖η‖ * a) * b + a * (‖ξ - η‖ * b) := by
+  have hfreq := frequency_triangle ξ η
+  have hab : 0 ≤ a * b := mul_nonneg ha hb
+  calc
+    ‖ξ‖ * (a * b) ≤ (‖η‖ + ‖ξ - η‖) * (a * b) :=
+      mul_le_mul_of_nonneg_right hfreq hab
+    _ = (‖η‖ * a) * b + a * (‖ξ - η‖ * b) := by ring
+
+/-- The preceding derivative allocation specialized to complex Fourier
+profiles.  It is ready for Tonelli and the convolution change of variables. -/
+theorem frequency_weighted_norm_product_split (f g : ES → ℂ) (ξ η : ES) :
+    ‖ξ‖ * (‖f η‖ * ‖g (ξ - η)‖) ≤
+      (‖η‖ * ‖f η‖) * ‖g (ξ - η)‖ +
+        ‖f η‖ * (‖ξ - η‖ * ‖g (ξ - η)‖) :=
+  frequency_weighted_product_split ξ η (norm_nonneg _) (norm_nonneg _)
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -268,3 +299,6 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_weighted_norm_le
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLerayE_aestronglyMeasurable
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_continuousLerayE
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_triangle
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_product_split
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_norm_product_split
