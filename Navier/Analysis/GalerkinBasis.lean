@@ -1,5 +1,6 @@
 import Navier.Analysis.GalerkinRawFamily
 import Navier.Analysis.EnergyDissipation
+import Navier.Analysis.EnergyConvectionIntegral
 
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
@@ -117,6 +118,7 @@ set_option autoImplicit false
 noncomputable section
 
 open Set MeasureTheory Filter
+open scoped LineDeriv
 
 namespace Navier.Analysis.GalerkinBasis
 
@@ -149,8 +151,9 @@ theorem staticDivergence_add (f g : VelocityField) (x : Space)
 divergence-free.**  The structural fact letting every Galerkin/Gram–Schmidt
 combination stay inside the divergence-free constraint manifold (pure
 linearity of the divergence; Clairaut-free). -/
-theorem divergenceFreeInitial_sum_smul (s : Finset ℕ) (c : ℕ → ℝ)
-    (v : ℕ → SchwartzVelocity) (hv : ∀ j, DivergenceFreeInitial (v j)) :
+theorem divergenceFreeInitial_sum_smul {ι : Type*} [DecidableEq ι]
+    (s : Finset ι) (c : ι → ℝ)
+    (v : ι → SchwartzVelocity) (hv : ∀ j, DivergenceFreeInitial (v j)) :
     DivergenceFreeInitial (∑ j ∈ s, c j • v j) := by
   intro x
   induction s using Finset.induction_on with
@@ -1137,6 +1140,234 @@ theorem curlSchwartzCLM_apply (u : SchwartzVelocity) (x : Space) :
     curlSchwartzCLM u x = staticCurl u x := by
   simp [curlSchwartzCLM, staticCurl, SchwartzMap.lineDerivOp_apply_eq_fderiv]
 
+/-- A coordinate of a Schwartz velocity field, retained as a scalar Schwartz
+map. -/
+noncomputable def componentSchwartz (u : SchwartzVelocity) (i : Fin 3) :
+    SchwartzMap Space ℝ :=
+  SchwartzMap.postcompCLM (𝕜 := ℝ) (ContinuousLinearMap.proj i) u
+
+@[simp] theorem componentSchwartz_apply (u : SchwartzVelocity) (i : Fin 3) (x : Space) :
+    componentSchwartz u i x = u x i := by
+  simp [componentSchwartz]
+
+/-- The bilinear Schwartz representative of `(u · ∇)v`. -/
+noncomputable def convectionSchwartzBilin (u v : SchwartzVelocity) : SchwartzVelocity :=
+  ∑ i : Fin 3, SchwartzMap.pairing (ContinuousLinearMap.lsmul ℝ ℝ)
+    (componentSchwartz u i) (∂_{basisVector i} v)
+
+/-- The Schwartz representative agrees pointwise with the project convection
+operator on a static slice. -/
+theorem convectionSchwartzBilin_apply (u v : SchwartzVelocity) (x : Space) :
+    convectionSchwartzBilin u v x =
+      spatialDerivative (fun _ => v) 0 x (u x) := by
+  rw [show u x = ∑ i : Fin 3, (u x i) • basisVector i from
+    pi_eq_sum_univ' (u x), map_sum]
+  simp [convectionSchwartzBilin, SchwartzMap.lineDerivOp_apply_eq_fderiv,
+    spatialDerivative]
+
+private theorem convectionSchwartzBilin_add_left (u v z : SchwartzVelocity) :
+    convectionSchwartzBilin (u + v) z =
+      convectionSchwartzBilin u z + convectionSchwartzBilin v z := by
+  simp [convectionSchwartzBilin, componentSchwartz, Finset.sum_add_distrib]
+
+private theorem convectionSchwartzBilin_add_right (u v z : SchwartzVelocity) :
+    convectionSchwartzBilin u (v + z) =
+      convectionSchwartzBilin u v + convectionSchwartzBilin u z := by
+  have hderiv : ∀ i : Fin 3, ∂_{basisVector i} (v + z) =
+      ∂_{basisVector i} v + ∂_{basisVector i} z := by
+    intro i
+    exact map_add (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i)) v z
+  simp [convectionSchwartzBilin, hderiv, Finset.sum_add_distrib]
+
+private theorem convectionSchwartzBilin_smul_left (r : ℝ) (u v : SchwartzVelocity) :
+    convectionSchwartzBilin (r • u) v = r • convectionSchwartzBilin u v := by
+  simp [convectionSchwartzBilin, componentSchwartz, Finset.smul_sum]
+
+private theorem convectionSchwartzBilin_smul_right (r : ℝ) (u v : SchwartzVelocity) :
+    convectionSchwartzBilin u (r • v) = r • convectionSchwartzBilin u v := by
+  have hderiv : ∀ i : Fin 3, ∂_{basisVector i} (r • v) =
+      r • ∂_{basisVector i} v := by
+    intro i
+    exact map_smul (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i)) r v
+  simp [convectionSchwartzBilin, hderiv, Finset.smul_sum]
+
+private theorem convectionSchwartzBilin_zero_left (v : SchwartzVelocity) :
+    convectionSchwartzBilin 0 v = 0 := by
+  simp [convectionSchwartzBilin, componentSchwartz]
+
+private theorem convectionSchwartzBilin_zero_right (u : SchwartzVelocity) :
+    convectionSchwartzBilin u 0 = 0 := by
+  have hderiv : ∀ i : Fin 3, ∂_{basisVector i} (0 : SchwartzVelocity) = 0 := by
+    intro i
+    exact map_zero (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i))
+  simp [convectionSchwartzBilin, hderiv]
+
+private theorem convectionSchwartzBilin_sum_left {ι : Type*} [DecidableEq ι]
+    (s : Finset ι) (u : ι → SchwartzVelocity) (v : SchwartzVelocity) :
+    convectionSchwartzBilin (∑ i ∈ s, u i) v =
+      ∑ i ∈ s, convectionSchwartzBilin (u i) v := by
+  induction s using Finset.induction_on with
+  | empty => simp [convectionSchwartzBilin_zero_left]
+  | insert i s hi => simp [convectionSchwartzBilin_add_left, *]
+
+private theorem convectionSchwartzBilin_sum_right {ι : Type*} [DecidableEq ι]
+    (s : Finset ι) (u : SchwartzVelocity) (v : ι → SchwartzVelocity) :
+    convectionSchwartzBilin u (∑ i ∈ s, v i) =
+      ∑ i ∈ s, convectionSchwartzBilin u (v i) := by
+  induction s using Finset.induction_on with
+  | empty => simp [convectionSchwartzBilin_zero_right]
+  | insert i s hi => simp [convectionSchwartzBilin_add_right, *]
+
+/-- The quadratic Schwartz convection field `(u · ∇)u`. -/
+noncomputable def convectionSchwartz (u : SchwartzVelocity) : SchwartzVelocity :=
+  convectionSchwartzBilin u u
+
+private theorem convectionSchwartz_coefficientField (W : GalerkinBasisFamily)
+    (m : ℕ) (a : EuclideanSpace ℝ (Fin m)) :
+    convectionSchwartz (W.coefficientField a) =
+      ∑ j : Fin m, ∑ k : Fin m,
+        (a j * a k) • convectionSchwartzBilin (W.w j) (W.w k) := by
+  unfold convectionSchwartz
+  rw [show W.coefficientField a = ∑ i : Fin m, a i • W.w i from rfl,
+    convectionSchwartzBilin_sum_left]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [convectionSchwartzBilin_smul_left,
+    convectionSchwartzBilin_sum_right, Finset.smul_sum]
+  apply Finset.sum_congr rfl
+  intro k _
+  rw [convectionSchwartzBilin_smul_right, smul_smul]
+
+theorem convectionSchwartz_apply (u : SchwartzVelocity) (x : Space) :
+    convectionSchwartz u x = convection (fun _ => u) 0 x := by
+  rw [convectionSchwartz, convection, convectionSchwartzBilin_apply]
+
+/-- The kinetic-energy density of a Schwartz velocity, retained as a scalar
+Schwartz map. -/
+noncomputable def kineticEnergyDensitySchwartz (u : SchwartzVelocity) :
+    SchwartzMap Space ℝ :=
+  (1 / 2 : ℝ) • ∑ i : Fin 3,
+    SchwartzMap.pairing (ContinuousLinearMap.mul ℝ ℝ)
+      (componentSchwartz u i) (componentSchwartz u i)
+
+@[simp] theorem kineticEnergyDensitySchwartz_apply (u : SchwartzVelocity) (x : Space) :
+    kineticEnergyDensitySchwartz u x = kineticEnergyDensity u x := by
+  simp [kineticEnergyDensitySchwartz, kineticEnergyDensity]
+
+/-- One coordinate of the Schwartz kinetic-energy flux. -/
+noncomputable def kineticEnergyFluxComponentSchwartz (u : SchwartzVelocity) (i : Fin 3) :
+    SchwartzMap Space ℝ :=
+  SchwartzMap.pairing (ContinuousLinearMap.mul ℝ ℝ)
+    (kineticEnergyDensitySchwartz u) (componentSchwartz u i)
+
+@[simp] theorem kineticEnergyFluxComponentSchwartz_apply
+    (u : SchwartzVelocity) (i : Fin 3) (x : Space) :
+    kineticEnergyFluxComponentSchwartz u i x = kineticEnergyFlux u x i := by
+  simp [kineticEnergyFluxComponentSchwartz, kineticEnergyFlux]
+
+/-- The whole-space convection work of a divergence-free Schwartz field
+vanishes.  The flux hypotheses of the repository's divergence theorem are
+discharged by the explicit Schwartz flux components above. -/
+theorem schwartzL2Inner_convection_self_eq_zero (u : SchwartzVelocity)
+    (hu : DivergenceFreeInitial u) :
+    schwartzL2Inner (convectionSchwartz u) u = 0 := by
+  let ue : VelocityEvolution := fun _ => u
+  have hinc : Incompressible ue := by
+    intro t _ x
+    simpa [ue, divergence, spatialDerivative, staticDivergence] using hu x
+  have hflux : ∀ i : Fin 3,
+      Integrable (fun x => kineticEnergyFlux u x i) := by
+    intro i
+    refine (kineticEnergyFluxComponentSchwartz u i).integrable.congr ?_
+    filter_upwards with x
+    simp
+  have hfluxDeriv : ∀ i : Fin 3,
+      Integrable (fun x =>
+        fderiv ℝ (fun y => kineticEnergyFlux u y i) x (basisVector i)) := by
+    intro i
+    have hint : Integrable
+        (fun x : Space => (∂_{basisVector i}
+          (kineticEnergyFluxComponentSchwartz u i)) x) (volume : Measure Space) :=
+      (∂_{basisVector i} (kineticEnergyFluxComponentSchwartz u i)).integrable
+    refine hint.congr ?_
+    filter_upwards with x
+    rw [SchwartzMap.lineDerivOp_apply_eq_fderiv]
+    have hfun : (fun y : Space => kineticEnergyFlux u y i) =
+        (kineticEnergyFluxComponentSchwartz u i : Space → ℝ) := by
+      funext y
+      simp
+    rw [hfun]
+  have hzero :=
+    Navier.Analysis.EnergyConvectionIntegral.integral_convection_work_eq_zero
+      ue 0 le_rfl hinc u.differentiable hflux hfluxDeriv
+  unfold schwartzL2Inner
+  calc
+    (∫ x : Space, officialInner (convectionSchwartz u x) (u x)) =
+        ∫ x : Space, ∑ i : Fin 3, convection ue 0 x i * ue 0 x i := by
+      apply integral_congr_ae
+      filter_upwards with x
+      rw [officialInner_eq_sum, convectionSchwartz_apply]
+    _ = 0 := hzero
+
+/-- The concrete projected convection field on finite coefficients.  The sign
+matches `u' = -νAu + B(u)`: `B` is minus the Galerkin projection of
+`(u·∇)u`. -/
+noncomputable def GalerkinBasisFamily.convectionOperator (W : GalerkinBasisFamily)
+    (m : ℕ) (a : EuclideanSpace ℝ (Fin m)) : EuclideanSpace ℝ (Fin m) :=
+  WithLp.toLp 2 fun i =>
+    -schwartzL2Inner (W.w i) (convectionSchwartz (W.coefficientField a))
+
+@[simp] theorem convectionOperator_apply (W : GalerkinBasisFamily) (m : ℕ)
+    (a : EuclideanSpace ℝ (Fin m)) (i : Fin m) :
+    W.convectionOperator m a i =
+      -schwartzL2Inner (W.w i) (convectionSchwartz (W.coefficientField a)) := by
+  simp [GalerkinBasisFamily.convectionOperator]
+
+/-- Each coordinate of the projected convection field is a finite quadratic
+polynomial in the modal coefficients. -/
+theorem convectionOperator_apply_eq_sum (W : GalerkinBasisFamily) (m : ℕ)
+    (a : EuclideanSpace ℝ (Fin m)) (i : Fin m) :
+    W.convectionOperator m a i =
+      -∑ j : Fin m, ∑ k : Fin m, (a j * a k) *
+        schwartzL2Inner (W.w i) (convectionSchwartzBilin (W.w j) (W.w k)) := by
+  rw [convectionOperator_apply, convectionSchwartz_coefficientField,
+    schwartzL2Inner_finset_sum_right]
+  simp_rw [schwartzL2Inner_finset_sum_right, schwartzL2Inner_smul_right]
+
+/-- The concrete finite-mode convection field is `C¹` (indeed polynomial). -/
+theorem convectionOperator_contDiff (W : GalerkinBasisFamily) (m : ℕ) :
+    ContDiff ℝ 1 (W.convectionOperator m) := by
+  rw [contDiff_piLp]
+  intro i
+  simp_rw [convectionOperator_apply_eq_sum]
+  fun_prop
+
+/-- Energy skewness of the concrete projected convection field. -/
+theorem convectionOperator_inner_self (W : GalerkinBasisFamily) (m : ℕ)
+    (a : EuclideanSpace ℝ (Fin m)) :
+    inner ℝ (W.convectionOperator m a) a = 0 := by
+  rw [PiLp.inner_apply]
+  simp only [convectionOperator_apply, RCLike.inner_apply, conj_trivial]
+  have hfield : W.coefficientField a = ∑ i : Fin m, a i • W.w i := rfl
+  calc
+    (∑ i : Fin m,
+        a i * -schwartzL2Inner (W.w i) (convectionSchwartz (W.coefficientField a))) =
+        -schwartzL2Inner (∑ i : Fin m, a i • W.w i)
+          (convectionSchwartz (W.coefficientField a)) := by
+      rw [schwartzL2Inner_finset_sum_left]
+      simp only [schwartzL2Inner_smul_left]
+      simp only [mul_neg, Finset.sum_neg_distrib]
+    _ = -schwartzL2Inner (W.coefficientField a)
+        (convectionSchwartz (W.coefficientField a)) := by rw [← hfield]
+    _ = -schwartzL2Inner (convectionSchwartz (W.coefficientField a))
+        (W.coefficientField a) := by rw [schwartzL2Inner_comm]
+    _ = 0 := by
+      rw [schwartzL2Inner_convection_self_eq_zero
+        (W.coefficientField a) (divergenceFreeInitial_sum_smul Finset.univ
+          (fun i : Fin m => a i) (fun i : Fin m => W.w i)
+          (fun i => W.divergence_free i))]
+      simp
+
 /-- The physical enstrophy of a field realized from one finite coefficient
 vector.  A projected Stokes operator represents exactly this quadratic form. -/
 noncomputable def GalerkinBasisFamily.coefficientEnstrophy (W : GalerkinBasisFamily)
@@ -1742,13 +1973,11 @@ bound, a uniform projected-vector-field bound, spatial translations, and weak
 consistency. -/
 theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (ν : ℝ) (hν : 0 < ν) (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
-    (B : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin m))
     (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
     (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
-      HasDerivWithinAt (c m) (-(ν • W.stokesOperator m (c m t)) + B m (c m t))
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
         (Set.Ici (0 : ℝ)) t)
-    (hB_skew : ∀ (m : ℕ) (a : EuclideanSpace ℝ (Fin m)),
-      inner ℝ (B m a) a = 0)
     (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m)
     (bound : ℝ) (hbound : 0 ≤ bound)
     (hbound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2)
@@ -1758,7 +1987,8 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (henstrophy_budget : ∀ m : ℕ, ‖c m 0‖ ^ 2 / (2 * ν) ≤ bound)
     (derivativeBound : ℝ) (hderivativeBound : 0 ≤ derivativeBound)
     (hderivative : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
-      ‖-(ν • W.stokesOperator m (c m t)) + B m (c m t)‖ ≤ derivativeBound)
+      ‖-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t)‖
+        ≤ derivativeBound)
     (hspace : SpaceEquicontinuous (W.modalApprox c))
     (hprojectedWeak : ∀ φ : DivergenceFreeTestFunction,
       Filter.Tendsto
@@ -1775,10 +2005,11 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     kinetic_bounded := hkin
     official_kinetic_bounded := ?_
     enstrophy_bounded := modalApprox_uniformEnstrophyBound W hν
-      (fun m => W.stokesOperator m) B c hc hB_skew
+      (fun m => W.stokesOperator m) (fun m => W.convectionOperator m) c hc
+      (convectionOperator_inner_self W)
       (stokesOperator_inner_eq_enstrophy W) bound henstrophy_budget
     time_equicontinuous := modalApprox_timeEquicontinuous_of_uniformDerivative
-      W (fun m => W.stokesOperator m) B c hc derivativeBound
+      W (fun m => W.stokesOperator m) (fun m => W.convectionOperator m) c hc derivativeBound
       hderivativeBound hderivative bound hkin
     space_equicontinuous := hspace
     jointly_measurable := ?_
@@ -1792,7 +2023,8 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     exact henergy m t ht
   · simpa [GalerkinBasisFamily.modalApprox] using
       galerkinModalApprox_jointlyMeasurable (fun m => m) c
-        (fun m t => -(ν • W.stokesOperator m (c m t)) + B m (c m t)) hc
+        (fun m t =>
+          -(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t)) hc
         (fun m => W.finiteModes m)
   · simpa [GalerkinBasisFamily.modalApprox] using
       galerkinModalApprox_sq_integrable (fun m => m) c
