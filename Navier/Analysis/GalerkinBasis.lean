@@ -291,6 +291,24 @@ theorem norm_toL2_sq (u : SchwartzVelocity) : ‖toL2 u‖ ^ 2 = schwartzL2Inner
   rw [hx]
   rfl
 
+/-- The concrete Schwartz pairing is exactly the real Hilbert inner product
+after embedding both fields into `L²`. -/
+theorem inner_toL2_eq_schwartzL2Inner (u v : SchwartzVelocity) :
+    inner ℝ (toL2 u) (toL2 v) = schwartzL2Inner u v := by
+  rw [MeasureTheory.L2.inner_def, schwartzL2Inner]
+  refine integral_congr_ae ?_
+  filter_upwards [SchwartzMap.coeFn_toLp (toES u) 2 (volume : Measure Space),
+    SchwartzMap.coeFn_toLp (toES v) 2 (volume : Measure Space)] with x hu hv
+  simp only [toL2]
+  rw [hu, hv]
+  rfl
+
+/-- Cauchy--Schwarz for the official Schwartz `L²` pairing. -/
+theorem abs_schwartzL2Inner_le (u v : SchwartzVelocity) :
+    |schwartzL2Inner u v| ≤ ‖toL2 u‖ * ‖toL2 v‖ := by
+  rw [← inner_toL2_eq_schwartzL2Inner]
+  exact abs_real_inner_le_norm _ _
+
 def divFreeL2Set : Set (Lp (EuclideanSpace ℝ (Fin 3)) 2 (volume : Measure Space)) :=
   toL2 '' {u : SchwartzVelocity | DivergenceFreeInitial u}
 
@@ -1382,6 +1400,30 @@ theorem proj_initial_converges (W : GalerkinBasisFamily) (u₀ : SchwartzVelocit
     (fun m => W.proj m u₀ - u₀) (proj_initial_converges_L2 W u₀ hu₀)
   simpa using h
 
+/-- Pairing the Galerkin projection error against any fixed Schwartz field
+tends to zero.  This is Bessel convergence plus Hilbert-space Cauchy--Schwarz,
+and is the datum-correction term in weak consistency. -/
+theorem proj_error_pairing_tendsto_zero (W : GalerkinBasisFamily)
+    (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
+    (v : SchwartzVelocity) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (u₀ - W.proj m u₀) v)
+      Filter.atTop (nhds 0) := by
+  have hsq : Filter.Tendsto
+      (fun m => ‖toL2 (u₀ - W.proj m u₀)‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+    simpa only [norm_toL2_sq] using proj_tendsto_self W u₀ hu₀
+  have hnorm : Filter.Tendsto
+      (fun m => ‖toL2 (u₀ - W.proj m u₀)‖)
+      Filter.atTop (nhds 0) := by
+    have hsqrt := hsq.sqrt
+    simpa only [Real.sqrt_sq (norm_nonneg _), Real.sqrt_zero] using hsqrt
+  apply squeeze_zero_norm
+  · intro m
+    simpa only [Real.norm_eq_abs] using
+      abs_schwartzL2Inner_le (u₀ - W.proj m u₀) v
+  · simpa using hnorm.mul_const ‖toL2 v‖
+
 /-!
 ## Certified-basis modal constructor
 
@@ -1549,6 +1591,50 @@ theorem modalApprox_timeEquicontinuous_of_uniformDerivative
     _ ≤ D * |h| := hDbound
     _ ≤ ε := hDsmall.le
 
+/-- Replacing the datum in the weak residual by its Galerkin projection changes
+only the initial-time pairing, exactly by the projection error. -/
+theorem weakFormResidual_eq_projectedDatum_add (W : GalerkinBasisFamily)
+    (ν : ℝ) (u₀ : SchwartzVelocity) (u : VelocityEvolution)
+    (φ : DivergenceFreeTestFunction) (m : ℕ) :
+    weakFormResidual ν u₀ u φ =
+      weakFormResidual ν (W.proj m u₀) u φ +
+        schwartzL2Inner (u₀ - W.proj m u₀) (φ.field 0) := by
+  have hdatum : schwartzL2Inner u₀ (φ.field 0) =
+      schwartzL2Inner (W.proj m u₀) (φ.field 0) +
+        schwartzL2Inner (u₀ - W.proj m u₀) (φ.field 0) := by
+    rw [schwartzL2Inner_sub_left]
+    ring
+  unfold weakFormResidual
+  change _ + schwartzL2Inner u₀ (φ.field 0) =
+    (_ + schwartzL2Inner (W.proj m u₀) (φ.field 0)) +
+      schwartzL2Inner (u₀ - W.proj m u₀) (φ.field 0)
+  rw [hdatum]
+  ring
+
+/-- Weak consistency for the actual datum follows from consistency for the
+projected datum used to initialize each finite ODE.  The only correction is a
+fixed-test pairing with `u₀ - Pₘu₀`, which vanishes by Bessel convergence. -/
+theorem modalApprox_weakConsistent_of_projectedDatum (W : GalerkinBasisFamily)
+    (ν : ℝ) (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hprojected : ∀ φ : DivergenceFreeTestFunction,
+      Filter.Tendsto
+        (fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ)
+        Filter.atTop (nhds 0)) :
+    ∀ φ : DivergenceFreeTestFunction,
+      Filter.Tendsto
+        (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ)
+        Filter.atTop (nhds 0) := by
+  intro φ
+  have heq : (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ) =
+      fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ +
+        schwartzL2Inner (u₀ - W.proj m u₀) (φ.field 0) := by
+    funext m
+    exact weakFormResidual_eq_projectedDatum_add W ν u₀ (W.modalApprox c m) φ m
+  rw [heq]
+  simpa using
+    (hprojected φ).add (proj_error_pairing_tendsto_zero W u₀ hu₀ (φ.field 0))
+
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
 modal realization, projected initial slice, exact official-energy transfer,
@@ -1580,8 +1666,9 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (hderivative : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
       ‖-(ν • A m (c m t)) + B m (c m t)‖ ≤ derivativeBound)
     (hspace : SpaceEquicontinuous (W.modalApprox c))
-    (hweak : ∀ φ : DivergenceFreeTestFunction,
-      Filter.Tendsto (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ)
+    (hprojectedWeak : ∀ φ : DivergenceFreeTestFunction,
+      Filter.Tendsto
+        (fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ)
         Filter.atTop (nhds 0)) :
     Nonempty (GalerkinModeData ν u₀) := by
   refine ⟨{
@@ -1601,7 +1688,8 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     jointly_measurable := ?_
     sq_integrable := ?_
     initial_converges_L2 := proj_initial_converges_L2 W u₀ hu₀
-    weak_consistent := hweak }⟩
+    weak_consistent := modalApprox_weakConsistent_of_projectedDatum
+      W ν u₀ hu₀ c hprojectedWeak }⟩
   · intro m t ht
     rw [modalApprox_kineticEnergy_eq W c m t,
       forwardExtend_eq_of_nonneg (c m) ht]
