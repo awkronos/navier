@@ -4323,6 +4323,228 @@ theorem exists_lerayLimitData_of_weakClauses (ν : ℝ) (u₀ : SchwartzVelocity
            datum_pairing_integrable := hdatum
            weak_form := hform }⟩
 
+/-!
+### Pairing-side integrability: the spatial factors are free, the time factor is the residue
+
+The weak-pairing density splits as `⟨u, ∂ₜφ⟩ + ⟨u, (∇φ)(u)⟩ + ν⟨u, Δφ⟩`.  The
+two *spatial* factors are derivatives of the Schwartz slice `φ.field t`, hence
+Schwartz themselves (`SchwartzMap.fderivCLM` composed with `evalCLM`), so those
+pairings are integrable against any measurable square-integrable slice by
+Cauchy–Schwarz — certified below.  The *time* factor is not so controlled:
+`DivergenceFreeTestFunction` constrains `∂ₜφ` only through joint smoothness,
+which yields no decay in `x` whatsoever (see the residual docstring below for
+the witness family).  `integrable_weakPairingDensity_of_timeDeriv` records the
+exact reduction: the pairing clauses of `LerayLimitData` close as soon as the
+time-derivative slice is measurable and square-integrable.
+-/
+
+/-- Coordinatewise Cauchy–Schwarz for the official pairing against the ambient
+sup norm: `|⟨x, y⟩| ≤ 3‖x‖‖y‖`.  The factor `3` is the dimension, and it is
+attained (constant vectors), so this is the sharp sup-norm form. -/
+theorem abs_officialInner_le_three (x y : Space) :
+    |officialInner x y| ≤ 3 * (‖x‖ * ‖y‖) := by
+  rw [officialInner_eq_sum]
+  refine le_trans (Finset.abs_sum_le_sum_abs _ _) ?_
+  have hb : ∀ i : Fin 3, |x i * y i| ≤ ‖x‖ * ‖y‖ := by
+    intro i
+    rw [abs_mul]
+    have hx : |x i| ≤ ‖x‖ := by
+      simpa [Real.norm_eq_abs] using norm_le_pi_norm x i
+    have hy : |y i| ≤ ‖y‖ := by
+      simpa [Real.norm_eq_abs] using norm_le_pi_norm y i
+    exact mul_le_mul hx hy (abs_nonneg _) (norm_nonneg _)
+  calc (∑ i : Fin 3, |x i * y i|) ≤ ∑ _i : Fin 3, ‖x‖ * ‖y‖ :=
+      Finset.sum_le_sum fun i _ => hb i
+    _ = 3 * (‖x‖ * ‖y‖) := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+        norm_num
+
+private theorem measurable_officialInner_comp {u w : Space → Space}
+    (hu : Measurable u) (hw : Measurable w) :
+    Measurable fun x : Space => officialInner (u x) (w x) := by
+  have heq : (fun x : Space => officialInner (u x) (w x))
+      = fun x : Space => ∑ i : Fin 3, u x i * w x i := by
+    funext x
+    rw [officialInner_eq_sum]
+  rw [heq]
+  exact Finset.measurable_sum _ fun i _ =>
+    ((measurable_pi_apply i).comp hu).mul ((measurable_pi_apply i).comp hw)
+
+/-- **Cauchy–Schwarz for the official pairing**: the pairing of two measurable
+square-integrable fields is integrable. -/
+theorem integrable_officialInner_pairing {u w : Space → Space}
+    (hu : Measurable u) (hw : Measurable w)
+    (hu2 : Integrable fun x : Space => ‖u x‖ ^ 2)
+    (hw2 : Integrable fun x : Space => ‖w x‖ ^ 2) :
+    Integrable fun x : Space => officialInner (u x) (w x) := by
+  refine ((hu2.const_mul (3/2)).add (hw2.const_mul (3/2))).mono'
+    (measurable_officialInner_comp hu hw).aestronglyMeasurable
+    (Filter.Eventually.of_forall fun x => ?_)
+  simp only [Pi.add_apply]
+  rw [Real.norm_eq_abs]
+  have h1 := abs_officialInner_le_three (u x) (w x)
+  nlinarith [sq_nonneg (‖u x‖ - ‖w x‖), norm_nonneg (u x), norm_nonneg (w x)]
+
+/-- The directional spatial derivative of a Schwartz slice, as a Schwartz map
+(Mathlib's `fderivCLM` composed with `evalCLM`). -/
+private noncomputable def schwartzDirDeriv (f : SchwartzVelocity) (v : Space) :
+    SchwartzVelocity :=
+  SchwartzMap.evalCLM ℝ Space Space v (SchwartzMap.fderivCLM ℝ Space Space f)
+
+private theorem schwartzDirDeriv_apply (f : SchwartzVelocity) (v x : Space) :
+    schwartzDirDeriv f v x = fderiv ℝ (⇑f) x v := by
+  simp [schwartzDirDeriv]
+
+/-- **The convection pairing is integrable**: `⟨u, (∇φ)(u)⟩ ≤ 3M‖u‖²` with `M`
+the global operator-norm bound of the Schwartz slice's derivative. -/
+theorem integrable_convection_pairing (f : SchwartzVelocity) {u : Space → Space}
+    (hu : Measurable u) (hu2 : Integrable fun x : Space => ‖u x‖ ^ 2) :
+    Integrable fun x : Space => officialInner (u x) (fderiv ℝ (⇑f) x (u x)) := by
+  have hM : ∀ x : Space, ‖fderiv ℝ (⇑f) x‖ ≤ (SchwartzMap.seminorm ℝ 0 1) f := by
+    intro x
+    have h1 := f.norm_iteratedFDeriv_le_seminorm ℝ 1 x
+    rwa [norm_iteratedFDeriv_one] at h1
+  have happly : Continuous fun p : (Space →L[ℝ] Space) × Space => p.1 p.2 :=
+    isBoundedBilinearMap_apply.continuous
+  have hfc : Continuous fun x : Space => fderiv ℝ (⇑f) x :=
+    (f.smooth ⊤).continuous_fderiv (by simp)
+  have hcont2 : Continuous fun q : Space × Space => fderiv ℝ (⇑f) q.1 q.2 :=
+    happly.comp (hfc.prodMap continuous_id)
+  have hwmeas : Measurable fun x : Space => fderiv ℝ (⇑f) x (u x) :=
+    hcont2.measurable.comp (measurable_id.prodMk hu)
+  refine (hu2.const_mul (3 * (SchwartzMap.seminorm ℝ 0 1) f)).mono'
+    (measurable_officialInner_comp hu hwmeas).aestronglyMeasurable
+    (Filter.Eventually.of_forall fun x => ?_)
+  rw [Real.norm_eq_abs]
+  have h1 := abs_officialInner_le_three (u x) (fderiv ℝ (⇑f) x (u x))
+  have h2 : ‖fderiv ℝ (⇑f) x (u x)‖ ≤ (SchwartzMap.seminorm ℝ 0 1) f * ‖u x‖ :=
+    le_trans (ContinuousLinearMap.le_opNorm _ _)
+      (mul_le_mul_of_nonneg_right (hM x) (norm_nonneg _))
+  have h3 : ‖u x‖ * ‖fderiv ℝ (⇑f) x (u x)‖
+      ≤ ‖u x‖ * ((SchwartzMap.seminorm ℝ 0 1) f * ‖u x‖) :=
+    mul_le_mul_of_nonneg_left h2 (norm_nonneg _)
+  nlinarith [h1, h3]
+
+/-- Bilinearity of the official pairing over finite sums in the right slot. -/
+private theorem officialInner_sum_right {κ : Type*} (x : Space) (s : Finset κ)
+    (g : κ → Space) :
+    officialInner x (∑ j ∈ s, g j) = ∑ j ∈ s, officialInner x (g j) := by
+  simp only [officialInner_eq_sum, Finset.sum_apply, Finset.mul_sum]
+  exact Finset.sum_comm
+
+/-- **The Laplacian pairing is integrable**: each second-derivative factor of a
+Schwartz slice is itself Schwartz, so Cauchy–Schwarz applies leg by leg. -/
+theorem integrable_laplacian_pairing (f : SchwartzVelocity) (t : ℝ) {u : Space → Space}
+    (hu : Measurable u) (hu2 : Integrable fun x : Space => ‖u x‖ ^ 2) :
+    Integrable fun x : Space =>
+      officialInner (u x) (laplacian (fun _ => (⇑f : Space → Space)) t x) := by
+  have hg : ∀ i : Fin 3, (fun y : Space => fderiv ℝ (⇑f) y (basisVector i))
+      = ⇑(schwartzDirDeriv f (basisVector i)) := by
+    intro i
+    funext y
+    rw [schwartzDirDeriv_apply]
+  have hL : ∀ x : Space, laplacian (fun _ => (⇑f : Space → Space)) t x
+      = ∑ i : Fin 3,
+          schwartzDirDeriv (schwartzDirDeriv f (basisVector i)) (basisVector i) x := by
+    intro x
+    unfold laplacian
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [hg i, schwartzDirDeriv_apply]
+  have hpart : ∀ i : Fin 3, Integrable fun x : Space =>
+      officialInner (u x)
+        (schwartzDirDeriv (schwartzDirDeriv f (basisVector i)) (basisVector i) x) := by
+    intro i
+    exact integrable_officialInner_pairing hu
+      (schwartzDirDeriv (schwartzDirDeriv f (basisVector i))
+        (basisVector i)).continuous.measurable hu2
+      (integrable_norm_sq_schwartz _)
+  have hsum : Integrable fun x : Space => ∑ i : Fin 3,
+      officialInner (u x)
+        (schwartzDirDeriv (schwartzDirDeriv f (basisVector i)) (basisVector i) x) :=
+    integrable_finsetSum _ fun i _ => hpart i
+  refine hsum.congr (Filter.Eventually.of_forall fun x => ?_)
+  show (∑ i : Fin 3, officialInner (u x)
+      (schwartzDirDeriv (schwartzDirDeriv f (basisVector i)) (basisVector i) x))
+      = officialInner (u x) (laplacian (fun _ => (⇑f : Space → Space)) t x)
+  rw [← officialInner_sum_right, ← hL x]
+
+/-- **The pairing-side residue, reduced to the time-derivative factor.**  Once
+the time-derivative slice of the test is measurable and square-integrable, the
+whole weak-pairing density is integrable against any measurable
+square-integrable velocity slice.  The two spatial factors need no hypothesis:
+the derivative and Laplacian of a Schwartz slice are Schwartz. -/
+theorem integrable_weakPairingDensity_of_timeDeriv (ν : ℝ)
+    (φ : DivergenceFreeTestFunction) (t : ℝ) {u : Space → Space}
+    (hu : Measurable u) (hu2 : Integrable fun x : Space => ‖u x‖ ^ 2)
+    (hT : Measurable fun x : Space =>
+      timeDerivative (fun s => (φ.field s : Space → Space)) t x)
+    (hT2 : Integrable fun x : Space =>
+      ‖timeDerivative (fun s => (φ.field s : Space → Space)) t x‖ ^ 2) :
+    Integrable fun x : Space =>
+      officialInner (u x)
+        (timeDerivative (fun s => (φ.field s : Space → Space)) t x +
+          spatialDerivative (fun s => (φ.field s : Space → Space)) t x (u x) +
+          ν • laplacian (fun s => (φ.field s : Space → Space)) t x) := by
+  have hTpart : Integrable fun x : Space => officialInner (u x)
+      (timeDerivative (fun s => (φ.field s : Space → Space)) t x) :=
+    integrable_officialInner_pairing hu hT hu2 hT2
+  have hSpart : Integrable fun x : Space => officialInner (u x)
+      (spatialDerivative (fun s => (φ.field s : Space → Space)) t x (u x)) :=
+    integrable_convection_pairing (φ.field t) hu hu2
+  have hLpart : Integrable fun x : Space => officialInner (u x)
+      (ν • laplacian (fun s => (φ.field s : Space → Space)) t x) := by
+    have hbase := integrable_laplacian_pairing (φ.field t) t hu hu2
+    have hsc : (fun x : Space => officialInner (u x)
+        (ν • laplacian (fun s => (φ.field s : Space → Space)) t x))
+        = fun x : Space => ν * officialInner (u x)
+            (laplacian (fun s => (φ.field s : Space → Space)) t x) := by
+      funext x
+      rw [officialInner_smul_right]
+    rw [hsc]
+    exact hbase.const_mul ν
+  have hsplit : (fun x : Space =>
+      officialInner (u x)
+        (timeDerivative (fun s => (φ.field s : Space → Space)) t x +
+          spatialDerivative (fun s => (φ.field s : Space → Space)) t x (u x) +
+          ν • laplacian (fun s => (φ.field s : Space → Space)) t x))
+      = fun x : Space =>
+        officialInner (u x)
+            (timeDerivative (fun s => (φ.field s : Space → Space)) t x) +
+          officialInner (u x)
+            (spatialDerivative (fun s => (φ.field s : Space → Space)) t x (u x)) +
+          officialInner (u x)
+            (ν • laplacian (fun s => (φ.field s : Space → Space)) t x) := by
+    funext x
+    rw [officialInner_add_right, officialInner_add_right]
+  rw [hsplit]
+  exact (hTpart.add hSpart).add hLpart
+
+/-- The datum-side pairing clause of `LerayLimitData`, reduced to the same
+time-derivative residue (the datum is Schwartz, hence measurable and `L²`). -/
+theorem datum_pairing_integrable_of_timeDeriv (ν : ℝ) (u₀ : SchwartzVelocity)
+    (φ : DivergenceFreeTestFunction)
+    (hT : Measurable fun x : Space =>
+      timeDerivative (fun s => (φ.field s : Space → Space)) 0 x)
+    (hT2 : Integrable fun x : Space =>
+      ‖timeDerivative (fun s => (φ.field s : Space → Space)) 0 x‖ ^ 2) :
+    Integrable fun x : Space => weakPairingDensity ν (fun _ y => u₀ y) φ 0 x :=
+  integrable_weakPairingDensity_of_timeDeriv ν φ 0 u₀.continuous.measurable
+    (integrable_norm_sq_schwartz u₀) hT hT2
+
+/-- The limit-side pairing clause of `LerayLimitData`, reduced to the same
+time-derivative residue, for any jointly measurable slicewise-`L²` evolution. -/
+theorem pairing_integrable_of_timeDeriv (ν : ℝ) (u : VelocityEvolution)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (huint : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (φ : DivergenceFreeTestFunction) (t : ℝ) (ht : 0 < t)
+    (hT : Measurable fun x : Space =>
+      timeDerivative (fun s => (φ.field s : Space → Space)) t x)
+    (hT2 : Integrable fun x : Space =>
+      ‖timeDerivative (fun s => (φ.field s : Space → Space)) t x‖ ^ 2) :
+    Integrable fun x : Space => weakPairingDensity ν u φ t x :=
+  integrable_weakPairingDensity_of_timeDeriv ν φ t
+    (humeas.comp measurable_prodMk_left) (huint t ht.le) hT hT2
+
 /-- **[NAMED RESIDUAL — Galerkin limit passage; Leray, Acta Math. 63 (1934)
 §§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a
 Galerkin approximation, `aubin_lions_l2loc_compactness` (invoked on the
@@ -4372,8 +4594,42 @@ the rest; (c) the convection split
 `≤ (∫_{window}‖u−u_m‖²)^{1/2}·(∫‖·‖²ψ)^{1/2}` by (a), the first factor `→ 0`
 by `StrongL2LocLimit`, the second uniformly bounded by (b) and `energy_le`;
 (d) assembly of the linear terms by the same estimate, then `m → ∞` along `σ`
-against `G.weak_consistent φ` composed with `hσ.tendsto_atTop`.  None of (a)–(d)
-is banked; each is standard. -/
+against `G.weak_consistent φ` composed with `hσ.tendsto_atTop`.
+
+**Banked this wave (the Cauchy–Schwarz layer, certified above).**  The pairing
+clauses are now reduced to the *time-derivative factor alone*:
+`integrable_weakPairingDensity_of_timeDeriv` /
+`pairing_integrable_of_timeDeriv` / `datum_pairing_integrable_of_timeDeriv`
+discharge `pairing_integrable` and `datum_pairing_integrable` from
+measurability plus square-integrability of `x ↦ ∂ₜφ(t, x)`, with the
+convection and Laplacian legs closed unconditionally
+(`integrable_convection_pairing`, `integrable_laplacian_pairing`,
+`abs_officialInner_le_three`: the spatial factors of a Schwartz slice are
+Schwartz via `SchwartzMap.fderivCLM`/`evalCLM`).
+
+**The exact remaining obstruction (statement hygiene, recorded 2026-08-11).**
+`DivergenceFreeTestFunction` controls `∂ₜφ` only through joint smoothness on
+`Ici 0 ×ˢ univ`, and slicewise-Schwartz plus joint smoothness imply **no decay
+whatsoever** for the time-derivative slice.  Witness family: with `χ` smooth
+compactly supported, `χ(0) = 1`, `g` smooth of arbitrary growth, and `η` a
+smooth compact-time envelope, the divergence-free tests built from the vector
+potential `A(t,x) = η(t)·(t−1)·χ((t−1)‖x‖²)·g(x)·e` have every slice compactly
+supported (hence Schwartz) and are jointly smooth, yet
+`∂ₜφ(1,·) = η(1)·curl(χ(0)·g·e)` grows like `∇g` — arbitrary.  So
+`pairing_integrable` at `t = 1` against such a test demands integrability of
+`⟨u(1,·), w⟩` for fields `w` of arbitrary growth, which `L²` control of the
+compactness limit cannot supply — no proof of the `∀ φ` clauses can go through
+on this hypothesis bundle without either (i) a Pattern-A field on the test
+class asserting time-derivative decay (still a subclass of the classical
+`C_c^∞` test class, whose time derivatives are compactly supported, so the
+existence statement would remain weaker-or-equal to Leray's), or (ii) a limit
+representative with compactly supported slices, which the Aubin–Lions limit
+does not provide.  Item (i) is a statement-level change to
+`DivergenceFreeTestFunction` and is deliberately **not** taken in this wave;
+the reduction lemmas above are exactly the interface such a repair would
+consume.  The weak-form limit passage (a)–(d) proper additionally awaits the
+same repair, since its left-hand side is only meaningful on integrable
+pairings. -/
 
 
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
