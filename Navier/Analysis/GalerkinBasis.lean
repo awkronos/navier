@@ -1963,6 +1963,63 @@ theorem modalApprox_weakConsistent_of_projectedDatum (W : GalerkinBasisFamily)
   simpa using
     (hprojected φ).add (proj_error_pairing_tendsto_zero W u₀ hu₀ (φ.field 0))
 
+/-- Bessel's inequality for the actual initial coefficient vector: the energy
+of the retained modes is at most the full Euclidean `L²` energy of the datum. -/
+theorem initialCoefficients_norm_sq_le (W : GalerkinBasisFamily)
+    (u : SchwartzVelocity) (m : ℕ) :
+    ‖W.initialCoefficients u m‖ ^ 2 ≤ schwartzL2Inner u u := by
+  rw [← coefficientField_l2_isometry W,
+    coefficientField_initialCoefficients_eq_proj]
+  have horth : schwartzL2Inner (u - W.proj m u) (W.proj m u) = 0 := by
+    exact residual_inner_span W m u (W.coeff u)
+  have hsplit : u = (u - W.proj m u) + W.proj m u := by abel
+  calc
+    schwartzL2Inner (W.proj m u) (W.proj m u) ≤
+        schwartzL2Inner (u - W.proj m u) (u - W.proj m u) +
+          schwartzL2Inner (W.proj m u) (W.proj m u) :=
+      le_add_of_nonneg_left (schwartzL2Inner_self_nonneg _)
+    _ = schwartzL2Inner ((u - W.proj m u) + W.proj m u)
+        ((u - W.proj m u) + W.proj m u) :=
+      (schwartzL2Inner_self_add_of_orthogonal _ _ horth).symm
+    _ = schwartzL2Inner u u := by rw [← hsplit]
+
+/-- The concrete projected ODE automatically supplies the official modal
+energy bound.  Stokes positivity and convection skewness make the coefficient
+energy nonincreasing; Bessel's inequality controls its initial value by the
+datum's Euclidean `L²` energy. -/
+theorem coefficientFlow_energy_le_data (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν) (u₀ : SchwartzVelocity)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m)
+    (m : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    ‖c m t‖ ^ 2 ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2 := by
+  have hdiss : ∀ s : ℝ, 0 ≤ s →
+      inner ℝ
+        (-(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s))
+        (c m s) ≤ 0 := by
+    intro s _
+    rw [inner_add_left, inner_neg_left, inner_smul_left,
+      convectionOperator_inner_self]
+    simp only [conj_trivial, add_zero]
+    exact neg_nonpos.mpr (mul_nonneg hν.le (stokesOperator_nonneg W m (c m s)))
+  calc
+    ‖c m t‖ ^ 2 ≤ ‖c m 0‖ ^ 2 :=
+      norm_sq_le_initial_forward (c m)
+        (fun s => -(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s))
+        (hc m) hdiss ht
+    _ = ‖W.initialCoefficients u₀ m‖ ^ 2 := by rw [hc0 m]
+    _ ≤ schwartzL2Inner u₀ u₀ := initialCoefficients_norm_sq_le W u₀ m
+    _ = ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2 := by
+      unfold schwartzL2Inner
+      apply integral_congr_ae
+      filter_upwards with x
+      rw [officialInner_eq_sum]
+      exact Finset.sum_congr rfl (fun i _ => by rw [pow_two])
+
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
 modal realization, projected initial slice, exact official-energy transfer,
@@ -1982,8 +2039,6 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (bound : ℝ) (hbound : 0 ≤ bound)
     (hbound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2)
     (hkin : UniformKineticBound (W.modalApprox c) bound)
-    (henergy : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
-      ‖c m t‖ ^ 2 ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
     (henstrophy_budget : ∀ m : ℕ, ‖c m 0‖ ^ 2 / (2 * ν) ≤ bound)
     (derivativeBound : ℝ) (hderivativeBound : 0 ≤ derivativeBound)
     (hderivative : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
@@ -2020,7 +2075,7 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
   · intro m t ht
     rw [modalApprox_kineticEnergy_eq W c m t,
       forwardExtend_eq_of_nonneg (c m) ht]
-    exact henergy m t ht
+    exact coefficientFlow_energy_le_data W hν u₀ c hc hc0 m ht
   · simpa [GalerkinBasisFamily.modalApprox] using
       galerkinModalApprox_jointlyMeasurable (fun m => m) c
         (fun m t =>
