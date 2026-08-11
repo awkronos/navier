@@ -105,6 +105,7 @@ open Navier
 open Navier.Analysis.Enstrophy
 open Navier.Analysis.RieszKolmogorov
 open Navier.Analysis.OfficialABEncoding
+open Navier.Analysis.EnergyNormBridge
 
 /-!
 ## Test functions
@@ -1444,8 +1445,14 @@ theorem strongL2LocLimit_of_natWindows
         norm_nonneg (uSeq k t x - u t x), sq_nonneg (‖uSeq k t x‖ - ‖u t x‖)]
     rw [integral_add ((hintSeq k t ht).const_mul 2) ((hintU t ht).const_mul 2),
       MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hb
-    have h1 : (∫ x : Space, ‖uSeq k t x‖ ^ 2) ≤ C := hkinSeq k t ht
-    have h2 : (∫ x : Space, ‖u t x‖ ^ 2) ≤ C := hkinU t ht
+    have h1 : (∫ x : Space, ‖uSeq k t x‖ ^ 2) ≤ C :=
+      intNormSq_le_of_kineticEnergy_le (uSeq k) t C
+        (((hmeasSeq k).comp measurable_prodMk_left).aestronglyMeasurable)
+        (hintSeq k t ht) (hkinSeq k t ht)
+    have h2 : (∫ x : Space, ‖u t x‖ ^ 2) ≤ C :=
+      intNormSq_le_of_kineticEnergy_le u t C
+        ((hmeasU.comp measurable_prodMk_left).aestronglyMeasurable)
+        (hintU t ht) (hkinU t ht)
     linarith
   -- the ball integral, as a function of `t`, is integrable on every `Ioc 0 b`
   have hInner : ∀ (k : ℕ) (ρ b : ℝ),
@@ -2059,6 +2066,18 @@ theorem fwd_meas (uSeq : ℕ → VelocityEvolution) (hmeas : JointlyMeasurable u
   exact (hmeas m).comp
     ((continuous_fst.max continuous_const).measurable.prodMk measurable_snd)
 
+/-- The forward extension's inherited (sup-norm) `L²` mass is bounded by the
+same constant as its Euclidean kinetic energy (`fwd_kin`), via
+`intNormSq_le_of_kineticEnergy_le`. -/
+theorem fwd_intNormSq_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
+    (hkin : UniformKineticBound uSeq C)
+    (hint : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → Integrable (fun x : Space => ‖uSeq m t x‖ ^ 2))
+    (hmeas : JointlyMeasurable uSeq) (m : ℕ) (t : ℝ) :
+    (∫ x : Space, ‖fwd uSeq m t x‖ ^ 2) ≤ C :=
+  intNormSq_le_of_kineticEnergy_le (fwd uSeq m) t C
+    (((fwd_meas uSeq hmeas m).comp measurable_prodMk_left).aestronglyMeasurable)
+    (fwd_int uSeq hint m t) (fwd_kin uSeq C hkin m t)
+
 theorem sq_norm_sub_le_two {E : Type*} [NormedAddCommGroup E] (a b : E) :
     ‖a - b‖ ^ 2 ≤ 2 * ‖a‖ ^ 2 + 2 * ‖b‖ ^ 2 := by
   have h := norm_sub_le a b
@@ -2140,11 +2159,11 @@ theorem fwd_disp2_inner_le (uSeq : ℕ → VelocityEvolution) (C : ℝ)
   have h1 : (∫ x : Space, ‖fwd uSeq m t₁ (x + w₁)‖ ^ 2) ≤ C := by
     show (∫ x : Space, (fun x : Space => ‖fwd uSeq m t₁ x‖ ^ 2) (x + w₁)) ≤ C
     rw [integral_add_right_eq_self (μ := volume) (fun x : Space => ‖fwd uSeq m t₁ x‖ ^ 2) w₁]
-    exact fwd_kin uSeq C hkin m t₁
+    exact fwd_intNormSq_le uSeq C hkin hint hmeas m t₁
   have h2 : (∫ x : Space, ‖fwd uSeq m t₂ (x + w₂)‖ ^ 2) ≤ C := by
     show (∫ x : Space, (fun x : Space => ‖fwd uSeq m t₂ x‖ ^ 2) (x + w₂)) ≤ C
     rw [integral_add_right_eq_self (μ := volume) (fun x : Space => ‖fwd uSeq m t₂ x‖ ^ 2) w₂]
-    exact fwd_kin uSeq C hkin m t₂
+    exact fwd_intNormSq_le uSeq C hkin hint hmeas m t₂
   have hi1 : Integrable (fun x : Space => ‖fwd uSeq m t₁ (x + w₁)‖ ^ 2) :=
     (fwd_int uSeq hint m t₁).comp_add_right w₁
   have hi2 : Integrable (fun x : Space => ‖fwd uSeq m t₂ (x + w₂)‖ ^ 2) :=
@@ -2188,7 +2207,7 @@ theorem fwd_inner_integrableOn (uSeq : ℕ → VelocityEvolution) (C : ℝ)
     IntegrableOn (fun t : ℝ => ∫ x : Space, ‖fwd uSeq m t x‖ ^ 2) (Set.Ioc p q) := by
   refine integrableOn_Ioc_of_le (fwd_inner_measurable uSeq hint hmeas m) p q C
     (fun t => integral_nonneg fun x => by positivity) (fun t => ?_)
-  exact fwd_kin uSeq C hkin m t
+  exact fwd_intNormSq_le uSeq C hkin hint hmeas m t
 
 
 
@@ -2522,7 +2541,9 @@ theorem exists_limit_of_forall_windowCauchy
       (∀ n : ℕ, Filter.Tendsto (fun k => windowError (vSeq k) u n) Filter.atTop (nhds 0)) := by
   classical
   have hbnd : ∀ (m : ℕ) (t : ℝ), 0 ≤ t → (∫ x : Space, ‖vSeq m t x‖ ^ 2) ≤ C :=
-    fun m t ht => hkin m t ht
+    fun m t ht => intNormSq_le_of_kineticEnergy_le (vSeq m) t C
+      (((hmeas m).comp measurable_prodMk_left).aestronglyMeasurable)
+      (hint m t ht) (hkin m t ht)
   have hstep : ∀ n : ℕ, ∃ N : ℕ, ∀ j k : ℕ, N ≤ j → N ≤ k →
       windowError (vSeq j) (vSeq k) n < ((4:ℝ)⁻¹) ^ n := by
     intro n
@@ -2600,15 +2621,63 @@ theorem exists_limit_of_forall_windowCauchy
         ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
     simp_rw [he]
     exact lt_of_le_of_lt (hFatou t ht) ENNReal.ofReal_lt_top
+  -- Fatou again, now on the *Euclidean* energy density, which is what
+  -- `kineticEnergy` (hence `UniformKineticBound`) actually integrates.
+  have hsumcont : Continuous
+      (fun y : Space => ENNReal.ofReal (∑ i : Fin 3, (y i) ^ 2)) := by
+    refine ENNReal.continuous_ofReal.comp ?_
+    fun_prop
+  have hEsum : ∀ t : ℝ, 0 ≤ t →
+      (∫⁻ x : Space, ENNReal.ofReal (∑ i : Fin 3, (u t x i) ^ 2))
+        ≤ ENNReal.ofReal C := by
+    intro t ht
+    have hpt : ∀ x : Space, ENNReal.ofReal (∑ i : Fin 3, (u t x i) ^ 2)
+        ≤ atTop.liminf
+            (fun j => ENNReal.ofReal (∑ i : Fin 3, (vSeq (φ j) t x i) ^ 2)) := by
+      intro x
+      by_cases hx : (t, x) ∈ S
+      · have h1 : Tendsto (fun j => g j (t, x)) atTop (𝓝 (u t x)) := hutend (t, x) hx
+        have h2 : Tendsto
+            (fun j => ENNReal.ofReal (∑ i : Fin 3, (vSeq (φ j) t x i) ^ 2)) atTop
+            (𝓝 (ENNReal.ofReal (∑ i : Fin 3, (u t x i) ^ 2))) :=
+          (hsumcont.tendsto _).comp h1
+        rw [h2.liminf_eq]
+      · rw [huzero (t, x) hx]; simp
+    calc (∫⁻ x : Space, ENNReal.ofReal (∑ i : Fin 3, (u t x i) ^ 2))
+        ≤ ∫⁻ x : Space, atTop.liminf
+            (fun j => ENNReal.ofReal (∑ i : Fin 3, (vSeq (φ j) t x i) ^ 2)) :=
+          lintegral_mono hpt
+      _ ≤ atTop.liminf (fun j => ∫⁻ x : Space,
+            ENNReal.ofReal (∑ i : Fin 3, (vSeq (φ j) t x i) ^ 2)) :=
+          lintegral_liminf_le (fun j =>
+            hsumcont.measurable.comp ((hmeas (φ j)).comp measurable_prodMk_left))
+      _ ≤ ENNReal.ofReal C := by
+          refine Filter.liminf_le_of_frequently_le' (Filter.Frequently.of_forall fun j => ?_)
+          have hij : Integrable
+              (fun x : Space => ∑ i : Fin 3, (vSeq (φ j) t x i) ^ 2) :=
+            integrable_sum_sq_of_norm_sq (vSeq (φ j)) t
+              ((((hmeas (φ j)).comp measurable_prodMk_left)).aestronglyMeasurable)
+              (hint (φ j) t ht)
+          rw [← ofReal_integral_eq_lintegral_ofReal hij
+            (Filter.Eventually.of_forall fun x =>
+              Finset.sum_nonneg fun i _ => sq_nonneg _)]
+          exact ENNReal.ofReal_le_ofReal (hkin (φ j) t ht)
   have hukin : ∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ C := by
     intro t ht
-    have h1 : (∫ x : Space, ‖u t x‖ ^ 2) = (∫⁻ x : Space, ‖u t x‖ₑ ^ 2).toReal := by
-      rw [lintegral_enorm_sq_eq (u t) (huint t ht),
-        ENNReal.toReal_ofReal (integral_nonneg fun x => by positivity)]
-    rw [kineticEnergy, h1]
-    calc (∫⁻ x : Space, ‖u t x‖ₑ ^ 2).toReal ≤ (ENNReal.ofReal C).toReal :=
-          ENNReal.toReal_mono ENNReal.ofReal_ne_top (hFatou t ht)
-      _ = C := ENNReal.toReal_ofReal hC
+    have hiu : Integrable (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) :=
+      integrable_sum_sq_of_norm_sq u t ((hslicemeas t).aestronglyMeasurable) (huint t ht)
+    have heq : ENNReal.ofReal (kineticEnergy u t)
+        = ∫⁻ x : Space, ENNReal.ofReal (∑ i : Fin 3, (u t x i) ^ 2) := by
+      rw [kineticEnergy]
+      exact ofReal_integral_eq_lintegral_ofReal hiu
+        (Filter.Eventually.of_forall fun x =>
+          Finset.sum_nonneg fun i _ => sq_nonneg _)
+    have hle : ENNReal.ofReal (kineticEnergy u t) ≤ ENNReal.ofReal C := by
+      rw [heq]; exact hEsum t ht
+    exact (ENNReal.ofReal_le_ofReal_iff hC).mp hle
+  have hubnd : ∀ t : ℝ, 0 ≤ t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ C :=
+    fun t ht => intNormSq_le_of_kineticEnergy_le u t C
+      ((hslicemeas t).aestronglyMeasurable) (huint t ht) (hukin t ht)
   refine ⟨u, humeas, huint, hukin, ?_⟩
 
   -- (C) almost-everywhere convergence of the fast subsequence on each window
@@ -2663,7 +2732,7 @@ theorem exists_limit_of_forall_windowCauchy
   have hnn := windowError_nonneg (vSeq k) u n
   rw [Real.norm_eq_abs, abs_of_nonneg hnn]
   have key : ENNReal.ofReal (windowError (vSeq k) u n) ≤ ENNReal.ofReal (ε / 2) := by
-    rw [← lintegral_winQ_eq (vSeq k) u n C (hmeas k) humeas (hint k) huint (hbnd k) hukin]
+    rw [← lintegral_winQ_eq (vSeq k) u n C (hmeas k) humeas (hint k) huint (hbnd k) hubnd]
     have hcongr : ∫⁻ z in winQ n, ‖vSeq k z.1 z.2 - u z.1 z.2‖ₑ ^ 2 ∂(volume.prod volume)
         = ∫⁻ z in winQ n,
             atTop.liminf (fun j => ‖vSeq k z.1 z.2 - g j z‖ₑ ^ 2) ∂(volume.prod volume) := by
@@ -2856,8 +2925,13 @@ structure LerayLimitData (ν : ℝ) (u₀ : SchwartzVelocity) where
   sq_integrable : ∀ t : ℝ, 0 < t → Integrable (fun x : Space => ‖limit t x‖ ^ 2)
   /-- The datum is square-integrable (automatic for Schwartz data). -/
   datum_sq_integrable : Integrable (fun x : Space => ‖u₀ x‖ ^ 2)
-  /-- The Leray energy bound for positive times. -/
-  energy_le : ∀ t : ℝ, 0 < t → kineticEnergy limit t ≤ ∫ x : Space, ‖u₀ x‖ ^ 2
+  /-- The Leray energy bound for positive times.  Both sides are the Euclidean
+  (Fefferman) energy: `kineticEnergy` integrates `∑ᵢ uᵢ²`, so the datum side is
+  `∫ ∑ᵢ (u₀)ᵢ²` and not the inherited sup-norm mass `∫ ‖u₀‖²`.  Mixing the two
+  would compare different quantities, since `Space` carries the product
+  (supremum) norm. -/
+  energy_le : ∀ t : ℝ, 0 < t →
+    kineticEnergy limit t ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2
   /-- Integrability of the weak-form density for positive times. -/
   pairing_integrable : ∀ (φ : DivergenceFreeTestFunction) (t : ℝ), 0 < t →
     Integrable (fun x : Space => weakPairingDensity ν limit φ t x)
@@ -2887,7 +2961,8 @@ theorem isLerayHopfWeakSolution_patchInitial (ν : ℝ) (u₀ : SchwartzVelocity
   initial_attained := by intro x; simp [patchInitial]
   energy_nonincreasing := by
     intro t ht
-    have h0 : kineticEnergy (patchInitial D.limit u₀) 0 = ∫ x : Space, ‖u₀ x‖ ^ 2 := by
+    have h0 : kineticEnergy (patchInitial D.limit u₀) 0
+        = ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2 := by
       unfold kineticEnergy; rw [patchInitial_apply_zero]
     rcases eq_or_lt_of_le ht with h | h
     · rw [← h]
@@ -2971,10 +3046,12 @@ route bounds the limit by the bundle's constant: `kineticEnergy u t ≤ G.bound`
 (`exists_limit_of_forall_windowCauchy` proves exactly this, though
 `aubin_lions_l2loc_compactness` does not re-export the conjunct — strengthen its
 conclusion or call the internal steps directly).  But `energy_le` demands the
-*exact* datum constant `∫ ‖u₀‖²`, and no field of `GalerkinApproximation`
+*exact* datum constant `∫ ∑ᵢ (u₀)ᵢ²` (the Euclidean energy of the datum, which
+is what `kineticEnergy` integrates), and no field of `GalerkinApproximation`
 relates `bound` to `u₀`: `initial_converges` pins only the `t = 0` slices, and
 nothing records energy monotonicity of the approximants.  Repair (one line each):
-add `bound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2` to `GalerkinApproximation` and to
+add `bound_le : bound ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2` to
+`GalerkinApproximation` and to
 `GalerkinModeData` — true with equality in the finite-mode construction
 (`bound = ‖u₀‖²_{L²}`), true in `zeroGalerkinModeData` (`0 ≤ 0`), carried
 verbatim by `galerkinApproximation_of_modeData`.  With (0) in place,

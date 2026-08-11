@@ -164,4 +164,41 @@ theorem uniformlyBoundedEnergy_iff_official
         u t (hmeas t ht) hoff)
       (hbound t ht)
 
+/-- **Kinetic-energy → sup-norm `L²` mass.**  `kineticEnergy` is the Euclidean
+density `∑ᵢ uᵢ²`, which dominates the inherited sup-norm density `‖·‖²`
+pointwise (`norm_sq_le_sum_sq`).  Only the *larger* integrand needs to be
+integrable: `integral_mono_of_nonneg` handles a non-integrable smaller one by
+the Bochner zero convention, and the smaller integrand is nonnegative. -/
+theorem intNormSq_le_kineticEnergy (u : VelocityEvolution) (t : ℝ)
+    (hsum : Integrable (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2)) :
+    (∫ x : Space, ‖u t x‖ ^ 2) ≤ kineticEnergy u t := by
+  unfold kineticEnergy
+  exact integral_mono_of_nonneg
+    (Filter.Eventually.of_forall fun x => by positivity) hsum
+    (Filter.Eventually.of_forall fun x => norm_sq_le_sum_sq (u t x))
+
+/-- The Euclidean energy density is integrable whenever the inherited one is,
+under slice strong measurability. -/
+theorem integrable_sum_sq_of_norm_sq (u : VelocityEvolution) (t : ℝ)
+    (hu : AEStronglyMeasurable (u t))
+    (hint : Integrable (fun x : Space => ‖u t x‖ ^ 2)) :
+    Integrable (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) := by
+  have hoff : Integrable (fun x : Space => officialEuclideanNorm (u t x) ^ 2) :=
+    (integrable_norm_sq_iff_officialEuclideanNorm_sq (u t) hu).1 hint
+  have h_eq : (fun x : Space => officialEuclideanNorm (u t x) ^ 2)
+      = fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2 := by
+    funext x; exact officialEuclideanNorm_sq_eq_sum_sq (u t x)
+  rwa [h_eq] at hoff
+
+/-- **The bridge every kinetic-bound consumer needs.**  A bound on the
+Euclidean kinetic energy transfers to the inherited sup-norm `L²` mass with the
+*same* constant, since `‖x‖ ≤ |x|` pointwise. -/
+theorem intNormSq_le_of_kineticEnergy_le (u : VelocityEvolution) (t : ℝ) (C : ℝ)
+    (hu : AEStronglyMeasurable (u t))
+    (hint : Integrable (fun x : Space => ‖u t x‖ ^ 2))
+    (h : kineticEnergy u t ≤ C) :
+    (∫ x : Space, ‖u t x‖ ^ 2) ≤ C :=
+  le_trans (intNormSq_le_kineticEnergy u t
+    (integrable_sum_sq_of_norm_sq u t hu hint)) h
+
 end Navier.Analysis.EnergyNormBridge
