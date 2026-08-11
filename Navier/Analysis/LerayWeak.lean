@@ -1310,6 +1310,70 @@ theorem jointlyMeasurable_of_forwardODE (deg : ℕ → ℕ)
     (fun m i => continuous_forwardExtend (c m i) (F m i) (hc m i))
     (fun m i => (w m i).continuous)
 
+/-!
+### Coefficient flows realized as Schwartz velocity fields
+
+The global ODE theorem produces a curve in the Euclidean coefficient space
+`EuclideanSpace ℝ (Fin (deg m))`.  The following definitions perform the actual
+finite-mode realization against Schwartz modes.  They are upstream of
+`GalerkinBasis`: that file supplies the certified dense orthonormal
+divergence-free family and can instantiate these constructors without creating
+the forbidden import cycle `LerayWeak → GalerkinBasis → LerayWeak`.
+-/
+
+/-- The initial Schwartz field represented by a finite coefficient vector. -/
+noncomputable def galerkinModalInitialMode (deg : ℕ → ℕ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin (deg m)))
+    (w : ∀ m : ℕ, Fin (deg m) → SchwartzVelocity) (m : ℕ) : SchwartzVelocity :=
+  ∑ i, c m 0 i • w m i
+
+/-- The velocity evolution represented by a forward coefficient flow, extended
+constantly to negative time before taking the finite modal sum. -/
+noncomputable def galerkinModalApprox (deg : ℕ → ℕ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin (deg m)))
+    (w : ∀ m : ℕ, Fin (deg m) → SchwartzVelocity) : ℕ → VelocityEvolution :=
+  fun m t x => ∑ i, forwardExtend (c m) t i • (w m i) x
+
+/-- The realized evolution has exactly the represented Schwartz field as its
+`t = 0` slice.  This is `GalerkinModeData.initial_eq` for the modal constructor. -/
+theorem galerkinModalApprox_initial_eq (deg : ℕ → ℕ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin (deg m)))
+    (w : ∀ m : ℕ, Fin (deg m) → SchwartzVelocity) :
+    ∀ m : ℕ, galerkinModalApprox deg c w m 0 =
+      fun x => galerkinModalInitialMode deg c w m x := by
+  intro m
+  funext x
+  simp [galerkinModalApprox, galerkinModalInitialMode, forwardExtend]
+
+/-- A forward differentiable Euclidean coefficient flow realizes a jointly
+measurable spacetime velocity field.  This supplies
+`GalerkinModeData.jointly_measurable` for the modal constructor. -/
+theorem galerkinModalApprox_jointlyMeasurable (deg : ℕ → ℕ)
+    (c F : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin (deg m)))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m) (F m t) (Set.Ici (0 : ℝ)) t)
+    (w : ∀ m : ℕ, Fin (deg m) → SchwartzVelocity) :
+    JointlyMeasurable (galerkinModalApprox deg c w) := by
+  intro m
+  apply jointlyMeasurable_modalSum
+    (fun i t => forwardExtend (c m) t i) (fun i x => (w m i) x)
+  · intro i
+    exact (EuclideanSpace.proj i).continuous.comp
+      (continuous_forwardExtend (c m) (F m) (hc m))
+  · exact fun i => (w m i).continuous
+
+/-- Every spatial slice of a realized finite modal flow is square-integrable,
+because a finite linear combination of Schwartz modes is again Schwartz.  This
+supplies `GalerkinModeData.sq_integrable` without an analytic payload. -/
+theorem galerkinModalApprox_sq_integrable (deg : ℕ → ℕ)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin (deg m)))
+    (w : ∀ m : ℕ, Fin (deg m) → SchwartzVelocity) :
+    ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable (fun x : Space => ‖galerkinModalApprox deg c w m t x‖ ^ 2) := by
+  intro m t _
+  let f : SchwartzVelocity := ∑ i, forwardExtend (c m) t i • w m i
+  simpa [f, galerkinModalApprox] using integrable_norm_sq_schwartz f
+
 /-- **[NAMED RESIDUAL — finite-mode Galerkin construction; Temam, *NSE* III.3;
 Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20; est ~350 LOC.]**
 Projecting NSE onto the first `m` divergence-free modes gives a `C¹` ODE on a
@@ -1339,8 +1403,14 @@ fields for `schwartzL2Inner`), proved from the `GalerkinRawFamily` reservoir via
 hoisted `SchwartzL2Pairing` layer — so the relocation route is unblocked and no
 *basis* mathematics is missing.  What remains after relocation is the finite-mode
 construction itself: the projected field `F_m = −ν A_m + P_m B` is dissipative by
-skew-symmetry of `B`, `finiteDim_dissipative_ode_global` (BANKED, above) gives the
-global coefficient curve, `galerkin_apriori_bound` and
+skew-symmetry of `B`; `exists_forward_galerkinCoefficientFlow` (CERTIFIED, above)
+now constructs the global coefficient curve together with its exact forward
+squared-norm bound.  The actual coefficient-to-field realization is also
+certified: `galerkinModalApprox_initial_eq`,
+`galerkinModalApprox_jointlyMeasurable`, and
+`galerkinModalApprox_sq_integrable` discharge `initial_eq`,
+`jointly_measurable`, and `sq_integrable` for the finite Schwartz modal sum.
+`galerkin_apriori_bound` and
 `EnergyDissipation.dissipation_integral_le_forward` give the two uniform bounds,
 basis density gives `initial_converges_L2`, and the Galerkin equation against test
 functions gives `weak_consistent`.
@@ -3331,6 +3401,3 @@ theorem leray_weak_existence :
     (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak
-
-
-
