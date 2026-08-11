@@ -441,6 +441,39 @@ theorem weighted_convolution_mass_le (f g : ES → ℝ)
         normX0_convolution_eq f (fun η => ‖η‖ * g η) hf0 hg1]
       rfl
 
+/-- The continuous Leray multiplier contracts the weighted `L¹` mass of any
+a.e. strongly measurable vector frequency profile. -/
+theorem integrable_weighted_continuousLerayE (v : ES → ComplexE3)
+    (hv : AEStronglyMeasurable v)
+    (hw : Integrable (fun ξ : ES => ‖ξ‖ * ‖v ξ‖)) :
+    Integrable (fun ξ : ES => ‖ξ‖ * ‖continuousLerayE ξ (v ξ)‖) := by
+  refine hw.mono' ?_ ?_
+  · exact continuous_norm.aestronglyMeasurable.mul
+      (continuousLerayE_aestronglyMeasurable v hv).norm
+  · filter_upwards with ξ
+    rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg (norm_nonneg ξ)
+      (norm_nonneg (continuousLerayE ξ (v ξ))))]
+    exact mul_le_mul_of_nonneg_left (continuousLerayE_norm_le ξ (v ξ)) (norm_nonneg ξ)
+
+/-- Integral form of the continuous weighted Leray contraction. -/
+theorem weighted_continuousLerayE_mass_le (v : ES → ComplexE3)
+    (hv : AEStronglyMeasurable v)
+    (hw : Integrable (fun ξ : ES => ‖ξ‖ * ‖v ξ‖)) :
+    (∫ ξ : ES, ‖ξ‖ * ‖continuousLerayE ξ (v ξ)‖) ≤
+      ∫ ξ : ES, ‖ξ‖ * ‖v ξ‖ :=
+  integral_mono (integrable_weighted_continuousLerayE v hv hw) hw
+    (fun ξ => mul_le_mul_of_nonneg_left (continuousLerayE_norm_le ξ (v ξ)) (norm_nonneg ξ))
+
+/-- The norm of the literal complex Fourier convolution is bounded pointwise
+by convolution of its scalar norm profiles. -/
+theorem norm_complex_convolution_le (f g : ES → ℂ) (ξ : ES) :
+    ‖(f ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] g) ξ‖ ≤
+      convolution (fun η => ‖f η‖) (fun η => ‖g η‖) ξ := by
+  change ‖∫ η : ES, f η * g (ξ - η)‖ ≤
+    ∫ η : ES, ‖f η‖ * ‖g (ξ - η)‖
+  simpa only [norm_mul] using
+    (norm_integral_le_integral_norm (fun η : ES => f η * g (ξ - η)))
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -466,3 +499,6 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_scalar_convolution
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.ae_frequency_weighted_convolution_pointwise
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.weighted_convolution_mass_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_weighted_continuousLerayE
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.weighted_continuousLerayE_mass_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.norm_complex_convolution_le
