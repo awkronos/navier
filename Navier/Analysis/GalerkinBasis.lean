@@ -1086,6 +1086,29 @@ theorem coefficientField_l2_isometry (W : GalerkinBasisFamily) {m : ℕ}
       ring
     _ = ‖a‖ ^ 2 := (EuclideanSpace.real_norm_sq_eq a).symm
 
+/-- The finite coefficient realization preserves the full real inner product,
+not only squared norms. -/
+theorem coefficientField_l2_inner (W : GalerkinBasisFamily) {m : ℕ}
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    schwartzL2Inner (W.coefficientField a) (W.coefficientField b) = inner ℝ a b := by
+  have hinner : ∀ j : Fin m,
+      schwartzL2Inner (W.w j) (W.coefficientField b) = b j := by
+    intro j
+    unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+    rw [schwartzL2Inner_finset_sum_right, Finset.sum_eq_single j]
+    · rw [schwartzL2Inner_smul_right, W.orthonormal j j, if_pos rfl, mul_one]
+    · intro i _ hij
+      rw [schwartzL2Inner_smul_right, W.orthonormal j i,
+        if_neg (fun h => hij (Fin.ext h.symm)), mul_zero]
+    · exact fun hj => (hj (Finset.mem_univ j)).elim
+  change schwartzL2Inner (∑ j : Fin m, a j • W.w j) (W.coefficientField b) =
+    inner ℝ a b
+  rw [schwartzL2Inner_finset_sum_left, PiLp.inner_apply]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [schwartzL2Inner_smul_left, hinner j]
+  simp [RCLike.inner_apply, mul_comm]
+
 /-- The coefficient realization is additive under subtraction. -/
 theorem coefficientField_sub (W : GalerkinBasisFamily) {m : ℕ}
     (a b : EuclideanSpace ℝ (Fin m)) :
@@ -2019,6 +2042,75 @@ theorem coefficientFlow_energy_le_data (W : GalerkinBasisFamily)
       filter_upwards with x
       rw [officialInner_eq_sum]
       exact Finset.sum_congr rfl (fun i _ => by rw [pow_two])
+
+/-- **Exact retained-span weak equation.**  Let `b(t)` be a differentiable
+finite coefficient test, with continuous derivative and vanishing at a finite
+horizon `T`.  Pairing the concrete Galerkin ODE with `b`, integrating the
+temporal term by parts on `[0,T]`, and transporting the coefficient inner
+product through the modal `L²` isometry gives the physical retained-mode
+identity below.  This is the finite-span core of projected weak consistency;
+no density claim for arbitrary Schwartz tests is made here. -/
+theorem modalFlow_retainedSpan_weakEquation (W : GalerkinBasisFamily)
+    (ν : ℝ) (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) (b b' : ℝ → EuclideanSpace ℝ (Fin m))
+    (hb : ∀ t : ℝ, HasDerivAt b (b' t) t) (hb'_cont : Continuous b')
+    (T : ℝ) (hT : 0 ≤ T) (hb_zero : ∀ t : ℝ, T ≤ t → b t = 0) :
+    (∫ t in (0 : ℝ)..T,
+        schwartzL2Inner (W.coefficientField (c m t))
+          (W.coefficientField (b' t)) +
+        schwartzL2Inner
+          (W.coefficientField
+            (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t)))
+          (W.coefficientField (b t))) +
+      schwartzL2Inner (W.coefficientField (c m 0))
+        (W.coefficientField (b 0)) = 0 := by
+  let F : EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin m) :=
+    fun a => -(ν • W.stokesOperator m a) + W.convectionOperator m a
+  have hF_cont : Continuous F := by
+    exact ((W.stokesOperator m).contDiff.const_smul ν).neg.add
+      (convectionOperator_contDiff W m) |>.continuous
+  have hc_cont : ContinuousOn (c m) (Set.Icc (0 : ℝ) T) := by
+    intro t ht
+    exact (hc m t ht.1).continuousWithinAt.mono Set.Icc_subset_Ici_self
+  have hb_cont : Continuous b := continuous_iff_continuousAt.mpr fun t =>
+    (hb t).continuousAt
+  have hprod_cont : ContinuousOn (fun t => inner ℝ (c m t) (b t))
+      (Set.Icc (0 : ℝ) T) := hc_cont.inner hb_cont.continuousOn
+  have hF_comp : ContinuousOn (fun t => F (c m t)) (Set.Icc (0 : ℝ) T) :=
+    hF_cont.comp_continuousOn hc_cont
+  have hdensity_cont : ContinuousOn
+      (fun t => inner ℝ (c m t) (b' t) + inner ℝ (F (c m t)) (b t))
+      (Set.Icc (0 : ℝ) T) :=
+    (hc_cont.inner hb'_cont.continuousOn).add (hF_comp.inner hb_cont.continuousOn)
+  have hderiv : ∀ t ∈ Set.Ioo (0 : ℝ) T,
+      HasDerivWithinAt (fun s => inner ℝ (c m s) (b s))
+        (inner ℝ (c m t) (b' t) + inner ℝ (F (c m t)) (b t))
+        (Set.Ioi t) t := by
+    intro t ht
+    have hc_right := (hc m t ht.1.le).mono
+      (show Set.Ioi t ⊆ Set.Ici (0 : ℝ) by
+        intro s hs
+        exact le_trans ht.1.le hs.le)
+    simpa only [F] using hc_right.inner ℝ (hb t).hasDerivWithinAt
+  have hint : IntervalIntegrable
+      (fun t => inner ℝ (c m t) (b' t) + inner ℝ (F (c m t)) (b t))
+      volume 0 T := by
+    apply ContinuousOn.intervalIntegrable
+    rw [Set.uIcc_of_le hT]
+    exact hdensity_cont
+  have hftc := intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le
+    hT hprod_cont hderiv hint
+  have hcoeff :
+      (∫ t in (0 : ℝ)..T,
+          inner ℝ (c m t) (b' t) + inner ℝ (F (c m t)) (b t)) +
+        inner ℝ (c m 0) (b 0) = 0 := by
+    rw [hb_zero T le_rfl, inner_zero_right, zero_sub] at hftc
+    linarith
+  simpa only [coefficientField_l2_inner, F] using hcoeff
 
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
