@@ -1065,6 +1065,14 @@ theorem coefficientField_l2_isometry (W : GalerkinBasisFamily) {m : ℕ}
       ring
     _ = ‖a‖ ^ 2 := (EuclideanSpace.real_norm_sq_eq a).symm
 
+/-- The coefficient realization is additive under subtraction. -/
+theorem coefficientField_sub (W : GalerkinBasisFamily) {m : ℕ}
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    W.coefficientField (a - b) = W.coefficientField a - W.coefficientField b := by
+  unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+  rw [← Finset.sum_sub_distrib]
+  exact Finset.sum_congr rfl (fun i _ => sub_smul (a i) (b i) (W.w i))
+
 /-- Realizing the datum's coefficient vector recovers its genuine Galerkin
 projection. -/
 theorem coefficientField_initialCoefficients_eq_proj (W : GalerkinBasisFamily)
@@ -1087,15 +1095,51 @@ noncomputable def GalerkinBasisFamily.coefficientEnstrophy (W : GalerkinBasisFam
     {m : ℕ} (a : EuclideanSpace ℝ (Fin m)) : ℝ :=
   ∫ x : Space, officialEuclideanNorm (staticCurl (W.coefficientField a) x) ^ 2
 
+/-- At every time, the modal flow is the Schwartz field represented by the
+forward-extended coefficient vector. -/
+theorem modalApprox_eq_coefficientField_forwardExtend (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) (m : ℕ) (t : ℝ) :
+    W.modalApprox c m t = fun x => W.coefficientField (forwardExtend (c m) t) x := by
+  funext x
+  simp [GalerkinBasisFamily.modalApprox, galerkinModalApprox,
+    GalerkinBasisFamily.coefficientField, GalerkinBasisFamily.finiteModes]
+
 /-- At nonnegative time, the forward-extended modal flow is exactly the
 Schwartz field represented by its current coefficient vector. -/
 theorem modalApprox_eq_coefficientField (W : GalerkinBasisFamily)
     (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) (m : ℕ) {t : ℝ} (ht : 0 ≤ t) :
     W.modalApprox c m t = fun x => W.coefficientField (c m t) x := by
-  funext x
-  simp [GalerkinBasisFamily.modalApprox, galerkinModalApprox,
-    GalerkinBasisFamily.coefficientField, GalerkinBasisFamily.finiteModes,
+  rw [modalApprox_eq_coefficientField_forwardExtend W c m t,
     forwardExtend_eq_of_nonneg (c m) ht]
+
+/-- Physical time displacement is bounded by Euclidean coefficient
+displacement at the same constant.  This is the exact modal isometry followed
+by the valid pointwise comparison `‖v‖∞² ≤ ∑ᵢ vᵢ²`; no converse norm
+conversion is used. -/
+theorem modalApprox_timeDisplacement_le (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m)) (m : ℕ) (s t : ℝ) :
+    (∫ x : Space, ‖W.modalApprox c m s x - W.modalApprox c m t x‖ ^ 2) ≤
+      ‖forwardExtend (c m) s - forwardExtend (c m) t‖ ^ 2 := by
+  let a := forwardExtend (c m) s
+  let b := forwardExtend (c m) t
+  have hfield : ∀ x : Space,
+      W.modalApprox c m s x - W.modalApprox c m t x =
+        W.coefficientField (a - b) x := by
+    intro x
+    rw [congrFun (modalApprox_eq_coefficientField_forwardExtend W c m s) x,
+      congrFun (modalApprox_eq_coefficientField_forwardExtend W c m t) x]
+    exact (congrArg (fun f : SchwartzVelocity => f x) (coefficientField_sub W a b)).symm
+  calc
+    (∫ x : Space, ‖W.modalApprox c m s x - W.modalApprox c m t x‖ ^ 2) =
+        ∫ x : Space, ‖W.coefficientField (a - b) x‖ ^ 2 := by
+      apply integral_congr_ae
+      filter_upwards with x
+      rw [hfield x]
+    _ ≤ schwartzL2Inner (W.coefficientField (a - b))
+        (W.coefficientField (a - b)) :=
+      integral_norm_sq_le_integral_officialInner_self (W.coefficientField (a - b))
+    _ = ‖a - b‖ ^ 2 := coefficientField_l2_isometry W (a - b)
+    _ = ‖forwardExtend (c m) s - forwardExtend (c m) t‖ ^ 2 := rfl
 
 /-- Exact transfer of physical enstrophy to the coefficient representation at
 nonnegative time. -/
@@ -1403,13 +1447,116 @@ theorem modalApprox_uniformEnstrophyBound (W : GalerkinBasisFamily)
   rw [henstrophy]
   exact hdiss.trans (hbudget m)
 
+/-- A uniform bound on the actual projected ODE vector field makes the modal
+flows uniformly time-translation equicontinuous.  The proof uses the mean
+value theorem on `[0,∞)` for the coefficient curve, the nonexpansive cutoff
+`t ↦ max t 0`, and `modalApprox_timeDisplacement_le` to transport the resulting
+coefficient Lipschitz estimate to physical `L²`. -/
+theorem modalApprox_timeEquicontinuous_of_uniformDerivative
+    (W : GalerkinBasisFamily) {ν : ℝ}
+    (A : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) →L[ℝ] EuclideanSpace ℝ (Fin m))
+    (B : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin m))
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m) (-(ν • A m (c m t)) + B m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (K : ℝ) (hK : 0 ≤ K)
+    (hderiv : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      ‖-(ν • A m (c m t)) + B m (c m t)‖ ≤ K)
+    (C : ℝ) (hkin : UniformKineticBound (W.modalApprox c) C) :
+    TimeEquicontinuous (W.modalApprox c) := by
+  have hjoint : JointlyMeasurable (W.modalApprox c) := by
+    simpa [GalerkinBasisFamily.modalApprox] using
+      galerkinModalApprox_jointlyMeasurable (fun m => m) c
+        (fun m t => -(ν • A m (c m t)) + B m (c m t)) hc
+        (fun m => W.finiteModes m)
+  have hsq : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable (fun x : Space => ‖W.modalApprox c m t x‖ ^ 2) := by
+    simpa [GalerkinBasisFamily.modalApprox] using
+      galerkinModalApprox_sq_integrable (fun m => m) c
+        (fun m => W.finiteModes m)
+  have hfwd : ∀ m : ℕ, fwd (W.modalApprox c) m = W.modalApprox c m := by
+    intro m
+    funext t x
+    simp [fwd, GalerkinBasisFamily.modalApprox, galerkinModalApprox, forwardExtend]
+  intro T ε hε
+  rcases lt_or_ge T 0 with hT | hT
+  · refine ⟨1, one_pos, fun _ _ _ => ?_⟩
+    rw [show Set.Ioc (0 : ℝ) T = ∅ from Set.Ioc_eq_empty (by linarith)]
+    simpa using hε.le
+  let D : ℝ := (T + 1) * (K + 1) ^ 2
+  have hDpos : 0 < D := by
+    dsimp [D]
+    positivity
+  refine ⟨min 1 (ε / D), lt_min one_pos (div_pos hε hDpos), ?_⟩
+  intro m h hh
+  have hh_one : |h| < 1 := hh.trans_le (min_le_left _ _)
+  have hh_D : |h| < ε / D := hh.trans_le (min_le_right _ _)
+  have hcoeff : ∀ t : ℝ,
+      ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ≤ K * |h| := by
+    intro t
+    have hmv := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le
+      (f := c m)
+      (f' := fun r => -(ν • A m (c m r)) + B m (c m r))
+      (fun r hr => hc m r hr) (fun r hr => hderiv m r hr)
+      (convex_Ici (0 : ℝ))
+      (Set.mem_Ici.mpr (le_max_right t 0))
+      (Set.mem_Ici.mpr (le_max_right (t + h) 0))
+    have hmax : ‖max (t + h) 0 - max t 0‖ ≤ |h| := by
+      simpa [Real.norm_eq_abs] using abs_max_sub_max_le_abs (t + h) t 0
+    unfold forwardExtend
+    exact hmv.trans (mul_le_mul_of_nonneg_left hmax hK)
+  have hpoint : ∀ t : ℝ,
+      (∫ x : Space,
+        ‖W.modalApprox c m (t + h) x - W.modalApprox c m t x‖ ^ 2) ≤
+        K ^ 2 * |h| ^ 2 := by
+    intro t
+    refine (modalApprox_timeDisplacement_le W c m (t + h) t).trans ?_
+    have hc_le := hcoeff t
+    nlinarith [norm_nonneg (forwardExtend (c m) (t + h) - forwardExtend (c m) t),
+      abs_nonneg h]
+  have houter : IntegrableOn (fun t : ℝ => ∫ x : Space,
+      ‖W.modalApprox c m (t + h) x - W.modalApprox c m t x‖ ^ 2)
+      (Set.Ioc (0 : ℝ) T) := by
+    simpa only [hfwd m] using
+      fwd_tdisp_outer (W.modalApprox c) C hkin hsq hjoint m h 0 T
+  have hvol : volume.real (Set.Ioc (0 : ℝ) T) = T := by
+    rw [Measure.real, Real.volume_Ioc,
+      ENNReal.toReal_ofReal (by linarith : (0 : ℝ) ≤ T - 0), sub_zero]
+  have habs_sq : |h| ^ 2 ≤ |h| := by
+    nlinarith [abs_nonneg h]
+  have hTD : T * K ^ 2 ≤ D := by
+    dsimp [D]
+    nlinarith [sq_nonneg K]
+  have hDbound : T * (K ^ 2 * |h| ^ 2) ≤ D * |h| := by
+    calc
+      T * (K ^ 2 * |h| ^ 2) = (T * K ^ 2) * |h| ^ 2 := by ring
+      _ ≤ D * |h| ^ 2 := mul_le_mul_of_nonneg_right hTD (sq_nonneg |h|)
+      _ ≤ D * |h| := mul_le_mul_of_nonneg_left habs_sq hDpos.le
+  have hDsmall : D * |h| < ε := by
+    have hm := mul_lt_mul_of_pos_left hh_D hDpos
+    calc
+      D * |h| < D * (ε / D) := hm
+      _ = ε := by field_simp
+  calc
+    (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        ‖W.modalApprox c m (t + h) x - W.modalApprox c m t x‖ ^ 2) ≤
+        ∫ _t in Set.Ioc (0 : ℝ) T, K ^ 2 * |h| ^ 2 :=
+      setIntegral_mono_on houter
+        (integrableOn_const (hs := measure_Ioc_lt_top.ne)) measurableSet_Ioc
+        (fun t _ => hpoint t)
+    _ = T * (K ^ 2 * |h| ^ 2) := by rw [setIntegral_const, hvol]; simp
+    _ ≤ D * |h| := hDbound
+    _ ≤ ε := hDsmall.le
+
 /-- Build finite-mode Galerkin data from a certified divergence-free basis and
 actual Euclidean coefficient flows.  The constructor itself supplies the
 modal realization, projected initial slice, exact official-energy transfer,
 joint measurability, square-integrability, and Bessel convergence.  The
 remaining hypotheses are precisely the PDE estimates not implied by basis
 orthonormality or projected energy dissipation: the inherited-sup kinetic
-bound, translations, and weak consistency. -/
+bound, a uniform projected-vector-field bound, spatial translations, and weak
+consistency. -/
 theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (ν : ℝ) (hν : 0 < ν) (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
     (A : ∀ m : ℕ, EuclideanSpace ℝ (Fin m) →L[ℝ] EuclideanSpace ℝ (Fin m))
@@ -1429,7 +1576,9 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     (henergy : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
       ‖c m t‖ ^ 2 ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
     (henstrophy_budget : ∀ m : ℕ, ‖c m 0‖ ^ 2 / (2 * ν) ≤ bound)
-    (htime : TimeEquicontinuous (W.modalApprox c))
+    (derivativeBound : ℝ) (hderivativeBound : 0 ≤ derivativeBound)
+    (hderivative : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      ‖-(ν • A m (c m t)) + B m (c m t)‖ ≤ derivativeBound)
     (hspace : SpaceEquicontinuous (W.modalApprox c))
     (hweak : ∀ φ : DivergenceFreeTestFunction,
       Filter.Tendsto (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ)
@@ -1446,7 +1595,8 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     official_kinetic_bounded := ?_
     enstrophy_bounded := modalApprox_uniformEnstrophyBound W hν A B c hc
       hB_skew hA_enstrophy bound henstrophy_budget
-    time_equicontinuous := htime
+    time_equicontinuous := modalApprox_timeEquicontinuous_of_uniformDerivative
+      W A B c hc derivativeBound hderivativeBound hderivative bound hkin
     space_equicontinuous := hspace
     jointly_measurable := ?_
     sq_integrable := ?_
