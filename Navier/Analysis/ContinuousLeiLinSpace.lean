@@ -612,6 +612,94 @@ theorem normXm1_continuousNavierBilinear_pointwise (u v : ES → ComplexSpace) (
   filter_upwards with η
   exact mul_nonneg (norm_nonneg (u η j)) (norm_nonneg (v (ξ - η) i))
 
+/-- Coordinatewise a.e.-strong measurability and `L¹` masses make the literal
+continuous Navier symbol Bochner measurable on the Hermitian Euclidean
+carrier.  The coordinate hypotheses are essential: integrability of their
+norms alone does not encode the complex phases' measurability. -/
+theorem continuousNavierBilinear_aestronglyMeasurable (u v : ES → ComplexSpace)
+    (hu : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => u η j))
+    (hv : ∀ i : Fin 3, AEStronglyMeasurable (fun η : ES => v η i))
+    (hu0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖u η j‖))
+    (hv0 : ∀ i : Fin 3, Integrable (fun η : ES => ‖v η i‖)) :
+    AEStronglyMeasurable (fun ξ : ES =>
+      complexEuclideanPoint (continuousNavierBilinear u v ξ)) := by
+  have hconv : ∀ i j : Fin 3, Integrable
+      ((fun η : ES => u η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
+        (fun η : ES => v η i)) := by
+    intro i j
+    exact (integrable_norm_iff (hu j)).mp (hu0 j) |>.integrable_convolution
+      (ContinuousLinearMap.mul ℂ ℂ) ((integrable_norm_iff (hv i)).mp (hv0 i))
+  have hraw : AEStronglyMeasurable (rawNavierConvection u v) := by
+    apply (aemeasurable_pi_lambda _ ?_).aestronglyMeasurable
+    intro i
+    change AEMeasurable (fun ξ : ES => ∑ j : Fin 3, (ξ j : ℂ) *
+      ((fun η => u η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
+        (fun η => v η i)) ξ)
+    exact (Finset.aestronglyMeasurable_sum Finset.univ (fun j _ => by
+      have hcoord : Continuous (fun ξ : ES => (ξ j : ℝ)) :=
+        PiLp.continuous_apply 2 _ j
+      exact ((Complex.continuous_ofReal.comp hcoord).aestronglyMeasurable).mul
+        (hconv i j).aestronglyMeasurable)).aemeasurable
+  have hrawE : AEStronglyMeasurable (fun ξ : ES =>
+      complexEuclideanPoint (rawNavierConvection u v ξ)) :=
+    (PiLp.continuous_toLp 2 _).aestronglyMeasurable.comp_aemeasurable hraw.aemeasurable
+  have hphase : AEStronglyMeasurable (fun ξ : ES =>
+      Complex.I • complexEuclideanPoint (rawNavierConvection u v ξ)) :=
+    aestronglyMeasurable_const.smul hrawE
+  have hrewrite : (fun ξ : ES =>
+      complexEuclideanPoint (continuousNavierBilinear u v ξ)) =
+      fun ξ => continuousLerayE ξ
+        (Complex.I • complexEuclideanPoint (rawNavierConvection u v ξ)) := by
+    funext ξ
+    change complexEuclideanPoint (complexLeray (spaceProj ξ)
+      (Complex.I • rawNavierConvection u v ξ)) = _
+    rw [complexEuclideanPoint_complexLeray]
+    simp [continuousLerayE, complexEuclideanPoint, WithLp.toLp_smul]
+  rw [hrewrite]
+  exact continuousLerayE_aestronglyMeasurable _ hphase
+
+/-- The scalar `X⁻¹` density of the continuous Navier bilinear symbol is
+integrable once its coordinate inputs have measurable `L¹` representatives. -/
+theorem integrable_normXm1_continuousNavierBilinear (u v : ES → ComplexSpace)
+    (hu : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => u η j))
+    (hv : ∀ i : Fin 3, AEStronglyMeasurable (fun η : ES => v η i))
+    (hu0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖u η j‖))
+    (hv0 : ∀ i : Fin 3, Integrable (fun η : ES => ‖v η i‖)) :
+    Integrable (fun ξ : ES => ‖ξ‖⁻¹ * complexEuclideanNorm
+      (continuousNavierBilinear u v ξ)) := by
+  have hsum : Integrable (fun ξ : ES => ∑ i : Fin 3, ∑ j : Fin 3,
+      convolution (fun η => ‖u η j‖) (fun η => ‖v η i‖) ξ) := by
+    refine integrable_finsetSum Finset.univ ?_
+    intro i hi
+    refine integrable_finsetSum Finset.univ ?_
+    intro j hj
+    exact integrable_scalar_convolution _ _ (hu0 j) (hv0 i)
+  refine hsum.mono' ?_ ?_
+  · have heq : ((fun ξ : ES => ‖ξ‖)⁻¹ * fun ξ =>
+        ‖complexEuclideanPoint (continuousNavierBilinear u v ξ)‖) =
+        fun ξ : ES => ‖ξ‖⁻¹ *
+          ‖complexEuclideanPoint (continuousNavierBilinear u v ξ)‖ := by
+      rfl
+    change AEStronglyMeasurable (fun ξ : ES => ‖ξ‖⁻¹ *
+      ‖complexEuclideanPoint (continuousNavierBilinear u v ξ)‖)
+    rw [← heq]
+    exact (continuous_norm.aestronglyMeasurable.inv₀).mul (by
+        have hmeas := continuousNavierBilinear_aestronglyMeasurable u v hu hv hu0 hv0
+        exact hmeas.norm)
+  · filter_upwards with ξ
+    rw [Real.norm_eq_abs, abs_of_nonneg]
+    · exact normXm1_continuousNavierBilinear_pointwise u v ξ
+    exact mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _)
+
+/-- Fourier transforms of a finite vector of Schwartz profiles automatically
+supply the coordinatewise a.e.-strong measurability used by the analytic
+bilinear estimate. -/
+theorem fourier_schwartz_coordinate_aestronglyMeasurable
+    (f : Fin 3 → SchwartzMap ES ℂ) (i : Fin 3) :
+    AEStronglyMeasurable (fun ξ : ES =>
+      ((𝓕 (f i) : SchwartzMap ES ℂ) : ES → ℂ) ξ) :=
+  ((𝓕 (f i) : SchwartzMap ES ℂ).continuous).aestronglyMeasurable
+
 /-- The integrated continuous vector bilinear estimate.  `hout` is stated
 explicitly because this module proves the symbol estimate; constructing the
 time-dependent Bochner representative is the next Duhamel leaf. -/
@@ -653,6 +741,22 @@ theorem normXm1_continuousNavierBilinear_mass_le
       intro j hj
       exact normX0_convolution_eq _ _ (hu0 j) (hv0 i)
 
+/-- Unconditional analytic `X⁻¹` estimate for the continuous Fourier Navier
+symbol.  The prior conditional form is recovered by supplying the integrable
+output density; this theorem constructs that density from measurable `L¹`
+coordinate representatives. -/
+theorem normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable
+    (u v : ES → ComplexSpace)
+    (hu : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => u η j))
+    (hv : ∀ i : Fin 3, AEStronglyMeasurable (fun η : ES => v η i))
+    (hu0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖u η j‖))
+    (hv0 : ∀ i : Fin 3, Integrable (fun η : ES => ‖v η i‖)) :
+    (∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierBilinear u v ξ)) ≤
+      ∑ i : Fin 3, ∑ j : Fin 3,
+        (∫ η : ES, ‖u η j‖) * (∫ η : ES, ‖v η i‖) :=
+  normXm1_continuousNavierBilinear_mass_le u v hu0 hv0
+    (integrable_normXm1_continuousNavierBilinear u v hu hv hu0 hv0)
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -684,4 +788,8 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.complexE3_measurableSpace_coherent
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousNavierBilinear_majorant
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_pointwise
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousNavierBilinear_aestronglyMeasurable
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_normXm1_continuousNavierBilinear
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_coordinate_aestronglyMeasurable
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable
