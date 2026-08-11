@@ -126,6 +126,7 @@ import Navier.Analysis.WienerAlgebraConvolution
 import Navier.Analysis.LeiLinSpace
 import Navier.Analysis.LeiLinLinearEstimate
 import Navier.Analysis.GlobalRegularityEndpoint
+import Navier.Analysis.ZeroDataGlobal
 import Navier.Analysis.LeiLinBilinear
 import Navier.Analysis.LeiLinFixedPoint
 import Navier.Analysis.LeiLinSmallDataObstruction
