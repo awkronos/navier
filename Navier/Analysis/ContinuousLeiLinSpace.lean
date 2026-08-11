@@ -35,6 +35,73 @@ def normXm1 (f : ES → ℂ) : ℝ :=
 def normX1 (f : ES → ℂ) : ℝ :=
   ∫ ξ : ES, ‖ξ‖ * ‖f ξ‖
 
+/-- Continuous `X⁰` interpolation between the homogeneous `X⁻¹` and `X¹`
+norms.  The square-root factorization is used only almost everywhere: at the
+single frequency `ξ = 0` the two homogeneous weights cannot factor `‖f ξ‖`,
+but that singleton has Lebesgue measure zero on `R³`. -/
+theorem normX0_sq_le_normXm1_mul_normX1 (f : ES → ℂ)
+    (hxm1 : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖f ξ‖))
+    (hx1 : Integrable (fun ξ : ES => ‖ξ‖ * ‖f ξ‖)) :
+    (∫ ξ : ES, ‖f ξ‖) ^ 2 ≤ normXm1 f * normX1 f := by
+  let a : ES → ℝ := fun ξ => Real.sqrt (‖ξ‖⁻¹ * ‖f ξ‖)
+  let b : ES → ℝ := fun ξ => Real.sqrt (‖ξ‖ * ‖f ξ‖)
+  have ha_meas : AEStronglyMeasurable a :=
+    Real.continuous_sqrt.comp_aestronglyMeasurable hxm1.aestronglyMeasurable
+  have hb_meas : AEStronglyMeasurable b :=
+    Real.continuous_sqrt.comp_aestronglyMeasurable hx1.aestronglyMeasurable
+  have ha_sq : Integrable (fun ξ => a ξ ^ 2) := by
+    convert hxm1 using 1
+    ext ξ
+    dsimp [a]
+    rw [Real.sq_sqrt]
+    positivity
+  have hb_sq : Integrable (fun ξ => b ξ ^ 2) := by
+    convert hx1 using 1
+    ext ξ
+    dsimp [b]
+    rw [Real.sq_sqrt]
+    positivity
+  have ha : MemLp a 2 volume := (memLp_two_iff_integrable_sq ha_meas).mpr ha_sq
+  have hb : MemLp b 2 volume := (memLp_two_iff_integrable_sq hb_meas).mpr hb_sq
+  have hz : ∀ᵐ ξ : ES, ξ ≠ 0 := by simp [ae_iff, measure_singleton]
+  have hab : (∫ ξ : ES, a ξ * b ξ) = ∫ ξ : ES, ‖f ξ‖ := by
+    apply integral_congr_ae
+    filter_upwards [hz] with ξ hξ
+    dsimp [a, b]
+    rw [← Real.sqrt_mul (by positivity)]
+    have hnorm : 0 ≤ ‖f ξ‖ := norm_nonneg _
+    have hxi : 0 < ‖ξ‖ := norm_pos_iff.mpr hξ
+    field_simp
+    simpa [pow_two] using (Real.sqrt_mul_self hnorm)
+  have hcs := integral_mul_le_Lp_mul_Lq_of_nonneg
+    (μ := volume) (p := (2 : ℝ)) (q := (2 : ℝ)) (by constructor <;> norm_num)
+    (show 0 ≤ᵐ[volume] a by filter_upwards with ξ; exact Real.sqrt_nonneg _)
+    (show 0 ≤ᵐ[volume] b by filter_upwards with ξ; exact Real.sqrt_nonneg _)
+    (by simpa using ha) (by simpa using hb)
+  rw [hab] at hcs
+  norm_num at hcs
+  have hC : 0 ≤ ∫ ξ : ES, ‖f ξ‖ := integral_nonneg fun _ => norm_nonneg _
+  have hA : 0 ≤ ∫ ξ : ES, ‖ξ‖⁻¹ * ‖f ξ‖ :=
+    integral_nonneg fun _ => mul_nonneg (inv_nonneg.mpr (norm_nonneg _)) (norm_nonneg _)
+  have hB : 0 ≤ ∫ ξ : ES, ‖ξ‖ * ‖f ξ‖ :=
+    integral_nonneg fun _ => mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  have haInt : (∫ ξ : ES, a ξ ^ 2) = ∫ ξ : ES, ‖ξ‖⁻¹ * ‖f ξ‖ := by
+    apply integral_congr_ae
+    filter_upwards with ξ
+    dsimp [a]
+    rw [Real.sq_sqrt]
+    positivity
+  have hbInt : (∫ ξ : ES, b ξ ^ 2) = ∫ ξ : ES, ‖ξ‖ * ‖f ξ‖ := by
+    apply integral_congr_ae
+    filter_upwards with ξ
+    dsimp [b]
+    rw [Real.sq_sqrt]
+    positivity
+  rw [haInt, hbInt, ← Real.sqrt_eq_rpow, ← Real.sqrt_eq_rpow] at hcs
+  change (∫ ξ : ES, ‖f ξ‖) ^ 2 ≤
+    (∫ ξ : ES, ‖ξ‖⁻¹ * ‖f ξ‖) * (∫ ξ : ES, ‖ξ‖ * ‖f ξ‖)
+  nlinarith [Real.sq_sqrt hA, Real.sq_sqrt hB]
+
 /-- Fourier-side heat evolution on the continuous carrier. -/
 def heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) : ℂ :=
   ((Real.exp (-(ν * ((‖ξ‖ : ℝ) ^ 2) * t)) : ℝ) : ℂ) * f ξ
@@ -762,6 +829,7 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_Xm1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_X1
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_sq_le_normXm1_mul_normX1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.heat_contracts_Xm1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_convolution_eq
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_convolution_integrable
