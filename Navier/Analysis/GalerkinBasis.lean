@@ -2510,6 +2510,123 @@ theorem coefficientField_convectionTestProjection_pairing_tendsto
   rw [heq]
   simpa using hadd
 
+/-- Stability estimate for the quadratic convection pairing against one fixed
+Schwartz test.  It is the polarization identity followed by two Hilbert-space
+Cauchy--Schwarz bounds. -/
+theorem fixedTestConvection_pairing_sub_bound
+    (u v φ : SchwartzVelocity) :
+    |schwartzL2Inner u (convectionSchwartzBilin u φ) -
+        schwartzL2Inner v (convectionSchwartzBilin v φ)| ≤
+      ‖toL2 (u - v)‖ * ‖toL2 (convectionSchwartzBilin u φ)‖ +
+        ‖toL2 v‖ * ‖toL2 (convectionSchwartzBilin (u - v) φ)‖ := by
+  have hconv : convectionSchwartzBilin (u - v) φ =
+      convectionSchwartzBilin u φ - convectionSchwartzBilin v φ := by
+    rw [sub_eq_add_neg, convectionSchwartzBilin_add_left]
+    have hneg : convectionSchwartzBilin (-v) φ =
+        -convectionSchwartzBilin v φ := by
+      rw [show -v = (-1 : ℝ) • v by simp,
+        convectionSchwartzBilin_smul_left]
+      simp
+    rw [hneg]
+    rfl
+  have hsub_right (f g h : SchwartzVelocity) :
+      schwartzL2Inner f (g - h) =
+        schwartzL2Inner f g - schwartzL2Inner f h := by
+    rw [schwartzL2Inner_comm, schwartzL2Inner_sub_left,
+      schwartzL2Inner_comm g f, schwartzL2Inner_comm h f]
+  have hsplit : schwartzL2Inner u (convectionSchwartzBilin u φ) -
+        schwartzL2Inner v (convectionSchwartzBilin v φ) =
+      schwartzL2Inner (u - v) (convectionSchwartzBilin u φ) +
+        schwartzL2Inner v (convectionSchwartzBilin (u - v) φ) := by
+    rw [hconv, schwartzL2Inner_sub_left, hsub_right]
+    ring
+  rw [hsplit]
+  exact (abs_add_le _ _).trans (add_le_add
+    (abs_schwartzL2Inner_le (u - v) (convectionSchwartzBilin u φ))
+    (abs_schwartzL2Inner_le v (convectionSchwartzBilin (u - v) φ)))
+
+/-- Strong-`L²` convergence and strong convergence after the fixed-test
+transport operator imply convergence of the quadratic convection pairing.
+The uniform bound is only on the transformed approximants and is exactly what
+the stability estimate consumes. -/
+theorem fixedTestConvection_pairing_tendsto_of_strongL2
+    (u : ℕ → SchwartzVelocity) (v φ : SchwartzVelocity) (C : ℝ)
+    (hbound : ∀ n, ‖toL2 (convectionSchwartzBilin (u n) φ)‖ ≤ C)
+    (hu : Filter.Tendsto (fun n => ‖toL2 (u n - v)‖)
+      Filter.atTop (nhds 0))
+    (htransport : Filter.Tendsto
+      (fun n => ‖toL2 (convectionSchwartzBilin (u n - v) φ)‖)
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun n => schwartzL2Inner (u n) (convectionSchwartzBilin (u n) φ))
+      Filter.atTop (nhds (schwartzL2Inner v (convectionSchwartzBilin v φ))) := by
+  have herr : Filter.Tendsto
+      (fun n => schwartzL2Inner (u n) (convectionSchwartzBilin (u n) φ) -
+        schwartzL2Inner v (convectionSchwartzBilin v φ))
+      Filter.atTop (nhds 0) := by
+    refine squeeze_zero_norm (a := fun n =>
+      ‖toL2 (u n - v)‖ * C +
+        ‖toL2 v‖ * ‖toL2 (convectionSchwartzBilin (u n - v) φ)‖) ?_ ?_
+    · intro n
+      rw [Real.norm_eq_abs]
+      refine (fixedTestConvection_pairing_sub_bound (u n) v φ).trans ?_
+      exact add_le_add
+        (mul_le_mul_of_nonneg_left (hbound n) (norm_nonneg _)) le_rfl
+    · have hfirst := hu.mul_const C
+      have hsecond : Filter.Tendsto
+          (fun n => ‖toL2 v‖ *
+            ‖toL2 (convectionSchwartzBilin (u n - v) φ)‖)
+          Filter.atTop (nhds 0) := by
+        simpa using (tendsto_const_nhds.mul htransport :
+          Filter.Tendsto
+            (fun n => ‖toL2 v‖ *
+              ‖toL2 (convectionSchwartzBilin (u n - v) φ)‖)
+            Filter.atTop (nhds (‖toL2 v‖ * 0)))
+      simpa using hfirst.add hsecond
+  have hadd := (tendsto_const_nhds : Filter.Tendsto
+      (fun _ : ℕ => schwartzL2Inner v (convectionSchwartzBilin v φ))
+      Filter.atTop (nhds (schwartzL2Inner v (convectionSchwartzBilin v φ)))).add herr
+  have heq : (fun n => schwartzL2Inner (u n)
+      (convectionSchwartzBilin (u n) φ)) = fun n =>
+      schwartzL2Inner v (convectionSchwartzBilin v φ) +
+        (schwartzL2Inner (u n) (convectionSchwartzBilin (u n) φ) -
+          schwartzL2Inner v (convectionSchwartzBilin v φ)) := by
+    funext n
+    ring
+  rw [heq]
+  simpa using hadd
+
+/-- Strong-`L²` fixed-test stability wired to the projected-test residual
+split.  The final hypothesis is only the one scalar projection residual from
+`convectionTestProjection_pairing`, not weak consistency for all tests. -/
+theorem coefficientField_convectionTestProjection_pairing_tendsto_of_strongL2
+    (W : GalerkinBasisFamily)
+    (a : ∀ m : ℕ, EuclideanSpace ℝ (Fin m))
+    (v φ : SchwartzVelocity) (C : ℝ)
+    (hbound : ∀ m, ‖toL2
+      (convectionSchwartzBilin (W.coefficientField (a m)) φ)‖ ≤ C)
+    (hu : Filter.Tendsto
+      (fun m => ‖toL2 (W.coefficientField (a m) - v)‖)
+      Filter.atTop (nhds 0))
+    (htransport : Filter.Tendsto
+      (fun m => ‖toL2
+        (convectionSchwartzBilin (W.coefficientField (a m) - v) φ)‖)
+      Filter.atTop (nhds 0))
+    (hcomm : Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (W.convectionTestProjectionCommutator m
+          (W.coefficientField (a m)) φ)) Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+      (fun m => schwartzL2Inner (W.coefficientField (a m))
+        (convectionSchwartzBilin (W.coefficientField (a m)) (W.proj m φ)))
+      Filter.atTop
+        (nhds (schwartzL2Inner v (convectionSchwartzBilin v φ))) := by
+  apply coefficientField_convectionTestProjection_pairing_tendsto W a φ
+    (schwartzL2Inner v (convectionSchwartzBilin v φ))
+  · exact fixedTestConvection_pairing_tendsto_of_strongL2
+      (fun m => W.coefficientField (a m)) v φ C hbound hu htransport
+  · exact hcomm
+
 /-- Projecting both the datum and the fixed test has the same initial-pairing
 limit as the unprojected pair. -/
 theorem initialProjection_pairing_tendsto (W : GalerkinBasisFamily)
