@@ -25,6 +25,7 @@ open Navier.Analysis.ComplexLerayNorm
 
 abbrev ES := EuclideanSpace ℝ (Fin 3)
 abbrev ComplexSpace := Fin 3 → ℂ
+abbrev ComplexE3 := EuclideanSpace ℂ (Fin 3)
 
 /-- The continuous homogeneous `X^{-1}` quantity. -/
 def normXm1 (f : ES → ℂ) : ℝ :=
@@ -44,6 +45,21 @@ projection is total at `ξ = 0` (where it is the identity). -/
 def continuousLeray (ξ : ES) (z : ComplexSpace) : ComplexSpace :=
   complexLeray (spaceProj ξ) z
 
+/-- The same continuous-frequency multiplier on the Hermitian Euclidean
+carrier, which is the normed carrier used for Bochner integrability. -/
+def continuousLerayE (ξ : ES) (z : ComplexE3) : ComplexE3 :=
+  complexEuclideanLeray (spaceProj ξ) z
+
+/-- The real-to-complex frequency embedding is continuous. -/
+theorem continuous_complexFrequency : Continuous (complexFrequency : Space → ComplexE3) := by
+  unfold complexFrequency complexEuclideanPoint complexOfReal complexOfParts
+  apply (PiLp.continuous_toLp (p := 2) (β := fun _ : Fin 3 => ℂ)).comp
+  apply continuous_pi
+  intro i
+  apply Continuous.add
+  · exact Complex.continuous_ofReal.comp (continuous_apply i)
+  · exact continuous_const.mul (Complex.continuous_ofReal.comp continuous_const)
+
 /-- The continuous multiplier is exactly identity at zero frequency. -/
 @[simp] theorem continuousLeray_zero (z : ComplexSpace) :
     continuousLeray 0 z = z := by
@@ -53,6 +69,56 @@ def continuousLeray (ξ : ES) (z : ComplexSpace) : ComplexSpace :=
 theorem continuousLeray_norm_le (ξ : ES) (z : ComplexSpace) :
     complexEuclideanNorm (continuousLeray ξ z) ≤ complexEuclideanNorm z := by
   exact complexEuclideanNorm_complexLeray_le (spaceProj ξ) z
+
+/-- The Hermitian-carrier multiplier contracts pointwise. -/
+theorem continuousLerayE_norm_le (ξ : ES) (z : ComplexE3) :
+    ‖continuousLerayE ξ z‖ ≤ ‖z‖ :=
+  complexEuclideanLeray_norm_le (spaceProj ξ) z
+
+/-- Once the (a.e.) measurability of a projected Fourier profile is supplied,
+the Leray contraction promotes integrability of its Hermitian norm.  This is
+the exact Bochner consumer used by the future convolution estimate; no
+discrete carrier is involved. -/
+theorem integrable_continuousLerayE_of_aestronglyMeasurable
+    (v : ES → ComplexE3)
+    (hv_meas : AEStronglyMeasurable (fun ξ => continuousLerayE ξ (v ξ)))
+    (hv : Integrable (fun ξ => ‖v ξ‖)) :
+    Integrable (fun ξ => continuousLerayE ξ (v ξ)) := by
+  refine hv.mono' hv_meas ?_
+  filter_upwards with ξ
+  exact continuousLerayE_norm_le ξ (v ξ)
+
+/-- The totalized continuous Leray multiplier is a.e. strongly measurable on
+measurable Hermitian Fourier profiles.  Its exceptional directional
+discontinuity at the single frequency `0` is absorbed by measurability of the
+explicit algebraic formula. -/
+theorem continuousLerayE_aestronglyMeasurable (v : ES → ComplexE3)
+    (hv : AEStronglyMeasurable v) :
+    AEStronglyMeasurable (fun ξ => continuousLerayE ξ (v ξ)) := by
+  have hformula : (fun ξ : ES => continuousLerayE ξ (v ξ)) =
+      fun ξ : ES => v ξ -
+        (inner ℂ (complexFrequency (spaceProj ξ)) (v ξ) /
+          ((‖complexFrequency (spaceProj ξ)‖ ^ 2 : ℝ) : ℂ)) •
+          complexFrequency (spaceProj ξ) := by
+    funext ξ
+    exact complexEuclideanLeray_formula (spaceProj ξ) (v ξ)
+  rw [hformula]
+  simp only [div_eq_mul_inv]
+  have hq : Continuous (fun ξ : ES => complexFrequency (spaceProj ξ)) :=
+    continuous_complexFrequency.comp spaceProj.continuous
+  have hqM : AEStronglyMeasurable (fun ξ : ES => complexFrequency (spaceProj ξ)) :=
+    hq.aestronglyMeasurable
+  have hden : AEStronglyMeasurable
+      (fun ξ : ES => ((‖complexFrequency (spaceProj ξ)‖ ^ 2 : ℝ) : ℂ)) :=
+    (Complex.continuous_ofReal.comp (hq.norm.pow 2)).aestronglyMeasurable
+  exact hv.sub ((hqM.inner hv).mul hden.inv₀ |>.smul hqM)
+
+/-- The continuous Leray multiplier preserves Bochner integrability of
+Hermitian Fourier profiles. -/
+theorem integrable_continuousLerayE (v : ES → ComplexE3) (hv : Integrable v) :
+    Integrable (fun ξ => continuousLerayE ξ (v ξ)) :=
+  integrable_continuousLerayE_of_aestronglyMeasurable v
+    (continuousLerayE_aestronglyMeasurable v hv.aestronglyMeasurable) hv.norm
 
 /-- Every nonnegative Fourier weight is preserved under the continuous Leray
 multiplier pointwise.  This is the projection half of the future weighted
@@ -200,3 +266,5 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_convolution_integrable
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_norm_le
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_weighted_norm_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLerayE_aestronglyMeasurable
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_continuousLerayE
