@@ -25,6 +25,10 @@ abbrev ES := EuclideanSpace ℝ (Fin 3)
 def normXm1 (f : ES → ℂ) : ℝ :=
   ∫ ξ : ES, ‖ξ‖⁻¹ * ‖f ξ‖
 
+/-- The continuous homogeneous `X¹` quantity. -/
+def normX1 (f : ES → ℂ) : ℝ :=
+  ∫ ξ : ES, ‖ξ‖ * ‖f ξ‖
+
 /-- Fourier-side heat evolution on the continuous carrier. -/
 def heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) : ℂ :=
   ((Real.exp (-(ν * ((‖ξ‖ : ℝ) ^ 2) * t)) : ℝ) : ℂ) * f ξ
@@ -42,6 +46,15 @@ used by the discrete Lei--Lin prototype. -/
 theorem normX0_convolution_eq (f g : ES → ℝ) (hf : Integrable f) (hg : Integrable g) :
     normX0 (convolution f g) = normX0 f * normX0 g := by
   exact integral_convolution (ContinuousLinearMap.mul ℝ ℝ) hf hg
+
+/-- The actual complex Fourier convolution of two Schwartz Fourier profiles
+is an `L¹(R³)` function.  This is the measure-theoretic carrier on which the
+Leray-projected Navier bilinear operator must next be bounded. -/
+theorem fourier_schwartz_convolution_integrable (f g : SchwartzMap ES ℂ) :
+    Integrable (((𝓕 f : SchwartzMap ES ℂ) : ES → ℂ) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
+      ((𝓕 g : SchwartzMap ES ℂ) : ES → ℂ)) :=
+  (𝓕 f : SchwartzMap ES ℂ).integrable.integrable_convolution
+    (ContinuousLinearMap.mul ℂ ℂ) (𝓕 g : SchwartzMap ES ℂ).integrable
 
 /-- A Schwartz function on three-dimensional Euclidean space is integrable
 against the critical singular Fourier weight.  The proof splits at the unit
@@ -93,6 +106,18 @@ theorem fourier_schwartz_integrable_Xm1 (f : SchwartzMap ES ℂ) :
     Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖(𝓕 f) ξ‖) :=
   schwartz_integrable_norm_inv_mul (𝓕 f)
 
+/-- Schwartz functions have finite continuous `X¹` mass. -/
+theorem schwartz_integrable_X1 (g : SchwartzMap ES ℂ) :
+    Integrable (fun ξ : ES => ‖ξ‖ * ‖g ξ‖) := by
+  simpa using g.integrable_pow_mul volume 1
+
+/-- Fourier transforms of Schwartz functions have finite continuous `X¹`
+mass.  Together with `fourier_schwartz_integrable_Xm1`, this puts the free
+Schwartz Fourier carrier in both endpoint norms needed by Lei--Lin. -/
+theorem fourier_schwartz_integrable_X1 (f : SchwartzMap ES ℂ) :
+    Integrable (fun ξ : ES => ‖ξ‖ * ‖(𝓕 f) ξ‖) :=
+  schwartz_integrable_X1 (𝓕 f)
+
 /-- The continuous heat semigroup contracts the literal homogeneous
 `X^{-1}(R³)` norm. -/
 theorem heat_contracts_Xm1 {ν t : ℝ} (hν : 0 ≤ ν) (ht : 0 ≤ t)
@@ -138,5 +163,7 @@ end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_Xm1
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_X1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.heat_contracts_Xm1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_convolution_eq
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_convolution_integrable
