@@ -114,7 +114,9 @@ structure IsPeriodicClassicalSolution (nu : ℝ) (f : ForceField)
   pressure_periodic : SpatiallyPeriodicPressure p
 
 /-- Representation bridges still needed before identifying these precise
-Mathlib surfaces with Fefferman's prose without qualification. -/
+Mathlib surfaces with Fefferman's prose without qualification.  Constructors
+remain historical names even after a bridge is retired from
+`officialSurfaceEncodingResiduals`. -/
 inductive OfficialSurfaceEncodingResidual where
   | schwartzDatumCoordinatewiseEquivalence
   | forceFrechetCoordinatewiseEquivalence
@@ -124,16 +126,21 @@ inductive OfficialSurfaceEncodingResidual where
   | periodicLiftQuotientEquivalence
   deriving DecidableEq, Repr, Fintype
 
-/-- The six remaining alternative-surface representation obligations. -/
+/-- The remaining alternative-surface representation obligations.  The
+periodic lift/quotient comparison is retired: the exact factorization theorem
+and its initial-data/classical-solution consumers are proved in
+`Analysis.PeriodicQuotientBridge`. -/
 def officialSurfaceEncodingResiduals : Finset OfficialSurfaceEncodingResidual :=
-  Finset.univ
+  { .schwartzDatumCoordinatewiseEquivalence,
+    .forceFrechetCoordinatewiseEquivalence,
+    .halfSpaceSmoothnessEquivalence,
+    .problemFrechetCoordinatePDEEquivalence,
+    .wholeSpaceEnergyClauseEquivalence }
 
-/-- The A--D surface exposes exactly seven representation bridges, two more than
-the statement-A-only list in `Navier.Problem` (the coordinatewise force clause
-and the periodic quotient lift).  Stated so that a silent retirement of any
-alternative-side residual breaks the build. -/
+/-- Five alternative-surface representation obligations remain active; the
+periodic quotient-lift obligation has been consumed. -/
 theorem officialSurfaceEncodingResiduals_card :
-    officialSurfaceEncodingResiduals.card = 6 := by
+    officialSurfaceEncodingResiduals.card = 5 := by
   decide
 
 namespace ProblemStatements

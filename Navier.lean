@@ -1,6 +1,7 @@
 import Navier.Problem
 import Navier.OfficialProblem
 import Navier.OfficialSurfaceSignatures
+import Navier.Analysis.PeriodicQuotientBridge
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
 import Navier.Analysis.CriticalL3Integrable

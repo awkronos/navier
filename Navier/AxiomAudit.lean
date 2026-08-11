@@ -30,6 +30,7 @@ import Navier.Analysis.CoordinatePDEBridge
 import Navier.Analysis.HalfSpaceSmoothnessBridge
 import Navier.Analysis.FrequencyDuhamel
 import Navier.OfficialSurfaceSignatures
+import Navier.Analysis.PeriodicQuotientBridge
 import Navier.Analysis.Covariance
 import Navier.Analysis.CriticalL3
 import Navier.Analysis.CriticalL3Integrable
@@ -631,6 +632,11 @@ These are support theorems, not inhabitants of an official problem endpoint.
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.uniqueDiffOn_halfSpace
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.continuousOn_iteratedFDerivWithin_of_halfSpaceSmooth
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.halfSpaceSmooth_iff_extension_of_seeley
+#print axioms Navier.Analysis.PeriodicQuotientBridge.invariant_add_integerLattice
+#print axioms Navier.Analysis.PeriodicQuotientBridge.spatiallyPeriodic_iff_factors_through_torus
+#print axioms Navier.Analysis.PeriodicQuotientBridge.periodicInitialDatum_iff_torus_realization
+#print axioms Navier.Analysis.PeriodicQuotientBridge.periodicForcedDataRapidDecay_iff_torus_realizations
+#print axioms Navier.Analysis.PeriodicQuotientBridge.periodicClassicalSolution_iff_torus_realizations
 #print axioms Navier.Analysis.FrequencyDuhamel.heatDecay_factor
 #print axioms Navier.Analysis.FrequencyDuhamel.frequencyHeatLeray_bilinear_norm_le
 #print axioms Navier.Analysis.FrequencyDuhamel.bilinear_diff_norm_le
