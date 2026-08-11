@@ -474,6 +474,133 @@ theorem norm_complex_convolution_le (f g : ES → ℂ) (ξ : ES) :
   simpa only [norm_mul] using
     (norm_integral_le_integral_norm (fun η : ES => f η * g (ξ - η)))
 
+/-- The literal continuous Fourier convection tensor: at output coordinate
+`i`, sum the three advecting coordinates `u_j` against `v_i` and apply the
+output-frequency derivative. -/
+def rawNavierConvection (u v : ES → ComplexSpace) (ξ : ES) : ComplexSpace := fun i =>
+  ∑ j : Fin 3, (ξ j : ℂ) *
+    ((fun η => u η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] (fun η => v η i)) ξ
+
+/-- The continuous Fourier Navier bilinear symbol, including the Fourier
+derivative phase and the frequencywise Leray projection. -/
+def continuousNavierBilinear (u v : ES → ComplexSpace) (ξ : ES) : ComplexSpace :=
+  continuousLeray ξ (Complex.I • rawNavierConvection u v ξ)
+
+/-- An `ℓ²` coordinate vector is bounded by its finite `ℓ¹` coordinate mass. -/
+theorem euclidean_norm_le_coordinate_sum (z : ComplexSpace) :
+    complexEuclideanNorm z ≤ ∑ i : Fin 3, ‖z i‖ := by
+  unfold complexEuclideanNorm complexEuclideanPoint
+  have hz : z = ∑ i : Fin 3, Pi.single i (z i) := by
+    ext i
+    simp
+  conv_lhs => rw [hz, WithLp.toLp_sum]
+  refine le_trans (norm_sum_le (Finset.univ)
+    (fun i => WithLp.toLp 2 (Pi.single i (z i)))) ?_
+  simp
+
+/-- A coordinate of the output frequency is bounded by its Euclidean norm. -/
+theorem navier_frequency_factor_le (ξ : ES) (a : ℂ) (j : Fin 3) :
+    ‖(ξ j : ℂ) * a‖ ≤ ‖ξ‖ * ‖a‖ := by
+  rw [norm_mul, Complex.norm_real]
+  exact mul_le_mul_of_nonneg_right (PiLp.norm_apply_le ξ j) (norm_nonneg _)
+
+/-- Componentwise scalar-convolution majorant for the actual vector-valued
+continuous Fourier Navier symbol. -/
+theorem continuousNavierBilinear_majorant (u v : ES → ComplexSpace) (ξ : ES) :
+    complexEuclideanNorm (continuousNavierBilinear u v ξ) ≤
+      ∑ i : Fin 3, ∑ j : Fin 3, ‖ξ‖ *
+        convolution (fun η => ‖u η j‖) (fun η => ‖v η i‖) ξ := by
+  refine le_trans (continuousLeray_norm_le ξ (Complex.I • rawNavierConvection u v ξ)) ?_
+  have hphase : complexEuclideanNorm (Complex.I • rawNavierConvection u v ξ) =
+      complexEuclideanNorm (rawNavierConvection u v ξ) := by
+    unfold complexEuclideanNorm complexEuclideanPoint
+    rw [WithLp.toLp_smul, norm_smul]
+    simp
+  rw [hphase]
+  refine le_trans (euclidean_norm_le_coordinate_sum (rawNavierConvection u v ξ)) ?_
+  apply Finset.sum_le_sum
+  intro i hi
+  rw [rawNavierConvection]
+  refine le_trans (norm_sum_le Finset.univ (fun j => (ξ j : ℂ) *
+    ((fun η => u η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] (fun η => v η i)) ξ)) ?_
+  apply Finset.sum_le_sum
+  intro j hj
+  refine le_trans (navier_frequency_factor_le ξ
+    (((fun η => u η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] (fun η => v η i)) ξ) j) ?_
+  exact mul_le_mul_of_nonneg_left
+    (norm_complex_convolution_le (fun η => u η j) (fun η => v η i) ξ) (norm_nonneg _)
+
+/-- The `X⁻¹` output weight cancels one Fourier derivative, including at zero
+frequency where Lean's total inverse is zero. -/
+theorem inv_mul_derivative_le (r a : ℝ) (_hr : 0 ≤ r) (ha : 0 ≤ a) :
+    r⁻¹ * (r * a) ≤ a := by
+  by_cases hz : r = 0
+  · simp [hz, ha]
+  · calc
+      r⁻¹ * (r * a) = (r⁻¹ * r) * a := by ring
+      _ ≤ a := by rw [inv_mul_cancel₀ hz, one_mul]
+
+/-- Pointwise `X⁻¹` majorant for the literal continuous Navier symbol. -/
+theorem normXm1_continuousNavierBilinear_pointwise (u v : ES → ComplexSpace) (ξ : ES) :
+    ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierBilinear u v ξ) ≤
+      ∑ i : Fin 3, ∑ j : Fin 3,
+        convolution (fun η => ‖u η j‖) (fun η => ‖v η i‖) ξ := by
+  have h := mul_le_mul_of_nonneg_left
+    (continuousNavierBilinear_majorant u v ξ)
+    (inv_nonneg.mpr (norm_nonneg ξ))
+  simp_rw [Finset.mul_sum] at h
+  refine le_trans h ?_
+  apply Finset.sum_le_sum
+  intro i hi
+  apply Finset.sum_le_sum
+  intro j hj
+  apply inv_mul_derivative_le ‖ξ‖
+  · exact norm_nonneg ξ
+  apply integral_nonneg_of_ae
+  filter_upwards with η
+  exact mul_nonneg (norm_nonneg (u η j)) (norm_nonneg (v (ξ - η) i))
+
+/-- The integrated continuous vector bilinear estimate.  `hout` is stated
+explicitly because this module proves the symbol estimate; constructing the
+time-dependent Bochner representative is the next Duhamel leaf. -/
+theorem normXm1_continuousNavierBilinear_mass_le
+    (u v : ES → ComplexSpace)
+    (hu0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖u η j‖))
+    (hv0 : ∀ i : Fin 3, Integrable (fun η : ES => ‖v η i‖))
+    (hout : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * complexEuclideanNorm
+      (continuousNavierBilinear u v ξ))) :
+    (∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierBilinear u v ξ)) ≤
+      ∑ i : Fin 3, ∑ j : Fin 3,
+        (∫ η : ES, ‖u η j‖) * (∫ η : ES, ‖v η i‖) := by
+  have hsum : Integrable (fun ξ : ES => ∑ i : Fin 3, ∑ j : Fin 3,
+      convolution (fun η => ‖u η j‖) (fun η => ‖v η i‖) ξ) := by
+    refine integrable_finsetSum Finset.univ ?_
+    intro i hi
+    refine integrable_finsetSum Finset.univ ?_
+    intro j hj
+    exact integrable_scalar_convolution _ _ (hu0 j) (hv0 i)
+  calc
+    (∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierBilinear u v ξ)) ≤
+        ∫ ξ : ES, ∑ i : Fin 3, ∑ j : Fin 3,
+          convolution (fun η => ‖u η j‖) (fun η => ‖v η i‖) ξ :=
+      integral_mono hout hsum (normXm1_continuousNavierBilinear_pointwise u v)
+    _ = ∑ i : Fin 3, ∑ j : Fin 3,
+        (∫ η : ES, ‖u η j‖) * (∫ η : ES, ‖v η i‖) := by
+      have hinner : ∀ i : Fin 3, Integrable (fun ξ : ES => ∑ j : Fin 3,
+          convolution (fun η => ‖u η j‖) (fun η => ‖v η i‖) ξ) := by
+        intro i
+        refine integrable_finsetSum Finset.univ ?_
+        intro j hj
+        exact integrable_scalar_convolution _ _ (hu0 j) (hv0 i)
+      rw [integral_finsetSum Finset.univ (fun i _ => hinner i)]
+      apply Finset.sum_congr rfl
+      intro i hi
+      rw [integral_finsetSum Finset.univ (fun j _ =>
+        integrable_scalar_convolution _ _ (hu0 j) (hv0 i))]
+      apply Finset.sum_congr rfl
+      intro j hj
+      exact normX0_convolution_eq _ _ (hu0 j) (hv0 i)
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -502,3 +629,6 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_weighted_continuousLerayE
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.weighted_continuousLerayE_mass_le
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.norm_complex_convolution_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousNavierBilinear_majorant
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_pointwise
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le
