@@ -156,6 +156,60 @@ theorem integral_normXm1_continuousNavierSource_self_le_coordinateXm1X1
         coordinateX0Mass_sq_le_coordinateXm1Mass_mul_coordinateX1Mass (u t)
           (hum1 t) (hu1 t))
 
+/-! ## Checked obstruction to direct lattice sampling -/
+
+/-- A profile supported at one continuous frequency.  It is useful for
+separating Lebesgue-integral control from pointwise sampling. -/
+def singletonFrequencyProfile (ξ₀ : ES) (z : ComplexSpace) : ES → ComplexSpace :=
+  fun ξ => if ξ = ξ₀ then z else 0
+
+@[simp] theorem singletonFrequencyProfile_at (ξ₀ : ES) (z : ComplexSpace) :
+    singletonFrequencyProfile ξ₀ z ξ₀ = z := by
+  simp [singletonFrequencyProfile]
+
+theorem singletonFrequencyProfile_ae_zero (ξ₀ : ES) (z : ComplexSpace) :
+    singletonFrequencyProfile ξ₀ z =ᵐ[volume] 0 := by
+  filter_upwards [show ∀ᵐ ξ : ES, ξ ≠ ξ₀ by simp [ae_iff]] with ξ hξ
+  simp [singletonFrequencyProfile, hξ]
+
+@[simp] theorem coordinateXm1Mass_singletonFrequencyProfile
+    (ξ₀ : ES) (z : ComplexSpace) :
+    coordinateXm1Mass (singletonFrequencyProfile ξ₀ z) = 0 := by
+  unfold coordinateXm1Mass normXm1
+  apply Finset.sum_eq_zero
+  intro i hi
+  rw [← integral_zero]
+  apply integral_congr_ae
+  filter_upwards [singletonFrequencyProfile_ae_zero ξ₀ z] with ξ hξ
+  simp [hξ]
+
+@[simp] theorem coordinateX1Mass_singletonFrequencyProfile
+    (ξ₀ : ES) (z : ComplexSpace) :
+    coordinateX1Mass (singletonFrequencyProfile ξ₀ z) = 0 := by
+  unfold coordinateX1Mass normX1
+  apply Finset.sum_eq_zero
+  intro i hi
+  rw [← integral_zero]
+  apply integral_congr_ae
+  filter_upwards [singletonFrequencyProfile_ae_zero ξ₀ z] with ξ hξ
+  simp [hξ]
+
+/-- **Falsification of the direct continuous-to-lattice sampling route.**
+
+No constant can control continuous-frequency point evaluation using only the
+`X⁻¹` and `X¹` coordinate masses: Lebesgue integration forgets values on
+singletons.  Thus the continuous mixed source estimate cannot be transported
+to a lattice terminal coefficient by point sampling alone.  A valid bridge
+would need additional regularity plus a proved sampling inequality, or a
+measure-changing periodization theorem. -/
+theorem not_pointwise_controlled_by_coordinateXm1X1 :
+    ¬ ∃ C : ℝ, ∀ (u : ES → ComplexSpace) (ξ : ES) (j : Fin 3),
+      ‖u ξ j‖ ≤ C * (coordinateXm1Mass u + coordinateX1Mass u) := by
+  rintro ⟨C, hC⟩
+  let z : ComplexSpace := fun _ => 1
+  have h := hC (singletonFrequencyProfile 0 z) 0 0
+  norm_num [z] at h
+
 end Navier.Analysis.ContinuousLeiLinTimeDuhamel
 
 #print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.normXm1_continuousNavierSource_le_coordinateX0Mass
@@ -163,3 +217,7 @@ end Navier.Analysis.ContinuousLeiLinTimeDuhamel
 #print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.coordinateX0Mass_sq_le_coordinateXm1Mass_mul_coordinateX1Mass
 #print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.integrable_coordinateX0Mass_of_integrable_spacetime
 #print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.integral_normXm1_continuousNavierSource_self_le_coordinateXm1X1
+#print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.singletonFrequencyProfile_ae_zero
+#print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.coordinateXm1Mass_singletonFrequencyProfile
+#print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.coordinateX1Mass_singletonFrequencyProfile
+#print axioms Navier.Analysis.ContinuousLeiLinTimeDuhamel.not_pointwise_controlled_by_coordinateXm1X1
