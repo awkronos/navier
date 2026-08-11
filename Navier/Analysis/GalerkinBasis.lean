@@ -1,6 +1,7 @@
 import Navier.Analysis.GalerkinRawFamily
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.EnergyConvectionIntegral
+import Navier.Analysis.CurlIdentities
 
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
@@ -1163,6 +1164,19 @@ theorem curlSchwartzCLM_apply (u : SchwartzVelocity) (x : Space) :
     curlSchwartzCLM u x = staticCurl u x := by
   simp [curlSchwartzCLM, staticCurl, SchwartzMap.lineDerivOp_apply_eq_fderiv]
 
+/-- The componentwise Laplacian retained as a Schwartz velocity. -/
+noncomputable def laplacianSchwartz (u : SchwartzVelocity) : SchwartzVelocity :=
+  ∑ i : Fin 3, ∂_{basisVector i} (∂_{basisVector i} u)
+
+theorem laplacianSchwartz_apply (u : SchwartzVelocity) (x : Space) :
+    laplacianSchwartz u x = laplacian (fun _ => u) 0 x := by
+  unfold laplacianSchwartz laplacian
+  change (∑ i : Fin 3, (∂_{basisVector i} (∂_{basisVector i} u)) x) = _
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [SchwartzMap.lineDerivOp_apply_eq_fderiv]
+  congr 2
+
 /-- A coordinate of a Schwartz velocity field, retained as a scalar Schwartz
 map. -/
 noncomputable def componentSchwartz (u : SchwartzVelocity) (i : Fin 3) :
@@ -1172,6 +1186,151 @@ noncomputable def componentSchwartz (u : SchwartzVelocity) (i : Fin 3) :
 @[simp] theorem componentSchwartz_apply (u : SchwartzVelocity) (i : Fin 3) (x : Space) :
     componentSchwartz u i x = u x i := by
   simp [componentSchwartz]
+
+/-- Static divergence retained as a scalar Schwartz map. -/
+noncomputable def divergenceSchwartz (u : SchwartzVelocity) : SchwartzMap Space ℝ :=
+  ∑ i : Fin 3, componentSchwartz (∂_{basisVector i} u) i
+
+@[simp] theorem divergenceSchwartz_apply (u : SchwartzVelocity) (x : Space) :
+    divergenceSchwartz u x = staticDivergence u x := by
+  simp [divergenceSchwartz, staticDivergence,
+    SchwartzMap.lineDerivOp_apply_eq_fderiv]
+
+private theorem lineDerivSchwartz_comm (u : SchwartzVelocity) (i j : Fin 3) :
+    ∂_{basisVector i} (∂_{basisVector j} u) =
+      ∂_{basisVector j} (∂_{basisVector i} u) := by
+  ext x k
+  have hmix := Navier.Analysis.CurlIdentities.ContDiffAt.hasSymmetricMixedPartialAt
+    (x := x) ((componentSchwartz u k).smooth 2).contDiffAt i j
+  have hcomponent (q : Fin 3) :
+      (fun y => fderiv ℝ (componentSchwartz u k) y (basisVector q)) =
+        fun y => (fderiv ℝ u y (basisVector q)) k := by
+    funext y
+    rw [show (componentSchwartz u k : Space → ℝ) = fun z => u z k by
+      funext z
+      simp]
+    rw [fderiv_apply (schwartz_differentiableAt u y) k]
+    rfl
+  rw [hcomponent j, hcomponent i] at hmix
+  simp only [SchwartzMap.lineDerivOp_apply_eq_fderiv]
+  rw [show ((∂_{basisVector j} u : SchwartzVelocity) : Space → Space) =
+      fun y => fderiv ℝ u y (basisVector j) by
+        funext y
+        simp [SchwartzMap.lineDerivOp_apply_eq_fderiv],
+    show ((∂_{basisVector i} u : SchwartzVelocity) : Space → Space) =
+      fun y => fderiv ℝ u y (basisVector i) by
+        funext y
+        simp [SchwartzMap.lineDerivOp_apply_eq_fderiv]]
+  have hdj : DifferentiableAt ℝ (fun y => fderiv ℝ u y (basisVector j)) x := by
+    rw [← show ((∂_{basisVector j} u : SchwartzVelocity) : Space → Space) =
+      fun y => fderiv ℝ u y (basisVector j) by
+        funext y
+        simp [SchwartzMap.lineDerivOp_apply_eq_fderiv]]
+    exact schwartz_differentiableAt _ x
+  have hdi : DifferentiableAt ℝ (fun y => fderiv ℝ u y (basisVector i)) x := by
+    rw [← show ((∂_{basisVector i} u : SchwartzVelocity) : Space → Space) =
+      fun y => fderiv ℝ u y (basisVector i) by
+        funext y
+        simp [SchwartzMap.lineDerivOp_apply_eq_fderiv]]
+    exact schwartz_differentiableAt _ x
+  have hj := congrArg (fun L : Space →L[ℝ] ℝ => L (basisVector i))
+    (fderiv_apply hdj k)
+  have hi := congrArg (fun L : Space →L[ℝ] ℝ => L (basisVector j))
+    (fderiv_apply hdi k)
+  exact hj.symm.trans (hmix.trans hi)
+
+private theorem lineDeriv_curlSchwartzCLM (u : SchwartzVelocity) (q : Fin 3) :
+    ∂_{basisVector q} (curlSchwartzCLM u) =
+      curlSchwartzCLM (∂_{basisVector q} u) := by
+  unfold curlSchwartzCLM
+  change (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector q))
+      (∑ i : Fin 3,
+        (SchwartzMap.postcompCLM
+          (LinearMap.toContinuousLinearMap (crossProduct (basisVector i))))
+          (∂_{basisVector i} u)) =
+      ∑ i : Fin 3,
+        (SchwartzMap.postcompCLM
+          (LinearMap.toContinuousLinearMap (crossProduct (basisVector i))))
+          (∂_{basisVector i} (∂_{basisVector q} u))
+  rw [map_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  ext x k
+  change (fderiv ℝ
+      (fun y => (LinearMap.toContinuousLinearMap (crossProduct (basisVector i)))
+        ((∂_{basisVector i} u) y)) x) (basisVector q) k = _
+  have hfd := congrArg
+    (fun D : Space →L[ℝ] Space => D (basisVector q) k)
+    (fderiv_comp x
+      (LinearMap.toContinuousLinearMap (crossProduct (basisVector i))).differentiableAt
+      (schwartz_differentiableAt (∂_{basisVector i} u) x))
+  rw [ContinuousLinearMap.fderiv] at hfd
+  have hc := congrArg (fun f : SchwartzVelocity => f x)
+    (lineDerivSchwartz_comm u q i)
+  calc
+    _ = (crossProduct (basisVector i))
+        ((∂_{basisVector q} (∂_{basisVector i} u)) x) k := by
+      change _ = (crossProduct (basisVector i))
+        ((fderiv ℝ ((∂_{basisVector i} u : SchwartzVelocity) : Space → Space) x)
+          (basisVector q)) k
+      convert hfd using 1 <;> rfl
+    _ = _ := by
+      simpa using congrArg (fun z : Space => (crossProduct (basisVector i)) z k) hc
+
+private theorem lineDeriv_divergenceSchwartz (u : SchwartzVelocity) (q : Fin 3) :
+    ∂_{basisVector q} (divergenceSchwartz u) =
+      ∑ i : Fin 3, componentSchwartz
+        (∂_{basisVector q} (∂_{basisVector i} u)) i := by
+  unfold divergenceSchwartz
+  change (LineDeriv.lineDerivOpCLM ℝ (SchwartzMap Space ℝ) (basisVector q))
+      (∑ i : Fin 3, componentSchwartz (∂_{basisVector i} u) i) = _
+  rw [map_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  ext x
+  change (fderiv ℝ (componentSchwartz (∂_{basisVector i} u) i) x)
+      (basisVector q) = _
+  rw [show (componentSchwartz (∂_{basisVector i} u) i : Space → ℝ) =
+      fun y => (∂_{basisVector i} u) y i by
+        funext y
+        simp]
+  rw [fderiv_apply (schwartz_differentiableAt (∂_{basisVector i} u) x) i]
+  rfl
+
+/-- For a divergence-free Schwartz field, `curl (curl u) = -Δu` as a
+Schwartz identity. -/
+theorem curlCurlSchwartz_eq_neg_laplacian (u : SchwartzVelocity)
+    (hu : DivergenceFreeInitial u) :
+    curlSchwartzCLM (curlSchwartzCLM u) = -laplacianSchwartz u := by
+  have hdiv : divergenceSchwartz u = 0 := by
+    ext x
+    simp [hu x]
+  have hddiv (q : Fin 3) : ∂_{basisVector q} (divergenceSchwartz u) = 0 := by
+    rw [hdiv]
+    exact map_zero (LineDeriv.lineDerivOpCLM ℝ (SchwartzMap Space ℝ) (basisVector q))
+  have hcomm (i j : Fin 3) := lineDerivSchwartz_comm u i j
+  ext x k
+  have hd0 := congrArg (fun f : SchwartzMap Space ℝ => f x) (hddiv 0)
+  have hd1 := congrArg (fun f : SchwartzMap Space ℝ => f x) (hddiv 1)
+  have hd2 := congrArg (fun f : SchwartzMap Space ℝ => f x) (hddiv 2)
+  have hc01 := congrArg (fun f : SchwartzVelocity => f x) (hcomm 0 1)
+  have hc02 := congrArg (fun f : SchwartzVelocity => f x) (hcomm 0 2)
+  have hc10 := congrArg (fun f : SchwartzVelocity => f x) (hcomm 1 0)
+  have hc12 := congrArg (fun f : SchwartzVelocity => f x) (hcomm 1 2)
+  have hc20 := congrArg (fun f : SchwartzVelocity => f x) (hcomm 2 0)
+  have hc21 := congrArg (fun f : SchwartzVelocity => f x) (hcomm 2 1)
+  rw [lineDeriv_divergenceSchwartz] at hd0 hd1 hd2
+  change ((∑ i : Fin 3,
+      SchwartzMap.postcompCLM
+        (LinearMap.toContinuousLinearMap (crossProduct (basisVector i)))
+        (∂_{basisVector i} (curlSchwartzCLM u))) x) k = _
+  simp_rw [lineDeriv_curlSchwartzCLM]
+  fin_cases k <;>
+    simp [curlSchwartzCLM, laplacianSchwartz, componentSchwartz,
+      basisVector, cross_apply, Fin.sum_univ_three,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+      Matrix.head_cons] at hd0 hd1 hd2 hc01 hc02 hc10 hc12 hc20 hc21 ⊢
+  all_goals linarith
 
 /-- The bilinear Schwartz representative of `(u · ∇)v`. -/
 noncomputable def convectionSchwartzBilin (u v : SchwartzVelocity) : SchwartzVelocity :=
