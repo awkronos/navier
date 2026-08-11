@@ -287,6 +287,26 @@ theorem frequency_weighted_norm_product_split (f g : ES → ℂ) (ξ η : ES) :
         ‖f η‖ * (‖ξ - η‖ * ‖g (ξ - η)‖) :=
   frequency_weighted_product_split ξ η (norm_nonneg _) (norm_nonneg _)
 
+/-- A pointwise weighted convolution estimate.  The hypotheses expose exactly
+the three integrability obligations which Tonelli supplies for Schwartz
+profiles; no discrete-frequency replacement is used. -/
+theorem frequency_weighted_convolution_pointwise (f g : ES → ℝ)
+    (hf : ∀ η, 0 ≤ f η) (hg : ∀ η, 0 ≤ g η) (ξ : ES)
+    (hfg : Integrable (fun η : ES => f η * g (ξ - η)))
+    (hl : Integrable (fun η : ES => (‖η‖ * f η) * g (ξ - η)))
+    (hr : Integrable (fun η : ES => f η * (‖ξ - η‖ * g (ξ - η)))) :
+    ‖ξ‖ * convolution f g ξ ≤
+      convolution (fun η => ‖η‖ * f η) g ξ +
+        convolution f (fun η => ‖η‖ * g η) ξ := by
+  change ‖ξ‖ * (∫ η : ES, f η * g (ξ - η)) ≤
+    (∫ η : ES, (‖η‖ * f η) * g (ξ - η)) +
+      ∫ η : ES, f η * (‖ξ - η‖ * g (ξ - η))
+  rw [← integral_const_mul,
+    ← integral_add hl hr]
+  apply integral_mono (hfg.const_mul ‖ξ‖) (hl.add hr)
+  intro η
+  exact frequency_weighted_product_split ξ η (hf η) (hg (ξ - η))
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -302,3 +322,4 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_triangle
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_product_split
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_norm_product_split
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.frequency_weighted_convolution_pointwise
