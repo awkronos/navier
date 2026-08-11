@@ -1265,6 +1265,151 @@ theorem convectionSchwartz_apply (u : SchwartzVelocity) (x : Space) :
     convectionSchwartz u x = convection (fun _ => u) 0 x := by
   rw [convectionSchwartz, convection, convectionSchwartzBilin_apply]
 
+/-- The pointwise Euclidean pairing of two Schwartz velocities, retained as a
+scalar Schwartz map. -/
+noncomputable def velocityPairingSchwartz (u v : SchwartzVelocity) :
+    SchwartzMap Space ℝ :=
+  ∑ i : Fin 3, SchwartzMap.pairing (ContinuousLinearMap.mul ℝ ℝ)
+    (componentSchwartz u i) (componentSchwartz v i)
+
+@[simp] theorem velocityPairingSchwartz_apply
+    (u v : SchwartzVelocity) (x : Space) :
+    velocityPairingSchwartz u v x = officialInner (u x) (v x) := by
+  simp [velocityPairingSchwartz, officialInner_eq_sum]
+
+/-- The Schwartz flux whose divergence implements skew-adjointness of
+transport by a divergence-free field. -/
+noncomputable def transportPairingFluxSchwartz (u v : SchwartzVelocity) :
+    SchwartzVelocity :=
+  SchwartzMap.pairing (ContinuousLinearMap.lsmul ℝ ℝ)
+    (velocityPairingSchwartz u v) u
+
+@[simp] theorem transportPairingFluxSchwartz_apply
+    (u v : SchwartzVelocity) (x : Space) :
+    transportPairingFluxSchwartz u v x = officialInner (u x) (v x) • u x := by
+  simp [transportPairingFluxSchwartz]
+
+private theorem fderiv_velocityPairingSchwartz
+    (u v : SchwartzVelocity) (x h : Space) :
+    fderiv ℝ (fun y => officialInner (u y) (v y)) x h =
+      officialInner (fderiv ℝ u x h) (v x) +
+        officialInner (u x) (fderiv ℝ v x h) := by
+  simp only [officialInner_eq_sum]
+  rw [fderiv_fun_sum]
+  · simp only [fderiv_fun_mul
+      (differentiableAt_pi.1 (schwartz_differentiableAt u x) _)
+      (differentiableAt_pi.1 (schwartz_differentiableAt v x) _),
+      add_apply, fderiv_apply (schwartz_differentiableAt u x),
+      fderiv_apply (schwartz_differentiableAt v x),
+      Finset.sum_add_distrib]
+    simp
+    rw [add_comm]
+    apply congrArg₂ (· + ·)
+    · exact Finset.sum_congr rfl (fun i _ => mul_comm _ _)
+    · rfl
+  · intro i _
+    exact (differentiableAt_pi.1 (schwartz_differentiableAt u x) i).mul
+      (differentiableAt_pi.1 (schwartz_differentiableAt v x) i)
+
+private theorem fderiv_apply_eq_sum_basis_schwartz
+    (f : SchwartzMap Space ℝ) (x w : Space) :
+    fderiv ℝ f x w = ∑ i : Fin 3, w i * fderiv ℝ f x (basisVector i) := by
+  calc
+    fderiv ℝ f x w = fderiv ℝ f x (∑ i : Fin 3, (w i) • basisVector i) := by
+      congr 1
+      simpa only [basisVector] using pi_eq_sum_univ' w
+    _ = ∑ i : Fin 3, w i * fderiv ℝ f x (basisVector i) := by
+      rw [map_sum]
+      simp
+
+/-- Pointwise transport pairing is a divergence: for divergence-free `u`,
+`div (⟨u,v⟩u) = ⟨(u·∇)u,v⟩ + ⟨u,(u·∇)v⟩`. -/
+theorem staticDivergence_transportPairingFluxSchwartz
+    (u v : SchwartzVelocity) (hu : DivergenceFreeInitial u) (x : Space) :
+    staticDivergence (transportPairingFluxSchwartz u v) x =
+      officialInner (convectionSchwartz u x) (v x) +
+        officialInner (u x) (convectionSchwartzBilin u v x) := by
+  rw [show (transportPairingFluxSchwartz u v : Space → Space) =
+      fun y => officialInner (u y) (v y) • u y by
+        funext y
+        simp]
+  have hpairDiff : DifferentiableAt ℝ (fun y => officialInner (u y) (v y)) x := by
+    rw [show (fun y => officialInner (u y) (v y)) =
+      (velocityPairingSchwartz u v : Space → ℝ) by
+        funext y
+        simp]
+    exact (velocityPairingSchwartz u v).differentiable.differentiableAt
+  rw [staticDivergence_smul _ _ x hpairDiff
+    (schwartz_differentiableAt u x), hu x, mul_zero, add_zero]
+  have hgradient :
+      (∑ i : Fin 3,
+        staticGradient (fun y => officialInner (u y) (v y)) x i * u x i) =
+        fderiv ℝ (velocityPairingSchwartz u v) x (u x) := by
+    unfold staticGradient
+    rw [fderiv_apply_eq_sum_basis_schwartz]
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [show (fun y => officialInner (u y) (v y)) =
+      (velocityPairingSchwartz u v : Space → ℝ) by
+        funext y
+        simp]
+    ring
+  rw [hgradient]
+  rw [show (velocityPairingSchwartz u v : Space → ℝ) =
+      fun y => officialInner (u y) (v y) by
+        funext y
+        simp,
+    fderiv_velocityPairingSchwartz]
+  rw [convectionSchwartz_apply, convectionSchwartzBilin_apply]
+  rfl
+
+/-- Whole-space skew-adjointness of convection on Schwartz fields:
+`⟨u,(u·∇)v⟩ = -⟨(u·∇)u,v⟩` when `div u = 0`.  The boundary term is the
+integral of the divergence of the explicit Schwartz flux `⟨u,v⟩u`. -/
+theorem schwartzL2Inner_convection_skew (u v : SchwartzVelocity)
+    (hu : DivergenceFreeInitial u) :
+    schwartzL2Inner u (convectionSchwartzBilin u v) =
+      -schwartzL2Inner (convectionSchwartz u) v := by
+  let flux := transportPairingFluxSchwartz u v
+  have hflux : ∀ i : Fin 3, Integrable (fun x => flux x i) := by
+    intro i
+    refine (componentSchwartz flux i).integrable.congr ?_
+    filter_upwards with x
+    simp [flux]
+  have hfluxDeriv : ∀ i : Fin 3,
+      Integrable (fun x => fderiv ℝ (fun y => flux y i) x (basisVector i)) := by
+    intro i
+    have hint : Integrable
+        (fun x : Space => (∂_{basisVector i} (componentSchwartz flux i)) x)
+        (volume : Measure Space) :=
+      (∂_{basisVector i} (componentSchwartz flux i)).integrable
+    refine hint.congr ?_
+    filter_upwards with x
+    rw [SchwartzMap.lineDerivOp_apply_eq_fderiv]
+    congr 2
+  have hzero :=
+    Navier.Analysis.EnergyPressureIntegral.integral_staticDivergence_eq_zero
+      flux flux.differentiable hflux hfluxDeriv
+  have hrewrite : (fun x => staticDivergence flux x) = fun x =>
+      officialInner (convectionSchwartz u x) (v x) +
+        officialInner (u x) (convectionSchwartzBilin u v x) := by
+    funext x
+    exact staticDivergence_transportPairingFluxSchwartz u v hu x
+  rw [hrewrite] at hzero
+  have hconv : Integrable (fun x =>
+      officialInner (convectionSchwartz u x) (v x)) := by
+    refine (velocityPairingSchwartz (convectionSchwartz u) v).integrable.congr ?_
+    filter_upwards with x
+    simp
+  have htest : Integrable (fun x =>
+      officialInner (u x) (convectionSchwartzBilin u v x)) := by
+    refine (velocityPairingSchwartz u (convectionSchwartzBilin u v)).integrable.congr ?_
+    filter_upwards with x
+    simp
+  rw [MeasureTheory.integral_add hconv htest] at hzero
+  unfold schwartzL2Inner
+  linarith
+
 /-- The kinetic-energy density of a Schwartz velocity, retained as a scalar
 Schwartz map. -/
 noncomputable def kineticEnergyDensitySchwartz (u : SchwartzVelocity) :
@@ -1390,6 +1535,33 @@ theorem convectionOperator_inner_self (W : GalerkinBasisFamily) (m : ℕ)
           (fun i : Fin m => a i) (fun i : Fin m => W.w i)
           (fun i => W.divergence_free i))]
       simp
+
+/-- The concrete coefficient convection pairing is exactly the physical weak
+transport term against another retained modal field. -/
+theorem convectionOperator_pairing (W : GalerkinBasisFamily) (m : ℕ)
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    schwartzL2Inner (W.coefficientField (W.convectionOperator m a))
+        (W.coefficientField b) =
+      schwartzL2Inner (W.coefficientField a)
+        (convectionSchwartzBilin (W.coefficientField a) (W.coefficientField b)) := by
+  rw [coefficientField_l2_inner, PiLp.inner_apply]
+  simp only [convectionOperator_apply, RCLike.inner_apply, conj_trivial]
+  have hbfield : W.coefficientField b = ∑ i : Fin m, b i • W.w i := rfl
+  calc
+    (∑ i : Fin m,
+        b i * -schwartzL2Inner (W.w i) (convectionSchwartz (W.coefficientField a))) =
+        -schwartzL2Inner (W.coefficientField b)
+          (convectionSchwartz (W.coefficientField a)) := by
+      rw [hbfield, schwartzL2Inner_finset_sum_left]
+      simp only [schwartzL2Inner_smul_left, mul_neg, Finset.sum_neg_distrib]
+    _ = -schwartzL2Inner (convectionSchwartz (W.coefficientField a))
+        (W.coefficientField b) := by rw [schwartzL2Inner_comm]
+    _ = schwartzL2Inner (W.coefficientField a)
+        (convectionSchwartzBilin (W.coefficientField a) (W.coefficientField b)) := by
+      rw [schwartzL2Inner_convection_skew (W.coefficientField a)
+        (W.coefficientField b) (divergenceFreeInitial_sum_smul Finset.univ
+          (fun i : Fin m => a i) (fun i : Fin m => W.w i)
+          (fun i => W.divergence_free i))]
 
 /-- The physical enstrophy of a field realized from one finite coefficient
 vector.  A projected Stokes operator represents exactly this quadratic form. -/
