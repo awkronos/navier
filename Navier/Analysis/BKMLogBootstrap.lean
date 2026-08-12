@@ -46,6 +46,14 @@ exactly `gronwall_log_apriori`; unwinding gives the doubly-exponential bound
   square-integrable on `{1 ≤ ‖z‖}` (the far-field half of the Calderón–Zygmund
   size layer for `exists_biotSavartLogTextbook`), by comparison with the
   certified Bessel weight.
+* `integral_bsKernelScalar_annulus_le_log` — **the logarithmic middle shell**:
+  `∫_{ρ ≤ |z| < 1} 1/(4π|z|³) ≤ (2·vol(B₁)/π)·(1 + log(1/ρ)/log 2)`.  This is
+  the layer that *produces* the logarithm in Beale–Kato–Majda: the annulus
+  meets only `⌊log₂(1/ρ)⌋ + 1` unit-scale dyadic shells and each carries the
+  same scale-invariant mass.  With the near-field bound
+  `integral_norm_mul_bsKernelScalar_ball_le` and the far-field bound above,
+  the Calderón–Zygmund **size layer** for `exists_biotSavartLogTextbook` is
+  complete; the residual there is the representation `∇u = PV(∇K ∗ ω)`.
 * the four analytic inputs below are **derived**, each from one named residual
   plus a certified leaf in `Navier/Analysis/BKMLogLeaves.lean`.
 
@@ -341,7 +349,16 @@ optimisation at scale `ρ ≈ ‖u‖_{H³}^{-1}` which is what produces the log
 **What is no longer residual.**  The passage from this citable shape to the
 `log (1 + Ms)` shape the bootstrap consumes — including the transfer to an
 arbitrary `H³`-majorant `Ms` — is certified in
-`BKMLogLeaves.bkm_log_shape_transfer`, at the cost of the constant factor `3`. -/
+`BKMLogLeaves.bkm_log_shape_transfer`, at the cost of the constant factor `3`.
+The whole Calderón–Zygmund **size layer** is now certified at the bottom of
+this file: near field `integral_norm_mul_bsKernelScalar_ball_le` (`O(ρ)` with
+the cancellation weight `‖z‖`), logarithmic shell
+`integral_bsKernelScalar_annulus_le_log` (`O(1 + log(1/ρ))`, the source of the
+logarithm), far field `integrableOn_bsKernelScalar_sq_farField` (`L²`, paired
+with `‖ω‖_{L²}` by Cauchy–Schwarz).  What remains genuinely Mathlib-absent is
+the Biot–Savart *representation* `∇u = PV(∇K ∗ ω)` for divergence-free
+Schwartz fields, which is what converts these kernel estimates into a bound on
+`‖∇u‖_∞`. -/
 theorem exists_biotSavartLogTextbook :
     ∃ C : ℝ, 0 < C ∧
       ∀ (u : SchwartzVelocity), DivergenceFreeInitial u →
@@ -2188,9 +2205,10 @@ with the first-order cancellation factor `‖z‖` (from
 `|ω(x−z) − ω(x)| ≤ ‖∇ω‖∞·‖z‖`) integrates to at most `(2·vol(B₁)/π)·ρ`.
 This is the near-field half of the size layer feeding
 `exists_biotSavartLogTextbook`: the near-field convolution is `O(ρ·‖∇ω‖∞)`;
-the far-field half is `integrableOn_bsKernelScalar_sq_farField`.  What remains
-residual for the textbook log inequality is the Biot–Savart representation
-`∇u = PV(∇K ∗ ω)` itself and the logarithmic shell (`ρ < |z| < 1`). -/
+the far-field half is `integrableOn_bsKernelScalar_sq_farField` and the
+logarithmic middle shell is `integral_bsKernelScalar_annulus_le_log` below.
+What remains residual for the textbook log inequality is the Biot–Savart
+representation `∇u = PV(∇K ∗ ω)` itself. -/
 theorem integral_norm_mul_bsKernelScalar_ball_le {ρ : ℝ} (hρ : 0 < ρ) :
     ∫ z in Metric.ball (0 : Space) ρ, ‖z‖ * bsKernelScalar z
       ≤ 2 * (volume (Metric.ball (0 : Space) 1)).toReal / Real.pi * ρ := by
@@ -2217,9 +2235,229 @@ theorem integral_norm_mul_bsKernelScalar_ball_le {ρ : ℝ} (hρ : 0 < ρ) :
   apply le_of_eq
   ring
 
+/-!
+## The Biot–Savart kernel logarithmic shell (certified, no sorry)
+
+The middle layer of the Calderón–Zygmund splitting, and **the layer that
+produces the logarithm** in the Beale–Kato–Majda inequality.  Between the
+near-field cutoff `ρ` and the far-field radius `1` the kernel is integrated
+*without* any cancellation weight; what keeps the mass finite is that the
+annulus `{ρ ≤ ‖z‖} ∩ B₁` meets only the first `N ≈ log₂(1/ρ)` unit-scale
+dyadic shells `czShell 1 k`, and every shell contributes the *same* constant
+mass: amplitude `≤ 2·8ᵏ/π` against volume `≤ 8⁻ᵏ·vol(B₁)`.  So the total is
+`(2·vol(B₁)/π)·N`, and the dyadic count `N` is exactly `log₂(1/ρ)` rounded up
+— the logarithmic divergence of `∫ |z|⁻³` in three dimensions.
+
+Together with `integral_norm_mul_bsKernelScalar_ball_le` (near field, weight
+`‖z‖`) and `integrableOn_bsKernelScalar_sq_farField` (far field, `L²`), this
+completes the Calderón–Zygmund **size layer** for
+`exists_biotSavartLogTextbook`.  The remaining residual for that theorem is
+the Biot–Savart representation `∇u = PV(∇K ∗ ω)` itself.
+-/
+
+/-- **Unit-scale shell amplitude bound (certified).**  On the dyadic shell
+`czShell 1 k = B₁ ∩ {2^{-(k+1)} < ‖z‖ ≤ 2^{-k}}` the Biot–Savart kernel — with
+*no* cancellation weight — is at most `2·8ᵏ/π`:
+`1/(4π|z|³) ≤ 1/(4π·(2^{-(k+1)})³) = 8^{k+1}/(4π)`.  The passage from the
+kernel's Euclidean norm to the shell's product norm uses
+`‖z‖ ≤ officialEuclideanNorm z`. -/
+theorem czShell_kernel_le {k : ℕ} {z : Space} (hz : z ∈ czShell 1 k) :
+    bsKernelScalar z ≤ 2 * 8 ^ k / Real.pi := by
+  obtain ⟨-, hlo, -⟩ := hz
+  have hpos : (0 : ℝ) < 1 / 2 ^ (k + 1) := by positivity
+  have hn : 0 < ‖z‖ := lt_trans hpos hlo
+  rw [bsKernelScalar_apply_of_ne_zero (norm_pos_iff.mp hn)]
+  have hoge := norm_le_officialEuclideanNorm z
+  have hle1 : (1 : ℝ) / (4 * Real.pi * officialEuclideanNorm z ^ 3)
+      ≤ 1 / (4 * Real.pi * ‖z‖ ^ 3) :=
+    one_div_le_one_div_of_le (by positivity)
+      (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hn.le hoge 3) (by positivity))
+  have hden : 4 * Real.pi * ((1 : ℝ) / 2 ^ (k + 1)) ^ 3 ≤ 4 * Real.pi * ‖z‖ ^ 3 :=
+    mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (by positivity) hlo.le 3)
+      (by positivity)
+  have hkey : (1 : ℝ) / (4 * Real.pi * (1 / 2 ^ (k + 1)) ^ 3)
+      = 2 * 8 ^ k / Real.pi := by
+    have h8 : ((2 : ℝ) ^ (k + 1)) ^ 3 = 8 * 8 ^ k := by
+      rw [← pow_mul, mul_comm (k + 1) 3, pow_mul]
+      norm_num [pow_succ, mul_comm]
+    have hpi := Real.pi_ne_zero
+    rw [div_pow, one_pow, h8]
+    field_simp
+    ring
+  calc (1 : ℝ) / (4 * Real.pi * officialEuclideanNorm z ^ 3)
+      ≤ 1 / (4 * Real.pi * ‖z‖ ^ 3) := hle1
+    _ ≤ 1 / (4 * Real.pi * ((1 : ℝ) / 2 ^ (k + 1)) ^ 3) :=
+        one_div_le_one_div_of_le (by positivity) hden
+    _ = 2 * 8 ^ k / Real.pi := hkey
+
+/-- **The dyadic shell count is logarithmic (certified).**  If `2^{-N} < ρ`
+then the annulus `B₁ ∩ {ρ ≤ ‖z‖}` is covered by the *first `N`* unit-scale
+shells: a point of the annulus is nonzero, hence lies in some `czShell 1 k` by
+`ball_subset_iUnion_czShell`, and `k ≥ N` would force
+`ρ ≤ ‖z‖ ≤ 2^{-k} ≤ 2^{-N} < ρ`. -/
+theorem annulus_subset_biUnion_czShell {ρ : ℝ} (hρ : 0 < ρ) {N : ℕ}
+    (hN : 1 / 2 ^ N < ρ) :
+    Metric.ball (0 : Space) 1 ∩ {z : Space | ρ ≤ ‖z‖} ⊆
+      ⋃ k ∈ Finset.range N, czShell 1 k := by
+  intro z hz
+  obtain ⟨hball, hlow⟩ := hz
+  simp only [Set.mem_setOf_eq] at hlow
+  have hz0 : z ≠ 0 := by
+    intro h
+    rw [h, norm_zero] at hlow
+    linarith
+  have hmem := ball_subset_iUnion_czShell (ρ := (1 : ℝ)) one_pos hball
+  rw [mem_insert_iff] at hmem
+  rcases hmem with h | h
+  · exact absurd h hz0
+  · rw [mem_iUnion] at h
+    obtain ⟨k, hk⟩ := h
+    have hhi : ‖z‖ ≤ 1 / 2 ^ k := hk.2.2
+    have hkN : k < N := by
+      by_contra hcon
+      have hNk : N ≤ k := Nat.not_lt.mp hcon
+      have hmono : (1 : ℝ) / 2 ^ k ≤ 1 / 2 ^ N :=
+        one_div_le_one_div_of_le (by positivity)
+          (pow_le_pow_right₀ one_le_two hNk)
+      linarith
+    exact mem_biUnion (Finset.mem_range.mpr hkN) hk
+
+/-- **Every unit-scale shell carries the same mass (certified).**  Amplitude
+`2·8ᵏ/π` times volume `≤ 8⁻ᵏ·vol(B₁)` is the `k`-independent constant
+`(2/π)·vol(B₁)`.  This scale invariance is precisely why the shell count, not
+the shell sizes, controls the integral. -/
+theorem setLIntegral_czShell_kernel_le (k : ℕ) :
+    ∫⁻ z in czShell 1 k, ENNReal.ofReal (bsKernelScalar z) ∂volume
+      ≤ ENNReal.ofReal (2 / Real.pi) * volume (Metric.ball (0 : Space) 1) := by
+  calc ∫⁻ z in czShell 1 k, ENNReal.ofReal (bsKernelScalar z) ∂volume
+      ≤ ∫⁻ _ in czShell 1 k, ENNReal.ofReal (2 * 8 ^ k / Real.pi) ∂volume :=
+        setLIntegral_mono measurable_const fun _z hz =>
+          ENNReal.ofReal_le_ofReal (czShell_kernel_le hz)
+    _ = ENNReal.ofReal (2 * 8 ^ k / Real.pi) * volume (czShell 1 k) :=
+        setLIntegral_const _ _
+    _ ≤ ENNReal.ofReal (2 * 8 ^ k / Real.pi)
+          * (ENNReal.ofReal (((1 : ℝ) / 2 ^ k) ^ 3)
+              * volume (Metric.ball (0 : Space) 1)) :=
+        mul_le_mul_of_nonneg_left (volume_czShell_le one_pos k) zero_le
+    _ = ENNReal.ofReal (2 / Real.pi) * volume (Metric.ball (0 : Space) 1) := by
+        rw [← mul_assoc]
+        congr 1
+        rw [← ENNReal.ofReal_mul (by positivity)]
+        congr 1
+        have h8 : ((2 : ℝ) ^ k) ^ 3 = 8 ^ k := by
+          rw [← pow_mul, mul_comm k 3, pow_mul]; norm_num
+        have hpi := Real.pi_ne_zero
+        have h8k : ((8 : ℝ) ^ k) ≠ 0 := by positivity
+        rw [div_pow, one_pow, h8]
+        field_simp
+
+/-- **The logarithmic shell, lower-Lebesgue form (certified).**  For any `N`
+with `2^{-N} < ρ`, the kernel mass on `B₁ ∩ {ρ ≤ ‖z‖}` is at most
+`(2N/π)·vol(B₁)`.  The shells are pairwise disjoint and measurable, so the
+covering of the annulus by the first `N` of them turns the set integral into a
+finite sum of `N` equal constants. -/
+theorem lintegral_bsKernelScalar_annulus_le {ρ : ℝ} (hρ : 0 < ρ) {N : ℕ}
+    (hN : 1 / 2 ^ N < ρ) :
+    ∫⁻ z in Metric.ball (0 : Space) 1 ∩ {z : Space | ρ ≤ ‖z‖},
+        ENNReal.ofReal (bsKernelScalar z) ∂volume
+      ≤ ENNReal.ofReal (2 * N / Real.pi) * volume (Metric.ball (0 : Space) 1) := by
+  refine le_trans (lintegral_mono'
+    (Measure.restrict_mono (annulus_subset_biUnion_czShell hρ hN) le_rfl) le_rfl) ?_
+  rw [lintegral_biUnion_finset ((czShell_disjoint one_pos).set_pairwise _)
+    (fun b _ => measurableSet_czShell 1 b)]
+  calc ∑ k ∈ Finset.range N,
+        ∫⁻ z in czShell 1 k, ENNReal.ofReal (bsKernelScalar z) ∂volume
+      ≤ ∑ _k ∈ Finset.range N,
+          ENNReal.ofReal (2 / Real.pi) * volume (Metric.ball (0 : Space) 1) :=
+        Finset.sum_le_sum fun k _ => setLIntegral_czShell_kernel_le k
+    _ = (N : ENNReal) * (ENNReal.ofReal (2 / Real.pi)
+          * volume (Metric.ball (0 : Space) 1)) := by
+        rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+    _ = ENNReal.ofReal (2 * N / Real.pi) * volume (Metric.ball (0 : Space) 1) := by
+        rw [← mul_assoc]
+        congr 1
+        rw [← ENNReal.ofReal_natCast N, ← ENNReal.ofReal_mul (by positivity)]
+        congr 1
+        ring
+
+/-- **The logarithmic shell, Bochner form (certified).**  Same bound for the
+real integral; finiteness comes from the `lintegral` bound above and
+`vol(B₁) < ∞`. -/
+theorem integral_bsKernelScalar_annulus_le {ρ : ℝ} (hρ : 0 < ρ) {N : ℕ}
+    (hN : 1 / 2 ^ N < ρ) :
+    ∫ z in Metric.ball (0 : Space) 1 ∩ {z : Space | ρ ≤ ‖z‖}, bsKernelScalar z
+      ≤ 2 * (volume (Metric.ball (0 : Space) 1)).toReal / Real.pi * N := by
+  rw [integral_eq_lintegral_of_nonneg_ae
+    (Filter.Eventually.of_forall bsKernelScalar_nonneg)
+    measurable_bsKernelScalar.aestronglyMeasurable]
+  have htop2 : (ENNReal.ofReal (2 * N / Real.pi)
+      * volume (Metric.ball (0 : Space) 1)) ≠ ⊤ :=
+    ENNReal.mul_ne_top ENNReal.ofReal_ne_top
+      (measure_ball_lt_top (μ := volume) (x := (0 : Space)) (r := 1)).ne
+  have htop : (∫⁻ z in Metric.ball (0 : Space) 1 ∩ {z : Space | ρ ≤ ‖z‖},
+      ENNReal.ofReal (bsKernelScalar z) ∂volume) ≠ ⊤ :=
+    ne_top_of_le_ne_top htop2 (lintegral_bsKernelScalar_annulus_le hρ hN)
+  refine le_trans ((ENNReal.toReal_le_toReal htop htop2).mpr
+    (lintegral_bsKernelScalar_annulus_le hρ hN)) ?_
+  rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal (by positivity)]
+  apply le_of_eq
+  ring
+
+/-- **The Calderón–Zygmund logarithmic shell bound (certified, no sorry).**
+For `0 < ρ ≤ 1`,
+
+  `∫_{ρ ≤ |z| < 1} 1/(4π|z|³) dz ≤ (2·vol(B₁)/π)·(1 + log(1/ρ)/log 2)`.
+
+**This is where the logarithm in Beale–Kato–Majda comes from.**  Taking the
+near-field cutoff at `ρ ≈ ‖u‖_{H³}^{-1}` turns the right-hand side into
+`C·(1 + log‖u‖_{H³})`, which is the `log(e + ‖u‖_{H³})` factor of
+`exists_biotSavartLogTextbook`; the near field then contributes `O(ρ‖∇ω‖_∞)`
+via `integral_norm_mul_bsKernelScalar_ball_le` and the far field `O(‖ω‖_{L²})`
+via `integrableOn_bsKernelScalar_sq_farField`.
+
+The dyadic count is `N = ⌊log₂(1/ρ)⌋ + 1`, which satisfies both `2^{-N} < ρ`
+(so `annulus_subset_biUnion_czShell` applies) and `N ≤ 1 + log₂(1/ρ)` (so the
+bound is genuinely logarithmic and not merely finite). -/
+theorem integral_bsKernelScalar_annulus_le_log {ρ : ℝ} (hρ0 : 0 < ρ)
+    (hρ1 : ρ ≤ 1) :
+    ∫ z in Metric.ball (0 : Space) 1 ∩ {z : Space | ρ ≤ ‖z‖}, bsKernelScalar z
+      ≤ 2 * (volume (Metric.ball (0 : Space) 1)).toReal / Real.pi
+          * (1 + Real.log (1 / ρ) / Real.log 2) := by
+  have hl2 : (0 : ℝ) < Real.log 2 := Real.log_pos (by norm_num)
+  set x : ℝ := Real.log (1 / ρ) / Real.log 2 with hxdef
+  have hxnn : 0 ≤ x := by
+    refine div_nonneg (Real.log_nonneg ?_) hl2.le
+    rw [le_div_iff₀ hρ0]; linarith
+  have hxN : x < (⌊x⌋₊ + 1 : ℕ) := by
+    have h := Nat.lt_floor_add_one x
+    push_cast
+    exact h
+  have hNle : ((⌊x⌋₊ + 1 : ℕ) : ℝ) ≤ 1 + x := by
+    have h := Nat.floor_le hxnn
+    push_cast
+    linarith
+  have hNρ : 1 / 2 ^ (⌊x⌋₊ + 1 : ℕ) < ρ := by
+    have h2 : Real.log (1 / ρ) < ((⌊x⌋₊ + 1 : ℕ) : ℝ) * Real.log 2 := by
+      rw [hxdef, div_lt_iff₀ hl2] at hxN; exact hxN
+    have h3 : Real.log (1 / ρ) < Real.log ((2 : ℝ) ^ (⌊x⌋₊ + 1 : ℕ)) := by
+      rw [Real.log_pow]; exact_mod_cast h2
+    have h4 : (1 : ℝ) / ρ < 2 ^ (⌊x⌋₊ + 1 : ℕ) :=
+      (Real.log_lt_log_iff (by positivity) (by positivity)).mp h3
+    rw [div_lt_iff₀ (by positivity : (0 : ℝ) < 2 ^ (⌊x⌋₊ + 1 : ℕ))]
+    rw [div_lt_iff₀ hρ0] at h4
+    linarith
+  refine le_trans (integral_bsKernelScalar_annulus_le hρ0 hNρ) ?_
+  have hC : 0 ≤ 2 * (volume (Metric.ball (0 : Space) 1)).toReal / Real.pi := by
+    refine div_nonneg ?_ Real.pi_pos.le
+    have hv : (0 : ℝ) ≤ (volume (Metric.ball (0 : Space) 1)).toReal :=
+      ENNReal.toReal_nonneg
+    linarith
+  exact mul_le_mul_of_nonneg_left (by linarith) hC
+
 end Navier.Analysis.BealeKatoMajda
 
 #print axioms Navier.Analysis.BealeKatoMajda.besselFourierMajorant_zero
+#print axioms Navier.Analysis.BealeKatoMajda.integral_bsKernelScalar_annulus_le_log
 
 
 

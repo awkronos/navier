@@ -123,6 +123,13 @@ nonnegative spacetime. -/
 structure DivergenceFreeTestFunction where
   /-- The Schwartz slice at each time. -/
   field : ℝ → SchwartzVelocity
+  /-- The genuine Schwartz slice of the time derivative. -/
+  timeDerivSchwartz : ℝ → SchwartzVelocity
+  /-- Pointwise identification with the half-line time derivative used by the
+  weak formulation. -/
+  timeDeriv_eq : ∀ t : ℝ, 0 ≤ t → ∀ x : Space,
+    timeDerivative (fun s => (field s : Space → Space)) t x =
+      timeDerivSchwartz t x
   /-- Joint spacetime smoothness on the nonnegative-time half-space, in the
   repo's within-derivative convention. -/
   smooth : ContDiffOn ℝ ∞
@@ -130,18 +137,26 @@ structure DivergenceFreeTestFunction where
     ((Set.Ici (0:ℝ)) ×ˢ (Set.univ : Set Space))
   /-- The test function vanishes beyond a finite horizon. -/
   compact_time : ∃ T : ℝ, 0 < T ∧ ∀ t : ℝ, T ≤ t → field t = 0
+  /-- The time derivative has the same classical compact-time behavior. -/
+  compact_time_deriv : ∃ T : ℝ, 0 < T ∧
+    ∀ t : ℝ, T ≤ t → timeDerivSchwartz t = 0
   /-- Every slice is divergence-free. -/
   divergence_free : ∀ t : ℝ, DivergenceFreeInitial (field t)
 
 /-- The zero test function (inhabitant of the test class). -/
 def zeroTestFunction : DivergenceFreeTestFunction where
   field := fun _ => 0
+  timeDerivSchwartz := fun _ => 0
+  timeDeriv_eq := by
+    intro t ht x
+    simp [timeDerivative]
   smooth := by
     have : (fun z : ℝ × Space => ((0 : SchwartzVelocity)) z.2) =
         fun _ : ℝ × Space => (0 : Space) := by
       funext z; simp
     simpa [this] using contDiffOn_const
   compact_time := ⟨1, one_pos, fun _ _ => rfl⟩
+  compact_time_deriv := ⟨1, one_pos, fun _ _ => rfl⟩
   divergence_free := by
     intro t x
     simp [staticDivergence]
@@ -359,6 +374,20 @@ theorem staticDivergence_const_smul (c : ℝ) (f : Space → Space) (x : Space)
 
 noncomputable def witnessTest : DivergenceFreeTestFunction where
   field := fun t => envelope t • phiSchwartz
+  timeDerivSchwartz := fun t => deriv envelope t • phiSchwartz
+  timeDeriv_eq := by
+    intro t ht x
+    unfold timeDerivative
+    have he : HasDerivAt envelope (deriv envelope t) t :=
+      (envelope_smooth.differentiable (by decide) t).hasDerivAt
+    have hx := he.smul_const (phiSchwartz x)
+    have hfun : (fun s : ℝ => ((envelope s • phiSchwartz : SchwartzVelocity)) x) =
+        fun s : ℝ => envelope s • phiSchwartz x := by
+      funext s
+      simp
+    rw [hfun, hx.hasFDerivAt.hasFDerivWithinAt.fderivWithin
+      ((uniqueDiffOn_Ici 0) t (Set.mem_Ici.mpr ht))]
+    simp
   smooth := by
     have hcoe : (fun z : ℝ × Space =>
         ((envelope z.1 • phiSchwartz : SchwartzVelocity)) z.2) =
@@ -372,6 +401,14 @@ noncomputable def witnessTest : DivergenceFreeTestFunction where
     exact hjoint.contDiffOn
   compact_time := ⟨2, two_pos, fun t ht => by
     rw [envelope_vanish ht, zero_smul]⟩
+  compact_time_deriv := ⟨3, by norm_num, fun t ht => by
+    have ht' : 2 < t := by linarith
+    have hevent : envelope =ᶠ[nhds t] fun _ : ℝ => 0 := by
+      filter_upwards [Ioi_mem_nhds ht'] with s hs
+      exact envelope_vanish hs.le
+    have hderiv : deriv envelope t = 0 := by
+      rw [hevent.deriv_eq, deriv_const]
+    rw [hderiv, zero_smul]⟩
   divergence_free := by
     intro t x
     show staticDivergence (fun y => (envelope t • phiSchwartz) y) x = 0
@@ -4285,57 +4322,15 @@ theorem exists_galerkinLimit_energy_le (ν : ℝ) (u₀ : SchwartzVelocity)
       G.official_kinetic_bounded
   exact ⟨u, σ, hσ, humeas, huint, huoff, hlim⟩
 
-/-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once the
-three *pairing-side* clauses are supplied for some compactness limit of the
-Galerkin sequence, `LerayLimitData` follows: the energy-side clauses
-`sq_integrable`, `datum_sq_integrable` and `energy_le` are discharged here from
-`exists_galerkinLimit_energy_le` and `integrable_norm_sq_schwartz`.
-
-So the residual below no longer contains any energy or integrability
-bookkeeping: what is left of it is exactly items (a)–(d) of its docstring, the
-weak-form passage.  The hypothesis is stated over the compactness *output*
-rather than over a bare `u` so that a closer may use the strong `L²_loc`
-convergence, which is the whole point of the compactness step for the quadratic
-convection term.  `datum_pairing_integrable` is kept in the hypothesis bundle
-rather than claimed here: it is a Schwartz–Cauchy–Schwarz estimate on the test
-factors, independent of the limit, and it is not banked. -/
-theorem exists_lerayLimitData_of_weakClauses (ν : ℝ) (u₀ : SchwartzVelocity)
-    (G : GalerkinApproximation ν u₀)
-    (hdatum : ∀ φ : DivergenceFreeTestFunction,
-      Integrable (fun x : Space => weakPairingDensity ν (fun _ y => u₀ y) φ 0 x))
-    (hweak : ∀ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ →
-      Measurable (fun z : ℝ × Space => u z.1 z.2) →
-      (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) →
-      StrongL2LocLimit (fun k => G.approx (σ k)) u →
-      (∀ (φ : DivergenceFreeTestFunction) (t : ℝ), 0 < t →
-          Integrable (fun x : Space => weakPairingDensity ν u φ t x)) ∧
-        (∀ φ : DivergenceFreeTestFunction,
-          (∫ t in Set.Ici (0:ℝ), ∫ x : Space, weakPairingDensity ν u φ t x) =
-            -(∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)))) :
-    Nonempty (LerayLimitData ν u₀) := by
-  obtain ⟨u, σ, hσ, humeas, huint, huoff, hlim⟩ := exists_galerkinLimit_energy_le ν u₀ G
-  obtain ⟨hpair, hform⟩ := hweak u σ hσ humeas huint hlim
-  exact ⟨{ limit := u
-           sq_integrable := fun t ht => huint t ht.le
-           datum_sq_integrable := integrable_norm_sq_schwartz u₀
-           energy_le := fun t ht => huoff t ht.le
-           pairing_integrable := hpair
-           datum_pairing_integrable := hdatum
-           weak_form := hform }⟩
-
 /-!
-### Pairing-side integrability: the spatial factors are free, the time factor is the residue
+### Pairing-side integrability from the certified Schwartz time derivative
 
 The weak-pairing density splits as `⟨u, ∂ₜφ⟩ + ⟨u, (∇φ)(u)⟩ + ν⟨u, Δφ⟩`.  The
 two *spatial* factors are derivatives of the Schwartz slice `φ.field t`, hence
-Schwartz themselves (`SchwartzMap.fderivCLM` composed with `evalCLM`), so those
-pairings are integrable against any measurable square-integrable slice by
-Cauchy–Schwarz — certified below.  The *time* factor is not so controlled:
-`DivergenceFreeTestFunction` constrains `∂ₜφ` only through joint smoothness,
-which yields no decay in `x` whatsoever (see the residual docstring below for
-the witness family).  `integrable_weakPairingDensity_of_timeDeriv` records the
-exact reduction: the pairing clauses of `LerayLimitData` close as soon as the
-time-derivative slice is measurable and square-integrable.
+Schwartz themselves (`SchwartzMap.fderivCLM` composed with `evalCLM`).  The
+repaired test interface also carries the genuine time derivative as a Schwartz
+slice.  Thus all three pairings are integrable against any measurable
+square-integrable velocity slice by Cauchy–Schwarz.
 -/
 
 /-- Coordinatewise Cauchy–Schwarz for the official pairing against the ambient
@@ -4544,6 +4539,80 @@ theorem pairing_integrable_of_timeDeriv (ν : ℝ) (u : VelocityEvolution)
     Integrable fun x : Space => weakPairingDensity ν u φ t x :=
   integrable_weakPairingDensity_of_timeDeriv ν φ t
     (humeas.comp measurable_prodMk_left) (huint t ht.le) hT hT2
+
+/-- The time derivative of a certified test is measurable in space on the
+nonnegative time half-line. -/
+theorem DivergenceFreeTestFunction.timeDerivative_measurable
+    (φ : DivergenceFreeTestFunction) (t : ℝ) (ht : 0 ≤ t) :
+    Measurable fun x : Space =>
+      timeDerivative (fun s => (φ.field s : Space → Space)) t x := by
+  have heq : (fun x : Space =>
+      timeDerivative (fun s => (φ.field s : Space → Space)) t x) =
+      φ.timeDerivSchwartz t := by
+    funext x
+    exact φ.timeDeriv_eq t ht x
+  rw [heq]
+  exact (φ.timeDerivSchwartz t).continuous.measurable
+
+/-- The time derivative of a certified test is square-integrable in space on
+the nonnegative time half-line. -/
+theorem DivergenceFreeTestFunction.timeDerivative_sq_integrable
+    (φ : DivergenceFreeTestFunction) (t : ℝ) (ht : 0 ≤ t) :
+    Integrable fun x : Space =>
+      ‖timeDerivative (fun s => (φ.field s : Space → Space)) t x‖ ^ 2 := by
+  have heq : (fun x : Space =>
+      ‖timeDerivative (fun s => (φ.field s : Space → Space)) t x‖ ^ 2) =
+      fun x : Space => ‖φ.timeDerivSchwartz t x‖ ^ 2 := by
+    funext x
+    rw [φ.timeDeriv_eq t ht x]
+  rw [heq]
+  exact integrable_norm_sq_schwartz (φ.timeDerivSchwartz t)
+
+/-- The datum-side weak pairing is integrable for every certified test; no
+extra decay hypothesis on its time derivative is needed. -/
+theorem datum_pairing_integrable (ν : ℝ) (u₀ : SchwartzVelocity)
+    (φ : DivergenceFreeTestFunction) :
+    Integrable fun x : Space => weakPairingDensity ν (fun _ y => u₀ y) φ 0 x :=
+  datum_pairing_integrable_of_timeDeriv ν u₀ φ
+    (φ.timeDerivative_measurable 0 le_rfl)
+    (φ.timeDerivative_sq_integrable 0 le_rfl)
+
+/-- The limit-side weak pairing is integrable for every certified test and
+every positive time whenever the velocity has measurable `L²` slices. -/
+theorem pairing_integrable (ν : ℝ) (u : VelocityEvolution)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (huint : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (φ : DivergenceFreeTestFunction) (t : ℝ) (ht : 0 < t) :
+    Integrable fun x : Space => weakPairingDensity ν u φ t x :=
+  pairing_integrable_of_timeDeriv ν u humeas huint φ t ht
+    (φ.timeDerivative_measurable t ht.le)
+    (φ.timeDerivative_sq_integrable t ht.le)
+
+/-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once
+the limit weak-form identity is supplied for a compactness limit of the
+Galerkin sequence, `LerayLimitData` follows.  The energy clauses come from
+`exists_galerkinLimit_energy_le`; both pairing-integrability clauses are now
+certified consequences of the test's genuine Schwartz time derivative. -/
+theorem exists_lerayLimitData_of_weakClauses (ν : ℝ) (u₀ : SchwartzVelocity)
+    (G : GalerkinApproximation ν u₀)
+    (hweak : ∀ (u : VelocityEvolution) (σ : ℕ → ℕ), StrictMono σ →
+      Measurable (fun z : ℝ × Space => u z.1 z.2) →
+      (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) →
+      StrongL2LocLimit (fun k => G.approx (σ k)) u →
+      ∀ φ : DivergenceFreeTestFunction,
+        (∫ t in Set.Ici (0:ℝ), ∫ x : Space, weakPairingDensity ν u φ t x) =
+          -(∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))) :
+    Nonempty (LerayLimitData ν u₀) := by
+  obtain ⟨u, σ, hσ, humeas, huint, huoff, hlim⟩ :=
+    exists_galerkinLimit_energy_le ν u₀ G
+  have hform := hweak u σ hσ humeas huint hlim
+  exact ⟨{ limit := u
+           sq_integrable := fun t ht => huint t ht.le
+           datum_sq_integrable := integrable_norm_sq_schwartz u₀
+           energy_le := fun t ht => huoff t ht.le
+           pairing_integrable := pairing_integrable ν u humeas huint
+           datum_pairing_integrable := datum_pairing_integrable ν u₀
+           weak_form := hform }⟩
 
 /-- **[NAMED RESIDUAL — Galerkin limit passage; Leray, Acta Math. 63 (1934)
 §§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a

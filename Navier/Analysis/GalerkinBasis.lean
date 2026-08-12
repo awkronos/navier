@@ -3246,6 +3246,129 @@ theorem modalFlow_projectedTest_splitResidualWeakEquation_at
   rw [hintegral] at h
   exact h
 
+/-- The finite-interval density in the retained modal equation is exactly the
+half-line density used by `weakFormResidual` once both certified test slices
+have vanished.  The endpoint `t = 0` is handled by the null singleton, not by
+discarding the repo's right-within derivative convention. -/
+theorem weakFormResidual_modalApprox_eq_interval
+    (W : GalerkinBasisFamily) (ν : ℝ) (u₀ : SchwartzVelocity)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (φ : DivergenceFreeTestFunction) (m : ℕ)
+    (T : ℝ) (hT : 0 ≤ T)
+    (hφzero : ∀ t, T ≤ t → φ.field t = 0)
+    (hφ'zero : ∀ t, T ≤ t → φ.timeDerivSchwartz t = 0) :
+    weakFormResidual ν u₀ (W.modalApprox c m) φ =
+      (∫ t in (0 : ℝ)..T,
+        schwartzL2Inner (W.coefficientField (c m t))
+          (φ.timeDerivSchwartz t) +
+        schwartzL2Inner (W.coefficientField (c m t))
+          (ν • laplacianSchwartz (φ.field t) +
+            convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t))) +
+      schwartzL2Inner u₀ (φ.field 0) := by
+  let F : ℝ → ℝ := fun t => ∫ x : Space,
+    officialInner (W.modalApprox c m t x)
+      (timeDerivative (fun s => (φ.field s : Space → Space)) t x +
+        spatialDerivative (fun s => (φ.field s : Space → Space)) t x
+          (W.modalApprox c m t x) +
+        ν • laplacian (fun s => (φ.field s : Space → Space)) t x)
+  let G : ℝ → ℝ := fun t =>
+    schwartzL2Inner (W.coefficientField (c m t)) (φ.timeDerivSchwartz t) +
+    schwartzL2Inner (W.coefficientField (c m t))
+      (ν • laplacianSchwartz (φ.field t) +
+        convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t))
+  have hFG : ∀ t : ℝ, 0 ≤ t → F t = G t := by
+    intro t ht
+    have hu := modalApprox_eq_coefficientField W c m ht
+    change (∫ x : Space,
+      officialInner (W.modalApprox c m t x)
+        (timeDerivative (fun s => (φ.field s : Space → Space)) t x +
+          spatialDerivative (fun s => (φ.field s : Space → Space)) t x
+            (W.modalApprox c m t x) +
+          ν • laplacian (fun s => (φ.field s : Space → Space)) t x)) = _
+    rw [hu]
+    have hphysical : (∫ x : Space,
+        officialInner (W.coefficientField (c m t) x)
+          (timeDerivative (fun s => (φ.field s : Space → Space)) t x +
+            spatialDerivative (fun s => (φ.field s : Space → Space)) t x
+              (W.coefficientField (c m t) x) +
+            ν • laplacian (fun s => (φ.field s : Space → Space)) t x)) =
+        schwartzL2Inner (W.coefficientField (c m t))
+          (φ.timeDerivSchwartz t +
+            convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t) +
+            ν • laplacianSchwartz (φ.field t)) := by
+      unfold schwartzL2Inner
+      apply integral_congr_ae
+      filter_upwards with x
+      rw [φ.timeDeriv_eq t ht x]
+      change officialInner (W.coefficientField (c m t) x)
+          (φ.timeDerivSchwartz t x +
+            fderiv ℝ (φ.field t) x (W.coefficientField (c m t) x) +
+            ν • laplacian (fun _ => φ.field t) 0 x) = _
+      change officialInner (W.coefficientField (c m t) x)
+          (φ.timeDerivSchwartz t x +
+            fderiv ℝ (φ.field t) x (W.coefficientField (c m t) x) +
+            ν • laplacian (fun _ => φ.field t) 0 x) =
+        officialInner (W.coefficientField (c m t) x)
+          (φ.timeDerivSchwartz t x +
+            convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t) x +
+            ν • laplacianSchwartz (φ.field t) x)
+      rw [convectionSchwartzBilin_apply, laplacianSchwartz_apply]
+      rfl
+    rw [hphysical, schwartzL2Inner_add_right, schwartzL2Inner_add_right]
+    change _ = schwartzL2Inner (W.coefficientField (c m t))
+        (φ.timeDerivSchwartz t) +
+      schwartzL2Inner (W.coefficientField (c m t))
+        (ν • laplacianSchwartz (φ.field t) +
+          convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t))
+    rw [schwartzL2Inner_add_right, schwartzL2Inner_smul_right]
+    ring
+  have hFtail : ∀ t ∈ Set.Ici (0 : ℝ) \ Set.Icc 0 T, F t = 0 := by
+    intro t ht
+    have hnot : ¬ t ≤ T := fun htt => ht.2 ⟨ht.1, htt⟩
+    have hTt : T ≤ t := (lt_of_not_ge hnot).le
+    have hfield : φ.field t = 0 := hφzero t hTt
+    have hderiv : φ.timeDerivSchwartz t = 0 := hφ'zero t hTt
+    have ht0 : 0 ≤ t := ht.1
+    change (∫ x : Space,
+      officialInner (W.modalApprox c m t x)
+        (timeDerivative (fun s => (φ.field s : Space → Space)) t x +
+          spatialDerivative (fun s => (φ.field s : Space → Space)) t x
+            (W.modalApprox c m t x) +
+          ν • laplacian (fun s => (φ.field s : Space → Space)) t x)) = 0
+    apply integral_eq_zero_of_ae
+    filter_upwards with x
+    rw [φ.timeDeriv_eq t ht0 x, hderiv]
+    change officialInner (W.modalApprox c m t x)
+      (0 + fderiv ℝ (φ.field t) x (W.modalApprox c m t x) +
+        ν • laplacian (fun _ => φ.field t) 0 x) = 0
+    rw [hfield]
+    have hz : ((0 : SchwartzVelocity) : Space → Space) =
+        fun _ : Space => (0 : Space) := by
+      funext y
+      simp
+    rw [hz]
+    simp only [laplacian, fderiv_const_apply, zero_apply,
+      Finset.sum_const_zero, add_zero, smul_zero]
+    unfold officialInner
+    rw [show officialEuclideanPoint (0 : Space) = 0 by
+      ext i
+      simp [officialEuclideanPoint], inner_zero_right]
+  have hrestrict : (∫ t in Set.Ici (0 : ℝ), F t) =
+      ∫ t in Set.Icc (0 : ℝ) T, F t :=
+    setIntegral_eq_of_subset_of_forall_sdiff_eq_zero measurableSet_Ici
+      (fun _ ht => ht.1) hFtail
+  have hinterval : (∫ t in Set.Ici (0 : ℝ), F t) = ∫ t in (0 : ℝ)..T, G t := by
+    rw [hrestrict, integral_Icc_eq_integral_Ioc,
+      intervalIntegral.integral_of_le hT]
+    apply setIntegral_congr_fun measurableSet_Ioc
+    intro t ht
+    exact hFG t ht.1.le
+  unfold weakFormResidual
+  change (∫ t in Set.Ici (0 : ℝ), F t) +
+    (∫ x : Space, officialInner (u₀ x) (φ.field 0 x)) = _
+  rw [hinterval]
+  rfl
+
 /-- Direct fixed-test weak-residual limit.  The retained ODE supplies the
 split equation; after the finite-interval/`weakFormResidual` identification,
 only the two scalar projection-commutator integrals must vanish. -/
@@ -3257,22 +3380,16 @@ theorem modalFlow_fixedTest_projectedResidual_tendsto_of_commutators
         (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
         (Set.Ici (0 : ℝ)) t)
     (hc0 : ∀ m, c m 0 = W.initialCoefficients u₀ m)
-    (φ : DivergenceFreeTestFunction) (φ' : ℝ → SchwartzVelocity)
+    (φ : DivergenceFreeTestFunction)
     (T : ℝ) (hT : 0 ≤ T) (hφzero : ∀ t, T ≤ t → φ.field t = 0)
+    (hφ'zero : ∀ t, T ≤ t → φ.timeDerivSchwartz t = 0)
     (hmodal_deriv : ∀ (m : ℕ) (t : ℝ),
       HasDerivAt (W.modalTestCoefficients φ.field m)
-        (W.modalTestCoefficients φ' m t) t)
-    (hmodal_deriv_cont : ∀ m, Continuous (W.modalTestCoefficients φ' m))
-    (hidentify : ∀ m,
-      weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ =
-        (∫ t in (0 : ℝ)..T,
-          schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
-          schwartzL2Inner (W.coefficientField (c m t))
-            (ν • laplacianSchwartz (φ.field t) +
-              convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t))) +
-        schwartzL2Inner (W.proj m u₀) (φ.field 0))
+        (W.modalTestCoefficients φ.timeDerivSchwartz m t) t)
+    (hmodal_deriv_cont : ∀ m,
+      Continuous (W.modalTestCoefficients φ.timeDerivSchwartz m))
     (hmainInt : ∀ m, IntervalIntegrable (fun t =>
-      schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
+      schwartzL2Inner (W.coefficientField (c m t)) (φ.timeDerivSchwartz t) +
       schwartzL2Inner (W.coefficientField (c m t))
         (ν • laplacianSchwartz (φ.field t) +
           convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t)))
@@ -3297,7 +3414,10 @@ theorem modalFlow_fixedTest_projectedResidual_tendsto_of_commutators
       (fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ)
       Filter.atTop (nhds 0) := by
   have heq (m : ℕ) := modalFlow_projectedTest_splitResidualWeakEquation_at
-    W ν c hc φ φ' T hT hφzero m (hmodal_deriv m) (hmodal_deriv_cont m)
+    W ν c hc φ φ.timeDerivSchwartz T hT hφzero m
+      (hmodal_deriv m) (hmodal_deriv_cont m)
+  have hidentify (m : ℕ) := weakFormResidual_modalApprox_eq_interval
+    W ν (W.proj m u₀) c φ m T hT hφzero hφ'zero
   have hresidual : (fun m =>
       weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ) = fun m =>
       -(∫ t in (0 : ℝ)..T, ν * schwartzL2Inner (W.coefficientField (c m t))
