@@ -165,6 +165,7 @@ open Set MeasureTheory
 namespace Navier.Analysis.ConditionalRegularity
 
 open scoped Matrix
+open scoped ContDiff
 
 open Navier
 open Navier.Analysis.Vorticity
@@ -1105,5 +1106,205 @@ theorem constantinFefferman_velocity_bounded
     constantinFefferman_interior_bounded hν sol E hE hL2 hmass ρ Ω₀ hρ hΩ₀ hcoh
       (T / 2) hδ0 hδT
   exact uniformBound_of_split (fun t x => ‖sol.velocity t x‖) R₁ R₂ hR₁ hR₂
+
+/-! ### Sharpness: an explicit strain flow -/
+
+/-- Diagonal strain coefficients `(1, -1, 0)`.  They sum to zero, which is
+exactly incompressibility of `strainVelocity` below. -/
+def strainCoeff : Fin 3 → ℝ := ![1, -1, 0]
+
+lemma sum_strainCoeff : ∑ i : Fin 3, strainCoeff i = 0 := by
+  simp [strainCoeff, Fin.sum_univ_three]
+
+/-- The time-`t` strain, as a continuous linear map on `ℝ³`. -/
+def strainMap (t : ℝ) : Space →L[ℝ] Space :=
+  ContinuousLinearMap.pi fun i => (strainCoeff i * t) • ContinuousLinearMap.proj i
+
+@[simp] lemma strainMap_apply (t : ℝ) (x : Space) (i : Fin 3) :
+    strainMap t x i = strainCoeff i * t * x i := rfl
+
+/-- The diagonal strain flow `u(t,x) = (t x₁, −t x₂, 0)`. -/
+def strainVelocity : VelocityEvolution := fun t x => strainMap t x
+
+@[simp] lemma strainVelocity_apply (t : ℝ) (x : Space) (i : Fin 3) :
+    strainVelocity t x i = strainCoeff i * t * x i := rfl
+
+/-- The pressure `p(t,x) = −½ ∑ᵢ (cᵢ + cᵢ²t²) xᵢ²` that closes the strain
+flow into an exact zero-force Navier–Stokes solution. -/
+def strainPressure : PressureEvolution := fun t x =>
+  -(2⁻¹ : ℝ) * ∑ i : Fin 3, (strainCoeff i + (strainCoeff i * t) ^ 2) * (x i) ^ 2
+
+lemma strainVelocity_fderiv (t : ℝ) (y : Space) :
+    fderiv ℝ (strainVelocity t) y = strainMap t :=
+  (strainMap t).hasFDerivAt.fderiv
+
+lemma strainVelocity_contDiff :
+    ContDiff ℝ ∞ (fun z : ℝ × Space => strainVelocity z.1 z.2) := by
+  refine contDiff_pi.2 fun i => ?_
+  simpa using (contDiff_const.mul contDiff_fst).mul (contDiff_pi.1 contDiff_snd i)
+
+lemma strainPressure_contDiff :
+    ContDiff ℝ ∞ (fun z : ℝ × Space => strainPressure z.1 z.2) := by
+  refine contDiff_const.mul (ContDiff.sum fun i _ => ?_)
+  exact ((contDiff_const.add ((contDiff_const.mul contDiff_fst).pow 2)).mul
+    ((contDiff_pi.1 contDiff_snd i).pow 2))
+
+lemma strainVelocity_divergence (t : ℝ) (x : Space) :
+    divergence strainVelocity t x = 0 := by
+  simp [divergence, spatialDerivative, strainVelocity_fderiv, basisVector,
+    strainCoeff, Fin.sum_univ_three]
+
+lemma strainVelocity_laplacian (t : ℝ) (x : Space) :
+    laplacian strainVelocity t x = 0 := by
+  have hconst : ∀ i : Fin 3,
+      (fun y : Space => fderiv ℝ (strainVelocity t) y (basisVector i))
+        = fun _ : Space => strainMap t (basisVector i) := by
+    intro i
+    funext y
+    rw [strainVelocity_fderiv]
+  simp [laplacian, hconst]
+
+lemma strainVelocity_convection (t : ℝ) (x : Space) (i : Fin 3) :
+    convection strainVelocity t x i = (strainCoeff i * t) ^ 2 * x i := by
+  simp [convection, spatialDerivative, strainVelocity_fderiv]
+  ring
+
+lemma strainVelocity_timeDerivative {t : ℝ} (ht : 0 ≤ t) (x : Space) :
+    timeDerivative strainVelocity t x = fun i => strainCoeff i * x i := by
+  have hfun : (fun s : ℝ => strainVelocity s x)
+      = fun s : ℝ => s • (fun j => strainCoeff j * x j : Space) := by
+    funext s
+    funext j
+    simp [strainVelocity]
+    ring
+  have hd : HasDerivAt (fun s : ℝ => strainVelocity s x)
+      (fun j => strainCoeff j * x j : Space) t := by
+    rw [hfun]
+    simpa using (hasDerivAt_id t).smul_const (fun j => strainCoeff j * x j : Space)
+  have := hd.hasDerivWithinAt.derivWithin (uniqueDiffOn_Ici 0 t ht)
+  simpa [timeDerivative, derivWithin] using this
+
+lemma strainPressure_hasFDerivAt (t : ℝ) (x : Space) :
+    HasFDerivAt (strainPressure t)
+      ((-(2⁻¹ : ℝ)) • ∑ i : Fin 3,
+        (strainCoeff i + (strainCoeff i * t) ^ 2) •
+          ((2 * x i) • (ContinuousLinearMap.proj i : Space →L[ℝ] ℝ))) x := by
+  have hterm : ∀ i : Fin 3,
+      HasFDerivAt
+        (fun y : Space => (strainCoeff i + (strainCoeff i * t) ^ 2) * (y i) ^ 2)
+        ((strainCoeff i + (strainCoeff i * t) ^ 2) •
+          ((2 * x i) • (ContinuousLinearMap.proj i : Space →L[ℝ] ℝ))) x := by
+    intro i
+    refine HasFDerivAt.const_mul ?_ _
+    simpa using ((ContinuousLinearMap.proj i :
+      Space →L[ℝ] ℝ).hasFDerivAt).pow 2
+  have hfun :
+      (∑ i : Fin 3, fun y : Space =>
+        (strainCoeff i + (strainCoeff i * t) ^ 2) * (y i) ^ 2)
+        = fun y : Space =>
+          ∑ i : Fin 3, (strainCoeff i + (strainCoeff i * t) ^ 2) * (y i) ^ 2 := by
+    funext y
+    simp
+  have hsum := HasFDerivAt.sum
+    (fun i (_ : i ∈ (Finset.univ : Finset (Fin 3))) => hterm i)
+  rw [hfun] at hsum
+  have hp : strainPressure t = fun y : Space =>
+      -(2⁻¹ : ℝ) * ∑ i : Fin 3,
+        (strainCoeff i + (strainCoeff i * t) ^ 2) * (y i) ^ 2 := rfl
+  rw [hp]
+  exact hsum.const_mul _
+
+lemma strainPressure_gradient (t : ℝ) (x : Space) (j : Fin 3) :
+    pressureGradient strainPressure t x j
+      = -((strainCoeff j + (strainCoeff j * t) ^ 2) * x j) := by
+  rw [pressureGradient, (strainPressure_hasFDerivAt t x).fderiv]
+  fin_cases j <;>
+    simp [basisVector, Fin.sum_univ_three, strainCoeff, Fin.ext_iff] <;>
+    ring
+
+lemma strainFlow_equation (ν T : ℝ) :
+    SatisfiesNavierStokesBefore ν zeroForce T strainVelocity strainPressure := by
+  intro t ht0 _ x
+  funext i
+  simp [strainVelocity_timeDerivative ht0, strainVelocity_convection,
+    strainVelocity_laplacian, strainPressure_gradient, zeroForce]
+  ring
+
+/-- **The diagonal strain flow is an exact zero-force classical solution with
+zero initial datum.**  For every viscosity `ν` and every horizon `T > 0`,
+
+`u(t,x) = (t x₁, −t x₂, 0)`,  `p(t,x) = −½[(1+t²)x₁² + (t²−1)x₂²]`
+
+is smooth on `[0,T) × ℝ³`, divergence-free, solves the Navier–Stokes system
+with zero body force, and starts from `u(0,·) = 0`.  (The Laplacian vanishes
+identically, which is why the construction is viscosity-independent.) -/
+def strainSolution (ν T : ℝ) (hT : 0 < T) :
+    PartialClassicalSolution ν zeroForce (fun _ : Space => (0 : Space)) T where
+  terminalTime_pos := hT
+  velocity := strainVelocity
+  pressure := strainPressure
+  velocity_smooth := strainVelocity_contDiff.contDiffOn
+  pressure_smooth := strainPressure_contDiff.contDiffOn
+  initial_condition := by
+    funext x
+    funext i
+    simp
+  incompressible := fun t _ _ x => strainVelocity_divergence t x
+  equation := strainFlow_equation ν T
+
+/-- **Sharpness witness: the integrability hypotheses of the far-field leaves
+are load-bearing.**  For every viscosity `ν`, every horizon `T > 0` and every
+layer thickness `δ ∈ (0,T)`, the strain solution `strainSolution` satisfies
+*every* hypothesis of `prodiSerrin_layer_farField_bounded` and of
+`constantinFefferman_layer_farField_bounded` except the integrability clauses
+(`hint`, respectively `hL2`) — in particular its initial datum is bounded,
+being identically zero — and yet its far-field conclusion
+
+`∃ ϱ R, ∀ t ∈ [0,δ], ∀ x with ϱ ≤ ‖x‖, ‖u t x‖ ≤ R`
+
+is false: at any fixed `t > 0` the velocity grows linearly in `x`.
+
+Consequences.  (i) No proof of either far-field leaf can avoid using its
+integrability hypothesis; the smoothness, incompressibility, equation and
+bounded-initial-datum data are jointly insufficient.  (ii) Since the initial
+datum is zero and the flow is not, this is also a kernel-checked instance of
+non-uniqueness for `PartialClassicalSolution` in the absence of a decay or
+integrability clause — the elementary analogue of the Tychonov shear flow
+recorded in the falsification note above, with an explicit closed form in
+place of Tychonov's non-analytic series.
+
+Scope.  The witness does *not* refute the two leaves: the strain velocity is a
+nonzero linear field, so it fails `hint` and `hL2`.  This file does not
+formalize that failure; the statement below claims only what it proves. -/
+theorem strainFlow_farField_unbounded (ν : ℝ) {T δ : ℝ} (hT : 0 < T)
+    (hδ0 : 0 < δ) (_hδT : δ < T) :
+    (∃ B₀ : ℝ, ∀ x : Space, ‖(fun _ : Space => (0 : Space)) x‖ ≤ B₀) ∧
+      ¬ ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
+          ϱ ≤ ‖x‖ → ‖(strainSolution ν T hT).velocity t x‖ ≤ R := by
+  refine ⟨⟨0, fun x => by simp⟩, ?_⟩
+  rintro ⟨ϱ, R, h⟩
+  set c : ℝ := max (max ϱ 0) ((|R| + 1) / δ) with hc
+  have hc0 : (0 : ℝ) ≤ c := le_trans (le_max_right ϱ 0) (le_max_left _ _)
+  have hcϱ : ϱ ≤ c := le_trans (le_max_left ϱ 0) (le_max_left _ _)
+  have hcR : (|R| + 1) / δ ≤ c := le_max_right _ _
+  set x : Space := Pi.single 0 c with hx
+  have hx0 : x 0 = c := by simp [hx]
+  have hnx : ϱ ≤ ‖x‖ := by
+    refine hcϱ.trans ?_
+    have := norm_le_pi_norm x 0
+    rwa [hx0, Real.norm_eq_abs, abs_of_nonneg hc0] at this
+  have hbound := h δ hδ0.le le_rfl x hnx
+  have hval : (strainSolution ν T hT).velocity δ x 0 = δ * c := by
+    simp [strainSolution, hx0, strainCoeff]
+  have hge : δ * c ≤ ‖(strainSolution ν T hT).velocity δ x‖ := by
+    have := norm_le_pi_norm ((strainSolution ν T hT).velocity δ x) 0
+    rwa [hval, Real.norm_eq_abs, abs_of_nonneg (mul_nonneg hδ0.le hc0)] at this
+  have hRlt : R < δ * c := by
+    have : |R| + 1 ≤ δ * c := by
+      have := (div_le_iff₀ hδ0).mp hcR
+      linarith [this]
+    have hR' : R ≤ |R| := le_abs_self R
+    linarith
+  linarith [hge.trans hbound]
 
 end Navier.Analysis.ConditionalRegularity
