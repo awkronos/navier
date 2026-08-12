@@ -4763,6 +4763,7 @@ theorem tendsto_setIntegral_compl_closedBall_norm_sq {b : Space → Space}
   have h2 := hlim.const_sub (∫ x : Space, ‖b x‖ ^ 2)
   simpa using h2
 
+set_option maxHeartbeats 1000000 in
 /-- **(a)+(b) of the limit passage, in fixed-time form.**  A sequence of
 velocity slices converging in `L²` on every ball, with a uniform global `L²`
 error bound, pairs convergently against any fixed `L²` field — the far-field
@@ -4904,6 +4905,458 @@ theorem tendsto_integral_officialInner_of_l2loc
   rw [← hkey k]
   ring
 
+/-!
+### The convection leg and the full fixed-time limit passage (certified)
+
+Step (c): the quadratic term.  The far field can no longer be handled by the
+test's `L²` tail, because the pairing field is the velocity itself; it is
+handled instead by the Schwartz decay `‖x‖·‖∇φ(x)‖ ≤ K`, which makes
+`‖∇φ‖` uniformly small outside a ball.  Assembling the two linear legs and this
+one gives the whole weak-pairing density's spatial limit passage at each fixed
+time.
+-/
+
+/-- Young's inequality in the form the two legs of the limit passage need. -/
+theorem mul_le_young (a b : ℝ) {lam : ℝ} (hlam : 0 < lam) :
+    a * b ≤ lam / 2 * a ^ 2 + 1 / (2 * lam) * b ^ 2 := by
+  rw [← sub_nonneg]
+  have hid : lam / 2 * a ^ 2 + 1 / (2 * lam) * b ^ 2 - a * b
+      = (lam * a - b) ^ 2 / (2 * lam) := by
+    field_simp
+    ring
+  rw [hid]
+  positivity
+
+/-- Additivity of the official pairing in the right slot, subtractive form. -/
+theorem officialInner_sub_right (x a b : Space) :
+    officialInner x (a - b) = officialInner x a - officialInner x b := by
+  simp only [officialInner_eq_sum, Pi.sub_apply, mul_sub, Finset.sum_sub_distrib]
+
+set_option maxHeartbeats 1000000 in
+/-- **The bilinear (convection-type) leg of the limit passage.**  A real
+integrand dominated by `3‖∇f(x)‖·‖g_k(x)‖·‖h_k(x)‖`, with `g_k → 0` in `L²` on
+every ball and both factors uniformly `L²`-bounded, has vanishing integral in the
+limit.  The far field is controlled by the Schwartz decay `‖x‖·‖∇f(x)‖ ≤ K`,
+which is what replaces compact support of the test; the near field by Young's
+inequality with a large parameter. -/
+theorem tendsto_integral_of_dominated_l2loc (f : SchwartzVelocity)
+    (F : ℕ → Space → ℝ) (g h : ℕ → Space → Space) (C : ℝ) (hCnn : 0 ≤ C)
+    (hFint : ∀ k, Integrable (F k))
+    (hg2 : ∀ k, Integrable fun x : Space => ‖g k x‖ ^ 2)
+    (hh2 : ∀ k, Integrable fun x : Space => ‖h k x‖ ^ 2)
+    (hgC : ∀ k, (∫ x : Space, ‖g k x‖ ^ 2) ≤ C)
+    (hhC : ∀ k, (∫ x : Space, ‖h k x‖ ^ 2) ≤ C)
+    (hdom : ∀ (k : ℕ) (x : Space),
+      |F k x| ≤ 3 * ‖fderiv ℝ (⇑f) x‖ * (‖g k x‖ * ‖h k x‖))
+    (hgloc : ∀ R : ℝ, Filter.Tendsto
+      (fun k => ∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2)
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun k => ∫ x : Space, F k x) Filter.atTop (nhds 0) := by
+  classical
+  set M : ℝ := (SchwartzMap.seminorm ℝ 0 1) f with hMdef
+  have hMbd : ∀ x : Space, ‖fderiv ℝ (⇑f) x‖ ≤ M := by
+    intro x
+    have h1 := f.norm_iteratedFDeriv_le_seminorm ℝ 1 x
+    rwa [norm_iteratedFDeriv_one] at h1
+  have hMnn : 0 ≤ M := le_trans (norm_nonneg _) (hMbd 0)
+  set K : ℝ := (SchwartzMap.seminorm ℝ 1 1) f with hKdef
+  have hKbd : ∀ x : Space, ‖x‖ * ‖fderiv ℝ (⇑f) x‖ ≤ K := by
+    intro x
+    have h1 := SchwartzMap.le_seminorm ℝ 1 1 f x
+    rwa [norm_iteratedFDeriv_one, pow_one] at h1
+  have hKnn : 0 ≤ K := by
+    have := hKbd 0
+    simpa using this
+  rw [NormedAddGroup.tendsto_nhds_zero]
+  intro ε hε
+  -- far-field radius
+  set R : ℝ := 1 + 12 * K * C / ε with hRdef
+  have hR1 : (1:ℝ) ≤ R := by
+    have : 0 ≤ 12 * K * C / ε := by positivity
+    linarith
+  have hRpos : (0:ℝ) < R := by linarith
+  have hRfar : 3 * (K / R) * C < ε / 2 := by
+    have hεR : ε * R = ε + 12 * K * C := by
+      rw [hRdef]
+      field_simp
+    have heq : ε / 2 - 3 * (K / R) * C = (ε * R - 6 * K * C) / (2 * R) := by
+      field_simp
+      ring
+    have hnum : 0 < ε * R - 6 * K * C := by
+      rw [hεR]
+      nlinarith
+    have hpos : 0 < (ε * R - 6 * K * C) / (2 * R) := div_pos hnum (by linarith)
+    linarith
+  -- near-field Young parameter
+  set lam : ℝ := 1 + 12 * M * C / ε with hlamdef
+  have hlam : (0:ℝ) < lam := by
+    have : 0 ≤ 12 * M * C / ε := by positivity
+    linarith
+  have hnearC : 3 * M * (1 / (2 * lam) * C) < ε / 4 := by
+    have hεl : ε * lam = ε + 12 * M * C := by
+      rw [hlamdef]
+      field_simp
+    have heq : ε / 4 - 3 * M * (1 / (2 * lam) * C) = (ε * lam - 6 * M * C) / (4 * lam) := by
+      field_simp
+      ring
+    have hnum : 0 < ε * lam - 6 * M * C := by
+      rw [hεl]
+      nlinarith
+    have hpos : 0 < (ε * lam - 6 * M * C) / (4 * lam) := div_pos hnum (by linarith)
+    linarith
+  -- eventual near-field smallness
+  have hnearlim := hgloc R
+  rw [NormedAddGroup.tendsto_nhds_zero] at hnearlim
+  filter_upwards [hnearlim (ε / (6 * M * lam + 1)) (by positivity)] with k hk
+  have hAk : (∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2) < ε / (6 * M * lam + 1) := by
+    rw [Real.norm_eq_abs] at hk
+    exact lt_of_abs_lt hk
+  have hAknn : 0 ≤ ∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2 :=
+    setIntegral_nonneg measurableSet_closedBall fun x _ => by positivity
+  -- majorants
+  have hmajFar : Integrable fun x : Space =>
+      3 * (K / R) * ((‖g k x‖ ^ 2 + ‖h k x‖ ^ 2) / 2) :=
+    (((hg2 k).add (hh2 k)).div_const 2).const_mul _
+  have hmajNear : Integrable fun x : Space =>
+      3 * M * (lam / 2 * ‖g k x‖ ^ 2 + 1 / (2 * lam) * ‖h k x‖ ^ 2) :=
+    (((hg2 k).const_mul (lam / 2)).add ((hh2 k).const_mul (1 / (2 * lam)))).const_mul _
+  -- the far-field estimate
+  have hfar : (∫ x in (Metric.closedBall (0:Space) R)ᶜ, |F k x|) < ε / 2 := by
+    have hstep : (∫ x in (Metric.closedBall (0:Space) R)ᶜ, |F k x|)
+        ≤ ∫ x in (Metric.closedBall (0:Space) R)ᶜ,
+            3 * (K / R) * ((‖g k x‖ ^ 2 + ‖h k x‖ ^ 2) / 2) := by
+      refine setIntegral_mono_on (hFint k).abs.integrableOn hmajFar.integrableOn
+        measurableSet_closedBall.compl fun x hx => ?_
+      have hxR : R ≤ ‖x‖ := by
+        simp only [Set.mem_compl_iff, Metric.mem_closedBall, dist_zero_right, not_le] at hx
+        exact hx.le
+      have hdecay : ‖fderiv ℝ (⇑f) x‖ ≤ K / R := by
+        have hxpos : (0:ℝ) < ‖x‖ := lt_of_lt_of_le hRpos hxR
+        have h1 : ‖x‖ * ‖fderiv ℝ (⇑f) x‖ ≤ K := hKbd x
+        rw [le_div_iff₀ hRpos]
+        nlinarith [norm_nonneg (fderiv ℝ (⇑f) x)]
+      have h2 : |F k x| ≤ 3 * (K / R) * (‖g k x‖ * ‖h k x‖) := by
+        refine le_trans (hdom k x) ?_
+        have hnn : 0 ≤ ‖g k x‖ * ‖h k x‖ := by positivity
+        nlinarith [hnn, hdecay]
+      have h3 : ‖g k x‖ * ‖h k x‖ ≤ (‖g k x‖ ^ 2 + ‖h k x‖ ^ 2) / 2 := by
+        nlinarith [sq_nonneg (‖g k x‖ - ‖h k x‖)]
+      have hKR : 0 ≤ 3 * (K / R) := by positivity
+      nlinarith [h2, h3, hKR]
+    have hstep2 : (∫ x in (Metric.closedBall (0:Space) R)ᶜ,
+        3 * (K / R) * ((‖g k x‖ ^ 2 + ‖h k x‖ ^ 2) / 2))
+        ≤ ∫ x : Space, 3 * (K / R) * ((‖g k x‖ ^ 2 + ‖h k x‖ ^ 2) / 2) := by
+      refine setIntegral_le_integral hmajFar (Filter.Eventually.of_forall fun x => ?_)
+      have : 0 ≤ 3 * (K / R) := by positivity
+      have h2 : 0 ≤ (‖g k x‖ ^ 2 + ‖h k x‖ ^ 2) / 2 := by positivity
+      exact mul_nonneg this h2
+    have hval : (∫ x : Space, 3 * (K / R) * ((‖g k x‖ ^ 2 + ‖h k x‖ ^ 2) / 2))
+        = 3 * (K / R) * (((∫ x : Space, ‖g k x‖ ^ 2) + ∫ x : Space, ‖h k x‖ ^ 2) / 2) := by
+      rw [MeasureTheory.integral_const_mul, MeasureTheory.integral_div,
+        integral_add (hg2 k) (hh2 k)]
+    have hle : 3 * (K / R) * (((∫ x : Space, ‖g k x‖ ^ 2) + ∫ x : Space, ‖h k x‖ ^ 2) / 2)
+        ≤ 3 * (K / R) * C := by
+      have hKR : 0 ≤ 3 * (K / R) := by positivity
+      have := hgC k
+      have := hhC k
+      nlinarith [hgC k, hhC k, hKR]
+    linarith [hstep, hstep2, hval ▸ hle]
+  -- the near-field estimate
+  have hnear : (∫ x in Metric.closedBall (0:Space) R, |F k x|) < ε / 2 := by
+    have hstep : (∫ x in Metric.closedBall (0:Space) R, |F k x|)
+        ≤ ∫ x in Metric.closedBall (0:Space) R,
+            3 * M * (lam / 2 * ‖g k x‖ ^ 2 + 1 / (2 * lam) * ‖h k x‖ ^ 2) := by
+      refine setIntegral_mono_on (hFint k).abs.integrableOn hmajNear.integrableOn
+        measurableSet_closedBall fun x _ => ?_
+      have h2 : |F k x| ≤ 3 * M * (‖g k x‖ * ‖h k x‖) := by
+        refine le_trans (hdom k x) ?_
+        have hnn : 0 ≤ ‖g k x‖ * ‖h k x‖ := by positivity
+        nlinarith [hnn, hMbd x]
+      have h3 : ‖g k x‖ * ‖h k x‖
+          ≤ lam / 2 * ‖g k x‖ ^ 2 + 1 / (2 * lam) * ‖h k x‖ ^ 2 :=
+        mul_le_young _ _ hlam
+      nlinarith [h2, h3, hMnn]
+    have hval : (∫ x in Metric.closedBall (0:Space) R,
+        3 * M * (lam / 2 * ‖g k x‖ ^ 2 + 1 / (2 * lam) * ‖h k x‖ ^ 2))
+        = 3 * M * (lam / 2 * (∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2)
+            + 1 / (2 * lam) * ∫ x in Metric.closedBall (0:Space) R, ‖h k x‖ ^ 2) := by
+      rw [MeasureTheory.integral_const_mul,
+        integral_add ((hg2 k).const_mul (lam / 2)).integrableOn
+          ((hh2 k).const_mul (1 / (2 * lam))).integrableOn,
+        MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul]
+    have hhball : (∫ x in Metric.closedBall (0:Space) R, ‖h k x‖ ^ 2) ≤ C :=
+      le_trans (setIntegral_le_integral (hh2 k)
+        (Filter.Eventually.of_forall fun x => by positivity)) (hhC k)
+    have hb1 : 3 * M * (lam / 2 * (∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2))
+        < ε / 4 := by
+      have hMl : 0 ≤ 3 * M * (lam / 2) := by positivity
+      have hstep2 : 3 * M * (lam / 2) * (∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2)
+          ≤ 3 * M * (lam / 2) * (ε / (6 * M * lam + 1)) :=
+        mul_le_mul_of_nonneg_left hAk.le hMl
+      have hden : (0:ℝ) < 6 * M * lam + 1 := by positivity
+      have hfinal : 3 * M * (lam / 2) * (ε / (6 * M * lam + 1)) < ε / 4 := by
+        rw [mul_div_assoc'] at *
+        have heq : ε / 4 - 3 * M * (lam / 2) * ε / (6 * M * lam + 1)
+            = (ε * (6 * M * lam + 1) - 6 * M * lam * ε) / (4 * (6 * M * lam + 1)) := by
+          field_simp
+          ring
+        have hnum : 0 < ε * (6 * M * lam + 1) - 6 * M * lam * ε := by nlinarith
+        have hpos : 0 < (ε * (6 * M * lam + 1) - 6 * M * lam * ε) / (4 * (6 * M * lam + 1)) :=
+          div_pos hnum (by linarith)
+        linarith
+      nlinarith [hstep2, hfinal]
+    have hb2 : 3 * M * (1 / (2 * lam) * (∫ x in Metric.closedBall (0:Space) R, ‖h k x‖ ^ 2))
+        ≤ 3 * M * (1 / (2 * lam) * C) := by
+      have h1 : 1 / (2 * lam) * (∫ x in Metric.closedBall (0:Space) R, ‖h k x‖ ^ 2)
+          ≤ 1 / (2 * lam) * C := mul_le_mul_of_nonneg_left hhball (by positivity)
+      exact mul_le_mul_of_nonneg_left h1 (by positivity)
+    have hdist : 3 * M * (lam / 2 * (∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2)
+          + 1 / (2 * lam) * ∫ x in Metric.closedBall (0:Space) R, ‖h k x‖ ^ 2)
+        = 3 * M * (lam / 2 * (∫ x in Metric.closedBall (0:Space) R, ‖g k x‖ ^ 2))
+          + 3 * M * (1 / (2 * lam) * ∫ x in Metric.closedBall (0:Space) R, ‖h k x‖ ^ 2) := by
+      ring
+    linarith [hstep, hb1, hb2, hnearC, hval.le, hval.ge, hdist.le, hdist.ge]
+  -- assemble
+  have hsplit : (∫ x : Space, |F k x|)
+      = (∫ x in Metric.closedBall (0:Space) R, |F k x|)
+        + ∫ x in (Metric.closedBall (0:Space) R)ᶜ, |F k x| :=
+    (integral_add_compl measurableSet_closedBall (hFint k).abs).symm
+  rw [Real.norm_eq_abs]
+  calc |∫ x : Space, F k x| ≤ ∫ x : Space, |F k x| := abs_integral_le_integral_abs
+    _ = (∫ x in Metric.closedBall (0:Space) R, |F k x|)
+        + ∫ x in (Metric.closedBall (0:Space) R)ᶜ, |F k x| := hsplit
+    _ < ε := by linarith
+
+set_option maxHeartbeats 1000000 in
+/-- **The convection (quadratic) term passes to the limit.**  Step (c): split
+`⟨u,(u·∇)φ⟩ − ⟨u_m,(u_m·∇)φ⟩ = ⟨u−u_m,(u·∇)φ⟩ + ⟨u_m,((u−u_m)·∇)φ⟩` and drive
+each leg to zero by the dominated `L²_loc` estimate above. -/
+theorem tendsto_integral_convection_of_l2loc (f : SchwartzVelocity)
+    (v : ℕ → Space → Space) (w : Space → Space) (C : ℝ) (hCnn : 0 ≤ C)
+    (hvm : ∀ k, Measurable (v k)) (hwm : Measurable w)
+    (hv2 : ∀ k, Integrable fun x : Space => ‖v k x‖ ^ 2)
+    (hw2 : Integrable fun x : Space => ‖w x‖ ^ 2)
+    (hvC : ∀ k, (∫ x : Space, ‖v k x‖ ^ 2) ≤ C)
+    (hwC : (∫ x : Space, ‖w x‖ ^ 2) ≤ C)
+    (hdC : ∀ k, (∫ x : Space, ‖v k x - w x‖ ^ 2) ≤ C)
+    (hloc : ∀ R : ℝ, Filter.Tendsto
+      (fun k => ∫ x in Metric.closedBall (0:Space) R, ‖v k x - w x‖ ^ 2)
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun k => ∫ x : Space, officialInner (v k x) (fderiv ℝ (⇑f) x (v k x)))
+      Filter.atTop (nhds (∫ x : Space, officialInner (w x) (fderiv ℝ (⇑f) x (w x)))) := by
+  classical
+  set M : ℝ := (SchwartzMap.seminorm ℝ 0 1) f with hMdef
+  have hMbd : ∀ x : Space, ‖fderiv ℝ (⇑f) x‖ ≤ M := by
+    intro x
+    have h1 := f.norm_iteratedFDeriv_le_seminorm ℝ 1 x
+    rwa [norm_iteratedFDeriv_one] at h1
+  have hMnn : 0 ≤ M := le_trans (norm_nonneg _) (hMbd 0)
+  have hfc : Continuous fun x : Space => fderiv ℝ (⇑f) x :=
+    (f.smooth ⊤).continuous_fderiv (by simp)
+  have happly : Continuous fun p : (Space →L[ℝ] Space) × Space => p.1 p.2 :=
+    isBoundedBilinearMap_apply.continuous
+  have hcont2 : Continuous fun q : Space × Space => fderiv ℝ (⇑f) q.1 q.2 :=
+    happly.comp (hfc.prodMap continuous_id)
+  have hAmeas : ∀ u : Space → Space, Measurable u →
+      Measurable fun x : Space => fderiv ℝ (⇑f) x (u x) :=
+    fun u hu => hcont2.measurable.comp (measurable_id.prodMk hu)
+  have hAnorm : ∀ (u : Space → Space) (x : Space),
+      ‖fderiv ℝ (⇑f) x (u x)‖ ≤ M * ‖u x‖ := by
+    intro u x
+    exact le_trans (ContinuousLinearMap.le_opNorm _ _)
+      (mul_le_mul_of_nonneg_right (hMbd x) (norm_nonneg _))
+  have hAsq : ∀ u : Space → Space, Measurable u → (Integrable fun x : Space => ‖u x‖ ^ 2) →
+      Integrable fun x : Space => ‖fderiv ℝ (⇑f) x (u x)‖ ^ 2 := by
+    intro u hu hu2
+    refine (hu2.const_mul (M ^ 2)).mono'
+      ((hAmeas u hu).norm.pow_const 2).aestronglyMeasurable
+      (Filter.Eventually.of_forall fun x => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    nlinarith [hAnorm u x, norm_nonneg (fderiv ℝ (⇑f) x (u x)), norm_nonneg (u x), hMnn]
+  set d : ℕ → Space → Space := fun k x => v k x - w x with hddef
+  have hdm : ∀ k, Measurable (d k) := fun k => (hvm k).sub hwm
+  have hd2 : ∀ k, Integrable fun x : Space => ‖d k x‖ ^ 2 := fun k =>
+    integrable_norm_sub_sq (v k) w ((hvm k).sub hwm) (hv2 k) hw2
+  have hF1int : ∀ k, Integrable fun x : Space =>
+      officialInner (d k x) (fderiv ℝ (⇑f) x (v k x)) := fun k =>
+    integrable_officialInner_pairing (hdm k) (hAmeas _ (hvm k)) (hd2 k)
+      (hAsq _ (hvm k) (hv2 k))
+  have hF2int : ∀ k, Integrable fun x : Space =>
+      officialInner (w x) (fderiv ℝ (⇑f) x (d k x)) := fun k =>
+    integrable_officialInner_pairing hwm (hAmeas _ (hdm k)) hw2
+      (hAsq _ (hdm k) (hd2 k))
+  have hFvint : ∀ k, Integrable fun x : Space =>
+      officialInner (v k x) (fderiv ℝ (⇑f) x (v k x)) := fun k =>
+    integrable_convection_pairing f (hvm k) (hv2 k)
+  have hFwint : Integrable fun x : Space =>
+      officialInner (w x) (fderiv ℝ (⇑f) x (w x)) :=
+    integrable_convection_pairing f hwm hw2
+  have hsplit : ∀ k, (∫ x : Space, officialInner (v k x) (fderiv ℝ (⇑f) x (v k x)))
+      - (∫ x : Space, officialInner (w x) (fderiv ℝ (⇑f) x (w x)))
+      = (∫ x : Space, officialInner (d k x) (fderiv ℝ (⇑f) x (v k x)))
+        + ∫ x : Space, officialInner (w x) (fderiv ℝ (⇑f) x (d k x)) := by
+    intro k
+    rw [← integral_sub (hFvint k) hFwint, ← integral_add (hF1int k) (hF2int k)]
+    congr 1
+    funext x
+    have hlin : fderiv ℝ (⇑f) x (d k x)
+        = fderiv ℝ (⇑f) x (v k x) - fderiv ℝ (⇑f) x (w x) := by
+      simp only [hddef]
+      exact map_sub _ _ _
+    rw [hlin, officialInner_sub_right, show d k x = v k x - w x from rfl,
+      officialInner_sub_left]
+    ring
+  have hT1 : Filter.Tendsto
+      (fun k => ∫ x : Space, officialInner (d k x) (fderiv ℝ (⇑f) x (v k x)))
+      Filter.atTop (nhds 0) := by
+    refine tendsto_integral_of_dominated_l2loc f
+      (fun k x => officialInner (d k x) (fderiv ℝ (⇑f) x (v k x))) d v C hCnn
+      hF1int hd2 hv2 hdC hvC (fun k x => ?_) hloc
+    have h1 := abs_officialInner_le_three (d k x) (fderiv ℝ (⇑f) x (v k x))
+    have h2 := (fderiv ℝ (⇑f) x).le_opNorm (v k x)
+    nlinarith [h1, h2, norm_nonneg (d k x), norm_nonneg (v k x),
+      norm_nonneg (fderiv ℝ (⇑f) x)]
+  have hT2 : Filter.Tendsto
+      (fun k => ∫ x : Space, officialInner (w x) (fderiv ℝ (⇑f) x (d k x)))
+      Filter.atTop (nhds 0) := by
+    refine tendsto_integral_of_dominated_l2loc f
+      (fun k x => officialInner (w x) (fderiv ℝ (⇑f) x (d k x))) d (fun _ => w) C hCnn
+      hF2int hd2 (fun _ => hw2) hdC (fun _ => hwC) (fun k x => ?_) hloc
+    have h1 := abs_officialInner_le_three (w x) (fderiv ℝ (⇑f) x (d k x))
+    have h2 := (fderiv ℝ (⇑f) x).le_opNorm (d k x)
+    nlinarith [h1, h2, norm_nonneg (d k x), norm_nonneg (w x),
+      norm_nonneg (fderiv ℝ (⇑f) x)]
+  have hzero : Filter.Tendsto
+      (fun k => (∫ x : Space, officialInner (v k x) (fderiv ℝ (⇑f) x (v k x)))
+        - ∫ x : Space, officialInner (w x) (fderiv ℝ (⇑f) x (w x)))
+      Filter.atTop (nhds 0) := by
+    have hsum := hT1.add hT2
+    rw [add_zero] at hsum
+    exact hsum.congr fun k => (hsplit k).symm
+  have hfin := hzero.add_const (∫ x : Space, officialInner (w x) (fderiv ℝ (⇑f) x (w x)))
+  rw [zero_add] at hfin
+  exact hfin.congr fun k => by ring
+
+/-- One directional spatial derivative of a Schwartz slice, packaged as a
+Schwartz map. -/
+noncomputable def schwartzDeriv (f : SchwartzVelocity) (e : Space) : SchwartzVelocity :=
+  SchwartzMap.evalCLM ℝ Space Space e (SchwartzMap.fderivCLM ℝ Space Space f)
+
+theorem schwartzDeriv_apply (f : SchwartzVelocity) (e x : Space) :
+    schwartzDeriv f e x = fderiv ℝ (⇑f) x e := by
+  simp [schwartzDeriv]
+
+/-- **The spatial Laplacian of a Schwartz slice is a Schwartz map.**  Written as
+an explicit three-term sum of second directional derivatives, so that
+measurability and square-integrability of the Laplacian factor of the weak
+pairing come for free. -/
+noncomputable def schwartzLaplacian (f : SchwartzVelocity) : SchwartzVelocity :=
+  schwartzDeriv (schwartzDeriv f (basisVector 0)) (basisVector 0)
+    + schwartzDeriv (schwartzDeriv f (basisVector 1)) (basisVector 1)
+    + schwartzDeriv (schwartzDeriv f (basisVector 2)) (basisVector 2)
+
+theorem schwartzLaplacian_apply (f : SchwartzVelocity) (t : ℝ) (x : Space) :
+    schwartzLaplacian f x = laplacian (fun _ => (⇑f : Space → Space)) t x := by
+  have hg : ∀ e : Space, (fun y : Space => fderiv ℝ (⇑f) y e) = ⇑(schwartzDeriv f e) := by
+    intro e
+    funext y
+    rw [schwartzDeriv_apply]
+  unfold laplacian
+  rw [Fin.sum_univ_three]
+  simp only [schwartzLaplacian, SchwartzMap.add_apply]
+  rw [hg (basisVector 0), hg (basisVector 1), hg (basisVector 2),
+    schwartzDeriv_apply, schwartzDeriv_apply, schwartzDeriv_apply]
+
+set_option maxHeartbeats 1000000 in
+/-- **The full fixed-time spatial limit passage for the weak-form density.**
+Steps (a), (b), (c) of the Leray limit passage, assembled: for velocity slices
+converging in `L²` on every ball with a uniform global `L²` bound, the whole
+weak-pairing density integral converges.  The linear legs go by the `L²`-tail
+estimate, the quadratic convection leg by the dominated `L²_loc` estimate. -/
+theorem tendsto_integral_weakPairingDensity_of_l2loc (ν : ℝ)
+    (φ : DivergenceFreeTestFunction) (t : ℝ) (ht : 0 ≤ t)
+    (v : ℕ → Space → Space) (w : Space → Space) (C : ℝ) (hCnn : 0 ≤ C)
+    (hvm : ∀ k, Measurable (v k)) (hwm : Measurable w)
+    (hv2 : ∀ k, Integrable fun x : Space => ‖v k x‖ ^ 2)
+    (hw2 : Integrable fun x : Space => ‖w x‖ ^ 2)
+    (hvC : ∀ k, (∫ x : Space, ‖v k x‖ ^ 2) ≤ C)
+    (hwC : (∫ x : Space, ‖w x‖ ^ 2) ≤ C)
+    (hdC : ∀ k, (∫ x : Space, ‖v k x - w x‖ ^ 2) ≤ C)
+    (hloc : ∀ R : ℝ, Filter.Tendsto
+      (fun k => ∫ x in Metric.closedBall (0:Space) R, ‖v k x - w x‖ ^ 2)
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun k => ∫ x : Space, weakPairingDensity ν (fun _ => v k) φ t x)
+      Filter.atTop (nhds (∫ x : Space, weakPairingDensity ν (fun _ => w) φ t x)) := by
+  classical
+  set b1 : SchwartzVelocity := φ.timeDerivSchwartz t with hb1def
+  set b3 : SchwartzVelocity := ν • schwartzLaplacian (φ.field t) with hb3def
+  have hdec : ∀ (u : Space → Space) (x : Space),
+      weakPairingDensity ν (fun _ => u) φ t x
+        = officialInner (u x) (b1 x)
+          + officialInner (u x) (fderiv ℝ (⇑(φ.field t)) x (u x))
+          + officialInner (u x) (b3 x) := by
+    intro u x
+    unfold weakPairingDensity
+    rw [officialInner_add_right, officialInner_add_right]
+    congr 1
+    · congr 1
+      · congr 1
+        exact φ.timeDeriv_eq t ht x
+    · congr 1
+      rw [hb3def]
+      show ν • laplacian (fun s => (φ.field s : Space → Space)) t x
+        = (ν • schwartzLaplacian (φ.field t) : SchwartzVelocity) x
+      rw [SchwartzMap.smul_apply, schwartzLaplacian_apply (φ.field t) t x]
+      rfl
+  have hint1 : ∀ u : Space → Space, Measurable u → (Integrable fun x : Space => ‖u x‖ ^ 2) →
+      Integrable fun x : Space => officialInner (u x) (b1 x) := fun u hu hu2 =>
+    integrable_officialInner_pairing hu b1.continuous.measurable hu2
+      (integrable_norm_sq_schwartz b1)
+  have hint3 : ∀ u : Space → Space, Measurable u → (Integrable fun x : Space => ‖u x‖ ^ 2) →
+      Integrable fun x : Space => officialInner (u x) (b3 x) := fun u hu hu2 =>
+    integrable_officialInner_pairing hu b3.continuous.measurable hu2
+      (integrable_norm_sq_schwartz b3)
+  have hint2 : ∀ u : Space → Space, Measurable u → (Integrable fun x : Space => ‖u x‖ ^ 2) →
+      Integrable fun x : Space =>
+        officialInner (u x) (fderiv ℝ (⇑(φ.field t)) x (u x)) := fun u hu hu2 =>
+    integrable_convection_pairing (φ.field t) hu hu2
+  have hsplit : ∀ u : Space → Space, Measurable u → (Integrable fun x : Space => ‖u x‖ ^ 2) →
+      (∫ x : Space, weakPairingDensity ν (fun _ => u) φ t x)
+        = (∫ x : Space, officialInner (u x) (b1 x))
+          + (∫ x : Space, officialInner (u x) (fderiv ℝ (⇑(φ.field t)) x (u x)))
+          + ∫ x : Space, officialInner (u x) (b3 x) := by
+    intro u hu hu2
+    calc (∫ x : Space, weakPairingDensity ν (fun _ => u) φ t x)
+        = ∫ x : Space, (officialInner (u x) (b1 x)
+            + officialInner (u x) (fderiv ℝ (⇑(φ.field t)) x (u x))
+            + officialInner (u x) (b3 x)) :=
+          integral_congr_ae (Filter.Eventually.of_forall fun x => hdec u x)
+      _ = (∫ x : Space, (officialInner (u x) (b1 x)
+            + officialInner (u x) (fderiv ℝ (⇑(φ.field t)) x (u x))))
+          + ∫ x : Space, officialInner (u x) (b3 x) :=
+          integral_add ((hint1 u hu hu2).add (hint2 u hu hu2)) (hint3 u hu hu2)
+      _ = (∫ x : Space, officialInner (u x) (b1 x))
+          + (∫ x : Space, officialInner (u x) (fderiv ℝ (⇑(φ.field t)) x (u x)))
+          + ∫ x : Space, officialInner (u x) (b3 x) := by
+          rw [integral_add (hint1 u hu hu2) (hint2 u hu hu2)]
+  have hL1 : Filter.Tendsto (fun k => ∫ x : Space, officialInner (v k x) (b1 x))
+      Filter.atTop (nhds (∫ x : Space, officialInner (w x) (b1 x))) :=
+    tendsto_integral_officialInner_of_l2loc v w (⇑b1) C hvm hwm b1.continuous.measurable
+      hv2 hw2 (integrable_norm_sq_schwartz b1) hdC hloc
+  have hL3 : Filter.Tendsto (fun k => ∫ x : Space, officialInner (v k x) (b3 x))
+      Filter.atTop (nhds (∫ x : Space, officialInner (w x) (b3 x))) :=
+    tendsto_integral_officialInner_of_l2loc v w (⇑b3) C hvm hwm b3.continuous.measurable
+      hv2 hw2 (integrable_norm_sq_schwartz b3) hdC hloc
+  have hL2 : Filter.Tendsto
+      (fun k => ∫ x : Space, officialInner (v k x) (fderiv ℝ (⇑(φ.field t)) x (v k x)))
+      Filter.atTop
+      (nhds (∫ x : Space, officialInner (w x) (fderiv ℝ (⇑(φ.field t)) x (w x)))) :=
+    tendsto_integral_convection_of_l2loc (φ.field t) v w C hCnn hvm hwm hv2 hw2 hvC hwC
+      hdC hloc
+  have hsum := (hL1.add hL2).add hL3
+  rw [hsplit w hwm hw2]
+  exact hsum.congr fun k => (hsplit (v k) (hvm k) (hv2 k)).symm
+
 /-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once
 the limit weak-form identity is supplied for a compactness limit of the
 Galerkin sequence, `LerayLimitData` follows.  The energy clauses come from
@@ -4992,29 +5445,54 @@ convection and Laplacian legs closed unconditionally
 `abs_officialInner_le_three`: the spatial factors of a Schwartz slice are
 Schwartz via `SchwartzMap.fderivCLM`/`evalCLM`).
 
+**Banked this wave: steps (a), (b), (c) in full, at fixed time.**  The earlier
+time-derivative-decay obstruction recorded here was removed by the
+`timeDerivSchwartz`/`timeDeriv_eq`/`compact_time_deriv` repair, so both pairing
+clauses are now unconditional and the residue is the weak form alone.  Against
+that repaired interface the following are now proved above, kernel-clean:
+`weakForm_time_integral_eq_Ioc` (the half-line weak-form time integral IS a
+finite-window integral, by vanishing past the test's horizon);
+`tendsto_integral_officialInner_of_l2loc` (the linear legs, with the far field
+carried by the test's own `L²` tail rather than by any local convergence);
+`tendsto_integral_of_dominated_l2loc` and
+`tendsto_integral_convection_of_l2loc` (the quadratic leg, whose far field
+cannot use the test's `L²` tail — the pairing field is the velocity — and is
+carried instead by the Schwartz decay `‖x‖·‖∇φ(x)‖ ≤ K`); and their assembly
+`tendsto_integral_weakPairingDensity_of_l2loc`, the complete spatial limit
+passage for `∫ₓ weakPairingDensity` at each fixed time.
+
 **The exact remaining obstruction (statement hygiene, recorded 2026-08-11).**
-`DivergenceFreeTestFunction` controls `∂ₜφ` only through joint smoothness on
-`Ici 0 ×ˢ univ`, and slicewise-Schwartz plus joint smoothness imply **no decay
-whatsoever** for the time-derivative slice.  Witness family: with `χ` smooth
-compactly supported, `χ(0) = 1`, `g` smooth of arbitrary growth, and `η` a
-smooth compact-time envelope, the divergence-free tests built from the vector
-potential `A(t,x) = η(t)·(t−1)·χ((t−1)‖x‖²)·g(x)·e` have every slice compactly
-supported (hence Schwartz) and are jointly smooth, yet
-`∂ₜφ(1,·) = η(1)·curl(χ(0)·g·e)` grows like `∇g` — arbitrary.  So
-`pairing_integrable` at `t = 1` against such a test demands integrability of
-`⟨u(1,·), w⟩` for fields `w` of arbitrary growth, which `L²` control of the
-compactness limit cannot supply — no proof of the `∀ φ` clauses can go through
-on this hypothesis bundle without either (i) a Pattern-A field on the test
-class asserting time-derivative decay (still a subclass of the classical
-`C_c^∞` test class, whose time derivatives are compactly supported, so the
-existence statement would remain weaker-or-equal to Leray's), or (ii) a limit
-representative with compactly supported slices, which the Aubin–Lions limit
-does not provide.  Item (i) is a statement-level change to
-`DivergenceFreeTestFunction` and is deliberately **not** taken in this wave;
-the reduction lemmas above are exactly the interface such a repair would
-consume.  The weak-form limit passage (a)–(d) proper additionally awaits the
-same repair, since its left-hand side is only meaningful on integrable
-pairings. -/
+What is left is precisely step (d)'s interchange of `lim_m` with `∫_{(0,T]} dt`,
+and it is blocked by a second statement-level gap: `DivergenceFreeTestFunction`
+imposes **no uniform-in-time control** on the Schwartz seminorms of its slices,
+so `t ↦ ‖φ(t)‖_{L²}` and `t ↦ ‖∂ₜφ(t)‖_{L²}` may be unbounded on `[0,T)` and
+the weak-form time integrand then has no `m`-uniform integrable majorant.
+
+Witness (every field of the structure checked): take divergence-free Schwartz
+fields `ψ_n` with pairwise disjoint supports marching to spatial infinity and
+`‖ψ_n‖_{L²} = 1`, and scalar bumps `f_n ∈ C_c^∞((T − 1/n, T − 1/(n+1)))` with
+`sup|f_n| = n` and `∫|f_n'| = 2n`; set `φ(t) := Σ_n f_n(t)·ψ_n`.  At each `t` at
+most one term is nonzero, so every slice is Schwartz and divergence-free;
+`timeDerivSchwartz t := Σ_n f_n'(t)·ψ_n` is Schwartz; both vanish for `t ≥ T`;
+and the sum is jointly smooth on `Ici 0 ×ˢ univ`, because every point of the
+closed half-space has a neighborhood meeting only finitely many `supp ψ_n`, and
+each of those finitely many `f_n` already vanishes near `T`.  Yet
+`sup_{t<T} ‖φ(t)‖_{L²} = ∞` and `∫₀^T ‖∂ₜφ(t)‖_{L²} dt = ∞`.
+
+So dominated convergence in `t` is unavailable, and with it the `L¹(0,T)`
+route: extracting an a.e.-`t` subsequence from `StrongL2LocLimit` supplies the
+pointwise hypothesis that the fixed-time passage above discharges, but supplies
+no majorant.  This does **not** falsify the statement — under Bochner's
+junk-value convention both sides can vanish on such a test — it closes off
+every domination-based route.  Closing the headline needs one of: (i) a
+uniform-in-time seminorm field on `DivergenceFreeTestFunction` (still a
+subclass of the classical `C_c^∞` test class, whose slices are uniformly
+compactly supported, so the existence statement would remain
+weaker-or-equal to Leray's); (ii) an argument that never forms a `t`-majorant;
+or (iii) a limit representative with compactly supported slices, which
+Aubin–Lions does not provide.  Item (i) is a statement-level change and is
+deliberately **not** taken here; the fixed-time passage above is exactly the
+interface such a repair would consume. -/
 
 
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
