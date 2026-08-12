@@ -1252,6 +1252,27 @@ def strainSolution (ν T : ℝ) (hT : 0 < T) :
   incompressible := fun t _ _ x => strainVelocity_divergence t x
   equation := strainFlow_equation ν T
 
+/-- At any positive time the strain velocity exceeds every level `R` somewhere
+outside every ball: this is the exact negation shape of the far-field
+conclusions of the four residual leaves. -/
+lemma strainVelocity_farField_exceeds {t : ℝ} (ht : 0 < t) (ϱ R : ℝ) :
+    ∃ x : Space, ϱ ≤ ‖x‖ ∧ R < ‖strainVelocity t x‖ := by
+  set c : ℝ := max (max ϱ 0) ((|R| + 1) / t) with hc
+  have hc0 : (0 : ℝ) ≤ c := le_trans (le_max_right ϱ 0) (le_max_left _ _)
+  have hcϱ : ϱ ≤ c := le_trans (le_max_left ϱ 0) (le_max_left _ _)
+  have hcR : (|R| + 1) / t ≤ c := le_max_right _ _
+  refine ⟨Pi.single 0 c, hcϱ.trans ?_, ?_⟩
+  · have h := norm_le_pi_norm (Pi.single (0 : Fin 3) c : Space) 0
+    rwa [Pi.single_eq_same, Real.norm_eq_abs, abs_of_nonneg hc0] at h
+  · have hval : strainVelocity t (Pi.single 0 c) 0 = t * c := by simp [strainCoeff]
+    have h := norm_le_pi_norm (strainVelocity t (Pi.single (0 : Fin 3) c : Space)) 0
+    rw [hval, Real.norm_eq_abs, abs_of_nonneg (mul_nonneg ht.le hc0)] at h
+    have hgt : |R| + 1 ≤ t * c := by
+      have := (div_le_iff₀ ht).mp hcR
+      linarith
+    have hR' : R ≤ |R| := le_abs_self R
+    linarith
+
 /-- **Sharpness witness: the integrability hypotheses of the far-field leaves
 are load-bearing.**  For every viscosity `ν`, every horizon `T > 0` and every
 layer thickness `δ ∈ (0,T)`, the strain solution `strainSolution` satisfies
@@ -1283,28 +1304,163 @@ theorem strainFlow_farField_unbounded (ν : ℝ) {T δ : ℝ} (hT : 0 < T)
           ϱ ≤ ‖x‖ → ‖(strainSolution ν T hT).velocity t x‖ ≤ R := by
   refine ⟨⟨0, fun x => by simp⟩, ?_⟩
   rintro ⟨ϱ, R, h⟩
-  set c : ℝ := max (max ϱ 0) ((|R| + 1) / δ) with hc
-  have hc0 : (0 : ℝ) ≤ c := le_trans (le_max_right ϱ 0) (le_max_left _ _)
-  have hcϱ : ϱ ≤ c := le_trans (le_max_left ϱ 0) (le_max_left _ _)
-  have hcR : (|R| + 1) / δ ≤ c := le_max_right _ _
-  set x : Space := Pi.single 0 c with hx
-  have hx0 : x 0 = c := by simp [hx]
-  have hnx : ϱ ≤ ‖x‖ := by
-    refine hcϱ.trans ?_
-    have := norm_le_pi_norm x 0
-    rwa [hx0, Real.norm_eq_abs, abs_of_nonneg hc0] at this
-  have hbound := h δ hδ0.le le_rfl x hnx
-  have hval : (strainSolution ν T hT).velocity δ x 0 = δ * c := by
-    simp [strainSolution, hx0, strainCoeff]
-  have hge : δ * c ≤ ‖(strainSolution ν T hT).velocity δ x‖ := by
-    have := norm_le_pi_norm ((strainSolution ν T hT).velocity δ x) 0
-    rwa [hval, Real.norm_eq_abs, abs_of_nonneg (mul_nonneg hδ0.le hc0)] at this
-  have hRlt : R < δ * c := by
-    have : |R| + 1 ≤ δ * c := by
-      have := (div_le_iff₀ hδ0).mp hcR
-      linarith [this]
-    have hR' : R ≤ |R| := le_abs_self R
+  obtain ⟨x, hx, hR⟩ := strainVelocity_farField_exceeds hδ0 ϱ R
+  have hv : (strainSolution ν T hT).velocity = strainVelocity := rfl
+  have := h δ hδ0.le le_rfl x hx
+  rw [hv] at this
+  linarith
+
+/-! #### The strain flow satisfies every non-integrability hypothesis -/
+
+/-- The strain flow is irrotational: its velocity gradient is a diagonal
+matrix, so the curl vanishes identically.  Consequently *every*
+direction-coherence hypothesis — in particular the `ρ`-scaled
+Constantin–Fefferman bound `hcoh` — holds vacuously for it whenever
+`Ω₀ > 0`. -/
+lemma crossProduct_self_smul (c : ℝ) (a : Space) : a ⨯₃ (c • a) = 0 := by
+  funext j
+  fin_cases j <;> simp
+
+lemma strainMap_basisVector (t : ℝ) (i : Fin 3) :
+    strainMap t (basisVector i) = (strainCoeff i * t) • basisVector i := by
+  funext j
+  by_cases h : j = i
+  · subst h; simp [basisVector]
+  · simp [basisVector, Pi.single_eq_of_ne h]
+
+lemma strainVelocity_vorticity (t : ℝ) (x : Space) :
+    vorticity strainVelocity t x = 0 := by
+  have h : ∀ i : Fin 3,
+      basisVector i ⨯₃ (fderiv ℝ (strainVelocity t) x (basisVector i)) = 0 := by
+    intro i
+    rw [strainVelocity_fderiv, strainMap_basisVector]
+    exact crossProduct_self_smul _ _
+  simp only [vorticity, staticCurl, h, Finset.sum_const_zero]
+
+/-- Any half-space slab `{x | a ≤ x₀}` has infinite Lebesgue measure in `ℝ³`,
+so a function bounded below by `1` on such a slab is not integrable. -/
+lemma not_integrable_of_slab {g : Space → ℝ} {a : ℝ}
+    (h : ∀ x : Space, a ≤ x 0 → (1 : ℝ) ≤ g x) : ¬ Integrable g := by
+  intro hI
+  have hlt := hI.measure_ge_lt_top (ε := (1 : ℝ)) one_pos
+  have hsub : (Set.univ.pi fun _ : Fin 3 => Set.Ici a)
+      ⊆ {y : Space | (1 : ℝ) ≤ g y} := fun x hx => h x (hx 0 (Set.mem_univ 0))
+  have hvol : volume (Set.univ.pi fun _ : Fin 3 => Set.Ici a) = ⊤ := by
+    rw [volume_pi_pi]
+    simp
+  have hle := measure_mono (μ := (volume : Measure Space)) hsub
+  rw [hvol] at hle
+  exact absurd (hle.trans_lt hlt) (lt_irrefl _)
+
+lemma strainVelocity_one_le_norm {t : ℝ} (ht : t ≠ 0) {x : Space}
+    (hx : |t|⁻¹ ≤ x 0) : (1 : ℝ) ≤ ‖strainVelocity t x‖ := by
+  have ht0 : 0 < |t| := abs_pos.mpr ht
+  have hx0 : 0 < x 0 := lt_of_lt_of_le (by positivity) hx
+  have hone : (1 : ℝ) ≤ |t| * x 0 := by
+    have := mul_le_mul_of_nonneg_left hx ht0.le
+    rwa [mul_inv_cancel₀ ht0.ne'] at this
+  have hval : strainVelocity t x 0 = t * x 0 := by simp [strainCoeff]
+  have h := norm_le_pi_norm (strainVelocity t x) 0
+  rw [hval, Real.norm_eq_abs, abs_mul, abs_of_pos hx0] at h
+  linarith
+
+/-- **The strain flow fails the `L^p` integrability hypothesis.**  For `t ≠ 0`
+the velocity is a nonzero linear field, so `‖u(t,·)‖^p` is bounded below by `1`
+on a half-space and is therefore not integrable, for every exponent `p > 0`.
+This is precisely the hypothesis `hint` of the Prodi–Serrin leaves. -/
+lemma strainVelocity_not_integrable_rpow {t : ℝ} (ht : t ≠ 0) {p : ℝ} (hp : 0 < p) :
+    ¬ Integrable (fun x : Space => ‖strainVelocity t x‖ ^ p) := by
+  refine not_integrable_of_slab (a := |t|⁻¹) fun x hx => ?_
+  calc (1 : ℝ) = (1 : ℝ) ^ p := (Real.one_rpow p).symm
+    _ ≤ ‖strainVelocity t x‖ ^ p :=
+        Real.rpow_le_rpow zero_le_one (strainVelocity_one_le_norm ht hx) hp.le
+
+/-- **The strain flow fails the `L²` integrability hypothesis** `hL2` of the
+Constantin–Fefferman leaves, for the same reason. -/
+lemma strainVelocity_not_integrable_sq {t : ℝ} (ht : t ≠ 0) :
+    ¬ Integrable (fun x : Space => ‖strainVelocity t x‖ ^ 2) := by
+  refine not_integrable_of_slab (a := |t|⁻¹) fun x hx => ?_
+  exact one_le_pow₀ (strainVelocity_one_le_norm ht hx)
+
+lemma strainVelocity_zero_time : strainVelocity 0 = fun _ : Space => (0 : Space) := by
+  funext x
+  funext i
+  simp
+
+/-- Lean's Bochner integral returns its junk value `0` off the integrable
+class, so the strain flow's `L^p` slice integrals all vanish. -/
+lemma strainVelocity_integral_rpow (t : ℝ) {p : ℝ} (hp : 0 < p) :
+    (∫ x : Space, ‖strainVelocity t x‖ ^ p) = 0 := by
+  rcases eq_or_ne t 0 with rfl | ht
+  · simp [strainVelocity_zero_time, Real.zero_rpow hp.ne']
+  · exact integral_undef (strainVelocity_not_integrable_rpow ht hp)
+
+lemma strainVelocity_integral_sq (t : ℝ) :
+    (∫ x : Space, ‖strainVelocity t x‖ ^ 2) = 0 := by
+  rcases eq_or_ne t 0 with rfl | ht
+  · simp [strainVelocity_zero_time]
+  · exact integral_undef (strainVelocity_not_integrable_sq ht)
+
+/-- The uniform `L²` mass bracket `hmass` holds for the strain flow, for every
+energy budget `E ≥ 0`. -/
+lemma strainVelocity_massBracket {E : ℝ} (hE : 0 ≤ E) (t : ℝ) :
+    (∫ x : Space, ‖strainVelocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E := by
+  rw [strainVelocity_integral_sq]
+  exact ⟨le_rfl, hE⟩
+
+/-- The Serrin mixed norm `hM` holds for the strain flow, for every budget
+`M ≥ 0`. -/
+lemma strainVelocity_mixedNorm {p q : ℝ} (hp : 0 < p) (hq : 0 < q) (T' : ℝ) :
+    (∫ s in (0 : ℝ)..T',
+      (∫ x : Space, ‖strainVelocity s x‖ ^ p) ^ (q / p)) = 0 := by
+  have h : ∀ s : ℝ,
+      (∫ x : Space, ‖strainVelocity s x‖ ^ p) ^ (q / p) = 0 := fun s => by
+    rw [strainVelocity_integral_rpow s hp, Real.zero_rpow (by positivity)]
+  simp [h]
+
+lemma strainVelocity_mixedNorm_intervalIntegrable
+    {p q : ℝ} (hp : 0 < p) (hq : 0 < q) (T' : ℝ) :
+    IntervalIntegrable
+      (fun s : ℝ => (∫ x : Space, ‖strainVelocity s x‖ ^ p) ^ (q / p))
+      volume 0 T' := by
+  have h : (fun s : ℝ => (∫ x : Space, ‖strainVelocity s x‖ ^ p) ^ (q / p))
+      = fun _ : ℝ => (0 : ℝ) := by
+    funext s
+    rw [strainVelocity_integral_rpow s hp, Real.zero_rpow (by positivity)]
+  rw [h]
+  exact intervalIntegrable_const
+
+/-- **Sharpness for the two interior outer-region leaves.**  The strain
+solution satisfies every hypothesis of `prodiSerrin_interior_outerRegion_bounded`
+except `hint` — the mixed-norm budget `hM` and its integrability `hMint` hold
+for *every* `M ≥ 0` because the slice integrals take Lean's junk value `0` —
+and every hypothesis of `constantinFefferman_interior_outerRegion_bounded`
+except `hL2`, since its vorticity vanishes identically
+(`strainVelocity_vorticity`) so the direction-coherence hypothesis `hcoh` is
+vacuous, and the mass bracket `hmass` again holds for every `E ≥ 0`.  Its
+outer-region conclusion nevertheless fails. -/
+theorem strainFlow_interior_outerRegion_unbounded (ν : ℝ) {T δ : ℝ} (hT : 0 < T)
+    (hδ0 : 0 < δ) (hδT : δ < T) :
+    (∀ {E : ℝ}, 0 ≤ E → ∀ t : ℝ,
+        (∫ x : Space, ‖(strainSolution ν T hT).velocity t x‖ ^ 2)
+          ∈ Set.Icc (0 : ℝ) E) ∧
+      (∀ t : ℝ, ∀ x : Space,
+        vorticity (strainSolution ν T hT).velocity t x = 0) ∧
+      ¬ ∃ ϱ R : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
+          (ϱ ≤ ‖x‖ ∨ (δ + T) / 2 < t) →
+            ‖(strainSolution ν T hT).velocity t x‖ ≤ R := by
+  have hv : (strainSolution ν T hT).velocity = strainVelocity := rfl
+  refine ⟨fun hE t => ?_, fun t x => ?_, ?_⟩
+  · rw [hv]; exact strainVelocity_massBracket hE t
+  · rw [hv]; exact strainVelocity_vorticity t x
+
+  · rintro ⟨ϱ, R, h⟩
+    have ht0 : 0 < (δ + T) / 2 := by linarith
+    have htδ : δ < (δ + T) / 2 := by linarith
+    have htT : (δ + T) / 2 < T := by linarith
+    obtain ⟨x, hx, hR⟩ := strainVelocity_farField_exceeds ht0 ϱ R
+    have := h ((δ + T) / 2) htδ htT x (Or.inl hx)
+    rw [hv] at this
     linarith
-  linarith [hge.trans hbound]
 
 end Navier.Analysis.ConditionalRegularity
