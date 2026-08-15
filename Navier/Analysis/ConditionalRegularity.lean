@@ -1,4 +1,5 @@
 import Navier.Analysis.BealeKatoMajda
+import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Scaling
 import Navier.Analysis.ESSInputs
@@ -172,6 +173,7 @@ open Navier.Analysis.Vorticity
 open Navier.Analysis.OfficialABEncoding
 open Navier.Analysis.EnergyNormBridge
 open Navier.Breakdown
+open Navier.Analysis.EnergyNormBridge
 
 /-! ### Shared established leaves -/
 
@@ -255,17 +257,7 @@ theorem uniformL2Mass_of_energyBound {u : VelocityEvolution} {T E : ℝ}
   intro t ht0 htT
   obtain ⟨hmeas, hint, hk⟩ := henergy t ht0 htT
   refine ⟨integral_nonneg fun x => by positivity, ?_⟩
-  have hoff : Integrable (fun x : Space => officialEuclideanNorm (u t x) ^ 2) :=
-    (integrable_norm_sq_iff_officialEuclideanNorm_sq (u t) hmeas).1 hint
-  have hsum : Integrable (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) := by
-    have heq : (fun x : Space => officialEuclideanNorm (u t x) ^ 2)
-        = (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) :=
-      funext fun x => officialEuclideanNorm_sq_eq_sum_sq (u t x)
-    rwa [heq] at hoff
-  calc (∫ x : Space, ‖u t x‖ ^ 2) ≤ ∫ x : Space, ∑ i : Fin 3, (u t x i) ^ 2 :=
-        integral_mono hint hsum (fun x => norm_sq_le_sum_sq (u t x))
-    _ = kineticEnergy u t := rfl
-    _ ≤ E := hk
+  exact intNormSq_le_of_kineticEnergy_le u t E hmeas hint hk
 
 /-- A hypothesis-carried energy bound over a nonempty time interval is
 nonnegative.  Not assumed anywhere: it is forced by the nonnegativity of the
@@ -275,8 +267,10 @@ theorem energyBound_nonneg {u : VelocityEvolution} {T E : ℝ} (hT : 0 < T)
       AEStronglyMeasurable (u t) volume ∧
       Integrable (fun x : Space => ‖u t x‖ ^ 2) ∧ kineticEnergy u t ≤ E) :
     0 ≤ E := by
-  obtain ⟨h0, hE⟩ := uniformL2Mass_of_energyBound henergy 0 le_rfl hT
-  exact h0.trans hE
+  have hnn : (0 : ℝ) ≤ kineticEnergy u 0 := by
+    unfold kineticEnergy
+    exact integral_nonneg fun x => Finset.sum_nonneg fun i _ => sq_nonneg _
+  exact hnn.trans (henergy 0 le_rfl hT).2.2
 
 /-- The integrability half of a hypothesis-carried energy bound.  Companion to
 `uniformL2Mass_of_energyBound`, which retains only the numeric bracket and

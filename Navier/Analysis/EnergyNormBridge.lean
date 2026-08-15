@@ -250,6 +250,66 @@ theorem uniformlyBoundedEnergy_iff_sup
       (supKineticEnergy_le_kineticEnergy u t (hmeas t ht) (hint t ht))
       (hbound t ht)
 
+/-! ### Consumer-facing form of the energy comparison
+
+`supKineticEnergy_le_kineticEnergy` above is the comparison in its named form.
+`ConditionalRegularity.uniformL2Mass_of_energyBound` meets it in the unfolded
+shape `∫ ‖u t x‖ ^ 2 ≤ C` derived from a `kineticEnergy` bound; the three
+lemmas below are that interface.  Nothing here is new mathematics over
+`supKineticEnergy_le_kineticEnergy`.
+
+`LerayWeak` does *not* route through these: its `UniformKineticBound` is
+already stated in the sup norm, so its slice bounds need no transport at all,
+and its Euclidean bound is carried separately as
+`UniformOfficialKineticBound`.
+-/
+
+/-- **Kinetic-energy → sup-norm `L²` mass.**  `kineticEnergy` is the Euclidean
+density `∑ᵢ uᵢ²`, which dominates the inherited sup-norm density `‖·‖²`
+pointwise (`norm_sq_le_sum_sq`).  Only the *larger* integrand needs to be
+integrable: `integral_mono_of_nonneg` handles a non-integrable smaller one by
+the Bochner zero convention, and the smaller integrand is nonnegative.  This is
+therefore the measurability-free strengthening of
+`supKineticEnergy_le_kineticEnergy`, which asks for slice measurability in
+order to run the transport in the opposite direction. -/
+theorem intNormSq_le_kineticEnergy (u : VelocityEvolution) (t : ℝ)
+    (hsum : Integrable (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2)) :
+    (∫ x : Space, ‖u t x‖ ^ 2) ≤ kineticEnergy u t := by
+  unfold kineticEnergy
+  exact integral_mono_of_nonneg
+    (Filter.Eventually.of_forall fun x => by positivity) hsum
+    (Filter.Eventually.of_forall fun x => norm_sq_le_sum_sq (u t x))
+
+/-- The Euclidean energy density is integrable whenever the inherited one is,
+under slice strong measurability.  This is the integrability step that
+`supKineticEnergy_le_kineticEnergy` and
+`kineticEnergy_le_three_mul_supKineticEnergy` each perform inline; it is named
+here because `intNormSq_le_of_kineticEnergy_le` below needs it as a separate
+step to discharge the hypothesis of `intNormSq_le_kineticEnergy`. -/
+theorem integrable_sum_sq_of_norm_sq (u : VelocityEvolution) (t : ℝ)
+    (hu : AEStronglyMeasurable (u t))
+    (hint : Integrable (fun x : Space => ‖u t x‖ ^ 2)) :
+    Integrable (fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2) := by
+  have hoff : Integrable (fun x : Space => officialEuclideanNorm (u t x) ^ 2) :=
+    (integrable_norm_sq_iff_officialEuclideanNorm_sq (u t) hu).1 hint
+  have h_eq : (fun x : Space => officialEuclideanNorm (u t x) ^ 2)
+      = fun x : Space => ∑ i : Fin 3, (u t x i) ^ 2 := by
+    funext x; exact officialEuclideanNorm_sq_eq_sum_sq (u t x)
+  rwa [h_eq] at hoff
+
+/-- **The bridge every kinetic-bound consumer needs.**  A bound on the
+Euclidean kinetic energy transfers to the inherited sup-norm `L²` mass with the
+*same* constant, since `‖x‖ ≤ |x|` pointwise.  The constant is preserved in
+this direction only; the converse costs the attained factor `3`
+(`kineticEnergy_le_three_mul_supKineticEnergy`). -/
+theorem intNormSq_le_of_kineticEnergy_le (u : VelocityEvolution) (t : ℝ) (C : ℝ)
+    (hu : AEStronglyMeasurable (u t))
+    (hint : Integrable (fun x : Space => ‖u t x‖ ^ 2))
+    (h : kineticEnergy u t ≤ C) :
+    (∫ x : Space, ‖u t x‖ ^ 2) ≤ C :=
+  le_trans (intNormSq_le_kineticEnergy u t
+    (integrable_sum_sq_of_norm_sq u t hu hint)) h
+
 /-! ### Beyond energy: the derivative-bundle operator norm
 
 With the energy clauses transported above, and the *spatial weight* `‖x‖ ^ k` of

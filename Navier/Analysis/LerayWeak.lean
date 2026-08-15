@@ -113,6 +113,7 @@ open Navier
 open Navier.Analysis.Enstrophy
 open Navier.Analysis.RieszKolmogorov
 open Navier.Analysis.OfficialABEncoding
+open Navier.Analysis.EnergyNormBridge
 
 /-!
 ## Test functions
@@ -4180,7 +4181,11 @@ structure LerayLimitData (ν : ℝ) (u₀ : SchwartzVelocity) where
   sq_integrable : ∀ t : ℝ, 0 < t → Integrable (fun x : Space => ‖limit t x‖ ^ 2)
   /-- The datum is square-integrable (automatic for Schwartz data). -/
   datum_sq_integrable : Integrable (fun x : Space => ‖u₀ x‖ ^ 2)
-  /-- The Leray energy bound for positive times. -/
+  /-- The Leray energy bound for positive times.  Both sides are the Euclidean
+  (Fefferman) energy: `kineticEnergy` integrates `∑ᵢ uᵢ²`, so the datum side is
+  `∫ ∑ᵢ (u₀)ᵢ²` and not the inherited sup-norm mass `∫ ‖u₀‖²`.  Mixing the two
+  would compare different quantities, since `Space` carries the product
+  (supremum) norm. -/
   energy_le : ∀ t : ℝ, 0 < t →
     kineticEnergy limit t ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2
   /-- Integrability of the weak-form density for positive times. -/
