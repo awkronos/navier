@@ -19,6 +19,33 @@ emits 448 raw declaration audits, each restricted to `propext`,
 their own receipts.  The audits establish the named lower theorems only.  They
 are not an endpoint certificate.
 
+## Compiler-confirmed residual sorries (9) — triage 2026-08-15
+
+`lake build` at `main@f1b496f` on a clean tree completes successfully (8729
+jobs) and emits exactly nine `declaration uses 'sorry'` warnings.  This is the
+whole compiler residual; it supersedes the stale `10` carried by the
+`ba2995e1` proof-report row (`exists_subseq_windowCauchy` has since closed).
+
+Triage verdict: **0 reachable, 9 blocked on absent infrastructure or a named
+statement-level barrier.**  None is a tactic gap; each is a missing analytic
+layer with a citation and a LOC estimate at its declaration.
+
+| # | Declaration | File:line | Class | Exact missing layer |
+|---|---|---|---|---|
+| 1 | `exists_biotSavartLogTextbook` | `BKMLogBootstrap.lean:362` | infrastructure-blocked | Biot–Savart representation `∇u = PV(∇K ∗ ω)` for divergence-free Schwartz fields. The entire Calderón–Zygmund **size** layer (near field, log shell, far field) is already certified in-file; only the representation is Mathlib-absent |
+| 2 | `exists_locallyUniformSliceDecay` | `BKMLogBootstrap.lean:1489` | infrastructure-blocked | Propagation of Schwartz seminorm bounds, locally uniform in time, along the flow — the genuinely PDE-dependent conjunct. In-file note proves no dominating function exists from `velocity_smooth` alone, so the NS clauses must be used |
+| 3 | `exists_sobolevOrderEnergyEstimate` | `BKMLogBootstrap.lean:1561` | infrastructure-blocked | Kato–Ponce commutator bound `\|⟨D^n(u·∇u), D^n u⟩\| ≤ C‖∇u‖_∞‖u‖²_{H^n}` (CPAM 41 (1988) 891–907); Majda–Bertozzi Prop. 3.7; ~600 LOC. Order summation already certified (`BKMLogLeaves.exists_hasDerivAt_sum_range_le`) |
+| 4 | `exists_galerkinModeData` | `LerayWeak.lean:1482` | infrastructure-blocked | `time_equicontinuous` + `weak_consistent` from the finite-mode energy identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (~100 LOC). Both Pattern-A fields from the Aubin–Lions repair are already discharged |
+| 5 | `exists_lerayLimitData` | `LerayWeak.lean:5503` | **statement-level barrier** | Every domination-based route is closed off by the in-file unbounded-test-field construction (`sup_{t<T}‖φ(t)‖_{L²} = ∞`). Not a falsification; closing it needs a uniform-in-time seminorm field on the test class, an argument forming no `t`-majorant, or a compactly-supported-slice representative. The statement-level change is deliberately not taken |
+| 6 | `prodiSerrin_layer_farField_bounded` | `ConditionalRegularity.lean:721` | infrastructure-blocked | Duhamel representation of an arbitrary `PartialClassicalSolution` + Leray projector as a pointwise bounded kernel. Kato, *Math. Z.* 187 (1984); Giga–Miyakawa, *ARMA* 89 (1985); ~300 LOC. Gaussian kernel, its `L^s` norms and the Young layer already land in `HeatSemigroupSmoothing` |
+| 7 | `prodiSerrin_interior_outerRegion_bounded` | `ConditionalRegularity.lean:791` | infrastructure-blocked | Cutoff integration by parts against the local energy identity, plus an `L^r` pressure bound. Blocked in turn on the Calderón–Zygmund near-field cancellation, named residual in `SingularIntegralPrelims` |
+| 8 | `constantinFefferman_layer_farField_bounded` | `ConditionalRegularity.lean:866` | infrastructure-blocked | Same layer as #6 with the uniform `L²` mass bracket replacing per-slice `L^p` |
+| 9 | `constantinFefferman_interior_outerRegion_bounded` | `ConditionalRegularity.lean:951` | infrastructure-blocked | Integral enstrophy budget (pointwise stretching identity already lands as `Enstrophy.vorticityTransportEquation`), near-field cancellation as in #7, and `SobolevEmbedding`'s `H³ ↪ L^∞` which still carries a disclosed Plancherel `sorryAx` |
+
+Three residuals (#1, #7, #9) route through one shared blocker — the
+Calderón–Zygmund near-field cancellation in `SingularIntegralPrelims` — which
+makes it the highest-fanout single target in the residual set.
+
 ## What the checked layer proves
 
 ### Official energy representation
