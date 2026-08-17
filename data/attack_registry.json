@@ -1219,10 +1219,10 @@
       ],
       "provenance": {
         "source_locator": "repo:Navier/Problem.lean",
-        "source_revision": "57c8f4d79df66fae495093b940a56843ff9805fa",
+        "source_revision": "2896490fc8b9c5ddba1ec185fd49c9f2462ac149",
         "immutable": true,
         "observed_at": "2026-07-14T22:58:16Z",
-        "artifact_sha256": "17dfd7fead6848f3489195dabd54df6593906a28cb0b099e40029c262606ee8a"
+        "artifact_sha256": "340254a52f87a3ea1c5b60a0c407c3227648912ed75bc1c55daf5ac378916a3d"
       },
       "receipt": null
     },
@@ -1239,10 +1239,10 @@
       ],
       "provenance": {
         "source_locator": "repo:Navier/OfficialProblem.lean",
-        "source_revision": "57c8f4d79df66fae495093b940a56843ff9805fa",
+        "source_revision": "2896490fc8b9c5ddba1ec185fd49c9f2462ac149",
         "immutable": true,
         "observed_at": "2026-07-14T22:37:17Z",
-        "artifact_sha256": "ba98244a0a7a40ef767b3dfe5d7d3668b26ec21df07ee9623f0be2c1db9360b0"
+        "artifact_sha256": "de4b327353f9d9ad1d6f80beb66deb6a335c95d2fd9132cdd2fc7cbb53c46e23"
       },
       "receipt": null
     },
