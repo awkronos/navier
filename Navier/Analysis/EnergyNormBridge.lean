@@ -144,8 +144,10 @@ theorem norm_onesPoint : ‖(![1, 1, 1] : Space)‖ = 1 := by
 inherited squared norm is `1` while the Euclidean squared norm is `3`, so
 `norm_sq_le_officialEuclideanNorm_sq` is a strict inequality somewhere.  This is
 the machine-checked reason every transport below is class-level rather than an
-identity, and hence why the `currentSpaceNormEuclideanNormEquivalence` residual
-of `Navier.Problem` is retained. -/
+identity.  The `currentSpaceNormEuclideanNormEquivalence` residual of
+`Navier.Problem` that tracked this gap is retired: class-level transports
+closed every clause it named, and this witness is why no identity-level
+statement was ever available. -/
 theorem norm_sq_lt_officialEuclideanNorm_sq_witness :
     ∃ x : Space, ‖x‖ ^ 2 < officialEuclideanNorm x ^ 2 := by
   refine ⟨![1, 1, 1], ?_⟩
@@ -314,9 +316,9 @@ theorem intNormSq_le_of_kineticEnergy_le (u : VelocityEvolution) (t : ℝ) (C : 
 
 With the energy clauses transported above, and the *spatial weight* `‖x‖ ^ k` of
 the data decay clause transported by
-`OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight`, the clause the
-`currentSpaceNormEuclideanNormEquivalence` residual still named for the data was
-the **derivative bundle** itself: `‖iteratedFDeriv ℝ n f x‖` is the operator norm
+`OfficialABEncoding.feffermanRapidDecayBound_iff_euclideanWeight`, the last
+clause the former `currentSpaceNormEuclideanNormEquivalence` residual named for
+the data was the **derivative bundle** itself: `‖iteratedFDeriv ℝ n f x‖` is the operator norm
 induced by the inherited sup norm on the `n` argument slots *and* on the value,
 so fixing the weight alone does not make it Fefferman's quantity.
 

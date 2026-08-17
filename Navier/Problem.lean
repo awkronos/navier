@@ -12,17 +12,20 @@ equations in (1)--(7) and statement (A) of Charles Fefferman's official problem-
 problem description.  It quantifies over every positive viscosity and every
 divergence-free Schwartz initial datum, and it fixes the force to zero.
 
-Scope caveat: `SchwartzMap`, `ContDiffOn`, the current norm on `Fin 3 → ℝ`,
-Fréchet derivatives, and a Lebesgue integral encode Fefferman's coordinatewise
-clauses.  Their comparison with the official derivative, Euclidean-norm, PDE,
-and energy wording is deliberately retained in `ProblemEncodingResidual`; no
-unproved representation equivalence is asserted here.
+Scope caveat: `SchwartzMap`, `ContDiffOn`, Fréchet derivatives, and a
+Lebesgue integral encode Fefferman's coordinatewise clauses.  Their comparison
+with the official datum, smoothness, PDE, and energy wording is deliberately
+retained in `ProblemEncodingResidual`; no unproved representation equivalence
+is asserted here.  The norm on `Fin 3 → ℝ` was a fifth such comparison until
+every consumer was transported to its Euclidean form; that residual is retired
+(see `Analysis.ForceNormBridge`).
 
-`kineticEnergy` uses the Euclidean density `∑ᵢ uᵢ²`, which discharges the
-energy-integrand clause of the norm residual.  All five residuals nevertheless
-remain listed.  Four of them still name an open clause; the norm residual no
-longer does, and is retained on the narrower ground stated in
-`currentSpaceNormEuclideanNormEquivalence`.
+`kineticEnergy` uses the Euclidean density `∑ᵢ uᵢ²`, which discharged the
+energy-integrand clause of the former norm residual.  Every other clause of
+that residual has since been transported through its consumers — the Schwartz
+datum decay, the force alternatives, and statement A itself — so
+`currentSpaceNormEuclideanNormEquivalence` is retired: each of the four
+constructors below names a clause that is still open.
 -/
 
 set_option autoImplicit false
@@ -118,10 +121,11 @@ def SmoothPressureOnNonnegativeTime (p : PressureEvolution) : Prop :=
 squared norm `∑ᵢ uᵢ²`.  The physical kinetic energy is `½∫|u|²`; this omits the
 factor `½`.
 
-Choosing the Euclidean density here discharged *one clause* of the
-`currentSpaceNormEuclideanNormEquivalence` residual below — the energy integrand
-itself, which previously used the sup norm inherited by `Fin 3 → ℝ`.  It does
-**not** close that residual, which remains listed.  `finite_energy` below still
+Choosing the Euclidean density here discharged *one clause* of the former
+`currentSpaceNormEuclideanNormEquivalence` residual — the energy integrand
+itself, which previously used the sup norm inherited by `Fin 3 → ℝ`.  The
+remaining clauses were then transported one by one, and the residual is now
+retired from `problemEncodingResiduals`.  `finite_energy` below still
 *states* integrability of the inherited sup norm `‖u t x‖²`, and the Schwartz and
 force-decay clauses (here and in `Navier.OfficialProblem`) still state their
 weights and derivative bundles in the product norm.  Each of those is now
@@ -170,8 +174,10 @@ is the same as the one whose energy clause is Fefferman's throughout, the
 smoothness field supplying the slice measurability that transport needs.  What
 the mismatch does cost is a constant — the two energies are interderivable only
 up to the attained dimension factor three
-(`Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup`) — which is why
-`currentSpaceNormEuclideanNormEquivalence` stays on the residual list. -/
+(`Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup`).  Every consumer
+provably transports across the mismatch, so the former
+`currentSpaceNormEuclideanNormEquivalence` residual is retired rather than
+listed. -/
 structure IsClassicalSolution (ν : ℝ) (f : ForceField)
     (u₀ : SchwartzVelocity) (u : VelocityEvolution)
     (p : PressureEvolution) : Prop where

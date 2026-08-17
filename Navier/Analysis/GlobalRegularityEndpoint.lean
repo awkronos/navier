@@ -24,11 +24,11 @@ and is diffable across waves.
   integrable kinetic-energy density and a uniform strict energy bound
   (Fefferman's clause (7)).
 
-The four remaining `Frontier` nodes (`schwartzConventionBridge`,
-`halfSpaceSmoothnessBridge`, `currentSpaceNormBridge`,
-`frechetCoordinatePDEBridge`) are metamathematical representation residuals of
-the encoding, not hypotheses of the Lean proposition, and correctly do not
-appear here.
+The metamathematical `Frontier` representation bridges
+(`schwartzConventionBridge`, `halfSpaceSmoothnessBridge`,
+`frechetCoordinatePDEBridge`) are not hypotheses of the Lean proposition, and
+correctly do not appear here; the fourth remaining bridge,
+`wholeSpaceEnergyBridge`, is the second hypothesis above.
 
 ## The three gates
 

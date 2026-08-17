@@ -294,8 +294,10 @@ hypothesis-carried (each classical statement is monotone in the corresponding
 norm, so these forms follow from the textbook ones and avoid `⨆`-junk
 vacuity).  Norm convention: `‖·‖` on `Space → Space` values is Mathlib's Pi
 (sup) norm; all `ℝ³` norms are equivalent, constants are absorbed into `C`
-(the official-norm comparison is the `currentSpaceNormEuclideanNormEquivalence`
-encoding residual, tracked separately in `Problem.lean`).
+(the official-norm comparison was tracked as the
+`currentSpaceNormEuclideanNormEquivalence` encoding residual, since retired in
+`Problem.lean`; the transports live in `Analysis.EnergyNormBridge` and
+`Analysis.ForceNormBridge`).
 -/
 
 /-- The squared inhomogeneous `H³(ℝ³)` Sobolev norm of a Schwartz velocity

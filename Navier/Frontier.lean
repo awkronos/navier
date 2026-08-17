@@ -100,7 +100,7 @@ theorem not_mem_own_dependencies (node : FrontierNode) :
 /-- The complete finite node set. -/
 def nodes : Finset FrontierNode := Finset.univ
 
-/-- This overview currently has ten explicitly named nodes. -/
+/-- This overview currently has nine explicitly named nodes. -/
 theorem nodes_card : nodes.card = 9 := by
   decide
 

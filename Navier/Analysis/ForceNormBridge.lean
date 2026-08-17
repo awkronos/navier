@@ -519,11 +519,11 @@ def OfficialWholeSpaceGlobalRegularity : Prop :=
 `ProblemStatements.WholeSpaceGlobalRegularity` does not change when its energy
 clause is restated in Fefferman's Euclidean norm.
 
-This settles the last clause of
+This settled the last clause of the former
 `ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence` that bore on
-statement A itself.  It proves nothing about whether either side holds, and it
-does not restate any *definition* of the surface in Euclidean form — the
-residual survives on that narrower ground. -/
+statement A itself; with every consumer transported, that residual is retired
+from `Navier.Problem.problemEncodingResiduals`.  It proves nothing about
+whether either side holds. -/
 theorem wholeSpaceGlobalRegularity_iff_official :
     ProblemStatements.WholeSpaceGlobalRegularity ↔
       OfficialWholeSpaceGlobalRegularity := by
