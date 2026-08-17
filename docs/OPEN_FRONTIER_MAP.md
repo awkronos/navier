@@ -19,22 +19,66 @@ emits 448 raw declaration audits, each restricted to `propext`,
 their own receipts.  The audits establish the named lower theorems only.  They
 are not an endpoint certificate.
 
-## Compiler-confirmed residual sorries (9) — triage 2026-08-15
+## Compiler-confirmed residual sorries (9) — triage 2026-08-15, re-verified 2026-08-17
 
 `lake build` at `main@f1b496f` on a clean tree completes successfully (8729
 jobs) and emits exactly nine `declaration uses 'sorry'` warnings.  This is the
 whole compiler residual; it supersedes the stale `10` carried by the
 `ba2995e1` proof-report row (`exists_subseq_windowCauchy` has since closed).
 
-Triage verdict: **0 reachable, 9 blocked on absent infrastructure or a named
-statement-level barrier.**  None is a tactic gap; each is a missing analytic
-layer with a citation and a LOC estimate at its declaration.
+**Wave-3 re-verification (2026-08-17, HEAD `1c73ee1`).**  Single-file
+`lake env lean` on each of the three residual files at HEAD (exit 0 every
+time) re-confirms exactly the nine triaged declarations across those files:
+`BKMLogBootstrap.lean` warns at 364, 1491, 1563 (the triage's 362/1489/1561,
+drifted +2 by later inserts); `ConditionalRegularity.lean` warns at 721, 791,
+866, 951 (unchanged); `LerayWeak.lean` warns at 1482, 5503 (unchanged).  (The
+project-wide no-more-no-fewer claim remains the full-build fact from
+`f1b496f` quoted above; no fresh full build was run.)  The two most tractable
+rows (#1: single named missing layer, entire CZ size layer certified; #6:
+smallest LOC estimate, heat-kernel/Young layer landed) drew the wave's two
+sorry attempts as artifact-free probes, and both hit the named walls exactly
+as triaged:
+
+* *Probe on #1 (`exists_biotSavartLogTextbook`).*  Neither Mathlib at this
+  pin (`grep -ri "riesz transform|rieszTransform" .lake/packages/mathlib`
+  gives no hits — the Fourier-transform API exists, but no Riesz transform and
+  no Biot–Savart representation) nor the repo carries the
+  `∇u = PV(∇K ∗ ω)` representation; `CZNearField`/`BiotSavartKernel` certify
+  kernel *estimates* only.  The single missing layer is real.
+* *Probe on #6 (`prodiSerrin_layer_farField_bounded`).*  Every in-repo Duhamel
+  development (`FrequencyDuhamel`, `CriticalMild*`) quantifies over
+  one-frequency, lattice-mode, or `PathSpace` encodings — none over
+  `PartialClassicalSolution`, whose fields carry no decay or energy hypothesis
+  (smoothness, initial condition, incompressibility, equation only).  The
+  per-slice `L^p` hypothesis is therefore the only spatial control, and the
+  narrow-bump obstruction named in the declaration's frontier note applies.
+
+Tooling receipts: Kimina `127.0.0.1:8765` refused connection twice (Studio
+tunnel down; recorded per protocol — no local instance launched); headless
+`lean-lsp.sh` hit a fatal LSP error on `BKMLogBootstrap.lean`, so goal states
+were taken from the compiler-validated statements at the exact warning sites.
+No `.lean` file was edited; every sorry is untouched.
+
+**Infrastructure landed since triage** (`f58990e`, `7e23b4a`, both in
+`Navier/Analysis/CZNearField.lean`): the model degree-(−3) kernel
+`czScalarKernel` with its Hörmander smoothness bound (explicit constant 38),
+`cz_nearField_cancellation` (mean-zero data upgrades the model transform's
+far-field decay `|x|⁻³ → |x|⁻⁴`), and the Biot–Savart gradient kernel
+`bsGradKernel` with its `4·czScalarKernel` size bound.  This is the first rung
+of the shared blocker named below the table; the file header itself carries
+the next rungs (Hörmander integral condition, weak-(1,1), `L∞→BMO`, CZ
+decomposition) as residual, so no row changes class.
+
+Triage verdict (unchanged after re-verification): **0 reachable, 9 blocked on
+absent infrastructure or a named statement-level barrier.**  None is a tactic
+gap; each is a missing analytic layer with a citation and a LOC estimate at
+its declaration.
 
 | # | Declaration | File:line | Class | Exact missing layer |
 |---|---|---|---|---|
-| 1 | `exists_biotSavartLogTextbook` | `BKMLogBootstrap.lean:362` | infrastructure-blocked | Biot–Savart representation `∇u = PV(∇K ∗ ω)` for divergence-free Schwartz fields. The entire Calderón–Zygmund **size** layer (near field, log shell, far field) is already certified in-file; only the representation is Mathlib-absent |
-| 2 | `exists_locallyUniformSliceDecay` | `BKMLogBootstrap.lean:1489` | infrastructure-blocked | Propagation of Schwartz seminorm bounds, locally uniform in time, along the flow — the genuinely PDE-dependent conjunct. In-file note proves no dominating function exists from `velocity_smooth` alone, so the NS clauses must be used |
-| 3 | `exists_sobolevOrderEnergyEstimate` | `BKMLogBootstrap.lean:1561` | infrastructure-blocked | Kato–Ponce commutator bound `\|⟨D^n(u·∇u), D^n u⟩\| ≤ C‖∇u‖_∞‖u‖²_{H^n}` (CPAM 41 (1988) 891–907); Majda–Bertozzi Prop. 3.7; ~600 LOC. Order summation already certified (`BKMLogLeaves.exists_hasDerivAt_sum_range_le`) |
+| 1 | `exists_biotSavartLogTextbook` | `BKMLogBootstrap.lean:364` | infrastructure-blocked | Biot–Savart representation `∇u = PV(∇K ∗ ω)` for divergence-free Schwartz fields. The entire Calderón–Zygmund **size** layer (near field, log shell, far field) is already certified in-file; only the representation is Mathlib-absent (re-verified 2026-08-17: no Riesz/Biot–Savart in Mathlib at this pin) |
+| 2 | `exists_locallyUniformSliceDecay` | `BKMLogBootstrap.lean:1491` | infrastructure-blocked | Propagation of Schwartz seminorm bounds, locally uniform in time, along the flow — the genuinely PDE-dependent conjunct. In-file note proves no dominating function exists from `velocity_smooth` alone, so the NS clauses must be used |
+| 3 | `exists_sobolevOrderEnergyEstimate` | `BKMLogBootstrap.lean:1563` | infrastructure-blocked | Kato–Ponce commutator bound `\|⟨D^n(u·∇u), D^n u⟩\| ≤ C‖∇u‖_∞‖u‖²_{H^n}` (CPAM 41 (1988) 891–907); Majda–Bertozzi Prop. 3.7; ~600 LOC. Order summation already certified (`BKMLogLeaves.exists_hasDerivAt_sum_range_le`) |
 | 4 | `exists_galerkinModeData` | `LerayWeak.lean:1482` | infrastructure-blocked | `time_equicontinuous` + `weak_consistent` from the finite-mode energy identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (~100 LOC). Both Pattern-A fields from the Aubin–Lions repair are already discharged |
 | 5 | `exists_lerayLimitData` | `LerayWeak.lean:5503` | **statement-level barrier** | Every domination-based route is closed off by the in-file unbounded-test-field construction (`sup_{t<T}‖φ(t)‖_{L²} = ∞`). Not a falsification; closing it needs a uniform-in-time seminorm field on the test class, an argument forming no `t`-majorant, or a compactly-supported-slice representative. The statement-level change is deliberately not taken |
 | 6 | `prodiSerrin_layer_farField_bounded` | `ConditionalRegularity.lean:721` | infrastructure-blocked | Duhamel representation of an arbitrary `PartialClassicalSolution` + Leray projector as a pointwise bounded kernel. Kato, *Math. Z.* 187 (1984); Giga–Miyakawa, *ARMA* 89 (1985); ~300 LOC. Gaussian kernel, its `L^s` norms and the Young layer already land in `HeatSemigroupSmoothing` |
@@ -44,7 +88,12 @@ layer with a citation and a LOC estimate at its declaration.
 
 Three residuals (#1, #7, #9) route through one shared blocker — the
 Calderón–Zygmund near-field cancellation in `SingularIntegralPrelims` — which
-makes it the highest-fanout single target in the residual set.
+makes it the highest-fanout single target in the residual set.  Its first
+rung has since landed in `CZNearField` (model-kernel Hörmander bound with
+explicit constant, mean-zero far-field upgrade, `bsGradKernel` size bound);
+the rungs that actually feed the pressure bound and the representation —
+Hörmander integral condition, weak-(1,1), CZ decomposition — remain residual
+per that file's own header.
 
 ## What the checked layer proves
 
