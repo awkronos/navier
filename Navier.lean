@@ -45,6 +45,7 @@ import Navier.Analysis.VorticityTransport
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.BiotSavartKernel
 import Navier.Analysis.SingularIntegralPrelims
+import Navier.Analysis.CZNearField
 import Navier.Analysis.WeightIntegrability
 import Navier.Analysis.SobolevEmbedding
 import Navier.Analysis.FourierMajorant
