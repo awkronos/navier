@@ -314,4 +314,75 @@ theorem cz_nearField_cancellation
     _ = (38 * r / officialEuclideanNorm (x - y₀) ^ 4) * ∫ y, |f y| :=
           integral_const_mul _ _
 
+/-!
+## The Biot–Savart gradient kernel and its envelope
+-/
+
+/-- Coordinate domination: each coordinate is bounded by the Euclidean norm. -/
+theorem coord_abs_le_officialEuclideanNorm (x : Space) (i : Fin 3) :
+    |x i| ≤ officialEuclideanNorm x := by
+  rw [officialEuclideanNorm_eq_sqrt_sum_sq]
+  have h : |x i| ^ 2 ≤ ∑ j : Fin 3, |x j| ^ 2 :=
+    Finset.single_le_sum (s := Finset.univ) (f := fun j : Fin 3 => |x j| ^ 2)
+      (fun j _ => sq_nonneg _) (Finset.mem_univ i)
+  calc |x i| = Real.sqrt (|x i| ^ 2) := by
+        rw [Real.sqrt_sq_eq_abs, abs_abs]
+    _ ≤ Real.sqrt (∑ j : Fin 3, |x j| ^ 2) := Real.sqrt_le_sqrt h
+
+/-- The **Biot–Savart gradient kernel** components
+`Kᵢⱼ(x) = δᵢⱼ/|x|³ − 3·xᵢxⱼ/|x|⁵` off the origin (`0` at the origin).  This is
+the matrix Calderón–Zygmund kernel of the velocity-gradient Biot–Savart law
+`∂ᵢuⱼ = Kᵢⱼ * ω`-type convolutions on `ℝ³` (up to the skew-symmetric
+vorticity contraction); every component is homogeneous of degree `−3`. -/
+def bsGradKernel (i j : Fin 3) (x : Space) : ℝ :=
+  if x = 0 then 0
+  else (if i = j then (1 : ℝ) else 0) / officialEuclideanNorm x ^ 3
+    - 3 * x i * x j / officialEuclideanNorm x ^ 5
+
+/-- Off the origin the gradient kernel components are
+`δᵢⱼ/|x|³ − 3xᵢxⱼ/|x|⁵`. -/
+theorem bsGradKernel_apply_of_ne_zero {i j : Fin 3} {x : Space} (hx : x ≠ 0) :
+    bsGradKernel i j x =
+      (if i = j then (1 : ℝ) else 0) / officialEuclideanNorm x ^ 3
+        - 3 * x i * x j / officialEuclideanNorm x ^ 5 := by
+  rw [bsGradKernel, if_neg hx]
+
+/-- **The gradient kernel is enveloped by the model CZ kernel**: every
+component satisfies `|Kᵢⱼ(x)| ≤ 4·czScalarKernel(x)`.  This is the size
+condition `|K(x)| ≤ A/|x|³` of the Calderón–Zygmund kernel hypotheses
+(Stein 1970 Ch. II §4.2) for the Biot–Savart gradient kernel. -/
+theorem bsGradKernel_abs_le (i j : Fin 3) (x : Space) :
+    |bsGradKernel i j x| ≤ 4 * czScalarKernel x := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp [bsGradKernel, czScalarKernel_zero]
+  · rw [bsGradKernel_apply_of_ne_zero hx, czScalarKernel_apply_of_ne_zero hx]
+    set a := officialEuclideanNorm x with ha_def
+    have ha : 0 < a := officialEuclideanNorm_pos_of_ne_zero hx
+    have hi := coord_abs_le_officialEuclideanNorm x i
+    have hj := coord_abs_le_officialEuclideanNorm x j
+    have hδ1 : |(if i = j then (1 : ℝ) else 0)| ≤ 1 := by
+      by_cases hij : i = j <;> simp [hij]
+    have hδ : |(if i = j then (1 : ℝ) else 0) / a ^ 3| ≤ 1 / a ^ 3 := by
+      rw [abs_div, abs_of_pos (by positivity : (0 : ℝ) < a ^ 3)]
+      exact div_le_div₀ (by norm_num) hδ1 (by positivity) le_rfl
+    have hmul : |3 * x i * x j| = 3 * |x i| * |x j| := by
+      rw [abs_mul, abs_mul, abs_of_pos (by norm_num : (0 : ℝ) < 3)]
+    have h2 : 3 * |x i| * |x j| ≤ 3 * a * a :=
+      mul_le_mul (by linarith) hj (abs_nonneg _) (by positivity)
+    have hterm2 : |3 * x i * x j / a ^ 5| ≤ 3 / a ^ 3 := by
+      rw [abs_div, abs_of_pos (by positivity : (0 : ℝ) < a ^ 5), hmul]
+      calc 3 * |x i| * |x j| / a ^ 5 ≤ 3 * a * a / a ^ 5 :=
+            div_le_div₀ (by positivity) h2 (by positivity) le_rfl
+        _ = 3 / a ^ 3 := by
+            field_simp
+    calc |(if i = j then (1 : ℝ) else 0) / a ^ 3 - 3 * x i * x j / a ^ 5|
+        = |(if i = j then (1 : ℝ) else 0) / a ^ 3 + -(3 * x i * x j / a ^ 5)| :=
+            congrArg abs (sub_eq_add_neg _ _)
+      _ ≤ |(if i = j then (1 : ℝ) else 0) / a ^ 3| +
+            |-(3 * x i * x j / a ^ 5)| := abs_add_le _ _
+      _ = |(if i = j then (1 : ℝ) else 0) / a ^ 3| + |3 * x i * x j / a ^ 5| := by
+            rw [abs_neg]
+      _ ≤ 1 / a ^ 3 + 3 / a ^ 3 := add_le_add hδ hterm2
+      _ = 4 * (1 / a ^ 3) := by ring
+
 end Navier.Analysis.CZNearField
