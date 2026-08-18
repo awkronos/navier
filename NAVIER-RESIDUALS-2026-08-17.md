@@ -116,6 +116,76 @@ not provide one).
 
 ---
 
+## Wave 2026-08-18 N2 — BKMLogBootstrap triple attack: one DECOMPOSED, two typed no-gos (compiler-verified)
+
+Receipts: `lake env lean Navier/Analysis/BKMLogBootstrap.lean` — exit 0, zero
+errors, exactly 3 `declaration uses sorry` warnings (declarations :364, :1498,
+:1582; tokens :376, :1503, :1594 — the latter two shifted by the decomposition
+below).  Full `lake build` GREEN, zero errors, estate declaration-sorry delta
+this lane: **10 → 10** (BKMLogBootstrap 3 → 3: the #7 residual moved into a
+strictly-lower declaration; none added, none closed).  `#print axioms`:
+`exists_sliceLocallyUniformDecayBound` and the derived
+`exists_locallyUniformSliceDecay` both show `[propext, sorryAx,
+Classical.choice, Quot.sound]` (bare `sorryAx`, no custom axioms — the same
+profile the inline-sorry form carried); the certified leaf
+`sliceIteratedFDeriv_continuousOn` remains kernel-only.  No statement edits,
+no deleted content.
+
+### #6 — BKMLogBootstrap.lean:376 `exists_biotSavartLogTextbook` → **typed no-go (CONJECTURE, unchanged)**
+
+Two route probes, both negative.  (i) In-repo reconstruction of `fderiv u`
+from `staticCurl u`: confirmed absent — `CurlIdentities` carries only the
+algebra (`staticCurl_staticGradient_eq_zero`,
+`staticDivergence_staticCurl_eq_zero`, …); `BiotSavartKernel`, `CZNearField`,
+`SingularIntegralPrelims` carry kernel size/cancellation layers; the pointwise
+representation `∇u = PV(∇K ∗ ω)` exists nowhere (Mathlib-absent).  (ii) Agmon
+bypass: `exists_agmonSupBound` applies to the field itself, not to `fderiv`,
+and even a componentwise `H² ↪ L^∞` on `∂_j u_i` yields only
+`‖Du‖∞ ≤ C·√(H³ u)` — strictly weaker than the target's
+`C·(1 + Mω(1 + log(e + √H³)) + √M₂)`: for the scaling family `ω = εφ(k·)`,
+`k = ε⁻⁴`, one has `√(H³ u) ~ ε⁻¹` while the target RHS stays
+`O(1 + ε·log(1/ε))`, so the log-producing shell decomposition around the
+representation is unavoidable.  Residual unchanged: the Biot–Savart
+*representation* for divergence-free Schwartz fields; est ~400 LOC after it.
+
+### #7 — BKMLogBootstrap.lean:1499 `exists_locallyUniformSliceDecay` → **DECOMPOSED**
+
+The bundled conjunctive residual is split per repo convention.  The genuinely
+PDE-dependent conjunct is extracted as the strictly-lower named residual
+`exists_sliceLocallyUniformDecayBound` (declaration :1498, token :1503), and
+`exists_locallyUniformSliceDecay` (:1511) is now **derived** (certified,
+sorry-free) from it plus the previously certified
+`sliceIteratedFDeriv_continuousOn` — same name, same type, zero downstream
+churn (`sobolevOrderIntegralContinuity` untouched).  The new residual's
+docstring sharpens the insufficiency witness: for
+`v t x := (t − t₀)³·ψ((t − t₀)² x)`, `ψ = exp(−‖·‖²)`, the decay bound *itself*
+(not merely a dominating integral) fails at every `t₀` and every `r > 0`:
+`sup_{t ∈ B(t₀,r)} ‖v(t,x)‖² = C·‖x‖⁻³` (attained at
+`|t − t₀| = (3/4)^{1/4}·‖x‖^{-1/2}`), which overtakes any `K·(1+‖x‖)⁻⁴` — so
+even the local-in-time form cannot follow from joint smoothness alone.
+Remaining content: polynomially weighted Schwartz seminorm propagation along
+the flow (weighted energy inequalities closed by Grönwall against
+`uniformly_bounded_energy`); the repo's cutoff-IBP stack (`CutoffEnergyIbp`,
+completed at `2c69626`) is compact-support only and does not transport to
+polynomial weights without a priori decay (the bootstrap gap).  Est ~250 LOC,
+unchanged.
+
+### #8 — BKMLogBootstrap.lean:1575 `exists_sobolevOrderEnergyEstimate` → **typed no-go (CONJECTURE, unchanged)**
+
+Two route probes, both negative.  (i) `n = 0` split via the certified `Energy*`
+stack: every instantaneous-balance theorem is guard-carried —
+`integral_kineticEnergyDensity_timeDerivative_eq_neg_viscousDissipation`
+requires nine flux/derivative integrability hypotheses that are exactly the
+missing decay data (#7's residual in disguise), so the `n = 0` case is not
+currently certifiable either, and no statement-level split is possible without
+weakening the theorem (not taken).  (ii) `n ≥ 1` Kato–Ponce: no commutator
+bound of any form exists in the repo (the only `commutator` hits are the
+Galerkin projection commutators in `GalerkinBasis`, a different object);
+`|⟨Dⁿ(u·∇u), Dⁿu⟩| ≤ C‖∇u‖∞‖u‖²_{Hⁿ}` remains Mathlib-absent.  Residual
+unchanged (declaration now :1582, token :1594); est ~600 LOC.
+
+---
+
 ## Original entry (2026-08-17)
 
 **Build**: GREEN, 8730 jobs, 12 source `sorry` tokens (= 10 compiler `declaration uses sorry` warnings after the GalerkinBasis 3-token roll-up — see the reconciliation above)  

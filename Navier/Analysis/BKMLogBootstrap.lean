@@ -68,7 +68,7 @@ bookkeeping between the two is certified in `BKMLogLeaves`:
 |---|---|---|
 | `biotSavartLogInequality` | `exists_biotSavartLogTextbook` (textbook `log(e+‖u‖_{H³})` shape) | `bkm_log_shape_transfer` |
 | `sobolevEmbeddingDomination` | `exists_besselFourierMajorant` — **now CERTIFIED** (Fourier inversion + Plancherel symbol bookkeeping) | `integrable_inv_one_add_normSq_sq` + `integral_le_besselWeightMass_mul_sqrt` + `le_mul_sqrt_of_le_majorant` |
-| `sobolevControlContinuity` | `sobolevOrderIntegralContinuity` (one derivative order) | `continuousOn_sum_range` |
+| `sobolevControlContinuity` | `exists_sliceLocallyUniformDecayBound` (locally uniform slice decay) | `continuousOn_sum_range` + `sliceIteratedFDeriv_continuousOn` |
 | `katoCommutatorEstimate` | `exists_sobolevOrderEnergyEstimate` (one derivative order) | `exists_hasDerivAt_sum_range_le` |
 
 Majorants stay hypothesis-carried (Step-0e: avoids `⨆`-junk vacuity; each
@@ -1450,53 +1450,72 @@ theorem sliceIteratedFDeriv_continuousOn
     ‖iteratedFDeriv ℝ n (S.velocity t) x‖ ^ 2
   rw [S.slice_eq t ht]
 
-/-- **[NAMED RESIDUAL — the dominated-convergence *data* for one derivative
-order; Majda–Bertozzi §3.2.3; est ~250 LOC.]**  Along a Schwartz-sliced
-classical solution, for one order `n < 4`, there is a single integrable
-`g : Space → ℝ` dominating `‖D^n u(t,·)‖²` uniformly for `t ≥ 0`, and for each
-fixed `x` the map `t ↦ ‖D^n u(t,x)‖²` is continuous on `Ici 0`.
+/-- **[NAMED RESIDUAL — locally uniform Schwartz decay along the flow;
+Majda–Bertozzi §3.2.3; est ~250 LOC.]**  Along a Schwartz-sliced classical
+solution, near every nonnegative time `t₀` there is a uniform polynomial decay
+bound on every slice derivative of order `n < 4`: a single `K` and radius
+`r > 0` with
 
-**Why this is a genuine hypothesis and not bookkeeping.**  The docstring this
-statement replaces claimed `sobolevOrderIntegralContinuity` follows from joint
-smoothness by dominated convergence.  It does not: joint smoothness together
-with Schwartz slices is *provably insufficient* to produce the dominating
-function.  Witness (verified numerically before formalisation, and exact by
-scaling): on `ℝ³` take `ψ(y) = exp(-‖y‖²)` and
+  `‖D^n u(t,x)‖² ≤ K·(1 + ‖x‖)⁻⁴`   for all `t ∈ Ici 0 ∩ B(t₀, r)`, all `x`.
 
-  `v t x := t³ · ψ(t² x)`.
+This is the *only* genuinely PDE-dependent input to
+`sobolevOrderIntegralContinuity`: paired with the certified dominator
+integrability `(1 + ‖x‖)⁻⁴ ∈ L¹(ℝ³)` it is exactly the dominated-convergence
+data for one derivative order at a time.
+
+**Why this is a genuine hypothesis and not bookkeeping.**  Joint smoothness
+together with Schwartz slices is *provably insufficient* to produce this
+locally uniform bound.  Witness (verified numerically before formalisation,
+and exact by scaling): on `ℝ³` take `ψ(y) = exp(-‖y‖²)` and
+
+  `v t x := (t - t₀)³ · ψ((t - t₀)² x)`.
 
 Then `(t,x) ↦ v t x` is `C^∞` on all of `ℝ × ℝ³`, every slice `v t` is Schwartz
-(at `t = 0` it is identically `0`), yet
+(at `t = t₀` it is identically `0`), yet for `n = 0`
 
-  `∫_{ℝ³} ‖v t x‖² dx = t⁶ · (t²)^{-3} · ‖ψ‖²_{L²} = ‖ψ‖²_{L²}`  for every `t ≠ 0`,
+  `sup_{t near t₀} ‖v(t, x)‖² · (1 + ‖x‖)⁴ ~ C·‖x‖⁻³ · (1 + ‖x‖)⁴ → ∞`,
 
-while the value at `t = 0` is `0`.  So `t ↦ ∫‖v t ·‖²` jumps at `0` — mass
-escapes to spatial infinity at exactly the rate that keeps the `L²` norm
-constant.  Hence no dominating function exists for that family, and any proof of
-`sobolevOrderIntegralContinuity` must use the Navier–Stokes clauses of
-`IsClassicalSolution` (`equation`, `incompressible`, `finite_energy`,
-`uniformly_bounded_energy`) and not merely `velocity_smooth`.
+mass escaping to spatial infinity at exactly the rate `‖x‖⁻³` that keeps the
+`L²` norm constant (`∫ ‖v t ·‖² = ‖ψ‖²_{L²}` for every `t ≠ t₀`, `0` at
+`t = t₀`).  Hence no such `K` exists for that family, and any proof must use
+the Navier–Stokes clauses of `IsClassicalSolution` (`equation`,
+`incompressible`, `finite_energy`, `uniformly_bounded_energy`) and not merely
+`velocity_smooth`.
 
 **Dependencies.**  Propagation of Schwartz bounds with locally-in-time uniform
-seminorms along the flow (this is where the PDE enters), plus identification of
-`iteratedFDeriv` of the slice with the spatial partial derivatives of the joint
-map on the half-space product `Ici 0 ×ˢ univ`.
+seminorms along the flow (this is where the PDE enters): polynomially weighted
+energy inequalities for `‖x^α D^β u‖_{L²}` closed by Grönwall against the
+uniform energy bound, plus identification of `iteratedFDeriv` of the slice with
+the spatial partial derivatives of the joint map on the half-space product
+`Ici 0 ×ˢ univ` (certified above as
+`iteratedFDeriv_slice_eq_within_compContinuousLinearMap`).
 
 **What is no longer residual.**  The fixed-`x` time continuity
 (`sliceIteratedFDeriv_continuousOn` above, from joint half-space smoothness
 alone), the dominated-convergence step itself, the measurability of every
 integrand, and the assembly of the four orders into the `H³` norm
-(`BKMLogLeaves.continuousOn_sum_range`) are all certified.  Only the locally
-uniform decay bound — the genuinely PDE-dependent conjunct — remains below. -/
+(`BKMLogLeaves.continuousOn_sum_range`) are all certified. -/
+theorem exists_sliceLocallyUniformDecayBound
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
+    ∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ r K : ℝ, 0 < r ∧
+      ∀ t ∈ Set.Ici (0 : ℝ) ∩ Metric.ball t₀ r, ∀ n : ℕ, n < 4 → ∀ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ) := by
+  sorry
+
+/-- **[DERIVED from `exists_sliceLocallyUniformDecayBound`.]**  The
+dominated-convergence data for one derivative order along a Schwartz-sliced
+classical solution: the locally uniform decay bound (the named residual above,
+the genuinely PDE-dependent conjunct) together with the certified fixed-`x`
+time continuity `sliceIteratedFDeriv_continuousOn`. -/
 theorem exists_locallyUniformSliceDecay
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
     (∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ r K : ℝ, 0 < r ∧
         ∀ t ∈ Set.Ici (0 : ℝ) ∩ Metric.ball t₀ r, ∀ n : ℕ, n < 4 → ∀ x : Space,
           ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ)) ∧
       (∀ n : ℕ, n < 4 → ∀ x : Space, ContinuousOn
-        (fun t => ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0)) := by
-  refine ⟨?_, fun n _ x => sliceIteratedFDeriv_continuousOn S n x⟩
-  sorry
+        (fun t => ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2) (Set.Ici 0)) :=
+  ⟨exists_sliceLocallyUniformDecayBound S,
+    fun n _ x => sliceIteratedFDeriv_continuousOn S n x⟩
 
 /-- **[DERIVED from `exists_locallyUniformSliceDecay`.]**  Per-derivative-order
 control continuity; Majda–Bertozzi §3.2.3.  Along a Schwartz-sliced classical
