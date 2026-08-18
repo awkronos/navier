@@ -15,6 +15,14 @@ lemmas to the integrand of the parabolic Caccioppoli inequality:
 * `cutoffEnergy_ibp_eq` — the capstone equality for zero-force solutions:
 
   `∫ χ²⟨u,∂ₜu⟩ + ν∫ χ²|∇u|² = ∫ χ(u·∇χ)|u|² + (ν/2)∫ (Δχ²)|u|² − ∫ χ²(u·∇)p`.
+* `cutoffEnergy_pressure_ibp` — the pressure slot integrated by parts once
+  more (transport IBP against incompressibility), giving the derivative-free
+  pressure form the parabolic Caccioppoli assembly consumes:
+
+  `−∫ χ²(u·∇)p = 2∫ p·χ(u·∇χ)`,
+
+  so the only remaining pressure input is a local `L^r` bound on `p` itself,
+  never on `∇p`.
 -/
 
 set_option autoImplicit false
@@ -350,5 +358,72 @@ theorem cutoffEnergy_ibp_eq
     -- These are equal by ring
     simpa [D, add_comm, add_left_comm, add_assoc, sub_eq_add_neg] using htemp
   simpa [hu_def, hp_def] using hcalc_raw
+
+/-! ### The pressure slot, derivative-free (one more transport IBP) -/
+
+/-- **Cutoff energy balance with the pressure slot integrated by parts.**
+The pressure term of `cutoffEnergy_ibp_eq` is `−∫ χ² (u·∇)p`; one more
+transport IBP against the incompressibility of `u` moves the derivative off
+the pressure:
+
+  `−∫ χ² (u·∇)p = 2 ∫ p · χ (u·∇χ)`.
+
+This is the form the parabolic Caccioppoli inequality consumes: the pressure
+then enters only through a *derivative-free* local `L^r` bound on `p` itself
+(the remaining named residual — the Calderón–Zygmund / Biot–Savart pressure
+representation), never through `∇p`. -/
+theorem cutoffEnergy_pressure_ibp
+    {ν : ℝ} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {χ : Space → ℝ}
+    (hχ : ContDiff ℝ ∞ χ) (hχsupp : HasCompactSupport χ)
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T) :
+    (∫ x : Space, χ x ^ 2 * officialInner (sol.velocity t x)
+        (timeDerivative sol.velocity t x))
+      + ν * (∫ x : Space, χ x ^ 2 * gradNormSq (sol.velocity t) x)
+    = (∫ x : Space, χ x * fderiv ℝ χ x (sol.velocity t x) *
+        officialEuclideanNorm (sol.velocity t x) ^ 2)
+      + 2 * (∫ x : Space, sol.pressure t x *
+          (χ x * fderiv ℝ χ x (sol.velocity t x)))
+      + (ν / 2) * (∫ x : Space, laplacianChiSq χ x *
+          officialEuclideanNorm (sol.velocity t x) ^ 2) := by
+  have huC : ContDiff ℝ ∞ (sol.velocity t) := velocity_slice_contDiff sol ht0 htT
+  have hpC : ContDiff ℝ ∞ (sol.pressure t) := pressure_slice_contDiff sol ht0 htT
+  have hdivfree : ∀ x, staticDivergence (sol.velocity t) x = 0 := by
+    intro x
+    have hi : IncompressibleBefore T sol.velocity := sol.incompressible
+    simpa [staticDivergence, divergence, spatialDerivative] using hi t ht0 htT x
+  have hχ_sq : ContDiff ℝ ∞ (χ ^ 2) := contDiff_sq hχ
+  have hχ_sq_supp : HasCompactSupport (χ ^ 2) := hasCompactSupport_sq hχsupp
+  have hbase := cutoffEnergy_ibp_eq sol hχ hχsupp ht0 htT
+  -- The pressure slot: `∫ χ² (u·∇)p = −2 ∫ p · χ (u·∇χ)`, by transport IBP
+  -- with cutoff `χ²` and scalar field `p t`, then `fderiv_sq_apply`.
+  have hpress :
+      (∫ x : Space, χ x ^ 2 * fderiv ℝ (sol.pressure t) x (sol.velocity t x))
+        = -(2 * ∫ x : Space, sol.pressure t x *
+            (χ x * fderiv ℝ χ x (sol.velocity t x))) := by
+    have h0 := integral_cutoff_transport_ibp hχ_sq hχ_sq_supp hpC huC hdivfree
+    have hL : (∫ x : Space, χ x ^ 2 *
+          fderiv ℝ (sol.pressure t) x (sol.velocity t x))
+        = ∫ x : Space, (χ ^ 2) x *
+          fderiv ℝ (sol.pressure t) x (sol.velocity t x) := by
+      refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+      simp [Pi.pow_apply]
+    have hpt : ∀ x : Space,
+        (fderiv ℝ (χ ^ 2) x) (sol.velocity t x) * sol.pressure t x
+          = 2 * (sol.pressure t x * (χ x * (fderiv ℝ χ x) (sol.velocity t x))) := by
+      intro x
+      rw [fderiv_sq_apply hχ x (sol.velocity t x)]
+      ring
+    calc ∫ x : Space, χ x ^ 2 * fderiv ℝ (sol.pressure t) x (sol.velocity t x)
+        = ∫ x : Space, (χ ^ 2) x * fderiv ℝ (sol.pressure t) x (sol.velocity t x) := hL
+      _ = -∫ x : Space, (fderiv ℝ (χ ^ 2) x) (sol.velocity t x) * sol.pressure t x := h0
+      _ = -∫ x : Space, 2 * (sol.pressure t x *
+            (χ x * fderiv ℝ χ x (sol.velocity t x))) := by
+          rw [integral_congr_ae (Filter.Eventually.of_forall hpt)]
+      _ = -(2 * ∫ x : Space, sol.pressure t x *
+            (χ x * fderiv ℝ χ x (sol.velocity t x))) := by
+          rw [integral_const_mul]
+  linear_combination hbase - hpress
 
 end Navier.Analysis.CutoffEnergyIbp

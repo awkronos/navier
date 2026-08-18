@@ -94,6 +94,23 @@ Re-checked at this HEAD: the sole residue remains the `hweak` hypothesis of
 uniform-in-time test-class control).  Nothing committed since N3
 (`GalerkinHMinusOne`, `DivFreeGradientEnstrophy`) bears on it.  No edit.
 
+### #10 pressure input — **SHARPENED** (NK2, kernel-clean): the Caccioppoli pressure slot no longer needs `∇p`
+
+`CutoffEnergyIbp.cutoffEnergy_pressure_ibp` (NEW, certified this wave):
+one more transport IBP against incompressibility moves the derivative off the
+pressure in the capstone identity — `−∫ χ² (u·∇)p = 2∫ p·χ (u·∇χ)` — so the
+integrated Caccioppoli assembly consumes the pressure through a
+**derivative-free local `L^r` bound on `p` itself**.  Receipt: `lake env lean
+Navier/Analysis/CutoffEnergyIbp.lean` exit 0, zero errors, zero `sorry`
+tokens; `#print axioms cutoffEnergy_pressure_ibp` =
+`[propext, Classical.choice, Quot.sound]` (kernel-clean).  N4's blocker (b)
+for #10 (`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded`)
+is thereby reduced from "an `L^r` pressure bound for `∫ χ² ⟨∇p, u⟩`" to: an
+`L^r_loc` bound on `p` (Biot–Savart/CZ pressure representation — still a
+named residual, genuinely Mathlib-absent) plus the time-integrated assembly
+(FTC in `t` of the slice identity).  Sorry census unchanged: 0 tokens in the
+file, before and after.
+
 ---
 
 ## Wave 2026-08-18 N3 — LerayWeak pair attack: two typed no-gos (compiler-verified)
