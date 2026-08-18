@@ -1,4 +1,5 @@
 import Navier.Analysis.GalerkinRawFamily
+import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.EnergyConvectionIntegral
 import Navier.Analysis.CurlIdentities
@@ -124,6 +125,7 @@ open scoped LineDeriv
 namespace Navier.Analysis.GalerkinBasis
 
 open Navier
+open Navier.Analysis.EnergyNormBridge
 open Navier.Analysis.Enstrophy
 open Navier.Analysis.LerayWeak
 open Navier.Analysis.OfficialABEncoding
@@ -3475,7 +3477,7 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
         (Set.Ici (0 : ℝ)) t)
     (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m)
     (bound : ℝ) (hbound : 0 ≤ bound)
-    (hbound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2)
+    (hbound_le : bound ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
     (hkin : UniformKineticBound (W.modalApprox c) bound)
     (henstrophy_budget : ∀ m : ℕ, ‖c m 0‖ ^ 2 / (2 * ν) ≤ bound)
     (derivativeBound : ℝ) (hderivativeBound : 0 ≤ derivativeBound)
@@ -3497,6 +3499,8 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     bound_le := hbound_le
     kinetic_bounded := hkin
     official_kinetic_bounded := ?_
+    enstrophyBound := bound
+    enstrophyBound_nonneg := hbound
     enstrophy_bounded := modalApprox_uniformEnstrophyBound W hν
       (fun m => W.stokesOperator m) (fun m => W.convectionOperator m) c hc
       (convectionOperator_inner_self W)
@@ -3523,4 +3527,162 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
       galerkinModalApprox_sq_integrable (fun m => m) c
         (fun m => W.finiteModes m)
 
+/-- **Finite-mode Galerkin construction from the certified divergence-free
+    basis (Temam III.3; Constantin--Foias II; Leray, Acta Math. 63 (1934) sections 18--20).**
+
+    Given the LerayWeak divergence-free basis, this constructs a concrete
+    `GalerkinModeData` for any divergence-free Schwartz datum and any positive
+    viscosity.  The proof:
+
+    1. Obtain a certified `GalerkinBasisFamily` from `exists_galerkinBasisFamily`.
+    2. For each mode count `m`, apply `exists_forward_galerkinCoefficientFlow`
+       to the projected Stokes and convection operators, obtaining a forward
+       differentiable coefficient curve with the projected initial data.
+    3. Realise the coefficient curves as physical velocity fields via
+       `GalerkinBasisFamily.modalApprox`.
+
+    All fields of `GalerkinModeData` that follow from basis orthonormality,
+    the coefficient ODE structure, or the projected energy-dissipation identity
+    are discharged here.  The genuinely analytic estimates
+    (`hspace`, `htime`, `hweak`) are NAMED RESIDUALS.
+  -/
+  theorem exists_galerkinModeData (nu : ℝ) (hnu : 0 < nu)
+      (u0 : SchwartzVelocity) (hu0 : DivergenceFreeInitial u0) :
+      Nonempty (GalerkinModeData nu u0) := by
+    -- 1. Certified divergence-free basis
+    obtain ⟨W⟩ := exists_galerkinBasisFamily
+    -- 2. For each m, get a forward coefficient curve solving the projected ODE
+    have hB_skew (m : ℕ) (a : EuclideanSpace ℝ (Fin m)) :
+        inner ℝ (W.convectionOperator m a) a = 0 :=
+      convectionOperator_inner_self W m a
+    have hB_C1 (m : ℕ) : ContDiff ℝ 1 (W.convectionOperator m) :=
+      convectionOperator_contDiff W m
+    have hcoeff (m : ℕ) :
+        exists u : ℝ → EuclideanSpace ℝ (Fin m),
+          u 0 = W.initialCoefficients u0 m ∧
+          (∀ t : ℝ, 0 ≤ t →
+            HasDerivWithinAt u
+              (-(nu • W.stokesOperator m (u t)) + W.convectionOperator m (u t))
+              (Set.Ici (0 : ℝ)) t) ∧
+          ∀ t : ℝ, 0 ≤ t → ‖u t‖ ^ 2 ≤ ‖W.initialCoefficients u0 m‖ ^ 2 :=
+      exists_forward_galerkinCoefficientFlow nu hnu.le (W.stokesOperator m)
+        (stokesOperator_nonneg W m) (W.convectionOperator m)
+        (convectionOperator_contDiff W m) (hB_skew m)
+        (W.initialCoefficients u0 m)
+    let cChoice (m : ℕ) : ℝ → EuclideanSpace ℝ (Fin m) := (hcoeff m).choose
+    have hc0 (m : ℕ) : cChoice m 0 = W.initialCoefficients u0 m :=
+      (hcoeff m).choose_spec.1
+    have hc_deriv (m : ℕ) (t : ℝ) (ht : 0 ≤ t) :
+        HasDerivWithinAt (cChoice m)
+          (-(nu • W.stokesOperator m (cChoice m t)) + W.convectionOperator m (cChoice m t))
+          (Set.Ici (0 : ℝ)) t := by
+      rcases (hcoeff m).choose_spec with ⟨hc0', hcderiv', hcnorm'⟩
+      exact hcderiv' t ht
+    have hc_norm (m : ℕ) (t : ℝ) (ht : 0 ≤ t) :
+        ‖cChoice m t‖ ^ 2 ≤ ‖W.initialCoefficients u0 m‖ ^ 2 :=
+      (hcoeff m).choose_spec.2.2 t ht
+    -- 3. Constant and kinetic bounds (Euclidean datum energy)
+    let bound : ℝ := ∫ x : Space, ∑ i : Fin 3, (u0 x i) ^ 2
+    have hbound_nonneg : 0 ≤ bound := by
+      refine integral_nonneg fun x => ?_
+      exact Finset.sum_nonneg fun i _ => pow_two_nonneg _
+    have hbound_le : bound ≤ bound := le_rfl
+    have hinner_eq : schwartzL2Inner u0 u0 = bound := by
+      simp [bound, schwartzL2Inner, officialEuclideanNorm_sq_eq_sum_sq]
+    have hofficial : UniformOfficialKineticBound (W.modalApprox cChoice) bound := by
+      intro m' t' ht'
+      rw [modalApprox_kineticEnergy_eq W cChoice m' t',
+        forwardExtend_eq_of_nonneg (cChoice m') ht']
+      calc
+        ‖cChoice m' t'‖ ^ 2 ≤ ‖W.initialCoefficients u0 m'‖ ^ 2 := hc_norm m' t' ht'
+        _ ≤ schwartzL2Inner u0 u0 := initialCoefficients_norm_sq_le W u0 m'
+        _ = bound := hinner_eq
+    have hkin : UniformKineticBound (W.modalApprox cChoice) bound := by
+      have hmeas : ∀ (m' : ℕ) (t' : ℝ), 0 ≤ t' → AEStronglyMeasurable (W.modalApprox cChoice m' t') := by
+        intro m' t' ht'
+        refine (Continuous.aestronglyMeasurable ?_)
+        unfold GalerkinBasisFamily.modalApprox galerkinModalApprox
+        refine (continuous_finsetSum (Finset.univ : Finset (Fin m')) fun i hi => ?_)
+        have hw : Continuous (W.finiteModes m' i) :=
+          (W.finiteModes m' i).continuous
+        have hc : Continuous fun (x : Space) => forwardExtend (cChoice m') t' i := continuous_const
+        exact hc.smul hw
+      have hint : ∀ (m' : ℕ) (t' : ℝ), 0 ≤ t' →
+          Integrable (fun x : Space => ‖W.modalApprox cChoice m' t' x‖ ^ 2) := by
+        intro m' t' ht'
+        simpa [GalerkinBasisFamily.modalApprox] using
+          galerkinModalApprox_sq_integrable (fun m => m) cChoice (fun m => W.finiteModes m) m' t' ht'
+      exact uniformKineticBound_of_official hmeas hint hofficial
+    -- 4. Enstrophy bound (separate constant, handles all nu > 0)
+    let enstrophyBound : ℝ := bound / (2 * nu)
+    have henstrophyBound_nonneg : 0 ≤ enstrophyBound := by
+      positivity
+    have henstrophy_budget (m : ℕ) : ‖cChoice m 0‖ ^ 2 / (2 * nu) ≤ enstrophyBound := by
+      have h0norm : ‖cChoice m 0‖ ^ 2 ≤ schwartzL2Inner u0 u0 := by
+        calc
+          ‖cChoice m 0‖ ^ 2 = ‖W.initialCoefficients u0 m‖ ^ 2 := by rw [hc0 m]
+          _ ≤ schwartzL2Inner u0 u0 := initialCoefficients_norm_sq_le W u0 m
+      dsimp [enstrophyBound]
+      have hpos : 0 < 2 * nu := by positivity
+      have hpos_nonneg : 0 ≤ 2 * nu := by positivity
+      have hdiv : ‖cChoice m 0‖ ^ 2 / (2 * nu) ≤ schwartzL2Inner u0 u0 / (2 * nu) := by
+        have := div_le_div_of_nonneg_right h0norm hpos_nonneg
+        -- div_le_div_of_nonneg_right has type: a ≤ b → 0 ≤ c → a / c ≤ b / c
+        simpa using this
+      calc
+        ‖cChoice m 0‖ ^ 2 / (2 * nu) ≤ schwartzL2Inner u0 u0 / (2 * nu) := hdiv
+        _ = bound / (2 * nu) := by rw [hinner_eq]
+    have henstrophy : UniformEnstrophyBound (W.modalApprox cChoice) enstrophyBound :=
+      modalApprox_uniformEnstrophyBound W hnu
+        (fun m => W.stokesOperator m) (fun m => W.convectionOperator m) cChoice hc_deriv
+        (convectionOperator_inner_self W) (stokesOperator_inner_eq_enstrophy W) enstrophyBound
+        henstrophy_budget
+    -- 5. Space equicontinuity -- NAMED RESIDUAL (Brezis + dissipation)
+    have hspace : SpaceEquicontinuous (W.modalApprox cChoice) := by
+      sorry
+    -- 6. Time equicontinuity -- NAMED RESIDUAL (no uniform derivative bound)
+    have htime : TimeEquicontinuous (W.modalApprox cChoice) := by
+      sorry
+    -- 7. Joint measurability -- discharged from the ODE forward-extension
+    have hjoint : JointlyMeasurable (W.modalApprox cChoice) := by
+      simpa [GalerkinBasisFamily.modalApprox] using
+        galerkinModalApprox_jointlyMeasurable (fun m => m) cChoice
+          (fun m t => -(nu • W.stokesOperator m (cChoice m t)) + W.convectionOperator m (cChoice m t))
+          hc_deriv (fun m => W.finiteModes m)
+    -- 8. Square integrability -- discharged via finite Schwartz modes
+    have hsq : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+        Integrable (fun x : Space => ‖W.modalApprox cChoice m t x‖ ^ 2) := by
+      intro m t ht
+      simpa [GalerkinBasisFamily.modalApprox] using
+        galerkinModalApprox_sq_integrable (fun m => m) cChoice (fun m => W.finiteModes m) m t ht
+    -- 9. Initial convergence in L^2 -- banked
+    have hinit : Filter.Tendsto (fun m => ∫ x : Space,
+        officialInner ((W.proj m u0 - u0) x) ((W.proj m u0 - u0) x))
+        Filter.atTop (nhds 0) :=
+      proj_initial_converges_L2 W u0 hu0
+    -- 10. Weak consistency -- NAMED RESIDUAL (Galerkin equation limit passage)
+    have hweak : ∀ phi : DivergenceFreeTestFunction,
+        Filter.Tendsto (fun m => weakFormResidual nu u0 (W.modalApprox cChoice m) phi)
+          Filter.atTop (nhds 0) := by
+      sorry
+    -- Assemble
+    refine ⟨{
+      approx := W.modalApprox cChoice
+      initialMode := fun m => W.proj m u0
+      initial_eq := modalApprox_initial_eq_proj W u0 cChoice hc0
+      bound := bound
+      bound_nonneg := hbound_nonneg
+      bound_le := hbound_le
+      kinetic_bounded := hkin
+      official_kinetic_bounded := hofficial
+      enstrophyBound := enstrophyBound
+      enstrophyBound_nonneg := henstrophyBound_nonneg
+      enstrophy_bounded := henstrophy
+      time_equicontinuous := htime
+      space_equicontinuous := hspace
+      jointly_measurable := hjoint
+      sq_integrable := hsq
+      initial_converges_L2 := hinit
+      weak_consistent := hweak
+    }⟩
 end Navier.Analysis.GalerkinBasis

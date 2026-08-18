@@ -918,7 +918,7 @@ structure GalerkinApproximation (ν : ℝ) (u₀ : SchwartzVelocity) where
   bound : ℝ
   bound_nonneg : 0 ≤ bound
   /-- The bound is at most the datum energy (equality in the construction). -/
-  bound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2
+  bound_le : bound ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2
   /-- Uniform `L^∞_t L²_x` bound. -/
   kinetic_bounded : UniformKineticBound approx bound
   /-- **Uniform slice bound in the official Euclidean energy, at the exact datum
@@ -931,8 +931,11 @@ structure GalerkinApproximation (ν : ℝ) (u₀ : SchwartzVelocity) where
   (`galerkinLimit_energy_le`). -/
   official_kinetic_bounded :
     UniformOfficialKineticBound approx (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
+  /-- `L²(0,T; H¹)` dissipation bound constant (envelope bound, may exceed `bound`). -/
+  enstrophyBound : ℝ
+  enstrophyBound_nonneg : 0 ≤ enstrophyBound
   /-- Uniform `L²(0,T; H¹)` dissipation bound. -/
-  enstrophy_bounded : UniformEnstrophyBound approx bound
+  enstrophy_bounded : UniformEnstrophyBound approx enstrophyBound
   /-- Uniform time-translation equicontinuity (Simon time-regularity). -/
   time_equicontinuous : TimeEquicontinuous approx
   /-- (H-space) Uniform spatial-translation equicontinuity (Riesz–Kolmogorov).
@@ -1109,7 +1112,7 @@ structure GalerkinModeData (ν : ℝ) (u₀ : SchwartzVelocity) where
   bound : ℝ
   bound_nonneg : 0 ≤ bound
   /-- The bound is at most the datum energy. -/
-  bound_le : bound ≤ ∫ x : Space, ‖u₀ x‖ ^ 2
+  bound_le : bound ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2
   /-- Uniform `L^∞_t L²_x` bound. -/
   kinetic_bounded : UniformKineticBound approx bound
   /-- Uniform slice bound in the official Euclidean energy at the exact datum
@@ -1117,8 +1120,11 @@ structure GalerkinModeData (ν : ℝ) (u₀ : SchwartzVelocity) where
   implied by `kinetic_bounded` + `bound_le`; see `UniformOfficialKineticBound`. -/
   official_kinetic_bounded :
     UniformOfficialKineticBound approx (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2)
+  /-- Separate enstrophy bound constant (may exceed `bound` when ν < 1/2). -/
+  enstrophyBound : ℝ
+  enstrophyBound_nonneg : 0 ≤ enstrophyBound
   /-- Uniform `L²(0,T; H¹)` dissipation bound. -/
-  enstrophy_bounded : UniformEnstrophyBound approx bound
+  enstrophy_bounded : UniformEnstrophyBound approx enstrophyBound
   /-- Uniform time-translation equicontinuity. -/
   time_equicontinuous : TimeEquicontinuous approx
   /-- (H-space) Uniform spatial-translation equicontinuity (Riesz–Kolmogorov). -/
@@ -1150,6 +1156,8 @@ theorem galerkinApproximation_of_modeData (ν : ℝ) (u₀ : SchwartzVelocity)
             bound_le := D.bound_le,
             kinetic_bounded := D.kinetic_bounded,
             official_kinetic_bounded := D.official_kinetic_bounded,
+            enstrophyBound := D.enstrophyBound,
+            enstrophyBound_nonneg := D.enstrophyBound_nonneg,
             enstrophy_bounded := D.enstrophy_bounded,
             time_equicontinuous := D.time_equicontinuous,
             space_equicontinuous := D.space_equicontinuous,
@@ -1179,6 +1187,8 @@ def zeroGalerkinModeData (ν : ℝ) : GalerkinModeData ν (0 : SchwartzVelocity)
   bound_le := by simp
   kinetic_bounded := by intro m t _; simp
   official_kinetic_bounded := by intro m t _; simp [kineticEnergy]
+  enstrophyBound := 0
+  enstrophyBound_nonneg := le_rfl
   enstrophy_bounded := by intro m T _; simp only [enstrophy_zero_velocity]; simp
   time_equicontinuous := by
     intro T ε hε
@@ -4319,9 +4329,18 @@ theorem exists_galerkinLimit_energy_le (ν : ℝ) (u₀ : SchwartzVelocity)
       (∀ t : ℝ, 0 ≤ t → Integrable (fun x : Space => ‖u t x‖ ^ 2)) ∧
       (∀ t : ℝ, 0 ≤ t → kineticEnergy u t ≤ ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2) ∧
       StrongL2LocLimit (fun k => G.approx (σ k)) u := by
+  let Cmax := max G.bound G.enstrophyBound
+  have hCmax_nonneg : 0 ≤ Cmax :=
+    le_max_of_le_left G.bound_nonneg
+  have hkin_max : UniformKineticBound G.approx Cmax := by
+    intro m t ht
+    exact le_trans (G.kinetic_bounded m t ht) (le_max_left _ _)
+  have hens_max : UniformEnstrophyBound G.approx Cmax := by
+    intro m T hT
+    exact le_trans (G.enstrophy_bounded m T hT) (le_max_right _ _)
   obtain ⟨u, σ, hσ, humeas, huint, _hukin, huoff, hlim⟩ :=
-    aubin_lions_l2loc_compactness G.approx G.bound G.bound_nonneg G.kinetic_bounded
-      G.enstrophy_bounded G.time_equicontinuous G.space_equicontinuous
+    aubin_lions_l2loc_compactness G.approx Cmax hCmax_nonneg hkin_max
+      hens_max G.time_equicontinuous G.space_equicontinuous
       G.jointly_measurable G.sq_integrable
       (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2) (datumOfficialEnergy_nonneg u₀)
       G.official_kinetic_bounded
