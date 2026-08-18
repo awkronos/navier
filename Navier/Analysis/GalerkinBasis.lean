@@ -3,6 +3,8 @@ import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.EnergyConvectionIntegral
 import Navier.Analysis.CurlIdentities
+import Navier.Analysis.EnergyViscousIntegral
+import Navier.Analysis.EnergyViscousDissipation
 
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
@@ -3527,7 +3529,7 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
       galerkinModalApprox_sq_integrable (fun m => m) c
         (fun m => W.finiteModes m)
 
-/-- **Finite-mode Galerkin construction from the certified divergence-free
+/- **Finite-mode Galerkin construction from the certified divergence-free
     basis (Temam III.3; Constantin--Foias II; Leray, Acta Math. 63 (1934) sections 18--20).**
 
     Given the LerayWeak divergence-free basis, this constructs a concrete
@@ -3546,6 +3548,16 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     are discharged here.  The genuinely analytic estimates
     (`hspace`, `htime`, `hweak`) are NAMED RESIDUALS.
   -/
+  /-- For a divergence-free Schwartz velocity field, the L² integral of the
+  squared Fréchet-derivative norm equals the enstrophy (squared L² norm of the
+  curl).  This bridges the `UniformEnstrophyBound` (which measures the curl)
+  to the `hdiss` hypothesis of `spaceEquicontinuous_of_dissipation_bound`
+  (which needs the full derivative). -/
+  lemma integral_fderiv_sq_eq_enstrophy_of_divFree (w : SchwartzVelocity)
+      (hw : DivergenceFreeInitial w) :
+      ∫ x : Space, ‖fderiv ℝ w x‖ ^ 2 = enstrophy (fun _ : ℝ => w) 0 := by
+    sorry
+
   theorem exists_galerkinModeData (nu : ℝ) (hnu : 0 < nu)
       (u0 : SchwartzVelocity) (hu0 : DivergenceFreeInitial u0) :
       Nonempty (GalerkinModeData nu u0) := by
