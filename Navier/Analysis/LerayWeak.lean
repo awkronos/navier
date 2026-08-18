@@ -67,9 +67,12 @@ Galerkin/compactness tower has a home with no floating restatement.
   for `t > 0` only, which is all a compactness limit can give) transports to a
   full `IsLerayHopfWeakSolution` with pointwise `initial_attained`.  Anti-vacuity
   inhabitant: `zeroLerayLimitData`.
-* `leray_weak_existence`, `galerkin_approximation_exists`, and
-  `leray_of_galerkinApproximation` are now **compositions**, with no `sorry` of
-  their own.
+* `leray_of_galerkinApproximation` is a **composition**, with no `sorry` of
+  its own.  `exists_galerkinModeData`, `galerkin_approximation_exists`, and
+  `leray_weak_existence` (same namespace, same names, same types) live
+  downstream in `Navier.Analysis.LerayWeakExistence` since 2026-08-18, wired
+  to `GalerkinBasis.exists_galerkinModeData` instead of a duplicate upstream
+  `sorry` — see the residual ledger.
 * `exists_subseq_windowCauchy` — Riesz–Fréchet–Kolmogorov total boundedness on
   the single bounded window `(0,n] × B̄(0,n)` [Brezis 2011 Thm 4.26 + Cor 4.27;
   Simon 1987 Thm 1] — now CERTIFIED: the dyadic-average projection route,
@@ -87,10 +90,12 @@ Galerkin/compactness tower has a home with no floating restatement.
 
 ## Named residuals (honest `sorry`, strictly-lower leaves)
 
-* `exists_galerkinModeData` — the finite-mode Galerkin construction (ODE on the
-  first `m` divergence-free modes + time-regularity bookkeeping); depends on
-  `Navier.Analysis.GalerkinBasis.GalerkinBasisFamily` [Temam III.3;
-  Constantin–Foias II; Leray 1934 §§18–20; est ~350 LOC].
+* (`exists_galerkinModeData` — the finite-mode Galerkin construction — was
+  RELOCATED 2026-08-18 to `Navier.Analysis.LerayWeakExistence`, where it is a
+  one-line composition of `GalerkinBasis.exists_galerkinModeData`; that
+  downstream construction is assembled modulo exactly the named residuals
+  `hspace`/`htime`/`hweak` [Temam III.3; Constantin–Foias II; Leray 1934
+  §§18–20].  The duplicate upstream `sorry` is deleted.)
 (`exists_limit_of_forall_windowCauchy` — Fischer–Riesz limit extraction from
 window-Cauchy, with the pointwise-limit-or-zero representative that makes the
 slicewise clauses true at **every** `t ≥ 0` [Brezis 2011 Thm 4.8] — is CERTIFIED
@@ -1429,8 +1434,9 @@ theorem galerkinModalApprox_sq_integrable (deg : ℕ → ℕ)
   let f : SchwartzVelocity := ∑ i, forwardExtend (c m) t i • w m i
   simpa [f, galerkinModalApprox] using integrable_norm_sq_schwartz f
 
-/-- **[NAMED RESIDUAL — finite-mode Galerkin construction; Temam, *NSE* III.3;
-Constantin–Foias, *NSE* II; Leray, Acta Math. 63 (1934) §§18–20; est ~350 LOC.]**
+/-! **[FORMER NAMED RESIDUAL — RELOCATED 2026-08-18; finite-mode Galerkin
+construction; Temam, *NSE* III.3; Constantin–Foias, *NSE* II; Leray, Acta
+Math. 63 (1934) §§18–20; est ~350 LOC.]**
 Projecting NSE onto the first `m` divergence-free modes gives a `C¹` ODE on a
 finite subspace whose field `F_m = −ν A_m + P_m B` is dissipative-plus-skew, so
 `⟨F_m x, x⟩ ≤ 0`; `finiteDim_dissipative_ode_global` (BANKED, above) then yields
@@ -1488,18 +1494,16 @@ holds and the enstrophy bound *is* a gradient bound.  For a general sequence tha
 identity fails — which is precisely the curl-free falsification.
 
 The product-norm/Euclidean conversion that used to sit inside this obligation is
-now certified (`galerkinApproximation_of_modeData`). -/
-theorem exists_galerkinModeData (ν : ℝ) (hν : 0 < ν)
-    (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀) :
-    Nonempty (GalerkinModeData ν u₀) := by
-  sorry
+now certified (`galerkinApproximation_of_modeData`).
 
-/-- **Galerkin approximants exist** — now a composition of the finite-mode data
-residual with the certified transport `galerkinApproximation_of_modeData`. -/
-theorem galerkin_approximation_exists (ν : ℝ) (hν : 0 < ν)
-    (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀) :
-    Nonempty (GalerkinApproximation ν u₀) :=
-  galerkinApproximation_of_modeData ν u₀ (exists_galerkinModeData ν hν u₀ hu₀).some
+**RELOCATED 2026-08-18 (lane NK2).**  The declarations
+`exists_galerkinModeData` and `galerkin_approximation_exists` now live in
+`Navier.Analysis.LerayWeakExistence` (same namespace, same names, same types),
+downstream of `GalerkinBasis`: `exists_galerkinModeData` is there a one-line
+composition of `GalerkinBasis.exists_galerkinModeData` — the construction
+described above, assembled from the certified basis modulo exactly
+`hspace`/`htime`/`hweak`.  The duplicate upstream `sorry` that sat here is
+deleted; nothing in this file referenced it in code. -/
 
 /-!
 ### `StrongL2LocLimit` plumbing (certified)
@@ -5534,23 +5538,13 @@ theorem leray_of_galerkinApproximation (ν : ℝ) (hν : 0 < ν)
 
 /-!
 ## Existence skeleton
+
+**RELOCATED 2026-08-18 (lane NK2).**  `leray_weak_existence` now lives in
+`Navier.Analysis.LerayWeakExistence` (same namespace, same name, same type),
+downstream of `GalerkinBasis`: it composes the relocated
+`galerkin_approximation_exists` with `leray_of_galerkinApproximation` above.
+Its remaining `sorryAx` reach is exactly the named residuals
+`hspace`/`htime`/`hweak` (GalerkinBasis) and `exists_lerayLimitData` (here).
 -/
-
-/-- **Leray weak existence** [Leray, Acta Math. 63 (1934); Temam, *Navier–
-Stokes Equations* Ch. III].  For every viscosity `ν > 0` and every
-divergence-free Schwartz datum there is a global Leray–Hopf weak solution.
-
-This is now a genuine composition of the Galerkin decomposition above:
-`galerkin_approximation_exists` builds the uniformly-bounded approximants and
-`leray_of_galerkinApproximation` (via `aubin_lions_l2loc_compactness`) passes
-to the limit.  The remaining `sorry`s live in named, reference-grounded,
-strictly-lower leaves — not here. -/
-theorem leray_weak_existence :
-    ∀ ν : ℝ, 0 < ν →
-    ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
-      ∃ u : VelocityEvolution, IsLerayHopfWeakSolution ν u₀ u := by
-  intro ν hν u₀ hu₀
-  exact (galerkin_approximation_exists ν hν u₀ hu₀).elim
-    (fun G => leray_of_galerkinApproximation ν hν u₀ hu₀ G)
 
 end Navier.Analysis.LerayWeak

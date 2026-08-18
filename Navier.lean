@@ -70,6 +70,7 @@ import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.GalerkinHMinusOne
 import Navier.Analysis.DivFreeGradientEnstrophy
 import Navier.Analysis.LerayWeak
+import Navier.Analysis.LerayWeakExistence
 import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.SeeleyExtension
 import Navier.Analysis.SeeleyMoments
