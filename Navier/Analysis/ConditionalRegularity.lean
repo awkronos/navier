@@ -777,15 +777,15 @@ Depends on: parabolic Moser/De Giorgi iteration, the Caccioppoli inequality
 for the local energy, and the Biot–Savart representation of the pressure —
 none currently in Mathlib.
 
-Frontier status: `ParabolicCaccioppoli` now lands the first two rungs —
-the pointwise local energy identity `local_energy_balance` and the
-De Giorgi–Moser numeric engine `deGiorgiMoser_tendsto_zero` — but not the
-integrated Caccioppoli inequality `cutoff_local_energy_inequality` itself,
-which is blocked on (a) cutoff integration by parts against the local
-energy identity and (b) an `L^r` pressure bound.  `BiotSavartKernel` lands
-the kernel's elementary algebra and its pointwise far-field `L²` tail
-bound, with the Calderón–Zygmund near-field cancellation — exactly the
-missing pressure-bound ingredient (b) — named as an honest residual in
+Frontier status (N4 sweep 2026-08-18): `ParabolicCaccioppoli` lands the
+pointwise local energy identity `local_energy_balance` and the De
+Giorgi–Moser engine `deGiorgiMoser_tendsto_zero`, and former blocker (a)
+is now certified: `CutoffEnergyIbp.cutoffEnergy_ibp_eq` gives the cutoff
+IBP balance.  The integrated Caccioppoli inequality itself is still
+missing, blocked on (b) an `L^r` pressure bound for `∫ χ² ⟨∇p, u⟩` — no
+`MemLp`/`Integrable` estimate for `sol.pressure` exists in the estate.
+`CZNearField` certifies the pointwise Hörmander core; the transform's
+`L^r` bounds behind (b) stay a named residual in
 `SingularIntegralPrelims`, so the pressure representation is not yet
 available either. -/
 theorem prodiSerrin_interior_outerRegion_bounded
@@ -941,13 +941,13 @@ bounds, the enstrophy identity from `Navier.Analysis.Enstrophy`, and the
 `H² ↪ L^∞` Sobolev embedding on `ℝ³` — the singular-integral layer is the
 same Mathlib gap as in the Beale–Kato–Majda tower.
 
-Frontier status: `Enstrophy` lands the pointwise vortex-stretching identity
-(`vorticityTransportEquation`) while the integral enstrophy budget remains
-open; `BiotSavartKernel` stops at the elementary kernel algebra and the
-far-field `L²` tail, with the near-field cancellation named as an honest
-residual in `SingularIntegralPrelims`; and `SobolevEmbedding`'s `H³ ↪ L^∞`
-assembly still carries its disclosed Plancherel `sorryAx`, so even the
-closing embedding is not yet residual-free. -/
+Frontier status (N4 sweep 2026-08-18): `Enstrophy` lands the pointwise
+identity `vorticityTransportEquation`; the integral enstrophy budget
+stays open, and no kernel-clean Biot–Savart representation of `∇u`
+exists (routes use the open leaf `exists_biotSavartLogTextbook`).  The
+closing embedding IS residual-free: `sobolevEmbeddingDomination_H3` is
+kernel-clean since `19192df` (N4-verified via `#print axioms`); caveat —
+it needs `SchwartzVelocity` slices; slice-Schwartz control stays open. -/
 theorem constantinFefferman_interior_outerRegion_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
