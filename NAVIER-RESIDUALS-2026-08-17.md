@@ -293,6 +293,25 @@ Navier.Analysis.LerayWeak.spaceEquicontinuous_of_dissipation_bound` returns
 
 ## File: `Navier/Analysis/ConditionalRegularity.lean` (4 sorries)
 
+**N4 sweep audit 2026-08-18** (lane N4; docstring side committed as
+`d7bacfd`): all four leaves
+re-attacked; two full attempt cycles each (certified-reduction survey +
+machine search over the imported environment). Verdict: **all four remain
+CONJECTURE-tier no-gos**, blocked on the same Mathlib-absent infrastructure
+recorded below — `exact?` over the full analysis DAG closes neither the
+`L^p`-slice (`p > 3`) nor the `L²`-mass pointwise far-field goal, and the
+environment census finds zero `MemLp`/`Integrable` conclusions for
+`sol.pressure` and no kernel-clean Biot–Savart representation of `∇u`.
+Frontier deltas since this ledger's snapshot, verified against the
+compiler: (i) `CutoffEnergyIbp.cutoffEnergy_ibp_eq` (commit `2c69626`)
+discharges #10's former blocker (a); (ii) the `H³(ℝ³) ↪ L^∞` Sobolev
+embedding has been **kernel-clean since `19192df` (2026-07-27)** —
+`#print axioms Navier.Analysis.SobolevEmbedding.sobolevEmbeddingDomination_H3`
+→ `{propext, Classical.choice, Quot.sound}` — so #12's "closing embedding
+carries a Plancherel `sorryAx`" note was already stale at this ledger's
+writing; corrected below. Sorry census unchanged: 4 compiler sorries in
+this file (721/791/866/951), 9 repo-wide.
+
 ### 9. ConditionalRegularity.lean:731 — `prodiSerrin_layer_farField_bounded`
 
 | Field | Value |
@@ -311,7 +330,7 @@ Navier.Analysis.LerayWeak.spaceEquicontinuous_of_dissipation_bound` returns
 | **Statement** | The critical mixed-norm bound `L^q(0,T; L^p)` (`3/p + 2/q = 1`) gives a uniform velocity bound on `(δ,T)` for `‖x‖ ≥ ϱ`. |
 | **Blocks** | Prodi–Serrin conditional regularity |
 | **Approach exists** | Parabolic Moser/De Giorgi iteration, Caccioppoli inequality for local energy, Biot–Savart representation of pressure.  `ParabolicCaccioppoli` now lands the first two rungs: `local_energy_balance` and the numeric De Giorgi–Moser engine `deGiorgiMoser_tendsto_zero`.  `BiotSavartKernel` lands the kernel's elementary algebra and far-field `L²` tail bound. |
-| **What blocks** | The integrated Caccioppoli inequality `cutoff_local_energy_inequality` (blocked on cutoff integration by parts vs local energy identity, and an `L^r` pressure bound).  The near-field Calderón–Zygmund cancellation remains a named residual in `SingularIntegralPrelims`. |
+| **What blocks** | The integrated Caccioppoli inequality `cutoff_local_energy_inequality`.  Former blocker (a) — cutoff integration by parts against the local energy identity — is now **certified** (`CutoffEnergyIbp.cutoffEnergy_ibp_eq`, commit `2c69626`, N4-verified 2026-08-18).  Remaining: (b) an `L^r` pressure bound for the cutoff pressure term `∫ χ² ⟨∇p, u⟩`, plus the assembly/iteration step.  The Calderón–Zygmund `L^r` boundedness behind (b) remains a named residual in `SingularIntegralPrelims` (the pointwise Hörmander core is now certified in `CZNearField`). |
 
 ### 11. ConditionalRegularity.lean:878 — `constantinFefferman_layer_farField_bounded`
 
@@ -331,7 +350,7 @@ Navier.Analysis.LerayWeak.spaceEquicontinuous_of_dissipation_bound` returns
 | **Statement** | The uniform `L²` mass bracket + depleted cross-product bound gives a uniform velocity bound on `(δ,T)` for `‖x‖ ≥ ϱ`. |
 | **Blocks** | Constantin–Fefferman conditional regularity |
 | **Approach exists** | Enstrophy identity (`vorticityTransportEquation` in `Navier.Analysis.Enstrophy`), `H² ↪ L^∞` Sobolev embedding, vortex-stretching algebra.  The singular-integral layer is the same Mathlib gap as in the BKM tower. |
-| **What blocks** | `Enstrophy` lands the pointwise vortex-stretching identity but the integral enstrophy budget remains open.  `BiotSavartKernel` stops at the far-field tail; near-field cancellation in `SingularIntegralPrelims`.  `SobolevEmbedding` carries its own disclosed Plancherel `sorryAx`. |
+| **What blocks** | `Enstrophy` lands the pointwise vortex-stretching identity but the integral enstrophy budget remains open.  `BiotSavartKernel` stops at the far-field tail; no kernel-clean Biot–Savart representation of `∇u` exists (the only `biotSavart` decls route through the open leaf `exists_biotSavartLogTextbook`).  **Correction (N4, 2026-08-18):** the closing Sobolev embedding is no longer a blocker on soundness grounds — `sobolevEmbeddingDomination_H3` is kernel-clean since `19192df`; the residual caveat is that it accepts `SchwartzVelocity` slices, with slice-Schwartz control itself open (`exists_locallyUniformSliceDecay`). |
 
 ---
 
