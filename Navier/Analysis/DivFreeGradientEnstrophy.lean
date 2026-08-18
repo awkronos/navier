@@ -1,6 +1,8 @@
-import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.CurlIdentities
 import Navier.Analysis.EnergyNormBridge
+import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 
 /-!
 # The divergence-free gradient–enstrophy identity (Plancherel route)
@@ -70,10 +72,61 @@ open scoped FourierTransform LineDeriv
 namespace Navier.Analysis.DivFreeGradientEnstrophy
 
 open Navier
-open Navier.Analysis.BealeKatoMajda
 open Navier.Analysis.Vorticity
 open Navier.Analysis.OfficialABEncoding
 open Navier.Analysis.EnergyNormBridge
+
+/-!
+## The Euclidean/complex model bridges (self-contained copies)
+
+These are the bridge definitions that this file previously consumed from
+`BKMLogBootstrap` (`BealeKatoMajda.EuclSpace`/`euclModel`/...).  They are
+inlined here verbatim to decouple this file's build from that module; the
+copies are definitionally identical to the banked ones.
+-/
+
+/-- The Euclidean (ℓ²) model of `Space`, on the same carrier `Fin 3 → ℝ`. -/
+abbrev EuclSpace := EuclideanSpace ℝ (Fin 3)
+
+/-- The complex Euclidean codomain, needed because Mathlib's Fourier transform
+takes values in a `ℂ`-normed space. -/
+abbrev CxSpace := EuclideanSpace ℂ (Fin 3)
+
+/-- The coordinate identification `EuclideanSpace ℝ (Fin 3) ≃L[ℝ] Space`.  It is the
+identity on carriers and changes only the norm. -/
+def euclCoords : EuclSpace ≃L[ℝ] Space := EuclideanSpace.equiv (Fin 3) ℝ
+
+/-- Componentwise inclusion `ℝ³ ↪ ℂ³`, landing in the complex Euclidean space. -/
+def realToCx : Space →L[ℝ] CxSpace :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun a => (WithLp.toLp 2 (fun i => ((a i : ℂ))) : CxSpace)
+      map_add' := by intro a b; ext i; simp
+      map_smul' := by intro c a; ext i; simp }
+
+@[simp] theorem realToCx_apply (a : Space) (i : Fin 3) : realToCx a i = (a i : ℂ) := by
+  simp [realToCx]
+
+/-- The Euclidean/complex model of a Schwartz velocity field: precompose with the
+coordinate identification (`compCLMOfContinuousLinearEquiv`) and postcompose with the
+componentwise complexification (`postcompCLM`). -/
+def euclModel (u : SchwartzVelocity) : SchwartzMap EuclSpace CxSpace :=
+  SchwartzMap.postcompCLM (𝕜 := ℝ) realToCx
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℝ euclCoords u)
+
+@[simp] theorem euclModel_apply (u : SchwartzVelocity) (y : EuclSpace) :
+    euclModel u y = realToCx (u (euclCoords y)) := rfl
+
+/-- **Volume transport between the two models.**  `Space` and `EuclSpace`
+share a carrier and the coordinate map is volume preserving
+(`PiLp.volume_preserving_ofLp`), so every Lebesgue integral transports
+verbatim. -/
+theorem integral_space_eq_euclSpace (f : Space → ℝ) :
+    ∫ ξ : Space, f ξ = ∫ y : EuclSpace, f (euclCoords y) := by
+  have hmp : MeasureTheory.MeasurePreserving (@WithLp.ofLp 2 (Fin 3 → ℝ))
+      (volume : Measure EuclSpace) (volume : Measure Space) :=
+    PiLp.volume_preserving_ofLp (Fin 3)
+  rw [← hmp.integral_comp (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).symm.measurableEmbedding]
+  rfl
 
 /-- Local alias for the complex-valued Schwartz maps on the Euclidean model. -/
 private abbrev SV := SchwartzMap EuclSpace CxSpace
@@ -535,7 +588,7 @@ private theorem eq_sum_smul_basis (v : Space) :
 
 /-- The Fréchet-derivative operator norm is bounded by the sum of the
 coordinate-direction norms (sup-norm domain estimate). -/
-private theorem opNorm_le_sum (T : Space →L[ℝ] Space) :
+theorem opNorm_le_sum (T : Space →L[ℝ] Space) :
     ‖T‖ ≤ ∑ i : Fin 3, ‖T (basisVector i)‖ := by
   refine ContinuousLinearMap.opNorm_le_bound _ (Finset.sum_nonneg fun i _ => norm_nonneg _)
       (fun v => ?_)
