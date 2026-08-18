@@ -56,6 +56,46 @@ token :376).  Compare like with like when auditing.
 
 ---
 
+## Wave 2026-08-18 NK2 — LerayWeak relocation dedup (−1 compiler sorry; compiler-verified)
+
+Receipt: `lake env lean Navier/Analysis/LerayWeak.lean` — exit 0, sorry
+warnings **2 → 1** (decl :1492 `exists_galerkinModeData` deleted upstream;
+decl `exists_lerayLimitData` now at :5526).  `lake build
+Navier.Analysis.LerayWeakExistence` — exit 0, zero sorry warnings (the new
+file carries no `sorry` token).  `lake env lean Navier.lean` — exit 0.
+`#print axioms`: `leray_weak_existence`, `exists_galerkinModeData`,
+`galerkin_approximation_exists`, `exists_lerayLimitData` are all
+`[propext, sorryAx, Classical.choice, Quot.sound]` — kernel axioms plus
+`sorryAx` via the named residuals only; no custom axioms, no `native_decide`.
+
+### #4 — LerayWeak :1492/:1495 `exists_galerkinModeData` → **RELOCATED-DEDUPED** (duplicate-sorry closure)
+
+N3's recorded follow-up, executed: the three declarations
+`exists_galerkinModeData`, `galerkin_approximation_exists`, and
+`leray_weak_existence` moved (same namespace, same names, same types) to the
+new downstream file `Navier/Analysis/LerayWeakExistence.lean` (`import
+Navier.Analysis.GalerkinBasis`), where `exists_galerkinModeData` is the
+one-line composition `GalerkinBasis.exists_galerkinModeData`.  The upstream
+copy was a **duplicate monolithic `sorry`** of a construction that already
+exists downstream modulo exactly `hspace`/`htime`/`hweak`; `LerayWeak` is
+strictly upstream of the basis chain and could never consume it.
+Deletion-mandate evidence: zero code references to the three declarations
+outside `LerayWeak.lean` itself (repo-wide grep 2026-08-18); build green
+before and after; full names unchanged, so even nominal consumers are
+unaffected.  Effect: estate compiler sorry census **10 → 9** declaration
+warnings (LerayWeak 2 → 1; GalerkinBasis unchanged at 1; the new file 0).
+When N1's three residuals land, the headline `leray_weak_existence` becomes
+`sorryAx`-free with no further wiring.
+
+### #5 — LerayWeak `exists_lerayLimitData` (:5526) → unchanged (N3 typed no-go stands)
+
+Re-checked at this HEAD: the sole residue remains the `hweak` hypothesis of
+`exists_lerayLimitData_of_weakClauses` (the `lim_m ↔ ∫ dt` interchange with no
+uniform-in-time test-class control).  Nothing committed since N3
+(`GalerkinHMinusOne`, `DivFreeGradientEnstrophy`) bears on it.  No edit.
+
+---
+
 ## Wave 2026-08-18 N3 — LerayWeak pair attack: two typed no-gos (compiler-verified)
 
 Receipt: `lake env lean Navier/Analysis/LerayWeak.lean` at HEAD — exit 0, zero
