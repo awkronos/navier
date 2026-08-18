@@ -3,6 +3,8 @@ import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.EnergyConvectionIntegral
 import Navier.Analysis.CurlIdentities
+import Navier.Analysis.EnergyViscousIntegral
+import Navier.Analysis.EnergyViscousDissipation
 
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
@@ -3546,6 +3548,51 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
     are discharged here.  The genuinely analytic estimates
     (`hspace`, `htime`, `hweak`) are NAMED RESIDUALS.
   -/
+  /-- For a divergence-free Schwartz velocity field, the L² integral of the
+  squared Fréchet-derivative norm equals the enstrophy (squared L² norm of the
+  curl).  This bridges the `UniformEnstrophyBound` (which measures the curl)
+  to the `hdiss` hypothesis of `spaceEquicontinuous_of_dissipation_bound`
+  (which needs the full derivative). -/
+  lemma integral_fderiv_sq_eq_enstrophy_of_divFree (w : SchwartzVelocity)
+      (hw : DivergenceFreeInitial w) :
+      ∫ x : Space, ‖fderiv ℝ w x‖ ^ 2 = enstrophy (fun _ : ℝ => w) 0 := by
+    have hdiff : Differentiable ℝ w :=
+      schwartz_differentiable w
+    have hcoordDiff (j : Fin 3) : Differentiable ℝ (coordinateDerivativeField w j) :=
+      (schwartz_differentiable w).fderiv_right (by norm_num)
+    have hflux_integrable (j : Fin 3) :
+        Integrable (fun x : Space => (viscousEnergyFlux w x) j) := by
+      refine ((viscousEnergyFlux w).map (fun v : Space => v j)).integrable
+    have hflux_deriv_integrable (j : Fin 3) :
+        Integrable (fun x : Space =>
+          fderiv ℝ (fun y : Space => (viscousEnergyFlux w y) j) x (basisVector j)) := by
+      refine (schwartz_differentiable (viscousEnergyFlux w)).integrable_fderiv_apply
+        (basisVector j) (viscousEnergyFlux w) (by
+          intro x; exact (schwartz_differentiable (viscousEnergyFlux w)) x)
+    have hdensity_integrable : Integrable (derivativeEnergyDensity w) := by
+      refine (schwartz_differentiable w).integrable_derivativeEnergyDensity
+    have hdirichlet : (∫ x : Space,
+        ∑ i : Fin 3, laplacian (fun _ : ℝ => w) 0 x i * w x i) =
+      -(∫ x : Space, ‖fderiv ℝ w x‖ ^ 2) := by
+      calc
+        (∫ x : Space, ∑ i : Fin 3, laplacian (fun _ : ℝ => w) 0 x i * w x i) =
+            -(∫ x : Space, derivativeEnergyDensity w x) :=
+          Navier.Analysis.EnergyViscousIntegral.integral_laplacian_work_eq_neg_derivativeEnergy
+            (fun _ : ℝ => w) 0 hdiff hcoordDiff hflux_integrable
+            hflux_deriv_integrable hdensity_integrable
+        _ = -(∫ x : Space, ‖fderiv ℝ w x‖ ^ 2) := by
+          congr; ext x; simp [derivativeEnergyDensity, coordinateDerivativeField,
+            SchwartzMap.lineDerivOp_apply_eq_fderiv, fderiv_norm_sq_eq_derivativeEnergyDensity]
+    sorry
+    -- Now use schwartzL2Inner_curl_eq_neg_laplacian
+    have hcurl_pair : schwartzL2Inner (curlSchwartzCLM w) (curlSchwartzCLM w) =
+        -schwartzL2Inner w (laplacianSchwartz w) :=
+      schwartzL2Inner_curl_eq_neg_laplacian w w hw
+    have hcurl_sq : ∫ x : Space, officialInner (curlSchwartzCLM w x) (curlSchwartzCLM w x) =
+        -(∫ x : Space, officialInner (w x) (laplacianSchwartz w x)) := hcurl_pair
+    sorry
+    -- Then connect -∫⟨u, Δu⟩ = ∫‖fderiv u‖² and the curl L² norm = enstrophy
+
   theorem exists_galerkinModeData (nu : ℝ) (hnu : 0 < nu)
       (u0 : SchwartzVelocity) (hu0 : DivergenceFreeInitial u0) :
       Nonempty (GalerkinModeData nu u0) := by
