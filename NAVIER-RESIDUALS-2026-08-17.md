@@ -56,6 +56,66 @@ token :376).  Compare like with like when auditing.
 
 ---
 
+## Wave 2026-08-18 N3 — LerayWeak pair attack: two typed no-gos (compiler-verified)
+
+Receipt: `lake env lean Navier/Analysis/LerayWeak.lean` at HEAD — exit 0, zero
+errors, exactly 2 `declaration uses sorry` warnings (declarations :1492 and
+:5522; tokens :1495/:5526).  Sorry delta this lane: **2 → 2** (no regression,
+no new axioms, no statement edits).  No code changed; the closures below were
+analyzed to their exact blocking lemmas and are banked as typed no-gos.
+
+### #4 — LerayWeak.lean:1495 `exists_galerkinModeData` → **BLOCKED-ON-N1** (dependency no-go)
+
+The identical construction already exists downstream as
+`GalerkinBasis.exists_galerkinModeData` (:3549), fully assembled modulo exactly
+the three named residuals `hspace`/`htime`/`hweak` (:3642/:3645/:3667) — lane
+N1's active targets this wave.  LerayWeak is strictly *upstream* of the basis
+(chain `LerayWeak → SchwartzL2Pairing → GalerkinRawFamily → GalerkinBasis`), so
+an in-file closure cannot consume that construction; closing :1495 *is* proving
+those three estimates, and any closure via the downstream theorem would still
+compile to `declaration uses sorry` until N1 lands.  Basis-free routes were
+re-checked and fail: any non-dense mode family fails `weak_consistent`,
+including the `span{u₀}` collapse (convection self-pairing `⟨u₀,(u₀·∇)u₀⟩ = 0`
+by skew-symmetry, so the 1-mode ODE is linear and global — but the weak-form
+residual against transverse tests does not tend to 0).  Component status:
+`hspace` is mechanically reducible from certified pieces
+(`spaceEquicontinuous_of_dissipation_bound` :1249 + Brezis slice estimate +
+banked dissipation budget, per the :1479 docstring); `htime` needs the
+`H⁻¹` time-derivative bound (the untracked `GalerkinHMinusOne.lean` stub is
+infrastructure toward it); `hweak` is the deep one (nonlinear test-projection
+residual, under active reduction in recent commits).
+**Follow-up after N1 lands:** relocate `exists_galerkinModeData` /
+`galerkin_approximation_exists` / `leray_weak_existence` downstream of
+`GalerkinBasis` (or re-export) to wire the headline to :3549.
+
+### #5 — LerayWeak.lean:5526 `exists_lerayLimitData` → **CONDITIONAL, re-diagnosed** (statement-level no-go)
+
+The original entry's "blocked on #4; once #4 closes, purely functional
+analysis" is **stale and is corrected here**.  The limit extraction is already
+certified in-file: `exists_galerkinLimit_energy_le` (:4325) discharges
+`energy_le`/`sq_integrable`/joint measurability, and
+`pairing_integrable`/`datum_pairing_integrable` are unconditional via the
+certified Cauchy–Schwarz layer.  The sole residue is the hypothesis `hweak` of
+the certified reducer `exists_lerayLimitData_of_weakClauses` (:5389): the
+`weak_form` `lim_m ↔ ∫_{(0,T]} dt` interchange.  Obstruction (full witness in
+the :5488 docstring): `DivergenceFreeTestFunction` (:124) imposes **no
+uniform-in-time seminorm control**, so no `m`-uniform integrable majorant
+exists.  Re-verified this wave that the same witness also closes the
+non-domination standard routes: weak `L²`-spacetime (`∂ₜφ ∉ L²((0,T)×Space)`),
+`H⁻¹`–`H¹` duality (`φ ∉ L²(0,T;H¹)`), Vitali/uniform-integrability
+(`sup_m ∫_E |g_m| = ∞` on small `E`), and time-truncation
+(`‖φ(t)‖_{L²} ↛ 0` at the horizon, so the cut-off error integral does not
+vanish).  Not FALSIFIED: under Bochner's junk-value convention both sides can
+vanish on the pure witness (`φ(0) = 0`), and the modified witness
+(witness + bump, `⟨u₀, φ(0)⟩ ≠ 0`) makes the statement *undetermined* rather
+than provably false for the non-explicit Aubin–Lions limit.  Routes remaining
+are the docstring's: (i) test-class repair = statement change = owner-level
+decision (deliberately not taken), (ii) a non-majorant argument (no known
+mathematics), (iii) a compact-slice limit representative (Aubin–Lions does
+not provide one).
+
+---
+
 ## Original entry (2026-08-17)
 
 **Build**: GREEN, 8730 jobs, 12 source `sorry` tokens (= 10 compiler `declaration uses sorry` warnings after the GalerkinBasis 3-token roll-up — see the reconciliation above)  
