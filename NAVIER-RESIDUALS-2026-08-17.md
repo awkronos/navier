@@ -1,5 +1,46 @@
 # Navier Residual Ledger — 2026-08-17
 
+**UPDATED 2026-08-17 — Wave Ω580-N2 discrepancy audit**
+
+The previous snapshot reported "9 compiler sorries" vs "12 source-grep sorries" (diff=3).
+This update reconciles that discrepancy with the current build state.
+
+## Discrepancy resolution
+
+| Bucket | Previous | Current | Notes |
+|--------|----------|---------|-------|
+| Compiler `declaration uses sorry` | 9 | 10 | One GalerkinBasis sorry now visible despite build error |
+| Source `^ *sorry$` blocks | 12 | 24 | The 12 counted "declarations" (one per theorem), the 24 counts all `sorry` blocks (some theorems use >1 `sorry`) |
+| Diff | 3 | 14 | The 3-gap was GalerkinBasis sorries in declarations the compiler could not reach (build regression at line 3550) |
+| Remainder of 14-gap | — | 14 | Multi-sorry theorems (GalerkinBasis `integral_fderiv_sq_eq_enstrophy_of_divFree` has 2 sorries; GalerkinBasis `exists_galerkinModeData` has 2; EnstrophyForPartialClassical has 10 sorries in multiple declarations) |
+
+### The original 3-gap (now stale)
+
+At ledger snapshot `42acbbe` (build GREEN, 8730 jobs):
+- **Compiler (9)**: 3 BKMLogBootstrap + 2 LerayWeak + 4 ConditionalRegularity
+- **Grep (12)**: above 9 + 3 GalerkinBasis sorries (hspace, htime, hweak)
+- **Cause of gap**: GalerkinBasis sorries lived in code not reachable by the main import chain's elaboration path at that snapshot. The build still passed because GalerkinBasis compiled independently (its `.olean` was present).
+
+As of `af10eb8`, **GalerkinBasis has a build error** at line 3550 (`unexpected token '/--'; expected 'lemma'`) plus missing identifiers `schwartz_differentiable`, `coordinateDerivativeField` at lines 3560-3562. The 4 sorry blocks inside it (lines 3559, 3654, 3657, 3679) are now in code the compiler cannot reach. This is N1's file — not touched by this wave.
+
+### Current N2 sorry inventory
+
+| File | Line | Declaration | Tier | Status |
+|------|------|-------------|------|--------|
+| BKMLogBootstrap | 376 | `exists_biotSavartLogTextbook` | CONJECTURE | Requires Biot-Savart representation (singular integral) |
+| BKMLogBootstrap | 1499 | `exists_locallyUniformSliceDecay` | CONJECTURE | Second conjunct proved (`sliceIteratedFDeriv_continuousOn`); first conjunct requires PDE decay bound |
+| BKMLogBootstrap | 1575 | `exists_sobolevOrderEnergyEstimate` | CONJECTURE | Kato-Ponce commutator ~600 LOC |
+| LerayWeak | 1495 | `exists_galerkinModeData` | SORRY-in-progress | Blocked on 3 GalerkinBasis sub-obligations (hspace/htime/hweak) + GalerkinBasis build error |
+| LerayWeak | 5526 | `exists_lerayLimitData` | CONDITIONAL | Blocked on `exists_galerkinModeData` + uniform test function control |
+
+No dead-code sorries found in N2 files (BKMLogBootstrap, LerayWeak).
+
+**Build**: succeeds for all files except GalerkinBasis (N1 error). Five `declaration uses sorry` in N2 scope.
+
+---
+
+## Original entry (2026-08-17)
+
 **Build**: GREEN, 8730 jobs, 12 sorries  
 **Commit**: `42acbbe`  
 **Date**: 2026-08-17  
