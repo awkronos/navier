@@ -357,10 +357,19 @@ this file: near field `integral_norm_mul_bsKernelScalar_ball_le` (`O(ρ)` with
 the cancellation weight `‖z‖`), logarithmic shell
 `integral_bsKernelScalar_annulus_le_log` (`O(1 + log(1/ρ))`, the source of the
 logarithm), far field `integrableOn_bsKernelScalar_sq_farField` (`L²`, paired
-with `‖ω‖_{L²}` by Cauchy–Schwarz).  What remains genuinely Mathlib-absent is
-the Biot–Savart *representation* `∇u = PV(∇K ∗ ω)` for divergence-free
-Schwartz fields, which is what converts these kernel estimates into a bound on
-`‖∇u‖_∞`. -/
+with `‖ω‖_{L²}` by Cauchy–Schwarz).  The near-field **Hölder input** is
+certified as `exists_agmonMorreyBound` (Morrey–Agmon, `H²(ℝ³) ↪ C^{0,1/4}`
+for Schwartz fields, kernel axioms only): the cancellation factor
+`|ω(x−z) − ω(x)|` is `O(‖z‖^{1/4})` with constant `O(√(sobolevH2NormSq))` of
+the vorticity components — exactly the `H³`-of-`u` order this statement
+carries, not the `H⁴` that a Lipschitz/`‖∇ω‖∞` route would cost — so the
+cutoff optimisation at `ρ ≈ ‖u‖_{H³}^{-4}` produces the `log(e + ‖u‖_{H³})`
+factor.  What remains genuinely Mathlib-absent is the Biot–Savart
+*representation* `∇u = PV(∇K ∗ ω)` (with its local term) for divergence-free
+Schwartz fields, which is what converts these kernel estimates into a bound
+on `‖∇u‖_∞`; the residual also carries the curl-component bridge
+(`‖Dⁿ(staticCurl u)‖ ≤ ‖D^{n+1}u‖` bookkeeping) feeding the vorticity into
+`exists_agmonMorreyBound`. -/
 theorem exists_biotSavartLogTextbook :
     ∃ C : ℝ, 0 < C ∧
       ∀ (u : SchwartzVelocity), DivergenceFreeInitial u →
@@ -1308,6 +1317,483 @@ theorem sobolevEmbeddingDomination :
   exact le_mul_sqrt_of_le_majorant (le_of_lt hCpos) (hC u x)
     (le_trans (sobolevH2NormSq_le_sobolevH3NormSq u) hMs)
 
+/-!
+### The Morrey–Agmon Hölder seminorm bound (certified, no sorry)
+
+`exists_agmonSupBound` controls the *size* of a Schwartz field by its `H²`
+norm; the Biot–Savart near field in `exists_biotSavartLogTextbook` consumes
+the *difference* version — a Hölder modulus of continuity at the same `H²`
+order.  The derivative count is the point: bounding the near-field
+cancellation `|ω(x-z) - ω(x)|` by `‖∇ω‖∞·‖z‖` costs a full extra derivative
+of the vorticity and would push the log inequality onto `H⁴`, while a Hölder
+bound at any exponent `s < 1/2` is available at exactly `H²` of `ω`, hence at
+the `H³` of `u` that the BKM statement carries.  The exponent certified here
+is `s = 1/4`: the frequency-side bound is the single global pointwise
+inequality `min(2, 2π|ξ|h)² ≤ 4·√(2π|ξ|h)`, so the only dimensional input is
+the weighted moment `∫ (1+‖ξ‖²)⁻²·√‖ξ‖ dξ < ∞` (radially
+`∫₀^∞ r^{5/2}/(1+r²)² dr`, tail `∫^∞ r^{-3/2} dr`), discharged by the same
+Japanese-bracket integrability that powers the Agmon chain, at exponent
+`7/2 > 3`.
+
+References: S. Agmon, *Lectures on Elliptic Boundary Value Problems*, Van
+Nostrand 1965; Stein, *Singular Integrals and Differentiability Properties of
+Functions*, Princeton 1970, Ch. V §3 (Bessel potentials) and Ch. II §4.
+-/
+
+/-- The Fourier character is `4π`-Lipschitz in its argument below the trivial
+bound: `‖𝐞 a - 𝐞 b‖ ≤ min 2 (4π|a - b|)`.  The cap `2` handles the
+large-phase regime; on `2π|a-b| ≤ 1` the linear bound is
+`Complex.norm_exp_sub_one_le`. -/
+private theorem norm_fourierChar_coe_sub_le (a b : ℝ) :
+    ‖(Real.fourierChar a : ℂ) - (Real.fourierChar b : ℂ)‖
+      ≤ min 2 (4 * Real.pi * |a - b|) := by
+  have hnorm1 : ∀ θ : ℝ, ‖(Real.fourierChar θ : ℂ)‖ = 1 := by
+    intro θ
+    exact mem_sphere_zero_iff_norm.mp (Real.fourierChar θ).property
+  have hfactor : (Real.fourierChar a : ℂ) - (Real.fourierChar b : ℂ)
+      = (Real.fourierChar b : ℂ) * ((Real.fourierChar (a - b) : ℂ) - 1) := by
+    have h1 : (Real.fourierChar a : ℂ)
+        = (Real.fourierChar b : ℂ) * (Real.fourierChar (a - b) : ℂ) := by
+      rw [← Circle.coe_mul, ← Real.fourierChar.map_add_eq_mul,
+        show b + (a - b) = a from by ring]
+    rw [h1]; ring
+  rw [hfactor, norm_mul, hnorm1 b, one_mul]
+  have htriv : ‖(Real.fourierChar (a - b) : ℂ) - 1‖ ≤ 2 := by
+    calc ‖(Real.fourierChar (a - b) : ℂ) - 1‖
+        ≤ ‖(Real.fourierChar (a - b) : ℂ)‖ + ‖(1 : ℂ)‖ := norm_sub_le _ _
+      _ = 2 := by rw [hnorm1 (a - b), norm_one]; norm_num
+  have hlin : 2 * Real.pi * |a - b| ≤ 1 →
+      ‖(Real.fourierChar (a - b) : ℂ) - 1‖ ≤ 4 * Real.pi * |a - b| := by
+    intro hz
+    have harg : ‖(↑(2 * Real.pi * (a - b)) : ℂ) * Complex.I‖ = 2 * Real.pi * |a - b| := by
+      rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real, Real.norm_eq_abs, abs_mul,
+        abs_of_nonneg (by positivity : (0 : ℝ) ≤ 2 * Real.pi)]
+    rw [Real.fourierChar_apply]
+    calc ‖Complex.exp (↑(2 * Real.pi * (a - b)) * Complex.I) - 1‖
+        ≤ 2 * ‖(↑(2 * Real.pi * (a - b)) : ℂ) * Complex.I‖ :=
+          Complex.norm_exp_sub_one_le (harg ▸ hz)
+      _ = 4 * Real.pi * |a - b| := by rw [harg]; ring
+  by_cases hc : 2 * Real.pi * |a - b| ≤ 1
+  · exact le_min htriv (hlin hc)
+  · have h2 : (2 : ℝ) ≤ 4 * Real.pi * |a - b| := by
+      have hc' := not_le.mp hc
+      nlinarith [Real.pi_pos, abs_nonneg (a - b)]
+    rw [min_eq_left h2]
+    exact htriv
+
+/-- The squared minimum bound underlying the Hölder exponent `1/4`:
+`(min 2 (2t))² ≤ 4√t` for `t ≥ 0`.  This one inequality replaces the
+frequency split at `|ξ| ~ h⁻¹`: the near-field uses `min(2, 2t) ≤ 2t` and the
+far field `min ≤ 2`, and `t² ≤ √t` on `[0,1]` interpolates between them at
+the price of the sub-endpoint exponent. -/
+private theorem min_two_two_mul_sq_le {t : ℝ} (ht : 0 ≤ t) :
+    (min 2 (2 * t)) ^ 2 ≤ 4 * Real.sqrt t := by
+  have h1 : min 2 (2 * t) ≤ 2 * min 1 t := by
+    by_cases hc : t ≤ 1
+    · rw [min_eq_right (by nlinarith : 2 * t ≤ 2), min_eq_right hc]
+    · rw [not_le] at hc
+      rw [min_eq_left (by nlinarith : (2 : ℝ) ≤ 2 * t), min_eq_left (le_of_lt hc)]
+      norm_num
+  have h2 : (min 1 t) ^ 2 ≤ Real.sqrt t := by
+    by_cases hc : t ≤ 1
+    · rw [min_eq_right hc]
+      have ht4 : t ^ 4 ≤ t := by
+        have h3 : t ^ 3 ≤ 1 := pow_le_one₀ ht hc
+        calc t ^ 4 = t * t ^ 3 := by ring
+          _ ≤ t * 1 := mul_le_mul_of_nonneg_left h3 ht
+          _ = t := mul_one t
+      rw [show t ^ 2 = Real.sqrt ((t ^ 2) ^ 2) from (Real.sqrt_sq (by positivity)).symm]
+      refine Real.sqrt_le_sqrt ?_
+      rw [show (t ^ 2) ^ 2 = t ^ 4 from by ring]
+      exact ht4
+    · rw [not_le] at hc
+      rw [min_eq_left (le_of_lt hc)]
+      calc (1 : ℝ) ^ 2 = 1 := by ring
+        _ = Real.sqrt 1 := Real.sqrt_one.symm
+        _ ≤ Real.sqrt t := Real.sqrt_le_sqrt (le_of_lt hc)
+  have hnn : (0 : ℝ) ≤ min 2 (2 * t) := le_min (by norm_num) (by nlinarith)
+  calc (min 2 (2 * t)) ^ 2 ≤ (2 * min 1 t) ^ 2 := pow_le_pow_left₀ hnn h1 2
+    _ = 4 * (min 1 t) ^ 2 := by ring
+    _ ≤ 4 * Real.sqrt t := mul_le_mul_of_nonneg_left h2 (by norm_num)
+
+/-- The quartic Bessel weight on the Euclidean model (the `EuclSpace`
+counterpart of `integrable_inv_one_add_normSq_sq`). -/
+private theorem integrable_bessel_sq_inv_eucl :
+    Integrable (fun ξ : EuclSpace => (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹) volume := by
+  have hfr : (Module.finrank ℝ EuclSpace : ℝ) < 4 := by
+    have h3 : Module.finrank ℝ EuclSpace = 3 := by simp
+    rw [h3]; norm_num
+  have h := integrable_rpow_neg_one_add_norm_sq (E := EuclSpace) (μ := volume)
+    (r := 4) hfr
+  refine h.congr (Filter.Eventually.of_forall fun ξ => ?_)
+  show ((1 : ℝ) + ‖ξ‖ ^ 2) ^ (-(4 : ℝ) / 2) = ((1 + ‖ξ‖ ^ 2) ^ 2)⁻¹
+  rw [show (-(4 : ℝ)) / 2 = -(2 : ℕ) by norm_num, Real.rpow_neg (by positivity),
+    Real.rpow_natCast]
+
+/-- The Bessel-weighted half-moment is finite on `ℝ³`:
+`ξ ↦ √‖ξ‖·(1+‖ξ‖²)⁻²` is integrable (radially `∫₀^∞ r^{5/2}(1+r²)⁻² dr`,
+tail `∫^∞ r^{-3/2} dr`).  This is the only dimensional input to the Morrey
+bound; it comes from the same Japanese-bracket integrability as the Agmon
+weight, at exponent `7/2 > 3`. -/
+private theorem integrable_sqrt_norm_mul_bessel_sq_inv :
+    Integrable (fun ξ : EuclSpace => Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹)
+      volume := by
+  have hfr : (Module.finrank ℝ EuclSpace : ℝ) < 7 / 2 := by
+    have h3 : Module.finrank ℝ EuclSpace = 3 := by simp
+    rw [h3]; norm_num
+  have h := integrable_rpow_neg_one_add_norm_sq (E := EuclSpace) (μ := volume)
+    (r := 7 / 2) hfr
+  have hcont : Continuous fun ξ : EuclSpace =>
+      Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ := by
+    refine (Real.continuous_sqrt.comp continuous_norm).mul ?_
+    apply Continuous.inv₀
+    · fun_prop
+    · intro ξ; positivity
+  refine h.mono' hcont.aestronglyMeasurable (Filter.Eventually.of_forall fun ξ => ?_)
+  show ‖Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹‖
+    ≤ (1 + ‖ξ‖ ^ 2) ^ (-(7 / 2 : ℝ) / 2)
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have hx : (0 : ℝ) ≤ ‖ξ‖ := norm_nonneg _
+  have hw1 : (0 : ℝ) < 1 + ‖ξ‖ ^ 2 := by nlinarith [sq_nonneg ‖ξ‖]
+  have hs1 : ‖ξ‖ ≤ Real.sqrt (1 + ‖ξ‖ ^ 2) := by
+    conv_lhs => rw [show ‖ξ‖ = Real.sqrt (‖ξ‖ ^ 2) from (Real.sqrt_sq hx).symm]
+    exact Real.sqrt_le_sqrt (by nlinarith [sq_nonneg ‖ξ‖])
+  have hsqrt : Real.sqrt ‖ξ‖ ≤ (1 + ‖ξ‖ ^ 2) ^ (1 / 4 : ℝ) := by
+    calc Real.sqrt ‖ξ‖ ≤ Real.sqrt (Real.sqrt (1 + ‖ξ‖ ^ 2)) := Real.sqrt_le_sqrt hs1
+      _ = (1 + ‖ξ‖ ^ 2) ^ (1 / 4 : ℝ) := by
+        rw [Real.sqrt_eq_rpow, Real.sqrt_eq_rpow, ← Real.rpow_mul hw1.le]
+        congr 1
+        norm_num
+  calc Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹
+      = Real.sqrt ‖ξ‖ * (1 + ‖ξ‖ ^ 2) ^ (-(2 : ℕ) : ℝ) := by
+        rw [Real.rpow_neg hw1.le, Real.rpow_natCast]
+    _ ≤ (1 + ‖ξ‖ ^ 2) ^ (1 / 4 : ℝ) * (1 + ‖ξ‖ ^ 2) ^ (-(2 : ℕ) : ℝ) :=
+        mul_le_mul_of_nonneg_right hsqrt (Real.rpow_nonneg hw1.le _)
+    _ = (1 + ‖ξ‖ ^ 2) ^ (-(7 / 2) / 2 : ℝ) := by
+        rw [← Real.rpow_add hw1, show ((1 : ℝ) / 4 + -(2 : ℕ)) = -(7 / 2) / 2 by norm_num]
+
+/-- The quartic Bessel weight times the square of a continuous factor bounded
+by `2` is integrable (dominated by `4` times the weight). -/
+private theorem integrable_bessel_mul_sq {φ : EuclSpace → ℝ} (hφcont : Continuous φ)
+    (hφnn : ∀ ξ, 0 ≤ φ ξ) (hφ2 : ∀ ξ, φ ξ ≤ 2) :
+    Integrable (fun ξ : EuclSpace => (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (φ ξ) ^ 2)
+      volume := by
+  have hcont : Continuous fun ξ : EuclSpace => (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (φ ξ) ^ 2 := by
+    refine (Continuous.inv₀ (by fun_prop) (fun ξ => by positivity)).mul (hφcont.pow 2)
+  refine (integrable_bessel_sq_inv_eucl.const_mul 4).mono' hcont.aestronglyMeasurable
+    (Filter.Eventually.of_forall fun ξ => ?_)
+  show ‖(((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (φ ξ) ^ 2‖ ≤ 4 * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have hφsq : (φ ξ) ^ 2 ≤ 4 := by
+    have := pow_le_pow_left₀ (hφnn ξ) (hφ2 ξ) 2
+    nlinarith
+  calc (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (φ ξ) ^ 2 ≤ (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * 4 :=
+        mul_le_mul_of_nonneg_left hφsq (by positivity)
+    _ = 4 * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ := by ring
+
+/-- Cauchy–Schwarz against the Bessel weight with an extra bounded factor
+kept in the weight term: for continuous `0 ≤ φ ≤ 2` and nonneg `ψ` with
+`(1+‖ξ‖²)·ψ` in `L²`,
+
+  `∫ φ·ψ ≤ √(∫ (1+‖ξ‖²)⁻²·φ²) · √(∫ ((1+‖ξ‖²)·ψ)²)`.
+
+This is `integral_le_besselWeightMass_mul_sqrt` with the phase factor
+retained in the first factor — the `L²` pairing is unchanged; only the first
+factor is sharpened from the full weight mass to the phase-weighted one. -/
+private theorem integral_phase_mul_le_sqrt_weighted
+    {φ : EuclSpace → ℝ} (hφcont : Continuous φ) (hφnn : ∀ ξ, 0 ≤ φ ξ)
+    (hφ2 : ∀ ξ, φ ξ ≤ 2)
+    {ψ : EuclSpace → ℝ} (hψnn : ∀ ξ, 0 ≤ ψ ξ)
+    (hψmem : MemLp (fun ξ : EuclSpace => ((1 : ℝ) + ‖ξ‖ ^ 2) * ψ ξ) 2 volume) :
+    ∫ ξ : EuclSpace, φ ξ * ψ ξ ≤
+      Real.sqrt (∫ ξ : EuclSpace, (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (φ ξ) ^ 2) *
+        Real.sqrt (∫ ξ : EuclSpace, (((1 : ℝ) + ‖ξ‖ ^ 2) * ψ ξ) ^ 2) := by
+  have hpq : Real.HolderConjugate 2 2 := by rw [Real.holderConjugate_iff]; norm_num
+  have hfmem : MemLp (fun ξ : EuclSpace => ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹ * φ ξ) 2 volume := by
+    refine (memLp_two_iff_integrable_sq ?_).mpr ?_
+    · exact ((Continuous.inv₀ (by fun_prop) (fun ξ => by positivity)).mul
+        hφcont).aestronglyMeasurable
+    · refine (integrable_bessel_mul_sq hφcont hφnn hφ2).congr
+        (Filter.Eventually.of_forall fun ξ => ?_)
+      show (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (φ ξ) ^ 2
+        = (((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹ * φ ξ) ^ 2
+      rw [mul_pow, inv_pow]
+  have key := integral_mul_le_Lp_mul_Lq_of_nonneg (μ := volume) hpq
+    (f := fun ξ : EuclSpace => ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹ * φ ξ)
+    (g := fun ξ : EuclSpace => ((1 : ℝ) + ‖ξ‖ ^ 2) * ψ ξ)
+    (Filter.Eventually.of_forall fun ξ => mul_nonneg (by positivity) (hφnn ξ))
+    (Filter.Eventually.of_forall fun ξ => mul_nonneg (by positivity) (hψnn ξ))
+    (by simpa using hfmem) (by simpa using hψmem)
+  have hprod : ∀ ξ : EuclSpace,
+      ((1 : ℝ) + ‖ξ‖ ^ 2)⁻¹ * φ ξ * (((1 : ℝ) + ‖ξ‖ ^ 2) * ψ ξ) = φ ξ * ψ ξ := by
+    intro ξ
+    field_simp
+  simp only [hprod] at key
+  have hrw : ∀ y : ℝ, y ^ (2 : ℝ) = y ^ (2 : ℕ) := by
+    intro y
+    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+  simp only [hrw] at key
+  rw [Real.sqrt_eq_rpow, Real.sqrt_eq_rpow]
+  simpa [mul_pow, inv_pow] using key
+
+/-- The phase-weighted Bessel mass is `O(√h)`: with `w = (1+‖ξ‖²)⁻²`,
+`∫ w·min(2, 4π‖ξ‖h)² ≤ 4√(2πh)·∫ w·√‖ξ‖`.  This is the whole frequency
+localization of the Morrey argument in one global pointwise step. -/
+private theorem integral_weighted_min_sq_le {h : ℝ} (hh : 0 ≤ h) :
+    ∫ ξ : EuclSpace,
+        (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (min 2 (4 * Real.pi * ‖ξ‖ * h)) ^ 2
+      ≤ 4 * Real.sqrt (2 * Real.pi * h) *
+          ∫ ξ : EuclSpace, Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ := by
+  have hmincont : Continuous fun ξ : EuclSpace => min 2 (4 * Real.pi * ‖ξ‖ * h) := by
+    fun_prop
+  have hpt : ∀ ξ : EuclSpace,
+      (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (min 2 (4 * Real.pi * ‖ξ‖ * h)) ^ 2
+        ≤ 4 * Real.sqrt (2 * Real.pi * h) *
+            (Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹) := by
+    intro ξ
+    have hsq := min_two_two_mul_sq_le (t := 2 * Real.pi * ‖ξ‖ * h) (by positivity)
+    rw [show 2 * (2 * Real.pi * ‖ξ‖ * h) = 4 * Real.pi * ‖ξ‖ * h from by ring] at hsq
+    have hsqrt : Real.sqrt (2 * Real.pi * ‖ξ‖ * h)
+        = Real.sqrt (2 * Real.pi * h) * Real.sqrt ‖ξ‖ := by
+      rw [show 2 * Real.pi * ‖ξ‖ * h = (2 * Real.pi * h) * ‖ξ‖ from by ring]
+      exact Real.sqrt_mul (by positivity) _
+    rw [hsqrt] at hsq
+    calc (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (min 2 (4 * Real.pi * ‖ξ‖ * h)) ^ 2
+        ≤ (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ *
+            (4 * (Real.sqrt (2 * Real.pi * h) * Real.sqrt ‖ξ‖)) :=
+          mul_le_mul_of_nonneg_left hsq (by positivity)
+      _ = 4 * Real.sqrt (2 * Real.pi * h) *
+            (Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹) := by ring
+  have hintR : Integrable (fun ξ : EuclSpace =>
+      4 * Real.sqrt (2 * Real.pi * h) *
+        (Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹)) volume :=
+    integrable_sqrt_norm_mul_bessel_sq_inv.const_mul _
+  calc ∫ ξ : EuclSpace, (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (min 2 (4 * Real.pi * ‖ξ‖ * h)) ^ 2
+      ≤ ∫ ξ : EuclSpace, 4 * Real.sqrt (2 * Real.pi * h) *
+          (Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹) :=
+        integral_mono_ae
+          (integrable_bessel_mul_sq hmincont (fun ξ => le_min (by norm_num) (by positivity))
+            (fun ξ => min_le_left _ _))
+          hintR (Filter.Eventually.of_forall hpt)
+    _ = 4 * Real.sqrt (2 * Real.pi * h) *
+          ∫ ξ : EuclSpace, Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ :=
+        integral_const_mul _ _
+
+/-- The inverse Fourier transform difference, bounded by the phase-twisted
+`L¹` mass of the transform: `𝓕⁻g(y₁) - 𝓕⁻g(y₂) = ∫ (𝐞⟪ξ,y₁⟫ - 𝐞⟪ξ,y₂⟫)·g(ξ)
+dξ`, then norm of integral ≤ integral of norm. -/
+private theorem norm_fourierInv_sub_le {g : EuclSpace → CxSpace}
+    (hgcont : Continuous g) (hg : Integrable g volume) (y₁ y₂ : EuclSpace) :
+    ‖𝓕⁻ g y₁ - 𝓕⁻ g y₂‖ ≤
+      ∫ ξ : EuclSpace,
+        ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖
+          * ‖g ξ‖ := by
+  have hφcont : Continuous fun ξ : EuclSpace =>
+      ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖
+        * ‖g ξ‖ := by
+    fun_prop
+  have hint : ∀ y : EuclSpace,
+      Integrable (fun ξ : EuclSpace => Real.fourierChar (inner ℝ ξ y) • g ξ) volume := by
+    intro y
+    have h := (Real.fourierIntegral_convergent_iff (μ := volume) (f := g) (-y)).mpr hg
+    refine h.congr (Filter.Eventually.of_forall fun ξ => ?_)
+    show Real.fourierChar (-inner ℝ ξ (-y)) • g ξ = Real.fourierChar (inner ℝ ξ y) • g ξ
+    rw [inner_neg_right, neg_neg]
+  rw [Real.fourierInv_eq, Real.fourierInv_eq, ← integral_sub (hint y₁) (hint y₂)]
+  refine le_trans (norm_integral_le_integral_norm _) ?_
+  refine integral_mono_ae ((hint y₁).sub (hint y₂)).norm
+    ((hg.norm.const_mul 2).mono' hφcont.aestronglyMeasurable
+      (Filter.Eventually.of_forall fun ξ => ?_))
+    (Filter.Eventually.of_forall fun ξ => ?_)
+  · have hb : ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ)
+        - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖ ≤ 2 :=
+      le_trans (norm_fourierChar_coe_sub_le _ _) (min_le_left _ _)
+    show ‖‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖
+        * ‖g ξ‖‖ ≤ 2 * ‖g ξ‖
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    exact mul_le_mul_of_nonneg_right hb (norm_nonneg _)
+  · show ‖Real.fourierChar (inner ℝ ξ y₁) • g ξ
+        - Real.fourierChar (inner ℝ ξ y₂) • g ξ‖
+      ≤ ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖
+        * ‖g ξ‖
+    have heq : Real.fourierChar (inner ℝ ξ y₁) • g ξ
+        - Real.fourierChar (inner ℝ ξ y₂) • g ξ
+        = ((Real.fourierChar (inner ℝ ξ y₁) : ℂ)
+            - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)) • g ξ := by
+      rw [Circle.smul_def, Circle.smul_def, ← sub_smul]
+    rw [heq, norm_smul]
+
+/-- **Morrey–Agmon on the Euclidean model (certified, no sorry).**  For a
+Schwartz map `v : 𝓢(EuclSpace, CxSpace)` the Hölder seminorm at exponent
+`1/4` is controlled by the `H²` energy: the inversion difference is
+phase-twisted (`norm_fourierInv_sub_le`), the phase is `min(2, 4π‖ξ‖h)`
+(`norm_fourierChar_coe_sub_le` with `abs_real_inner_le_norm`), Cauchy–Schwarz
+against the Bessel weight splits off `√(∫ w·min²) = O(h^{1/4})`
+(`integral_weighted_min_sq_le`), and the surviving weighted `L²` mass of
+`𝓕 v` is weighted Plancherel (`exists_weighted_plancherel`). -/
+private theorem exists_morrey_euclModel :
+    ∃ C₁ : ℝ, 0 < C₁ ∧ ∀ (v : SV) (y₁ y₂ : EuclSpace),
+      ‖v y₁ - v y₂‖ ≤
+        C₁ * Real.sqrt (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+          ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2) * ‖y₁ - y₂‖ ^ (1 / 4 : ℝ) := by
+  obtain ⟨Cp, hCppos, hplan⟩ := exists_weighted_plancherel
+  set M : ℝ := ∫ ξ : EuclSpace, Real.sqrt ‖ξ‖ * (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ with hMdef
+  have hMnn : 0 ≤ M := integral_nonneg fun ξ => by positivity
+  refine ⟨Real.sqrt (4 * Real.sqrt (2 * Real.pi)) * Real.sqrt M * Real.sqrt Cp + 1,
+    by positivity, fun v y₁ y₂ => ?_⟩
+  have hv : ∀ y : EuclSpace, v y = 𝓕⁻ (⇑(𝓕 v : SV)) y := by
+    intro y
+    have hinv : (𝓕⁻ (𝓕 v : SV) : SchwartzMap EuclSpace CxSpace) = v :=
+      FourierPair.fourierInv_fourier_eq v
+    conv_lhs => rw [← hinv]
+    rw [SchwartzMap.fourierInv_coe]
+  have hgint : Integrable (⇑(𝓕 v : SV)) volume := (𝓕 v : SV).integrable
+  rw [hv y₁, hv y₂]
+  set h : ℝ := ‖y₁ - y₂‖ with hhdef
+  have hhnn : 0 ≤ h := norm_nonneg _
+  have hφcont : Continuous fun ξ : EuclSpace =>
+      ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖ := by
+    fun_prop
+  have hφmin : ∀ ξ : EuclSpace,
+      ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖
+        ≤ min 2 (4 * Real.pi * ‖ξ‖ * h) := by
+    intro ξ
+    refine le_trans (norm_fourierChar_coe_sub_le _ _) (min_le_min le_rfl ?_)
+    have hinner : |inner ℝ ξ y₁ - inner ℝ ξ y₂| ≤ ‖ξ‖ * h := by
+      rw [← inner_sub_right]
+      exact abs_real_inner_le_norm _ _
+    calc 4 * Real.pi * |inner ℝ ξ y₁ - inner ℝ ξ y₂|
+        ≤ 4 * Real.pi * (‖ξ‖ * h) := mul_le_mul_of_nonneg_left hinner (by positivity)
+      _ = 4 * Real.pi * ‖ξ‖ * h := by ring
+  have hcs := integral_phase_mul_le_sqrt_weighted hφcont (fun ξ => norm_nonneg _)
+    (fun ξ => le_trans (norm_fourierChar_coe_sub_le _ _) (min_le_left _ _))
+    (fun ξ => norm_nonneg _) (memLp_weight_fourier v)
+  have hA : (∫ ξ : EuclSpace, (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ *
+        ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖ ^ 2)
+      ≤ ∫ ξ : EuclSpace,
+        (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ * (min 2 (4 * Real.pi * ‖ξ‖ * h)) ^ 2 :=
+    integral_mono_ae
+      (integrable_bessel_mul_sq hφcont (fun ξ => norm_nonneg _)
+        (fun ξ => le_trans (norm_fourierChar_coe_sub_le _ _) (min_le_left _ _)))
+      (integrable_bessel_mul_sq (by fun_prop) (fun ξ => le_min (by norm_num) (by positivity))
+        (fun ξ => min_le_left _ _))
+      (Filter.Eventually.of_forall fun ξ =>
+        mul_le_mul_of_nonneg_left
+          (pow_le_pow_left₀ (norm_nonneg _) (hφmin ξ) 2) (by positivity))
+  have hfirst := le_trans hA (integral_weighted_min_sq_le hhnn)
+  have hsecond : (∫ ξ : EuclSpace, (((1 : ℝ) + ‖ξ‖ ^ 2) * ‖(𝓕 v : SV) ξ‖) ^ 2)
+      ≤ Cp * (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+        ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2) := hplan v
+  have hsqrtM : Real.sqrt (4 * Real.sqrt (2 * Real.pi * h) * M)
+      = Real.sqrt (4 * Real.sqrt (2 * Real.pi)) * Real.sqrt M * h ^ (1 / 4 : ℝ) := by
+    have e1 : Real.sqrt (2 * Real.pi * h) = Real.sqrt (2 * Real.pi) * Real.sqrt h :=
+      Real.sqrt_mul (by positivity) _
+    rw [e1]
+    rw [show (4 : ℝ) * (Real.sqrt (2 * Real.pi) * Real.sqrt h) * M
+        = (4 * Real.sqrt (2 * Real.pi) * M) * Real.sqrt h from by ring]
+    rw [Real.sqrt_mul (mul_nonneg (mul_nonneg (by positivity) (Real.sqrt_nonneg _)) hMnn),
+      Real.sqrt_mul (mul_nonneg (by positivity) (Real.sqrt_nonneg _))]
+    have e3 : Real.sqrt (Real.sqrt h) = h ^ (1 / 4 : ℝ) := by
+      rw [Real.sqrt_eq_rpow, Real.sqrt_eq_rpow, ← Real.rpow_mul hhnn]
+      congr 1
+      norm_num
+    rw [e3]
+  have hsqrtCp : Real.sqrt (Cp * (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+        ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2))
+      = Real.sqrt Cp * Real.sqrt (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+        ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2) :=
+    Real.sqrt_mul hCppos.le _
+  calc ‖𝓕⁻ (⇑(𝓕 v : SV)) y₁ - 𝓕⁻ (⇑(𝓕 v : SV)) y₂‖
+      ≤ ∫ ξ : EuclSpace,
+          ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ) - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖
+            * ‖(𝓕 v : SV) ξ‖ :=
+        norm_fourierInv_sub_le (𝓕 v : SV).continuous hgint y₁ y₂
+    _ ≤ Real.sqrt (∫ ξ : EuclSpace, (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹ *
+            ‖(Real.fourierChar (inner ℝ ξ y₁) : ℂ)
+              - (Real.fourierChar (inner ℝ ξ y₂) : ℂ)‖ ^ 2) *
+          Real.sqrt (∫ ξ : EuclSpace, (((1 : ℝ) + ‖ξ‖ ^ 2) * ‖(𝓕 v : SV) ξ‖) ^ 2) := hcs
+    _ ≤ Real.sqrt (4 * Real.sqrt (2 * Real.pi * h) * M) *
+          Real.sqrt (Cp * (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+            ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2)) :=
+        mul_le_mul (Real.sqrt_le_sqrt hfirst) (Real.sqrt_le_sqrt hsecond)
+          (Real.sqrt_nonneg _) (Real.sqrt_nonneg _)
+    _ = (Real.sqrt (4 * Real.sqrt (2 * Real.pi)) * Real.sqrt M * Real.sqrt Cp) *
+          Real.sqrt (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+            ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2) * h ^ (1 / 4 : ℝ) := by
+        rw [hsqrtM, hsqrtCp]; ring
+    _ ≤ (Real.sqrt (4 * Real.sqrt (2 * Real.pi)) * Real.sqrt M * Real.sqrt Cp + 1) *
+          Real.sqrt (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+            ‖iteratedFDeriv ℝ n (⇑v) y‖ ^ 2) * h ^ (1 / 4 : ℝ) := by
+        refine mul_le_mul_of_nonneg_right ?_ (Real.rpow_nonneg hhnn _)
+        exact mul_le_mul_of_nonneg_right (by linarith) (Real.sqrt_nonneg _)
+
+/-- **[DERIVED from the certified Fourier chain above.]**  **Morrey–Agmon:
+`H²(ℝ³) ↪ C^{0,1/4}` for Schwartz fields (certified, no sorry).**  The
+Hölder seminorm at exponent `1/4` is dominated by the `H²` norm:
+`‖u x - u y‖ ≤ C·√(sobolevH2NormSq u)·‖x - y‖^{1/4}` — the difference
+companion of `exists_agmonSupBound` at the same derivative order.
+
+This is the near-field input the BKM log inequality consumes through the
+cancellation `ω(x-z) - ω(x)`: applied to the vorticity components (whose `H²`
+energies are bounded by `sobolevH3NormSq u`, one derivative up), it upgrades
+the certified near-field layer `integral_norm_mul_bsKernelScalar_ball_le`
+from `O(ρ·‖∇ω‖∞)` — which would cost `H⁴` — to `O(ρ^{1/4}·‖u‖_{H³})`, the
+order the cutoff optimisation at `ρ ≈ ‖u‖_{H³}^{-4}` turns into the
+`log(e + ‖u‖_{H³})` factor.  What remains residual for
+`exists_biotSavartLogTextbook` is the Biot–Savart representation
+`∇u = PV(∇K ∗ ω)` itself (including its local term). -/
+theorem exists_agmonMorreyBound :
+    ∃ C : ℝ, 0 < C ∧ ∀ (u : SchwartzVelocity) (x y : Space),
+      ‖(⇑u) x - (⇑u) y‖ ≤
+        C * Real.sqrt (sobolevH2NormSq u) * ‖x - y‖ ^ (1 / 4 : ℝ) := by
+  obtain ⟨C₁, hC₁pos, hmor⟩ := exists_morrey_euclModel
+  obtain ⟨C₂, hC₂pos, hmod⟩ := exists_euclModel_h2_bound
+  refine ⟨C₁ * Real.sqrt C₂ * ‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ ^ (1 / 4 : ℝ) + 1,
+    by positivity, fun u x y => ?_⟩
+  have hnorm : ‖(⇑u) x - (⇑u) y‖
+      ≤ ‖euclModel u (euclCoords.symm x) - euclModel u (euclCoords.symm y)‖ := by
+    have heq : euclModel u (euclCoords.symm x) - euclModel u (euclCoords.symm y)
+        = realToCx ((⇑u) x - (⇑u) y) := by
+      rw [euclModel_apply, euclModel_apply, ContinuousLinearEquiv.apply_symm_apply,
+        ContinuousLinearEquiv.apply_symm_apply]
+      exact (map_sub realToCx _ _).symm
+    rw [heq]
+    exact norm_le_norm_realToCx _
+  have hdist : ‖euclCoords.symm x - euclCoords.symm y‖
+      ≤ ‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ * ‖x - y‖ := by
+    have hh := ContinuousLinearMap.le_opNorm
+      (euclCoords.symm : Space →L[ℝ] EuclSpace) (x - y)
+    rwa [ContinuousLinearEquiv.coe_coe, map_sub] at hh
+  have hpow : ‖euclCoords.symm x - euclCoords.symm y‖ ^ (1 / 4 : ℝ)
+      ≤ ‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ ^ (1 / 4 : ℝ)
+          * ‖x - y‖ ^ (1 / 4 : ℝ) := by
+    calc ‖euclCoords.symm x - euclCoords.symm y‖ ^ (1 / 4 : ℝ)
+        ≤ (‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ * ‖x - y‖) ^ (1 / 4 : ℝ) :=
+          Real.rpow_le_rpow (norm_nonneg _) hdist (by norm_num)
+      _ = ‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ ^ (1 / 4 : ℝ)
+            * ‖x - y‖ ^ (1 / 4 : ℝ) :=
+          Real.mul_rpow (norm_nonneg _) (norm_nonneg _)
+  calc ‖(⇑u) x - (⇑u) y‖
+      ≤ ‖euclModel u (euclCoords.symm x) - euclModel u (euclCoords.symm y)‖ := hnorm
+    _ ≤ C₁ * Real.sqrt (∑ n ∈ Finset.range 3, ∫ y : EuclSpace,
+            ‖iteratedFDeriv ℝ n (⇑(euclModel u)) y‖ ^ 2)
+          * ‖euclCoords.symm x - euclCoords.symm y‖ ^ (1 / 4 : ℝ) :=
+        hmor _ _ _
+    _ ≤ C₁ * Real.sqrt (C₂ * sobolevH2NormSq u)
+          * (‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ ^ (1 / 4 : ℝ)
+            * ‖x - y‖ ^ (1 / 4 : ℝ)) := by
+        refine mul_le_mul ?_ hpow (Real.rpow_nonneg (norm_nonneg _) _)
+          (mul_nonneg hC₁pos.le (Real.sqrt_nonneg _))
+        exact mul_le_mul_of_nonneg_left
+          (Real.sqrt_le_sqrt (hmod u)) hC₁pos.le
+    _ = (C₁ * Real.sqrt C₂ * ‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ ^ (1 / 4 : ℝ))
+          * Real.sqrt (sobolevH2NormSq u) * ‖x - y‖ ^ (1 / 4 : ℝ) := by
+        rw [Real.sqrt_mul hC₂pos.le]; ring
+    _ ≤ (C₁ * Real.sqrt C₂ * ‖(euclCoords.symm : Space →L[ℝ] EuclSpace)‖ ^ (1 / 4 : ℝ) + 1)
+          * Real.sqrt (sobolevH2NormSq u) * ‖x - y‖ ^ (1 / 4 : ℝ) := by
+        refine mul_le_mul_of_nonneg_right ?_ (Real.rpow_nonneg (norm_nonneg _) _)
+        exact mul_le_mul_of_nonneg_right (by linarith) (Real.sqrt_nonneg _)
+
 /-- A classical solution whose nonnegative-time slices are Schwartz fields.
 This is the regularity frame in which the `H³` energy method operates; the
 persistence of Schwartz class itself is standard for smooth bounded-energy
@@ -2228,8 +2714,11 @@ This is the near-field half of the size layer feeding
 `exists_biotSavartLogTextbook`: the near-field convolution is `O(ρ·‖∇ω‖∞)`;
 the far-field half is `integrableOn_bsKernelScalar_sq_farField` and the
 logarithmic middle shell is `integral_bsKernelScalar_annulus_le_log` below.
-What remains residual for the textbook log inequality is the Biot–Savart
-representation `∇u = PV(∇K ∗ ω)` itself. -/
+Paired against the vorticity through `|ω(x−z) − ω(x)| ≤ C‖z‖^{1/4}` (the
+certified Morrey–Agmon leaf `exists_agmonMorreyBound`, at `H³`-of-`u` cost)
+the near-field convolution is `O(ρ^{1/4}·‖u‖_{H³})` — the form the cutoff
+optimisation consumes.  What remains residual for the textbook log inequality
+is the Biot–Savart representation `∇u = PV(∇K ∗ ω)` itself. -/
 theorem integral_norm_mul_bsKernelScalar_ball_le {ρ : ℝ} (hρ : 0 < ρ) :
     ∫ z in Metric.ball (0 : Space) ρ, ‖z‖ * bsKernelScalar z
       ≤ 2 * (volume (Metric.ball (0 : Space) 1)).toReal / Real.pi * ρ := by
@@ -2479,6 +2968,7 @@ end Navier.Analysis.BealeKatoMajda
 
 #print axioms Navier.Analysis.BealeKatoMajda.besselFourierMajorant_zero
 #print axioms Navier.Analysis.BealeKatoMajda.integral_bsKernelScalar_annulus_le_log
+#print axioms Navier.Analysis.BealeKatoMajda.exists_agmonMorreyBound
 
 
 

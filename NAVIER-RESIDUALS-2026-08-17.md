@@ -226,6 +226,63 @@ unchanged (declaration now :1582, token :1594); est ~600 LOC.
 
 ---
 
+## Wave 2026-08-18 NK1 — BKMLogBootstrap: the near-field Hölder leaf CERTIFIED (Morrey–Agmon `H² ↪ C^{0,1/4}`)
+
+Receipts: `lake env lean Navier/Analysis/BKMLogBootstrap.lean` — exit 0, zero
+errors, exactly 3 `declaration uses sorry` warnings (declarations :373, :1984,
+:2068; tokens :385, :1989, :2080 — shifted from N2's :364/:1498/:1582 by the
+~500-line insertion).  Sorry delta this lane: file **3 → 3**, no declaration
+moved onto or off `sorryAx`; `#print axioms exists_agmonMorreyBound` →
+`[propext, Classical.choice, Quot.sound]` (kernel axioms only, no
+`native_decide`).  No statement weakened, nothing deleted.
+
+**Banked certified asset (toward #6, `exists_biotSavartLogTextbook`).**
+`exists_agmonMorreyBound` — for every Schwartz velocity field `u` and all
+`x y : Space`,
+
+  `‖u x − u y‖ ≤ C·√(sobolevH2NormSq u)·‖x − y‖^{1/4}`.
+
+This is the *difference* companion of the certified Agmon leaf
+`exists_agmonSupBound`, and it is the near-field input the BKM cutoff argument
+actually consumes: the cancellation factor `|ω(x−z) − ω(x)|` is
+`O(‖z‖^{1/4}·√(H² ω))`, i.e. at `H³`-of-`u` cost (one derivative up), **not**
+the `H⁴` cost of the Lipschitz/`‖∇ω‖∞` route recorded in the size-layer
+docstrings.  With cutoff `ρ ≈ ‖u‖_{H³}^{-4}` the near field is `O(1)` and the
+shell (`integral_bsKernelScalar_annulus_le_log`, already certified) delivers
+exactly the `log(e + ‖u‖_{H³})` factor — so after this leaf the *entire*
+analytic content of #6 is isolated in the Biot–Savart representation
+`∇u = PV(∇K ∗ ω)` (plus its local term and the curl-component bridge
+`‖Dⁿ(staticCurl u)‖ ≤ ‖D^{n+1}u‖`).
+
+**Route (all inside `Navier/Analysis/BKMLogBootstrap.lean`, after
+`sobolevEmbeddingDomination`).**  Inversion phase-twist
+(`norm_fourierInv_sub_le`: `𝓕⁻g(y₁) − 𝓕⁻g(y₂) = ∫ (𝐞⟪ξ,y₁⟫ − 𝐞⟪ξ,y₂⟫)·g`,
+via `Real.fourierInv_eq` + `integral_sub`, no translation-symbol identity
+needed); phase bound `‖𝐞 a − 𝐞 b‖ ≤ min 2 (4π|a−b|)`
+(`norm_fourierChar_coe_sub_le`, via `Complex.norm_exp_sub_one_le` on the disk
+and the trivial cap `2` off it); the single global pointwise step
+`min(2, 2t)² ≤ 4√t` (`min_two_two_mul_sq_le`) replacing the frequency split —
+no radial/shell integration is needed for this leaf; Bessel half-moment
+integrability `∫ (1+‖ξ‖²)⁻²√‖ξ‖ < ∞` at exponent `7/2 > 3`
+(`integrable_sqrt_norm_mul_bessel_sq_inv`, same Japanese-bracket source as the
+Agmon weight); phase-weighted Cauchy–Schwarz
+(`integral_phase_mul_le_sqrt_weighted`, the in-file Hölder pattern with the
+phase retained in the weight factor); weighted Plancherel
+(`exists_weighted_plancherel`) for the surviving `L²` mass; model transport
+back to `Space` through `euclModel`/`realToCx` with constants absorbed.
+
+**Residual ledger for #6 (unchanged tier, CONJECTURE; sharper content).**
+Remaining: (i) the PV representation with local term — genuinely
+Mathlib-absent (N2 probe stands); (ii) the curl-component bridge feeding
+`staticCurl u` into `exists_agmonMorreyBound` (componentwise Schwartz
+extraction + `iteratedFDeriv` count); (iii) the shell mean-zero of
+`bsGradKernel` (needed to subtract `ω(x)` inside the near field) and the
+ε→0 PV limit assembly.  Est for the remainder: ~300 LOC on top of the
+representation.  The `:1984`/`:2068` residuals (#7 decay propagation, #8
+Kato–Ponce) were not re-attacked this lane (owner scope: BKM chain).
+
+---
+
 ## Original entry (2026-08-17)
 
 **Build**: GREEN, 8730 jobs, 12 source `sorry` tokens (= 10 compiler `declaration uses sorry` warnings after the GalerkinBasis 3-token roll-up — see the reconciliation above)  
