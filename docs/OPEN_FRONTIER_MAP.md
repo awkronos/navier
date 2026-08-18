@@ -19,7 +19,7 @@ emits 448 raw declaration audits, each restricted to `propext`,
 their own receipts.  The audits establish the named lower theorems only.  They
 are not an endpoint certificate.
 
-## Compiler-confirmed residual sorries (9) — triage 2026-08-15, re-verified 2026-08-17
+## Compiler-confirmed residual sorries (10 at 2026-08-18 HEAD `2c69626`; 9 at the triage pins) — triage 2026-08-15, re-verified 2026-08-17 and 2026-08-18
 
 `lake build` at `main@f1b496f` on a clean tree completes successfully (8729
 jobs) and emits exactly nine `declaration uses 'sorry'` warnings.  This is the
@@ -69,7 +69,21 @@ of the shared blocker named below the table; the file header itself carries
 the next rungs (Hörmander integral condition, weak-(1,1), `L∞→BMO`, CZ
 decomposition) as residual, so no row changes class.
 
-Triage verdict (unchanged after re-verification): **0 reachable, 9 blocked on
+**Wave-4 re-verification (2026-08-18, HEAD `2c69626`).**  Single-file
+`lake env lean` on each of the now-four residual files (exit 0 every time,
+zero errors — the "GalerkinBasis build error" carried by the 2026-08-17
+residual-ledger header does not exist on `main`) re-confirms the nine triaged
+declarations — the `LerayWeak.lean` declaration sites drifted to 1492/5522 via
+`42acbbe`'s `enstrophyBound` insert — plus one addition: `42acbbe` introduced
+`GalerkinBasis.exists_galerkinModeData` (`GalerkinBasis.lean:3549`), which
+carries three named-residual `sorry` tokens (`hspace`/`htime`/`hweak` at
+:3642/:3645/:3667) rolling up into a single compiler declaration warning.
+Compiler truth at HEAD is therefore **10** `declaration uses sorry` warnings
+from **12** source `sorry` tokens; the 2026-08-18 proof-report row's `9` is
+its snapshot at git_head `7e23b4a`, six commits behind HEAD, not a phantom
+set.  No `.lean` file was edited by this wave.
+
+Triage verdict (updated after wave-4 re-verification): **0 reachable, 10 blocked on
 absent infrastructure or a named statement-level barrier.**  None is a tactic
 gap; each is a missing analytic layer with a citation and a LOC estimate at
 its declaration.
@@ -79,12 +93,13 @@ its declaration.
 | 1 | `exists_biotSavartLogTextbook` | `BKMLogBootstrap.lean:364` | infrastructure-blocked | Biot–Savart representation `∇u = PV(∇K ∗ ω)` for divergence-free Schwartz fields. The entire Calderón–Zygmund **size** layer (near field, log shell, far field) is already certified in-file; only the representation is Mathlib-absent (re-verified 2026-08-17: no Riesz/Biot–Savart in Mathlib at this pin) |
 | 2 | `exists_locallyUniformSliceDecay` | `BKMLogBootstrap.lean:1491` | infrastructure-blocked | Propagation of Schwartz seminorm bounds, locally uniform in time, along the flow — the genuinely PDE-dependent conjunct. In-file note proves no dominating function exists from `velocity_smooth` alone, so the NS clauses must be used |
 | 3 | `exists_sobolevOrderEnergyEstimate` | `BKMLogBootstrap.lean:1563` | infrastructure-blocked | Kato–Ponce commutator bound `\|⟨D^n(u·∇u), D^n u⟩\| ≤ C‖∇u‖_∞‖u‖²_{H^n}` (CPAM 41 (1988) 891–907); Majda–Bertozzi Prop. 3.7; ~600 LOC. Order summation already certified (`BKMLogLeaves.exists_hasDerivAt_sum_range_le`) |
-| 4 | `exists_galerkinModeData` | `LerayWeak.lean:1482` | infrastructure-blocked | `time_equicontinuous` + `weak_consistent` from the finite-mode energy identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (~100 LOC). Both Pattern-A fields from the Aubin–Lions repair are already discharged |
-| 5 | `exists_lerayLimitData` | `LerayWeak.lean:5503` | **statement-level barrier** | Every domination-based route is closed off by the in-file unbounded-test-field construction (`sup_{t<T}‖φ(t)‖_{L²} = ∞`). Not a falsification; closing it needs a uniform-in-time seminorm field on the test class, an argument forming no `t`-majorant, or a compactly-supported-slice representative. The statement-level change is deliberately not taken |
+| 4 | `exists_galerkinModeData` | `LerayWeak.lean:1492` | infrastructure-blocked | `time_equicontinuous` + `weak_consistent` from the finite-mode energy identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (~100 LOC). Both Pattern-A fields from the Aubin–Lions repair are already discharged |
+| 5 | `exists_lerayLimitData` | `LerayWeak.lean:5522` | **statement-level barrier** | Every domination-based route is closed off by the in-file unbounded-test-field construction (`sup_{t<T}‖φ(t)‖_{L²} = ∞`). Not a falsification; closing it needs a uniform-in-time seminorm field on the test class, an argument forming no `t`-majorant, or a compactly-supported-slice representative. The statement-level change is deliberately not taken |
 | 6 | `prodiSerrin_layer_farField_bounded` | `ConditionalRegularity.lean:721` | infrastructure-blocked | Duhamel representation of an arbitrary `PartialClassicalSolution` + Leray projector as a pointwise bounded kernel. Kato, *Math. Z.* 187 (1984); Giga–Miyakawa, *ARMA* 89 (1985); ~300 LOC. Gaussian kernel, its `L^s` norms and the Young layer already land in `HeatSemigroupSmoothing` |
 | 7 | `prodiSerrin_interior_outerRegion_bounded` | `ConditionalRegularity.lean:791` | infrastructure-blocked | Cutoff integration by parts against the local energy identity, plus an `L^r` pressure bound. Blocked in turn on the Calderón–Zygmund near-field cancellation, named residual in `SingularIntegralPrelims` |
 | 8 | `constantinFefferman_layer_farField_bounded` | `ConditionalRegularity.lean:866` | infrastructure-blocked | Same layer as #6 with the uniform `L²` mass bracket replacing per-slice `L^p` |
 | 9 | `constantinFefferman_interior_outerRegion_bounded` | `ConditionalRegularity.lean:951` | infrastructure-blocked | Integral enstrophy budget (pointwise stretching identity already lands as `Enstrophy.vorticityTransportEquation`), near-field cancellation as in #7, and `SobolevEmbedding`'s `H³ ↪ L^∞` which still carries a disclosed Plancherel `sorryAx` |
+| 10 | `exists_galerkinModeData` | `GalerkinBasis.lean:3549` | infrastructure-blocked | Added by `42acbbe`; three named-residual tokens in one declaration (one compiler warning, three source sorries at :3642/:3645/:3667): `hspace` — wire `modalApprox_uniformEnstrophyBound` into the dissipation-bound lemma's `hdiss`; `htime` — uniform bound on the projected Stokes+convection ODE vector field (Simon-type `∂ₜu_m ∈ L²(0,T;H⁻¹)`, ~100 LOC); `hweak` — limit/integral interchange with no `t`-uniform majorant (routes named in `NAVIER-RESIDUALS-2026-08-17.md` #3). Shares its blockers with #4 |
 
 Three residuals (#1, #7, #9) route through one shared blocker — the
 Calderón–Zygmund near-field cancellation in `SingularIntegralPrelims` — which
