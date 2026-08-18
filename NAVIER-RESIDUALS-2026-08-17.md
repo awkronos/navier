@@ -1,47 +1,64 @@
 # Navier Residual Ledger — 2026-08-17
 
-**UPDATED 2026-08-17 — Wave Ω580-N2 discrepancy audit**
+**UPDATED 2026-08-18 — Wave N5 count reconciliation (compiler-verified at `2c69626`)**
 
-The previous snapshot reported "9 compiler sorries" vs "12 source-grep sorries" (diff=3).
-This update reconciles that discrepancy with the current build state.
+This supersedes the 2026-08-17 Wave Ω580-N2 audit that previously occupied this
+header.  That audit was measured against a stale or divergent checkout: on `main`
+at `2c69626` there is **no GalerkinBasis build error** (the file elaborates clean,
+exit 0), there are exactly **12** source `sorry` tokens — not 24 — and no
+`EnstrophyForPartialClassical` file exists in this checkout.  The corrected,
+compiler-verified picture:
 
-## Discrepancy resolution
+## Count reconciliation (2026-08-18, HEAD `2c69626`)
 
-| Bucket | Previous | Current | Notes |
-|--------|----------|---------|-------|
-| Compiler `declaration uses sorry` | 9 | 10 | One GalerkinBasis sorry now visible despite build error |
-| Source `^ *sorry$` blocks | 12 | 24 | The 12 counted "declarations" (one per theorem), the 24 counts all `sorry` blocks (some theorems use >1 `sorry`) |
-| Diff | 3 | 14 | The 3-gap was GalerkinBasis sorries in declarations the compiler could not reach (build regression at line 3550) |
-| Remainder of 14-gap | — | 14 | Multi-sorry theorems (GalerkinBasis `integral_fderiv_sq_eq_enstrophy_of_divFree` has 2 sorries; GalerkinBasis `exists_galerkinModeData` has 2; EnstrophyForPartialClassical has 10 sorries in multiple declarations) |
+| Measure | Count | Basis |
+|---|---|---|
+| Compiler `declaration uses sorry` warnings | **10** | per-file `lake env lean` receipts below; every file exit 0, zero errors |
+| Source `^ *sorry$` tokens | **12** | 10 sorry-carrying declarations; `GalerkinBasis.exists_galerkinModeData` carries 3 named-residual tokens (`hspace`/`htime`/`hweak`) that roll up into a single compiler declaration warning |
+| 2026-08-18 proof-report row | 9 | snapshot at git_head `7e23b4a`, six commits behind HEAD — predates `42acbbe`, which added the GalerkinBasis declaration (+1 compiler warning, +3 source tokens). Temporal snapshot skew, not phantom source annotations |
 
-### The original 3-gap (now stale)
+### Compiler receipts at `2c69626` (`lake env lean <file>`, all exit 0)
 
-At ledger snapshot `42acbbe` (build GREEN, 8730 jobs):
-- **Compiler (9)**: 3 BKMLogBootstrap + 2 LerayWeak + 4 ConditionalRegularity
-- **Grep (12)**: above 9 + 3 GalerkinBasis sorries (hspace, htime, hweak)
-- **Cause of gap**: GalerkinBasis sorries lived in code not reachable by the main import chain's elaboration path at that snapshot. The build still passed because GalerkinBasis compiled independently (its `.olean` was present).
+| File | Warnings | Declaration sites |
+|---|---|---|
+| `Navier/Analysis/BKMLogBootstrap.lean` | 3 | :364, :1491, :1563 |
+| `Navier/Analysis/LerayWeak.lean` | 2 | :1492, :5522 |
+| `Navier/Analysis/ConditionalRegularity.lean` | 4 | :721, :791, :866, :951 |
+| `Navier/Analysis/GalerkinBasis.lean` | 1 | :3549 (`exists_galerkinModeData`; tokens at :3642/:3645/:3667) |
+| **Total** | **10** | |
 
-As of `af10eb8`, **GalerkinBasis has a build error** at line 3550 (`unexpected token '/--'; expected 'lemma'`) plus missing identifiers `schwartz_differentiable`, `coordinateDerivativeField` at lines 3560-3562. The 4 sorry blocks inside it (lines 3559, 3654, 3657, 3679) are now in code the compiler cannot reach. This is N1's file — not touched by this wave.
+Line-number convention: the compiler reports the **declaration** line; the site
+inventory below cites the **sorry-token** line (e.g. BKM declaration :364 vs
+token :376).  Compare like with like when auditing.
 
-### Current N2 sorry inventory
+### Coverage notes (count-neutral, zero sorries each)
 
-| File | Line | Declaration | Tier | Status |
-|------|------|-------------|------|--------|
-| BKMLogBootstrap | 376 | `exists_biotSavartLogTextbook` | CONJECTURE | Requires Biot-Savart representation (singular integral) |
-| BKMLogBootstrap | 1499 | `exists_locallyUniformSliceDecay` | CONJECTURE | Second conjunct proved (`sliceIteratedFDeriv_continuousOn`); first conjunct requires PDE decay bound |
-| BKMLogBootstrap | 1575 | `exists_sobolevOrderEnergyEstimate` | CONJECTURE | Kato-Ponce commutator ~600 LOC |
-| LerayWeak | 1495 | `exists_galerkinModeData` | SORRY-in-progress | Blocked on 3 GalerkinBasis sub-obligations (hspace/htime/hweak) + GalerkinBasis build error |
-| LerayWeak | 5526 | `exists_lerayLimitData` | CONDITIONAL | Blocked on `exists_galerkinModeData` + uniform test function control |
+- `Navier/Analysis/GalerkinHMinusOne.lean` — 269-line infrastructure stub toward
+  the `htime` residual, currently **untracked** in this checkout and outside
+  every import chain (the proof-report row's `coverage_gap`), no sorries.
+- `Navier/Analysis/CutoffEnergyIbp.lean` — added by `2c69626`, not yet imported
+  by the umbrella, no sorries.
 
-No dead-code sorries found in N2 files (BKMLogBootstrap, LerayWeak).
+### The original 9-vs-12 gap (fully explained)
 
-**Build**: succeeds for all files except GalerkinBasis (N1 error). Five `declaration uses sorry` in N2 scope.
+- The **9** was compiler truth at `7e23b4a` (the 2026-08-18 proof-report row's
+  git_head): 3 BKMLogBootstrap + 2 LerayWeak + 4 ConditionalRegularity
+  declaration warnings.  `GalerkinBasis.exists_galerkinModeData` did not exist
+  yet at that snapshot (verified: zero `sorry` tokens in the file at `7e23b4a`).
+- The **12** is the source `sorry`-token count from `42acbbe` onward: the same
+  9 declaration sites plus the 3 GalerkinBasis named-residual tokens
+  (`hspace`, `htime`, `hweak`) that `42acbbe` introduced inside
+  `exists_galerkinModeData`.
+- Both numbers were correct for their snapshots and measures; no source
+  annotation was phantom.  The stale artifacts were this ledger's Ω580-N2
+  header claims (24 blocks / 14-gap / build error / `EnstrophyForPartialClassical`),
+  now retracted.
 
 ---
 
 ## Original entry (2026-08-17)
 
-**Build**: GREEN, 8730 jobs, 12 sorries  
+**Build**: GREEN, 8730 jobs, 12 source `sorry` tokens (= 10 compiler `declaration uses sorry` warnings after the GalerkinBasis 3-token roll-up — see the reconciliation above)  
 **Commit**: `42acbbe`  
 **Date**: 2026-08-17  
 
