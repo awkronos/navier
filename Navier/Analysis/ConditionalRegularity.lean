@@ -685,6 +685,79 @@ theorem crossProductCoherent_of_directionLipschitz
   exact mul_le_mul_of_nonneg_right (hdir t ht0 htT x y hx hy)
     (mul_nonneg (officialEuclideanNorm_nonneg _) (officialEuclideanNorm_nonneg _))
 
+/-! ### Heat kernel lemmas -/
+
+open Navier.Analysis.HeatSemigroupSmoothing (heatKernel heatKernel_nonneg heatKernel_comm
+  integrable_heatKernel_rpow integral_heatKernel)
+
+/-- **Heat kernel convolution of a bounded function is bounded by the same bound.**
+For every `ν > 0`, `t > 0`, every measurable `u₀` bounded by `B₀`, the
+convolution of the heat kernel `G_t^ν` with `u₀` is also bounded by `B₀`,
+because `∫ G_t^ν = 1` and the kernel is nonnegative. -/
+theorem heatKernel_convolution_bounded {ν : ℝ} (hν : 0 < ν) {t : ℝ} (ht : 0 < t)
+    {u₀ : VelocityField} (hmeas_u₀ : Measurable u₀) {B₀ : ℝ} (hu₀ : ∀ x : Space, ‖u₀ x‖ ≤ B₀)
+    (x : Space) : ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ := by
+  have hB_nonneg : 0 ≤ B₀ := by
+    have h0 := hu₀ 0
+    have h0_nonneg : 0 ≤ ‖u₀ (0 : Space)‖ := norm_nonneg _
+    linarith
+  have hK_int : Integrable (fun y : Space => heatKernel ν t (x - y)) := by
+    have hK : Integrable (fun y : Space => heatKernel ν t y) := by
+      have := integrable_heatKernel_rpow hν ht one_pos
+      simpa [Real.rpow_one] using this
+    refine hK.comp_sub_right x |>.congr (Filter.Eventually.of_forall (fun y => ?_))
+    simpa using (heatKernel_comm ν t x y).symm
+  have hK_mul_B₀ : Integrable (fun y : Space => heatKernel ν t (x - y) * B₀) :=
+    hK_int.mul_const B₀
+  have hmeas_Kx : Measurable (fun y : Space => heatKernel ν t (x - y)) :=
+    (heatKernel_continuous ν t).measurable.comp (measurable_const.sub measurable_id)
+  have hmeas_prod : AEStronglyMeasurable (fun y : Space => heatKernel ν t (x - y) • u₀ y) volume :=
+    hmeas_Kx.aestronglyMeasurable.smul hmeas_u₀.aestronglyMeasurable
+  have h_norm_bound : ∀ y, ‖heatKernel ν t (x - y) • u₀ y‖ ≤ heatKernel ν t (x - y) * B₀ := by
+    intro y
+    calc
+      ‖heatKernel ν t (x - y) • u₀ y‖ = heatKernel ν t (x - y) * ‖u₀ y‖ := by
+        simp [norm_smul, abs_of_nonneg (heatKernel_nonneg hν ht (x - y))]
+      _ ≤ heatKernel ν t (x - y) * B₀ := mul_le_mul_of_nonneg_left (hu₀ y) (heatKernel_nonneg hν ht (x - y))
+  have h_norm_bound_ae : ∀ᵐ y ∂ volume, ‖heatKernel ν t (x - y) • u₀ y‖ ≤ |heatKernel ν t (x - y) * B₀| :=
+    Filter.Eventually.of_forall (fun y => by
+      have hnn : 0 ≤ heatKernel ν t (x - y) * B₀ :=
+        mul_nonneg (heatKernel_nonneg hν ht (x - y)) hB_nonneg
+      simpa [abs_of_nonneg hnn] using h_norm_bound y)
+  have h_int : Integrable (fun y : Space => heatKernel ν t (x - y) • u₀ y) :=
+    hK_mul_B₀.mono hmeas_prod h_norm_bound_ae
+  have h_int_norm_sq : Integrable (fun y : Space => heatKernel ν t (x - y) * ‖u₀ y‖) := by
+    have hmeas_norm : AEStronglyMeasurable (fun y : Space => heatKernel ν t (x - y) * ‖u₀ y‖) volume :=
+      (hmeas_Kx.mul (measurable_norm.comp hmeas_u₀)).aestronglyMeasurable
+    have h_norm_sq_bound : ∀ᵐ y ∂ volume,
+        heatKernel ν t (x - y) * ‖u₀ y‖ ≤ heatKernel ν t (x - y) * B₀ :=
+      Filter.Eventually.of_forall (fun y => mul_le_mul_of_nonneg_left (hu₀ y) (heatKernel_nonneg hν ht (x - y)))
+    exact hK_mul_B₀.mono_nonneg hmeas_norm
+      (Filter.Eventually.of_forall (fun y => mul_nonneg (heatKernel_nonneg hν ht (x - y)) (norm_nonneg _)))
+      h_norm_sq_bound
+  calc
+    ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖
+        ≤ ∫ y : Space, ‖heatKernel ν t (x - y) • u₀ y‖ :=
+      norm_integral_le_integral_norm _
+    _ = ∫ y : Space, heatKernel ν t (x - y) * ‖u₀ y‖ := by
+      refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+      simp [norm_smul, abs_of_nonneg (heatKernel_nonneg hν ht (x - y))]
+    _ ≤ ∫ y : Space, heatKernel ν t (x - y) * B₀ :=
+      integral_mono h_int_norm_sq hK_mul_B₀
+        (fun y => mul_le_mul_of_nonneg_left (hu₀ y) (heatKernel_nonneg hν ht (x - y)))
+    _ = (∫ y : Space, heatKernel ν t (x - y)) * B₀ := by rw [integral_mul_const]
+    _ = B₀ * ∫ y : Space, heatKernel ν t (x - y) := by rw [mul_comm]
+    _ = B₀ * 1 := by
+      have hK_int_self : (∫ y : Space, heatKernel ν t (x - y)) = 1 := by
+        calc
+          ∫ y : Space, heatKernel ν t (x - y) = ∫ y : Space, heatKernel ν t (y - x) := by
+            refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+            simpa using heatKernel_comm ν t x y
+          _ = ∫ y : Space, heatKernel ν t y := by rw [integral_sub_right_eq_self _ x]
+          _ = 1 := integral_heatKernel hν ht
+      rw [hK_int_self]
+    _ = B₀ := by ring
+
 /-! ### Named residual leaves -/
 
 /-- **[LEAF — Prodi–Serrin far-field layer tail; est ~300 LOC.]**  Outside one
