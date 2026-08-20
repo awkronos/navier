@@ -4,6 +4,8 @@ import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Scaling
 import Navier.Analysis.ESSInputs
 import Navier.Analysis.EnergyNormBridge
+import Navier.Analysis.HeatSemigroupSmoothing
+import Navier.Analysis.HeatSemigroupSmoothing
 
 /-!
 # Conditional regularity bridges: Prodi–Serrin and Constantin–Fefferman
@@ -173,7 +175,7 @@ open Navier.Analysis.Vorticity
 open Navier.Analysis.OfficialABEncoding
 open Navier.Analysis.EnergyNormBridge
 open Navier.Breakdown
-open Navier.Analysis.EnergyNormBridge
+open Navier.Analysis.HeatSemigroupSmoothing
 
 /-! ### Shared established leaves -/
 
@@ -686,7 +688,7 @@ theorem crossProductCoherent_of_directionLipschitz
 /-! ### Named residual leaves -/
 
 /-- **[LEAF — Prodi–Serrin far-field layer tail; est ~300 LOC.]**  Outside one
-closed ball, a partial classical solution with bounded initial datum and
+A closed ball, a partial classical solution with bounded initial datum and
 per-slice `L^p` integrability (`p > 3`) is uniformly bounded on the closed
 initial layer `[0,δ]`.
 
@@ -728,6 +730,97 @@ theorem prodiSerrin_layer_farField_bounded
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
       ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
+  -- The classical proof uses the Duhamel formula:
+  --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds
+  -- The first term (heat flow of the initial data) is bounded by B₀
+  -- (since ∫ G_t = 1 and u₀ is bounded by B₀).  The second term (the
+  -- Duhamel integral) is controlled by the L^p → L^∞ smoothing estimate
+  -- for the heat semigroup, using the per-slice L^p integrability of the
+  -- velocity.
+  --
+  -- What the estate CAN prove: the heat kernel convolution of the initial
+  -- data is bounded by B₀.  Everything else requires the Duhamel formula,
+  -- which is not available.
+  obtain ⟨B₀, hu₀⟩ := hu₀
+  have hB_nonneg : 0 ≤ B₀ := by
+    have h0 := hu₀ 0
+    have h0_nonneg : 0 ≤ ‖u₀ (0 : Space)‖ := norm_nonneg _
+    linarith
+  -- The heat kernel convolution of the initial data is bounded by B₀,
+  -- because the kernel integrates to 1.
+  have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
+      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ := by
+    intro t ht x
+    have hintK : Integrable (fun y : Space => heatKernel ν t (y - x)) := by
+      have hK : Integrable (fun y : Space => heatKernel ν t y) := by
+        have := integrable_heatKernel_rpow hν ht one_pos
+        simpa [Real.rpow_one] using this
+      exact hK.comp_sub_right x
+    have hintKx : Integrable (fun y : Space => heatKernel ν t (x - y)) :=
+      hintK.congr (Filter.Eventually.of_forall (fun y => by
+        simpa using (heatKernel_comm ν t x y).symm))
+    have hintKxB : Integrable (fun y : Space => heatKernel ν t (x - y) * B₀) := by
+      have h' := hintKx.const_mul B₀
+      refine h'.congr (Filter.Eventually.of_forall (fun y => ?_))
+      ring
+    have hmeas_u₀ : Measurable u₀ := by
+      have hcontOn : ContinuousOn (fun (z : ℝ × Space) => sol.velocity z.1 z.2) (spacetimeBefore T) :=
+        sol.velocity_smooth.continuousOn
+      have hcontOn_u₀ : ContinuousOn (fun (x : Space) => sol.velocity 0 x) Set.univ :=
+        hcontOn.comp (Continuous.prodMk continuous_const continuous_id).continuousOn (by
+          intro x hx
+          refine ⟨⟨le_rfl, by simpa using sol.terminalTime_pos⟩, Set.mem_univ x⟩)
+      have hcont_u₀ : Continuous (fun (x : Space) => sol.velocity 0 x) :=
+        (continuousOn_univ.1 hcontOn_u₀)
+      have hcont_u₀' : Continuous u₀ := by
+        rw [← sol.initial_condition]
+        exact hcont_u₀
+      exact hcont_u₀'.measurable
+    have hprod_int : Integrable (fun y : Space => heatKernel ν t (x - y) * ‖u₀ y‖) := by
+      have hmeas : AEStronglyMeasurable (fun y : Space => heatKernel ν t (x - y) * ‖u₀ y‖) volume :=
+        (((heatKernel_continuous ν t).measurable.comp (measurable_const.sub measurable_id)).mul
+          (measurable_norm.comp hmeas_u₀)).aestronglyMeasurable
+      have h_nonneg : ∀ᵐ y ∂ volume, 0 ≤ heatKernel ν t (x - y) * ‖u₀ y‖ :=
+        Filter.Eventually.of_forall (fun y => mul_nonneg (heatKernel_nonneg hν ht (x - y)) (norm_nonneg _))
+      have h_bound : ∀ᵐ y ∂ volume, heatKernel ν t (x - y) * ‖u₀ y‖ ≤ heatKernel ν t (x - y) * B₀ :=
+        Filter.Eventually.of_forall (fun y => mul_le_mul_of_nonneg_left (hu₀ y) (heatKernel_nonneg hν ht (x - y)))
+      exact hintKxB.mono_nonneg hmeas h_nonneg h_bound
+    calc
+      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖
+          ≤ ∫ y : Space, ‖heatKernel ν t (x - y) • u₀ y‖ :=
+        norm_integral_le_integral_norm _
+      _ = ∫ y : Space, heatKernel ν t (x - y) * ‖u₀ y‖ := by
+        refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+        simp [norm_smul, abs_of_nonneg (heatKernel_nonneg hν ht (x - y))]
+      _ ≤ ∫ y : Space, heatKernel ν t (x - y) * B₀ :=
+        integral_mono hprod_int hintKxB (fun y =>
+          mul_le_mul_of_nonneg_left (hu₀ y) (heatKernel_nonneg hν ht (x - y)))
+      _ = (∫ y : Space, heatKernel ν t (x - y)) * B₀ := by rw [integral_mul_const]
+      _ = B₀ * ∫ y : Space, heatKernel ν t (x - y) := by rw [mul_comm]
+      _ = B₀ * 1 := by
+        rw [show (∫ y : Space, heatKernel ν t (x - y)) = 1 by
+          calc
+            ∫ y : Space, heatKernel ν t (x - y) = ∫ y : Space, heatKernel ν t (y - x) := by
+              refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+              simpa using heatKernel_comm ν t x y
+            _ = ∫ y : Space, heatKernel ν t y := by rw [integral_sub_right_eq_self _ x]
+            _ = 1 := integral_heatKernel hν ht]
+      _ = B₀ := by ring
+  -- GAP: The velocity is the heat flow of the initial data PLUS the Duhamel
+  -- integral (the nonlinear correction).  The Duhamel formula,
+  --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds,
+  -- requires (i) integration by parts against the kernel (to transfer the
+  -- spatial derivative from the nonlinear term to the kernel), (ii) spatial
+  -- decay of the velocity and its first derivatives at infinity (to control
+  -- the boundary terms from integration by parts), and (iii) the Leray
+  -- projector P as a pointwise bounded singular integral kernel.  None of
+  -- these are currently available in the estate.
+  --
+  -- The terms `hheat0` above and `hint` (per-slice L^p integrability) are
+  -- the ingredients that the Duhamel argument would combine: `hheat0`
+  -- bounds the linear part, and `heatKernel_convolution_norm_vec_le` would
+  -- bound the Duhamel integral via the L^p → L^∞ smoothing estimate.  The
+  -- missing link is the Duhamel representation itself.
   sorry
 
 /-- **Prodi–Serrin initial layer.**  With a bounded initial datum, a partial
@@ -805,6 +898,24 @@ theorem prodiSerrin_interior_outerRegion_bounded
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
       (ϱ ≤ ‖x‖ ∨ (δ + T) / 2 < t) → ‖sol.velocity t x‖ ≤ R := by
+  -- The classical route is Serrin's local regularity criterion: on every parabolic
+  -- cylinder Q_r(z) with r ≤ √δ contained in ℝ³ × (0,T), the critical mixed-norm
+  -- bound controls ‖u‖_{L^∞(Q_{r/2})}; the global bound M makes the estimate
+  -- uniform in the cylinder centre.  This is a parabolic Moser/De Giorgi iteration
+  -- argument.
+  --
+  -- The estate has `ParabolicCaccioppoli` which lands:
+  --   * `local_energy_balance` — the pointwise local energy identity
+  --   * `deGiorgiMoser_tendsto_zero` — the De Giorgi–Moser engine
+  --   * `CutoffEnergyIbp.cutoffEnergy_ibp_eq` — the cutoff IBP balance
+  -- The integrated Caccioppoli inequality itself is still missing, blocked on
+  -- an L^r pressure bound for ∫ χ² ⟨∇p, u⟩ (no `MemLp`/`Integrable` estimate
+  -- for `sol.pressure`).  `CZNearField` certifies the pointwise Hörmander
+  -- core, but the singular integral's L^r bounds behind the pressure estimate
+  -- stay a named residual in `SingularIntegralPrelims`.
+  --
+  -- Without the pressure estimate, the De Giorgi–Moser engine cannot produce
+  -- the `L^∞_t L^∞_x` bound that the outer-region conclusion requires.
   sorry
 
 /-- **Prodi–Serrin interior bound.**  Away from the initial time, the critical
@@ -875,6 +986,18 @@ theorem constantinFefferman_layer_farField_bounded
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
       ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
+  -- The same Duhamel gap as `prodiSerrin_layer_farField_bounded`, with the
+  -- uniform L² mass bracket replacing the per-slice L^p control.  What the
+  -- estate CAN prove is that the heat kernel convolution of the initial data
+  -- is bounded by B₀ (the same `hheat0` lemma used there), exactly as computed
+  -- in the Prodi–Serrin leaf above.
+  --
+  -- The classical route uses the Kato mild-solution short-time L^∞ bound with
+  -- the L² mass replacing the L^p slice control in the Duhamel estimate.  The
+  -- Duhamel formula is the same missing piece: without it the nonlinear
+  -- correction term cannot be bounded, and the `hL2` integrability alone does
+  -- not imply spatial decay (the strain flow witness at
+  -- `strainFlow_farField_unbounded` shows this directly).
   sorry
 
 /-- **Constantin–Fefferman initial layer.**  With a bounded initial datum, the
@@ -943,10 +1066,10 @@ same Mathlib gap as in the Beale–Kato–Majda tower.
 
 Frontier status (N4 sweep 2026-08-18): `Enstrophy` lands the pointwise
 identity `vorticityTransportEquation`; the integral enstrophy budget
-stays open, and no kernel-clean Biot–Savart representation of `∇u`
+stays open, and no sound Biot–Savart representation of `∇u`
 exists (routes use the open leaf `exists_biotSavartLogTextbook`).  The
 closing embedding IS residual-free: `sobolevEmbeddingDomination_H3` is
-kernel-clean since `19192df` (N4-verified via `#print axioms`); caveat —
+vetted since `19192df` (N4-verified via `#print axioms`); caveat —
 it needs `SchwartzVelocity` slices; slice-Schwartz control stays open. -/
 theorem constantinFefferman_interior_outerRegion_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
@@ -968,6 +1091,27 @@ theorem constantinFefferman_interior_outerRegion_bounded
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
       (ϱ ≤ ‖x‖ ∨ (δ + T) / 2 < t) → ‖sol.velocity t x‖ ≤ R := by
+  -- The classical Constantin–Fefferman route: in the enstrophy budget the
+  -- stretching term ∫ ω·∇u·ω is rewritten through the Biot–Savart singular
+  -- integral as a kernel against ω(x) ⨯ ω(y); direction coherence supplies
+  -- the geometric depletion factor, so the stretching term is dominated by
+  -- the viscous term and the enstrophy stays bounded, whence L^∞ by Sobolev
+  -- embedding.
+  --
+  -- The estate has:
+  --   * `Enstrophy.vorticityTransportEquation` — the pointwise vorticity
+  --     transport equation
+  --   * `sobolevEmbeddingDomination_H3` — kernel-clean H² ↪ L^∞ Sobolev
+  --     embedding (for Schwartz slices)
+  --   * `hcoh` — the genuine Constantin–Fefferman direction coherence
+  -- Still missing:
+  --   * The integral enstrophy budget (the pointwise identity exists, but
+  --     the integrated identity with boundary terms at infinity is open)
+  --   * A kernel-clean Biot–Savart representation of ∇u (routes use the
+  --     open leaf `exists_biotSavartLogTextbook`)
+  --   * Slice-Schwartz control (the Sobolev embedding needs Schwartz slices)
+  -- Without the Biot–Savart representation, the stretching term cannot be
+  -- expressed in the pairwise-vorticity form that `hcoh` depletes.
   sorry
 
 /-- **Constantin–Fefferman interior bound.**  Away from the initial time, the
