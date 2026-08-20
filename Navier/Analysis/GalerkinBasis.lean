@@ -3,6 +3,7 @@ import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.EnergyConvectionIntegral
 import Navier.Analysis.CurlIdentities
+import Navier.Analysis.GalerkinSpaceEquicontinuity
 
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
@@ -3637,9 +3638,67 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
         (fun m => W.stokesOperator m) (fun m => W.convectionOperator m) cChoice hc_deriv
         (convectionOperator_inner_self W) (stokesOperator_inner_eq_enstrophy W) enstrophyBound
         henstrophy_budget
-    -- 5. Space equicontinuity -- NAMED RESIDUAL (Brezis + dissipation)
+    -- 5. Space equicontinuity -- CLOSED (Brezis + dissipation, via
+    -- `GalerkinSpaceEquicontinuity.spaceEquicontinuous_of_modalFamily`)
+    let cChoiceExt (m : ℕ) (t : ℝ) : EuclideanSpace ℝ (Fin m) := cChoice m (max t 0)
+    have hc_cont : ∀ m, Continuous (cChoiceExt m) := by
+      intro m
+      have hc_contOn : ContinuousOn (cChoice m) (Set.Ici (0 : ℝ)) := by
+        intro t ht
+        exact (hc_deriv m t ht).continuousWithinAt
+      have hc_max : Continuous (fun (t : ℝ) => max t 0) :=
+        continuous_id.max continuous_zero
+      have hc_range : ∀ t : ℝ, max t 0 ∈ Set.Ici (0 : ℝ) := by
+        intro t; exact Set.mem_Ici.mpr (by simpa using le_max_right 0 t)
+      exact hc_contOn.comp_continuous hc_max hc_range
+    have hdiv : ∀ (m : ℕ) (i : Fin m), DivergenceFreeInitial (W.finiteModes m i) := by
+      intro m i
+      have h := W.divergence_free (i : ℕ)
+      simpa [GalerkinBasisFamily.finiteModes] using h
+    have h_modal_eq : ∀ (m : ℕ) (t : ℝ) (x : Space),
+        W.modalApprox cChoice m t x = (Navier.Analysis.GalerkinSpaceEquicontinuity.modalField
+          (W.finiteModes) cChoiceExt m t) x := by
+      intro m t x
+      simp [GalerkinBasisFamily.modalApprox, galerkinModalApprox, forwardExtend,
+        cChoiceExt, Navier.Analysis.GalerkinSpaceEquicontinuity.modalField,
+        GalerkinBasisFamily.finiteModes]
+    have h_modal_eq_fun : W.modalApprox cChoice =
+        (fun (m : ℕ) (t : ℝ) (x : Space) =>
+          (Navier.Analysis.GalerkinSpaceEquicontinuity.modalField (W.finiteModes) cChoiceExt m t) x) := by
+      funext m t x; exact h_modal_eq m t x
+    have henst' : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+        ∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space,
+          Navier.Analysis.OfficialABEncoding.officialEuclideanNorm
+            (Navier.Analysis.Vorticity.staticCurl (⇑(Navier.Analysis.GalerkinSpaceEquicontinuity.modalField
+              (W.finiteModes) cChoiceExt m t)) x) ^ 2 ≤ enstrophyBound := by
+      intro m T hT
+      have h_ens := henstrophy m T hT
+      have h_eq_int : (∫ t in Set.Ioc (0:ℝ) T, enstrophy (W.modalApprox cChoice m) t) =
+          ∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space,
+            Navier.Analysis.OfficialABEncoding.officialEuclideanNorm
+              (Navier.Analysis.Vorticity.staticCurl (⇑(Navier.Analysis.GalerkinSpaceEquicontinuity.modalField
+                (W.finiteModes) cChoiceExt m t)) x) ^ 2 := by
+        refine MeasureTheory.setIntegral_congr_ae measurableSet_Ioc ?_
+        filter_upwards with t ht
+        have ht_nonneg : 0 ≤ t := ht.1.le
+        calc
+          enstrophy (W.modalApprox cChoice m) t
+              = ∫ x : Space, officialEuclideanNorm (staticCurl ((W.modalApprox cChoice m) t) x) ^ 2 := rfl
+          _ = ∫ x : Space, officialEuclideanNorm (staticCurl ((Navier.Analysis.GalerkinSpaceEquicontinuity.modalField
+                (W.finiteModes) cChoiceExt m) t) x) ^ 2 := by
+            have hfun_eq : (W.modalApprox cChoice m) t = (Navier.Analysis.GalerkinSpaceEquicontinuity.modalField
+                (W.finiteModes) cChoiceExt m) t := by
+              funext x; exact h_modal_eq m t x
+            simp [hfun_eq]
+      rw [h_eq_int] at h_ens
+      exact h_ens
+    have hspace_raw : SpaceEquicontinuous
+        (fun (m : ℕ) (t : ℝ) (x : Space) =>
+          (Navier.Analysis.GalerkinSpaceEquicontinuity.modalField (W.finiteModes) cChoiceExt m t) x) :=
+      Navier.Analysis.GalerkinSpaceEquicontinuity.spaceEquicontinuous_of_modalFamily
+        (W.finiteModes) hdiv cChoiceExt hc_cont enstrophyBound henstrophyBound_nonneg henst'
     have hspace : SpaceEquicontinuous (W.modalApprox cChoice) := by
-      sorry
+      rw [h_modal_eq_fun]; exact hspace_raw
     -- 6. Time equicontinuity -- NAMED RESIDUAL (no uniform derivative bound)
     have htime : TimeEquicontinuous (W.modalApprox cChoice) := by
       sorry
