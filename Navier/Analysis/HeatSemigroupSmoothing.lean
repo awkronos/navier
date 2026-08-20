@@ -417,6 +417,42 @@ theorem heatKernel_convolution_smoothing_le {ν : ℝ} (hν : 0 < ν) {r : ℝ} 
     _ = C * t ^ (-(3 : ℝ) / (2 * r)) * (∫ y : Space, |f y| ^ r) ^ (1 / r) := by
         rw [hC t ht]
 
+/-- **The `L^r → L^∞` heat smoothing estimate for vector-valued functions, pointwise.**
+For `r > 1` there is `C = C(r, ν) > 0` such that for every `t > 0` and every `x : Space`,
+
+`‖∫ G_t^ν(x−y) • f(y) dy‖ ≤ C · t^{−3/(2r)} · ‖f‖_{L^r}`.
+
+This is the vector-valued analogue of `heatKernel_convolution_smoothing_le`, obtained
+by combining the triangle inequality for the Bochner integral with the scalar estimate
+applied to the norm `‖f(·)‖`. -/
+theorem heatKernel_convolution_norm_vec_le {ν : ℝ} (hν : 0 < ν) {r : ℝ} (hr : 1 < r)
+    {f : Space → Space} (hfr : Integrable (fun y : Space => ‖f y‖ ^ r))
+    (hfm : Measurable f) :
+    ∃ C : ℝ, 0 < C ∧ ∀ t : ℝ, 0 < t → ∀ x : Space,
+      ‖∫ y : Space, heatKernel ν t (x - y) • f y‖
+        ≤ C * t ^ (-(3 : ℝ) / (2 * r)) * (∫ y : Space, ‖f y‖ ^ r) ^ (1 / r) := by
+  have hfnorm : Measurable (fun y : Space => ‖f y‖) := hfm.norm
+  have hfnorm_int : Integrable (fun y : Space => |‖f y‖| ^ r) :=
+    hfr.congr (Filter.Eventually.of_forall (fun y => by simp))
+  obtain ⟨C, hC0, hC⟩ := heatKernel_convolution_smoothing_le hν hr hfnorm_int hfnorm
+  refine ⟨C, hC0, fun t ht x => ?_⟩
+  have h_nonneg_integrand : ∀ y : Space, 0 ≤ heatKernel ν t (x - y) * ‖f y‖ :=
+    fun y => mul_nonneg (heatKernel_nonneg hν ht (x - y)) (norm_nonneg _)
+  have h_nonneg_int : 0 ≤ ∫ y : Space, heatKernel ν t (x - y) * ‖f y‖ :=
+    integral_nonneg h_nonneg_integrand
+  calc
+    ‖∫ y : Space, heatKernel ν t (x - y) • f y‖
+        ≤ ∫ y : Space, ‖heatKernel ν t (x - y) • f y‖ :=
+      norm_integral_le_integral_norm _
+    _ = ∫ y : Space, heatKernel ν t (x - y) * ‖f y‖ := by
+      refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+      simp [norm_smul, Real.norm_eq_abs, abs_of_nonneg (heatKernel_nonneg hν ht (x - y))]
+    _ = |∫ y : Space, heatKernel ν t (x - y) * ‖f y‖| := by
+      rw [abs_of_nonneg h_nonneg_int]
+    _ ≤ C * t ^ (-(3 : ℝ) / (2 * r)) * (∫ y : Space, |‖f y‖| ^ r) ^ (1 / r) :=
+      hC t ht x
+    _ = C * t ^ (-(3 : ℝ) / (2 * r)) * (∫ y : Space, ‖f y‖ ^ r) ^ (1 / r) := by simp
+
 /-! ### The kernel solves the heat equation -/
 
 /-- **Time derivative of the heat kernel.**  For `0 < ν` and `0 < t`,
