@@ -5385,6 +5385,114 @@ theorem tendsto_integral_weakPairingDensity_of_l2loc (ν : ℝ)
   rw [hsplit w hwm hw2]
   exact hsum.congr fun k => (hsplit (v k) (hvm k) (hv2 k)).symm
 
+/-!
+### `L¹`-to-a.e. extraction: from the time-integrated error to a fixed time
+
+`StrongL2LocLimit` controls the **time-integrated** local `L²` error, while the
+fixed-time passage `tendsto_integral_weakPairingDensity_of_l2loc` above consumes
+the error at a **single** time.  The bridge is Markov's inequality: a sequence of
+nonnegative functions whose integrals vanish converges to `0` in measure, hence
+a.e. along a subsequence.  Diagonalising over the countably many integer radii
+and using monotonicity of `R ↦ ∫_{B_R}` upgrades this to a single subsequence
+along which, for a.e. time, the local error vanishes at *every* radius — exactly
+the pointwise hypothesis `tendsto_integral_weakPairingDensity_of_l2loc` needs.
+
+These two theorems are the analytic content that the frontier note on
+`exists_lerayLimitData` records as the pointwise input of the limit passage; they
+are stated for a general set and a general nonnegative sequence, so they carry no
+Navier–Stokes-specific hypothesis and cannot be vacuous.
+-/
+
+/-- **Measurability of a nonnegative spatial set-integral in the time variable,
+with no slicewise integrability hypothesis.**  `inner_sq_measurable` needs
+`Integrable` at *every* `t`, which a velocity evolution supplies only for
+`0 ≤ t`; the Bochner junk value rescues the statement instead.  For a
+nonnegative jointly measurable integrand the Bochner integral agrees with
+`(∫⁻ …).toReal` **everywhere**: on the integrable locus by
+`ofReal_integral_eq_lintegral_ofReal`, and off it because both sides are `0`
+(Bochner by `integral_undef`, the lower integral because it is `⊤`). -/
+theorem measurable_setIntegral_of_jointlyMeasurable_nonneg
+    {B : Set Space} (hB : MeasurableSet B)
+    {F : ℝ → Space → ℝ} (hF : Measurable fun z : ℝ × Space => F z.1 z.2)
+    (hnn : ∀ (t : ℝ) (x : Space), 0 ≤ F t x) :
+    Measurable fun t : ℝ => ∫ x in B, F t x := by
+  classical
+  have hFind : Measurable fun z : ℝ × Space =>
+      if z.2 ∈ B then ENNReal.ofReal (F z.1 z.2) else 0 := by
+    refine Measurable.ite (measurable_snd hB) hF.ennreal_ofReal measurable_const
+  have hlint : Measurable fun t : ℝ => ∫⁻ x in B, ENNReal.ofReal (F t x) := by
+    have h1 : Measurable fun t : ℝ =>
+        ∫⁻ x : Space, (if x ∈ B then ENNReal.ofReal (F t x) else 0) :=
+      Measurable.lintegral_prod_right
+        (ν := volume)
+        (f := fun (t : ℝ) (x : Space) => if x ∈ B then ENNReal.ofReal (F t x) else 0)
+        hFind
+    have h2 : (fun t : ℝ => ∫⁻ x : Space, (if x ∈ B then ENNReal.ofReal (F t x) else 0))
+        = fun t : ℝ => ∫⁻ x in B, ENNReal.ofReal (F t x) := by
+      funext t
+      rw [← lintegral_indicator hB]
+      rfl
+    rw [← h2]
+    exact h1
+  have heq : (fun t : ℝ => ∫ x in B, F t x)
+      = fun t : ℝ => (∫⁻ x in B, ENNReal.ofReal (F t x)).toReal := by
+    funext t
+    by_cases hi : IntegrableOn (F t) B volume
+    · rw [← ofReal_integral_eq_lintegral_ofReal hi
+        (Filter.Eventually.of_forall fun x => hnn t x),
+        ENNReal.toReal_ofReal (integral_nonneg fun x => hnn t x)]
+    · have hae : AEStronglyMeasurable (F t) (volume.restrict B) :=
+        (hF.comp measurable_prodMk_left).aestronglyMeasurable
+      have hnf : ¬ HasFiniteIntegral (F t) (volume.restrict B) := fun h => hi ⟨hae, h⟩
+      have htop : ∫⁻ x in B, ENNReal.ofReal (F t x) = ⊤ := by
+        have hne : ¬ (∫⁻ x in B, ‖F t x‖ₑ) < ⊤ := by
+          simpa [HasFiniteIntegral] using hnf
+        have hcongr : ∫⁻ x in B, ‖F t x‖ₑ = ∫⁻ x in B, ENNReal.ofReal (F t x) :=
+          lintegral_congr_ae (Filter.Eventually.of_forall fun x =>
+            Real.enorm_eq_ofReal (hnn t x))
+        rw [← hcongr]
+        exact top_le_iff.mp (not_lt.mp hne)
+      rw [integral_undef hi, htop, ENNReal.toReal_top]
+  rw [heq]
+  exact hlint.ennreal_toReal
+
+/-- **Markov + Riesz.**  If nonnegative measurable functions have set integrals
+tending to `0` over `s`, then some subsequence tends to `0` almost everywhere on
+`s`.  (`L¹`-null ⟹ null in measure ⟹ a.e.-null along a subsequence.) -/
+theorem exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral
+    (s : Set ℝ) (g : ℕ → ℝ → ℝ)
+    (hgm : ∀ k, Measurable (g k)) (hg0 : ∀ k t, 0 ≤ g k t)
+    (hgi : ∀ k, IntegrableOn (g k) s)
+    (hg : Filter.Tendsto (fun k => ∫ t in s, g k t) Filter.atTop (nhds 0)) :
+    ∃ ψ : ℕ → ℕ, StrictMono ψ ∧
+      ∀ᵐ t ∂(volume.restrict s),
+        Filter.Tendsto (fun j => g (ψ j) t) Filter.atTop (nhds 0) := by
+  classical
+  set μ : Measure ℝ := volume.restrict s with hμdef
+  have hmeas : ∀ k, AEStronglyMeasurable (g k) μ := fun k => (hgm k).aestronglyMeasurable
+  have hrw : ∀ k, eLpNorm (g k - fun _ : ℝ => (0 : ℝ)) 1 μ
+      = ENNReal.ofReal (∫ t in s, g k t) := by
+    intro k
+    have hsub : (g k - fun _ : ℝ => (0 : ℝ)) = g k := by
+      funext t; simp
+    rw [hsub, eLpNorm_one_eq_lintegral_enorm]
+    have hcongr : ∫⁻ x : ℝ, ‖g k x‖ₑ ∂μ = ∫⁻ x : ℝ, ENNReal.ofReal (g k x) ∂μ :=
+      lintegral_congr_ae (Filter.Eventually.of_forall fun t =>
+        Real.enorm_eq_ofReal (hg0 k t))
+    rw [hcongr]
+    exact (ofReal_integral_eq_lintegral_ofReal (hgi k)
+      (Filter.Eventually.of_forall fun t => hg0 k t)).symm
+  have hL1 : Filter.Tendsto (fun k => eLpNorm (g k - fun _ : ℝ => (0 : ℝ)) 1 μ)
+      Filter.atTop (nhds 0) := by
+    have := (ENNReal.continuous_ofReal.tendsto 0).comp hg
+    simp only [ENNReal.ofReal_zero] at this
+    exact this.congr fun k => (hrw k).symm
+  have hTIM : TendstoInMeasure μ g Filter.atTop (fun _ : ℝ => (0 : ℝ)) :=
+    tendstoInMeasure_of_tendsto_eLpNorm one_ne_zero hmeas
+      aestronglyMeasurable_const hL1
+  obtain ⟨ns, hns, hae⟩ := hTIM.exists_seq_tendsto_ae
+  exact ⟨ns, hns, hae⟩
+
 /-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once
 the limit weak-form identity is supplied for a compactness limit of the
 Galerkin sequence, `LerayLimitData` follows.  The energy clauses come from
