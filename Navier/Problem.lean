@@ -242,6 +242,63 @@ def WholeSpaceGlobalRegularity : Prop :=
       ∃ (u : VelocityEvolution) (p : PressureEvolution),
         IsClassicalSolution ν zeroForce u₀ u p
 
+/-! ### Two-pole satisfiability guards for the statement-A surface
+
+A universally quantified endpoint fails soundness at either of two poles, and
+both are invisible to the kernel.  If the datum class `{u₀ : DivergenceFreeInitial u₀}`
+were empty, `WholeSpaceGlobalRegularity` would be vacuously TRUE and provable
+without any analysis.  If the conclusion bundle `IsClassicalSolution` were
+uninhabitable — for instance if `finite_energy` and `uniformly_bounded_energy`
+could not hold simultaneously with the smoothness and equation fields — the
+endpoint would be FALSE as stated for a formalization reason rather than a
+fluid-mechanical one, and every `iff` and conditional reduction stated against
+it would be about a false proposition.
+
+The three declarations below close both poles at a real point of the quantifier
+range.  They are guards, not progress: the zero datum is the one Schwartz datum
+whose global smooth solution is elementary, and nothing here bears on any
+nonzero datum. -/
+
+/-- **Pole (a): the datum class is nonempty.**  The zero Schwartz velocity is
+divergence-free, so the outer `∀` of `WholeSpaceGlobalRegularity` does not range
+over an empty class and the endpoint is not vacuously true. -/
+theorem divergenceFreeInitial_zero : DivergenceFreeInitial (0 : SchwartzVelocity) := by
+  intro x
+  simp [staticDivergence]
+
+/-- **Pole (b): the solution contract is inhabitable.**  The zero velocity and
+zero pressure satisfy every field of `IsClassicalSolution` simultaneously, at
+every viscosity, including the explicit `Integrable` field and the strict
+uniform energy bound (`kineticEnergy = 0 < 1`).  The seven clauses are therefore
+jointly satisfiable: `IsClassicalSolution` is not an uninhabitable bundle, so no
+theorem taking it is vacuously true for that reason. -/
+theorem isClassicalSolution_zero (ν : ℝ) :
+    IsClassicalSolution ν zeroForce 0 (fun _ _ => 0) (fun _ _ => 0) where
+  velocity_smooth := contDiffOn_const
+  pressure_smooth := contDiffOn_const
+  initial_condition := by intro x; simp
+  incompressible := by
+    intro t _ x
+    simp [divergence, spatialDerivative]
+  equation := by
+    intro t _ x
+    have hpg : pressureGradient (fun _ _ => (0 : ℝ)) t x = 0 := by
+      funext i
+      simp [pressureGradient]
+    simp [timeDerivative, convection, spatialDerivative, laplacian, zeroForce, hpg]
+  finite_energy := by intro t _; simp
+  uniformly_bounded_energy := ⟨1, one_pos, by intro t _; simp [kineticEnergy]⟩
+
+/-- The body of `WholeSpaceGlobalRegularity` holds at the zero datum, for every
+positive viscosity.  This is the endpoint's own shape evaluated at an admissible
+point of its quantifier range; it settles both satisfiability poles at once and
+proves nothing about `WholeSpaceGlobalRegularity` itself, whose content is the
+nonzero data. -/
+theorem wholeSpaceGlobalRegularity_body_at_zero_datum (ν : ℝ) (_hν : 0 < ν) :
+    ∃ (u : VelocityEvolution) (p : PressureEvolution),
+      IsClassicalSolution ν zeroForce 0 u p :=
+  ⟨fun _ _ => 0, fun _ _ => 0, isClassicalSolution_zero ν⟩
+
 end ProblemStatements
 
 end Navier
