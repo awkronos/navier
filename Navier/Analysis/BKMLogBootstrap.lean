@@ -331,8 +331,136 @@ theorem sobolevH2NormSq_le_sobolevH3NormSq (u : SchwartzVelocity) :
   intro n _ _
   exact integral_nonneg (fun x => by positivity)
 
-/-- **[NAMED RESIDUAL — BKM 1984 Lemma 1; Majda–Bertozzi Prop. 3.8;
-Stein, *Singular Integrals* (1970) Ch. II §4; est ~400 LOC.]**
+/-- **Per-order domination by the `H³` norm (certified, no sorry).**  For each
+derivative order `n < 4`, the order-`n` energy `∫ ‖Dⁿu‖²` is one summand of
+`sobolevH3NormSq u`, and the omitted summands are integrals of squares.  This
+is the step that converts a Kato–Ponce commutator bound stated against
+`‖Dⁿu‖_{L²}` into the `‖u‖²_{H³}` shape that
+`exists_sobolevOrderEnergyEstimate` and the Grönwall consumer use. -/
+theorem sobolevOrderNormSq_le_sobolevH3NormSq (u : SchwartzVelocity) {n : ℕ}
+    (hn : n < 4) :
+    (∫ x : Space, ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2) ≤ sobolevH3NormSq u :=
+  Finset.single_le_sum
+    (f := fun m => ∫ x : Space, ‖iteratedFDeriv ℝ m (⇑u) x‖ ^ 2)
+    (fun m _ => integral_nonneg (fun x => by positivity))
+    (Finset.mem_range.mpr hn)
+
+/-- **The Calderón–Zygmund cutoff optimisation (certified, no sorry).**  This is
+the step that *manufactures the logarithm* in the Beale–Kato–Majda inequality,
+isolated as a statement of pure real analysis.
+
+Suppose a quantity `Y` admits, at **every** cutoff scale `ρ ∈ (0, 1]`, the
+three-term Calderón–Zygmund split
+
+  `Y ≤ A · ρ^{1/4} · M + B · Mω · (1 + log(1/ρ)) + F`
+
+— near field `O(ρ^{1/4}·M)` (the Hölder-`1/4` cancellation weight supplied by
+`exists_agmonMorreyBound`, with `M = ‖u‖_{H³}`), logarithmic shell
+`O(Mω·(1 + log(1/ρ)))` (supplied by `integral_bsKernelScalar_annulus_le_log`),
+and a `ρ`-independent far-field term `F` (supplied by
+`integrableOn_bsKernelScalar_sq_farField` paired with `‖ω‖_{L²}` by
+Cauchy–Schwarz).  Then `Y` obeys the *`ρ`-free* logarithmic bound
+
+  `Y ≤ A + 4·B·Mω·(1 + log(e + M)) + F`.
+
+**The optimising scale.**  Take `ρ := (e + M)^{-4}`, which lies in `(0, e^{-4}]`
+for every `M ≥ 0`, so it is an admissible cutoff *without any smallness or
+largeness hypothesis on `M`* — this is exactly why the `e +` guard is written
+into the conclusion rather than a bare `log M`.  At that scale
+`ρ^{1/4} = (e + M)^{-1}`, so the near-field term collapses to
+`A · M / (e + M) ≤ A`, while `log(1/ρ) = 4 log(e + M)` turns the shell term
+into `B·Mω·(1 + 4 log(e + M)) ≤ 4·B·Mω·(1 + log(e + M))`, the last step using
+`log(e + M) ≥ 1 > 0`.
+
+**Endpoint check.**  `e + M ≥ e > 1` for `M ≥ 0`, hence `log(e + M) ≥ 1`, so
+every term of the conclusion is nonnegative and the bound is never vacuously
+unsatisfiable — contrast a bare `log log`-type majorant, which goes negative at
+its own left endpoint. -/
+theorem le_of_forall_cutoff_le
+    {Y A B F Mω M : ℝ}
+    (hA : 0 ≤ A) (hB : 0 ≤ B) (hMω : 0 ≤ Mω) (hM : 0 ≤ M)
+    (h : ∀ ρ : ℝ, 0 < ρ → ρ ≤ 1 →
+      Y ≤ A * ρ ^ ((1 : ℝ) / 4) * M + B * Mω * (1 + Real.log (1 / ρ)) + F) :
+    Y ≤ A + 4 * B * Mω * (1 + Real.log (Real.exp 1 + M)) + F := by
+  set L : ℝ := Real.exp 1 + M with hLdef
+  have hL1 : (1 : ℝ) ≤ L := by
+    have : (1 : ℝ) ≤ Real.exp 1 := Real.one_le_exp (by norm_num)
+    linarith
+  have hL0 : (0 : ℝ) < L := lt_of_lt_of_le one_pos hL1
+  have hlogL : 0 ≤ Real.log L := Real.log_nonneg hL1
+  set ρ : ℝ := L ^ (-(4 : ℝ)) with hρdef
+  have hρ0 : 0 < ρ := Real.rpow_pos_of_pos hL0 _
+  have hρ1 : ρ ≤ 1 := Real.rpow_le_one_of_one_le_of_nonpos hL1 (by norm_num)
+  have hpow : ρ ^ ((1 : ℝ) / 4) = L⁻¹ := by
+    rw [hρdef, ← Real.rpow_mul hL0.le]
+    norm_num
+    rw [Real.rpow_neg_one]
+  have hlogρ : Real.log (1 / ρ) = 4 * Real.log L := by
+    rw [one_div, Real.log_inv, hρdef, Real.log_rpow hL0]; ring
+  have hkey := h ρ hρ0 hρ1
+  rw [hpow, hlogρ] at hkey
+  have h1 : A * L⁻¹ * M ≤ A := by
+    rw [mul_comm A L⁻¹, mul_assoc, inv_mul_le_iff₀ hL0]
+    have hML : M ≤ L := by rw [hLdef]; nlinarith [Real.exp_pos (1 : ℝ)]
+    nlinarith
+  have h2 : B * Mω * (1 + 4 * Real.log L) ≤ 4 * B * Mω * (1 + Real.log L) := by
+    nlinarith [mul_nonneg hB hMω]
+  linarith
+
+/-- **[NAMED RESIDUAL — Biot–Savart representation + Calderón–Zygmund
+three-term split; BKM 1984 Lemma 1; Majda–Bertozzi Prop. 3.8; Stein,
+*Singular Integrals* (1970) Ch. II §4; est ~350 LOC.]**  For a divergence-free
+Schwartz field and **every** cutoff scale `ρ ∈ (0, 1]`, the velocity gradient
+splits as
+
+  `‖∇u(x)‖ ≤ A·ρ^{1/4}·‖u‖_{H³} + B·‖ω‖_∞·(1 + log(1/ρ)) + F·‖ω‖_{L²}`.
+
+This is `exists_biotSavartLogTextbook` with the *cutoff still free*: it is a
+strictly lower residual, because the passage from this `ρ`-indexed family to
+the `ρ`-free logarithmic shape is now certified as `le_of_forall_cutoff_le`
+above, and `exists_biotSavartLogTextbook` is derived from it below.
+
+**What this residual still carries** (and nothing more).  The Biot–Savart
+representation `∇u = PV(∇K ∗ ω)` with its local term, for divergence-free
+Schwartz fields — genuinely Mathlib-absent — together with the curl-component
+bridge (`‖Dⁿ(staticCurl u)‖ ≤ ‖D^{n+1}u‖` bookkeeping) feeding the vorticity
+into `exists_agmonMorreyBound`.
+
+**What it no longer carries.**  The three kernel size estimates are already
+certified at the bottom of this file: near field
+`integral_norm_mul_bsKernelScalar_ball_le` (`O(ρ)` against the cancellation
+weight `‖z‖`), logarithmic shell `integral_bsKernelScalar_annulus_le_log`
+(`O(1 + log(1/ρ))`), far field `integrableOn_bsKernelScalar_sq_farField`
+(`L²`, paired with `‖ω‖_{L²}` by Cauchy–Schwarz); the Hölder-`1/4` near-field
+input is `exists_agmonMorreyBound`; and the cutoff optimisation is
+`le_of_forall_cutoff_le`.
+
+**Satisfiability at both endpoints.**  At `ρ = 1` the bound reads
+`A·‖u‖_{H³} + B·‖ω‖_∞ + F·‖ω‖_{L²}`, which already dominates `‖∇u‖_∞` by the
+`H³ ↪ C¹` embedding for `A` large; as `ρ ↓ 0` the shell term diverges, so the
+family is not constraining there.  The bundle is therefore inhabited, not
+vacuous. -/
+theorem exists_biotSavartKernelSplitting :
+    ∃ A B F : ℝ, 0 < A ∧ 0 < B ∧ 0 < F ∧
+      ∀ (u : SchwartzVelocity), DivergenceFreeInitial u →
+        ∀ Mω M₂ : ℝ,
+          (∀ x : Space,
+            officialEuclideanNorm (staticCurl (⇑u) x) ≤ Mω) →
+          (∫ x : Space,
+            officialEuclideanNorm (staticCurl (⇑u) x) ^ 2) ≤ M₂ →
+          ∀ ρ : ℝ, 0 < ρ → ρ ≤ 1 →
+          ∀ x : Space,
+            ‖fderiv ℝ (⇑u) x‖ ≤
+              A * ρ ^ ((1 : ℝ) / 4) * Real.sqrt (sobolevH3NormSq u)
+                + B * Mω * (1 + Real.log (1 / ρ))
+                + F * Real.sqrt M₂ := by
+  sorry
+
+/-- **[DERIVED — no `sorry` in this declaration.  Reduced to the strictly lower
+residual `exists_biotSavartKernelSplitting` (Biot–Savart representation +
+Calderón–Zygmund split, est ~350 LOC) via the certified cutoff optimisation
+`le_of_forall_cutoff_le`.  BKM 1984 Lemma 1; Majda–Bertozzi Prop. 3.8;
+Stein, *Singular Integrals* (1970) Ch. II §4.]**
 The Biot–Savart logarithmic inequality in its **textbook shape**
 
   `‖∇u‖_∞ ≤ C(1 + ‖ω‖_∞·(1 + log(e + ‖u‖_{H³})) + ‖ω‖_{L²})`,
@@ -342,13 +470,23 @@ with `‖u‖_{H³} = √(sobolevH3NormSq u)` written out as
 majorants stay hypothesis-carried; the right-hand side is monotone in both, so
 this form follows from the classical statement.
 
-**Dependencies (all genuinely Mathlib-absent).**  The Biot–Savart
-representation `∇u = ∇K ∗ ω` for the homogeneous degree `−3` kernel `∇K`;
-Calderón–Zygmund near-field cancellation for that kernel; the far-field tail
-`∇K ∈ L²(|z| > 1)` paired with `‖ω‖_{L²}` by Cauchy–Schwarz; and the cutoff
-optimisation at scale `ρ ≈ ‖u‖_{H³}^{-1}` which is what produces the logarithm.
+**Status.**  This declaration is *conditional*, not closed: it is proved from
+`exists_biotSavartKernelSplitting`, which still carries an honest `sorry`.  The
+constant produced here is `max A (max (4B) F)` in that residual's constants.
 
-**What is no longer residual.**  The passage from this citable shape to the
+**What the derivation certifies.**  Exactly the log-producing step: the
+`ρ`-indexed Calderón–Zygmund family is collapsed at the optimising scale
+`ρ = (e + ‖u‖_{H³})^{-4}`, which is admissible for every value of the `H³`
+norm, so no smallness/largeness case split is needed and the `e +` guard is
+genuine rather than cosmetic.
+
+**Dependencies still carried by the lower residual (Mathlib-absent).**  The
+Biot–Savart representation `∇u = ∇K ∗ ω` for the homogeneous degree `−3`
+kernel `∇K`, with its local term, for divergence-free Schwartz fields; and the
+curl-component bridge feeding the vorticity into `exists_agmonMorreyBound`.
+
+**What is no longer residual.**  The cutoff optimisation is certified as
+`le_of_forall_cutoff_le` above.  The passage from this citable shape to the
 `log (1 + Ms)` shape the bootstrap consumes — including the transfer to an
 arbitrary `H³`-majorant `Ms` — is certified in
 `BKMLogLeaves.bkm_log_shape_transfer`, at the cost of the constant factor `3`.
@@ -382,7 +520,38 @@ theorem exists_biotSavartLogTextbook :
             ‖fderiv ℝ (⇑u) x‖ ≤
               C * (1 + Mω * (1 + Real.log (Real.exp 1 +
                 Real.sqrt (sobolevH3NormSq u))) + Real.sqrt M₂) := by
-  sorry
+  obtain ⟨A, B, F, hA, hB, hF, hsplit⟩ := exists_biotSavartKernelSplitting
+  refine ⟨max A (max (4 * B) F), lt_of_lt_of_le hA (le_max_left _ _), ?_⟩
+  intro u hu Mω M₂ hMω hM₂ x
+  have hMωnn : 0 ≤ Mω :=
+    le_trans (officialEuclideanNorm_nonneg (staticCurl (⇑u) 0)) (hMω 0)
+  have hMnn : 0 ≤ Real.sqrt (sobolevH3NormSq u) := Real.sqrt_nonneg _
+  have hM₂nn : 0 ≤ Real.sqrt M₂ := Real.sqrt_nonneg _
+  have key :=
+    le_of_forall_cutoff_le (Y := ‖fderiv ℝ (⇑u) x‖) (A := A) (B := B)
+      (F := F * Real.sqrt M₂) (Mω := Mω)
+      (M := Real.sqrt (sobolevH3NormSq u)) hA.le hB.le hMωnn hMnn
+      (fun ρ hρ0 hρ1 => hsplit u hu Mω M₂ hMω hM₂ ρ hρ0 hρ1 x)
+  set S : ℝ := 1 + Real.log (Real.exp 1 + Real.sqrt (sobolevH3NormSq u)) with hSdef
+  have hSnn : 0 ≤ S := by
+    have h1 : (1 : ℝ) ≤ Real.exp 1 + Real.sqrt (sobolevH3NormSq u) := by
+      have : (1 : ℝ) ≤ Real.exp 1 := Real.one_le_exp (by norm_num)
+      linarith
+    have := Real.log_nonneg h1
+    rw [hSdef]; linarith
+  set C : ℝ := max A (max (4 * B) F) with hCdef
+  have hAC : A ≤ C := le_max_left _ _
+  have hBC : 4 * B ≤ C := le_trans (le_max_left _ _) (le_max_right _ _)
+  have hFC : F ≤ C := le_trans (le_max_right _ _) (le_max_right _ _)
+  have e1 : 4 * B * Mω * S ≤ C * (Mω * S) := by
+    calc 4 * B * Mω * S = (4 * B) * (Mω * S) := by ring
+      _ ≤ C * (Mω * S) := mul_le_mul_of_nonneg_right hBC (mul_nonneg hMωnn hSnn)
+  have e2 : F * Real.sqrt M₂ ≤ C * Real.sqrt M₂ :=
+    mul_le_mul_of_nonneg_right hFC hM₂nn
+  have hexp : C * (1 + Mω * S + Real.sqrt M₂)
+      = C + C * (Mω * S) + C * Real.sqrt M₂ := by ring
+  rw [hexp]
+  linarith
 
 /-- **[DERIVED from `exists_biotSavartLogTextbook`.]**
 The Biot–Savart logarithmic inequality: for a divergence-free Schwartz field,
