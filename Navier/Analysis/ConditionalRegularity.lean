@@ -57,6 +57,15 @@ honestly.
   This strengthens `Navier.Breakdown.bounded_pointEvaluation_of_smooth` from a
   single spatial point to an arbitrary compact set, and it is the whole part of
   both bridges that needs no analytic machinery.
+* `initialDatum_continuous`, `heatFlow_bounded_of_bounded`,
+  `heatFlow_initialDatum_bounded` — the linear half of the Duhamel estimate
+  shared by both far-field leaves: the initial datum of a partial classical
+  solution is continuous (hence measurable), and the Gaussian heat flow of any
+  measurable field bounded by `B` is again bounded by `B`, since the kernel is
+  nonnegative with unit mass.  Previously trapped inside the `sorry`-carrying
+  proof of `prodiSerrin_layer_farField_bounded`; now kernel-clean and reusable,
+  so what remains open in both far-field leaves is exactly the nonlinear
+  Duhamel correction.
 * `uniformBound_of_farField_window`, `interiorBound_of_outerRegion` — the two
   reductions that discharge that compact core, leaving only decay at spatial
   infinity (both windows) and uniformity as `t ↑ T` (interior window).
@@ -685,6 +694,111 @@ theorem crossProductCoherent_of_directionLipschitz
   exact mul_le_mul_of_nonneg_right (hdir t ht0 htT x y hx hy)
     (mul_nonneg (officialEuclideanNorm_nonneg _) (officialEuclideanNorm_nonneg _))
 
+/-! ### Shared linear ingredient: the heat flow of the initial datum -/
+
+/-- **The initial datum of a partial classical solution is continuous.**  It is
+the time-zero slice of a velocity field that is `C^∞` on `[0,T) × ℝ³`, and
+`0 ∈ [0,T)` because `terminalTime_pos` gives `0 < T`.
+
+Extracted from the far-field leaves, which both need measurability of `u₀` to
+integrate it against the heat kernel; it holds for an arbitrary force field, so
+it is stated for a general `PartialClassicalSolution`. -/
+theorem initialDatum_continuous
+    {ν : ℝ} {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T) : Continuous u₀ := by
+  have hcontOn : ContinuousOn (fun z : ℝ × Space => sol.velocity z.1 z.2)
+      (spacetimeBefore T) := sol.velocity_smooth.continuousOn
+  have hcontOn_u₀ : ContinuousOn (fun x : Space => sol.velocity 0 x) Set.univ :=
+    hcontOn.comp (Continuous.prodMk continuous_const continuous_id).continuousOn (by
+      intro x _
+      exact ⟨⟨le_rfl, by simpa using sol.terminalTime_pos⟩, Set.mem_univ x⟩)
+  have hcont_u₀ : Continuous (fun x : Space => sol.velocity 0 x) :=
+    continuousOn_univ.1 hcontOn_u₀
+  rw [← sol.initial_condition]
+  exact hcont_u₀
+
+/-- **The heat flow of bounded data is bounded by the same constant.**  For
+every viscosity `ν > 0`, every positive time `t` and every measurable field `g`
+with `‖g‖ ≤ B` pointwise,
+
+`‖∫ G^ν_t(x − y) • g(y) dy‖ ≤ B`   for every `x`,
+
+because the Gaussian kernel is nonnegative and integrates to `1`
+(`integral_heatKernel`).  No decay of `g` is used, and the constant is not
+inflated: at `g ≡ b` constant the bound is attained.
+
+This is the *linear half* of the Duhamel estimate shared by both far-field
+leaves below — `prodiSerrin_layer_farField_bounded` and
+`constantinFefferman_layer_farField_bounded` — where it bounds `e^{tνΔ}u₀` by
+`‖u₀‖_∞`.  Isolating it here makes it a kernel-clean, reusable theorem instead
+of a fragment trapped inside a `sorry`-carrying proof; what remains open in
+both leaves is exactly the nonlinear Duhamel correction. -/
+theorem heatFlow_bounded_of_bounded {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t)
+    {g : VelocityField} (hg : Measurable g) {B : ℝ} (hB : ∀ x : Space, ‖g x‖ ≤ B)
+    (x : Space) :
+    ‖∫ y : Space, heatKernel ν t (x - y) • g y‖ ≤ B := by
+  have hintK : Integrable (fun y : Space => heatKernel ν t (y - x)) := by
+    have hK : Integrable (fun y : Space => heatKernel ν t y) := by
+      have := integrable_heatKernel_rpow hν ht one_pos
+      simpa [Real.rpow_one] using this
+    exact hK.comp_sub_right x
+  have hintKx : Integrable (fun y : Space => heatKernel ν t (x - y)) :=
+    hintK.congr (Filter.Eventually.of_forall (fun y => by
+      simpa using (heatKernel_comm ν t x y).symm))
+  have hintKxB : Integrable (fun y : Space => heatKernel ν t (x - y) * B) := by
+    have h' := hintKx.const_mul B
+    refine h'.congr (Filter.Eventually.of_forall (fun y => ?_))
+    ring
+  have hprod_int : Integrable (fun y : Space => heatKernel ν t (x - y) * ‖g y‖) := by
+    have hmeas : AEStronglyMeasurable
+        (fun y : Space => heatKernel ν t (x - y) * ‖g y‖) volume :=
+      (((heatKernel_continuous ν t).measurable.comp
+        (measurable_const.sub measurable_id)).mul
+          (measurable_norm.comp hg)).aestronglyMeasurable
+    have h_nonneg : ∀ᵐ y ∂ volume, 0 ≤ heatKernel ν t (x - y) * ‖g y‖ :=
+      Filter.Eventually.of_forall
+        (fun y => mul_nonneg (heatKernel_nonneg hν ht (x - y)) (norm_nonneg _))
+    have h_bound : ∀ᵐ y ∂ volume,
+        heatKernel ν t (x - y) * ‖g y‖ ≤ heatKernel ν t (x - y) * B :=
+      Filter.Eventually.of_forall
+        (fun y => mul_le_mul_of_nonneg_left (hB y) (heatKernel_nonneg hν ht (x - y)))
+    exact hintKxB.mono_nonneg hmeas h_nonneg h_bound
+  calc
+    ‖∫ y : Space, heatKernel ν t (x - y) • g y‖
+        ≤ ∫ y : Space, ‖heatKernel ν t (x - y) • g y‖ :=
+      norm_integral_le_integral_norm _
+    _ = ∫ y : Space, heatKernel ν t (x - y) * ‖g y‖ := by
+      refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+      simp [norm_smul, abs_of_nonneg (heatKernel_nonneg hν ht (x - y))]
+    _ ≤ ∫ y : Space, heatKernel ν t (x - y) * B :=
+      integral_mono hprod_int hintKxB (fun y =>
+        mul_le_mul_of_nonneg_left (hB y) (heatKernel_nonneg hν ht (x - y)))
+    _ = (∫ y : Space, heatKernel ν t (x - y)) * B := by rw [integral_mul_const]
+    _ = B * ∫ y : Space, heatKernel ν t (x - y) := by rw [mul_comm]
+    _ = B * 1 := by
+      rw [show (∫ y : Space, heatKernel ν t (x - y)) = 1 by
+        calc
+          ∫ y : Space, heatKernel ν t (x - y) = ∫ y : Space, heatKernel ν t (y - x) := by
+            refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+            simpa using heatKernel_comm ν t x y
+          _ = ∫ y : Space, heatKernel ν t y := by rw [integral_sub_right_eq_self _ x]
+          _ = 1 := integral_heatKernel hν ht]
+    _ = B := by ring
+
+/-- **The heat flow of a partial classical solution's initial datum is bounded
+by `B₀`.**  The composite of `initialDatum_continuous` and
+`heatFlow_bounded_of_bounded`, in exactly the form the two far-field leaves
+consume: it discharges the linear term `e^{tνΔ}u₀` of the Duhamel formula on
+the whole initial layer, uniformly in `x`, from the hypothesis `hu₀` alone. -/
+theorem heatFlow_initialDatum_bounded
+    {ν : ℝ} (hν : 0 < ν) {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T) {B₀ : ℝ}
+    (hu₀ : ∀ x : Space, ‖u₀ x‖ ≤ B₀) :
+    ∀ t : ℝ, 0 < t → ∀ x : Space,
+      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
+  fun _ ht x =>
+    heatFlow_bounded_of_bounded hν ht (initialDatum_continuous sol).measurable hu₀ x
+
 /-! ### Named residual leaves -/
 
 /-- **[LEAF — Prodi–Serrin far-field layer tail; est ~300 LOC.]**  Outside one
@@ -742,70 +856,12 @@ theorem prodiSerrin_layer_farField_bounded
   -- data is bounded by B₀.  Everything else requires the Duhamel formula,
   -- which is not available.
   obtain ⟨B₀, hu₀⟩ := hu₀
-  have hB_nonneg : 0 ≤ B₀ := by
-    have h0 := hu₀ 0
-    have h0_nonneg : 0 ≤ ‖u₀ (0 : Space)‖ := norm_nonneg _
-    linarith
-  -- The heat kernel convolution of the initial data is bounded by B₀,
-  -- because the kernel integrates to 1.
+  -- The heat kernel convolution of the initial data is bounded by B₀, because
+  -- the kernel is nonnegative and integrates to 1.  Now a standalone
+  -- kernel-clean theorem, shared with the Constantin–Fefferman far-field leaf.
   have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
-      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ := by
-    intro t ht x
-    have hintK : Integrable (fun y : Space => heatKernel ν t (y - x)) := by
-      have hK : Integrable (fun y : Space => heatKernel ν t y) := by
-        have := integrable_heatKernel_rpow hν ht one_pos
-        simpa [Real.rpow_one] using this
-      exact hK.comp_sub_right x
-    have hintKx : Integrable (fun y : Space => heatKernel ν t (x - y)) :=
-      hintK.congr (Filter.Eventually.of_forall (fun y => by
-        simpa using (heatKernel_comm ν t x y).symm))
-    have hintKxB : Integrable (fun y : Space => heatKernel ν t (x - y) * B₀) := by
-      have h' := hintKx.const_mul B₀
-      refine h'.congr (Filter.Eventually.of_forall (fun y => ?_))
-      ring
-    have hmeas_u₀ : Measurable u₀ := by
-      have hcontOn : ContinuousOn (fun (z : ℝ × Space) => sol.velocity z.1 z.2) (spacetimeBefore T) :=
-        sol.velocity_smooth.continuousOn
-      have hcontOn_u₀ : ContinuousOn (fun (x : Space) => sol.velocity 0 x) Set.univ :=
-        hcontOn.comp (Continuous.prodMk continuous_const continuous_id).continuousOn (by
-          intro x hx
-          refine ⟨⟨le_rfl, by simpa using sol.terminalTime_pos⟩, Set.mem_univ x⟩)
-      have hcont_u₀ : Continuous (fun (x : Space) => sol.velocity 0 x) :=
-        (continuousOn_univ.1 hcontOn_u₀)
-      have hcont_u₀' : Continuous u₀ := by
-        rw [← sol.initial_condition]
-        exact hcont_u₀
-      exact hcont_u₀'.measurable
-    have hprod_int : Integrable (fun y : Space => heatKernel ν t (x - y) * ‖u₀ y‖) := by
-      have hmeas : AEStronglyMeasurable (fun y : Space => heatKernel ν t (x - y) * ‖u₀ y‖) volume :=
-        (((heatKernel_continuous ν t).measurable.comp (measurable_const.sub measurable_id)).mul
-          (measurable_norm.comp hmeas_u₀)).aestronglyMeasurable
-      have h_nonneg : ∀ᵐ y ∂ volume, 0 ≤ heatKernel ν t (x - y) * ‖u₀ y‖ :=
-        Filter.Eventually.of_forall (fun y => mul_nonneg (heatKernel_nonneg hν ht (x - y)) (norm_nonneg _))
-      have h_bound : ∀ᵐ y ∂ volume, heatKernel ν t (x - y) * ‖u₀ y‖ ≤ heatKernel ν t (x - y) * B₀ :=
-        Filter.Eventually.of_forall (fun y => mul_le_mul_of_nonneg_left (hu₀ y) (heatKernel_nonneg hν ht (x - y)))
-      exact hintKxB.mono_nonneg hmeas h_nonneg h_bound
-    calc
-      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖
-          ≤ ∫ y : Space, ‖heatKernel ν t (x - y) • u₀ y‖ :=
-        norm_integral_le_integral_norm _
-      _ = ∫ y : Space, heatKernel ν t (x - y) * ‖u₀ y‖ := by
-        refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
-        simp [norm_smul, abs_of_nonneg (heatKernel_nonneg hν ht (x - y))]
-      _ ≤ ∫ y : Space, heatKernel ν t (x - y) * B₀ :=
-        integral_mono hprod_int hintKxB (fun y =>
-          mul_le_mul_of_nonneg_left (hu₀ y) (heatKernel_nonneg hν ht (x - y)))
-      _ = (∫ y : Space, heatKernel ν t (x - y)) * B₀ := by rw [integral_mul_const]
-      _ = B₀ * ∫ y : Space, heatKernel ν t (x - y) := by rw [mul_comm]
-      _ = B₀ * 1 := by
-        rw [show (∫ y : Space, heatKernel ν t (x - y)) = 1 by
-          calc
-            ∫ y : Space, heatKernel ν t (x - y) = ∫ y : Space, heatKernel ν t (y - x) := by
-              refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
-              simpa using heatKernel_comm ν t x y
-            _ = ∫ y : Space, heatKernel ν t y := by rw [integral_sub_right_eq_self _ x]
-            _ = 1 := integral_heatKernel hν ht]
-      _ = B₀ := by ring
+      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
+    heatFlow_initialDatum_bounded hν sol hu₀
   -- GAP: The velocity is the heat flow of the initial data PLUS the Duhamel
   -- integral (the nonlinear correction).  The Duhamel formula,
   --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds,
@@ -987,10 +1043,12 @@ theorem constantinFefferman_layer_farField_bounded
     ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
       ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
   -- The same Duhamel gap as `prodiSerrin_layer_farField_bounded`, with the
-  -- uniform L² mass bracket replacing the per-slice L^p control.  What the
-  -- estate CAN prove is that the heat kernel convolution of the initial data
-  -- is bounded by B₀ (the same `hheat0` lemma used there), exactly as computed
-  -- in the Prodi–Serrin leaf above.
+  -- uniform L² mass bracket replacing the per-slice L^p control.  The linear
+  -- half is discharged by the shared theorem `heatFlow_initialDatum_bounded`:
+  obtain ⟨B₀, hu₀⟩ := hu₀
+  have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
+      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
+    heatFlow_initialDatum_bounded hν sol hu₀
   --
   -- The classical route uses the Kato mild-solution short-time L^∞ bound with
   -- the L² mass replacing the L^p slice control in the Duhamel estimate.  The
