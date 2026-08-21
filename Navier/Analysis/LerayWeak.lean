@@ -5707,7 +5707,20 @@ each of those finitely many `f_n` already vanishes near `T`.  Yet
 So dominated convergence in `t` is unavailable, and with it the `L¹(0,T)`
 route: extracting an a.e.-`t` subsequence from `StrongL2LocLimit` supplies the
 pointwise hypothesis that the fixed-time passage above discharges, but supplies
-no majorant.  This does **not** falsify the statement — under Bochner's
+no majorant.
+
+**The pointwise half is now certified (lane N3, 2026-08-21).**  That extraction
+is no longer a gap: `exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral`
+(Markov + Riesz) and `exists_subseq_ae_tendsto_l2loc_slices` (Cantor diagonal
+over the integer radius ladder, then all real radii by monotonicity) produce a
+single subsequence along which, for a.e. `t ∈ (0,T]`, the local `L²` error
+vanishes at **every** radius — exactly the `hloc` hypothesis of
+`tendsto_integral_weakPairingDensity_of_l2loc`, which previously had no
+producer.  Their measurability leaf
+`measurable_setIntegral_of_jointlyMeasurable_nonneg` is what makes the
+time-integrand measurable without an integrability hypothesis at negative
+times.  What remains of step (d) is therefore *only* the majorant, i.e. only
+the statement-level gap below — the analytic work in front of it is banked.  This does **not** falsify the statement — under Bochner's
 junk-value convention both sides can vanish on such a test — it closes off
 every domination-based route.  Closing the headline needs one of: (i) a
 uniform-in-time seminorm field on `DivergenceFreeTestFunction` (still a
