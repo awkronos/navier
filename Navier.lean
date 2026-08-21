@@ -137,6 +137,7 @@ import Navier.Analysis.LeiLinLinearEstimate
 import Navier.Analysis.ContinuousLeiLinSpace
 import Navier.Analysis.ContinuousLeiLinTimeDuhamel
 import Navier.Analysis.GlobalRegularityEndpoint
+import Navier.Analysis.CriticalControlDecomposition
 import Navier.Analysis.ZeroDataGlobal
 import Navier.Analysis.LeiLinBilinear
 import Navier.Analysis.LeiLinFixedPoint
