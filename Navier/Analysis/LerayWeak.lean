@@ -5493,6 +5493,95 @@ theorem exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral
   obtain ⟨ns, hns, hae⟩ := hTIM.exists_seq_tendsto_ae
   exact ⟨ns, hns, hae⟩
 
+/-- **Cantor diagonal over the radius ladder: `StrongL2LocLimit` upgrades to
+a.e.-fixed-time local `L²` convergence at *every* radius.**
+
+`StrongL2LocLimit` is a statement about the time-integrated error on each
+window; `tendsto_integral_weakPairingDensity_of_l2loc` consumes the error at a
+single time and at every radius simultaneously.  Radius by radius the previous
+theorem extracts an a.e.-convergent subsequence, `exists_diagonal_subseq`
+(already used for the window-Cauchy ladder) threads those extractions into one
+subsequence, and monotonicity of `R ↦ ∫_{B_R}` on a nonnegative integrand
+passes from the integer radii to all real radii.
+
+The bound hypothesis `hbd` is the uniform `L²` displacement bound the Galerkin
+energy estimate supplies (`≤ 4·G.bound`); it is what makes the time integrals
+genuine rather than Bochner junk values, so it cannot be dropped. -/
+theorem exists_subseq_ae_tendsto_l2loc_slices
+    (uSeq : ℕ → VelocityEvolution) (u : VelocityEvolution) (T C : ℝ)
+    (hmeas : JointlyMeasurable uSeq)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (hint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t → Integrable fun x : Space => ‖uSeq k t x‖ ^ 2)
+    (huint : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (hbd : ∀ (k : ℕ) (t : ℝ), 0 < t → (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2) ≤ C)
+    (hlim : StrongL2LocLimit uSeq u) :
+    ∃ ψ : ℕ → ℕ, StrictMono ψ ∧
+      ∀ᵐ t ∂(volume.restrict (Set.Ioc (0:ℝ) T)), ∀ R : ℝ,
+        Filter.Tendsto
+          (fun j => ∫ x in Metric.closedBall (0:Space) R, ‖uSeq (ψ j) t x - u t x‖ ^ 2)
+          Filter.atTop (nhds 0) := by
+  classical
+  set F : ℝ → ℕ → ℝ → ℝ := fun R k t =>
+    ∫ x in Metric.closedBall (0:Space) R, ‖uSeq k t x - u t x‖ ^ 2 with hFdef
+  have hdmeas : ∀ k, Measurable fun z : ℝ × Space => ‖uSeq k z.1 z.2 - u z.1 z.2‖ ^ 2 :=
+    fun k => (((hmeas k).sub humeas).norm.pow_const 2)
+  have hFm : ∀ (R : ℝ) (k : ℕ), Measurable (F R k) := fun R k =>
+    measurable_setIntegral_of_jointlyMeasurable_nonneg measurableSet_closedBall
+      (hdmeas k) (fun t x => by positivity)
+  have hFnn : ∀ (R : ℝ) (k : ℕ) (t : ℝ), 0 ≤ F R k t := fun R k t =>
+    integral_nonneg fun x => by positivity
+  have hdint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable fun x : Space => ‖uSeq k t x - u t x‖ ^ 2 := by
+    intro k t ht
+    exact integrable_norm_sub_sq (uSeq k t) (u t)
+      (((hmeas k).comp measurable_prodMk_left).sub (humeas.comp measurable_prodMk_left))
+      (hint k t ht) (huint t ht)
+  have hFle : ∀ (R : ℝ) (k : ℕ) (t : ℝ), t ∈ Set.Ioc (0:ℝ) T → F R k t ≤ C := by
+    intro R k t ht
+    refine le_trans ?_ (hbd k t ht.1)
+    exact setIntegral_le_integral (hdint k t ht.1.le)
+      (Filter.Eventually.of_forall fun x => by positivity)
+  have hFi : ∀ (R : ℝ) (k : ℕ), IntegrableOn (F R k) (Set.Ioc (0:ℝ) T) := by
+    intro R k
+    have hb : IntegrableOn (fun _ : ℝ => C) (Set.Ioc (0:ℝ) T) :=
+      integrableOn_const (hs := measure_Ioc_lt_top.ne)
+    refine hb.mono' (hFm R k).aestronglyMeasurable ?_
+    refine (ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (hFnn R k t)]
+    exact hFle R k t ht
+  set Q : ℕ → (ℕ → ℕ) → Prop := fun n τ =>
+    ∀ᵐ t ∂(volume.restrict (Set.Ioc (0:ℝ) T)),
+      Filter.Tendsto (fun j => F (n:ℝ) (τ j) t) Filter.atTop (nhds 0) with hQdef
+  have hsub : ∀ (n : ℕ) (τ ρ : ℕ → ℕ), Q n τ → StrictMono ρ → Q n (τ ∘ ρ) := by
+    intro n τ ρ hQn hρ
+    filter_upwards [hQn] with t ht
+    exact ht.comp hρ.tendsto_atTop
+  have htail : ∀ (n N : ℕ) (τ : ℕ → ℕ), Q n (fun k => τ (k + N)) → Q n τ := by
+    intro n N τ hQn
+    filter_upwards [hQn] with t ht
+    exact (Filter.tendsto_add_atTop_iff_nat N).mp ht
+  have hstep : ∀ (n : ℕ) (τ : ℕ → ℕ), StrictMono τ → ∃ ρ, StrictMono ρ ∧ Q n (τ ∘ ρ) := by
+    intro n τ hτ
+    have hgo : Filter.Tendsto (fun k => ∫ t in Set.Ioc (0:ℝ) T, F (n:ℝ) (τ k) t)
+        Filter.atTop (nhds 0) := (hlim T (n:ℝ)).comp hτ.tendsto_atTop
+    obtain ⟨ρ, hρ, hae⟩ :=
+      exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral (Set.Ioc (0:ℝ) T)
+        (fun k => F (n:ℝ) (τ k)) (fun k => hFm _ _) (fun k t => hFnn _ _ t)
+        (fun k => hFi _ _) hgo
+    exact ⟨ρ, hρ, hae⟩
+  obtain ⟨ψ, hψ, hQψ⟩ := exists_diagonal_subseq Q hsub htail hstep
+  refine ⟨ψ, hψ, ?_⟩
+  have hall : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0:ℝ) T)), ∀ n : ℕ,
+      Filter.Tendsto (fun j => F (n:ℝ) (ψ j) t) Filter.atTop (nhds 0) :=
+    ae_all_iff.mpr hQψ
+  filter_upwards [hall, ae_restrict_mem measurableSet_Ioc] with t ht htmem R
+  obtain ⟨n, hn⟩ := exists_nat_ge R
+  refine squeeze_zero (fun j => hFnn R (ψ j) t) (fun j => ?_) (ht n)
+  exact setIntegral_mono_set ((hdint (ψ j) t htmem.1.le).integrableOn)
+    (Filter.Eventually.of_forall fun x => by positivity)
+    (Metric.closedBall_subset_closedBall hn).eventuallyLE
+
 /-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once
 the limit weak-form identity is supplied for a compactness limit of the
 Galerkin sequence, `LerayLimitData` follows.  The energy clauses come from
