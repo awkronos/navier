@@ -71,6 +71,7 @@ import Navier.Analysis.FrequencyMildGlobal
 import Navier.Analysis.DissipativeODEGlobal
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.GalerkinBasis
+import Navier.Analysis.GalerkinModeData
 import Navier.Analysis.GalerkinHMinusOne
 import Navier.Analysis.DivFreeGradientEnstrophy
 import Navier.Analysis.LerayWeak
