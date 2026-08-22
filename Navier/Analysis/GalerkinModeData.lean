@@ -7,7 +7,7 @@ This file is the downstream home of the two declarations that cannot live in
 `Navier.Analysis.GalerkinBasis`:
 
 * `galerkinCoefficientFlow_timeEquicontinuous` — the Aubin–Lions time-regularity
-  residual for the coefficient flow.  Its whole mathematical content is
+  theorem for the coefficient flow.  Its whole mathematical content is
   certified upstream as
   `galerkinCoefficientFlow_timeEquicontinuous_of_convectionEstimate`; what it
   additionally needs is
@@ -41,8 +41,8 @@ open Navier.Analysis.LerayWeak
 open Navier.Analysis.OfficialABEncoding
 open Navier.Analysis.Vorticity
 
-/-- **[LEAF — Aubin–Lions time regularity for the Galerkin coefficient flow.]**
-A coefficient flow solving the projected Galerkin
+/-- **Aubin–Lions time regularity for the Galerkin coefficient flow
+(certified, no `sorry`).**  A coefficient flow solving the projected Galerkin
 ODE, with a uniform time-integrated enstrophy bound, is `L²`-in-time
 translation equicontinuous *uniformly in the mode count `m`*.
 
@@ -108,7 +108,10 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
     ∀ T ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ (m : ℕ) (h : ℝ), |h| < δ →
       (∫ t in Set.Ioc (0:ℝ) T,
         ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2) ≤ ε := by
-  sorry
+  obtain ⟨C, hC0, hC⟩ :=
+    Navier.Analysis.ConvectionLadyzhenskaya.abs_convectionOperator_inner_pow_four_le_enstrophy
+  exact galerkinCoefficientFlow_timeEquicontinuous_of_convectionEstimate W hν c hc
+    enstrophyBound henst hC0 (fun m a b => hC W m a b)
 
 /-- **Finite-mode Galerkin construction from the certified divergence-free
     basis (Temam III.3; Constantin--Foias II; Leray, Acta Math. 63 (1934) sections 18--20).**
