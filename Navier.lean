@@ -99,6 +99,7 @@ import Navier.Analysis.GramSchmidt
 import Navier.Breakdown.MaximalNonextension
 import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Analysis.PressurePoisson
+import Navier.Analysis.PressureNormalization
 import Navier.Breakdown.Restriction
 import Navier.Breakdown.ForceRecovery
 import Navier.Breakdown.OfficialCDEncoding

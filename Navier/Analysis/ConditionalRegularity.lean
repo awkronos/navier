@@ -926,17 +926,41 @@ Depends on: parabolic Moser/De Giorgi iteration, the Caccioppoli inequality
 for the local energy, and the Biot–Savart representation of the pressure —
 none currently in Mathlib.
 
-Frontier status (N4 sweep 2026-08-18): `ParabolicCaccioppoli` lands the
+Frontier status (N3 sweep 2026-08-21): `ParabolicCaccioppoli` lands the
 pointwise local energy identity `local_energy_balance` and the De
 Giorgi–Moser engine `deGiorgiMoser_tendsto_zero`, and former blocker (a)
 is now certified: `CutoffEnergyIbp.cutoffEnergy_ibp_eq` gives the cutoff
-IBP balance.  The integrated Caccioppoli inequality itself is still
-missing, blocked on (b) an `L^r` pressure bound for `∫ χ² ⟨∇p, u⟩` — no
-`MemLp`/`Integrable` estimate for `sol.pressure` exists in the estate.
-`CZNearField` certifies the pointwise Hörmander core; the transform's
-`L^r` bounds behind (b) stay a named residual in
-`SingularIntegralPrelims`, so the pressure representation is not yet
-available either. -/
+IBP balance.  Blocker (b) — "an `L^r` pressure bound for `∫ χ² ⟨∇p, u⟩`;
+no `MemLp`/`Integrable` estimate for `sol.pressure` exists in the estate"
+— has now been *analysed rather than merely restated*, in
+`Navier.Analysis.PressureNormalization`, and it splits in three:
+
+* **The raw-pressure form of (b) is FALSE as stated.**
+  `PressureNormalization.not_forall_memLp_pressure` refutes it with an
+  explicit witness (that theorem's own axiom audit is in its file):
+  `SatisfiesNavierStokesBefore` constrains the pressure only through
+  `pressureGradient`, so `PressureNormalization.shiftPressure` produces, from
+  any solution, another solution with the same velocity and pressure shifted
+  by an arbitrary constant; a nonzero constant lies in no `L^r(ℝ³)` for
+  `0 < r < ∞`.  There was never a `MemLp` estimate for `sol.pressure` to find.
+* **The `∇p` half of (b) is discharged, with no singular-integral input.**
+  `PressureNormalization.pressureGradient_eq_of_solution` solves the momentum
+  equation for `∇p = ν Δu + f − ∂ₜu − (u·∇)u`, and
+  `memLp_pressureGradient_of_terms` / `integrable_pressureGradient_of_terms`
+  transport `MemLp`/`Integrable` from the velocity terms to `∇p`.
+* **The remaining residual is well posed after normalization.**  The
+  derivative-free slot `2 ∫ p · χ (∇χ·u)` of
+  `CutoffEnergyIbp.cutoffEnergy_pressure_ibp` is gauge invariant
+  (`PressureNormalization.cutoffPressure_add_const`, via the vanishing cutoff
+  flux `integral_cutoff_flux_eq_zero` of a divergence-free field), and the
+  `L^r`-normalized pressure is unique
+  (`PressureNormalization.pressure_eq_of_memLp`).
+
+So (b) is now exactly: a local `L^r` bound on the *normalized* pressure,
+which still needs the Calderón–Zygmund representation `p = Σ RᵢRⱼ(uᵢuⱼ)`.
+`CZNearField` certifies the pointwise Hörmander core; the transform's `L^r`
+bounds stay a named residual in `SingularIntegralPrelims`, so the pressure
+representation is not yet available. -/
 theorem prodiSerrin_interior_outerRegion_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -964,14 +988,25 @@ theorem prodiSerrin_interior_outerRegion_bounded
   --   * `local_energy_balance` — the pointwise local energy identity
   --   * `deGiorgiMoser_tendsto_zero` — the De Giorgi–Moser engine
   --   * `CutoffEnergyIbp.cutoffEnergy_ibp_eq` — the cutoff IBP balance
-  -- The integrated Caccioppoli inequality itself is still missing, blocked on
-  -- an L^r pressure bound for ∫ χ² ⟨∇p, u⟩ (no `MemLp`/`Integrable` estimate
-  -- for `sol.pressure`).  `CZNearField` certifies the pointwise Hörmander
-  -- core, but the singular integral's L^r bounds behind the pressure estimate
-  -- stay a named residual in `SingularIntegralPrelims`.
+  -- The integrated Caccioppoli inequality itself is still missing.  Its
+  -- pressure blocker has been analysed in `PressureNormalization`:
+  --   * `not_forall_memLp_pressure` — the raw-pressure `MemLp` statement is
+  --     FALSE for every `0 < r < ∞`, witness `shiftPressure sol 1`; the
+  --     system constrains `p` only through `∇p`, so `p` is free up to an
+  --     additive constant and a nonzero constant is in no `L^r(ℝ³)`.
+  --   * `pressureGradient_eq_of_solution`, `memLp_pressureGradient_of_terms`
+  --     — the `∇p` half is available outright from the momentum equation,
+  --     with no singular-integral input.
+  --   * `cutoffPressure_add_const`, `pressure_eq_of_memLp` — the
+  --     derivative-free Caccioppoli slot is gauge invariant and the
+  --     `L^r`-normalized pressure is unique, so the residual is well posed.
+  -- What remains is a local `L^r` bound on the NORMALIZED pressure, i.e. the
+  -- Calderón–Zygmund representation `p = Σ RᵢRⱼ(uᵢuⱼ)`.  `CZNearField`
+  -- certifies the pointwise Hörmander core, but the singular integral's L^r
+  -- bounds stay a named residual in `SingularIntegralPrelims`.
   --
-  -- Without the pressure estimate, the De Giorgi–Moser engine cannot produce
-  -- the `L^∞_t L^∞_x` bound that the outer-region conclusion requires.
+  -- Without that bound, the De Giorgi–Moser engine cannot produce the
+  -- `L^∞_t L^∞_x` bound that the outer-region conclusion requires.
   sorry
 
 /-- **Prodi–Serrin interior bound.**  Away from the initial time, the critical
