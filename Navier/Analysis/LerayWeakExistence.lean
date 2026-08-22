@@ -1,4 +1,4 @@
-import Navier.Analysis.GalerkinBasis
+import Navier.Analysis.GalerkinModeData
 
 /-!
 # Leray–Hopf weak existence: the assembled headline, downstream of the basis

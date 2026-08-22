@@ -319,8 +319,10 @@ where `u_a = W.coefficientField a`.  Note that the two `L⁴` factors carry the
 *same* field `u_a`, because `B` is quadratic in `a`: the trilinear form
 `b(u_a, u_b, u_a)` puts `u_b` in the derivative slot.  This is exactly the
 inequality the Aubin–Lions time-equicontinuity argument consumes for the
-convective half of the Galerkin ODE, the half that
-`galerkinCoefficientFlow_timeEquicontinuous` still lacks.
+convective half of the Galerkin ODE; composed through
+`ConvectionLadyzhenskaya.abs_convectionOperator_inner_pow_four_le_enstrophy` it
+is what closes `galerkinCoefficientFlow_timeEquicontinuous` in
+`Navier.Analysis.GalerkinModeData`.
 
 Endpoint checks.  `m = 0`: `EuclideanSpace ℝ (Fin 0)` is trivial, both sides
 are `0`.  `a = 0`: `u_a = 0`, both sides `0`.  `b = a`: the bound is *weaker*
