@@ -2466,6 +2466,447 @@ theorem coefficientFlow_norm_sq_le_of_enstrophyBound (W : GalerkinBasisFamily)
     _ ≤ 2 * ν * enstrophyBound :=
         coefficientFlow_initial_norm_sq_le_of_enstrophyBound W hν c hc enstrophyBound henst m
 
+/-- **Young's inequality at exponent `2`.**  `√y ≤ θ y + 1/(4θ)` for `y ≥ 0`
+and `θ > 0`; the slack is `(1/(4θ))(2θ√y − 1)² ≥ 0`.  Equality at
+`y = 1/(4θ²)`, so the constant is sharp. -/
+theorem sqrt_le_mul_add_inv (θ y : ℝ) (hθ : 0 < θ) (hy : 0 ≤ y) :
+    Real.sqrt y ≤ θ * y + 1 / (4 * θ) := by
+  obtain ⟨e, hnn, he⟩ : ∃ e : ℝ, 0 ≤ e ∧ e ^ 2 = y :=
+    ⟨Real.sqrt y, Real.sqrt_nonneg y, Real.sq_sqrt hy⟩
+  have hs : Real.sqrt y = e := by rw [← he, Real.sqrt_sq hnn]
+  rw [hs, ← he]
+  have hid : θ * e ^ 2 + 1 / (4 * θ) - e = (2 * θ * e - 1) ^ 2 / (4 * θ) := by
+    field_simp
+    ring
+  have hpos : (0:ℝ) ≤ (2 * θ * e - 1) ^ 2 / (4 * θ) := by positivity
+  linarith
+
+/-- **Young's inequality at exponent `4`.**  If `d ≥ 0`, `y ≥ 0` and
+`d⁴ ≤ K y³` with `K ≥ 0`, then `d ≤ θ y + K/(4θ³)` for every `θ > 0`.
+
+This is the device that keeps the Aubin–Lions assembly free of fractional
+powers: the convective estimate is available only in its fourth-power form, and
+this converts it into a bound that is *linear* in the enstrophy density, which
+is exactly the quantity the budget `henst` controls.  Sending `θ → 0` recovers
+the sharp `d ≤ K^{1/4} y^{3/4}` in the limit. -/
+theorem quartic_root_le_mul_add {K θ d y : ℝ} (hK : 0 ≤ K) (hθ : 0 < θ)
+    (hy : 0 ≤ y) (hd : 0 ≤ d) (hd4 : d ^ 4 ≤ K * y ^ 3) :
+    d ≤ θ * y + K / (4 * θ ^ 3) := by
+  have hC0 : 0 ≤ K / (4 * θ ^ 3) := by positivity
+  have hb : 0 ≤ θ * y := by positivity
+  -- `(a + C)⁴ ≥ 4a³C` for `a, C ≥ 0`, and `4(θy)³C = K y³`
+  have hexp : 4 * (θ * y) ^ 3 * (K / (4 * θ ^ 3)) = K * y ^ 3 := by
+    field_simp
+  have hpow : d ^ 4 ≤ (θ * y + K / (4 * θ ^ 3)) ^ 4 := by
+    nlinarith [hd4, hexp, sq_nonneg (θ * y), sq_nonneg (K / (4 * θ ^ 3)),
+      mul_nonneg hb hC0, sq_nonneg (θ * y + K / (4 * θ ^ 3)),
+      mul_nonneg (mul_nonneg hb hb) hC0,
+      mul_nonneg (mul_nonneg hb hC0) hC0, mul_nonneg (mul_nonneg hC0 hC0) hC0]
+  exact le_of_pow_le_pow_left₀ (by norm_num) (by positivity) hpow
+
+/-- **`√Ω` obeys the triangle inequality.**  The modal enstrophy is the
+quadratic form of the positive semidefinite Stokes operator, so its square root
+is a seminorm; the polarization uses `stokesOperator_symm` and the certified
+Cauchy–Schwarz `abs_stokesOperator_inner_le`. -/
+theorem sqrt_coefficientEnstrophy_sub_le (W : GalerkinBasisFamily) (m : ℕ)
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    Real.sqrt (W.coefficientEnstrophy (a - b)) ≤
+      Real.sqrt (W.coefficientEnstrophy a) + Real.sqrt (W.coefficientEnstrophy b) := by
+  have hna : 0 ≤ W.coefficientEnstrophy a := integral_nonneg fun x => by positivity
+  have hnb : 0 ≤ W.coefficientEnstrophy b := integral_nonneg fun x => by positivity
+  have hpolar : W.coefficientEnstrophy (a - b) =
+      W.coefficientEnstrophy a - 2 * (inner ℝ (W.stokesOperator m a) b : ℝ)
+        + W.coefficientEnstrophy b := by
+    have h1 : (inner ℝ (W.stokesOperator m (a - b)) (a - b) : ℝ) =
+        W.coefficientEnstrophy (a - b) := stokesOperator_inner_eq_enstrophy W m (a - b)
+    have h2 : (inner ℝ (W.stokesOperator m a) a : ℝ) = W.coefficientEnstrophy a :=
+      stokesOperator_inner_eq_enstrophy W m a
+    have h3 : (inner ℝ (W.stokesOperator m b) b : ℝ) = W.coefficientEnstrophy b :=
+      stokesOperator_inner_eq_enstrophy W m b
+    have h4 : (inner ℝ (W.stokesOperator m b) a : ℝ) =
+        (inner ℝ (W.stokesOperator m a) b : ℝ) := stokesOperator_symm W m b a
+    rw [← h1, ← h2, ← h3, map_sub, inner_sub_left, inner_sub_right, inner_sub_right, h4]
+    ring
+  have hcs : |(inner ℝ (W.stokesOperator m a) b : ℝ)| ≤
+      Real.sqrt (W.coefficientEnstrophy a) * Real.sqrt (W.coefficientEnstrophy b) :=
+    abs_stokesOperator_inner_le W m a b
+  have hkey : W.coefficientEnstrophy (a - b) ≤
+      (Real.sqrt (W.coefficientEnstrophy a) + Real.sqrt (W.coefficientEnstrophy b)) ^ 2 := by
+    have hsa : Real.sqrt (W.coefficientEnstrophy a) ^ 2 = W.coefficientEnstrophy a :=
+      Real.sq_sqrt hna
+    have hsb : Real.sqrt (W.coefficientEnstrophy b) ^ 2 = W.coefficientEnstrophy b :=
+      Real.sq_sqrt hnb
+    have := abs_le.mp hcs
+    rw [hpolar]
+    nlinarith [this.1, this.2, hsa, hsb]
+  calc Real.sqrt (W.coefficientEnstrophy (a - b))
+      ≤ Real.sqrt ((Real.sqrt (W.coefficientEnstrophy a)
+          + Real.sqrt (W.coefficientEnstrophy b)) ^ 2) := Real.sqrt_le_sqrt hkey
+    _ = Real.sqrt (W.coefficientEnstrophy a) + Real.sqrt (W.coefficientEnstrophy b) :=
+        Real.sqrt_sq (by positivity)
+
+/-- **The displacement identity for the projected flow.**  Pairing the Galerkin
+ODE with the fixed vector `c(p) − c(q)` and integrating on the interval between
+`q` and `p` gives
+
+  `‖c(p) − c(q)‖² = ∫_q^p ⟨c'(s), c(p) − c(q)⟩ ds`.
+
+This is the identity that starts every Aubin–Lions time-regularity argument
+[Simon, Ann. Mat. Pura Appl. 146 (1987) 65–96; Temam III §3].  The right
+derivative on `Ioo` suffices, which is what the forward-in-time
+`HasDerivWithinAt … (Set.Ici 0)` hypothesis supplies. -/
+theorem coefficientFlow_displacement_identity (W : GalerkinBasisFamily) {ν : ℝ}
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
+    ‖c m p - c m q‖ ^ 2 =
+      ∫ s in q..p, (inner ℝ
+        (-(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s))
+        (c m p - c m q) : ℝ) := by
+  set w : EuclideanSpace ℝ (Fin m) := c m p - c m q with hw
+  set F : ℝ → EuclideanSpace ℝ (Fin m) := fun s =>
+    -(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s) with hF
+  -- the ordered case, proved once and used in both orders
+  have hordered : ∀ x y : ℝ, 0 ≤ x → x ≤ y →
+      (∫ s in x..y, (inner ℝ (F s) w : ℝ)) =
+        (inner ℝ (c m y) w : ℝ) - (inner ℝ (c m x) w : ℝ) := by
+    intro x y hx hxy
+    have hy : 0 ≤ y := le_trans hx hxy
+    have hderiv : ∀ z ∈ Set.Ioo x y,
+        HasDerivWithinAt (fun s => (inner ℝ (c m s) w : ℝ))
+          ((inner ℝ (F z) w : ℝ)) (Set.Ioi z) z := by
+      intro z hz
+      have hz0 : 0 ≤ z := le_trans hx hz.1.le
+      have hd : HasDerivWithinAt (c m) (F z) (Set.Ioi z) z :=
+        (hc m z hz0).mono (fun r hr => le_trans hz0 (le_of_lt hr))
+      have hconstd : HasDerivWithinAt (fun _ : ℝ => w) (0 : EuclideanSpace ℝ (Fin m))
+        (Set.Ioi z) z := hasDerivWithinAt_const _ _ _
+      have h := hd.inner ℝ hconstd
+      simpa using h
+    have hcontOn : ContinuousOn (fun s => (inner ℝ (c m s) w : ℝ)) (Set.Icc x y) := by
+      intro s hs
+      have hs0 : 0 ≤ s := le_trans hx hs.1
+      exact (((hc m s hs0).continuousWithinAt).mono
+        (fun r hr => le_trans hx hr.1)).inner continuousWithinAt_const
+    have hcontF : ContinuousOn (fun s => (inner ℝ (F s) w : ℝ)) (Set.Icc x y) := by
+      intro s hs
+      have hs0 : 0 ≤ s := le_trans hx hs.1
+      have hcm : ContinuousWithinAt (c m) (Set.Icc x y) s :=
+        ((hc m s hs0).continuousWithinAt).mono (fun r hr => le_trans hx hr.1)
+      have hA : ContinuousWithinAt (fun r => W.stokesOperator m (c m r)) (Set.Icc x y) s :=
+        (W.stokesOperator m).continuous.continuousAt.comp_continuousWithinAt hcm
+      have hB : ContinuousWithinAt (fun r => W.convectionOperator m (c m r))
+          (Set.Icc x y) s :=
+        ((convectionOperator_contDiff W m).continuous).continuousAt.comp_continuousWithinAt hcm
+      exact ((hA.const_smul ν).neg.add hB).inner continuousWithinAt_const
+    have hint : IntervalIntegrable (fun s => (inner ℝ (F s) w : ℝ)) volume x y := by
+      apply ContinuousOn.intervalIntegrable
+      rwa [Set.uIcc_of_le hxy]
+    exact (intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le hxy hcontOn hderiv hint)
+  rcases le_total q p with hqp | hpq
+  · rw [hordered q p hq hqp]
+    rw [← real_inner_self_eq_norm_sq]
+    rw [hw, inner_sub_left]
+  · rw [intervalIntegral.integral_symm, hordered p q hp hpq]
+    rw [← real_inner_self_eq_norm_sq]
+    rw [hw, inner_sub_left]
+    ring
+
+/-- **The pointwise convective bound in enstrophy-linear form.**  Combining the
+fourth-power convective estimate with the uniform energy bound and Young at
+exponent `4`, the convection pairing against a fixed vector `b` is bounded by a
+quantity *linear* in the enstrophy density of `a` — which is exactly what the
+time-integrated enstrophy budget controls. -/
+theorem abs_convectionOperator_inner_le_linear (W : GalerkinBasisFamily) {m : ℕ}
+    {K θ : ℝ} (hK : 0 ≤ K) (hθ : 0 < θ)
+    (a b : EuclideanSpace ℝ (Fin m))
+    (hbound : |(inner ℝ (W.convectionOperator m a) b : ℝ)| ^ 4 ≤
+      K * W.coefficientEnstrophy a ^ 3 * W.coefficientEnstrophy b ^ 2) :
+    |(inner ℝ (W.convectionOperator m a) b : ℝ)| ≤
+      (θ * W.coefficientEnstrophy a + K / (4 * θ ^ 3)) *
+        Real.sqrt (W.coefficientEnstrophy b) := by
+  set Y : ℝ := W.coefficientEnstrophy a with hY
+  set Z : ℝ := W.coefficientEnstrophy b with hZ
+  have hYn : 0 ≤ Y := integral_nonneg fun x => by positivity
+  have hZn : 0 ≤ Z := integral_nonneg fun x => by positivity
+  set X : ℝ := |(inner ℝ (W.convectionOperator m a) b : ℝ)| with hX
+  have hXn : 0 ≤ X := abs_nonneg _
+  set D : ℝ := Real.sqrt (Real.sqrt (K * Y ^ 3)) with hD
+  have hDn : 0 ≤ D := Real.sqrt_nonneg _
+  have hu : 0 ≤ K * Y ^ 3 := by positivity
+  have hD4 : D ^ 4 = K * Y ^ 3 := by
+    have h1 : Real.sqrt (K * Y ^ 3) ^ 2 = K * Y ^ 3 := Real.sq_sqrt hu
+    have h2 : D ^ 2 = Real.sqrt (K * Y ^ 3) := Real.sq_sqrt (Real.sqrt_nonneg _)
+    calc D ^ 4 = (D ^ 2) ^ 2 := by ring
+      _ = Real.sqrt (K * Y ^ 3) ^ 2 := by rw [h2]
+      _ = K * Y ^ 3 := h1
+  have hsq4 : Real.sqrt Z ^ 4 = Z ^ 2 := by
+    have h1 : Real.sqrt Z ^ 2 = Z := Real.sq_sqrt hZn
+    calc Real.sqrt Z ^ 4 = (Real.sqrt Z ^ 2) ^ 2 := by ring
+      _ = Z ^ 2 := by rw [h1]
+  -- `X ≤ D · √Z` from the fourth powers
+  have hXD : X ≤ D * Real.sqrt Z := by
+    refine le_of_pow_le_pow_left₀ (n := 4) (by norm_num) (by positivity) ?_
+    calc X ^ 4 ≤ K * Y ^ 3 * Z ^ 2 := hbound
+      _ = (D * Real.sqrt Z) ^ 4 := by rw [mul_pow, hD4, hsq4]
+  -- Young at exponent `4` linearizes `D`
+  have hDY : D ≤ θ * Y + K / (4 * θ ^ 3) :=
+    quartic_root_le_mul_add hK hθ hYn hDn (le_of_eq hD4)
+  calc X ≤ D * Real.sqrt Z := hXD
+    _ ≤ (θ * Y + K / (4 * θ ^ 3)) * Real.sqrt Z :=
+        mul_le_mul_of_nonneg_right hDY (Real.sqrt_nonneg _)
+
+/-- **The projected ODE vector field, paired against a fixed vector, is
+bounded linearly in the enstrophy density.**
+
+`|⟨c'(s), b⟩| ≤ ((ν+1)θ·Ω(c(s)) + ν/(4θ) + K/(4θ³))·√Ω(b)`, with
+`K = C·2νE`.
+
+Both halves are linearized by Young so that the `s`-dependence enters only
+through `Ω(c(s))` — the one quantity the time-integrated budget `henst`
+controls.  The viscous half uses the Stokes Cauchy–Schwarz
+`abs_stokesOperator_inner_le` and `sqrt_le_mul_add_inv`; the convective half
+uses `abs_convectionOperator_inner_le_linear`, whose energy factor is supplied
+uniformly in `m` by `coefficientFlow_norm_sq_le_of_enstrophyBound`. -/
+theorem abs_projectedVectorField_inner_le (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (enstrophyBound : ℝ)
+    (henst : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound)
+    {Cconv : ℝ} (hCconv : 0 ≤ Cconv)
+    (hconv : ∀ (m : ℕ) (a b : EuclideanSpace ℝ (Fin m)),
+      |(inner ℝ (W.convectionOperator m a) b : ℝ)| ^ 4 ≤
+        Cconv * ‖a‖ ^ 2 * W.coefficientEnstrophy a ^ 3 * W.coefficientEnstrophy b ^ 2)
+    {θ : ℝ} (hθ : 0 < θ) (m : ℕ) {s : ℝ} (hs : 0 ≤ s)
+    (b : EuclideanSpace ℝ (Fin m)) :
+    |(inner ℝ (-(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s)) b : ℝ)|
+      ≤ ((ν + 1) * θ * W.coefficientEnstrophy (c m s)
+          + (ν / (4 * θ) + Cconv * (2 * ν * enstrophyBound) / (4 * θ ^ 3)))
+        * Real.sqrt (W.coefficientEnstrophy b) := by
+  have hE0 : 0 ≤ enstrophyBound := by simpa using henst m 0 le_rfl
+  set K : ℝ := Cconv * (2 * ν * enstrophyBound) with hK
+  have hKn : 0 ≤ K := by positivity
+  set sqZ : ℝ := Real.sqrt (W.coefficientEnstrophy b) with hsqZ
+  have hsqZn : 0 ≤ sqZ := Real.sqrt_nonneg _
+  have hYn : 0 ≤ W.coefficientEnstrophy (c m s) := integral_nonneg fun x => by positivity
+  -- viscous half
+  have hvisc : |(inner ℝ (-(ν • W.stokesOperator m (c m s))) b : ℝ)|
+      ≤ ν * (θ * W.coefficientEnstrophy (c m s) + 1 / (4 * θ)) * sqZ := by
+    have h1 : |(inner ℝ (-(ν • W.stokesOperator m (c m s))) b : ℝ)|
+        = ν * |(inner ℝ (W.stokesOperator m (c m s)) b : ℝ)| := by
+      rw [inner_neg_left, inner_smul_left]
+      simp [abs_mul, abs_of_pos hν]
+    have h2 := abs_stokesOperator_inner_le W m (c m s) b
+    have h3 : Real.sqrt (W.coefficientEnstrophy (c m s))
+        ≤ θ * W.coefficientEnstrophy (c m s) + 1 / (4 * θ) :=
+      sqrt_le_mul_add_inv θ _ hθ hYn
+    rw [h1]
+    refine (mul_le_mul_of_nonneg_left h2 hν.le).trans ?_
+    rw [mul_assoc]
+    exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right h3 hsqZn) hν.le
+  -- convective half
+  have hconvpt : |(inner ℝ (W.convectionOperator m (c m s)) b : ℝ)|
+      ≤ (θ * W.coefficientEnstrophy (c m s) + K / (4 * θ ^ 3)) * sqZ := by
+    refine abs_convectionOperator_inner_le_linear W hKn hθ (c m s) b ?_
+    have hen : ‖c m s‖ ^ 2 ≤ 2 * ν * enstrophyBound :=
+      coefficientFlow_norm_sq_le_of_enstrophyBound W hν c hc enstrophyBound henst m hs
+    have h0 := hconv m (c m s) b
+    have hZ2 : 0 ≤ W.coefficientEnstrophy b ^ 2 := by positivity
+    have hY3 : 0 ≤ W.coefficientEnstrophy (c m s) ^ 3 := by positivity
+    calc |(inner ℝ (W.convectionOperator m (c m s)) b : ℝ)| ^ 4
+        ≤ Cconv * ‖c m s‖ ^ 2 * W.coefficientEnstrophy (c m s) ^ 3
+            * W.coefficientEnstrophy b ^ 2 := h0
+      _ ≤ K * W.coefficientEnstrophy (c m s) ^ 3 * W.coefficientEnstrophy b ^ 2 := by
+          rw [hK]
+          have : Cconv * ‖c m s‖ ^ 2 ≤ Cconv * (2 * ν * enstrophyBound) :=
+            mul_le_mul_of_nonneg_left hen hCconv
+          nlinarith [this, hY3, hZ2, mul_nonneg hY3 hZ2]
+  have hsplit : (inner ℝ
+      (-(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s)) b : ℝ) =
+      (inner ℝ (-(ν • W.stokesOperator m (c m s))) b : ℝ)
+        + (inner ℝ (W.convectionOperator m (c m s)) b : ℝ) := inner_add_left _ _ _
+  calc |(inner ℝ
+        (-(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s)) b : ℝ)|
+      ≤ |(inner ℝ (-(ν • W.stokesOperator m (c m s))) b : ℝ)|
+          + |(inner ℝ (W.convectionOperator m (c m s)) b : ℝ)| := by
+        rw [hsplit]; exact abs_add_le _ _
+    _ ≤ ν * (θ * W.coefficientEnstrophy (c m s) + 1 / (4 * θ)) * sqZ
+          + (θ * W.coefficientEnstrophy (c m s) + K / (4 * θ ^ 3)) * sqZ :=
+        add_le_add hvisc hconvpt
+    _ = ((ν + 1) * θ * W.coefficientEnstrophy (c m s)
+          + (ν / (4 * θ) + K / (4 * θ ^ 3))) * sqZ := by ring
+
+/-- **The Aubin–Lions pointwise displacement estimate.**
+
+For any two nonnegative times `p, q`,
+
+  `‖c(p) − c(q)‖² ≤ Φ(θ, |p−q|) · (√Ω(c(p)) + √Ω(c(q)))`,
+  `Φ(θ, ℓ) = (ν+1)θE + (ν/(4θ) + K/(4θ³))·ℓ`,  `K = C·2νE`,
+
+with every constant uniform in `m` and in `W`.  Pair the ODE with the
+displacement (`coefficientFlow_displacement_identity`), bound the viscous half
+by the Stokes Cauchy–Schwarz and the convective half by
+`abs_convectionOperator_inner_le_linear`, both linearized in the enstrophy
+density by Young, and integrate: the enstrophy budget `henst` absorbs the
+linear part uniformly and the remainder carries the factor `|p−q|`.
+
+The two-parameter shape is what makes the *uniform in `m`* conclusion
+possible: `θ` is chosen first, against `E` alone, and only then is `|p−q|`
+made small. -/
+theorem coefficientFlow_displacement_sq_le (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (enstrophyBound : ℝ)
+    (henst : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound)
+    {Cconv : ℝ} (hCconv : 0 ≤ Cconv)
+    (hconv : ∀ (m : ℕ) (a b : EuclideanSpace ℝ (Fin m)),
+      |(inner ℝ (W.convectionOperator m a) b : ℝ)| ^ 4 ≤
+        Cconv * ‖a‖ ^ 2 * W.coefficientEnstrophy a ^ 3 * W.coefficientEnstrophy b ^ 2)
+    {θ : ℝ} (hθ : 0 < θ) (m : ℕ) {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
+    ‖c m p - c m q‖ ^ 2 ≤
+      ((ν + 1) * θ * enstrophyBound
+        + (ν / (4 * θ)
+            + Cconv * (2 * ν * enstrophyBound) / (4 * θ ^ 3)) * |p - q|)
+      * (Real.sqrt (W.coefficientEnstrophy (c m p))
+          + Real.sqrt (W.coefficientEnstrophy (c m q))) := by
+  classical
+  have hE0 : 0 ≤ enstrophyBound := by simpa using henst m 0 le_rfl
+  set w : EuclideanSpace ℝ (Fin m) := c m p - c m q with hw
+  set F : ℝ → EuclideanSpace ℝ (Fin m) := fun s =>
+    -(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s) with hF
+  set K : ℝ := Cconv * (2 * ν * enstrophyBound) with hK
+  have hKn : 0 ≤ K := by positivity
+  set A : ℝ := (ν + 1) * θ with hA
+  set B : ℝ := ν / (4 * θ) + K / (4 * θ ^ 3) with hB
+  have hAn : 0 ≤ A := by positivity
+  have hBn : 0 ≤ B := by positivity
+  set Z : ℝ := W.coefficientEnstrophy w with hZ
+  have hZn : 0 ≤ Z := integral_nonneg fun x => by positivity
+  set sqZ : ℝ := Real.sqrt Z with hsqZ
+  have hsqZn : 0 ≤ sqZ := Real.sqrt_nonneg _
+  -- (1) the pointwise integrand bound, linear in the enstrophy density
+  have hpt : ∀ s : ℝ, 0 ≤ s →
+      |(inner ℝ (F s) w : ℝ)| ≤ (A * W.coefficientEnstrophy (c m s) + B) * sqZ := by
+    intro s hs
+    have h := abs_projectedVectorField_inner_le W hν c hc enstrophyBound henst
+      hCconv hconv hθ m hs w
+    rw [hF, hA, hB, hK, hsqZ, hZ]
+    exact h
+  -- (2) integrate over the interval between `q` and `p`
+  have hmin : (0:ℝ) ≤ min q p := le_min hq hp
+  have huIoc : Set.uIoc q p = Set.Ioc (min q p) (max q p) := rfl
+  have hsubIci : Set.Icc (min q p) (max q p) ⊆ Set.Ici (0:ℝ) :=
+    fun s hs => le_trans hmin hs.1
+  have hOmcontOn : ContinuousOn (fun s => W.coefficientEnstrophy (c m s))
+      (Set.Icc (min q p) (max q p)) :=
+    (coefficientFlow_enstrophy_continuousOn W c hc m).mono hsubIci
+  have hFwcont : ContinuousOn (fun s => (inner ℝ (F s) w : ℝ))
+      (Set.Icc (min q p) (max q p)) := by
+    intro s hs
+    have hs0 : 0 ≤ s := le_trans hmin hs.1
+    have hcm : ContinuousWithinAt (c m) (Set.Icc (min q p) (max q p)) s :=
+      ((hc m s hs0).continuousWithinAt).mono hsubIci
+    have hA' : ContinuousWithinAt (fun r => W.stokesOperator m (c m r))
+        (Set.Icc (min q p) (max q p)) s :=
+      (W.stokesOperator m).continuous.continuousAt.comp_continuousWithinAt hcm
+    have hB' : ContinuousWithinAt (fun r => W.convectionOperator m (c m r))
+        (Set.Icc (min q p) (max q p)) s :=
+      ((convectionOperator_contDiff W m).continuous).continuousAt.comp_continuousWithinAt hcm
+    exact ((hA'.const_smul ν).neg.add hB').inner continuousWithinAt_const
+  have hIntFw : IntegrableOn (fun s => |(inner ℝ (F s) w : ℝ)|) (Set.uIoc q p) := by
+    rw [huIoc]
+    exact ((hFwcont.abs).integrableOn_Icc).mono_set Set.Ioc_subset_Icc_self
+  have hIntOm : IntegrableOn (fun s => W.coefficientEnstrophy (c m s)) (Set.uIoc q p) := by
+    rw [huIoc]
+    exact (hOmcontOn.integrableOn_Icc).mono_set Set.Ioc_subset_Icc_self
+  have hIntMaj : IntegrableOn
+      (fun s => (A * W.coefficientEnstrophy (c m s) + B) * sqZ) (Set.uIoc q p) := by
+    have : (fun s => (A * W.coefficientEnstrophy (c m s) + B) * sqZ)
+        = fun s => (A * sqZ) * W.coefficientEnstrophy (c m s) + B * sqZ := by
+      funext s; ring
+    rw [this]
+    refine (hIntOm.const_mul _).add ?_
+    rw [huIoc]
+    exact ((continuousOn_const (s := Set.Icc (min q p) (max q p))
+      (c := B * sqZ)).integrableOn_Icc).mono_set Set.Ioc_subset_Icc_self
+  have hvol : (volume (Set.uIoc q p)).toReal = |p - q| := by
+    rw [Real.volume_uIoc, ENNReal.toReal_ofReal (abs_nonneg _)]
+  -- the displacement identity, then absolute values, then the majorant
+  have hid := coefficientFlow_displacement_identity W c hc m hp hq
+  have habs : ‖w‖ ^ 2 ≤ ∫ s in Set.uIoc q p, |(inner ℝ (F s) w : ℝ)| := by
+    have h0 : ‖w‖ ^ 2 = ∫ s in q..p, (inner ℝ (F s) w : ℝ) := hid
+    have h1 := intervalIntegral.norm_integral_le_integral_norm_uIoc
+      (f := fun s => (inner ℝ (F s) w : ℝ)) (a := q) (b := p) (μ := volume)
+    simp only [Real.norm_eq_abs] at h1
+    calc ‖w‖ ^ 2 = |‖w‖ ^ 2| := (abs_of_nonneg (by positivity)).symm
+      _ = |∫ s in q..p, (inner ℝ (F s) w : ℝ)| := by rw [h0]
+      _ ≤ ∫ s in Set.uIoc q p, |(inner ℝ (F s) w : ℝ)| := h1
+  have hmaj : (∫ s in Set.uIoc q p, |(inner ℝ (F s) w : ℝ)|)
+      ≤ ∫ s in Set.uIoc q p, (A * W.coefficientEnstrophy (c m s) + B) * sqZ :=
+    setIntegral_mono_on hIntFw hIntMaj measurableSet_uIoc
+      (fun s hs => hpt s (by rw [huIoc] at hs; exact le_trans hmin hs.1.le))
+  have hcomp : (∫ s in Set.uIoc q p, (A * W.coefficientEnstrophy (c m s) + B) * sqZ)
+      = (A * (∫ s in Set.uIoc q p, W.coefficientEnstrophy (c m s)) + B * |p - q|) * sqZ := by
+    have hrw : (fun s => (A * W.coefficientEnstrophy (c m s) + B) * sqZ)
+        = fun s => (A * sqZ) * W.coefficientEnstrophy (c m s) + B * sqZ := by
+      funext s; ring
+    have hIntC : IntegrableOn (fun _ : ℝ => B * sqZ) (Set.uIoc q p) := by
+      rw [huIoc]
+      exact ((continuousOn_const (s := Set.Icc (min q p) (max q p))
+        (c := B * sqZ)).integrableOn_Icc).mono_set Set.Ioc_subset_Icc_self
+    rw [hrw, integral_add (hIntOm.const_mul _) hIntC,
+      integral_const_mul, setIntegral_const, smul_eq_mul, measureReal_def, hvol]
+    ring
+  have hbudget : (∫ s in Set.uIoc q p, W.coefficientEnstrophy (c m s)) ≤ enstrophyBound := by
+    have hmax : (0:ℝ) ≤ max q p := le_trans hmin (min_le_max)
+    have hIntBig : IntegrableOn (fun s => W.coefficientEnstrophy (c m s))
+        (Set.Ioc (0:ℝ) (max q p)) :=
+      (((coefficientFlow_enstrophy_continuousOn W c hc m).mono
+        (Set.Icc_subset_Ici_self)).integrableOn_Icc).mono_set Set.Ioc_subset_Icc_self
+    have hsub : Set.uIoc q p ⊆ Set.Ioc (0:ℝ) (max q p) := by
+      rw [huIoc]
+      exact Set.Ioc_subset_Ioc_left hmin
+    calc (∫ s in Set.uIoc q p, W.coefficientEnstrophy (c m s))
+        ≤ ∫ s in Set.Ioc (0:ℝ) (max q p), W.coefficientEnstrophy (c m s) :=
+          setIntegral_mono_set hIntBig
+            (Filter.Eventually.of_forall fun s => integral_nonneg fun x => by positivity)
+            (HasSubset.Subset.eventuallyLE hsub)
+      _ ≤ enstrophyBound := henst m _ hmax
+  -- (3) assemble
+  have hPhi : (0:ℝ) ≤ A * enstrophyBound + B * |p - q| := by positivity
+  have hchain : ‖w‖ ^ 2 ≤ (A * enstrophyBound + B * |p - q|) * sqZ := by
+    refine le_trans (le_trans habs hmaj) ?_
+    rw [hcomp]
+    exact mul_le_mul_of_nonneg_right
+      (by nlinarith [hbudget, hAn]) hsqZn
+  have htri : sqZ ≤ Real.sqrt (W.coefficientEnstrophy (c m p))
+      + Real.sqrt (W.coefficientEnstrophy (c m q)) := by
+    rw [hsqZ, hZ, hw]
+    exact sqrt_coefficientEnstrophy_sub_le W m (c m p) (c m q)
+  calc ‖c m p - c m q‖ ^ 2 = ‖w‖ ^ 2 := by rw [hw]
+    _ ≤ (A * enstrophyBound + B * |p - q|) * sqZ := hchain
+    _ ≤ (A * enstrophyBound + B * |p - q|) *
+        (Real.sqrt (W.coefficientEnstrophy (c m p))
+          + Real.sqrt (W.coefficientEnstrophy (c m q))) :=
+        mul_le_mul_of_nonneg_left htri hPhi
+    _ = ((ν + 1) * θ * enstrophyBound
+          + (ν / (4 * θ) + Cconv * (2 * ν * enstrophyBound) / (4 * θ ^ 3)) * |p - q|)
+        * (Real.sqrt (W.coefficientEnstrophy (c m p))
+            + Real.sqrt (W.coefficientEnstrophy (c m q))) := by rw [hA, hB, hK]
+
 /-- **[LEAF — Aubin–Lions time regularity for the Galerkin coefficient flow;
 est ~450 LOC.]**  A coefficient flow solving the projected Galerkin ODE, with a
 uniform time-integrated enstrophy bound, is `L²`-in-time translation
