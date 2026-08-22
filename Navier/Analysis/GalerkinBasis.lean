@@ -2907,6 +2907,335 @@ theorem coefficientFlow_displacement_sq_le (W : GalerkinBasisFamily)
         * (Real.sqrt (W.coefficientEnstrophy (c m p))
             + Real.sqrt (W.coefficientEnstrophy (c m q))) := by rw [hA, hB, hK]
 
+/-- `√x ≤ x + 1` for `x ≥ 0`; the slack is `(√x − 1)² ≥ 0` plus `√x ≥ 0`. -/
+theorem sqrt_le_add_one (x : ℝ) (hx : 0 ≤ x) : Real.sqrt x ≤ x + 1 := by
+  have he : Real.sqrt x ^ 2 = x := Real.sq_sqrt hx
+  have hnn : 0 ≤ Real.sqrt x := Real.sqrt_nonneg x
+  nlinarith [sq_nonneg (Real.sqrt x - 1), he, hnn]
+
+/-- **The time-integrated displacement bound on a forward window.**
+
+On any window `[a, T]` with `0 ≤ a` and `0 ≤ a + h` — so that both `t` and
+`t + h` stay in the forward half-line — the displacement integral obeys
+
+  `∫_a^T ‖c(t+h) − c(t)‖² dt ≤ Φ(θ, |h|) · (2E + 2T)`,
+
+with `Φ(θ, ℓ) = (ν+1)θE + (ν/(4θ) + K/(4θ³))ℓ` and every constant uniform in
+`m` and `W`.  The outer factor is bounded by `√Ω ≤ Ω + 1` together with the
+budget, once on the window and once on its translate by `h`. -/
+theorem coefficientFlow_shifted_displacement_integral_le (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (enstrophyBound : ℝ)
+    (henst : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound)
+    {Cconv : ℝ} (hCconv : 0 ≤ Cconv)
+    (hconv : ∀ (m : ℕ) (a b : EuclideanSpace ℝ (Fin m)),
+      |(inner ℝ (W.convectionOperator m a) b : ℝ)| ^ 4 ≤
+        Cconv * ‖a‖ ^ 2 * W.coefficientEnstrophy a ^ 3 * W.coefficientEnstrophy b ^ 2)
+    {θ : ℝ} (hθ : 0 < θ) (m : ℕ)
+    {a T h : ℝ} (ha : 0 ≤ a) (haT : a ≤ T) (hah : 0 ≤ a + h) :
+    (∫ t in a..T, ‖c m (t + h) - c m t‖ ^ 2) ≤
+      ((ν + 1) * θ * enstrophyBound
+        + (ν / (4 * θ)
+            + Cconv * (2 * ν * enstrophyBound) / (4 * θ ^ 3)) * |h|)
+      * (2 * enstrophyBound + 2 * T) := by
+  classical
+  have hE0 : 0 ≤ enstrophyBound := by simpa using henst m 0 le_rfl
+  have hT0 : 0 ≤ T := le_trans ha haT
+  have hTh : 0 ≤ T + h := by linarith
+  set Φ : ℝ := (ν + 1) * θ * enstrophyBound
+      + (ν / (4 * θ) + Cconv * (2 * ν * enstrophyBound) / (4 * θ ^ 3)) * |h| with hΦ
+  have hΦn : 0 ≤ Φ := by rw [hΦ]; positivity
+  have hOm : ∀ s : ℝ, 0 ≤ W.coefficientEnstrophy (c m s) :=
+    fun s => integral_nonneg fun x => by positivity
+  have hOmcont := coefficientFlow_enstrophy_continuousOn W c hc m
+  -- continuity of the pieces on `[a, T]` and on its translate
+  have hcOn : ContinuousOn (c m) (Set.Ici (0:ℝ)) := fun s hs => (hc m s hs).continuousWithinAt
+  have hsubIci : Set.Icc a T ⊆ Set.Ici (0:ℝ) := fun r hr => le_trans ha hr.1
+  have hmaps : Set.MapsTo (fun r : ℝ => r + h) (Set.Icc a T) (Set.Ici (0:ℝ)) := by
+    intro r hr
+    simp only [Set.mem_Ici]
+    have h1 := hr.1
+    linarith
+  have hshiftC : ContinuousOn (fun r : ℝ => c m (r + h)) (Set.Icc a T) :=
+    hcOn.comp (continuous_id.add continuous_const).continuousOn hmaps
+  have hbaseC : ContinuousOn (c m) (Set.Icc a T) := hcOn.mono hsubIci
+  have hdispCont : ContinuousOn (fun t => ‖c m (t + h) - c m t‖ ^ 2) (Set.Icc a T) :=
+    ((hshiftC.sub hbaseC).norm).pow 2
+  have hOmShiftC : ContinuousOn (fun r : ℝ => W.coefficientEnstrophy (c m (r + h)))
+      (Set.Icc a T) :=
+    hOmcont.comp (continuous_id.add continuous_const).continuousOn hmaps
+  have hOmBaseC : ContinuousOn (fun r => W.coefficientEnstrophy (c m r)) (Set.Icc a T) :=
+    hOmcont.mono hsubIci
+  have hsqrtShiftCont : ContinuousOn
+      (fun t => Real.sqrt (W.coefficientEnstrophy (c m (t + h)))
+        + Real.sqrt (W.coefficientEnstrophy (c m t))) (Set.Icc a T) :=
+    (Real.continuous_sqrt.comp_continuousOn hOmShiftC).add
+      (Real.continuous_sqrt.comp_continuousOn hOmBaseC)
+  have hint1 : IntervalIntegrable (fun t => ‖c m (t + h) - c m t‖ ^ 2) volume a T := by
+    apply ContinuousOn.intervalIntegrable; rwa [Set.uIcc_of_le haT]
+  have hint2 : IntervalIntegrable
+      (fun t => Φ * (Real.sqrt (W.coefficientEnstrophy (c m (t + h)))
+        + Real.sqrt (W.coefficientEnstrophy (c m t)))) volume a T := by
+    apply ContinuousOn.intervalIntegrable
+    rw [Set.uIcc_of_le haT]
+    exact continuousOn_const.mul hsqrtShiftCont
+  -- (1) the pointwise displacement estimate on the window
+  have hstep1 : (∫ t in a..T, ‖c m (t + h) - c m t‖ ^ 2)
+      ≤ ∫ t in a..T, Φ * (Real.sqrt (W.coefficientEnstrophy (c m (t + h)))
+          + Real.sqrt (W.coefficientEnstrophy (c m t))) := by
+    refine intervalIntegral.integral_mono_on haT hint1 hint2 ?_
+    intro t ht
+    have ht0 : (0:ℝ) ≤ t := le_trans ha ht.1
+    have hth : (0:ℝ) ≤ t + h := by
+      have : a + h ≤ t + h := by linarith [ht.1]
+      linarith
+    have hbase := coefficientFlow_displacement_sq_le W hν c hc enstrophyBound henst
+      hCconv hconv hθ m hth ht0
+    have habs : |t + h - t| = |h| := by ring_nf
+    rw [habs] at hbase
+    exact hbase
+  -- (2) the outer factor: `√Ω ≤ Ω + 1`, twice, against the budget
+  have hbudgetBase : (∫ t in a..T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound := by
+    rw [intervalIntegral.integral_of_le haT]
+    calc (∫ t in Set.Ioc a T, W.coefficientEnstrophy (c m t))
+        ≤ ∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t) := by
+          refine setIntegral_mono_set ?_ (Filter.Eventually.of_forall fun s => hOm s)
+            (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc_left ha))
+          exact (((hOmcont.mono Set.Icc_subset_Ici_self).integrableOn_Icc).mono_set
+            Set.Ioc_subset_Icc_self)
+      _ ≤ enstrophyBound := henst m T hT0
+  have hbudgetShift : (∫ t in a..T, W.coefficientEnstrophy (c m (t + h))) ≤ enstrophyBound := by
+    rw [intervalIntegral.integral_comp_add_right
+      (f := fun s => W.coefficientEnstrophy (c m s)) h,
+      intervalIntegral.integral_of_le (by linarith : a + h ≤ T + h)]
+    calc (∫ t in Set.Ioc (a + h) (T + h), W.coefficientEnstrophy (c m t))
+        ≤ ∫ t in Set.Ioc (0:ℝ) (T + h), W.coefficientEnstrophy (c m t) := by
+          refine setIntegral_mono_set ?_ (Filter.Eventually.of_forall fun s => hOm s)
+            (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc_left hah))
+          exact (((hOmcont.mono Set.Icc_subset_Ici_self).integrableOn_Icc).mono_set
+            Set.Ioc_subset_Icc_self)
+      _ ≤ enstrophyBound := henst m (T + h) hTh
+  -- (3) `√x ≤ x + 1`, then linearity
+  have hiA : IntervalIntegrable (fun t => W.coefficientEnstrophy (c m (t + h))) volume a T := by
+    apply ContinuousOn.intervalIntegrable; rwa [Set.uIcc_of_le haT]
+  have hiB : IntervalIntegrable (fun t => W.coefficientEnstrophy (c m t)) volume a T := by
+    apply ContinuousOn.intervalIntegrable; rwa [Set.uIcc_of_le haT]
+  have hint3 : IntervalIntegrable
+      (fun t => Φ * ((W.coefficientEnstrophy (c m (t + h)) + 1)
+        + (W.coefficientEnstrophy (c m t) + 1))) volume a T :=
+    (((hiA.add (intervalIntegrable_const (c := (1:ℝ)))).add
+      (hiB.add (intervalIntegrable_const (c := (1:ℝ)))))).const_mul Φ
+  have hstep2 : (∫ t in a..T, Φ * (Real.sqrt (W.coefficientEnstrophy (c m (t + h)))
+          + Real.sqrt (W.coefficientEnstrophy (c m t))))
+      ≤ ∫ t in a..T, Φ * ((W.coefficientEnstrophy (c m (t + h)) + 1)
+          + (W.coefficientEnstrophy (c m t) + 1)) := by
+    refine intervalIntegral.integral_mono_on haT hint2 hint3 ?_
+    intro t _
+    refine mul_le_mul_of_nonneg_left (add_le_add ?_ ?_) hΦn
+    · exact sqrt_le_add_one _ (hOm _)
+    · exact sqrt_le_add_one _ (hOm _)
+  have hval : (∫ t in a..T, Φ * ((W.coefficientEnstrophy (c m (t + h)) + 1)
+        + (W.coefficientEnstrophy (c m t) + 1)))
+      = Φ * (∫ t in a..T, W.coefficientEnstrophy (c m (t + h)))
+        + Φ * (∫ t in a..T, W.coefficientEnstrophy (c m t)) + 2 * Φ * (T - a) := by
+    rw [show (fun t => Φ * ((W.coefficientEnstrophy (c m (t + h)) + 1)
+          + (W.coefficientEnstrophy (c m t) + 1)))
+        = fun t => (Φ * W.coefficientEnstrophy (c m (t + h))
+            + Φ * W.coefficientEnstrophy (c m t)) + 2 * Φ from by funext t; ring]
+    rw [intervalIntegral.integral_add ((hiA.const_mul Φ).add (hiB.const_mul Φ))
+        (intervalIntegrable_const),
+      intervalIntegral.integral_add (hiA.const_mul Φ) (hiB.const_mul Φ),
+      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul,
+      intervalIntegral.integral_const, smul_eq_mul]
+    ring
+  have hfinal : Φ * (∫ t in a..T, W.coefficientEnstrophy (c m (t + h)))
+      + Φ * (∫ t in a..T, W.coefficientEnstrophy (c m t)) + 2 * Φ * (T - a)
+      ≤ Φ * (2 * enstrophyBound + 2 * T) := by
+    have h1 : Φ * (∫ t in a..T, W.coefficientEnstrophy (c m (t + h)))
+        ≤ Φ * enstrophyBound := mul_le_mul_of_nonneg_left hbudgetShift hΦn
+    have h2 : Φ * (∫ t in a..T, W.coefficientEnstrophy (c m t))
+        ≤ Φ * enstrophyBound := mul_le_mul_of_nonneg_left hbudgetBase hΦn
+    have h3 : 2 * Φ * (T - a) ≤ 2 * Φ * T := by nlinarith [hΦn, ha]
+    nlinarith [h1, h2, h3]
+  calc (∫ t in a..T, ‖c m (t + h) - c m t‖ ^ 2)
+      ≤ ∫ t in a..T, Φ * (Real.sqrt (W.coefficientEnstrophy (c m (t + h)))
+          + Real.sqrt (W.coefficientEnstrophy (c m t))) := hstep1
+    _ ≤ ∫ t in a..T, Φ * ((W.coefficientEnstrophy (c m (t + h)) + 1)
+          + (W.coefficientEnstrophy (c m t) + 1)) := hstep2
+    _ = Φ * (∫ t in a..T, W.coefficientEnstrophy (c m (t + h)))
+        + Φ * (∫ t in a..T, W.coefficientEnstrophy (c m t)) + 2 * Φ * (T - a) := hval
+    _ ≤ Φ * (2 * enstrophyBound + 2 * T) := hfinal
+
+/-- **Aubin–Lions time equicontinuity for the Galerkin coefficient flow, given
+the convective estimate.**
+
+This is `galerkinCoefficientFlow_timeEquicontinuous` with the convective
+estimate carried as an explicit hypothesis, because
+`ConvectionLadyzhenskaya` — where that estimate is certified — is strictly
+downstream of this file.
+
+`∃ δ` stands *outside* `∀ m`, which is the whole content: `θ` is chosen first
+against the enstrophy budget `E` and the horizon `T` alone, and only then is
+`δ` chosen, so no constant anywhere in the argument depends on the mode count.
+
+Negative `h` is genuinely different and is handled by a split: on
+`t ≤ |h|` the clamp `forwardExtend` pins `t + h` to `0`, the enstrophy at time
+`0` is *not* uniformly bounded in `m`, and the fine estimate is unavailable —
+so that sliver is absorbed by the crude bound `‖c(p) − c(q)‖² ≤ 4·2νE`, which
+costs `O(|h|)` and is uniform in `m` precisely because of
+`coefficientFlow_norm_sq_le_of_enstrophyBound`. -/
+theorem galerkinCoefficientFlow_timeEquicontinuous_of_convectionEstimate
+    (W : GalerkinBasisFamily) {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (enstrophyBound : ℝ)
+    (henst : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound)
+    {Cconv : ℝ} (hCconv : 0 ≤ Cconv)
+    (hconv : ∀ (m : ℕ) (a b : EuclideanSpace ℝ (Fin m)),
+      |(inner ℝ (W.convectionOperator m a) b : ℝ)| ^ 4 ≤
+        Cconv * ‖a‖ ^ 2 * W.coefficientEnstrophy a ^ 3 * W.coefficientEnstrophy b ^ 2) :
+    ∀ T ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ (m : ℕ) (h : ℝ), |h| < δ →
+      (∫ t in Set.Ioc (0:ℝ) T,
+        ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2) ≤ ε := by
+  classical
+  intro T ε hε
+  have hE0 : 0 ≤ enstrophyBound := by simpa using henst 0 0 le_rfl
+  rcases le_or_gt T 0 with hT | hT
+  · refine ⟨1, one_pos, fun m h _ => ?_⟩
+    rw [show Set.Ioc (0:ℝ) T = ∅ from Set.Ioc_eq_empty (by linarith)]
+    simpa using hε.le
+  -- the constants, chosen in the order that makes them independent of `m`
+  set M2 : ℝ := 2 * ν * enstrophyBound with hM2
+  have hM2n : 0 ≤ M2 := by rw [hM2]; positivity
+  set G : ℝ := 2 * enstrophyBound + 2 * T with hG
+  have hGpos : 0 < G := by rw [hG]; linarith
+  set θ : ℝ := ε / (2 * G * ((ν + 1) * enstrophyBound + 1)) with hθdef
+  have hden : 0 < 2 * G * ((ν + 1) * enstrophyBound + 1) := by positivity
+  have hθ : 0 < θ := by rw [hθdef]; positivity
+  set Bc : ℝ := ν / (4 * θ) + Cconv * M2 / (4 * θ ^ 3) with hBc
+  have hBcn : 0 ≤ Bc := by rw [hBc]; positivity
+  set δ : ℝ := min 1 (ε / (2 * (Bc * G + 4 * M2 + 1))) with hδdef
+  have hδpos : 0 < δ := by
+    rw [hδdef]
+    exact lt_min one_pos (by positivity)
+  -- the `θ`-half of the budget
+  have hθhalf : (ν + 1) * θ * enstrophyBound * G ≤ ε / 2 := by
+    have hθD : θ * (2 * G * ((ν + 1) * enstrophyBound + 1)) = ε := by
+      rw [hθdef]; field_simp
+    nlinarith [hθD, mul_nonneg hGpos.le hθ.le]
+  refine ⟨δ, hδpos, fun m h hh => ?_⟩
+  have hhabs : (0:ℝ) ≤ |h| := abs_nonneg h
+  have hh1 : |h| < 1 := lt_of_lt_of_le hh (by rw [hδdef]; exact min_le_left _ _)
+  have hT0 : (0:ℝ) ≤ T := hT.le
+  -- the uniform energy ceiling, and the crude displacement bound it yields
+  have hnormsq : ∀ s : ℝ, ‖forwardExtend (c m) s‖ ^ 2 ≤ M2 := by
+    intro s
+    have := coefficientFlow_norm_sq_le_of_enstrophyBound W hν c hc enstrophyBound henst m
+      (t := max s 0) (le_max_right s 0)
+    simpa [forwardExtend, hM2] using this
+  have hcrude : ∀ s r : ℝ,
+      ‖forwardExtend (c m) s - forwardExtend (c m) r‖ ^ 2 ≤ 4 * M2 := by
+    intro s r
+    have h1 := hnormsq s
+    have h2 := hnormsq r
+    have htri := norm_sub_le (forwardExtend (c m) s) (forwardExtend (c m) r)
+    have hsq : ‖forwardExtend (c m) s - forwardExtend (c m) r‖ ^ 2
+        ≤ (‖forwardExtend (c m) s‖ + ‖forwardExtend (c m) r‖) ^ 2 :=
+      pow_le_pow_left₀ (norm_nonneg _) htri 2
+    nlinarith [hsq, h1, h2,
+      sq_nonneg (‖forwardExtend (c m) s‖ - ‖forwardExtend (c m) r‖)]
+  -- continuity of the forward extension
+  have hcOn : ContinuousOn (c m) (Set.Ici (0:ℝ)) := fun s hs => (hc m s hs).continuousWithinAt
+  have hfe : Continuous (fun t : ℝ => forwardExtend (c m) t) := by
+    have : Continuous (fun t : ℝ => max t 0) := continuous_id.max continuous_const
+    exact hcOn.comp_continuous this (fun t => le_max_right t 0)
+  have hdisp : Continuous
+      (fun t : ℝ => ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2) :=
+    (((hfe.comp (continuous_id.add continuous_const)).sub hfe).norm).pow 2
+  -- the split point
+  set a : ℝ := max 0 (min T (-h)) with hadef
+  have ha0 : (0:ℝ) ≤ a := le_max_left _ _
+  have haT : a ≤ T := max_le hT0 (min_le_left _ _)
+  have hah : a ≤ |h| := max_le hhabs (le_trans (min_le_right _ _) (neg_le_abs h))
+  have hint0a : IntervalIntegrable
+      (fun t : ℝ => ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2)
+      volume 0 a := hdisp.intervalIntegrable _ _
+  have hintaT : IntervalIntegrable
+      (fun t : ℝ => ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2)
+      volume a T := hdisp.intervalIntegrable _ _
+  -- region 1: the clamped sliver, absorbed crudely
+  have hreg1 : (∫ t in (0:ℝ)..a,
+      ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2) ≤ 4 * M2 * |h| := by
+    calc (∫ t in (0:ℝ)..a, ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2)
+        ≤ ∫ _t in (0:ℝ)..a, 4 * M2 :=
+          intervalIntegral.integral_mono_on ha0 hint0a intervalIntegrable_const
+            (fun t _ => hcrude _ _)
+      _ = 4 * M2 * a := by rw [intervalIntegral.integral_const, smul_eq_mul]; ring
+      _ ≤ 4 * M2 * |h| := by nlinarith [hM2n, hah]
+  -- region 2: the fine estimate, where the clamp is inactive
+  have hreg2 : (∫ t in a..T,
+      ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2)
+      ≤ ((ν + 1) * θ * enstrophyBound + Bc * |h|) * G := by
+    have hnn : 0 ≤ ((ν + 1) * θ * enstrophyBound + Bc * |h|) * G := by positivity
+    rcases eq_or_lt_of_le haT with heq | hlt
+    · rw [← heq, intervalIntegral.integral_same]; exact hnn
+    · -- on `a < T` the clamp is inactive: `0 ≤ a + h`
+      have hahn : (0:ℝ) ≤ a + h := by
+        rcases le_or_gt (-h) 0 with hh0 | hh0
+        · have hmin : min T (-h) ≤ 0 := le_trans (min_le_right _ _) hh0
+          have : a = 0 := by rw [hadef, max_eq_left hmin]
+          rw [this]; linarith
+        · rcases le_or_gt T (-h) with hTh | hTh
+          · exfalso
+            have : a = T := by rw [hadef, min_eq_left hTh, max_eq_right hT0]
+            linarith
+          · have : a = -h := by
+              rw [hadef, min_eq_right hTh.le, max_eq_right hh0.le]
+            rw [this]; linarith
+      have hcongr : (∫ t in a..T,
+          ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2)
+          = ∫ t in a..T, ‖c m (t + h) - c m t‖ ^ 2 := by
+        refine intervalIntegral.integral_congr ?_
+        intro t ht
+        rw [Set.uIcc_of_le haT] at ht
+        have ht0 : (0:ℝ) ≤ t := le_trans ha0 ht.1
+        have hth : (0:ℝ) ≤ t + h := by linarith [ht.1]
+        simp only [forwardExtend, max_eq_left ht0, max_eq_left hth]
+      rw [hcongr]
+      have := coefficientFlow_shifted_displacement_integral_le W hν c hc enstrophyBound
+        henst hCconv hconv hθ m ha0 haT hahn
+      calc (∫ t in a..T, ‖c m (t + h) - c m t‖ ^ 2)
+          ≤ ((ν + 1) * θ * enstrophyBound
+              + (ν / (4 * θ) + Cconv * (2 * ν * enstrophyBound) / (4 * θ ^ 3)) * |h|)
+            * (2 * enstrophyBound + 2 * T) := this
+        _ = ((ν + 1) * θ * enstrophyBound + Bc * |h|) * G := by rw [hBc, hG, hM2]
+  -- the `δ`-half of the budget
+  have hδhalf : 4 * M2 * |h| + Bc * |h| * G ≤ ε / 2 := by
+    set q : ℝ := ε / (2 * (Bc * G + 4 * M2 + 1)) with hq
+    have hqn : 0 ≤ q := by rw [hq]; positivity
+    have hqD : q * (2 * (Bc * G + 4 * M2 + 1)) = ε := by
+      rw [hq]; field_simp
+    have hd2 : |h| ≤ q :=
+      le_of_lt (lt_of_lt_of_le hh (by rw [hδdef]; exact min_le_right _ _))
+    have hSn : 0 ≤ 4 * M2 + Bc * G := by positivity
+    have hkey : (4 * M2 + Bc * G) * |h| ≤ (4 * M2 + Bc * G) * q :=
+      mul_le_mul_of_nonneg_left hd2 hSn
+    nlinarith [hkey, hqD, hqn]
+  -- assemble
+  rw [← intervalIntegral.integral_of_le hT0,
+    ← intervalIntegral.integral_add_adjacent_intervals hint0a hintaT]
+  nlinarith [hreg1, hreg2, hθhalf, hδhalf, hGpos.le, hBcn, hhabs]
+
 /-- **[LEAF — Aubin–Lions time regularity for the Galerkin coefficient flow;
 est ~450 LOC.]**  A coefficient flow solving the projected Galerkin ODE, with a
 uniform time-integrated enstrophy bound, is `L²`-in-time translation
