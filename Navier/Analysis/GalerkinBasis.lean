@@ -109,11 +109,41 @@ This file lays that layer over the repo's own objects:
   `LerayWeak → SchwartzL2Pairing → GalerkinRawFamily → GalerkinBasis` and the
   instantiation is two lines.
 
+## The Stokes bilinear form (certified, no sorry)
+
+* `stokesOperator_inner_eq_curlPairing` — the **polarized** Stokes form
+  `⟨A a, b⟩ = ⟨curl u_a, curl u_b⟩_{L²}`, strictly generalizing
+  `stokesOperator_inner_eq_enstrophy` (its `b = a` diagonal) off the diagonal.
+* `stokesOperator_symm` — self-adjointness, an immediate corollary.
+* `abs_stokesOperator_inner_le` — **Cauchy–Schwarz for the Stokes form**,
+  `|⟨A a, b⟩| ≤ √(enstrophy a)·√(enstrophy b)`, sharp (equality at `b = a`).
+  This is the estimate that converts the *time-integrated* enstrophy bound into
+  control of the viscous term in the Galerkin time-displacement identity.
+
+## Time equicontinuity: spatial half certified, coefficient half named
+
+* `timeEquicontinuous_of_coefficientDisplacement` (certified, no sorry) —
+  `TimeEquicontinuous (W.modalApprox c)` follows from the *coefficient-level*
+  translation bound alone.  The route is `modalApprox_timeDisplacement_le` (the
+  modal `L²` isometry composed with `‖·‖∞² ≤ ‖·‖₂²`, constant `1`) plus
+  continuity of the forward-extended coefficient curve, and it transports the
+  `δ` verbatim, so uniformity in the mode count `m` is preserved.
+* `galerkinCoefficientFlow_timeEquicontinuous` — the resulting **named residual**
+  (honest `sorry`, truth-checked signature).  Its conclusion mentions only
+  `ℝ^m`-valued curves: no Schwartz field, no spatial integral, no basis
+  property.  The `∃ δ` stands outside `∀ m` (the strong, compactness-bearing
+  form; the `∀ m, ∃ δ` weakening is content-free and is what would re-falsify
+  `aubin_lions_l2loc_compactness`).  The viscous half of its classical proof is
+  now fully stocked (`abs_stokesOperator_inner_le` + the enstrophy bound); the
+  open part is the convective term, which needs a Ladyzhenskaya/`L⁴`
+  interpolation bound on `convectionOperator` that the estate does not have.
+
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
 `finiteDim_dissipative_ode_global` + `galerkin_apriori_bound` +
-`EnergyDissipation.dissipation_integral_le_forward`, all BANKED), and the
-time-equicontinuity/weak-consistency bookkeeping.
+`EnergyDissipation.dissipation_integral_le_forward`, all BANKED), the
+coefficient-level time-regularity leaf above, and the weak-consistency
+bookkeeping.
 -/
 
 set_option autoImplicit false
@@ -1933,6 +1963,79 @@ theorem stokesOperator_nonneg (W : GalerkinBasisFamily) (m : ℕ)
   rw [stokesOperator_inner_eq_enstrophy]
   exact integral_nonneg fun x => by positivity
 
+/-- **The polarized Stokes form is the curl `L²` pairing (certified, no
+`sorry`).**  The strict generalization of `stokesOperator_inner_eq_enstrophy`
+off the diagonal: pairing `A a` with an arbitrary second coefficient vector `b`
+is the physical `⟨∇u_a, ∇u_b⟩_{L²}` term, realized here as the curl pairing
+(the two agree on divergence-free fields, which every basis mode is).
+
+Restricting to `b = a` recovers `stokesOperator_inner_eq_enstrophy` exactly, so
+this is not a weakening; it is the bilinear form of which the enstrophy is the
+quadratic diagonal.  It is what turns Stokes positivity into a genuine
+Cauchy–Schwarz estimate (`abs_stokesOperator_inner_le` below), which is the
+form the Aubin–Lions time-regularity argument consumes. -/
+theorem stokesOperator_inner_eq_curlPairing (W : GalerkinBasisFamily) (m : ℕ)
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    inner ℝ (W.stokesOperator m a) b =
+      schwartzL2Inner (curlSchwartzCLM (W.coefficientField b))
+        (curlSchwartzCLM (W.coefficientField a)) := by
+  rw [PiLp.inner_apply]
+  have hfield : curlSchwartzCLM (W.coefficientField b) =
+      ∑ i : Fin m, b i • curlSchwartzCLM (W.w i) := by
+    rw [show W.coefficientField b = ∑ i : Fin m, b i • W.w i from rfl, map_sum]
+    exact Finset.sum_congr rfl (fun i _ => by rw [map_smul])
+  simp only [stokesOperator_apply, RCLike.inner_apply, conj_trivial]
+  change (∑ i : Fin m, b i *
+      schwartzL2Inner (curlSchwartzCLM (W.w i))
+        (curlSchwartzCLM (W.coefficientField a))) = _
+  rw [hfield, schwartzL2Inner_finset_sum_left]
+  exact Finset.sum_congr rfl (fun i _ => (schwartzL2Inner_smul_left _ _ _).symm)
+
+/-- **Self-adjointness of the finite-mode Stokes operator (certified, no
+`sorry`).**  Immediate from `stokesOperator_inner_eq_curlPairing` and symmetry
+of the `L²` pairing: both sides are the same curl pairing read in the two
+orders. -/
+theorem stokesOperator_symm (W : GalerkinBasisFamily) (m : ℕ)
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    inner ℝ (W.stokesOperator m a) b = inner ℝ (W.stokesOperator m b) a := by
+  rw [stokesOperator_inner_eq_curlPairing, stokesOperator_inner_eq_curlPairing,
+    schwartzL2Inner_comm]
+
+/-- **Cauchy–Schwarz for the Stokes form (certified, no `sorry`).**
+
+`|⟨A a, b⟩| ≤ √(enstrophy a) · √(enstrophy b)`.
+
+The Stokes form is positive semidefinite (`stokesOperator_nonneg`) with
+quadratic diagonal `coefficientEnstrophy` (`stokesOperator_inner_eq_enstrophy`),
+so it obeys Cauchy–Schwarz; the proof routes through the certified pairing
+Cauchy–Schwarz `abs_schwartzL2Inner_le` on the curl fields rather than
+re-deriving it.  Equality holds at `b = a`, so the constant `1` is not inflated
+and the bound is sharp.
+
+This is the estimate that converts the *time-integrated* enstrophy bound
+`UniformEnstrophyBound` into control of the viscous term `⟨A c(s), c(t+h) −
+c(t)⟩` in the Galerkin time-displacement identity — the linear half of the
+Aubin–Lions time-regularity obligation
+`galerkinCoefficientFlow_timeEquicontinuous`. -/
+theorem abs_stokesOperator_inner_le (W : GalerkinBasisFamily) (m : ℕ)
+    (a b : EuclideanSpace ℝ (Fin m)) :
+    |inner ℝ (W.stokesOperator m a) b| ≤
+      Real.sqrt (W.coefficientEnstrophy a) * Real.sqrt (W.coefficientEnstrophy b) := by
+  rw [stokesOperator_inner_eq_curlPairing]
+  have hcs := abs_schwartzL2Inner_le (curlSchwartzCLM (W.coefficientField b))
+    (curlSchwartzCLM (W.coefficientField a))
+  have ha : ‖toL2 (curlSchwartzCLM (W.coefficientField a))‖ =
+      Real.sqrt (W.coefficientEnstrophy a) := by
+    rw [coefficientEnstrophy_eq_curlSchwartz, ← norm_toL2_sq]
+    exact (Real.sqrt_sq (norm_nonneg _)).symm
+  have hb : ‖toL2 (curlSchwartzCLM (W.coefficientField b))‖ =
+      Real.sqrt (W.coefficientEnstrophy b) := by
+    rw [coefficientEnstrophy_eq_curlSchwartz, ← norm_toL2_sq]
+    exact (Real.sqrt_sq (norm_nonneg _)).symm
+  rw [ha, hb] at hcs
+  rw [mul_comm]
+  exact hcs
+
 /-- At every time, the modal flow is the Schwartz field represented by the
 forward-extended coefficient vector. -/
 theorem modalApprox_eq_coefficientField_forwardExtend (W : GalerkinBasisFamily)
@@ -1978,6 +2081,103 @@ theorem modalApprox_timeDisplacement_le (W : GalerkinBasisFamily)
       integral_norm_sq_le_integral_officialInner_self (W.coefficientField (a - b))
     _ = ‖a - b‖ ^ 2 := coefficientField_l2_isometry W (a - b)
     _ = ‖forwardExtend (c m) s - forwardExtend (c m) t‖ ^ 2 := rfl
+
+/-- **Time equicontinuity descends from the coefficient flow (certified, no
+`sorry`).**  The whole spatial half of `TimeEquicontinuous` for a modal
+Galerkin family is discharged here: `modalApprox_timeDisplacement_le` (the
+modal `L²` isometry followed by `‖·‖∞² ≤ ‖·‖₂²`) bounds the physical
+space–time translation error by the finite-dimensional Euclidean coefficient
+translation error at the *same* constant `1`, and continuity of the
+forward-extended coefficient curve makes the majorant integrable on
+`Ioc 0 T`, so `integral_mono_of_nonneg` applies.
+
+The `δ` produced is the `δ` of `hcoef` verbatim, so the uniformity in `m` — the
+load-bearing part of `TimeEquicontinuous`, and the whole reason the
+`u_m = sin(m t)·w` family is excluded — is transported without loss.  No
+Schwartz field, no spatial integral and no basis property survives into
+`hcoef`: it is a statement about `ℝ^m`-valued curves alone. -/
+theorem timeEquicontinuous_of_coefficientDisplacement (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hcont : ∀ m : ℕ, Continuous (fun t : ℝ => forwardExtend (c m) t))
+    (hcoef : ∀ T ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ (m : ℕ) (h : ℝ), |h| < δ →
+      (∫ t in Set.Ioc (0:ℝ) T,
+        ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2) ≤ ε) :
+    TimeEquicontinuous (W.modalApprox c) := by
+  intro T ε hε
+  obtain ⟨δ, hδ0, hδ⟩ := hcoef T ε hε
+  refine ⟨δ, hδ0, fun m h hh => ?_⟩
+  have hgcont : Continuous
+      (fun t : ℝ => ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2) :=
+    (((hcont m).comp (continuous_id.add continuous_const)).sub (hcont m)).norm.pow 2
+  have hgint : IntegrableOn
+      (fun t : ℝ => ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2)
+      (Set.Ioc (0:ℝ) T) := hgcont.integrableOn_Ioc
+  calc
+    (∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space,
+        ‖W.modalApprox c m (t + h) x - W.modalApprox c m t x‖ ^ 2)
+        ≤ ∫ t in Set.Ioc (0:ℝ) T,
+            ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2 := by
+      refine integral_mono_of_nonneg ?_ hgint ?_
+      · filter_upwards with t
+        exact integral_nonneg fun x => by positivity
+      · filter_upwards with t
+        exact modalApprox_timeDisplacement_le W c m (t + h) t
+    _ ≤ ε := hδ m h hh
+
+/-- **[LEAF — Aubin–Lions time regularity for the Galerkin coefficient flow;
+est ~450 LOC.]**  A coefficient flow solving the projected Galerkin ODE, with a
+uniform time-integrated enstrophy bound, is `L²`-in-time translation
+equicontinuous *uniformly in the mode count `m`*.
+
+This is the residual of the `time_equicontinuous` field of
+`exists_galerkinModeData` after `timeEquicontinuous_of_coefficientDisplacement`
+discharges the spatial half.  It is strictly lower than what it replaces: the
+conclusion mentions only `ℝ^m`-valued curves — no Schwartz field, no spatial
+integral, no basis property — and it is not circular, since nothing in its
+proof may use the time equicontinuity it supplies.
+
+**Quantifier order is load-bearing and is the strong form.**  `∃ δ` stands
+*outside* `∀ m`.  The per-`m` form `∀ m, ∃ δ` is dischargeable from continuity
+of each individual curve alone and carries no compactness content whatsoever;
+it is exactly the weakening that would make `aubin_lions_l2loc_compactness`
+false.  The family `c m t = (sin (m t)) • e₀` satisfies the per-`m` form and
+violates this one, so the statement is not vacuous.  It is also satisfiable —
+`c ≡ 0` inhabits it — so no consumer is vacuously true through it.
+
+Classical route: pair the Galerkin ODE with the displacement itself,
+`‖c(t+h) − c(t)‖² = ∫_t^{t+h} ⟨c'(s), c(t+h) − c(t)⟩ ds`, and integrate in `t`.
+The viscous term is handled by the certified Stokes Cauchy–Schwarz
+`abs_stokesOperator_inner_le` together with `henst`: Fubini over the strip of
+width `h` and Cauchy–Schwarz in `(s,t)` give `O(ν · h · enstrophyBound)`, which
+is uniform in `m` and vanishes with `h`.  This is the linear half, and its
+ingredients are now all in the estate.
+Still missing: the corresponding bound on the convective term
+`⟨B(c(s)), c(t+h) − c(t)⟩`.  In three dimensions that needs the Ladyzhenskaya
+interpolation estimate `|⟨B(u), φ⟩| ≤ C‖u‖^{1/2}_{L²}‖u‖^{3/2}_{H¹}‖φ‖_{H¹}`
+for the trilinear form, i.e. an `H^{1/2}`/`L⁴` Sobolev bound on
+`convectionOperator`; the estate has `convectionOperator_inner_self` (skewness
+on the diagonal) but no off-diagonal size estimate at all
+[Temam, *Navier–Stokes Equations* III §3; Robinson–Rodrigo–Sadowski Ch. 4;
+Simon, Ann. Mat. Pura Appl. 146 (1987) 65–96, Thm 1 condition (iii)].
+
+Depends on: an `L⁴(ℝ³)` bound for finite modal fields in terms of
+`coefficientEnstrophy` — not currently in the estate, and the same
+Sobolev-interpolation gap that blocks the enstrophy budget elsewhere in this
+project. -/
+theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (enstrophyBound : ℝ)
+    (henst : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound) :
+    ∀ T ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ (m : ℕ) (h : ℝ), |h| < δ →
+      (∫ t in Set.Ioc (0:ℝ) T,
+        ‖forwardExtend (c m) (t + h) - forwardExtend (c m) t‖ ^ 2) ≤ ε := by
+  sorry
 
 /-- Exact transfer of physical enstrophy to the coefficient representation at
 nonnegative time. -/
@@ -3699,9 +3899,28 @@ theorem galerkinModeData_of_basis_modalFlow (W : GalerkinBasisFamily)
         (W.finiteModes) hdiv cChoiceExt hc_cont enstrophyBound henstrophyBound_nonneg henst'
     have hspace : SpaceEquicontinuous (W.modalApprox cChoice) := by
       rw [h_modal_eq_fun]; exact hspace_raw
-    -- 6. Time equicontinuity -- NAMED RESIDUAL (no uniform derivative bound)
-    have htime : TimeEquicontinuous (W.modalApprox cChoice) := by
-      sorry
+    -- 6. Time equicontinuity -- REDUCED to the coefficient-level Aubin-Lions
+    -- leaf `galerkinCoefficientFlow_timeEquicontinuous`.  The spatial half is
+    -- certified (`timeEquicontinuous_of_coefficientDisplacement`), so nothing
+    -- about Schwartz fields, spatial integrals or the basis survives into the
+    -- residual; what remains is a statement about `ℝ^m`-valued curves.
+    have hcontFE : ∀ m : ℕ, Continuous (fun t : ℝ => forwardExtend (cChoice m) t) :=
+      fun m => hc_cont m
+    have henstCoef : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+        (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (cChoice m t)) ≤
+          enstrophyBound := by
+      intro m T hT
+      have hcongr : (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (cChoice m t)) =
+          ∫ t in Set.Ioc (0:ℝ) T, enstrophy (W.modalApprox cChoice m) t := by
+        refine MeasureTheory.setIntegral_congr_ae measurableSet_Ioc ?_
+        filter_upwards with t ht
+        exact (modalApprox_enstrophy_eq W cChoice m ht.1.le).symm
+      rw [hcongr]
+      exact henstrophy m T hT
+    have htime : TimeEquicontinuous (W.modalApprox cChoice) :=
+      timeEquicontinuous_of_coefficientDisplacement W cChoice hcontFE
+        (galerkinCoefficientFlow_timeEquicontinuous W hnu cChoice hc_deriv
+          enstrophyBound henstCoef)
     -- 7. Joint measurability -- discharged from the ODE forward-extension
     have hjoint : JointlyMeasurable (W.modalApprox cChoice) := by
       simpa [GalerkinBasisFamily.modalApprox] using
