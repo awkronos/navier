@@ -1,5 +1,6 @@
 import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Analysis.CutoffEnergyIbp
+import Navier.Analysis.Ladyzhenskaya
 import Navier.Breakdown.MaximalNonextension
 
 /-!
@@ -54,11 +55,15 @@ be stated about:
 
 ## Residual after this file
 
-The derivative-free bound consumed by `CutoffEnergyIbp.cutoffEnergy_pressure_ibp`
-— a local `L^r` bound on the *normalized* `p` itself — still needs the
+`abs_cutoffPressure_le_localL2` performs the last certified reduction step: the
+derivative-free slot of `CutoffEnergyIbp.cutoffEnergy_pressure_ibp` is bounded
+by `√(∫ (χp)²) · √(∫ (∇χ·u)²)`, the second factor unconditionally finite.  So
+the residual is now exactly one named leaf — a **local** `L²` bound
+`∫ (χp)² ≤ …` for the normalized pressure — which still needs the
 Calderón–Zygmund representation `p = Σ RᵢRⱼ(uᵢuⱼ)` (named residual in
 `SingularIntegralPrelims`).  What this file removes is the ambiguity that made
-the target unstatable, and the whole `∇p` half of the blocker.
+the target unstatable, the whole `∇p` half of the blocker, and the passage from
+the integral pairing to a pressure norm.
 
 Axiom target: `⊆ {propext, Classical.choice, Quot.sound}`.
 -/
@@ -532,5 +537,85 @@ theorem memLp_pressureGradient_of_terms_nonvacuous
   · rw [htime]; exact MemLp.zero'
   · rw [hconv]; exact MemLp.zero'
   · rw [hgrad]; exact MemLp.zero'
+
+
+/-! ### Reduction of the Caccioppoli pressure slot to a local `L²` bound -/
+
+/-- Compact support of the cutoff gradient paired against a field. -/
+theorem hasCompactSupport_gradFlux {χ : Space → ℝ}
+    (hχsupp : HasCompactSupport χ) {w : VelocityField} :
+    HasCompactSupport fun x : Space => fderiv ℝ χ x (w x) := by
+  refine (hχsupp.fderiv ℝ).mono ?_
+  intro x hx
+  simp only [Function.mem_support] at hx ⊢
+  intro h
+  exact hx (by rw [h]; simp)
+
+/-- **The Caccioppoli pressure slot, reduced to a local `L²` pressure bound
+(certified reduction step).**  For a compactly supported smooth cutoff `χ`, a
+smooth field `w`, and a continuous pressure slice `P` whose *cutoff* square
+`(χP)²` is integrable,
+
+  `|∫ P · χ (∇χ·w)| ≤ √(∫ (χP)²) · √(∫ (∇χ·w)²)`,
+
+both factors on the right being finite.  The second factor is unconditional:
+`∇χ` is compactly supported, so `(∇χ·w)²` is continuous with compact support.
+
+This is the derivative-free pressure term of
+`CutoffEnergyIbp.cutoffEnergy_pressure_ibp` bounded by a *local* `L²` norm of
+the pressure — the strictly lower named leaf that remains after
+`not_forall_memLp_pressure` killed the global form.  Note the asymmetry that
+makes the reduction usable: by `cutoffPressure_add_const` the left-hand side is
+gauge invariant while the right-hand side is not, so the bound may be applied
+with whichever normalization of `P` minimises `∫ (χP)²` — which is the
+classical "subtract the local mean" step. -/
+theorem abs_cutoffPressure_le_localL2 {χ : Space → ℝ}
+    (hχ : ContDiff ℝ ∞ χ) (hχsupp : HasCompactSupport χ)
+    {w : VelocityField} (hw : ContDiff ℝ ∞ w)
+    {P : Space → ℝ} (hP : Continuous P)
+    (hloc : Integrable (fun x : Space => (χ x * P x) ^ 2) volume) :
+    |∫ x : Space, P x * (χ x * fderiv ℝ χ x (w x))|
+      ≤ Real.sqrt (∫ x : Space, (χ x * P x) ^ 2)
+          * Real.sqrt (∫ x : Space, (fderiv ℝ χ x (w x)) ^ 2) := by
+  have hDc : Continuous fun x : Space => fderiv ℝ χ x (w x) :=
+    (hχ.continuous_fderiv (by simp)).clm_apply hw.continuous
+  have hDs : HasCompactSupport fun x : Space => fderiv ℝ χ x (w x) :=
+    hasCompactSupport_gradFlux hχsupp
+  have hDs2 : HasCompactSupport
+      fun x : Space => (fderiv ℝ χ x (w x)) ^ 2 := by
+    refine hDs.mono ?_
+    intro x hx
+    simp only [Function.mem_support] at hx ⊢
+    intro h
+    exact hx (by rw [h]; ring)
+  have hD2 : Integrable (fun x : Space => (fderiv ℝ χ x (w x)) ^ 2) volume :=
+    (hDc.pow 2).integrable_of_hasCompactSupport hDs2
+  have hprodc : Continuous fun x : Space => P x * (χ x * fderiv ℝ χ x (w x)) :=
+    hP.mul (hχ.continuous.mul hDc)
+  have hprods : HasCompactSupport
+      fun x : Space => P x * (χ x * fderiv ℝ χ x (w x)) :=
+    HasCompactSupport.mul_left (f := P)
+      (HasCompactSupport.mul_right (f' := fun x : Space => fderiv ℝ χ x (w x))
+        hχsupp)
+  have hprod : Integrable
+      (fun x : Space => P x * (χ x * fderiv ℝ χ x (w x))) volume :=
+    hprodc.integrable_of_hasCompactSupport hprods
+  have habs : |∫ x : Space, P x * (χ x * fderiv ℝ χ x (w x))|
+      ≤ ∫ x : Space, |χ x * P x| * |fderiv ℝ χ x (w x)| := by
+    refine le_trans (abs_integral_le_integral_abs) (le_of_eq ?_)
+    refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+    simp only [abs_mul]
+    ring
+  refine habs.trans ?_
+  have hcs := Navier.Analysis.Ladyzhenskaya.integral_mul_le_sqrt_mul_sqrt
+      (μ := (volume : Measure Space))
+      (f := fun x : Space => |χ x * P x|)
+      (g := fun x : Space => |fderiv ℝ χ x (w x)|)
+      (fun x => abs_nonneg _) (fun x => abs_nonneg _)
+      ((hχ.continuous.mul hP).abs.aestronglyMeasurable)
+      (hDc.abs.aestronglyMeasurable)
+      (by simpa only [sq_abs] using hloc)
+      (by simpa only [sq_abs] using hD2)
+  simpa only [sq_abs] using hcs
 
 end Navier.Analysis.PressureNormalization

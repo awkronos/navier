@@ -956,8 +956,11 @@ no `MemLp`/`Integrable` estimate for `sol.pressure` exists in the estate"
   `L^r`-normalized pressure is unique
   (`PressureNormalization.pressure_eq_of_memLp`).
 
-So (b) is now exactly: a local `L^r` bound on the *normalized* pressure,
-which still needs the Calderón–Zygmund representation `p = Σ RᵢRⱼ(uᵢuⱼ)`.
+`PressureNormalization.abs_cutoffPressure_le_localL2` then bounds that slot by
+`√(∫ (χp)²) · √(∫ (∇χ·u)²)`, the second factor unconditionally finite.  So (b)
+is now exactly one named leaf: a **local** `L²` bound `∫ (χp)² ≤ …` for the
+normalized pressure, which still needs the Calderón–Zygmund representation
+`p = Σ RᵢRⱼ(uᵢuⱼ)`.
 `CZNearField` certifies the pointwise Hörmander core; the transform's `L^r`
 bounds stay a named residual in `SingularIntegralPrelims`, so the pressure
 representation is not yet available. -/
@@ -1000,7 +1003,9 @@ theorem prodiSerrin_interior_outerRegion_bounded
   --   * `cutoffPressure_add_const`, `pressure_eq_of_memLp` — the
   --     derivative-free Caccioppoli slot is gauge invariant and the
   --     `L^r`-normalized pressure is unique, so the residual is well posed.
-  -- What remains is a local `L^r` bound on the NORMALIZED pressure, i.e. the
+  --   * `abs_cutoffPressure_le_localL2` — that slot is bounded by
+  --     √(∫ (χp)²)·√(∫ (∇χ·u)²), the second factor unconditionally finite.
+  -- What remains is a local `L²` bound on the NORMALIZED pressure, i.e. the
   -- Calderón–Zygmund representation `p = Σ RᵢRⱼ(uᵢuⱼ)`.  `CZNearField`
   -- certifies the pointwise Hörmander core, but the singular integral's L^r
   -- bounds stay a named residual in `SingularIntegralPrelims`.
