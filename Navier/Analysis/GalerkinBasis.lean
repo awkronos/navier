@@ -135,12 +135,11 @@ This file lays that layer over the repo's own objects:
   form; the `∀ m, ∃ δ` weakening is content-free and is what would re-falsify
   `aubin_lions_l2loc_compactness`).  The viscous half of its classical proof is
   now fully stocked (`abs_stokesOperator_inner_le` + the enstrophy bound), and
-  the convective term now has its off-diagonal size estimate
-  (`ConvectionTrilinear.abs_convectionOperator_inner_le`, downstream).  The one
-  remaining analytic gap is the Gagliardo–Nirenberg–Sobolev endpoint
-  `‖u‖_{L⁶(ℝ³)} ≤ C‖∇u‖_{L²}` for Schwartz fields, which turns the `L⁴` factors
-  of that estimate into `coefficientEnstrophy` through the certified
-  interpolation `Ladyzhenskaya.integral_pow_four_le_sqrt`.
+  so is the convective term:
+  `ConvectionLadyzhenskaya.abs_convectionOperator_inner_pow_four_le_enstrophy`
+  (downstream) bounds `|⟨B(a), b⟩|⁴` by `C·‖a‖²·Ω(a)³·Ω(b)²` with one constant
+  for every `m` and every `W`.  What remains of this leaf is the Aubin–Lions
+  assembly alone; no analytic ingredient is missing.
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -2163,16 +2162,25 @@ downstream of this file) gives
 [Temam, *Navier–Stokes Equations* III §3; Robinson–Rodrigo–Sadowski Ch. 4;
 Simon, Ann. Mat. Pura Appl. 146 (1987) 65–96, Thm 1 condition (iii)].
 
-Depends on (the one remaining analytic gap): the Gagliardo–Nirenberg–Sobolev
-endpoint `‖u‖_{L⁶(ℝ³)} ≤ C ‖∇u‖_{L²}` for Schwartz fields, which converts the
-`L⁴` factors above into `coefficientEnstrophy` via
-`Ladyzhenskaya.integral_pow_four_le_sqrt` (the interpolation half, certified).
-Mathlib has GNS only under `HasCompactSupport`
-(`MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq`); the Schwartz case needs a
-cutoff-and-limit argument.  Reference: Evans, *PDE* §5.6.1 Thm 1; Mathlib
-`Mathlib/Analysis/FunctionalSpaces/SobolevInequality.lean`.  Estimated ~250 LOC.
-With that in hand the convective half of this leaf follows the same Fubini +
-Cauchy–Schwarz pattern as the certified viscous half. -/
+The Ladyzhenskaya estimate this leaf needs is now certified end to end and in
+this statement's own coordinates:
+`ConvectionLadyzhenskaya.abs_convectionOperator_inner_pow_four_le_enstrophy`
+gives `|⟨B(a), b⟩|⁴ ≤ C·‖a‖²·Ω(a)³·Ω(b)²` with `Ω = W.coefficientEnstrophy`,
+one constant for every `m` and every `W`.  Its chain is
+`ConvectionTrilinear.abs_convectionOperator_inner_le` (Hölder `(4,2,4)`) →
+`Ladyzhenskaya.integral_pow_four_le_sqrt` (interpolation) →
+`SobolevGNS.exists_gns_six` (the Gagliardo–Nirenberg–Sobolev endpoint for
+Schwartz fields, obtained by removing Mathlib's `HasCompactSupport` hypothesis
+with a cutoff-and-limit argument) →
+`DivFreeGradientEnstrophy.integral_fderiv_norm_sq_le_three_mul_curl_sq_of_divFree`
+(Dirichlet energy ≤ 3·enstrophy for divergence-free fields).
+
+Remaining: only the Aubin–Lions assembly itself.  Both halves of the
+integrand are now stocked — viscous by `abs_stokesOperator_inner_le`,
+convective by the estimate above — and what is left is pairing the ODE with
+the displacement, Fubini over the strip of width `h`, and Cauchy–Schwarz in
+`(s, t)`, with `henst` supplying the uniform-in-`m` `Ω` budget on both.
+Estimated ~250 LOC, no missing analytic ingredient. -/
 theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
     {ν : ℝ} (hν : 0 < ν)
     (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
