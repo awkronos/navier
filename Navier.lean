@@ -51,6 +51,7 @@ import Navier.Analysis.SobolevEmbedding
 import Navier.Analysis.Ladyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
 import Navier.Analysis.SobolevGNS
+import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.FourierMajorant
 import Navier.Analysis.FourierWeightedPlancherel
 import Navier.Analysis.FourierBridge
