@@ -68,7 +68,7 @@ bookkeeping between the two is certified in `BKMLogLeaves`:
 |---|---|---|
 | `biotSavartLogInequality` | `exists_biotSavartLogTextbook` (textbook `log(e+‖u‖_{H³})` shape) | `bkm_log_shape_transfer` |
 | `sobolevEmbeddingDomination` | `exists_besselFourierMajorant` — **now CERTIFIED** (Fourier inversion + Plancherel symbol bookkeeping) | `integrable_inv_one_add_normSq_sq` + `integral_le_besselWeightMass_mul_sqrt` + `le_mul_sqrt_of_le_majorant` |
-| `sobolevControlContinuity` | `exists_sliceLocallyUniformDecayBound` (locally uniform slice decay) | `continuousOn_sum_range` + `sliceIteratedFDeriv_continuousOn` |
+| `sobolevControlContinuity` | `sliceSeminorm_locallyBounded` (locally uniform propagation of the Schwartz seminorms `‖·‖_{0,n}`, `‖·‖_{2,n}`, `n < 4`; Majda–Bertozzi §3.2.3) — `exists_sliceLocallyUniformDecayBound` is now **derived** from it, and the two are **equivalent** | `schwartz_iteratedFDeriv_sq_decay_seminorm` + `schwartz_seminorm_le_of_sq_decay` + `sliceSeminormLocallyBounded_of_locallyUniformDecay` + `continuousOn_sum_range` + `sliceIteratedFDeriv_continuousOn` |
 | `katoCommutatorEstimate` | `exists_sobolevOrderEnergyEstimate` (one derivative order) | `exists_hasDerivAt_sum_range_le` |
 
 Majorants stay hypothesis-carried (Step-0e: avoids `⨆`-junk vacuity; each
@@ -2191,8 +2191,173 @@ theorem exists_sliceFixedTimeDecayBound
       Real.rpow_nonneg (by positivity) _
     exact le_trans (hK n x) (mul_le_mul_of_nonneg_right (hle n hn) hwpos)
 
-/-- **[NAMED RESIDUAL — locally uniform Schwartz decay along the flow;
-Majda–Bertozzi §3.2.3; est ~250 LOC.]**  Along a Schwartz-sliced classical
+/-- **Seminorm-explicit form of the quartic decay bound (certified).**  The
+constant in `schwartz_iteratedFDeriv_sq_decay` is not merely existential: it is
+`8·(‖f‖_{0,n}² + ‖f‖_{2,n}²)` in the Schwartz seminorms
+`SchwartzMap.seminorm ℝ k n`.  Only the weight exponent `k = 2` is needed,
+because the weight enters *squared*:
+
+  `‖D^n f x‖²·(1 + ‖x‖⁴) = ‖D^n f x‖² + (‖x‖²·‖D^n f x‖)² ≤ ‖f‖_{0,n}² + ‖f‖_{2,n}²`,
+
+and then `(1 + r)⁴ ≤ 8(1 + r⁴)` (sharp, equality at `r = 1`).
+
+Making the constant explicit is what converts the *fixed-time* bound into a
+*locally uniform* one: uniformity of `K` over a time neighbourhood is now
+exactly local boundedness of two Schwartz seminorms of the slice. -/
+theorem schwartz_iteratedFDeriv_sq_decay_seminorm {F : Type*} [NormedAddCommGroup F]
+    [NormedSpace ℝ F] (f : SchwartzMap Space F) (n : ℕ) (x : Space) :
+    ‖iteratedFDeriv ℝ n f x‖ ^ 2
+      ≤ 8 * ((SchwartzMap.seminorm ℝ 0 n f) ^ 2 + (SchwartzMap.seminorm ℝ 2 n f) ^ 2)
+          * (1 + ‖x‖) ^ (-4 : ℝ) := by
+  have h0 : ‖iteratedFDeriv ℝ n (⇑f) x‖ ≤ SchwartzMap.seminorm ℝ 0 n f :=
+    f.norm_iteratedFDeriv_le_seminorm ℝ n x
+  have h2 : ‖x‖ ^ 2 * ‖iteratedFDeriv ℝ n (⇑f) x‖ ≤ SchwartzMap.seminorm ℝ 2 n f :=
+    SchwartzMap.le_seminorm ℝ 2 n f x
+  have hxpos : (0 : ℝ) < 1 + ‖x‖ := by positivity
+  have hrw : (1 + ‖x‖) ^ (-4 : ℝ) = ((1 + ‖x‖) ^ (4 : ℕ))⁻¹ := by
+    rw [show (-4 : ℝ) = -((4 : ℕ) : ℝ) by norm_num, Real.rpow_neg hxpos.le,
+      Real.rpow_natCast]
+  rw [hrw, ← div_eq_mul_inv,
+    le_div_iff₀ (by positivity : (0 : ℝ) < (1 + ‖x‖) ^ (4 : ℕ))]
+  have hcmp : (1 + ‖x‖) ^ (4 : ℕ) ≤ 8 * (1 + ‖x‖ ^ 4) := by
+    nlinarith [norm_nonneg x, sq_nonneg (‖x‖ - 1), sq_nonneg (‖x‖ + 1),
+      sq_nonneg (‖x‖ ^ 2 - 1), sq_nonneg (‖x‖ ^ 2 - ‖x‖)]
+  have hkey : ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖ ^ 4)
+      ≤ (SchwartzMap.seminorm ℝ 0 n f) ^ 2 + (SchwartzMap.seminorm ℝ 2 n f) ^ 2 := by
+    calc ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖ ^ 4)
+        = ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2
+            + (‖x‖ ^ 2 * ‖iteratedFDeriv ℝ n (⇑f) x‖) ^ 2 := by ring
+      _ ≤ (SchwartzMap.seminorm ℝ 0 n f) ^ 2 + (SchwartzMap.seminorm ℝ 2 n f) ^ 2 :=
+          add_le_add (pow_le_pow_left₀ (norm_nonneg _) h0 2)
+            (pow_le_pow_left₀ (by positivity) h2 2)
+  calc ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖) ^ (4 : ℕ)
+      ≤ ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (8 * (1 + ‖x‖ ^ 4)) :=
+        mul_le_mul_of_nonneg_left hcmp (by positivity)
+    _ = 8 * (‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖ ^ 4)) := by ring
+    _ ≤ 8 * ((SchwartzMap.seminorm ℝ 0 n f) ^ 2
+          + (SchwartzMap.seminorm ℝ 2 n f) ^ 2) := by linarith
+
+/-- **Converse of `schwartz_iteratedFDeriv_sq_decay_seminorm` (certified).**  A
+quartic-weight decay bound at order `n` *forces* the two Schwartz seminorms
+`‖f‖_{0,n}` and `‖f‖_{2,n}` to be at most `√K`.
+
+Together the two directions certify that the seminorm formulation is **not a
+strengthening** of the decay bound but an equivalent restatement of it, with
+constants `K ↦ √K` and `M ↦ 16M²`.  This is what makes the residual below a
+strictly-lower leaf rather than a harder replacement obligation. -/
+theorem schwartz_seminorm_le_of_sq_decay {F : Type*} [NormedAddCommGroup F]
+    [NormedSpace ℝ F] (f : SchwartzMap Space F) (n : ℕ) {K : ℝ}
+    (h : ∀ x : Space, ‖iteratedFDeriv ℝ n f x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ)) :
+    SchwartzMap.seminorm ℝ 0 n f ≤ Real.sqrt K ∧
+      SchwartzMap.seminorm ℝ 2 n f ≤ Real.sqrt K := by
+  have key : ∀ x : Space,
+      ‖iteratedFDeriv ℝ n (⇑f) x‖ * (1 + ‖x‖) ^ 2 ≤ Real.sqrt K := by
+    intro x
+    have hxpos : (0 : ℝ) < 1 + ‖x‖ := by positivity
+    have h4 : (0 : ℝ) < (1 + ‖x‖) ^ (4 : ℕ) := by positivity
+    have hrw : (1 + ‖x‖) ^ (-4 : ℝ) = ((1 + ‖x‖) ^ (4 : ℕ))⁻¹ := by
+      rw [show (-4 : ℝ) = -((4 : ℕ) : ℝ) by norm_num, Real.rpow_neg hxpos.le,
+        Real.rpow_natCast]
+    have hx := h x
+    rw [hrw] at hx
+    have hnn : (0 : ℝ) ≤ ‖iteratedFDeriv ℝ n (⇑f) x‖ * (1 + ‖x‖) ^ 2 := by positivity
+    have hsq : (‖iteratedFDeriv ℝ n (⇑f) x‖ * (1 + ‖x‖) ^ 2) ^ 2 ≤ K := by
+      calc (‖iteratedFDeriv ℝ n (⇑f) x‖ * (1 + ‖x‖) ^ 2) ^ 2
+          = ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖) ^ (4 : ℕ) := by ring
+        _ ≤ (K * ((1 + ‖x‖) ^ (4 : ℕ))⁻¹) * (1 + ‖x‖) ^ (4 : ℕ) :=
+            mul_le_mul_of_nonneg_right hx h4.le
+        _ = K := by field_simp
+    calc ‖iteratedFDeriv ℝ n (⇑f) x‖ * (1 + ‖x‖) ^ 2
+        = Real.sqrt ((‖iteratedFDeriv ℝ n (⇑f) x‖ * (1 + ‖x‖) ^ 2) ^ 2) :=
+          (Real.sqrt_sq hnn).symm
+      _ ≤ Real.sqrt K := Real.sqrt_le_sqrt hsq
+  constructor
+  · refine SchwartzMap.seminorm_le_bound ℝ 0 n f (Real.sqrt_nonneg K) fun x => ?_
+    have hone : (1 : ℝ) ≤ (1 + ‖x‖) ^ 2 := by nlinarith [norm_nonneg x]
+    have := key x
+    rw [pow_zero, one_mul]
+    nlinarith [norm_nonneg (iteratedFDeriv ℝ n (⇑f) x)]
+  · refine SchwartzMap.seminorm_le_bound ℝ 2 n f (Real.sqrt_nonneg K) fun x => ?_
+    have hmono : ‖x‖ ^ 2 ≤ (1 + ‖x‖) ^ 2 := by nlinarith [norm_nonneg x]
+    have := key x
+    nlinarith [norm_nonneg (iteratedFDeriv ℝ n (⇑f) x)]
+
+/-- **The PDE residual of `exists_sliceLocallyUniformDecayBound`, isolated.**
+Local-in-time boundedness of the two Schwartz seminorms `‖·‖_{0,n}` and
+`‖·‖_{2,n}`, `n < 4`, of the slices of a Schwartz-sliced classical solution.
+
+By `schwartz_iteratedFDeriv_sq_decay_seminorm` and its converse
+`schwartz_seminorm_le_of_sq_decay` this predicate is **equivalent** to the
+locally uniform quartic decay bound (both implications certified below), so
+nothing is gained or lost by working with it — it is the same obligation in the
+vocabulary Majda–Bertozzi §3.2.3 states it in. -/
+def SliceSeminormLocallyBounded {ν : ℝ} {u₀ : SchwartzVelocity}
+    (S : SchwartzSlicedSolution ν u₀) : Prop :=
+  ∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ r M : ℝ, 0 < r ∧
+    ∀ t ∈ Set.Ici (0 : ℝ) ∩ Metric.ball t₀ r, ∀ n : ℕ, n < 4 →
+      SchwartzMap.seminorm ℝ 0 n (S.slice t) ≤ M ∧
+        SchwartzMap.seminorm ℝ 2 n (S.slice t) ≤ M
+
+/-- **[NAMED RESIDUAL — locally uniform propagation of Schwartz seminorms along
+the flow; Majda–Bertozzi §3.2.3; est ~200 LOC.]**  The whole PDE content of
+`exists_sliceLocallyUniformDecayBound`, and nothing else: near every
+nonnegative time, the seminorms `‖u(t)‖_{0,n}`, `‖u(t)‖_{2,n}` for `n < 4` admit
+a single bound.
+
+**Route.**  Polynomially weighted energy inequalities for `‖x^α D^β u‖_{L²}`,
+`|α| ≤ 2`, `|β| ≤ 5`: differentiating the weighted `L²` norm along the
+Navier–Stokes flow produces a viscous good term, a commutator term
+`[x^α, u·∇]D^β u` bounded by the *unweighted* `H^s` norm times the weighted
+norm, and a pressure term handled by the Calderón–Zygmund bound on
+`∇²(-Δ)^{-1}`; Grönwall against `uniformly_bounded_energy` then closes the
+inequality on a time interval whose length depends only on the energy bound.
+The passage from the weighted `L²` control to the pointwise seminorms is
+Sobolev embedding `H²(ℝ³) ↪ L^∞`, already certified in this file as
+`exists_agmonSupBound`.
+
+**Dependencies.**  `S.solution.equation`, `S.solution.incompressible`,
+`S.solution.finite_energy`, `S.solution.uniformly_bounded_energy`; the
+slice/joint derivative transfer
+`iteratedFDeriv_slice_eq_within_compContinuousLinearMap` (certified above); the
+Calderón–Zygmund pressure bound.
+
+**Non-vacuity (the file's witness, applied directly to the seminorms).**
+Smoothness plus Schwartz slices is provably insufficient: for
+`v t x = (t − t₀)³·ψ((t − t₀)²x)` with `ψ = exp(−‖·‖²)`, write `s = t − t₀` and
+substitute `y = s²x`.  Then `‖x‖² = ‖y‖²/s⁴`, so
+
+  `‖v s‖_{2,0} = sup_x ‖x‖²·s³ψ(s²x) = s^{−1}·sup_y ‖y‖²ψ(y) = e^{−1}/s → ∞`
+
+as `s → 0`, while `‖v s‖_{0,0} = s³ → 0`.  (Checked numerically: `e^{−1}/s` at
+`s = 1, 1/2, 1/5, 1/10, 1/20` gives `0.36788, 0.73576, 1.83940, 3.67879,
+7.35759`, matching `sup_x ‖x‖²s³ψ(s²x)` to five digits.)  So the `k = 2`
+seminorm alone already diverges on a family that is `C^∞` on `ℝ × ℝ³` with
+every slice Schwartz — no locally uniform `M` exists.  This is the same witness
+that makes `sup_s ‖v(s,x)‖²(1 + ‖x‖)⁴ ~ C‖x‖` diverge at the decay end
+(`sup_s ‖v(s,x)‖² = (3/4)^{3/2}e^{−3/2}‖x‖^{−3}`), as the certified equivalence
+requires.  The predicate therefore genuinely consumes the Navier–Stokes clauses
+of `IsClassicalSolution`, not merely `velocity_smooth`. -/
+theorem sliceSeminorm_locallyBounded
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
+    SliceSeminormLocallyBounded S := by
+  sorry
+
+/-- **[DERIVED, certified.]**  The reverse implication of the equivalence: a
+locally uniform quartic decay bound gives locally uniform seminorm bounds.
+Certifies that `sliceSeminorm_locallyBounded` is not a strengthened
+replacement obligation. -/
+theorem sliceSeminormLocallyBounded_of_locallyUniformDecay
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
+    (h : ∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ r K : ℝ, 0 < r ∧
+      ∀ t ∈ Set.Ici (0 : ℝ) ∩ Metric.ball t₀ r, ∀ n : ℕ, n < 4 → ∀ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ)) :
+    SliceSeminormLocallyBounded S := by
+  intro t₀ ht₀
+  obtain ⟨r, K, hr, hK⟩ := h t₀ ht₀
+  refine ⟨r, Real.sqrt K, hr, fun t ht n hn => ?_⟩
+  exact schwartz_seminorm_le_of_sq_decay (S.slice t) n fun x => hK t ht n hn x
+
+/-- **[DERIVED from `sliceSeminorm_locallyBounded`.]**  Along a Schwartz-sliced classical
 solution, near every nonnegative time `t₀` there is a uniform polynomial decay
 bound on every slice derivative of order `n < 4`: a single `K` and radius
 `r > 0` with
@@ -2223,25 +2388,43 @@ the Navier–Stokes clauses of `IsClassicalSolution` (`equation`,
 `incompressible`, `finite_energy`, `uniformly_bounded_energy`) and not merely
 `velocity_smooth`.
 
-**Dependencies.**  Propagation of Schwartz bounds with locally-in-time uniform
-seminorms along the flow (this is where the PDE enters): polynomially weighted
-energy inequalities for `‖x^α D^β u‖_{L²}` closed by Grönwall against the
-uniform energy bound, plus identification of `iteratedFDeriv` of the slice with
-the spatial partial derivatives of the joint map on the half-space product
-`Ici 0 ×ˢ univ` (certified above as
-`iteratedFDeriv_slice_eq_within_compContinuousLinearMap`).
+**Dependencies.**  Exactly one: `sliceSeminorm_locallyBounded`, the
+locally-in-time propagation of the two Schwartz seminorms `‖·‖_{0,n}`,
+`‖·‖_{2,n}` for `n < 4` along the flow.  The passage from those seminorms to
+this quartic pointwise bound, with the explicit constant `K = 16M²`, is
+certified by `schwartz_iteratedFDeriv_sq_decay_seminorm`; the converse passage
+`K ↦ √K` is certified by `schwartz_seminorm_le_of_sq_decay` and lifted to
+families by `sliceSeminormLocallyBounded_of_locallyUniformDecay`, so this
+statement and its hypothesis are **equivalent** — the reduction moves the
+obligation into Majda–Bertozzi's own vocabulary without strengthening it.
 
-**What is no longer residual.**  The fixed-`x` time continuity
-(`sliceIteratedFDeriv_continuousOn` above, from joint half-space smoothness
-alone), the dominated-convergence step itself, the measurability of every
-integrand, and the assembly of the four orders into the `H³` norm
-(`BKMLogLeaves.continuousOn_sum_range`) are all certified. -/
+**What is no longer residual.**  All of the analysis-side content: the
+fixed-time decay (`schwartz_iteratedFDeriv_sq_decay`,
+`exists_sliceFixedTimeDecayBound`), the seminorm-explicit constant and its
+converse (both above), the fixed-`x` time continuity
+(`sliceIteratedFDeriv_continuousOn`, from joint half-space smoothness alone),
+the dominated-convergence step itself, the measurability of every integrand,
+the slice/joint derivative transfer
+(`iteratedFDeriv_slice_eq_within_compContinuousLinearMap`), and the assembly of
+the four orders into the `H³` norm (`BKMLogLeaves.continuousOn_sum_range`).
+What remains is the weighted-energy/Grönwall propagation and nothing else. -/
 theorem exists_sliceLocallyUniformDecayBound
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
     ∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ r K : ℝ, 0 < r ∧
       ∀ t ∈ Set.Ici (0 : ℝ) ∩ Metric.ball t₀ r, ∀ n : ℕ, n < 4 → ∀ x : Space,
         ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ) := by
-  sorry
+  intro t₀ ht₀
+  obtain ⟨r, M, hr, hM⟩ := sliceSeminorm_locallyBounded S t₀ ht₀
+  refine ⟨r, 16 * M ^ 2, hr, fun t ht n hn x => ?_⟩
+  obtain ⟨h0, h2⟩ := hM t ht n hn
+  have hw : (0 : ℝ) ≤ (1 + ‖x‖) ^ (-4 : ℝ) := Real.rpow_nonneg (by positivity) _
+  refine le_trans (schwartz_iteratedFDeriv_sq_decay_seminorm (S.slice t) n x) ?_
+  refine mul_le_mul_of_nonneg_right ?_ hw
+  have hsum : (SchwartzMap.seminorm ℝ 0 n (S.slice t)) ^ 2
+      + (SchwartzMap.seminorm ℝ 2 n (S.slice t)) ^ 2 ≤ M ^ 2 + M ^ 2 :=
+    add_le_add (pow_le_pow_left₀ (apply_nonneg _ _) h0 2)
+      (pow_le_pow_left₀ (apply_nonneg _ _) h2 2)
+  linarith
 
 /-- **[DERIVED from `exists_sliceLocallyUniformDecayBound`.]**  The
 dominated-convergence data for one derivative order along a Schwartz-sliced
@@ -3224,6 +3407,7 @@ end Navier.Analysis.BealeKatoMajda
 #print axioms Navier.Analysis.BealeKatoMajda.besselFourierMajorant_zero
 #print axioms Navier.Analysis.BealeKatoMajda.integral_bsKernelScalar_annulus_le_log
 #print axioms Navier.Analysis.BealeKatoMajda.exists_agmonMorreyBound
+
 
 
 
