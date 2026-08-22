@@ -3402,11 +3402,179 @@ theorem integral_bsKernelScalar_annulus_le_log {ρ : ℝ} (hρ0 : 0 < ρ)
     linarith
   exact mul_le_mul_of_nonneg_left (by linarith) hC
 
+/-!
+## The `ρ = 1` endpoint of the Calderón–Zygmund splitting (certified, no `sorry`)
+
+`exists_biotSavartKernelSplitting` asserts, in its "Satisfiability at both
+endpoints" paragraph, that at `ρ = 1` its right-hand side already dominates
+`‖∇u‖_∞` "by the `H³ ↪ C¹` embedding for `A` large".  That sentence was prose:
+no `H³ ↪ C¹` gradient bound existed anywhere in this development —
+`exists_agmonSupBound` embeds `H² ↪ L^∞` for the *field*, not for its
+derivative, and the per-order dominations in `SobolevEmbedding` stop at the
+integral level.
+
+`exists_fderivSupBound_of_sobolevH3` below supplies it, kernel-clean.  The route
+is entirely finite-dimensional bookkeeping on top of `exists_agmonSupBound`:
+
+* the operator norm of `Du(x)` on the sup-normed `Space = Fin 3 → ℝ` is at most
+  the sum of its three columns `Du(x)eⱼ` (`opNorm_le_sum_basisVector`);
+* each column field `x ↦ Du(x)eⱼ` is itself a Schwartz velocity, namely
+  `evalCLM eⱼ (fderivCLM u)`, so `exists_agmonSupBound` applies to it;
+* its order-`n` derivative is dominated pointwise by the order-`(n+1)`
+  derivative of `u` (`norm_iteratedFDeriv_fderiv`, composed with the
+  norm-`≤ 1` evaluation map), so its `H²` energy is dominated by the `H³`
+  energy of `u` with the index shift `Finset.sum_range_succ'`.
+
+**What this does and does not do.**  It certifies the endpoint claim, and it
+gives the BKM tower a reusable `‖∇u‖_∞ ≤ A‖u‖_{H³}` bound.  It does **not**
+reduce `exists_biotSavartKernelSplitting`: that residual quantifies over *every*
+`ρ ∈ (0,1]`.  Writing `a = A‖u‖_{H³}` and `b = B·Mω`, the `ρ`-dependent part
+`a·ρ^{1/4} + b·(1 + log(1/ρ))` is minimised at `ρ = (4b/a)⁴`, where it equals
+`b·(5 + 4 log(a/(4b)))` — logarithmic in `a`, hence smaller than `a` by an
+arbitrary factor.  (Checked numerically: at `(a,b) = (10³,1), (10⁶,1),
+(10²,10⁻²)` the minimum over `ρ` is `27.085844, 54.716865, 0.362962`, matching
+`b(5 + 4 log(a/(4b)))` to six digits, with minimum/`a` equal to
+`2.7·10⁻², 5.5·10⁻⁵, 3.6·10⁻³`.)  So the endpoint bound is exactly the `ρ = 1`
+corner and nothing more: the genuine Biot–Savart singular-integral content —
+the representation `∇u = PV(∇K ∗ ω)` — is untouched, and the residual's own
+proof obligation stands.
+-/
+
+/-- The norm of a coordinate basis vector of the sup-normed `Space`. -/
+private theorem norm_basisVector_eq_one (j : Fin 3) : ‖(basisVector j : Space)‖ = 1 := by
+  refine le_antisymm ((pi_norm_le_iff_of_nonneg zero_le_one).2 fun i => ?_) ?_
+  · by_cases hi : i = j <;> simp [basisVector, hi]
+  · simpa [basisVector] using norm_le_pi_norm (basisVector j : Space) j
+
+/-- **Operator norm by columns.**  On the sup-normed `Space = Fin 3 → ℝ` the
+operator norm of a continuous linear map is at most the sum of the norms of its
+three columns. -/
+private theorem opNorm_le_sum_basisVector (T : Space →L[ℝ] Space) :
+    ‖T‖ ≤ ∑ i : Fin 3, ‖T (basisVector i)‖ := by
+  refine ContinuousLinearMap.opNorm_le_bound _
+    (Finset.sum_nonneg fun i _ => norm_nonneg _) (fun v => ?_)
+  have hbasis : v = ∑ i : Fin 3, v i • basisVector i := by
+    simpa only [basisVector] using (pi_eq_sum_univ' v)
+  calc ‖T v‖ = ‖T (∑ i : Fin 3, v i • basisVector i)‖ :=
+        congrArg (fun X => ‖T X‖) hbasis
+    _ = ‖∑ i : Fin 3, v i • T (basisVector i)‖ := by rw [map_sum]; simp only [map_smul]
+    _ ≤ ∑ i : Fin 3, ‖v i • T (basisVector i)‖ := norm_sum_le _ _
+    _ ≤ ∑ i : Fin 3, ‖v‖ * ‖T (basisVector i)‖ := by
+        refine Finset.sum_le_sum fun i _ => ?_
+        rw [norm_smul, Real.norm_eq_abs]
+        exact mul_le_mul_of_nonneg_right (norm_le_pi_norm v i) (norm_nonneg _)
+    _ = (∑ i : Fin 3, ‖T (basisVector i)‖) * ‖v‖ := by
+        rw [Finset.sum_mul]
+        exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+
+/-- The `j`-th column field `x ↦ Du(x)eⱼ` of a Schwartz velocity, as a Schwartz
+velocity in its own right. -/
+private def columnField (u : SchwartzVelocity) (j : Fin 3) : SchwartzVelocity :=
+  SchwartzMap.evalCLM ℝ Space Space (basisVector j) (SchwartzMap.fderivCLM ℝ Space Space u)
+
+private theorem columnField_apply (u : SchwartzVelocity) (j : Fin 3) (x : Space) :
+    (columnField u j) x = fderiv ℝ (⇑u) x (basisVector j) := by
+  rw [columnField, SchwartzMap.evalCLM_apply_apply, SchwartzMap.fderivCLM_apply]
+
+/-- **Order shift.**  Every iterated derivative of a column field is dominated
+pointwise by the next-order iterated derivative of the field itself: the column
+field is `ev ∘ (fderiv u)` with `‖ev‖ ≤ 1`, and
+`norm_iteratedFDeriv_fderiv` converts `Dⁿ(Du)` into `D^{n+1}u`. -/
+private theorem norm_iteratedFDeriv_columnField_le
+    (u : SchwartzVelocity) (j : Fin 3) (n : ℕ) (y : Space) :
+    ‖iteratedFDeriv ℝ n (⇑(columnField u j)) y‖ ≤ ‖iteratedFDeriv ℝ (n + 1) (⇑u) y‖ := by
+  set du : SchwartzMap Space (Space →L[ℝ] Space) :=
+    SchwartzMap.fderivCLM ℝ Space Space u with hdudef
+  set ev : (Space →L[ℝ] Space) →L[ℝ] Space :=
+    ContinuousLinearMap.apply ℝ Space (basisVector j) with hevdef
+  have hevnorm : ‖ev‖ ≤ 1 := by
+    refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one (fun T => ?_)
+    have hT := T.le_opNorm (basisVector j)
+    rw [norm_basisVector_eq_one] at hT
+    simpa [hevdef] using hT
+  have hcomp : ⇑(columnField u j) = (ev : (Space →L[ℝ] Space) → Space) ∘ (⇑du) := by
+    funext y
+    simp [columnField, hdudef, hevdef, SchwartzMap.evalCLM_apply_apply,
+      ContinuousLinearMap.apply_apply]
+  have hducoe : (⇑du) = fderiv ℝ (⇑u) := by
+    funext y; rw [hdudef, SchwartzMap.fderivCLM_apply]
+  calc ‖iteratedFDeriv ℝ n (⇑(columnField u j)) y‖
+      = ‖iteratedFDeriv ℝ n ((ev : (Space →L[ℝ] Space) → Space) ∘ (⇑du)) y‖ := by rw [hcomp]
+    _ = ‖ev.compContinuousMultilinearMap (iteratedFDeriv ℝ n (⇑du) y)‖ := by
+        rw [ContinuousLinearMap.iteratedFDeriv_comp_left ev (du.smooth ⊤).contDiffAt
+          (by exact_mod_cast le_top)]
+    _ ≤ ‖ev‖ * ‖iteratedFDeriv ℝ n (⇑du) y‖ := ev.norm_compContinuousMultilinearMap_le _
+    _ ≤ 1 * ‖iteratedFDeriv ℝ n (⇑du) y‖ :=
+        mul_le_mul_of_nonneg_right hevnorm (norm_nonneg _)
+    _ = ‖iteratedFDeriv ℝ n (fderiv ℝ (⇑u)) y‖ := by rw [one_mul, hducoe]
+    _ = ‖iteratedFDeriv ℝ (n + 1) (⇑u) y‖ := norm_iteratedFDeriv_fderiv
+
+/-- **`H²` of a column is dominated by `H³` of the field.**  The three `H²`
+summands of a column field are the order-`1`, `2`, `3` summands of `u`'s `H³`
+norm, so the omitted order-`0` summand is exactly the slack. -/
+private theorem sobolevH2NormSq_columnField_le (u : SchwartzVelocity) (j : Fin 3) :
+    sobolevH2NormSq (columnField u j) ≤ sobolevH3NormSq u := by
+  have hstep : ∀ n ∈ Finset.range 3,
+      (∫ x : Space, ‖iteratedFDeriv ℝ n (⇑(columnField u j)) x‖ ^ 2)
+        ≤ ∫ x : Space, ‖iteratedFDeriv ℝ (n + 1) (⇑u) x‖ ^ 2 := by
+    intro n _
+    refine integral_mono (integrable_normSq_iteratedFDeriv_space (columnField u j) n)
+      (integrable_normSq_iteratedFDeriv_space u (n + 1)) (fun x => ?_)
+    exact pow_le_pow_left₀ (norm_nonneg _) (norm_iteratedFDeriv_columnField_le u j n x) 2
+  have hsum : sobolevH2NormSq (columnField u j)
+      ≤ ∑ n ∈ Finset.range 3, ∫ x : Space, ‖iteratedFDeriv ℝ (n + 1) (⇑u) x‖ ^ 2 :=
+    Finset.sum_le_sum hstep
+  have hshift : sobolevH3NormSq u
+      = (∑ n ∈ Finset.range 3, ∫ x : Space, ‖iteratedFDeriv ℝ (n + 1) (⇑u) x‖ ^ 2)
+        + ∫ x : Space, ‖iteratedFDeriv ℝ 0 (⇑u) x‖ ^ 2 := by
+    rw [sobolevH3NormSq]
+    exact Finset.sum_range_succ' _ 3
+  have hnn : (0:ℝ) ≤ ∫ x : Space, ‖iteratedFDeriv ℝ 0 (⇑u) x‖ ^ 2 :=
+    integral_nonneg (fun x => by positivity)
+  rw [hshift]
+  linarith
+
+/-- **`H³(ℝ³) ↪ C¹` at the level of the gradient sup norm (certified, no
+`sorry`).**  There is one constant `A > 0` with
+
+  `‖∇u(x)‖ ≤ A·‖u‖_{H³}`   for every Schwartz velocity `u` and every `x`,
+
+where `‖u‖_{H³} = √(sobolevH3NormSq u)`.  The constant is `3C` in the constant
+`C` of `exists_agmonSupBound`, the factor `3` being the three columns of the
+sup-normed `Space = Fin 3 → ℝ`.
+
+This is the `ρ = 1` endpoint asserted in the satisfiability paragraph of
+`exists_biotSavartKernelSplitting`, now certified rather than argued: taking
+`A` at least this constant makes that residual's right-hand side dominate
+`‖∇u(x)‖` at `ρ = 1`, so the residual is not the unsatisfiable pole.  No
+divergence-freeness is used. -/
+theorem exists_fderivSupBound_of_sobolevH3 :
+    ∃ A : ℝ, 0 < A ∧
+      ∀ (u : SchwartzVelocity) (x : Space),
+        ‖fderiv ℝ (⇑u) x‖ ≤ A * Real.sqrt (sobolevH3NormSq u) := by
+  obtain ⟨C, hCpos, hC⟩ := exists_agmonSupBound
+  refine ⟨3 * C, by positivity, fun u x => ?_⟩
+  have hcol : ∀ j : Fin 3,
+      ‖fderiv ℝ (⇑u) x (basisVector j)‖ ≤ C * Real.sqrt (sobolevH3NormSq u) := by
+    intro j
+    have h1 : ‖fderiv ℝ (⇑u) x (basisVector j)‖
+        ≤ C * Real.sqrt (sobolevH2NormSq (columnField u j)) := by
+      rw [← columnField_apply u j x]; exact hC (columnField u j) x
+    refine h1.trans (mul_le_mul_of_nonneg_left ?_ hCpos.le)
+    exact Real.sqrt_le_sqrt (sobolevH2NormSq_columnField_le u j)
+  calc ‖fderiv ℝ (⇑u) x‖
+      ≤ ∑ j : Fin 3, ‖fderiv ℝ (⇑u) x (basisVector j)‖ := opNorm_le_sum_basisVector _
+    _ ≤ ∑ _j : Fin 3, C * Real.sqrt (sobolevH3NormSq u) :=
+        Finset.sum_le_sum (fun j _ => hcol j)
+    _ = 3 * C * Real.sqrt (sobolevH3NormSq u) := by
+        simp [Finset.sum_const]; ring
+
 end Navier.Analysis.BealeKatoMajda
 
 #print axioms Navier.Analysis.BealeKatoMajda.besselFourierMajorant_zero
 #print axioms Navier.Analysis.BealeKatoMajda.integral_bsKernelScalar_annulus_le_log
 #print axioms Navier.Analysis.BealeKatoMajda.exists_agmonMorreyBound
+#print axioms Navier.Analysis.BealeKatoMajda.exists_fderivSupBound_of_sobolevH3
 
 
 
