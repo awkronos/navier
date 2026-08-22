@@ -23,6 +23,10 @@ is infinite.  Hence:
   `MemLp (sol.pressure t) r volume`" can be true, as soon as one solution
   exists.  This is a kernel-clean refutation of the blocker's naive statement
   shape, with the explicit witness `sol.shiftPressure 1`.
+* `not_forall_memLp_pressure_zeroDatum` — the same no-go with the
+  "as soon as one solution exists" caveat removed: `zeroSolution` exhibits the
+  needed inhabitant (the rest state), so the refutation is unconditional for
+  zero force and zero initial datum.
 
 The endpoints are exactly where the hypotheses bite: at `r = ∞` a constant *is*
 in `L^∞`, and at `r = 0` Mathlib's `MemLp` is vacuously true — both excluded by
@@ -39,7 +43,9 @@ be stated about:
   three velocity terms with **no singular-integral input at all**
   (`memLp_pressureGradient_of_terms`, `integrable_pressureGradient_of_terms`).
   This is the entire `∇p` layer that blocker (b) was waiting on, and it never
-  needed Calderón–Zygmund.
+  needed Calderón–Zygmund.  Its four `MemLp` premises are jointly satisfiable
+  (`memLp_pressureGradient_of_terms_nonvacuous`, witnessed by the rest state),
+  so the bundle sits at neither vacuity pole.
 * The **normalized** pressure is unique: two pressures driving the same
   velocity differ by a spatial constant (`pressure_sub_const_of_sameVelocity`),
   so at most one of them lies in `L^r` (`pressure_eq_of_memLp`).  A pressure
@@ -434,5 +440,97 @@ theorem cutoffPressure_add_const {χ : Space → ℝ}
   rw [integral_congr_ae (Filter.Eventually.of_forall hpt),
     integral_add hPg hcg, integral_const_mul,
     integral_cutoff_flux_eq_zero hχ hχsupp hw hdiv, mul_zero, add_zero]
+
+
+/-! ### An explicit inhabitant: the rest state, and unconditional no-go -/
+
+/-- **The rest state is a partial classical solution.**  Velocity and pressure
+identically zero, zero force, zero initial datum.  Every clause is a derivative
+of a constant.  This is the inhabitant that makes the `L^r` no-go below
+unconditional, and it doubles as the non-vacuity witness for
+`memLp_pressureGradient_of_terms`. -/
+def zeroSolution (ν : ℝ) {T : ℝ} (hT : 0 < T) :
+    PartialClassicalSolution ν zeroForce (fun _ : Space => (0 : Space)) T where
+  terminalTime_pos := hT
+  velocity := fun _ _ => 0
+  pressure := fun _ _ => 0
+  velocity_smooth := contDiffOn_const
+  pressure_smooth := contDiffOn_const
+  initial_condition := rfl
+  incompressible := by
+    intro t _ _ x
+    simp [divergence, spatialDerivative]
+  equation := by
+    intro t _ _ x
+    have hp : pressureGradient (fun _ : ℝ => fun _ : Space => (0 : ℝ)) t x
+        = 0 := by
+      funext i
+      simp [pressureGradient]
+    simp [timeDerivative, convection, spatialDerivative, Navier.laplacian, hp,
+      zeroForce]
+
+@[simp] theorem zeroSolution_velocity (ν : ℝ) {T : ℝ} (hT : 0 < T) :
+    (zeroSolution ν hT).velocity = fun _ _ => 0 := rfl
+
+@[simp] theorem zeroSolution_pressure (ν : ℝ) {T : ℝ} (hT : 0 < T) :
+    (zeroSolution ν hT).pressure = fun _ _ => 0 := rfl
+
+/-- **Unconditional `L^r` no-go.**  Dropping the "as soon as one solution
+exists" caveat of `not_forall_memLp_pressure`: for every viscosity, every
+positive terminal time, every admissible time and every `0 < r < ∞`, the
+statement "every partial classical solution with zero force and zero initial
+datum has an `L^r` pressure slice" is false.  The two witnesses are
+`zeroSolution` and its gauge shift by `1`. -/
+theorem not_forall_memLp_pressure_zeroDatum
+    (ν : ℝ) {T : ℝ} (hT : 0 < T) (t : ℝ)
+    {r : ℝ≥0∞} (hr0 : r ≠ 0) (hrtop : r ≠ (⊤ : ℝ≥0∞)) :
+    ¬ ∀ sol : PartialClassicalSolution ν zeroForce (fun _ : Space => (0 : Space)) T,
+        MemLp (fun x : Space => sol.pressure t x) r volume :=
+  not_forall_memLp_pressure (zeroSolution ν hT) t hr0 hrtop
+
+/-- **Non-vacuity of the `∇p` transport hypotheses.**  The four `MemLp`
+premises of `memLp_pressureGradient_of_terms` are jointly satisfiable: the rest
+state satisfies all four for every exponent, and the conclusion holds for it.
+This rules out the unsatisfiable pole for that theorem's hypothesis bundle. -/
+theorem memLp_pressureGradient_of_terms_nonvacuous
+    (ν : ℝ) {T : ℝ} (hT : 0 < T) (t : ℝ) (r : ℝ≥0∞) :
+    MemLp (fun x : Space =>
+      Navier.laplacian (zeroSolution ν hT).velocity t x) r volume ∧
+    MemLp (fun x : Space => zeroForce t x) r volume ∧
+    MemLp (fun x : Space =>
+      timeDerivative (zeroSolution ν hT).velocity t x) r volume ∧
+    MemLp (fun x : Space =>
+      convection (zeroSolution ν hT).velocity t x) r volume ∧
+    MemLp (fun x : Space =>
+      pressureGradient (zeroSolution ν hT).pressure t x) r volume := by
+  have hlap : (fun x : Space =>
+      Navier.laplacian (zeroSolution ν hT).velocity t x)
+      = fun _ : Space => (0 : Space) := by
+    funext x
+    simp [Navier.laplacian]
+  have hforce : (fun x : Space => zeroForce t x)
+      = fun _ : Space => (0 : Space) := rfl
+  have htime : (fun x : Space =>
+      timeDerivative (zeroSolution ν hT).velocity t x)
+      = fun _ : Space => (0 : Space) := by
+    funext x
+    simp [timeDerivative]
+  have hconv : (fun x : Space =>
+      convection (zeroSolution ν hT).velocity t x)
+      = fun _ : Space => (0 : Space) := by
+    funext x
+    simp [convection, spatialDerivative]
+  have hgrad : (fun x : Space =>
+      pressureGradient (zeroSolution ν hT).pressure t x)
+      = fun _ : Space => (0 : Space) := by
+    funext x
+    funext i
+    simp [pressureGradient]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · rw [hlap]; exact MemLp.zero'
+  · rw [hforce]; exact MemLp.zero'
+  · rw [htime]; exact MemLp.zero'
+  · rw [hconv]; exact MemLp.zero'
+  · rw [hgrad]; exact MemLp.zero'
 
 end Navier.Analysis.PressureNormalization
