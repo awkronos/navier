@@ -129,8 +129,15 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
 
     All fields of `GalerkinModeData` that follow from basis orthonormality,
     the coefficient ODE structure, or the projected energy-dissipation identity
-    are discharged here.  The genuinely analytic estimates
-    (`hspace`, `htime`, `hweak`) are NAMED RESIDUALS.
+    are discharged here.
+
+    **Residual inventory, corrected 2026-08-22 (lane sorry-close).**  The
+    previous text listed `hspace`, `htime` and `hweak` as NAMED RESIDUALS.
+    That is stale: `hspace` is discharged at step 5 through
+    `GalerkinSpaceEquicontinuity.spaceEquicontinuous_of_modalFamily`, and
+    `htime` at step 6 through `timeEquicontinuous_of_coefficientDisplacement`
+    composed with `galerkinCoefficientFlow_timeEquicontinuous` (closed in
+    `435a6eb`).  **`hweak` is the sole remaining residual of this theorem.**
   -/
   theorem exists_galerkinModeData (nu : ℝ) (hnu : 0 < nu)
       (u0 : SchwartzVelocity) (hu0 : DivergenceFreeInitial u0) :
@@ -324,6 +331,49 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
         Filter.atTop (nhds 0) :=
       proj_initial_converges_L2 W u0 hu0
     -- 10. Weak consistency -- NAMED RESIDUAL (Galerkin equation limit passage)
+    --
+    -- Reference: Temam, `Navier-Stokes Equations` III.3; Constantin-Foias II;
+    -- Leray, Acta Math. 63 (1934) sections 18-20.
+    --
+    -- ROUTE ANALYSIS (lane sorry-close, 2026-08-22).  The assembly in
+    -- `GalerkinBasis` already reduces this to two scalar commutator integrals:
+    -- `modalFlow_fixedTest_projectedResidual_tendsto_of_commutators` consumes
+    -- `hlap`/`hconv` (the Laplacian- and convection-test projection
+    -- commutators paired against the retained field, integrated on `[0,T]`),
+    -- and `modalApprox_fixedTest_weakConsistent_of_projectedDatum` removes the
+    -- projected-datum correction via `proj_error_pairing_tendsto_zero`.  So
+    -- everything except `hlap`, `hconv` and their interval-integrability is
+    -- banked.
+    --
+    -- The Laplacian commutator is NOT an unmotivated extra hypothesis, and it
+    -- is not the graph-norm obstruction the definition's docstring warns
+    -- about, once the retained field is used.  Because `cChoice m t` lies in
+    -- the retained span and `W.proj m` is the `L^2`-orthogonal projection onto
+    -- that span, `⟪u_m, P_m(Δφ)⟫ = ⟪P_m u_m, Δφ⟫ = ⟪u_m, Δφ⟫`, hence
+    --
+    --   ⟪u_m, Δ(P_m φ) - P_m(Δφ)⟫ = ⟪u_m, Δ(P_m φ - φ)⟫ = -⟪∇u_m, ∇(P_m φ - φ)⟫
+    --
+    -- by integration by parts (both arguments are Schwartz).  Cauchy-Schwarz in
+    -- spacetime against the enstrophy budget already established above
+    -- (`henstCoef`/`henstrophy`, using `∫‖curl u‖² = ∫‖∇u‖²` for
+    -- divergence-free fields) then gives
+    --
+    --   |∫₀^T ν⟪u_m, comm⟫| ≤ ν √enstrophyBound · √(∫₀^T ‖∇(P_m φ(t) - φ(t))‖²)
+    --
+    -- So `hlap` follows from a STRICTLY LOWER leaf: `H¹`-convergence of the
+    -- basis projections on the fixed test slices,
+    --   `∫₀^T ‖∇(P_m φ(t) - φ(t))‖² dt → 0`,
+    -- which is a property of `GalerkinBasisFamily` alone (no PDE content).
+    -- This is NOT available from the current basis interface: the family is
+    -- Gram-Schmidt of a family dense in `L²` only, and an `L²`-orthogonal
+    -- projection is not `H¹`-bounded in general.  Closing `hweak` therefore
+    -- needs either (i) an `H¹`-density/`H¹`-boundedness clause added to
+    -- `GalerkinBasisFamily` (a statement-level change, deliberately not taken
+    -- here), or (ii) a Stokes-eigenbasis realization, for which the commutator
+    -- is identically zero because `Δ` commutes with the spectral projection.
+    -- Estimated ~250 LOC for `hlap` given (i); `hconv` is the same
+    -- Cauchy-Schwarz against `convectionTestProjectionCommutator`, whose
+    -- `L²`-bound layer is already certified at `GalerkinBasis:3696-3790`.
     have hweak : ∀ phi : DivergenceFreeTestFunction,
         Filter.Tendsto (fun m => weakFormResidual nu u0 (W.modalApprox cChoice m) phi)
           Filter.atTop (nhds 0) := by
