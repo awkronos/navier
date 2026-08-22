@@ -2127,6 +2127,345 @@ theorem timeEquicontinuous_of_coefficientDisplacement (W : GalerkinBasisFamily)
         exact modalApprox_timeDisplacement_le W c m (t + h) t
     _ ≤ ε := hδ m h hh
 
+/-- A Schwartz field that is constant is zero: the `k = 1` decay estimate
+`‖x‖ · ‖u x‖ ≤ C` forces the constant value to vanish. -/
+theorem schwartz_eq_zero_of_const (u : SchwartzVelocity) (hc : ∀ x : Space, u x = u 0) :
+    u = 0 := by
+  obtain ⟨C, hC0, hC⟩ := u.decay 1 0
+  simp only [norm_iteratedFDeriv_zero, pow_one] at hC
+  have hv : ‖u 0‖ = 0 := by
+    by_contra hne
+    have hpos : 0 < ‖u 0‖ := lt_of_le_of_ne (norm_nonneg _) (Ne.symm hne)
+    obtain ⟨x, hx⟩ := NormedSpace.exists_lt_norm ℝ Space (C / ‖u 0‖)
+    have h1 : ‖x‖ * ‖u x‖ ≤ C := hC x
+    rw [hc x] at h1
+    have h2 : C / ‖u 0‖ * ‖u 0‖ < ‖x‖ * ‖u 0‖ := mul_lt_mul_of_pos_right hx hpos
+    rw [div_mul_cancel₀ _ (ne_of_gt hpos)] at h2
+    linarith
+  have hzero : u 0 = 0 := norm_eq_zero.mp hv
+  ext y i
+  rw [hc y, hzero]
+  simp
+
+/-- The `L²` pairing of the zero field with itself vanishes. -/
+theorem schwartzL2Inner_zero_zero :
+    schwartzL2Inner (0 : SchwartzVelocity) (0 : SchwartzVelocity) = 0 := by
+  unfold schwartzL2Inner
+  have : (fun x : Space =>
+      officialInner ((0 : SchwartzVelocity) x) ((0 : SchwartzVelocity) x)) =
+      fun _ : Space => (0 : ℝ) := by
+    funext x
+    simp [officialInner, officialEuclideanPoint]
+  rw [this]
+  simp
+
+/-- The realized field of a coefficient vector is divergence free. -/
+theorem coefficientField_divergenceFree (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) : DivergenceFreeInitial (W.coefficientField a) :=
+  divergenceFreeInitial_sum_smul Finset.univ (fun i : Fin m => a i)
+    (fun i : Fin m => W.w i) (fun i => W.divergence_free i)
+
+/-- **The coefficient enstrophy form is positive definite.**  If the modal
+enstrophy of a coefficient vector vanishes then the vector is zero.
+
+Route: the Dirichlet bridge
+`integral_fderiv_norm_sq_le_three_mul_curl_sq_of_divFree` turns a vanishing
+curl energy into a vanishing Dirichlet energy; the Dirichlet integrand is
+continuous, nonnegative and integrable (the derivative of a Schwartz field is
+Schwartz), so it vanishes identically; a field with vanishing derivative is
+constant, and a constant Schwartz field is zero; finally the modal `L²`
+isometry `coefficientField_l2_isometry` transports `u = 0` back to `a = 0`. -/
+theorem coefficientEnstrophy_eq_zero_iff (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) :
+    W.coefficientEnstrophy a = 0 ↔ a = 0 := by
+  constructor
+  · intro h
+    set u : SchwartzVelocity := W.coefficientField a with hu
+    -- the Dirichlet energy is dominated by three times the (vanishing) curl energy
+    have hcurl : (∫ x : Space, officialEuclideanNorm (staticCurl (⇑u) x) ^ 2) = 0 := h
+    have hle := _root_.Navier.Analysis.DivFreeGradientEnstrophy.integral_fderiv_norm_sq_le_three_mul_curl_sq_of_divFree u (coefficientField_divergenceFree W a)
+    rw [hcurl, mul_zero] at hle
+    -- the Dirichlet integrand is the squared norm of a Schwartz map
+    have hfd : (fun x : Space => fderiv ℝ (⇑u) x) =
+        ⇑(SchwartzMap.fderivCLM ℝ Space Space u) := by
+      funext x
+      rw [SchwartzMap.fderivCLM_apply]
+    have hint : Integrable (fun x : Space => ‖fderiv ℝ (⇑u) x‖ ^ 2) := by
+      rw [show (fun x : Space => ‖fderiv ℝ (⇑u) x‖ ^ 2) =
+          (fun x : Space => ‖(SchwartzMap.fderivCLM ℝ Space Space u) x‖ ^ 2) by
+        funext x; rw [SchwartzMap.fderivCLM_apply]]
+      exact Navier.Analysis.GalerkinSpaceEquicontinuity.schwartz_integrable_norm_sq (SchwartzMap.fderivCLM ℝ Space Space u)
+    have hnonneg : 0 ≤ (fun x : Space => ‖fderiv ℝ (⇑u) x‖ ^ 2) := fun x => by positivity
+    have hzeroint : (∫ x : Space, ‖fderiv ℝ (⇑u) x‖ ^ 2) = 0 :=
+      le_antisymm hle (integral_nonneg hnonneg)
+    have hae : (fun x : Space => ‖fderiv ℝ (⇑u) x‖ ^ 2) =ᵐ[volume] 0 :=
+      (integral_eq_zero_iff_of_nonneg hnonneg hint).mp hzeroint
+    -- continuity upgrades a.e. vanishing to identical vanishing
+    have hcont : Continuous (fun x : Space => ‖fderiv ℝ (⇑u) x‖ ^ 2) := by
+      rw [show (fun x : Space => ‖fderiv ℝ (⇑u) x‖ ^ 2) =
+          (fun x : Space => ‖(SchwartzMap.fderivCLM ℝ Space Space u) x‖ ^ 2) by
+        funext x; rw [SchwartzMap.fderivCLM_apply]]
+      exact (SchwartzMap.fderivCLM ℝ Space Space u).continuous.norm.pow 2
+    have heq : (fun x : Space => ‖fderiv ℝ (⇑u) x‖ ^ 2) = 0 :=
+      (hcont.ae_eq_iff_eq volume continuous_const).mp hae
+    have hfderiv : ∀ x : Space, fderiv ℝ (⇑u) x = 0 := by
+      intro x
+      have := congrFun heq x
+      simp only [Pi.zero_apply] at this
+      have h2 : ‖fderiv ℝ (⇑u) x‖ = 0 := by
+        nlinarith [norm_nonneg (fderiv ℝ (⇑u) x)]
+      exact norm_eq_zero.mp h2
+    -- constant, hence zero
+    have hconst : ∀ x : Space, u x = u 0 :=
+      fun x => is_const_of_fderiv_eq_zero u.differentiable hfderiv x 0
+    have huz : u = 0 := schwartz_eq_zero_of_const u hconst
+    -- transport through the modal isometry
+    have hiso := coefficientField_l2_isometry W a
+    rw [← hu, huz] at hiso
+    have : ‖a‖ ^ 2 = 0 := by
+      rw [← hiso, schwartzL2Inner_zero_zero]
+    have : ‖a‖ = 0 := by nlinarith [norm_nonneg a]
+    exact norm_eq_zero.mp this
+  · rintro rfl
+    have : W.coefficientField (0 : EuclideanSpace ℝ (Fin m)) = 0 := by
+      simp [GalerkinBasisFamily.coefficientField]
+    rw [coefficientEnstrophy_eq_curlSchwartz, this, map_zero,
+      schwartzL2Inner_zero_zero]
+
+/-- **Positive definiteness of the modal enstrophy form, in positive form.**
+A nonzero coefficient vector has strictly positive modal enstrophy.  This is
+`coefficientEnstrophy_eq_zero_iff` combined with nonnegativity of the density.
+[Temam III §3; the underlying fact is that a divergence-free Schwartz field on
+`ℝ³` with vanishing curl vanishes.] -/
+theorem coefficientEnstrophy_pos_of_ne_zero (W : GalerkinBasisFamily) {m : ℕ}
+    {a : EuclideanSpace ℝ (Fin m)} (ha : a ≠ 0) :
+    0 < W.coefficientEnstrophy a := by
+  have hnn : 0 ≤ W.coefficientEnstrophy a := integral_nonneg fun x => by positivity
+  rcases hnn.lt_or_eq with h | h
+  · exact h
+  · exact absurd ((coefficientEnstrophy_eq_zero_iff W a).mp h.symm) ha
+
+/-- **The enstrophy density along a coefficient flow is continuous.**  The
+Stokes quadratic form is continuous and equals the modal enstrophy
+(`stokesOperator_inner_eq_enstrophy`), and the trajectory is continuous on
+`[0,∞)` because it is differentiable there. -/
+theorem coefficientFlow_enstrophy_continuousOn (W : GalerkinBasisFamily)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) :
+    ContinuousOn (fun s => W.coefficientEnstrophy (c m s)) (Set.Ici (0 : ℝ)) := by
+  have hc_cont : ContinuousOn (c m) (Set.Ici (0 : ℝ)) :=
+    fun s hs => (hc m s hs).continuousWithinAt
+  have hA_cont : ContinuousOn (fun s => W.stokesOperator m (c m s)) (Set.Ici (0 : ℝ)) :=
+    (W.stokesOperator m).continuous.comp_continuousOn hc_cont
+  refine (hA_cont.inner hc_cont).congr ?_
+  intro s _
+  exact (stokesOperator_inner_eq_enstrophy W m (c m s)).symm
+
+/-- **The exact finite-dimensional energy identity for the concrete projected
+flow.**  `‖c(T)‖² + 2ν∫₀ᵀ Ω(c(s)) ds = ‖c(0)‖²`: pairing the ODE with the
+solution kills the skew convection term (`convectionOperator_inner_self`) and
+leaves the Stokes quadratic form, which is exactly the modal enstrophy
+(`stokesOperator_inner_eq_enstrophy`).  This is
+`EnergyDissipation.energy_dissipation_identity_forward` specialized to the
+concrete operators and rewritten into the `Set.Ioc` integral that the enstrophy
+budget uses. [Leray 1934 §§18–20; Temam III §3 eq. (3.29).] -/
+theorem coefficientFlow_energy_identity (W : GalerkinBasisFamily)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) {T : ℝ} (hT : 0 ≤ T) :
+    ‖c m T‖ ^ 2 + 2 * ν * (∫ s in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m s))
+      = ‖c m 0‖ ^ 2 := by
+  have hc_cont : ContinuousOn (c m) (Set.Ici (0 : ℝ)) :=
+    fun s hs => (hc m s hs).continuousWithinAt
+  have hA_cont : ContinuousOn (fun s => W.stokesOperator m (c m s)) (Set.Ici (0 : ℝ)) :=
+    (W.stokesOperator m).continuous.comp_continuousOn hc_cont
+  have hinner_cont : ContinuousOn
+      (fun s => (inner ℝ (W.stokesOperator m (c m s)) (c m s) : ℝ)) (Set.Ici (0 : ℝ)) :=
+    hA_cont.inner hc_cont
+  have h := Navier.Analysis.EnergyDissipation.energy_dissipation_identity_forward
+    ν (W.stokesOperator m) (W.convectionOperator m) (c m)
+    (fun s => -(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s))
+    (hc m) (fun _ _ => rfl)
+    (fun s _ => convectionOperator_inner_self W m (c m s)) hinner_cont hT
+  rw [intervalIntegral.integral_of_le hT] at h
+  have hcongr : (∫ s in Set.Ioc (0:ℝ) T,
+      (inner ℝ (W.stokesOperator m (c m s)) (c m s) : ℝ)) =
+      ∫ s in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m s) := by
+    refine setIntegral_congr_fun measurableSet_Ioc ?_
+    intro s _
+    exact stokesOperator_inner_eq_enstrophy W m (c m s)
+  rwa [hcongr] at h
+
+/-- **A compact spherical shell carries a uniform positive enstrophy floor.**
+On `{a : L ≤ ‖a‖ ≤ R}` with `L > 0` the continuous form `Ω` attains its minimum
+(the shell is closed and bounded in a finite-dimensional space, hence compact),
+and the minimizer is nonzero, so the minimum is strictly positive by
+`coefficientEnstrophy_pos_of_ne_zero`.  When the shell is empty — which happens
+exactly when `m = 0` — any positive constant works. -/
+theorem exists_pos_enstrophy_floor_on_shell (W : GalerkinBasisFamily) (m : ℕ)
+    {L R : ℝ} (hL : 0 < L) :
+    ∃ eta : ℝ, 0 < eta ∧ ∀ a : EuclideanSpace ℝ (Fin m),
+      L ≤ ‖a‖ → ‖a‖ ≤ R → eta ≤ W.coefficientEnstrophy a := by
+  classical
+  set S : Set (EuclideanSpace ℝ (Fin m)) := {a | L ≤ ‖a‖ ∧ ‖a‖ ≤ R} with hSdef
+  have hOm_cont :
+      Continuous (fun a : EuclideanSpace ℝ (Fin m) => W.coefficientEnstrophy a) := by
+    have hbase : Continuous
+        (fun a : EuclideanSpace ℝ (Fin m) => (inner ℝ (W.stokesOperator m a) a : ℝ)) :=
+      (W.stokesOperator m).continuous.inner continuous_id
+    refine hbase.congr ?_
+    intro a
+    exact stokesOperator_inner_eq_enstrophy W m a
+  rcases S.eq_empty_or_nonempty with hSe | hSne
+  · refine ⟨1, one_pos, ?_⟩
+    intro a h1 h2
+    have : a ∈ S := ⟨h1, h2⟩
+    rw [hSe] at this
+    exact absurd this (by simp)
+  · have hSclosed : IsClosed S :=
+      (isClosed_le continuous_const continuous_norm).inter
+        (isClosed_le continuous_norm continuous_const)
+    have hSbdd : Bornology.IsBounded S := by
+      refine (Metric.isBounded_closedBall
+        (x := (0 : EuclideanSpace ℝ (Fin m))) (r := R)).subset ?_
+      intro a ha
+      simpa [Metric.mem_closedBall, dist_zero_right] using ha.2
+    have hScompact : IsCompact S := Metric.isCompact_of_isClosed_isBounded hSclosed hSbdd
+    obtain ⟨a0, ha0S, ha0min⟩ := hScompact.exists_isMinOn hSne hOm_cont.continuousOn
+    have ha0ne : a0 ≠ 0 := by
+      intro hz
+      have h1 : L ≤ ‖a0‖ := ha0S.1
+      rw [hz, norm_zero] at h1
+      linarith
+    exact ⟨W.coefficientEnstrophy a0, coefficientEnstrophy_pos_of_ne_zero W ha0ne,
+      fun a h1 h2 => ha0min ⟨h1, h2⟩⟩
+
+/-- **The initial coefficient energy is controlled by the enstrophy budget.**
+`‖c_m(0)‖² ≤ 2νE`, uniformly in `m`.
+
+If not, the energy identity `‖c(T)‖² = ‖c(0)‖² − 2ν∫₀ᵀ Ω` together with
+`∫₀ᵀ Ω ≤ E` confines the trajectory for *all* time to the compact shell
+`L ≤ ‖a‖ ≤ ‖c(0)‖` with `L² = ‖c(0)‖² − 2νE > 0`.  On that shell
+`exists_pos_enstrophy_floor_on_shell` gives `Ω ≥ η > 0`, so `∫₀ᵀ Ω ≥ ηT`,
+which exceeds `E` at `T = (E+1)/η` — contradicting the budget.
+
+The *global-in-`T`* form of the hypothesis is load-bearing here: a
+finite-horizon enstrophy budget genuinely does not bound the initial energy. -/
+theorem coefficientFlow_initial_norm_sq_le_of_enstrophyBound (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (enstrophyBound : ℝ)
+    (henst : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound)
+    (m : ℕ) :
+    ‖c m 0‖ ^ 2 ≤ 2 * ν * enstrophyBound := by
+  classical
+  have hOmega_cont := coefficientFlow_enstrophy_continuousOn W c hc m
+  have hE0 : 0 ≤ enstrophyBound := by simpa using henst m 0 le_rfl
+  have hid := fun (T : ℝ) (hT : 0 ≤ T) => coefficientFlow_energy_identity W c hc m hT
+  by_contra hcon
+  push_neg at hcon
+  set R : ℝ := ‖c m 0‖ with hR
+  set Lsq : ℝ := ‖c m 0‖ ^ 2 - 2 * ν * enstrophyBound with hLsq
+  have hLsq_pos : 0 < Lsq := by simp only [hLsq]; linarith
+  set L : ℝ := Real.sqrt Lsq with hL
+  have hL_pos : 0 < L := Real.sqrt_pos.mpr hLsq_pos
+  -- the trajectory is trapped in the shell `L ≤ ‖a‖ ≤ R` for all time
+  have hlow : ∀ T : ℝ, 0 ≤ T → L ≤ ‖c m T‖ := by
+    intro T hT
+    have h3 : Lsq ≤ ‖c m T‖ ^ 2 := by nlinarith [hid T hT, henst m T hT]
+    calc L = Real.sqrt Lsq := hL
+      _ ≤ Real.sqrt (‖c m T‖ ^ 2) := Real.sqrt_le_sqrt h3
+      _ = ‖c m T‖ := Real.sqrt_sq (norm_nonneg _)
+  have hhigh : ∀ T : ℝ, 0 ≤ T → ‖c m T‖ ≤ R := by
+    intro T hT
+    have h2 : (0:ℝ) ≤ ∫ s in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m s) :=
+      setIntegral_nonneg measurableSet_Ioc
+        (fun s _ => integral_nonneg fun x => by positivity)
+    have h3 : ‖c m T‖ ^ 2 ≤ R ^ 2 := by nlinarith [hid T hT]
+    calc ‖c m T‖ = Real.sqrt (‖c m T‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
+      _ ≤ Real.sqrt (R ^ 2) := Real.sqrt_le_sqrt h3
+      _ = R := Real.sqrt_sq (norm_nonneg _)
+  -- a uniform positive enstrophy floor along the whole trajectory
+  obtain ⟨eta, heta_pos, hfloor⟩ := exists_pos_enstrophy_floor_on_shell W m (R := R) hL_pos
+  have hbig : ∀ T : ℝ, 0 ≤ T →
+      eta * T ≤ ∫ s in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m s) := by
+    intro T hT
+    have hIntOn : IntegrableOn (fun s => W.coefficientEnstrophy (c m s))
+        (Set.Ioc (0:ℝ) T) :=
+      (((hOmega_cont.mono Set.Icc_subset_Ici_self).integrableOn_Icc)).mono_set
+        Set.Ioc_subset_Icc_self
+    have hconst : (∫ _s in Set.Ioc (0:ℝ) T, eta) = eta * T := by
+      rw [setIntegral_const, smul_eq_mul, measureReal_def, Real.volume_Ioc,
+        sub_zero, ENNReal.toReal_ofReal hT]
+      ring
+    calc eta * T = ∫ _s in Set.Ioc (0:ℝ) T, eta := hconst.symm
+      _ ≤ ∫ s in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m s) :=
+          setIntegral_mono_on
+            (((continuousOn_const (s := Set.Icc (0:ℝ) T)
+                (c := eta)).integrableOn_Icc).mono_set Set.Ioc_subset_Icc_self)
+            hIntOn measurableSet_Ioc
+            (fun s hs => hfloor _ (hlow s hs.1.le) (hhigh s hs.1.le))
+  have hTchoice : (0:ℝ) ≤ (enstrophyBound + 1) / eta := by positivity
+  have h1 := hbig _ hTchoice
+  have h2 := henst m _ hTchoice
+  rw [mul_div_cancel₀ _ (ne_of_gt heta_pos)] at h1
+  linarith
+
+/-- **The uniform coefficient-energy bound extracted from the enstrophy budget
+alone.**
+
+The hypotheses of the Aubin–Lions leaf budget only the *time-integrated
+enstrophy* `∫₀ᵀ Ω(c(t)) dt ≤ E`, uniformly in `m` and in `T`.  The convective
+estimate that leaf must consume,
+`|⟨B(a), b⟩|⁴ ≤ C‖a‖²Ω(a)³Ω(b)²`, additionally needs the coefficient *energy*
+`‖a‖`, which is not among those hypotheses.  This theorem supplies it, with a
+constant depending only on `ν` and `E` — in particular uniform in `m`:
+
+  `‖c_m(t)‖² ≤ 2 ν E`  for every `m` and every `t ≥ 0`.
+
+The energy is nonincreasing along the flow (`norm_sq_le_initial_forward`, using
+Stokes positivity and convection skewness), so the claim reduces to
+`coefficientFlow_initial_norm_sq_le_of_enstrophyBound` at `t = 0`.
+
+Dimensional check: on `ℝ³` the Dirichlet form controls `L⁶` but not `L⁴`, so no
+estimate of the convective shape above can drop the `L²` factor; the energy
+really is a needed ingredient rather than a rearrangement of `henst`. -/
+theorem coefficientFlow_norm_sq_le_of_enstrophyBound (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (enstrophyBound : ℝ)
+    (henst : ∀ (m : ℕ) (T : ℝ), 0 ≤ T →
+      (∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound)
+    (m : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    ‖c m t‖ ^ 2 ≤ 2 * ν * enstrophyBound := by
+  calc ‖c m t‖ ^ 2 ≤ ‖c m 0‖ ^ 2 := by
+        refine norm_sq_le_initial_forward (c m)
+          (fun s => -(ν • W.stokesOperator m (c m s)) + W.convectionOperator m (c m s))
+          (hc m) ?_ ht
+        intro s _
+        rw [inner_add_left, inner_neg_left, inner_smul_left,
+          convectionOperator_inner_self]
+        simp only [conj_trivial, add_zero]
+        exact neg_nonpos.mpr (mul_nonneg hν.le (stokesOperator_nonneg W m (c m s)))
+    _ ≤ 2 * ν * enstrophyBound :=
+        coefficientFlow_initial_norm_sq_le_of_enstrophyBound W hν c hc enstrophyBound henst m
+
 /-- **[LEAF — Aubin–Lions time regularity for the Galerkin coefficient flow;
 est ~450 LOC.]**  A coefficient flow solving the projected Galerkin ODE, with a
 uniform time-integrated enstrophy bound, is `L²`-in-time translation
