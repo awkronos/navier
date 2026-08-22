@@ -134,9 +134,13 @@ This file lays that layer over the repo's own objects:
   property.  The `∃ δ` stands outside `∀ m` (the strong, compactness-bearing
   form; the `∀ m, ∃ δ` weakening is content-free and is what would re-falsify
   `aubin_lions_l2loc_compactness`).  The viscous half of its classical proof is
-  now fully stocked (`abs_stokesOperator_inner_le` + the enstrophy bound); the
-  open part is the convective term, which needs a Ladyzhenskaya/`L⁴`
-  interpolation bound on `convectionOperator` that the estate does not have.
+  now fully stocked (`abs_stokesOperator_inner_le` + the enstrophy bound), and
+  the convective term now has its off-diagonal size estimate
+  (`ConvectionTrilinear.abs_convectionOperator_inner_le`, downstream).  The one
+  remaining analytic gap is the Gagliardo–Nirenberg–Sobolev endpoint
+  `‖u‖_{L⁶(ℝ³)} ≤ C‖∇u‖_{L²}` for Schwartz fields, which turns the `L⁴` factors
+  of that estimate into `coefficientEnstrophy` through the certified
+  interpolation `Ladyzhenskaya.integral_pow_four_le_sqrt`.
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
 projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
@@ -2151,19 +2155,24 @@ The viscous term is handled by the certified Stokes Cauchy–Schwarz
 width `h` and Cauchy–Schwarz in `(s,t)` give `O(ν · h · enstrophyBound)`, which
 is uniform in `m` and vanishes with `h`.  This is the linear half, and its
 ingredients are now all in the estate.
-Still missing: the corresponding bound on the convective term
-`⟨B(c(s)), c(t+h) − c(t)⟩`.  In three dimensions that needs the Ladyzhenskaya
-interpolation estimate `|⟨B(u), φ⟩| ≤ C‖u‖^{1/2}_{L²}‖u‖^{3/2}_{H¹}‖φ‖_{H¹}`
-for the trilinear form, i.e. an `H^{1/2}`/`L⁴` Sobolev bound on
-`convectionOperator`; the estate has `convectionOperator_inner_self` (skewness
-on the diagonal) but no off-diagonal size estimate at all
+The convective term `⟨B(c(s)), c(t+h) − c(t)⟩` now has an off-diagonal size
+estimate: `ConvectionTrilinear.abs_convectionOperator_inner_le` (certified,
+downstream of this file) gives
+`|⟨B(a), b⟩| ≤ √3 · ‖u_a‖²_{L⁴} · ‖∇u_b‖_{L²}` with `u_a = W.coefficientField a`
+— the exact counterpart of `convectionOperator_inner_self` on the diagonal
 [Temam, *Navier–Stokes Equations* III §3; Robinson–Rodrigo–Sadowski Ch. 4;
 Simon, Ann. Mat. Pura Appl. 146 (1987) 65–96, Thm 1 condition (iii)].
 
-Depends on: an `L⁴(ℝ³)` bound for finite modal fields in terms of
-`coefficientEnstrophy` — not currently in the estate, and the same
-Sobolev-interpolation gap that blocks the enstrophy budget elsewhere in this
-project. -/
+Depends on (the one remaining analytic gap): the Gagliardo–Nirenberg–Sobolev
+endpoint `‖u‖_{L⁶(ℝ³)} ≤ C ‖∇u‖_{L²}` for Schwartz fields, which converts the
+`L⁴` factors above into `coefficientEnstrophy` via
+`Ladyzhenskaya.integral_pow_four_le_sqrt` (the interpolation half, certified).
+Mathlib has GNS only under `HasCompactSupport`
+(`MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq`); the Schwartz case needs a
+cutoff-and-limit argument.  Reference: Evans, *PDE* §5.6.1 Thm 1; Mathlib
+`Mathlib/Analysis/FunctionalSpaces/SobolevInequality.lean`.  Estimated ~250 LOC.
+With that in hand the convective half of this leaf follows the same Fubini +
+Cauchy–Schwarz pattern as the certified viscous half. -/
 theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
     {ν : ℝ} (hν : 0 < ν)
     (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
