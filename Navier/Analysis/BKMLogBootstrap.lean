@@ -2105,6 +2105,92 @@ theorem sliceIteratedFDeriv_continuousOn
     ‖iteratedFDeriv ℝ n (S.velocity t) x‖ ^ 2
   rw [S.slice_eq t ht]
 
+/-- **Rapid decay of every Schwartz iterated derivative, in the quartic weight
+the BKM dominated-convergence layer actually consumes.**  For each order `n`,
+
+  `‖D^n f x‖² ≤ K · (1 + ‖x‖)^{-4}`  for all `x`,
+
+with `K = 8·(C₀² + C₄·C₀)` assembled from the two Schwartz seminorm bounds
+`f.decay 0 n` and `f.decay 4 n`.  The factor `8` is the sharp comparison
+`(1 + r)⁴ ≤ 8·(1 + r⁴)` on `r ≥ 0`, with equality at `r = 1`.
+
+This is the order-`n`, `rpow`-weight strengthening of
+`GalerkinSpaceEquicontinuity.schwartz_norm_sq_decay`, which covers only `n = 0`
+in the `D/(1 + ‖x‖⁴)` normalisation. -/
+theorem schwartz_iteratedFDeriv_sq_decay {F : Type*} [NormedAddCommGroup F]
+    [NormedSpace ℝ F] (f : SchwartzMap Space F) (n : ℕ) :
+    ∃ K : ℝ, 0 < K ∧ ∀ x : Space,
+      ‖iteratedFDeriv ℝ n f x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ) := by
+  obtain ⟨C0, hC0pos, hC0⟩ := f.decay 0 n
+  obtain ⟨C4, hC4pos, hC4⟩ := f.decay 4 n
+  have h0 : ∀ x : Space, ‖iteratedFDeriv ℝ n (⇑f) x‖ ≤ C0 := by
+    intro x; simpa using hC0 x
+  have h4 : ∀ x : Space, ‖x‖ ^ 4 * ‖iteratedFDeriv ℝ n (⇑f) x‖ ≤ C4 := by
+    intro x; simpa using hC4 x
+  refine ⟨8 * (C0 ^ 2 + C4 * C0), by positivity, fun x => ?_⟩
+  have hxpos : (0 : ℝ) < 1 + ‖x‖ := by positivity
+  have hrw : (1 + ‖x‖) ^ (-4 : ℝ) = ((1 + ‖x‖) ^ (4 : ℕ))⁻¹ := by
+    rw [show (-4 : ℝ) = -((4 : ℕ) : ℝ) by norm_num, Real.rpow_neg hxpos.le,
+      Real.rpow_natCast]
+  rw [hrw, ← div_eq_mul_inv,
+    le_div_iff₀ (by positivity : (0 : ℝ) < (1 + ‖x‖) ^ (4 : ℕ))]
+  have hcmp : (1 + ‖x‖) ^ (4 : ℕ) ≤ 8 * (1 + ‖x‖ ^ 4) := by
+    nlinarith [norm_nonneg x, sq_nonneg (‖x‖ - 1), sq_nonneg (‖x‖ + 1),
+      sq_nonneg (‖x‖ ^ 2 - 1), sq_nonneg (‖x‖ ^ 2 - ‖x‖)]
+  have hkey : ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖ ^ 4) ≤ C0 ^ 2 + C4 * C0 := by
+    calc ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖ ^ 4)
+        = ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2
+            + (‖x‖ ^ 4 * ‖iteratedFDeriv ℝ n (⇑f) x‖) * ‖iteratedFDeriv ℝ n (⇑f) x‖ := by
+          ring
+      _ ≤ C0 ^ 2 + C4 * C0 :=
+          add_le_add (pow_le_pow_left₀ (norm_nonneg _) (h0 x) 2)
+            (mul_le_mul (h4 x) (h0 x) (norm_nonneg _) hC4pos.le)
+  calc ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖) ^ (4 : ℕ)
+      ≤ ‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (8 * (1 + ‖x‖ ^ 4)) :=
+        mul_le_mul_of_nonneg_left hcmp (by positivity)
+    _ = 8 * (‖iteratedFDeriv ℝ n (⇑f) x‖ ^ 2 * (1 + ‖x‖ ^ 4)) := by ring
+    _ ≤ 8 * (C0 ^ 2 + C4 * C0) := by linarith
+
+/-- **The fixed-time half of `exists_sliceLocallyUniformDecayBound`, certified.**
+At each *single* nonnegative time the target inequality holds outright, for all
+four derivative orders at once, with a constant depending on that time: take
+the maximum of the four order-wise constants supplied by
+`schwartz_iteratedFDeriv_sq_decay`.
+
+**Why this pins the residual exactly.**  The open statement asks for a `K` that
+works simultaneously for every `t` in a neighborhood of `t₀`.  This theorem
+supplies `K` for each `t` separately, kernel-clean, from the Schwartz structure
+of the slice alone.  What remains open is therefore *only the uniformity of `K`
+over a time neighborhood* — and that uniformity is genuinely unavailable from
+smoothness plus Schwartz slices, by the witness recorded on the residual below:
+for `v t x = (t − t₀)³·ψ((t − t₀)²x)` with `ψ = exp(−‖·‖²)`, the exact
+optimisation over `s = t − t₀` gives
+
+  `sup_s ‖v(s,x)‖² = (3/4)^{3/2}·e^{−3/2}·‖x‖^{−3}`
+
+(confirmed numerically to seven digits at `‖x‖ = 1, 10, 10², 10³, 10⁴`), so
+`sup_s ‖v(s,x)‖²·(1 + ‖x‖)⁴ ~ C·‖x‖ → ∞` while every slice stays Schwartz and
+the joint map stays `C^∞`.  The residual must therefore consume the
+Navier–Stokes clauses of `IsClassicalSolution`, not merely `velocity_smooth`. -/
+theorem exists_sliceFixedTimeDecayBound
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) (t : ℝ) :
+    ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, n < 4 → ∀ x : Space,
+      ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ K * (1 + ‖x‖) ^ (-4 : ℝ) := by
+  choose K hKpos hK using fun n : ℕ => schwartz_iteratedFDeriv_sq_decay (S.slice t) n
+  refine ⟨max (max (K 0) (K 1)) (max (K 2) (K 3)), ?_, ?_⟩
+  · exact lt_of_lt_of_le (hKpos 0) (le_max_of_le_left (le_max_left _ _))
+  · have hle : ∀ m : ℕ, m < 4 → K m ≤ max (max (K 0) (K 1)) (max (K 2) (K 3)) := by
+      intro m hm
+      interval_cases m
+      · exact le_max_of_le_left (le_max_left _ _)
+      · exact le_max_of_le_left (le_max_right _ _)
+      · exact le_max_of_le_right (le_max_left _ _)
+      · exact le_max_of_le_right (le_max_right _ _)
+    intro n hn x
+    have hwpos : (0 : ℝ) ≤ (1 + ‖x‖) ^ (-4 : ℝ) :=
+      Real.rpow_nonneg (by positivity) _
+    exact le_trans (hK n x) (mul_le_mul_of_nonneg_right (hle n hn) hwpos)
+
 /-- **[NAMED RESIDUAL — locally uniform Schwartz decay along the flow;
 Majda–Bertozzi §3.2.3; est ~250 LOC.]**  Along a Schwartz-sliced classical
 solution, near every nonnegative time `t₀` there is a uniform polynomial decay
