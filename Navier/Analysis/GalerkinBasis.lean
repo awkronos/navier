@@ -143,13 +143,13 @@ This file lays that layer over the repo's own objects:
   `coefficientFlow_displacement_identity`, `abs_projectedVectorField_inner_le`,
   `coefficientFlow_displacement_sq_le`,
   `coefficientFlow_shifted_displacement_integral_le`.
-* `galerkinCoefficientFlow_timeEquicontinuous` itself now lives in
+* `galerkinCoefficientFlow_timeEquicontinuous` itself is **closed** and lives in
   `Navier.Analysis.GalerkinModeData`, together with its only consumer
   `exists_galerkinModeData`.  It cannot live here: discharging the convective
   hypothesis needs
   `ConvectionLadyzhenskaya.abs_convectionOperator_inner_pow_four_le_enstrophy`,
   and `ConvectionTrilinear` imports *this* file for `convectionOperator`, so
-  the estimate is strictly downstream.  The relocation is a routing move only;
+  the estimate is strictly downstream.  The relocation is a routing fact only;
   the statement is byte-identical.
 
 With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
