@@ -1,5 +1,6 @@
 import Navier.Analysis.WholeSpaceDuhamel
 import Navier.Analysis.PressurePoisson
+import Navier.Analysis.ScaledCutoff
 
 /-!
 # Whole-space cutoff momentum: time integration
@@ -42,6 +43,8 @@ open Navier.Breakdown
 open Navier.Analysis.ParabolicCaccioppoli
 open Navier.Analysis.PressurePoisson
 open Navier.Analysis.WholeSpaceDuhamel
+open Navier.Analysis.HeatSemigroupSmoothing
+open Navier.Analysis.ScaledCutoff
 
 /-! ### Time-slice regularity before the terminal time -/
 
@@ -313,5 +316,99 @@ theorem cutoffMomentumCoordinate_timeIntegrated
       have ht' : t ∈ Set.Icc a b := by simpa [uIcc_of_le hab] using ht
       exact cutoff_testedMomentum_coordinate sol hχ hχsupp
         (ha0.le.trans ht'.1) (ht'.2.trans_lt hbT) j
+
+/-! ### The actual cutoff-to-Gaussian limit -/
+
+/-- Multiplication by the concrete scaled cutoff converges under every
+integrable spatial integral.  The standard bump is pointwise eventually one
+and lies in `[0,1]`, so `‖f‖` is the global dominating function. -/
+theorem scaledCutoff_integral_tendsto (f : Space → ℝ) (hf : Integrable f) :
+    Filter.Tendsto (fun R : ℝ => ∫ y : Space, scaledCutoff R y * f y)
+      Filter.atTop (nhds (∫ y : Space, f y)) := by
+  apply tendsto_integral_filter_of_dominated_convergence (fun y => ‖f y‖)
+  · filter_upwards with R
+    exact (scaledCutoff_contDiff R).continuous.aestronglyMeasurable.mul
+      hf.aestronglyMeasurable
+  · filter_upwards with R
+    filter_upwards with y
+    rw [norm_mul]
+    exact mul_le_of_le_one_left (norm_nonneg (f y)) (by
+      rw [Real.norm_eq_abs, abs_of_nonneg (scaledCutoff_nonneg R y)]
+      exact scaledCutoff_le_one R y)
+  · exact hf.norm
+  · filter_upwards with y
+    have heq : (fun R : ℝ => scaledCutoff R y * f y) =ᶠ[Filter.atTop]
+        (fun _ => f y) := by
+      filter_upwards [scaledCutoff_eventually_one y] with R hR
+      simp [hR]
+    exact tendsto_const_nhds.congr' heq.symm
+
+/-- Every fixed Gaussian translate is smooth in its spatial variable. -/
+theorem heatKernel_translate_contDiff (ν τ : ℝ) (x : Space) :
+    ContDiff ℝ ∞ (fun y : Space => heatKernel ν τ (x - y)) := by
+  unfold heatKernel
+  fun_prop
+
+/-- The time-integrated right-hand side of the finite-cutoff coordinate
+momentum identity. -/
+def cutoffMomentumCoordinateTimeRhs
+    {ν : ℝ} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    (χ : Space → ℝ) (a b : ℝ) (j : Fin 3) : ℝ :=
+  ∫ t in a..b,
+    (∫ x : Space,
+      fderiv ℝ χ x (sol.velocity t x) * sol.velocity t x j) +
+    ν * (∫ x : Space, (∑ i : Fin 3,
+      fderiv ℝ (fun z => fderiv ℝ χ z (basisVector i)) x (basisVector i)) *
+        sol.velocity t x j) +
+    (∫ x : Space,
+      fderiv ℝ χ x (basisVector j) * sol.pressure t x)
+
+/-- **Cutoff-to-Gaussian convergence of the full tested momentum balance.**
+For the concrete tests
+
+`χ_R(y) G^κ_τ(x₀-y)`,
+
+the complete time-integrated finite-cutoff PDE right-hand side converges to
+the increment of Gaussian-tested momentum.  Endpoint integrability is the
+only domination used: the finite-cutoff momentum identity transports the
+right-hand side as one gauge-invariant package, while dominated convergence
+acts on its momentum endpoints.
+
+This is deliberately not a termwise Duhamel formula.  Splitting the limit
+into convection, viscosity, pressure/Leray pieces still requires the missing
+space-time tail bounds; the theorem isolates that remaining residual without
+assuming the desired representation. -/
+theorem gaussianCutoffMomentumRhs_tendsto
+    {ν : ℝ} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {a b : ℝ} (ha0 : 0 < a) (hab : a ≤ b) (hbT : b < T) (j : Fin 3)
+    (κ τ : ℝ) (x₀ : Space)
+    (hint_a : Integrable (fun y : Space =>
+      heatKernel κ τ (x₀ - y) * sol.velocity a y j))
+    (hint_b : Integrable (fun y : Space =>
+      heatKernel κ τ (x₀ - y) * sol.velocity b y j)) :
+    Filter.Tendsto (fun R : ℝ => cutoffMomentumCoordinateTimeRhs sol
+        (fun y : Space => scaledCutoff R y * heatKernel κ τ (x₀ - y)) a b j)
+      Filter.atTop (nhds
+        ((∫ y : Space, heatKernel κ τ (x₀ - y) * sol.velocity b y j) -
+          ∫ y : Space, heatKernel κ τ (x₀ - y) * sol.velocity a y j)) := by
+  have ha := scaledCutoff_integral_tendsto
+    (fun y : Space => heatKernel κ τ (x₀ - y) * sol.velocity a y j) hint_a
+  have hb := scaledCutoff_integral_tendsto
+    (fun y : Space => heatKernel κ τ (x₀ - y) * sol.velocity b y j) hint_b
+  have hleft := hb.sub ha
+  apply hleft.congr'
+  filter_upwards [Filter.eventually_gt_atTop (0 : ℝ)] with R hR
+  have htestDiff : ContDiff ℝ ∞
+      (fun y : Space => scaledCutoff R y * heatKernel κ τ (x₀ - y)) :=
+    (scaledCutoff_contDiff R).mul (heatKernel_translate_contDiff κ τ x₀)
+  have htestSupp : HasCompactSupport
+      (fun y : Space => scaledCutoff R y * heatKernel κ τ (x₀ - y)) :=
+    (scaledCutoff_hasCompactSupport hR).mul_right
+  have hfinite := cutoffMomentumCoordinate_timeIntegrated sol htestDiff
+    htestSupp ha0 hab hbT j
+  simpa [cutoffMomentumCoordinateTimeRhs, cutoffMomentumCoordinate, mul_assoc]
+    using hfinite
 
 end Navier.Analysis.WholeSpaceCutoffLimit
