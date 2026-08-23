@@ -58,6 +58,8 @@ import Navier.Analysis.FourierBridge
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.VacuityAudit
 import Navier.Analysis.BKMLogBootstrap
+import Navier.Analysis.BKMLogBootstrapAnalysis
+import Navier.Analysis.GagliardoNirenberg
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.EnstrophyPointwise
 import Navier.Analysis.LocalEnstrophyBalance
