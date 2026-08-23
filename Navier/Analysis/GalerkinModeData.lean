@@ -1,4 +1,5 @@
 import Navier.Analysis.ConvectionLadyzhenskaya
+import Navier.Analysis.GalerkinWeakConsistency
 
 /-!
 # The Galerkin mode-data construction, downstream of the convective estimate
