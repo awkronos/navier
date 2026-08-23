@@ -1,4 +1,5 @@
 import Navier.Analysis.GalerkinBasis
+import Navier.Analysis.Ladyzhenskaya
 
 /-!
 # Galerkin weak-consistency commutator identities
@@ -15,6 +16,7 @@ noncomputable section
 namespace Navier.Analysis.GalerkinBasis
 
 open Navier
+open MeasureTheory
 
 /-- Against a retained Galerkin field, the Laplacian/projection commutator is
 exactly the negative curl pairing with the test projection error.
@@ -114,5 +116,125 @@ theorem abs_coefficientField_laplacianProjectionCommutator_pairing_le
     exact (Real.sqrt_sq (norm_nonneg _)).symm
   rw [henstrophyNorm] at hcs
   exact hcs
+
+/-- Spacetime Cauchy--Schwarz control of the Laplacian/projection commutator.
+
+The modal enstrophy budget is the only PDE estimate used.  Integrability of
+the fixed test's squared curl-projection error is explicit, and no convergence
+of that error (in particular no `H¹` projection convergence) is assumed.
+
+Citation: Temam, *Navier--Stokes Equations*, Chapter III, Section 3. -/
+theorem abs_intervalIntegral_laplacianProjectionCommutator_le
+    (W : GalerkinBasisFamily) {m : ℕ}
+    (c : ℝ → EuclideanSpace ℝ (Fin m)) (φ : ℝ → SchwartzVelocity)
+    (hφ : ∀ t, DivergenceFreeInitial (φ t))
+    (ν T enstrophyBound : ℝ) (hT : 0 ≤ T)
+    (henstrophy :
+      (∫ t in Set.Ioc (0 : ℝ) T, W.coefficientEnstrophy (c t)) ≤ enstrophyBound)
+    (henstrophyIntegrable : IntegrableOn
+      (fun t => W.coefficientEnstrophy (c t)) (Set.Ioc (0 : ℝ) T))
+    (errorSqIntegrable : IntegrableOn (fun t =>
+      ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+      (Set.Ioc (0 : ℝ) T))
+    (pairingIntervalIntegrable : IntervalIntegrable (fun t =>
+      ν * schwartzL2Inner (W.coefficientField (c t))
+        (W.laplacianProjectionCommutator m (φ t))) volume 0 T) :
+    |∫ t in (0 : ℝ)..T, ν * schwartzL2Inner (W.coefficientField (c t))
+        (W.laplacianProjectionCommutator m (φ t))| ≤
+      |ν| * Real.sqrt enstrophyBound * Real.sqrt
+        (∫ t in Set.Ioc (0 : ℝ) T,
+          ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2) := by
+  let Ω : ℝ → ℝ := fun t => W.coefficientEnstrophy (c t)
+  let err : ℝ → ℝ := fun t =>
+    ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖
+  let pair : ℝ → ℝ := fun t => schwartzL2Inner (W.coefficientField (c t))
+    (W.laplacianProjectionCommutator m (φ t))
+  have hΩ0 : ∀ t, 0 ≤ Ω t := by
+    intro t
+    dsimp only [Ω]
+    unfold GalerkinBasisFamily.coefficientEnstrophy
+    exact integral_nonneg fun _ => by positivity
+  have herr0 : ∀ t, 0 ≤ err t := fun _ => norm_nonneg _
+  have hpoint : ∀ t, |pair t| ≤ Real.sqrt (Ω t) * err t := by
+    intro t
+    simpa only [pair, Ω, err] using
+      abs_coefficientField_laplacianProjectionCommutator_pairing_le
+        W (c t) (φ t) (hφ t)
+  have hsqrtΩMeas : AEStronglyMeasurable (fun t => Real.sqrt (Ω t))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) :=
+    Real.continuous_sqrt.comp_aestronglyMeasurable
+      henstrophyIntegrable.aestronglyMeasurable
+  have herrMeas : AEStronglyMeasurable err
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := by
+    have h := Real.continuous_sqrt.comp_aestronglyMeasurable
+      errorSqIntegrable.aestronglyMeasurable
+    simpa only [err, Real.sqrt_sq (norm_nonneg _)] using h
+  have hsqrtΩSqIntegrable : IntegrableOn (fun t => (Real.sqrt (Ω t)) ^ 2)
+      (Set.Ioc (0 : ℝ) T) := by
+    refine henstrophyIntegrable.congr ?_
+    filter_upwards with t
+    exact (Real.sq_sqrt (hΩ0 t)).symm
+  have herrorSqIntegrable : IntegrableOn (fun t => err t ^ 2)
+      (Set.Ioc (0 : ℝ) T) := by
+    simpa only [err] using errorSqIntegrable
+  have hsqrtProductIntegrable : IntegrableOn
+      (fun t => Real.sqrt (Ω t) * err t) (Set.Ioc (0 : ℝ) T) := by
+    have hf : MemLp (fun t => Real.sqrt (Ω t)) 2
+        (volume.restrict (Set.Ioc (0 : ℝ) T)) :=
+      (memLp_two_iff_integrable_sq hsqrtΩMeas).mpr hsqrtΩSqIntegrable
+    have hg : MemLp err 2 (volume.restrict (Set.Ioc (0 : ℝ) T)) :=
+      (memLp_two_iff_integrable_sq herrMeas).mpr herrorSqIntegrable
+    exact hf.integrable_mul hg
+  have hcs :
+      (∫ t in Set.Ioc (0 : ℝ) T, Real.sqrt (Ω t) * err t) ≤
+        Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, Ω t) *
+          Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, err t ^ 2) :=
+    calc
+      (∫ t in Set.Ioc (0 : ℝ) T, Real.sqrt (Ω t) * err t) ≤
+          Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, (Real.sqrt (Ω t)) ^ 2) *
+            Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, err t ^ 2) :=
+        Navier.Analysis.Ladyzhenskaya.integral_mul_le_sqrt_mul_sqrt
+          (μ := volume.restrict (Set.Ioc (0 : ℝ) T))
+          (fun t => Real.sqrt_nonneg _) herr0 hsqrtΩMeas herrMeas
+          hsqrtΩSqIntegrable herrorSqIntegrable
+      _ = Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, Ω t) *
+            Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, err t ^ 2) := by
+        congr 2
+        apply integral_congr_ae
+        filter_upwards with t
+        exact Real.sq_sqrt (hΩ0 t)
+  have hpairAbsIntegrable : IntegrableOn (fun t => |ν * pair t|)
+      (Set.Ioc (0 : ℝ) T) := by
+    change Integrable (fun t => |ν * pair t|)
+      (volume.restrict (Set.Ioc (0 : ℝ) T))
+    simpa only [pair] using pairingIntervalIntegrable.1.abs
+  have hmajorantIntegrable : IntegrableOn
+      (fun t => |ν| * (Real.sqrt (Ω t) * err t)) (Set.Ioc (0 : ℝ) T) :=
+    hsqrtProductIntegrable.const_mul _
+  rw [intervalIntegral.integral_of_le hT]
+  calc
+    |∫ t in Set.Ioc (0 : ℝ) T, ν * pair t| ≤
+        ∫ t in Set.Ioc (0 : ℝ) T, |ν * pair t| :=
+      abs_integral_le_integral_abs
+    _ ≤ ∫ t in Set.Ioc (0 : ℝ) T,
+        |ν| * (Real.sqrt (Ω t) * err t) :=
+      integral_mono hpairAbsIntegrable hmajorantIntegrable fun t => by
+        rw [abs_mul]
+        exact mul_le_mul_of_nonneg_left (hpoint t) (abs_nonneg ν)
+    _ = |ν| * (∫ t in Set.Ioc (0 : ℝ) T, Real.sqrt (Ω t) * err t) :=
+      integral_const_mul _ _
+    _ ≤ |ν| * (Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, Ω t) *
+        Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, err t ^ 2)) :=
+      mul_le_mul_of_nonneg_left hcs (abs_nonneg ν)
+    _ ≤ |ν| * (Real.sqrt enstrophyBound *
+        Real.sqrt (∫ t in Set.Ioc (0 : ℝ) T, err t ^ 2)) := by
+      refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg ν)
+      exact mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt henstrophy)
+        (Real.sqrt_nonneg _)
+    _ = |ν| * Real.sqrt enstrophyBound * Real.sqrt
+        (∫ t in Set.Ioc (0 : ℝ) T,
+          ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2) := by
+      simp only [err]
+      ring
 
 end Navier.Analysis.GalerkinBasis
