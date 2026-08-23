@@ -17,6 +17,7 @@ namespace Navier.Analysis.GalerkinBasis
 
 open Navier
 open MeasureTheory
+open Navier.Analysis.LerayWeak
 
 /-- Against a retained Galerkin field, the Laplacian/projection commutator is
 exactly the negative curl pairing with the test projection error.
@@ -477,5 +478,148 @@ theorem intervalIntegral_laplacianProjectionCommutator_tendsto_zero_projectedTes
     W c (fun t => W.proj M (ψ t))
     (fun t => proj_divergence_free W M (ψ t)) M
     (fun t => proj_proj_of_le W le_rfl (ψ t)) ν T
+
+/-- The nonlinear test-projection commutator is eventually zero for a
+time-dependent test fixed by one finite Galerkin projection.  Unlike the
+general nonlinear limit, this needs no velocity bound: the test error itself
+is identically zero at every level `m ≥ M`. -/
+theorem intervalIntegral_convectionTestProjectionCommutator_tendsto_zero_of_fixed_proj
+    (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (φ : ℝ → SchwartzVelocity) (M : ℕ)
+    (hretained : ∀ t, W.proj M (φ t) = φ t) (T : ℝ) :
+    Filter.Tendsto (fun m =>
+      ∫ t in (0 : ℝ)..T, schwartzL2Inner (W.coefficientField (c m t))
+        (W.convectionTestProjectionCommutator m
+          (W.coefficientField (c m t)) (φ t)))
+      Filter.atTop (nhds 0) := by
+  apply Filter.Tendsto.congr' ?_ tendsto_const_nhds
+  filter_upwards [Filter.eventually_ge_atTop M] with m hm
+  have hproj (t : ℝ) : W.proj m (φ t) = φ t := by
+    calc
+      W.proj m (φ t) = W.proj m (W.proj M (φ t)) := by rw [hretained t]
+      _ = W.proj M (φ t) := proj_proj_of_le W hm (φ t)
+      _ = φ t := hretained t
+  have hcomm (t : ℝ) :
+      W.convectionTestProjectionCommutator m
+        (W.coefficientField (c m t)) (φ t) = 0 := by
+    unfold GalerkinBasisFamily.convectionTestProjectionCommutator
+    rw [hproj t, sub_self]
+    unfold convectionSchwartzBilin
+    have hderiv : ∀ i : Fin 3,
+        LineDeriv.lineDerivOp (basisVector i) (0 : SchwartzVelocity) = 0 := by
+      intro i
+      exact map_zero (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i))
+    simp [hderiv]
+  have hpair (t : ℝ) :
+      schwartzL2Inner (W.coefficientField (c m t))
+        (W.convectionTestProjectionCommutator m
+          (W.coefficientField (c m t)) (φ t)) = 0 := by
+    rw [hcomm t, schwartzL2Inner_comm, schwartzL2Inner_zero_left]
+  simp_rw [hpair]
+  symm
+  simp
+
+/-- Weak consistency for the exact eventually retained test class.
+
+For a divergence-free test whose spatial slices are fixed by `P_M`, both
+projection commutators are identically zero for `m ≥ M`.  Their interval
+integrability and integrals are therefore automatic on that tail; the retained
+ODE identity makes the projected weak residual eventually zero, and
+`modalApprox_fixedTest_weakConsistent_of_projectedDatum` removes the initial
+projection correction.
+
+The ODE, common window, time differentiation, and main-term integrability
+premises are deliberately retained.  No commutator limit or commutator
+integrability premise remains, and no density extension to arbitrary tests is
+claimed.
+
+Citation: Temam, *Navier--Stokes Equations*, Chapter III, Section 3. -/
+theorem modalApprox_fixedTest_weakConsistent_of_fixed_proj
+    (W : GalerkinBasisFamily) (ν : ℝ)
+    (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (hc0 : ∀ m, c m 0 = W.initialCoefficients u₀ m)
+    (φ : DivergenceFreeTestFunction)
+    (M : ℕ) (hretained : ∀ t, W.proj M (φ.field t) = φ.field t)
+    (T : ℝ) (hT : 0 ≤ T) (hφzero : ∀ t, T ≤ t → φ.field t = 0)
+    (hφ'zero : ∀ t, T ≤ t → φ.timeDerivSchwartz t = 0)
+    (hmodal_deriv : ∀ (m : ℕ) (t : ℝ),
+      HasDerivAt (W.modalTestCoefficients φ.field m)
+        (W.modalTestCoefficients φ.timeDerivSchwartz m t) t)
+    (hmodal_deriv_cont : ∀ m,
+      Continuous (W.modalTestCoefficients φ.timeDerivSchwartz m))
+    (hmainInt : ∀ m, IntervalIntegrable (fun t =>
+      schwartzL2Inner (W.coefficientField (c m t)) (φ.timeDerivSchwartz t) +
+      schwartzL2Inner (W.coefficientField (c m t))
+        (ν • laplacianSchwartz (φ.field t) +
+          convectionSchwartzBilin (W.coefficientField (c m t)) (φ.field t)))
+      volume 0 T) :
+    Filter.Tendsto
+      (fun m => weakFormResidual ν u₀ (W.modalApprox c m) φ)
+      Filter.atTop (nhds 0) := by
+  have hprojected : Filter.Tendsto
+      (fun m => weakFormResidual ν (W.proj m u₀) (W.modalApprox c m) φ)
+      Filter.atTop (nhds 0) := by
+    apply Filter.Tendsto.congr' ?_ tendsto_const_nhds
+    filter_upwards [Filter.eventually_ge_atTop M] with m hm
+    have hproj (t : ℝ) : W.proj m (φ.field t) = φ.field t := by
+      calc
+        W.proj m (φ.field t) = W.proj m (W.proj M (φ.field t)) := by
+          rw [hretained t]
+        _ = W.proj M (φ.field t) := proj_proj_of_le W hm (φ.field t)
+        _ = φ.field t := hretained t
+    have hlapPair (t : ℝ) :
+        schwartzL2Inner (W.coefficientField (c m t))
+          (W.laplacianProjectionCommutator m (φ.field t)) = 0 := by
+      rw [coefficientField_laplacianProjectionCommutator_pairing_eq_neg_curl_error
+        W (c m t) (φ.field t) (φ.divergence_free t), hproj t]
+      rw [sub_self, map_zero, schwartzL2Inner_comm,
+        schwartzL2Inner_zero_left, neg_zero]
+    have hconvField (t : ℝ) :
+        W.convectionTestProjectionCommutator m
+          (W.coefficientField (c m t)) (φ.field t) = 0 := by
+      unfold GalerkinBasisFamily.convectionTestProjectionCommutator
+      rw [hproj t, sub_self]
+      unfold convectionSchwartzBilin
+      have hderiv : ∀ i : Fin 3,
+          LineDeriv.lineDerivOp (basisVector i) (0 : SchwartzVelocity) = 0 := by
+        intro i
+        exact map_zero (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i))
+      simp [hderiv]
+    have hconvPair (t : ℝ) :
+        schwartzL2Inner (W.coefficientField (c m t))
+          (W.convectionTestProjectionCommutator m
+            (W.coefficientField (c m t)) (φ.field t)) = 0 := by
+      rw [hconvField t, schwartzL2Inner_comm, schwartzL2Inner_zero_left]
+    have hlapInt : IntervalIntegrable (fun t =>
+        ν * schwartzL2Inner (W.coefficientField (c m t))
+          (W.laplacianProjectionCommutator m (φ.field t))) volume 0 T := by
+      simpa only [hlapPair, mul_zero] using
+        (intervalIntegrable_const (c := (0 : ℝ)) (μ := volume) (a := 0) (b := T))
+    have hconvInt : IntervalIntegrable (fun t =>
+        schwartzL2Inner (W.coefficientField (c m t))
+          (W.convectionTestProjectionCommutator m
+            (W.coefficientField (c m t)) (φ.field t))) volume 0 T := by
+      simpa only [hconvPair] using
+        (intervalIntegrable_const (c := (0 : ℝ)) (μ := volume) (a := 0) (b := T))
+    have heq := modalFlow_projectedTest_splitResidualWeakEquation_at
+      W ν c hc φ φ.timeDerivSchwartz T hT hφzero m
+        (hmodal_deriv m) (hmodal_deriv_cont m)
+    have hidentify := weakFormResidual_modalApprox_eq_interval
+      W ν (W.proj m u₀) c φ m T hT hφzero hφ'zero
+    rw [intervalIntegral.integral_add ((hmainInt m).add hlapInt) hconvInt,
+      intervalIntegral.integral_add (hmainInt m) hlapInt] at heq
+    rw [hidentify, ← coefficientField_initialCoefficients_eq_proj W u₀ m,
+      ← hc0 m]
+    simp_rw [hlapPair, mul_zero, hconvPair] at heq
+    simp only [intervalIntegral.integral_zero, add_zero] at heq
+    linarith [heq]
+  exact modalApprox_fixedTest_weakConsistent_of_projectedDatum
+    W ν u₀ hu₀ c φ hprojected
 
 end Navier.Analysis.GalerkinBasis
