@@ -872,6 +872,106 @@ theorem prodiSerrin_gaussianCutoffMomentumRhs_tendsto
   exact gaussianCutoffMomentumRhs_tendsto sol ha0 hab hbT j ν τ x₀
     hinta hintb
 
+/-- The Prodi--Serrin slice hypothesis makes the velocity square integrable
+against every positive-time Gaussian translate.  This is the common majorant
+for both pieces of the Gaussian-tested convection term. -/
+theorem prodiSerrin_gaussianVelocitySq_integrable
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {p : ℝ} (hp : 3 < p)
+    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T)
+    {τ : ℝ} (hτ : 0 < τ) (x₀ : Space) :
+    Integrable (fun y : Space =>
+      heatKernel ν τ (x₀ - y) * ‖sol.velocity t y‖ ^ 2) := by
+  have hsqMeas : Measurable (fun y : Space => ‖sol.velocity t y‖ ^ 2) :=
+    ((velocity_slice_contDiff sol ht0 htT).continuous.norm.pow 2).measurable
+  have hsqPow : Integrable (fun y : Space =>
+      |‖sol.velocity t y‖ ^ 2| ^ (p / 2)) := by
+    apply (hint t ht0 htT).congr
+    filter_upwards with y
+    symm
+    rw [abs_of_nonneg (sq_nonneg _), ← Real.rpow_natCast]
+    rw [← Real.rpow_mul (norm_nonneg _)]
+    congr 1
+    ring
+  exact integrable_heatKernel_mul_of_integrable_rpow hν hτ
+    (by linarith : 1 < p / 2) hsqPow hsqMeas x₀
+
+/-- The surviving Gaussian-gradient convection integrand is genuinely
+integrable under the Prodi--Serrin slice hypothesis.  Its majorant is a
+doubled-time Gaussian times `‖u(t,y)‖²`; no derivative decay of the solution is
+assumed. -/
+theorem prodiSerrin_gaussianGradientConvection_integrable
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {p : ℝ} (hp : 3 < p)
+    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T)
+    {τ : ℝ} (hτ : 0 < τ) (x₀ : Space) (j : Fin 3) :
+    Integrable (fun y : Space =>
+      fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+          (sol.velocity t y) * sol.velocity t y j) := by
+  obtain ⟨C, hCpos, hgrad⟩ :=
+    exists_abs_fderiv_heatKernel_translate_le_doubled hν hτ
+  have hGaussianSq := prodiSerrin_gaussianVelocitySq_integrable hν sol hp hint
+    ht0 htT (τ := 2 * τ) (by positivity) x₀
+  have hmajor : Integrable (fun y : Space =>
+      C * (heatKernel ν (2 * τ) (x₀ - y) * ‖sol.velocity t y‖ ^ 2)) :=
+    hGaussianSq.const_mul C
+  have huC : ContDiff ℝ ∞ (sol.velocity t) := velocity_slice_contDiff sol ht0 htT
+  have hKC : ContDiff ℝ ∞ (fun y : Space => heatKernel ν τ (x₀ - y)) :=
+    heatKernel_translate_contDiff ν τ x₀
+  have hgradC : ContDiff ℝ ∞ (fun y : Space =>
+      fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+        (sol.velocity t y)) :=
+    (hKC.fderiv_right (m := ∞) (by norm_num)).clm_apply huC
+  have hujC : Continuous (fun y : Space => sol.velocity t y j) :=
+    (continuous_apply j).comp huC.continuous
+  apply hmajor.mono' (hgradC.continuous.mul hujC).aestronglyMeasurable
+  filter_upwards with y
+  have hG2 : 0 ≤ heatKernel ν (2 * τ) (x₀ - y) :=
+    heatKernel_nonneg hν (by positivity) _
+  have hj : |sol.velocity t y j| ≤ ‖sol.velocity t y‖ := by
+    simpa [Real.norm_eq_abs] using norm_le_pi_norm (sol.velocity t y) j
+  calc
+    ‖fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+          (sol.velocity t y) * sol.velocity t y j‖ =
+        |fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+          (sol.velocity t y)| * |sol.velocity t y j| := by
+            rw [norm_mul, Real.norm_eq_abs, Real.norm_eq_abs]
+    _ ≤ (C * heatKernel ν (2 * τ) (x₀ - y) * ‖sol.velocity t y‖) *
+          ‖sol.velocity t y‖ :=
+      mul_le_mul (hgrad x₀ y (sol.velocity t y)) hj (abs_nonneg _)
+        (mul_nonneg (mul_nonneg hCpos.le hG2) (norm_nonneg _))
+    _ = C * (heatKernel ν (2 * τ) (x₀ - y) * ‖sol.velocity t y‖ ^ 2) := by
+      ring
+
+/-- Removing the scaled cutoff from the surviving Gaussian-gradient
+convection term.  This is the second term in the product-rule expansion of
+`D(χ_R G)(u) u_j`; the first term tends to zero in
+`prodiSerrin_gaussianCutoffConvectionTail_tendsto_zero`. -/
+theorem prodiSerrin_gaussianGradientConvection_tendsto
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {p : ℝ} (hp : 3 < p)
+    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T)
+    {τ : ℝ} (hτ : 0 < τ) (x₀ : Space) (j : Fin 3) :
+    Filter.Tendsto (fun R : ℝ => ∫ y : Space,
+        scaledCutoff R y *
+          (fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+            (sol.velocity t y) * sol.velocity t y j))
+      Filter.atTop (nhds (∫ y : Space,
+        fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+          (sol.velocity t y) * sol.velocity t y j)) :=
+  scaledCutoff_integral_tendsto _
+    (prodiSerrin_gaussianGradientConvection_integrable hν sol hp hint
+      ht0 htT hτ x₀ j)
+
 /-- The Prodi--Serrin spatial hypothesis closes the convective
 first-derivative cutoff tail in the Gaussian-tested momentum balance:
 
@@ -879,8 +979,8 @@ first-derivative cutoff tail in the Gaussian-tested momentum balance:
 
 Indeed `p > 3` makes the Gaussian-weighted velocity square integrable, and
 the concrete scaled cutoff contributes the sharp `R⁻¹` derivative decay.
-This removes the `Dχ_R` part of the convection limit; the surviving
-`χ_R DG(u)u_j` term and its time-uniform bound remain separate. -/
+This removes the `Dχ_R` part of the convection limit; the theorem below
+composes it with the surviving `χ_R DG(u)u_j` limit. -/
 theorem prodiSerrin_gaussianCutoffConvectionTail_tendsto_zero
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -893,21 +993,9 @@ theorem prodiSerrin_gaussianCutoffConvectionTail_tendsto_zero
         fderiv ℝ (scaledCutoff R) y (sol.velocity t y) *
           (heatKernel ν τ (x₀ - y) * sol.velocity t y j))
       Filter.atTop (nhds 0) := by
-  have hsqMeas : Measurable (fun y : Space => ‖sol.velocity t y‖ ^ 2) :=
-    ((velocity_slice_contDiff sol ht0 htT).continuous.norm.pow 2).measurable
-  have hsqPow : Integrable (fun y : Space =>
-      |‖sol.velocity t y‖ ^ 2| ^ (p / 2)) := by
-    apply (hint t ht0 htT).congr
-    filter_upwards with y
-    symm
-    rw [abs_of_nonneg (sq_nonneg _), ← Real.rpow_natCast]
-    rw [← Real.rpow_mul (norm_nonneg _)]
-    congr 1
-    ring
   have hGaussianSq : Integrable (fun y : Space =>
       heatKernel ν τ (x₀ - y) * ‖sol.velocity t y‖ ^ 2) :=
-    integrable_heatKernel_mul_of_integrable_rpow hν hτ
-      (by linarith : 1 < p / 2) hsqPow hsqMeas x₀
+    prodiSerrin_gaussianVelocitySq_integrable hν sol hp hint ht0 htT hτ x₀
   apply scaledCutoff_fderiv_remainder_tendsto_zero
     (v := sol.velocity t)
     (f := fun y : Space =>
@@ -930,6 +1018,53 @@ theorem prodiSerrin_gaussianCutoffConvectionTail_tendsto_zero
       mul_le_mul_of_nonneg_left
         (mul_le_mul_of_nonneg_left hj hG) (norm_nonneg _)
     _ = heatKernel ν τ (x₀ - y) * ‖sol.velocity t y‖ ^ 2 := by ring
+
+/-- Exact product-rule decomposition of the Gaussian cutoff convection
+integrand.  This is the pointwise identity connecting the two termwise limits
+below to the convection slot in the finite-cutoff momentum balance. -/
+theorem gaussianCutoff_convection_product_rule
+    (R ν τ : ℝ) (x₀ y v : Space) (a : ℝ) :
+    fderiv ℝ (fun z : Space =>
+      scaledCutoff R z * heatKernel ν τ (x₀ - z)) y v * a =
+      fderiv ℝ (scaledCutoff R) y v * (heatKernel ν τ (x₀ - y) * a) +
+      scaledCutoff R y *
+        (fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y v * a) := by
+  change fderiv ℝ (scaledCutoff R *
+    (fun z : Space => heatKernel ν τ (x₀ - z))) y v * a = _
+  rw [fderiv_mul
+    ((scaledCutoff_contDiff R).differentiable (by norm_num) y)
+    ((heatKernel_translate_contDiff ν τ x₀).differentiable (by norm_num) y)]
+  simp only [add_apply, smul_apply, smul_eq_mul]
+  ring
+
+/-- The complete product-rule split of the finite-cutoff convection term has
+the Gaussian-gradient limit.  The first integral is the `Dχ_R` remainder and
+vanishes; the second is the `χ_R DG` term and converges by its doubled-Gaussian
+`‖u‖²` majorant.  Thus this theorem consumes both analytic leaves and exposes
+the actual termwise convection limit used by the Gaussian momentum balance. -/
+theorem prodiSerrin_gaussianConvectionSplit_tendsto
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {p : ℝ} (hp : 3 < p)
+    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T)
+    {τ : ℝ} (hτ : 0 < τ) (x₀ : Space) (j : Fin 3) :
+    Filter.Tendsto (fun R : ℝ =>
+        (∫ y : Space,
+          fderiv ℝ (scaledCutoff R) y (sol.velocity t y) *
+            (heatKernel ν τ (x₀ - y) * sol.velocity t y j)) +
+        ∫ y : Space, scaledCutoff R y *
+          (fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+            (sol.velocity t y) * sol.velocity t y j))
+      Filter.atTop (nhds (∫ y : Space,
+        fderiv ℝ (fun z : Space => heatKernel ν τ (x₀ - z)) y
+          (sol.velocity t y) * sol.velocity t y j)) := by
+  have htail := prodiSerrin_gaussianCutoffConvectionTail_tendsto_zero
+    hν sol hp hint ht0 htT hτ x₀ j
+  have hgradient := prodiSerrin_gaussianGradientConvection_tendsto
+    hν sol hp hint ht0 htT hτ x₀ j
+  simpa only [zero_add] using htail.add hgradient
 
 /-- **[LEAF — Prodi–Serrin far-field layer tail; est ~300 LOC.]**  Outside one
 closed ball, a partial classical solution with bounded initial datum and
@@ -961,10 +1096,10 @@ transport is now certified by
 `WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated` performs its
 interior-time FTC composition.  The theorems immediately above now prove
 convergence of the complete finite-cutoff right-hand side to the increment of
-Gaussian-tested momentum under the present `L^p` hypothesis and remove its
-`Dχ_R(u) · G · u_j` convective cutoff tail.  Still missing: convergence of the
-surviving Gaussian-gradient convection term and the viscosity/pressure terms,
-uniform domination in the Duhamel time variable, and the Leray projection.
+Gaussian-tested momentum under the present `L^p` hypothesis and identify the
+complete product-rule convection limit.  Still missing: convergence of the
+viscosity/pressure terms, uniform domination in the Duhamel time variable, and
+the Leray projection.
 `WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` shows that this
 is a genuine limit step; its boundary terms require tail control of the
 solution and its first spatial derivatives that the per-slice `L^p` hypothesis
@@ -1014,23 +1149,22 @@ theorem prodiSerrin_layer_farField_bounded
     prodiSerrin_gaussianCutoffMomentumRhs_tendsto hν sol hp hint
       (a := δ / 2) (b := δ) (τ := δ / 2) (by linarith) (by linarith) hδT
       (by linarith) (0 : Space) (0 : Fin 3)
-  -- The `Dχ_R(u) · G · u_j` convection tail is no longer part of the gap:
-  -- `p > 3` supplies its Gaussian-weighted `L¹` majorant and the scaled
-  -- derivative estimate forces it to zero at the same half-time parameters.
-  have hconvectiveCutoffTailAtHalfTime :=
-    prodiSerrin_gaussianCutoffConvectionTail_tendsto_zero hν sol hp hint
+  -- The complete convection split is no longer part of the gap: `p > 3`
+  -- supplies Gaussian-weighted `L¹` majorants for both `Dχ_R · G` and
+  -- `χ_R · DG`, and their sum converges to the Gaussian-gradient term.
+  have hconvectionSplitAtHalfTime :=
+    prodiSerrin_gaussianConvectionSplit_tendsto hν sol hp hint
       (t := δ / 2) (τ := δ / 2) (by linarith) (by linarith) (by linarith)
       (0 : Space) (0 : Fin 3)
   -- GAP: The velocity is the heat flow of the initial data PLUS the Duhamel
   -- integral (the nonlinear correction).  The Duhamel formula,
   --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds,
   -- now has a certified combined cutoff-to-Gaussian limit in
-  -- `hcutoffGaussianAtHalfTime`.  The first cutoff-derivative convection
-  -- remainder is now closed by `hconvectiveCutoffTailAtHalfTime`.  What
-  -- remains is (i) convergence of the surviving Gaussian-gradient convection
-  -- term and the viscosity/pressure terms, (ii) uniform domination as the
-  -- Gaussian time lag approaches zero, and (iii) the Leray projector P as a
-  -- pointwise bounded singular integral kernel.
+  -- `hcutoffGaussianAtHalfTime`.  Its complete convection component is now
+  -- identified by `hconvectionSplitAtHalfTime`.  What remains is (i)
+  -- convergence of the viscosity/pressure terms, (ii) uniform domination as
+  -- the Gaussian time lag approaches zero, and (iii) the Leray projector P as
+  -- a pointwise bounded singular integral kernel.
   --
   -- The Duhamel argument would combine `hheat0` with the combined Gaussian
   -- cutoff limit only after its three spatial terms are identified; a
