@@ -4430,6 +4430,35 @@ theorem integrable_officialInner_pairing {u w : Space → Space}
   have h1 := abs_officialInner_le_three (u x) (w x)
   nlinarith [sq_nonneg (‖u x‖ - ‖w x‖), norm_nonneg (u x), norm_nonneg (w x)]
 
+/-- **Quantitative Cauchy–Young bound for the official pairing.**  This is the
+majorant form of `integrable_officialInner_pairing`: it bounds the spatial
+integral by the two squared `L²` masses with the sharp ambient-coordinate
+factor inherited from `abs_officialInner_le_three`. -/
+theorem abs_integral_officialInner_le_three_halves {u w : Space → Space}
+    (hu : Measurable u) (hw : Measurable w)
+    (hu2 : Integrable fun x : Space => ‖u x‖ ^ 2)
+    (hw2 : Integrable fun x : Space => ‖w x‖ ^ 2) :
+    |∫ x : Space, officialInner (u x) (w x)| ≤
+      (3 / 2 : ℝ) * ((∫ x : Space, ‖u x‖ ^ 2) + ∫ x : Space, ‖w x‖ ^ 2) := by
+  have hp := integrable_officialInner_pairing hu hw hu2 hw2
+  have hm : Integrable fun x : Space =>
+      (3 / 2 : ℝ) * ‖u x‖ ^ 2 + (3 / 2 : ℝ) * ‖w x‖ ^ 2 :=
+    (hu2.const_mul (3 / 2)).add (hw2.const_mul (3 / 2))
+  calc
+    |∫ x : Space, officialInner (u x) (w x)|
+        ≤ ∫ x : Space, |officialInner (u x) (w x)| := abs_integral_le_integral_abs
+    _ ≤ ∫ x : Space,
+        ((3 / 2 : ℝ) * ‖u x‖ ^ 2 + (3 / 2 : ℝ) * ‖w x‖ ^ 2) := by
+      apply integral_mono hp.abs hm
+      intro x
+      have h := abs_officialInner_le_three (u x) (w x)
+      nlinarith [sq_nonneg (‖u x‖ - ‖w x‖), norm_nonneg (u x), norm_nonneg (w x)]
+    _ = (3 / 2 : ℝ) * ((∫ x : Space, ‖u x‖ ^ 2) +
+        ∫ x : Space, ‖w x‖ ^ 2) := by
+      rw [integral_add (hu2.const_mul (3 / 2)) (hw2.const_mul (3 / 2)),
+        MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul]
+      ring
+
 /-- The directional spatial derivative of a Schwartz slice, as a Schwartz map
 (Mathlib's `fderivCLM` composed with `evalCLM`). -/
 private noncomputable def schwartzDirDeriv (f : SchwartzVelocity) (v : Space) :
@@ -4714,6 +4743,126 @@ theorem DivergenceFreeTestFunction.exists_compact_spacetime_carrier
     · apply hspaceDeriv t x
       intro hx₂
       exact hx (Set.mem_union_right K₁ hx₂)
+
+/-- The genuine time derivative is uniformly bounded on every compact
+nonnegative spacetime window.  The proof derives joint continuity from the
+test's existing half-space smoothness; it does not add a regularity payload. -/
+theorem DivergenceFreeTestFunction.exists_uniform_timeDeriv_bound
+    (φ : DivergenceFreeTestFunction) {T : ℝ} {K : Set Space} (hK : IsCompact K) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) T →
+      ∀ x : Space, x ∈ K → ‖φ.timeDerivSchwartz t x‖ ≤ C := by
+  let S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ
+  let F : ℝ × Space → Space := fun z => φ.field z.1 z.2
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hD : ContinuousOn
+      (fun z : ℝ × Space => fderivWithin ℝ F S z (1, 0)) S :=
+    ((φ.smooth.continuousOn_fderivWithin hUD (by norm_num)).clm_apply
+      continuousOn_const)
+  have hbridge : ∀ z ∈ S,
+      fderivWithin ℝ F S z (1, 0) = φ.timeDerivSchwartz z.1 z.2 := by
+    rintro ⟨t, x⟩ hz
+    rw [← φ.timeDeriv_eq t hz.1 x]
+    unfold timeDerivative
+    have hG : HasFDerivWithinAt F (fderivWithin ℝ F S (t, x)) S (t, x) :=
+      ((φ.smooth (t, x) hz).differentiableWithinAt
+        (by decide : (∞ : ℕ∞ω) ≠ 0)).hasFDerivWithinAt
+    have hi : HasFDerivAt (fun s : ℝ => (s, x))
+        (ContinuousLinearMap.inl ℝ ℝ Space) t := hasFDerivAt_prodMk_left t x
+    have hmaps : Set.MapsTo (fun s : ℝ => (s, x)) (Set.Ici 0) S := fun s hs =>
+      Set.mem_prod.mpr ⟨hs, Set.mem_univ x⟩
+    have hcomp := HasFDerivWithinAt.comp t hG hi.hasFDerivWithinAt hmaps
+    rw [show (F ∘ (fun s : ℝ => (s, x))) = (fun s => (φ.field s) x) from rfl]
+      at hcomp
+    rw [hcomp.fderivWithin ((uniqueDiffOn_Ici 0) t hz.1),
+      ContinuousLinearMap.comp_apply, ContinuousLinearMap.inl_apply]
+  have htd : ContinuousOn
+      (fun z : ℝ × Space => φ.timeDerivSchwartz z.1 z.2) S :=
+    hD.congr (fun z hz => (hbridge z hz).symm)
+  let W : Set (ℝ × Space) := Set.Icc (0 : ℝ) T ×ˢ K
+  have hW : IsCompact W := isCompact_Icc.prod hK
+  have hWS : W ⊆ S := by
+    rintro ⟨t, x⟩ htx
+    exact Set.mem_prod.mpr ⟨Set.mem_Ici.mpr htx.1.1, Set.mem_univ x⟩
+  have hn : ContinuousOn
+      (fun z : ℝ × Space => ‖φ.timeDerivSchwartz z.1 z.2‖) W :=
+    htd.norm.mono hWS
+  obtain ⟨C, hC⟩ := hW.bddAbove_image hn
+  refine ⟨max C 0, le_max_right C 0, ?_⟩
+  intro t ht x hx
+  exact le_trans (hC ⟨(t, x), Set.mem_prod.mpr ⟨ht, hx⟩, rfl⟩) (le_max_left C 0)
+
+/-- Compact spatial support turns the uniform pointwise time-derivative bound
+into a uniform squared `L²_x` bound. -/
+theorem DivergenceFreeTestFunction.timeDeriv_norm_sq_le_volume_mul_bound
+    (φ : DivergenceFreeTestFunction) {T C : ℝ} {K : Set Space}
+    (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → φ.timeDerivSchwartz t x = 0)
+    (hbound : ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) T →
+      ∀ x : Space, x ∈ K → ‖φ.timeDerivSchwartz t x‖ ≤ C) :
+    ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) T →
+      (∫ x : Space, ‖φ.timeDerivSchwartz t x‖ ^ 2) ≤ volume.real K * C ^ 2 := by
+  intro t ht
+  have heq : (∫ x : Space, ‖φ.timeDerivSchwartz t x‖ ^ 2) =
+      ∫ x in K, ‖φ.timeDerivSchwartz t x‖ ^ 2 := by
+    rw [← MeasureTheory.integral_indicator hK.measurableSet]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+    by_cases hx : x ∈ K
+    · simp [hx]
+    · simp [hx, hspace t x hx]
+  rw [heq]
+  have hf : IntegrableOn (fun x : Space => ‖φ.timeDerivSchwartz t x‖ ^ 2) K :=
+    (integrable_norm_sq_schwartz (φ.timeDerivSchwartz t)).integrableOn
+  have hg : IntegrableOn (fun _x : Space => C ^ 2) K :=
+    integrableOn_const (hs := hK.measure_lt_top.ne)
+  calc
+    (∫ x in K, ‖φ.timeDerivSchwartz t x‖ ^ 2) ≤ ∫ _x in K, C ^ 2 := by
+      exact setIntegral_mono_on hf hg hK.measurableSet fun x hx =>
+        pow_le_pow_left₀ (norm_nonneg _) (hbound t ht x hx) 2
+    _ = volume.real K * C ^ 2 := by simp [smul_eq_mul]
+
+/-- **The first genuine time majorant for the Leray limit passage.**  The
+time-derivative test factor has a single constant squared `L²_x` majorant on
+the test horizon, and that constant is integrable in time. -/
+theorem DivergenceFreeTestFunction.exists_integrable_timeDeriv_l2_majorant
+    (φ : DivergenceFreeTestFunction) :
+    ∃ T M : ℝ, 0 < T ∧ 0 ≤ M ∧
+      IntegrableOn (fun _t : ℝ => M) (Set.Ioc (0 : ℝ) T) ∧
+      ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+        (∫ x : Space, ‖φ.timeDerivSchwartz t x‖ ^ 2) ≤ M := by
+  obtain ⟨T, K, hT, hK, _hfield, hderiv⟩ := φ.exists_compact_spacetime_carrier
+  obtain ⟨C, _hC, hbound⟩ := φ.exists_uniform_timeDeriv_bound hK
+  let M : ℝ := volume.real K * C ^ 2
+  have hM : 0 ≤ M := mul_nonneg measureReal_nonneg (sq_nonneg C)
+  refine ⟨T, M, hT, hM, integrableOn_const (hs := measure_Ioc_lt_top.ne), ?_⟩
+  intro t ht
+  exact φ.timeDeriv_norm_sq_le_volume_mul_bound hK
+    (fun s x hx => hderiv s x (Or.inr hx)) hbound t ⟨ht.1.le, ht.2⟩
+
+/-- A uniform velocity `L²_x` bound and the compact-carrier test bound give an
+integrable time majorant for the linear `⟨u, ∂ₜφ⟩` leg.  This is the
+quantitative consumer needed before dominated convergence; it is independent
+of the convection and Laplacian legs. -/
+theorem DivergenceFreeTestFunction.exists_integrable_timeDeriv_pairing_majorant
+    (φ : DivergenceFreeTestFunction) (u : VelocityEvolution) (E : ℝ)
+    (hE : 0 ≤ E)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (huint : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (huE : ∀ t : ℝ, 0 < t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ E) :
+    ∃ T B : ℝ, 0 < T ∧ 0 ≤ B ∧
+      IntegrableOn (fun _t : ℝ => B) (Set.Ioc (0 : ℝ) T) ∧
+      ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+        |∫ x : Space, officialInner (u t x) (φ.timeDerivSchwartz t x)| ≤ B := by
+  obtain ⟨T, M, hT, hM, hMint, hMbound⟩ := φ.exists_integrable_timeDeriv_l2_majorant
+  let B : ℝ := (3 / 2 : ℝ) * (E + M)
+  have hB : 0 ≤ B := mul_nonneg (by norm_num) (add_nonneg hE hM)
+  refine ⟨T, B, hT, hB, integrableOn_const (hs := measure_Ioc_lt_top.ne), ?_⟩
+  intro t ht
+  have hpair := abs_integral_officialInner_le_three_halves
+    (humeas.comp measurable_prodMk_left)
+    (φ.timeDerivSchwartz t).continuous.measurable (huint t ht.1.le)
+    (integrable_norm_sq_schwartz (φ.timeDerivSchwartz t))
+  exact hpair.trans (mul_le_mul_of_nonneg_left
+    (add_le_add (huE t ht.1) (hMbound t ht)) (by norm_num))
 
 /-- A function vanishing beyond `T ≥ 0` has the same integral over `Ici 0` and
 over the finite window `Ioc 0 T`; no integrability hypothesis is needed since
@@ -5743,11 +5892,19 @@ and one for all time-derivative slices.  Together with the existing common
 time horizon, `exists_compact_spacetime_carrier` combines them into a single
 compact-spacetime carrier on the nonnegative half-space.  This excludes the
 previous counterexample, whose supports escaped to spatial infinity as time
-approached the horizon.  The remaining work is now theorem construction, not
-statement repair: derive a uniform integrable time majorant for the three
-weak-pairing legs from joint smoothness on that compact carrier and the
-Galerkin energy bounds, then apply dominated convergence to the a.e.-in-time
-subsequence below.
+approached the horizon.
+
+**The time-derivative majorant is now certified (lane N2, 2026-08-22).**
+`exists_uniform_timeDeriv_bound` derives joint continuity of `∂ₜφ` from the
+existing half-space smoothness, `timeDeriv_norm_sq_le_volume_mul_bound` turns
+compact support into a uniform squared `L²_x` bound, and
+`exists_integrable_timeDeriv_l2_majorant` makes that bound integrable on the
+test horizon.  Finally `abs_integral_officialInner_le_three_halves` and
+`exists_integrable_timeDeriv_pairing_majorant` combine it with a uniform
+velocity-energy bound to majorize the complete linear `⟨u,∂ₜφ⟩` leg.
+The remaining construction is the corresponding joint compact-window bounds
+for the spatial derivative and Laplacian factors, the convection majorant,
+and dominated-convergence assembly along the a.e.-in-time subsequence below.
 
 **The pointwise half is now certified (lane N3, 2026-08-21).**  That extraction
 is no longer a gap: `exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral`
@@ -5759,9 +5916,9 @@ vanishes at **every** radius — exactly the `hloc` hypothesis of
 producer.  Their measurability leaf
 `measurable_setIntegral_of_jointlyMeasurable_nonneg` is what makes the
 time-integrand measurable without an integrability hypothesis at negative
-times.  What remains of step (d) is therefore only construction of the
-compact-carrier majorant and its dominated-convergence assembly; the required
-support interface is now present. -/
+times.  What remains of step (d) is therefore the spatial-derivative,
+Laplacian and convection majorants plus their dominated-convergence assembly;
+the support interface and time-derivative leg are now present. -/
 
 
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
