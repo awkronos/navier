@@ -237,4 +237,108 @@ theorem abs_intervalIntegral_laplacianProjectionCommutator_le
       simp only [err]
       ring
 
+/-- Dominated convergence for the spacetime squared curl-projection error.
+
+The input is genuinely pointwise: the unsquared curl-error norms converge to
+zero almost everywhere, while one integrable function dominates every squared
+error.  Thus this theorem does not assume the desired convergence of the
+integrals, nor does it claim that the current `L²`-only basis supplies these
+hypotheses.
+
+Citation: Folland, *Real Analysis*, Theorem 2.24. -/
+theorem integral_curlProjectionError_sq_tendsto_zero_of_dominated
+    (W : GalerkinBasisFamily) (φ : ℝ → SchwartzVelocity) (T : ℝ)
+    (bound : ℝ → ℝ)
+    (hMeas : ∀ m, AEStronglyMeasurable (fun t =>
+      ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+      (volume.restrict (Set.Ioc (0 : ℝ) T)))
+    (hBoundIntegrable : IntegrableOn bound (Set.Ioc (0 : ℝ) T))
+    (hBound : ∀ m, ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)),
+      ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2 ≤ bound t)
+    (hPoint : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)),
+      Filter.Tendsto (fun m =>
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖)
+        Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun m =>
+      ∫ t in Set.Ioc (0 : ℝ) T,
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+  have hBoundNorm : ∀ m, ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)),
+      ‖‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2‖ ≤ bound t := by
+    intro m
+    filter_upwards [hBound m] with t ht
+    rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+    exact ht
+  have hSqPoint : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)),
+      Filter.Tendsto (fun m =>
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+        Filter.atTop (nhds 0) := by
+    filter_upwards [hPoint] with t ht
+    simpa using ht.pow 2
+  simpa using MeasureTheory.tendsto_integral_of_dominated_convergence
+    (μ := volume.restrict (Set.Ioc (0 : ℝ) T))
+    (F := fun m t => ‖toL2
+      (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+    (f := fun _ => 0) bound hMeas hBoundIntegrable hBoundNorm hSqPoint
+
+/-- The dominated curl-error bridge closes the viscous commutator limit under
+a uniform modal enstrophy budget.
+
+This is the direct `hlap`-shaped consumer of
+`integral_curlProjectionError_sq_tendsto_zero_of_dominated`: dominated
+convergence first makes the test error vanish in spacetime, and the preceding
+Cauchy--Schwarz estimate then squeezes the commutator integral to zero.
+
+Citation: Temam, *Navier--Stokes Equations*, Chapter III, Section 3. -/
+theorem intervalIntegral_laplacianProjectionCommutator_tendsto_zero_of_dominated
+    (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (φ : ℝ → SchwartzVelocity) (hφ : ∀ t, DivergenceFreeInitial (φ t))
+    (ν T enstrophyBound : ℝ) (hT : 0 ≤ T)
+    (henstrophy : ∀ m,
+      (∫ t in Set.Ioc (0 : ℝ) T, W.coefficientEnstrophy (c m t)) ≤
+        enstrophyBound)
+    (henstrophyIntegrable : ∀ m, IntegrableOn
+      (fun t => W.coefficientEnstrophy (c m t)) (Set.Ioc (0 : ℝ) T))
+    (pairingIntervalIntegrable : ∀ m, IntervalIntegrable (fun t =>
+      ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (φ t))) volume 0 T)
+    (bound : ℝ → ℝ)
+    (hErrorMeas : ∀ m, AEStronglyMeasurable (fun t =>
+      ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+      (volume.restrict (Set.Ioc (0 : ℝ) T)))
+    (hBoundIntegrable : IntegrableOn bound (Set.Ioc (0 : ℝ) T))
+    (hBound : ∀ m, ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)),
+      ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2 ≤ bound t)
+    (hPoint : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)),
+      Filter.Tendsto (fun m =>
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖)
+        Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun m =>
+      ∫ t in (0 : ℝ)..T, ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (φ t)))
+      Filter.atTop (nhds 0) := by
+  have herror := integral_curlProjectionError_sq_tendsto_zero_of_dominated
+    W φ T bound hErrorMeas hBoundIntegrable hBound hPoint
+  apply squeeze_zero_norm (a := fun m =>
+    |ν| * Real.sqrt enstrophyBound * Real.sqrt
+      (∫ t in Set.Ioc (0 : ℝ) T,
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2))
+  · intro m
+    rw [Real.norm_eq_abs]
+    have hErrorInt : IntegrableOn (fun t =>
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+        (Set.Ioc (0 : ℝ) T) := by
+      refine Integrable.mono' hBoundIntegrable (hErrorMeas m) ?_
+      filter_upwards [hBound m] with t ht
+      rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+      exact ht
+    exact abs_intervalIntegral_laplacianProjectionCommutator_le
+      W (c m) φ hφ ν T enstrophyBound hT (henstrophy m)
+        (henstrophyIntegrable m) hErrorInt (pairingIntervalIntegrable m)
+  · have hsqrt := herror.sqrt
+    have hconst : Filter.Tendsto (fun _ : ℕ => |ν| * Real.sqrt enstrophyBound)
+        Filter.atTop (nhds (|ν| * Real.sqrt enstrophyBound)) := tendsto_const_nhds
+    simpa using hconst.mul hsqrt
+
 end Navier.Analysis.GalerkinBasis
