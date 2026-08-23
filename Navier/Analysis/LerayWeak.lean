@@ -4499,6 +4499,57 @@ theorem integrable_convection_pairing (f : SchwartzVelocity) {u : Space → Spac
     mul_le_mul_of_nonneg_left h2 (norm_nonneg _)
   nlinarith [h1, h3]
 
+/-- **Quantitative convection majorant at one time slice.**  The quadratic
+weak-form leg is controlled by the velocity's squared `L²` mass times the
+first Schwartz derivative seminorm of the test slice.  Unlike mere
+integrability, this inequality exposes the exact scalar that the remaining
+compact-time argument must bound uniformly before dominated convergence.
+
+-- Citation: Leray (1934), §§21–23; Temam, Navier–Stokes Equations, III.3.3. -/
+theorem abs_integral_convection_pairing_le (f : SchwartzVelocity)
+    {u : Space → Space} (hu : Measurable u)
+    (hu2 : Integrable fun x : Space => ‖u x‖ ^ 2) :
+    |∫ x : Space, officialInner (u x) (fderiv ℝ (⇑f) x (u x))| ≤
+      3 * (SchwartzMap.seminorm ℝ 0 1) f * ∫ x : Space, ‖u x‖ ^ 2 := by
+  let M : ℝ := (SchwartzMap.seminorm ℝ 0 1) f
+  have hM : ∀ x : Space, ‖fderiv ℝ (⇑f) x‖ ≤ M := by
+    intro x
+    have h1 := f.norm_iteratedFDeriv_le_seminorm ℝ 1 x
+    rwa [norm_iteratedFDeriv_one] at h1
+  have hpair := integrable_convection_pairing f hu hu2
+  have hmaj : Integrable fun x : Space => (3 * M) * ‖u x‖ ^ 2 :=
+    hu2.const_mul (3 * M)
+  calc
+    |∫ x : Space, officialInner (u x) (fderiv ℝ (⇑f) x (u x))|
+        ≤ ∫ x : Space, |officialInner (u x) (fderiv ℝ (⇑f) x (u x))| :=
+      abs_integral_le_integral_abs
+    _ ≤ ∫ x : Space, (3 * M) * ‖u x‖ ^ 2 := by
+      apply integral_mono hpair.abs hmaj
+      intro x
+      have h1 := abs_officialInner_le_three (u x) (fderiv ℝ (⇑f) x (u x))
+      have h2 : ‖fderiv ℝ (⇑f) x (u x)‖ ≤ M * ‖u x‖ :=
+        le_trans (ContinuousLinearMap.le_opNorm _ _)
+          (mul_le_mul_of_nonneg_right (hM x) (norm_nonneg _))
+      have h3 : ‖u x‖ * ‖fderiv ℝ (⇑f) x (u x)‖ ≤
+          ‖u x‖ * (M * ‖u x‖) :=
+        mul_le_mul_of_nonneg_left h2 (norm_nonneg _)
+      nlinarith
+    _ = 3 * (SchwartzMap.seminorm ℝ 0 1) f *
+        ∫ x : Space, ‖u x‖ ^ 2 := by
+      rw [MeasureTheory.integral_const_mul]
+
+/-- The quantitative convection estimate consumed at the Galerkin energy
+level: any certified squared `L²` bound `E` gives the corresponding scalar
+majorant for the full quadratic spatial pairing. -/
+theorem abs_integral_convection_pairing_le_energy (f : SchwartzVelocity)
+    {u : Space → Space} (E : ℝ) (hu : Measurable u)
+    (hu2 : Integrable fun x : Space => ‖u x‖ ^ 2)
+    (huE : (∫ x : Space, ‖u x‖ ^ 2) ≤ E) :
+    |∫ x : Space, officialInner (u x) (fderiv ℝ (⇑f) x (u x))| ≤
+      3 * (SchwartzMap.seminorm ℝ 0 1) f * E := by
+  exact (abs_integral_convection_pairing_le f hu hu2).trans
+    (mul_le_mul_of_nonneg_left huE (by positivity))
+
 /-- Bilinearity of the official pairing over finite sums in the right slot. -/
 private theorem officialInner_sum_right {κ : Type*} (x : Space) (s : Finset κ)
     (g : κ → Space) :
