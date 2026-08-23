@@ -86,4 +86,33 @@ theorem coefficientField_laplacianProjectionCommutator_pairing_eq_neg_curl_error
   rw [hpairSub, hproj, hcurlSub]
   linarith
 
+/-- Sharp Cauchy--Schwarz control of the Laplacian/projection commutator by
+modal enstrophy and the fixed test's curl projection error.
+
+The constant is exactly one.  In particular, this theorem does not assume that
+the displayed error norm tends to zero; that stronger approximation property
+remains a separate basis-realization obligation.
+
+Citation: Temam, *Navier--Stokes Equations*, Chapter III, Section 3. -/
+theorem abs_coefficientField_laplacianProjectionCommutator_pairing_le
+    (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (φ : SchwartzVelocity)
+    (hφ : DivergenceFreeInitial φ) :
+    |schwartzL2Inner (W.coefficientField a)
+        (W.laplacianProjectionCommutator m φ)| ≤
+      Real.sqrt (W.coefficientEnstrophy a) *
+        ‖toL2 (curlSchwartzCLM (W.proj m φ - φ))‖ := by
+  rw [coefficientField_laplacianProjectionCommutator_pairing_eq_neg_curl_error
+    W a φ hφ, abs_neg]
+  have hcs := abs_schwartzL2Inner_le
+    (curlSchwartzCLM (W.coefficientField a))
+    (curlSchwartzCLM (W.proj m φ - φ))
+  have henstrophyNorm :
+      ‖toL2 (curlSchwartzCLM (W.coefficientField a))‖ =
+        Real.sqrt (W.coefficientEnstrophy a) := by
+    rw [coefficientEnstrophy_eq_curlSchwartz, ← norm_toL2_sq]
+    exact (Real.sqrt_sq (norm_nonneg _)).symm
+  rw [henstrophyNorm] at hcs
+  exact hcs
+
 end Navier.Analysis.GalerkinBasis
