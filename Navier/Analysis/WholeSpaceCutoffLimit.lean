@@ -18,14 +18,17 @@ window, rather than postulated as a decay hypothesis.  The fundamental theorem
 of calculus and the finite-cutoff momentum identity then give the exact
 time-integrated weak momentum balance on every `[a,b] ⊂ (0,T)`.
 
-This is not yet the whole-space Duhamel formula.  A Gaussian translate has
-noncompact support, so transporting the result below to that test still needs
-a cutoff-to-Gaussian limit with tail domination.  No such domination, Leray
-bound, pressure normalization, or Duhamel representation is assumed here.
+This is not yet the whole-space Duhamel formula.  The module now transports
+the complete finite-cutoff balance to a Gaussian test through its endpoint
+integrals and separately proves that every integrably dominated
+first-derivative cutoff remainder is `O(R⁻¹)`.  Splitting the surviving
+Gaussian-gradient, viscous, and pressure terms still needs their own spatial
+and time-uniform domination; no Leray bound, pressure normalization, or
+Duhamel representation is assumed here.
 
 Pattern classification: `representationTransport`; the finite-cutoff time
-integration is `kernelClosed`; the Gaussian-limit consumer remains
-`scientificFrontier`.
+integration, combined Gaussian transport, and cutoff-derivative tail lemma
+are `kernelClosed`; the termwise Duhamel consumer remains `scientificFrontier`.
 -/
 
 set_option autoImplicit false
@@ -318,6 +321,54 @@ theorem cutoffMomentumCoordinate_timeIntegrated
         (ha0.le.trans ht'.1) (ht'.2.trans_lt hbT) j
 
 /-! ### The actual cutoff-to-Gaussian limit -/
+
+/-- The first-derivative cutoff tail vanishes against every integrably
+dominated vector/scalar product.  This is the exact `Dχ_R(v) · f` remainder
+created when the derivative in a tested momentum term is expanded across
+`χ_R G`; unlike the combined-balance transport below, it identifies one
+termwise limit and records the sharp `O(R⁻¹)` rate.
+
+Reference: Majda--Bertozzi, *Vorticity and Incompressible Flow*, §3.3. -/
+theorem scaledCutoff_fderiv_remainder_tendsto_zero
+    (v : Space → Space) (f h : Space → ℝ) (hInt : Integrable h)
+    (hdom : ∀ x : Space, ‖v x‖ * |f x| ≤ h x) :
+    Filter.Tendsto (fun R : ℝ => ∫ x : Space,
+        fderiv ℝ (scaledCutoff R) x (v x) * f x)
+      Filter.atTop (nhds 0) := by
+  obtain ⟨M, hMnn, hM⟩ := exists_fderiv_opNorm_bound _
+    standardBump.contDiff standardBump.hasCompactSupport
+  apply squeeze_zero_norm'
+    (a := fun R : ℝ => R⁻¹ * (M * ∫ x : Space, h x))
+  · filter_upwards [Filter.eventually_gt_atTop 0] with R hR
+    have hRinvnn : (0 : ℝ) ≤ R⁻¹ := inv_nonneg.mpr hR.le
+    calc
+      ‖∫ x : Space, fderiv ℝ (scaledCutoff R) x (v x) * f x‖
+          ≤ ∫ x : Space, ‖fderiv ℝ (scaledCutoff R) x (v x) * f x‖ :=
+        norm_integral_le_integral_norm _
+      _ ≤ ∫ x : Space, R⁻¹ * M * h x := by
+        apply integral_mono_of_nonneg
+        · filter_upwards with x
+          positivity
+        · exact hInt.const_mul (R⁻¹ * M)
+        · filter_upwards with x
+          have hd : |fderiv ℝ (scaledCutoff R) x (v x)| ≤
+              R⁻¹ * M * ‖v x‖ :=
+            abs_fderiv_scaled_le _ standardBump.contDiff hM hR x (v x)
+          calc
+            ‖fderiv ℝ (scaledCutoff R) x (v x) * f x‖
+                = |fderiv ℝ (scaledCutoff R) x (v x)| * |f x| := by
+                  rw [norm_mul, Real.norm_eq_abs, Real.norm_eq_abs]
+            _ ≤ (R⁻¹ * M * ‖v x‖) * |f x| :=
+              mul_le_mul_of_nonneg_right hd (abs_nonneg _)
+            _ = R⁻¹ * M * (‖v x‖ * |f x|) := by ring
+            _ ≤ R⁻¹ * M * h x :=
+              mul_le_mul_of_nonneg_left (hdom x)
+                (mul_nonneg hRinvnn hMnn)
+      _ = R⁻¹ * (M * ∫ x : Space, h x) := by
+        rw [integral_const_mul]
+        ring
+  · simpa using
+      tendsto_inv_atTop_zero.mul_const (M * ∫ x : Space, h x)
 
 /-- Multiplication by the concrete scaled cutoff converges under every
 integrable spatial integral.  The standard bump is pointwise eventually one
