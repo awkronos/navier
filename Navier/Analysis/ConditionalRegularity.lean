@@ -197,9 +197,12 @@ open Navier
 open Navier.Analysis.Vorticity
 open Navier.Analysis.OfficialABEncoding
 open Navier.Analysis.EnergyNormBridge
+open Navier.Analysis.ParabolicCaccioppoli
 open Navier.Breakdown
 open Navier.Analysis.HeatSemigroupSmoothing
 open Navier.Analysis.WholeSpaceDuhamel
+open Navier.Analysis.WholeSpaceCutoffLimit
+open Navier.Analysis.ScaledCutoff
 
 /-! ### Shared established leaves -/
 
@@ -816,8 +819,61 @@ theorem heatFlow_initialDatum_bounded
 
 /-! ### Named residual leaves -/
 
+/-- The Prodi--Serrin per-slice `L^p` hypothesis supplies the endpoint
+domination required by
+`WholeSpaceCutoffLimit.gaussianCutoffMomentumRhs_tendsto`.  Thus the complete
+finite-cutoff tested PDE right-hand side has a genuine Gaussian limit on every
+positive interior time interval.  What remains for Duhamel is termwise
+identification and time-tail control, not existence of the combined cutoff
+limit. -/
+theorem prodiSerrin_gaussianCutoffMomentumRhs_tendsto
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {p : ℝ} (hp : 3 < p)
+    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    {a b : ℝ} (ha0 : 0 < a) (hab : a ≤ b) (hbT : b < T)
+    {τ : ℝ} (hτ : 0 < τ) (x₀ : Space) (j : Fin 3) :
+    Filter.Tendsto (fun R : ℝ => cutoffMomentumCoordinateTimeRhs sol
+        (fun y : Space => scaledCutoff R y * heatKernel ν τ (x₀ - y)) a b j)
+      Filter.atTop (nhds
+        ((∫ y : Space, heatKernel ν τ (x₀ - y) * sol.velocity b y j) -
+          ∫ y : Space, heatKernel ν τ (x₀ - y) * sol.velocity a y j)) := by
+  have hp0 : 0 < p := lt_trans (by norm_num) hp
+  have hcoord_pow : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun y : Space => |sol.velocity t y j| ^ p) := by
+    intro t ht0 htT
+    have hcomp : Continuous (fun y : Space => sol.velocity t y j) :=
+      (continuous_apply j).comp
+        (velocity_slice_contDiff sol ht0 htT).continuous
+    apply (hint t ht0 htT).mono'
+      (hcomp.abs.rpow_const (fun _ => Or.inr hp0.le)).aestronglyMeasurable
+    filter_upwards with y
+    rw [Real.norm_eq_abs,
+      abs_of_nonneg (Real.rpow_nonneg (abs_nonneg _) _)]
+    exact Real.rpow_le_rpow (abs_nonneg _)
+      (by simpa [Real.norm_eq_abs] using
+        norm_le_pi_norm (sol.velocity t y) j) hp0.le
+  have hcoord_meas : ∀ t : ℝ, 0 ≤ t → t < T →
+      Measurable (fun y : Space => sol.velocity t y j) := by
+    intro t ht0 htT
+    exact ((continuous_apply j).comp
+      (velocity_slice_contDiff sol ht0 htT).continuous).measurable
+  have hinta : Integrable (fun y : Space =>
+      heatKernel ν τ (x₀ - y) * sol.velocity a y j) :=
+    integrable_heatKernel_mul_of_integrable_rpow hν hτ
+      (by linarith : 1 < p) (hcoord_pow a ha0.le (hab.trans_lt hbT))
+      (hcoord_meas a ha0.le (hab.trans_lt hbT)) x₀
+  have hintb : Integrable (fun y : Space =>
+      heatKernel ν τ (x₀ - y) * sol.velocity b y j) :=
+    integrable_heatKernel_mul_of_integrable_rpow hν hτ
+      (by linarith : 1 < p) (hcoord_pow b (ha0.le.trans hab) hbT)
+      (hcoord_meas b (ha0.le.trans hab) hbT) x₀
+  exact gaussianCutoffMomentumRhs_tendsto sol ha0 hab hbT j ν τ x₀
+    hinta hintb
+
 /-- **[LEAF — Prodi–Serrin far-field layer tail; est ~300 LOC.]**  Outside one
-A closed ball, a partial classical solution with bounded initial datum and
+closed ball, a partial classical solution with bounded initial datum and
 per-slice `L^p` integrability (`p > 3`) is uniformly bounded on the closed
 initial layer `[0,δ]`.
 
@@ -844,9 +900,11 @@ convolution (Young) layer — `heatKernel_convolution_abs_le` and
 transport is now certified by
 `WholeSpaceDuhamel.cutoff_testedMomentum_coordinate`, and
 `WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated` performs its
-interior-time FTC composition.  Still missing: passage from the compactly
-supported test to the Gaussian translate.  Neither finite-cutoff theorem is
-used below, because no cutoff-to-Gaussian convergence theorem is available.
+interior-time FTC composition.  The theorem immediately above now proves
+convergence of the complete finite-cutoff right-hand side to the increment of
+Gaussian-tested momentum under the present `L^p` hypothesis.  Still missing:
+termwise identification of that combined limit, uniform domination in the
+Duhamel time variable, and the Leray projection.
 `WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` shows that this
 is a genuine limit step; its boundary terms require tail control of the
 solution and its first spatial derivatives that the per-slice `L^p` hypothesis
@@ -888,20 +946,26 @@ theorem prodiSerrin_layer_farField_bounded
   have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
       ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
     heatFlow_initialDatum_bounded hν sol hu₀
+  -- The actual cutoff limit is now consumed at this far-field leaf.  On the
+  -- concrete interior interval `[δ/2,δ]`, the whole finite-cutoff PDE side
+  -- converges to the Gaussian-tested momentum increment.  The remaining gap
+  -- is to split and bound that limit in the Duhamel/Leray form.
+  have hcutoffGaussianAtHalfTime :=
+    prodiSerrin_gaussianCutoffMomentumRhs_tendsto hν sol hp hint
+      (a := δ / 2) (b := δ) (τ := δ / 2) (by linarith) (by linarith) hδT
+      (by linarith) (0 : Space) (0 : Fin 3)
   -- GAP: The velocity is the heat flow of the initial data PLUS the Duhamel
   -- integral (the nonlinear correction).  The Duhamel formula,
   --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds,
-  -- has a finite-cutoff spatial IBP step and an interior-time FTC theorem in
-  -- `WholeSpaceCutoffLimit`, but those are deliberately not bound here: no
-  -- theorem transports them to the Gaussian test.  What remains is (i) that
-  -- cutoff-to-Gaussian limit, whose Gaussian test is provably not compactly
-  -- supported, (ii) domination of the spatial tails, and (iii) the Leray
-  -- projector P as a pointwise bounded singular integral kernel.  None of
-  -- these are currently available in the estate.
+  -- now has a certified combined cutoff-to-Gaussian limit in
+  -- `hcutoffGaussianAtHalfTime`.  What remains is (i) termwise tail
+  -- domination identifying the convection/viscosity/pressure limits, (ii)
+  -- uniform domination as the Gaussian time lag approaches zero, and (iii)
+  -- the Leray projector P as a pointwise bounded singular integral kernel.
   --
-  -- The Duhamel argument would combine `hheat0` with the standalone tested
-  -- momentum identity only after the missing cutoff limit; a raw-pressure
-  -- `L^p` shortcut remains invalid by pressure gauge freedom.  Then
+  -- The Duhamel argument would combine `hheat0` with the combined Gaussian
+  -- cutoff limit only after its three spatial terms are identified; a
+  -- raw-pressure `L^p` shortcut remains invalid by pressure gauge freedom. Then
   -- `heatKernel_convolution_norm_vec_le` would bound the nonlinear integral.
   sorry
 

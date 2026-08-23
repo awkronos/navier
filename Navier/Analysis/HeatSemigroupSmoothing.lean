@@ -254,6 +254,76 @@ theorem integrable_heatKernel_rpow {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t) {s :
   exact Integrable.fintype_prod
     (fun _ => integrable_exp_neg_mul_sq hb)
 
+/-- A Gaussian translate times an `L^r` scalar is integrable for `r > 1`.
+
+This is the integrability fact hidden inside the convolution estimate below,
+exported because cutoff-to-Gaussian dominated convergence needs the fact
+itself rather than only the resulting numerical bound. -/
+theorem integrable_heatKernel_mul_of_integrable_rpow {ν t : ℝ}
+    (hν : 0 < ν) (ht : 0 < t) {r : ℝ} (hr : 1 < r) {f : Space → ℝ}
+    (hfr : Integrable (fun y : Space => |f y| ^ r)) (hfm : Measurable f)
+    (x : Space) :
+    Integrable (fun y : Space => heatKernel ν t (x - y) * f y) := by
+  have hG : ∀ y : Space, 0 ≤ heatKernel ν t (x - y) :=
+    fun y => heatKernel_nonneg hν ht _
+  have hGm : Measurable (fun y : Space => heatKernel ν t (x - y)) :=
+    (heatKernel_continuous ν t).measurable.comp
+      (measurable_const.sub measurable_id)
+  have hA : (0 : ℝ) < 4 * π * ν * t := by positivity
+  have hGb : ∀ y : Space,
+      heatKernel ν t (x - y) ≤ (4 * π * ν * t) ^ (-(3 : ℝ) / 2) := by
+    intro y
+    have hexp :
+        Real.exp (-(4 * ν * t)⁻¹ * ∑ i : Fin 3, (x - y) i ^ 2) ≤ 1 := by
+      rw [Real.exp_le_one_iff]
+      exact mul_nonpos_of_nonpos_of_nonneg
+        (neg_nonpos.mpr (inv_nonneg.mpr (by positivity)))
+        (Finset.sum_nonneg (fun i _ => sq_nonneg _))
+    calc
+      heatKernel ν t (x - y) =
+          (4 * π * ν * t) ^ (-(3 : ℝ) / 2) *
+            Real.exp (-(4 * ν * t)⁻¹ * ∑ i : Fin 3, (x - y) i ^ 2) := rfl
+      _ ≤ (4 * π * ν * t) ^ (-(3 : ℝ) / 2) * 1 :=
+        mul_le_mul_of_nonneg_left hexp (Real.rpow_nonneg hA.le _)
+      _ = (4 * π * ν * t) ^ (-(3 : ℝ) / 2) := mul_one _
+  have hG_int : Integrable (fun y : Space => heatKernel ν t (x - y)) := by
+    have h1 := (integrable_heatKernel_rpow hν ht one_pos).comp_sub_right x
+    simp only [Real.rpow_one] at h1
+    rwa [show (fun y : Space => heatKernel ν t (x - y)) =
+        (fun y : Space => heatKernel ν t (y - x)) from
+      funext (fun y => heatKernel_comm ν t x y)]
+  have hsum_int : Integrable (fun y : Space =>
+      heatKernel ν t (x - y) +
+        (4 * π * ν * t) ^ (-(3 : ℝ) / 2) * |f y| ^ r) :=
+    hG_int.add (hfr.const_mul _)
+  have hprod_abs : Integrable (fun y : Space =>
+      heatKernel ν t (x - y) * |f y|) := by
+    apply hsum_int.mono' (hGm.mul (hfm.abs)).aestronglyMeasurable
+    refine Filter.Eventually.of_forall (fun y => ?_)
+    rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (hG y), abs_abs]
+    have hfr_le : |f y| ≤ 1 + |f y| ^ r := by
+      rcases le_total |f y| 1 with h | h
+      · have := Real.rpow_nonneg (abs_nonneg (f y)) r
+        linarith
+      · have h1 : |f y| ≤ |f y| ^ r := by
+          nth_rewrite 1 [← Real.rpow_one |f y|]
+          exact Real.rpow_le_rpow_of_exponent_le h hr.le
+        have := Real.rpow_nonneg (abs_nonneg (f y)) r
+        linarith
+    calc
+      heatKernel ν t (x - y) * |f y| ≤
+          heatKernel ν t (x - y) * (1 + |f y| ^ r) :=
+        mul_le_mul_of_nonneg_left hfr_le (hG y)
+      _ = heatKernel ν t (x - y) +
+          heatKernel ν t (x - y) * |f y| ^ r := by ring
+      _ ≤ heatKernel ν t (x - y) +
+          (4 * π * ν * t) ^ (-(3 : ℝ) / 2) * |f y| ^ r :=
+        add_le_add_right (mul_le_mul_of_nonneg_right (hGb y)
+          (Real.rpow_nonneg (abs_nonneg _) _)) _
+  exact hprod_abs.mono' (hGm.mul hfm).aestronglyMeasurable
+    (Filter.Eventually.of_forall (fun y => by
+      rw [norm_mul, Real.norm_eq_abs, abs_of_nonneg (hG y), Real.norm_eq_abs]))
+
 /-- **Pointwise Young/Hölder bound for heat-kernel convolution.**  For `r > 1`
 and `|f|^r` integrable,
 
