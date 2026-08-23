@@ -636,6 +636,170 @@ theorem fderiv_heatKernel_space_apply (ν : ℝ) (t : ℝ)
   rw [hsum, heatKernel]
   ring
 
+/-- A coordinate times a Gaussian at time `t` is dominated by a Gaussian at
+time `2t`.  This is the finite-dimensional first-moment estimate needed to
+integrate spatial derivatives of the heat kernel against `L^p` data.
+
+Reference: Kato, *Strong Lp-solutions of the Navier--Stokes equation in Rm*,
+Math. Z. 187 (1984), the Gaussian derivative estimates in §2. -/
+theorem exists_abs_coordinate_mul_heatKernel_le_doubled
+    {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t) :
+    ∃ C : ℝ, 0 < C ∧ ∀ (x : Space) (i : Fin 3),
+      |x i| * heatKernel ν t x ≤ C * heatKernel ν (2 * t) x := by
+  let a : ℝ := (8 * ν * t)⁻¹
+  let A : ℝ := (4 * π * ν * t) ^ (-(3 : ℝ) / 2)
+  let B : ℝ := (4 * π * ν * (2 * t)) ^ (-(3 : ℝ) / 2)
+  let C : ℝ := A * (Real.sqrt a)⁻¹ * B⁻¹
+  have ha : 0 < a := by simp only [a]; positivity
+  have hA : 0 < A := by simp only [A]; positivity
+  have hB : 0 < B := by simp only [B]; positivity
+  refine ⟨C, ?_, ?_⟩
+  · simp only [C]
+    positivity
+  · intro x i
+    let S : ℝ := ∑ j : Fin 3, x j ^ 2
+    have hS : 0 ≤ S := by simp only [S]; positivity
+    have hxi : x i ^ 2 ≤ S := by
+      simp only [S]
+      exact Finset.single_le_sum (fun j _ => sq_nonneg (x j)) (Finset.mem_univ i)
+    have hexp : Real.exp (-a * S) ≤ Real.exp (-a * |x i| ^ 2) := by
+      apply Real.exp_le_exp.mpr
+      rw [sq_abs]
+      nlinarith
+    have hbase := Real.abs_mulExpNegMulSq_le ha (x := |x i|)
+    have hbounded : |x i| * Real.exp (-a * S) ≤ (Real.sqrt a)⁻¹ := by
+      calc
+        |x i| * Real.exp (-a * S)
+            ≤ |x i| * Real.exp (-a * |x i| ^ 2) :=
+          mul_le_mul_of_nonneg_left hexp (abs_nonneg _)
+        _ = abs (Real.mulExpNegMulSq a |x i|) := by
+          simp only [Real.mulExpNegMulSq, abs_mul, abs_abs, abs_exp]
+          congr 2
+          rw [pow_two]
+          ring
+        _ ≤ (Real.sqrt a)⁻¹ := hbase
+    have hK1 : heatKernel ν t x = A * Real.exp (-2 * a * S) := by
+      simp only [heatKernel, A, a, S]
+      congr 2
+      field_simp
+      ring
+    have hK2 : heatKernel ν (2 * t) x = B * Real.exp (-a * S) := by
+      simp only [heatKernel, B, a, S]
+      congr 2
+      field_simp
+      ring
+    rw [hK1, hK2]
+    have hsplit : Real.exp (-2 * a * S) =
+        Real.exp (-a * S) * Real.exp (-a * S) := by
+      rw [← Real.exp_add]
+      congr 1
+      ring
+    rw [hsplit]
+    have hCB : C * B = A * (Real.sqrt a)⁻¹ := by
+      simp only [C]
+      field_simp
+    calc
+      |x i| * (A * (Real.exp (-a * S) * Real.exp (-a * S))) =
+          (A * Real.exp (-a * S)) * (|x i| * Real.exp (-a * S)) := by ring
+      _ ≤ (A * Real.exp (-a * S)) * (Real.sqrt a)⁻¹ :=
+        mul_le_mul_of_nonneg_left hbounded (mul_nonneg hA.le (Real.exp_nonneg _))
+      _ = (A * (Real.sqrt a)⁻¹) * Real.exp (-a * S) := by ring
+      _ = (C * B) * Real.exp (-a * S) := by rw [hCB]
+      _ = C * (B * Real.exp (-a * S)) := by ring
+
+/-- The exact Fréchet derivative of a translated Gaussian, applied to an
+arbitrary spatial direction.  The sign from `x₀ - y` cancels the negative
+sign in the Gaussian gradient. -/
+theorem fderiv_heatKernel_translate_apply (ν t : ℝ) (x₀ y v : Space) :
+    fderiv ℝ (fun z : Space => heatKernel ν t (x₀ - z)) y v =
+      heatKernel ν t (x₀ - y) *
+        ((4 * ν * t)⁻¹ * (2 * ∑ i : Fin 3, (x₀ - y) i * v i)) := by
+  have hsub : HasFDerivAt (fun z : Space => x₀ - z)
+      (-(1 : Space →L[ℝ] Space)) y :=
+    (hasFDerivAt_id y).const_sub x₀
+  have hc := (hasFDerivAt_heatKernel_space ν t (x₀ - y)).comp y hsub
+  have hcf := hc.fderiv
+  simp only [Function.comp_def] at hcf
+  rw [hcf]
+  simp only [ContinuousLinearMap.comp_apply, neg_apply, add_apply,
+    smul_apply, _root_.sum_apply, ContinuousLinearMap.proj_apply,
+    Pi.neg_apply, smul_eq_mul]
+  rw [show (1 : Space →L[ℝ] Space) v = v by rfl]
+  have hsum : (∑ i : Fin 3,
+      ((x₀ - y) i * -v i + (x₀ - y) i * -v i)) =
+      -2 * ∑ i : Fin 3, (x₀ - y) i * v i := by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro i _
+    ring
+  rw [hsum]
+  unfold heatKernel
+  ring
+
+/-- The spatial derivative of a translated Gaussian is bounded by a doubled-
+time Gaussian times the norm of the direction.  The proof sums the three
+coordinate first-moment estimates rather than hiding the derivative in an
+assumption. -/
+theorem exists_abs_fderiv_heatKernel_translate_le_doubled
+    {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t) :
+    ∃ C : ℝ, 0 < C ∧ ∀ (x₀ y v : Space),
+      |fderiv ℝ (fun z : Space => heatKernel ν t (x₀ - z)) y v| ≤
+        C * heatKernel ν (2 * t) (x₀ - y) * ‖v‖ := by
+  obtain ⟨C, hCpos, hC⟩ :=
+    exists_abs_coordinate_mul_heatKernel_le_doubled hν ht
+  let D : ℝ := |(4 * ν * t)⁻¹| * 2 * (3 * C)
+  have hcoef : 0 < |(4 * ν * t)⁻¹| := by positivity
+  refine ⟨D, ?_, ?_⟩
+  · simp only [D]
+    positivity
+  · intro x₀ y v
+    let z : Space := x₀ - y
+    have hG : 0 ≤ heatKernel ν t z := heatKernel_nonneg hν ht z
+    have hG2 : 0 ≤ heatKernel ν (2 * t) z :=
+      heatKernel_nonneg hν (by positivity) z
+    have hsum : |∑ i : Fin 3, z i * v i| ≤ ∑ i : Fin 3, |z i * v i| := by
+      simpa using
+        Finset.abs_sum_le_sum_abs (fun i : Fin 3 => z i * v i) Finset.univ
+    have hsumG : heatKernel ν t z * |∑ i : Fin 3, z i * v i| ≤
+        (3 * C * heatKernel ν (2 * t) z) * ‖v‖ := by
+      calc
+        heatKernel ν t z * |∑ i : Fin 3, z i * v i|
+            ≤ heatKernel ν t z * ∑ i : Fin 3, |z i * v i| :=
+          mul_le_mul_of_nonneg_left hsum hG
+        _ = ∑ i : Fin 3, (|z i| * heatKernel ν t z) * |v i| := by
+          rw [Finset.mul_sum]
+          apply Finset.sum_congr rfl
+          intro i _
+          rw [abs_mul]
+          ring
+        _ ≤ ∑ _i : Fin 3, (C * heatKernel ν (2 * t) z) * ‖v‖ := by
+          apply Finset.sum_le_sum
+          intro i _
+          exact mul_le_mul (hC z i) (norm_le_pi_norm v i) (abs_nonneg _)
+            (mul_nonneg hCpos.le hG2)
+        _ = (3 * C * heatKernel ν (2 * t) z) * ‖v‖ := by
+          rw [Fin.sum_univ_three]
+          ring
+    have hsumGx : heatKernel ν t (x₀ - y) *
+        |∑ i : Fin 3, (x₀ - y) i * v i| ≤
+        (3 * C * heatKernel ν (2 * t) (x₀ - y)) * ‖v‖ := by
+      simpa only [z] using hsumG
+    rw [fderiv_heatKernel_translate_apply]
+    rw [abs_mul, abs_of_nonneg (heatKernel_nonneg hν ht _), abs_mul, abs_mul,
+      abs_of_nonneg (show (0 : ℝ) ≤ 2 by norm_num)]
+    calc
+      heatKernel ν t (x₀ - y) *
+          (|(4 * ν * t)⁻¹| * (2 * |∑ i : Fin 3, (x₀ - y) i * v i|)) =
+          (|(4 * ν * t)⁻¹| * 2) *
+            (heatKernel ν t (x₀ - y) *
+              |∑ i : Fin 3, (x₀ - y) i * v i|) := by ring
+      _ ≤ (|(4 * ν * t)⁻¹| * 2) *
+          ((3 * C * heatKernel ν (2 * t) (x₀ - y)) * ‖v‖) :=
+        mul_le_mul_of_nonneg_left hsumGx (by positivity)
+      _ = D * heatKernel ν (2 * t) (x₀ - y) * ‖v‖ := by
+        simp only [D]
+        ring
+
 /-- **Second spatial partial derivative of the heat kernel.**
 `∂ᵢᵢ G_t^ν(x) = G_t^ν(x) · (xᵢ²/(4ν²t²) − 1/(2νt))`, in the division-free form
 `G_t^ν(x) · ((−(4νt)⁻¹·2xᵢ)² + 2·(−(4νt)⁻¹))` obtained directly from the
