@@ -4940,6 +4940,79 @@ theorem DivergenceFreeTestFunction.exists_integrable_convection_pairing_majorant
     simpa [B] using mul_le_mul_of_nonneg_right
       (mul_le_mul_of_nonneg_left (hseminorm t ⟨ht.1.le, ht.2⟩) (by norm_num)) hE)
 
+/-- A uniformly energy-bounded family has one common integrable majorant for
+all of its quadratic convection pairings on the compact time window of the
+test.  Unlike the single-velocity version above, this is the domination shape
+consumed by the Galerkin limit passage. -/
+theorem DivergenceFreeTestFunction.exists_integrable_convection_pairing_majorant_family
+    (φ : DivergenceFreeTestFunction) (uSeq : ℕ → VelocityEvolution) (E : ℝ)
+    (hE : 0 ≤ E)
+    (humeas : JointlyMeasurable uSeq)
+    (huint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t → Integrable fun x : Space => ‖uSeq k t x‖ ^ 2)
+    (huE : ∀ (k : ℕ) (t : ℝ), 0 < t → (∫ x : Space, ‖uSeq k t x‖ ^ 2) ≤ E) :
+    ∃ T B : ℝ, 0 < T ∧ 0 ≤ B ∧
+      IntegrableOn (fun _t : ℝ => B) (Set.Ioc (0 : ℝ) T) ∧
+      ∀ (k : ℕ) (t : ℝ), t ∈ Set.Ioc (0 : ℝ) T →
+        |∫ x : Space,
+          officialInner (uSeq k t x)
+            (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x))| ≤ B := by
+  obtain ⟨T, C, hT, hC, hseminorm⟩ := φ.exists_uniform_first_seminorm_bound
+  let B : ℝ := 3 * C * E
+  have hB : 0 ≤ B := mul_nonneg (mul_nonneg (by norm_num) hC) hE
+  refine ⟨T, B, hT, hB, integrableOn_const (hs := measure_Ioc_lt_top.ne), ?_⟩
+  intro k t ht
+  have hslice := abs_integral_convection_pairing_le_energy (φ.field t) E
+    ((humeas k).comp measurable_prodMk_left) (huint k t ht.1.le) (huE k t ht.1)
+  exact hslice.trans (by
+    simpa [B] using mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_left (hseminorm t ⟨ht.1.le, ht.2⟩) (by norm_num)) hE)
+
+/-- **Dominated-convergence assembly for the quadratic time leg.**
+
+If the spatial convection pairings of a uniformly energy-bounded family are
+measurable in time and converge almost everywhere to the limit pairing, then
+their time integrals converge on the certified compact window of the test.
+The common dominating function is constructed above from the test's uniform
+first Schwartz seminorm and the kinetic-energy bound; it is not an additional
+hypothesis. -/
+theorem DivergenceFreeTestFunction.exists_timeWindow_tendsto_integral_convection_pairing_of_ae
+    (φ : DivergenceFreeTestFunction) (uSeq : ℕ → VelocityEvolution)
+    (u : VelocityEvolution) (E : ℝ) (hE : 0 ≤ E)
+    (humeas : JointlyMeasurable uSeq)
+    (huint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t → Integrable fun x : Space => ‖uSeq k t x‖ ^ 2)
+    (huE : ∀ (k : ℕ) (t : ℝ), 0 < t → (∫ x : Space, ‖uSeq k t x‖ ^ 2) ≤ E)
+    (hpairMeas : ∀ T : ℝ, 0 < T → ∀ k : ℕ, AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (uSeq k t x) (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x)))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)))
+    (hpairLim : ∀ T : ℝ, 0 < T →
+      ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)), Filter.Tendsto
+        (fun k : ℕ => ∫ x : Space,
+          officialInner (uSeq k t x) (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x)))
+        Filter.atTop
+        (nhds (∫ x : Space,
+          officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x))))) :
+    ∃ T : ℝ, 0 < T ∧
+      Filter.Tendsto
+        (fun k : ℕ => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (uSeq k t x) (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x)))
+        Filter.atTop
+        (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x)))) := by
+  obtain ⟨T, B, hT, _hB, hBint, hbound⟩ :=
+    φ.exists_integrable_convection_pairing_majorant_family uSeq E hE humeas huint huE
+  refine ⟨T, hT, ?_⟩
+  apply MeasureTheory.tendsto_integral_of_dominated_convergence (fun _t : ℝ => B)
+  · intro k
+    exact hpairMeas T hT k
+  · exact hBint
+  · intro k
+    refine (ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    rw [Real.norm_eq_abs]
+    exact hbound k t ht
+  · exact hpairLim T hT
+
 /-- Compact spatial support turns the uniform pointwise time-derivative bound
 into a uniform squared `L²_x` bound. -/
 theorem DivergenceFreeTestFunction.timeDeriv_norm_sq_le_volume_mul_bound
@@ -6051,9 +6124,15 @@ compact support into a uniform squared `L²_x` bound, and
 test horizon.  Finally `abs_integral_officialInner_le_three_halves` and
 `exists_integrable_timeDeriv_pairing_majorant` combine it with a uniform
 velocity-energy bound to majorize the complete linear `⟨u,∂ₜφ⟩` leg.
-The remaining construction is the corresponding joint compact-window bounds
-for the spatial derivative and Laplacian factors, the convection majorant,
-and dominated-convergence assembly along the a.e.-in-time subsequence below.
+
+**The quadratic time assembly is now certified (lane N4, 2026-08-23).**
+`exists_integrable_convection_pairing_majorant_family` supplies one constant
+integrable majorant for every member of an energy-bounded Galerkin family, and
+`exists_timeWindow_tendsto_integral_convection_pairing_of_ae` consumes a.e.
+fixed-time convergence with Mathlib's dominated-convergence theorem.  The
+remaining assembly edge is to produce its restricted-time measurability and
+a.e.-convergence hypotheses from the Galerkin subsequence below, then combine
+this quadratic result with common time majorants for the two linear legs.
 
 **The pointwise half is now certified (lane N3, 2026-08-21).**  That extraction
 is no longer a gap: `exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral`
@@ -6065,9 +6144,9 @@ vanishes at **every** radius — exactly the `hloc` hypothesis of
 producer.  Their measurability leaf
 `measurable_setIntegral_of_jointlyMeasurable_nonneg` is what makes the
 time-integrand measurable without an integrability hypothesis at negative
-times.  What remains of step (d) is therefore the spatial-derivative,
-Laplacian and convection majorants plus their dominated-convergence assembly;
-the support interface and time-derivative leg are now present. -/
+times.  The new quadratic DCT theorem above now consumes the resulting
+fixed-time convergence once measurability of the signed convection pairing is
+wired; the full weak-density time assembly and its two linear majorants remain. -/
 
 
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
