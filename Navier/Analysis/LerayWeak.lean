@@ -4842,6 +4842,104 @@ theorem DivergenceFreeTestFunction.exists_uniform_timeDeriv_bound
   intro t ht x hx
   exact le_trans (hC ⟨(t, x), Set.mem_prod.mpr ⟨ht, hx⟩, rfl⟩) (le_max_left C 0)
 
+/-- The spatial Fréchet derivatives of the test slices are uniformly bounded
+on every compact nonnegative spacetime window.  This is a restriction of the
+joint spacetime derivative to the spatial inclusion, not an extra
+Schwartz-topology continuity assumption. -/
+theorem DivergenceFreeTestFunction.exists_uniform_spatialFDeriv_bound
+    (φ : DivergenceFreeTestFunction) {T : ℝ} {K : Set Space} (hK : IsCompact K) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) T →
+      ∀ x : Space, x ∈ K → ‖fderiv ℝ (⇑(φ.field t)) x‖ ≤ C := by
+  let S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ
+  let F : ℝ × Space → Space := fun z => φ.field z.1 z.2
+  let J : Space →L[ℝ] ℝ × Space := ContinuousLinearMap.inr ℝ ℝ Space
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hD : ContinuousOn (fun z : ℝ × Space => fderivWithin ℝ F S z) S :=
+    φ.smooth.continuousOn_fderivWithin hUD (by norm_num)
+  have hbridge : ∀ z ∈ S,
+      (fderivWithin ℝ F S z).comp J = fderiv ℝ (⇑(φ.field z.1)) z.2 := by
+    rintro ⟨t, x⟩ hz
+    have hG : HasFDerivWithinAt F (fderivWithin ℝ F S (t, x)) S (t, x) :=
+      ((φ.smooth (t, x) hz).differentiableWithinAt
+        (by decide : (∞ : ℕ∞ω) ≠ 0)).hasFDerivWithinAt
+    have hi : HasFDerivAt (fun y : Space => (t, y)) J x :=
+      hasFDerivAt_prodMk_right t x
+    have hmaps : Set.MapsTo (fun y : Space => (t, y)) Set.univ S := fun y _ =>
+      Set.mem_prod.mpr ⟨hz.1, Set.mem_univ y⟩
+    have hcomp := HasFDerivWithinAt.comp x hG hi.hasFDerivWithinAt hmaps
+    rw [show (F ∘ (fun y : Space => (t, y))) = (⇑(φ.field t) : Space → Space)
+      from rfl] at hcomp
+    have heq := hcomp.fderivWithin (uniqueDiffOn_univ x (Set.mem_univ x))
+    simpa only [fderivWithin_univ] using heq.symm
+  let W : Set (ℝ × Space) := Set.Icc (0 : ℝ) T ×ˢ K
+  have hW : IsCompact W := isCompact_Icc.prod hK
+  have hWS : W ⊆ S := by
+    rintro ⟨t, x⟩ htx
+    exact Set.mem_prod.mpr ⟨Set.mem_Ici.mpr htx.1.1, Set.mem_univ x⟩
+  have hn : ContinuousOn (fun z : ℝ × Space => ‖fderivWithin ℝ F S z‖) W :=
+    hD.norm.mono hWS
+  obtain ⟨C, hC⟩ := hW.bddAbove_image hn
+  let B : ℝ := max C 0 * ‖J‖
+  have hB : 0 ≤ B := mul_nonneg (le_max_right C 0) (norm_nonneg J)
+  refine ⟨B, hB, ?_⟩
+  intro t ht x hx
+  have hzS : (t, x) ∈ S :=
+    Set.mem_prod.mpr ⟨Set.mem_Ici.mpr ht.1, Set.mem_univ x⟩
+  rw [← hbridge (t, x) hzS]
+  exact (ContinuousLinearMap.opNorm_comp_le _ _).trans
+    (mul_le_mul_of_nonneg_right
+      (le_trans (hC ⟨(t, x), Set.mem_prod.mpr ⟨ht, hx⟩, rfl⟩)
+        (le_max_left C 0)) (norm_nonneg J))
+
+/-- Compact spacetime support upgrades the preceding pointwise derivative
+estimate to one uniform bound for the first Schwartz seminorm of every test
+slice in the active time window. -/
+theorem DivergenceFreeTestFunction.exists_uniform_first_seminorm_bound
+    (φ : DivergenceFreeTestFunction) :
+    ∃ T C : ℝ, 0 < T ∧ 0 ≤ C ∧ ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) T →
+      (SchwartzMap.seminorm ℝ 0 1) (φ.field t) ≤ C := by
+  obtain ⟨T, K, hT, hK, hfield, _hderiv⟩ := φ.exists_compact_spacetime_carrier
+  obtain ⟨C, hC, hbound⟩ := φ.exists_uniform_spatialFDeriv_bound hK
+  refine ⟨T, C, hT, hC, ?_⟩
+  intro t ht
+  apply SchwartzMap.seminorm_le_bound ℝ 0 1 (φ.field t) hC
+  intro x
+  rw [pow_zero, one_mul, norm_iteratedFDeriv_one]
+  by_cases hx : x ∈ K
+  · exact hbound t ht x hx
+  · have hevent : (⇑(φ.field t) : Space → Space) =ᶠ[nhds x]
+        (fun _ : Space => (0 : Space)) := by
+      filter_upwards [hK.isClosed.isOpen_compl.eventually_mem hx] with y hy
+      exact hfield t y (Or.inr hy)
+    have hz : fderiv ℝ (⇑(φ.field t)) x = 0 := by
+      simpa using hevent.fderiv_eq
+    simp [hz, hC]
+
+/-- The compact-time first-seminorm bound supplies a constant integrable
+majorant for the quadratic convection leg under a uniform kinetic-energy
+bound.  This is the domination input only; no limit interchange is claimed. -/
+theorem DivergenceFreeTestFunction.exists_integrable_convection_pairing_majorant
+    (φ : DivergenceFreeTestFunction) (u : VelocityEvolution) (E : ℝ)
+    (hE : 0 ≤ E)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (huint : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (huE : ∀ t : ℝ, 0 < t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ E) :
+    ∃ T B : ℝ, 0 < T ∧ 0 ≤ B ∧
+      IntegrableOn (fun _t : ℝ => B) (Set.Ioc (0 : ℝ) T) ∧
+      ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+        |∫ x : Space,
+          officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x))| ≤ B := by
+  obtain ⟨T, C, hT, hC, hseminorm⟩ := φ.exists_uniform_first_seminorm_bound
+  let B : ℝ := 3 * C * E
+  have hB : 0 ≤ B := mul_nonneg (mul_nonneg (by norm_num) hC) hE
+  refine ⟨T, B, hT, hB, integrableOn_const (hs := measure_Ioc_lt_top.ne), ?_⟩
+  intro t ht
+  have hslice := abs_integral_convection_pairing_le_energy (φ.field t) E
+    (humeas.comp measurable_prodMk_left) (huint t ht.1.le) (huE t ht.1)
+  exact hslice.trans (by
+    simpa [B] using mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_left (hseminorm t ⟨ht.1.le, ht.2⟩) (by norm_num)) hE)
+
 /-- Compact spatial support turns the uniform pointwise time-derivative bound
 into a uniform squared `L²_x` bound. -/
 theorem DivergenceFreeTestFunction.timeDeriv_norm_sq_le_volume_mul_bound
