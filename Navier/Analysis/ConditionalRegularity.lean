@@ -5,7 +5,7 @@ import Navier.Scaling
 import Navier.Analysis.ESSInputs
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.HeatSemigroupSmoothing
-import Navier.Analysis.WholeSpaceDuhamel
+import Navier.Analysis.WholeSpaceCutoffLimit
 
 /-!
 # Conditional regularity bridges: Prodi–Serrin and Constantin–Fefferman
@@ -70,8 +70,14 @@ honestly.
   pointwise-solution representation leaf: against every smooth compactly
   supported scalar test, the zero-force momentum equation is integrated by
   parts with convection, viscosity, and pressure derivatives moved onto the
-  test.  `WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` proves
-  why the Gaussian itself still needs a cutoff-limit argument, while
+  test.  Its first proof-producing consumer is
+  `WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated`: compact
+  support and the actual partial-solution smoothness justify differentiation
+  under the spatial integral and give the exact time-integrated tested
+  momentum balance on `[a,b] ⊂ (0,T)`.  This remains a standalone finite-cutoff
+  artifact, not a proof input to either far-field leaf.
+  `WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` proves why the
+  Gaussian itself still needs a cutoff-limit argument, while
   `WholeSpaceDuhamel.cutoff_pressurePairing_add_const` keeps the pressure slot
   gauge invariant.
 * `uniformBound_of_farField_window`, `interiorBound_of_outerRegion` — the two
@@ -836,13 +842,16 @@ convolution (Young) layer — `heatKernel_convolution_abs_le` and
 `heatKernel_convolution_smoothing_le` give the pointwise smoothing bound
 `|∫ G_t^ν(x−y) f(y)| ≤ C(r,ν) t^{-3/(2r)} ‖f‖_r`.  The finite-cutoff spatial
 transport is now certified by
-`WholeSpaceDuhamel.cutoff_testedMomentum_coordinate`.  Still missing: passage
-from the compactly supported test to the Gaussian translate, followed by time
-integration.  `WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport`
-shows that this is a genuine limit step; its boundary terms require tail
-control of the solution and its first spatial derivatives that the per-slice
-`L^p` hypothesis alone does not supply (narrow bump constructions defeat such
-pointwise derivative decay).  Raw pressure `L^p` cannot replace that step:
+`WholeSpaceDuhamel.cutoff_testedMomentum_coordinate`, and
+`WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated` performs its
+interior-time FTC composition.  Still missing: passage from the compactly
+supported test to the Gaussian translate.  Neither finite-cutoff theorem is
+used below, because no cutoff-to-Gaussian convergence theorem is available.
+`WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` shows that this
+is a genuine limit step; its boundary terms require tail control of the
+solution and its first spatial derivatives that the per-slice `L^p` hypothesis
+alone does not supply (narrow bump constructions defeat such pointwise
+derivative decay).  Raw pressure `L^p` cannot replace that step:
 for every solution and finite positive exponent, some pressure gauge shift
 preserves the velocity while leaving the raw pressure outside `L^p`.  The
 in-repo Duhamel developments
@@ -868,9 +877,10 @@ theorem prodiSerrin_layer_farField_bounded
   -- velocity.
   --
   -- What the estate CAN prove: the heat kernel convolution of the initial
-  -- data is bounded by B₀, and the pointwise PDE has an exact finite-cutoff
-  -- momentum representation.  The unrestricted Duhamel formula is not yet
-  -- available.
+  -- data is bounded by B₀.  Separately, the pointwise PDE has an exact
+  -- finite-cutoff momentum representation and an interior-time integrated
+  -- form.  Neither finite-cutoff result reaches the Gaussian test, so the
+  -- unrestricted Duhamel formula is not yet available.
   obtain ⟨B₀, hu₀⟩ := hu₀
   -- The heat kernel convolution of the initial data is bounded by B₀, because
   -- the kernel is nonnegative and integrates to 1.  Now a standalone
@@ -878,47 +888,21 @@ theorem prodiSerrin_layer_farField_bounded
   have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
       ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
     heatFlow_initialDatum_bounded hν sol hu₀
-  -- The finite-cutoff momentum identity is now wired at the exact consumer:
-  -- every spatial derivative in the pointwise equation has been transferred
-  -- to an arbitrary compactly supported test, without any decay assumption.
-  have hcutoffMomentum :
-      ∀ (χ : Space → ℝ), ContDiff ℝ ∞ χ → HasCompactSupport χ →
-        ∀ t : ℝ, 0 ≤ t → t < T → ∀ j : Fin 3,
-          (∫ x : Space, χ x * timeDerivative sol.velocity t x j) =
-            (∫ x : Space,
-              fderiv ℝ χ x (sol.velocity t x) * sol.velocity t x j) +
-            ν * (∫ x : Space, (∑ i : Fin 3,
-              fderiv ℝ (fun z => fderiv ℝ χ z (basisVector i)) x
-                (basisVector i)) * sol.velocity t x j) +
-            (∫ x : Space,
-              fderiv ℝ χ x (basisVector j) * sol.pressure t x) := by
-    intro χ hχ hχsupp t ht0 htT j
-    exact cutoff_testedMomentum_coordinate sol hχ hχsupp ht0 htT j
-  -- A raw-pressure L^p estimate is not a legal substitute for the missing
-  -- cutoff limit: an explicit gauge shift defeats it at the same exponent.
-  have hp0 : 0 < p := lt_trans (by norm_num) hp
-  have hrawPressureGaugeObstruction :
-      ∃ c : ℝ, ¬ MemLp
-        (fun x : Space =>
-          (Navier.Analysis.PressureNormalization.shiftPressure sol c).pressure 0 x)
-        (ENNReal.ofReal p) volume :=
-    Navier.Analysis.PressureNormalization.exists_shift_pressure_not_memLp sol 0
-      (by simp [ENNReal.ofReal_eq_zero, not_le.mpr hp0]) ENNReal.ofReal_ne_top
   -- GAP: The velocity is the heat flow of the initial data PLUS the Duhamel
   -- integral (the nonlinear correction).  The Duhamel formula,
   --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds,
-  -- now has its finite-cutoff spatial IBP step in `hcutoffMomentum`.  What
-  -- remains is (i) the cutoff-to-Gaussian limit, whose Gaussian test is
-  -- provably not compactly supported, (ii) domination of the spatial tails,
-  -- and (iii) time integration and the Leray
+  -- has a finite-cutoff spatial IBP step and an interior-time FTC theorem in
+  -- `WholeSpaceCutoffLimit`, but those are deliberately not bound here: no
+  -- theorem transports them to the Gaussian test.  What remains is (i) that
+  -- cutoff-to-Gaussian limit, whose Gaussian test is provably not compactly
+  -- supported, (ii) domination of the spatial tails, and (iii) the Leray
   -- projector P as a pointwise bounded singular integral kernel.  None of
   -- these are currently available in the estate.
   --
-  -- The Duhamel argument would combine these terms as follows: `hheat0`
-  -- bounds the linear part, `hcutoffMomentum` supplies the finite-cutoff PDE
-  -- identity, `hrawPressureGaugeObstruction` rules out a raw-pressure L^p
-  -- shortcut, and `heatKernel_convolution_norm_vec_le` would bound the
-  -- nonlinear integral after the missing cutoff limit and time integration.
+  -- The Duhamel argument would combine `hheat0` with the standalone tested
+  -- momentum identity only after the missing cutoff limit; a raw-pressure
+  -- `L^p` shortcut remains invalid by pressure gauge freedom.  Then
+  -- `heatKernel_convolution_norm_vec_le` would bound the nonlinear integral.
   sorry
 
 /-- **Prodi–Serrin initial layer.**  With a bounded initial datum, a partial

@@ -127,9 +127,11 @@ viscous and pressure terms use the corresponding Laplacian and directional
 IBP leaves.  This is the strongest noncircular spatial-transport identity
 currently supported by `PartialClassicalSolution` alone.
 
-Named consumer:
-`ConditionalRegularity.prodiSerrin_layer_farField_bounded`, where the remaining
-step is the cutoff-to-Gaussian limit followed by time integration. -/
+Named proof-producing consumer:
+`WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated`, which first
+derives the tested momentum derivative and then integrates this identity on
+closed interior time intervals.  The far-field branch is not yet a consumer:
+it still needs the separate cutoff-to-Gaussian limit. -/
 theorem cutoff_testedMomentum_coordinate
     {ν : ℝ} {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
