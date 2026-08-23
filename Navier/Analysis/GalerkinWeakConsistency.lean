@@ -1,5 +1,6 @@
 import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.Ladyzhenskaya
+import Navier.Analysis.ConvectionTrilinear
 
 /-!
 # Galerkin weak-consistency commutator identities
@@ -18,6 +19,66 @@ namespace Navier.Analysis.GalerkinBasis
 open Navier
 open MeasureTheory
 open Navier.Analysis.LerayWeak
+open Navier.Analysis.OfficialABEncoding
+
+/-- Quantitative continuity of the fixed-time Galerkin weak pairing in the
+natural test topology.
+
+The time leg is continuous in `L²`, the viscous leg in the divergence-free
+`H¹` curl norm, and the convection leg in the `L²` norm of the spatial
+derivative.  Every coefficient depending on the velocity is displayed.  Thus
+this is the honest continuity contract needed to extend weak consistency from
+eventually retained tests by density; it does not assert that the present
+`L²`-dense Galerkin basis is dense in these stronger spacetime test norms.
+
+Citation: Temam, *Navier--Stokes Equations*, Chapter III, Section 3. -/
+theorem abs_modalWeakPairing_le_testH1Gauge
+    (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (φ φ' : SchwartzVelocity)
+    (hφ : DivergenceFreeInitial φ) (ν : ℝ) :
+    |schwartzL2Inner (W.coefficientField a) φ' +
+      schwartzL2Inner (W.coefficientField a)
+        (ν • laplacianSchwartz φ +
+          convectionSchwartzBilin (W.coefficientField a) φ)| ≤
+      ‖toL2 (W.coefficientField a)‖ * ‖toL2 φ'‖ +
+      |ν| * Real.sqrt (W.coefficientEnstrophy a) *
+        ‖toL2 (curlSchwartzCLM φ)‖ +
+      Real.sqrt 3 *
+        ((∫ x : Space,
+          officialEuclideanNorm ((W.coefficientField a) x) ^ 4) ^ (1 / 4 : ℝ) *
+        (∫ x : Space, ‖fderiv ℝ (⇑φ) x‖ ^ 2) ^ (1 / 2 : ℝ) *
+        (∫ x : Space,
+          officialEuclideanNorm ((W.coefficientField a) x) ^ 4) ^ (1 / 4 : ℝ)) := by
+  have ht := abs_schwartzL2Inner_le (W.coefficientField a) φ'
+  have hc := Navier.Analysis.ConvectionTrilinear.abs_schwartzL2Inner_convection_le
+    (W.coefficientField a) (W.coefficientField a) φ
+  have hv0 := schwartzL2Inner_curl_eq_neg_laplacian
+    (W.coefficientField a) φ hφ
+  have hvcs := abs_schwartzL2Inner_le
+    (curlSchwartzCLM (W.coefficientField a)) (curlSchwartzCLM φ)
+  have hven : ‖toL2 (curlSchwartzCLM (W.coefficientField a))‖ =
+      Real.sqrt (W.coefficientEnstrophy a) := by
+    rw [coefficientEnstrophy_eq_curlSchwartz, ← norm_toL2_sq]
+    exact (Real.sqrt_sq (norm_nonneg _)).symm
+  rw [hven] at hvcs
+  rw [schwartzL2Inner_add_right, schwartzL2Inner_smul_right]
+  have hv : |ν * schwartzL2Inner (W.coefficientField a) (laplacianSchwartz φ)| ≤
+      |ν| * Real.sqrt (W.coefficientEnstrophy a) *
+        ‖toL2 (curlSchwartzCLM φ)‖ := by
+    rw [abs_mul, ← neg_eq_iff_eq_neg.mpr hv0, abs_neg]
+    simpa [mul_assoc] using mul_le_mul_of_nonneg_left hvcs (abs_nonneg ν)
+  calc
+    |schwartzL2Inner (W.coefficientField a) φ' +
+        (ν * schwartzL2Inner (W.coefficientField a) (laplacianSchwartz φ) +
+          schwartzL2Inner (W.coefficientField a)
+            (convectionSchwartzBilin (W.coefficientField a) φ))| ≤
+        |schwartzL2Inner (W.coefficientField a) φ'| +
+          |ν * schwartzL2Inner (W.coefficientField a) (laplacianSchwartz φ)| +
+          |schwartzL2Inner (W.coefficientField a)
+            (convectionSchwartzBilin (W.coefficientField a) φ)| := by
+      rw [← add_assoc]
+      exact abs_add_three _ _ _
+    _ ≤ _ := add_le_add (add_le_add ht hv) hc
 
 /-- Against a retained Galerkin field, the Laplacian/projection commutator is
 exactly the negative curl pairing with the test projection error.
