@@ -4404,11 +4404,12 @@ theorem abs_officialInner_le_three (x y : Space) :
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
         norm_num
 
-private theorem measurable_officialInner_comp {u w : Space → Space}
+private theorem measurable_officialInner_comp
+    {α : Type*} [MeasurableSpace α] {u w : α → Space}
     (hu : Measurable u) (hw : Measurable w) :
-    Measurable fun x : Space => officialInner (u x) (w x) := by
-  have heq : (fun x : Space => officialInner (u x) (w x))
-      = fun x : Space => ∑ i : Fin 3, u x i * w x i := by
+    Measurable fun x : α => officialInner (u x) (w x) := by
+  have heq : (fun x : α => officialInner (u x) (w x))
+      = fun x : α => ∑ i : Fin 3, u x i * w x i := by
     funext x
     rw [officialInner_eq_sum]
   rw [heq]
@@ -4967,6 +4968,85 @@ theorem DivergenceFreeTestFunction.exists_integrable_convection_pairing_majorant
     simpa [B] using mul_le_mul_of_nonneg_right
       (mul_le_mul_of_nonneg_left (hseminorm t ⟨ht.1.le, ht.2⟩) (by norm_num)) hE)
 
+/-- **Restricted-time measurability of the signed convection pairing.**
+
+Joint measurability of `u` and half-space smoothness of the test suffice; no
+integrability hypothesis at negative times is needed.  The proof continuously
+extends the test to all times by `t ↦ max t 0`, applies Mathlib's measurable
+parameterized-Fréchet-derivative theorem, and then identifies the extension
+with the original test on `(0,T]`. -/
+theorem DivergenceFreeTestFunction.aestronglyMeasurable_convection_pairing_restrict_Ioc
+    (φ : DivergenceFreeTestFunction) (u : VelocityEvolution)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (T : ℝ) :
+    AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x)))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := by
+  let Φ : ℝ → Space → Space := fun t x => φ.field (max t 0) x
+  have hΦcont : Continuous Φ.uncurry := by
+    have hmap : ∀ z : ℝ × Space,
+        (max z.1 0, z.2) ∈ (Set.Ici (0 : ℝ)) ×ˢ (Set.univ : Set Space) := by
+      intro z
+      exact ⟨le_max_right z.1 0, Set.mem_univ z.2⟩
+    exact φ.smooth.continuousOn.comp_continuous
+      ((continuous_fst.max continuous_const).prodMk continuous_snd) hmap
+  have hD : Measurable fun z : ℝ × Space =>
+      fderiv ℝ (Φ z.1) z.2 := measurable_fderiv_with_param ℝ hΦcont
+  have hDu : Measurable fun z : ℝ × Space =>
+      fderiv ℝ (Φ z.1) z.2 (u z.1 z.2) :=
+    (continuous_fst.clm_apply continuous_snd).measurable.comp
+      (hD.prodMk humeas)
+  have hjoint : Measurable fun z : ℝ × Space =>
+      officialInner (u z.1 z.2) (fderiv ℝ (Φ z.1) z.2 (u z.1 z.2)) :=
+    measurable_officialInner_comp humeas hDu
+  have hclamp : StronglyMeasurable fun t : ℝ => ∫ x : Space,
+      officialInner (u t x) (fderiv ℝ (Φ t) x (u t x)) :=
+    hjoint.stronglyMeasurable.integral_prod_right'
+  refine hclamp.aestronglyMeasurable.congr ?_
+  refine (ae_restrict_iff' measurableSet_Ioc).mpr
+    (Filter.Eventually.of_forall fun t ht => ?_)
+  apply MeasureTheory.integral_congr_ae
+  exact Filter.Eventually.of_forall fun x => by
+    simp only [Φ, max_eq_left ht.1.le]
+
+/-- The explicit-window dominated-convergence engine for quadratic convection
+pairings.  This is separated from window selection so a compactness-extracted
+subsequence on that exact window can consume it directly. -/
+theorem DivergenceFreeTestFunction.tendsto_integral_convection_pairing_on_timeWindow_of_ae
+    (φ : DivergenceFreeTestFunction) (uSeq : ℕ → VelocityEvolution)
+    (u : VelocityEvolution) (T B : ℝ)
+    (hpairMeas : ∀ k : ℕ, AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (uSeq k t x) (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x)))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)))
+    (hBint : IntegrableOn (fun _t : ℝ => B) (Set.Ioc (0 : ℝ) T))
+    (hbound : ∀ (k : ℕ) (t : ℝ), t ∈ Set.Ioc (0 : ℝ) T →
+      |∫ x : Space,
+        officialInner (uSeq k t x)
+          (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x))| ≤ B)
+    (hpairLim : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)), Filter.Tendsto
+      (fun k : ℕ => ∫ x : Space,
+        officialInner (uSeq k t x) (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x)))
+      Filter.atTop
+      (nhds (∫ x : Space,
+        officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x))))) :
+    Filter.Tendsto
+      (fun k : ℕ => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        officialInner (uSeq k t x) (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x)))
+      Filter.atTop
+      (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x)))) := by
+  apply MeasureTheory.tendsto_integral_of_dominated_convergence (fun _t : ℝ => B)
+  · exact hpairMeas
+  · exact hBint
+  · intro k
+    refine (ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    rw [Real.norm_eq_abs]
+    exact hbound k t ht
+  · exact hpairLim
+
 /-- **Dominated-convergence assembly for the quadratic time leg.**
 
 If the spatial convection pairings of a uniformly energy-bounded family are
@@ -5002,16 +5082,8 @@ theorem DivergenceFreeTestFunction.exists_timeWindow_tendsto_integral_convection
   obtain ⟨T, B, hT, _hB, hBint, hbound⟩ :=
     φ.exists_integrable_convection_pairing_majorant_family uSeq E hE humeas huint huE
   refine ⟨T, hT, ?_⟩
-  apply MeasureTheory.tendsto_integral_of_dominated_convergence (fun _t : ℝ => B)
-  · intro k
-    exact hpairMeas T hT k
-  · exact hBint
-  · intro k
-    refine (ae_restrict_iff' measurableSet_Ioc).mpr
-      (Filter.Eventually.of_forall fun t ht => ?_)
-    rw [Real.norm_eq_abs]
-    exact hbound k t ht
-  · exact hpairLim T hT
+  exact φ.tendsto_integral_convection_pairing_on_timeWindow_of_ae
+    uSeq u T B (hpairMeas T hT) hBint hbound (hpairLim T hT)
 
 /-- Compact spatial support turns the uniform pointwise time-derivative bound
 into a uniform squared `L²_x` bound. -/
@@ -6004,6 +6076,84 @@ theorem exists_subseq_ae_tendsto_l2loc_slices
     (Filter.Eventually.of_forall fun x => by positivity)
     (Metric.closedBall_subset_closedBall hn).eventuallyLE
 
+/-- **The compactness subsequence now feeds the quadratic time limit.**
+
+For a jointly measurable, uniformly energy-bounded family converging strongly
+in spacetime `L²_loc`, one subsequence has a.e. fixed-time `L²_loc`
+convergence on the test's certified compact window.  The fixed-time convection
+limit and the explicit-window dominated-convergence engine then give convergence
+of the time-integrated signed convection pairing.  This discharges the
+quadratic leg of the Galerkin weak-density assembly; the two linear legs remain
+separate consumers.
+
+-- Citation: Leray, Acta Math. 63 (1934), §§21–23; Temam III.3.3. -/
+theorem DivergenceFreeTestFunction.exists_subseq_timeWindow_tendsto_integral_convection_pairing
+    (φ : DivergenceFreeTestFunction) (uSeq : ℕ → VelocityEvolution)
+    (u : VelocityEvolution) (E : ℝ) (hE : 0 ≤ E)
+    (humeas : JointlyMeasurable uSeq)
+    (humeasU : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (huint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t → Integrable fun x : Space => ‖uSeq k t x‖ ^ 2)
+    (huintU : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (huE : ∀ (k : ℕ) (t : ℝ), 0 < t → (∫ x : Space, ‖uSeq k t x‖ ^ 2) ≤ E)
+    (huEU : ∀ t : ℝ, 0 < t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ E)
+    (hlim : StrongL2LocLimit uSeq u) :
+    ∃ ψ : ℕ → ℕ, StrictMono ψ ∧ ∃ T : ℝ, 0 < T ∧
+      Filter.Tendsto
+        (fun j : ℕ => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (uSeq (ψ j) t x)
+            (fderiv ℝ (⇑(φ.field t)) x (uSeq (ψ j) t x)))
+        Filter.atTop
+        (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x)))) := by
+  obtain ⟨T, B, hT, _hB, hBint, hbound⟩ :=
+    φ.exists_integrable_convection_pairing_majorant_family uSeq E hE humeas huint huE
+  have hdint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable fun x : Space => ‖uSeq k t x - u t x‖ ^ 2 := by
+    intro k t ht
+    exact integrable_norm_sub_sq (uSeq k t) (u t)
+      (((humeas k).comp measurable_prodMk_left).sub
+        (humeasU.comp measurable_prodMk_left))
+      (huint k t ht) (huintU t ht)
+  have hbd : ∀ (k : ℕ) (t : ℝ), 0 < t →
+      (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2) ≤ 4 * E := by
+    intro k t ht
+    have hb : (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2)
+        ≤ ∫ x : Space, (2 * ‖uSeq k t x‖ ^ 2 + 2 * ‖u t x‖ ^ 2) := by
+      refine integral_mono (hdint k t ht.le)
+        (((huint k t ht.le).const_mul 2).add ((huintU t ht.le).const_mul 2)) fun x => ?_
+      exact sq_norm_sub_le_two _ _
+    rw [integral_add ((huint k t ht.le).const_mul 2) ((huintU t ht.le).const_mul 2),
+      MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hb
+    linarith [huE k t ht, huEU t ht]
+  obtain ⟨ψ, hψ, hae⟩ := exists_subseq_ae_tendsto_l2loc_slices
+    uSeq u T (4 * E) humeas humeasU huint huintU hbd hlim
+  have hpairMeas : ∀ j : ℕ, AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (uSeq (ψ j) t x)
+          (fderiv ℝ (⇑(φ.field t)) x (uSeq (ψ j) t x)))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := fun j =>
+    φ.aestronglyMeasurable_convection_pairing_restrict_Ioc
+      (uSeq (ψ j)) (humeas (ψ j)) T
+  have hpairLim : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)), Filter.Tendsto
+      (fun j : ℕ => ∫ x : Space,
+        officialInner (uSeq (ψ j) t x)
+          (fderiv ℝ (⇑(φ.field t)) x (uSeq (ψ j) t x)))
+      Filter.atTop
+      (nhds (∫ x : Space,
+        officialInner (u t x) (fderiv ℝ (⇑(φ.field t)) x (u t x)))) := by
+    filter_upwards [hae, ae_restrict_mem measurableSet_Ioc] with t htloc htmem
+    refine tendsto_integral_convection_of_l2loc (φ.field t)
+      (fun j => uSeq (ψ j) t) (u t) (4 * E) (mul_nonneg (by norm_num) hE)
+      (fun j => (humeas (ψ j)).comp measurable_prodMk_left)
+      (humeasU.comp measurable_prodMk_left)
+      (fun j => huint (ψ j) t htmem.1.le) (huintU t htmem.1.le)
+      (fun j => le_trans (huE (ψ j) t htmem.1) (by nlinarith))
+      (le_trans (huEU t htmem.1) (by nlinarith))
+      (fun j => hbd (ψ j) t htmem.1) htloc
+  refine ⟨ψ, hψ, T, hT, ?_⟩
+  exact φ.tendsto_integral_convection_pairing_on_timeWindow_of_ae
+    (fun j => uSeq (ψ j)) u T B hpairMeas hBint (fun j => hbound (ψ j)) hpairLim
+
 /-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once
 the limit weak-form identity is supplied for a compactness limit of the
 Galerkin sequence, `LerayLimitData` follows.  The energy clauses come from
@@ -6129,10 +6279,13 @@ velocity-energy bound to majorize the complete linear `⟨u,∂ₜφ⟩` leg.
 `exists_integrable_convection_pairing_majorant_family` supplies one constant
 integrable majorant for every member of an energy-bounded Galerkin family, and
 `exists_timeWindow_tendsto_integral_convection_pairing_of_ae` consumes a.e.
-fixed-time convergence with Mathlib's dominated-convergence theorem.  The
-remaining assembly edge is to produce its restricted-time measurability and
-a.e.-convergence hypotheses from the Galerkin subsequence below, then combine
-this quadratic result with common time majorants for the two linear legs.
+fixed-time convergence with Mathlib's dominated-convergence theorem.
+`aestronglyMeasurable_convection_pairing_restrict_Ioc` supplies the signed
+pairing's missing time measurability, while
+`exists_subseq_timeWindow_tendsto_integral_convection_pairing` extracts the
+a.e. fixed-time subsequence and feeds it into that DCT engine.  The remaining
+assembly edge is to combine this quadratic result with time limits for the two
+linear legs.
 
 **The pointwise half is now certified (lane N3, 2026-08-21).**  That extraction
 is no longer a gap: `exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral`
@@ -6144,9 +6297,9 @@ vanishes at **every** radius — exactly the `hloc` hypothesis of
 producer.  Their measurability leaf
 `measurable_setIntegral_of_jointlyMeasurable_nonneg` is what makes the
 time-integrand measurable without an integrability hypothesis at negative
-times.  The new quadratic DCT theorem above now consumes the resulting
-fixed-time convergence once measurability of the signed convection pairing is
-wired; the full weak-density time assembly and its two linear majorants remain. -/
+times.  The quadratic DCT theorem above now consumes this subsequence through
+the signed-pairing measurability leaf.  The full weak-density time assembly's
+two linear time-limit legs remain. -/
 
 
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
