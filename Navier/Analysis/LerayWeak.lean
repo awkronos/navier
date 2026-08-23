@@ -88,7 +88,7 @@ Galerkin/compactness tower has a home with no floating restatement.
   stated; the checked curl-free witness is in that theorem's docstring and in
   `experiments/aubin_lions_curlfree_witness.py`.
 
-## Named residuals (honest `sorry`, strictly-lower leaves)
+## Residual routing and certified closures
 
 * (`exists_galerkinModeData` — the finite-mode Galerkin construction — was
   RELOCATED 2026-08-18 to `Navier.Analysis.LerayWeakExistence`, where it is a
@@ -100,8 +100,8 @@ Galerkin/compactness tower has a home with no floating restatement.
 window-Cauchy, with the pointwise-limit-or-zero representative that makes the
 slicewise clauses true at **every** `t ≥ 0` [Brezis 2011 Thm 4.8] — is CERTIFIED
 below.)
-* `exists_lerayLimitData` — limit passage in the weak form, stated for `t > 0`
-  [Leray 1934 §§21–23; Temam III.3.3; est ~700 LOC].
+(`exists_lerayLimitData` — the limit passage in the weak form, stated for
+`t > 0` [Leray 1934 §§21–23; Temam III.3.3] — is CERTIFIED below.)
 -/
 
 set_option autoImplicit false
@@ -6154,6 +6154,647 @@ theorem DivergenceFreeTestFunction.exists_subseq_timeWindow_tendsto_integral_con
   exact φ.tendsto_integral_convection_pairing_on_timeWindow_of_ae
     (fun j => uSeq (ψ j)) u T B hpairMeas hBint (fun j => hbound (ψ j)) hpairLim
 
+theorem second_spatial_bridge (φ : DivergenceFreeTestFunction)
+    {t : ℝ} (ht : 0 < t) (x : Space) (i : Fin 3) :
+    fderiv ℝ (fun y : Space => fderiv ℝ (⇑(φ.field t)) y (basisVector i)) x
+        (basisVector i) =
+      (iteratedFDeriv ℝ 2
+        (fun z : ℝ × Space => φ.field z.1 z.2) (t, x))
+        ![(0, basisVector i), (0, basisVector i)] := by
+  let F : ℝ × Space → Space := fun z => φ.field z.1 z.2
+  let J : Space →L[ℝ] ℝ × Space := ContinuousLinearMap.inr ℝ ℝ Space
+  let q : ℝ × Space := J (basisVector i)
+  have hUS : Set.Ioi (0 : ℝ) ×ˢ (Set.univ : Set Space) ⊆
+      Set.Ici (0 : ℝ) ×ˢ (Set.univ : Set Space) := by
+    rintro ⟨s, y⟩ ⟨hs, _hy⟩
+    exact ⟨Set.mem_Ici.mpr hs.le, Set.mem_univ y⟩
+  have hUopen : IsOpen (Set.Ioi (0 : ℝ) ×ˢ (Set.univ : Set Space)) :=
+    isOpen_Ioi.prod isOpen_univ
+  have hzU : (t, x) ∈ Set.Ioi (0 : ℝ) ×ˢ (Set.univ : Set Space) :=
+    ⟨Set.mem_Ioi.mpr ht, Set.mem_univ x⟩
+  have hF := (φ.smooth.mono hUS).contDiffAt
+      (hUopen.mem_nhds hzU)
+  have hDF : DifferentiableAt ℝ (fderiv ℝ F) (t, x) :=
+    (hF.fderiv_right (m := 1)
+      (by
+        change (2 : WithTop (ℕ∞)) ≤ ((⊤ : ℕ∞) : WithTop (ℕ∞))
+        exact WithTop.coe_le_coe.mpr le_top)).differentiableAt (by norm_num)
+  have hslice : ∀ y : Space,
+      fderiv ℝ (⇑(φ.field t)) y = (fderiv ℝ F (t, y)).comp J := by
+    intro y
+    have hzyU : (t, y) ∈ Set.Ioi (0 : ℝ) ×ˢ (Set.univ : Set Space) :=
+      ⟨Set.mem_Ioi.mpr ht, Set.mem_univ y⟩
+    have hFy : DifferentiableAt ℝ F (t, y) :=
+      ((φ.smooth.mono hUS).contDiffAt
+        (hUopen.mem_nhds hzyU)).differentiableAt
+        (by norm_num)
+    exact (hFy.hasFDerivAt.comp y (hasFDerivAt_prodMk_right t y)).fderiv
+  have hfun : (fun y : Space => fderiv ℝ (⇑(φ.field t)) y (basisVector i)) =
+      fun y : Space => fderiv ℝ F (t, y) q := by
+    funext y
+    rw [hslice y]
+    rfl
+  rw [hfun]
+  let ev : (ℝ × Space →L[ℝ] Space) →L[ℝ] Space :=
+    ContinuousLinearMap.apply ℝ Space q
+  have hcomp : HasFDerivAt (fun y : Space => fderiv ℝ F (t, y))
+      ((fderiv ℝ (fderiv ℝ F) (t, x)).comp J) x :=
+    hDF.hasFDerivAt.comp x (hasFDerivAt_prodMk_right t x)
+  have hev : HasFDerivAt (fun y : Space => ev (fderiv ℝ F (t, y)))
+      (ev.comp ((fderiv ℝ (fderiv ℝ F) (t, x)).comp J)) x :=
+    ev.hasFDerivAt.comp x hcomp
+  have hev' : fderiv ℝ (fun y : Space => fderiv ℝ F (t, y) q) x =
+      ev.comp ((fderiv ℝ (fderiv ℝ F) (t, x)).comp J) := by
+    simpa only [ev, ContinuousLinearMap.apply_apply] using hev.fderiv
+  rw [hev']
+  simp only [ContinuousLinearMap.comp_apply, ev, ContinuousLinearMap.apply_apply, q, J,
+    ContinuousLinearMap.inr_apply]
+  rw [iteratedFDeriv_two_apply]
+  rfl
+
+theorem exists_uniform_laplacian_bound (φ : DivergenceFreeTestFunction)
+    {T : ℝ} {K : Set Space} (hK : IsCompact K) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+      ∀ x : Space, x ∈ K → ‖schwartzLaplacian (φ.field t) x‖ ≤ C := by
+  let S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ (Set.univ : Set Space)
+  let F : ℝ × Space → Space := fun z => φ.field z.1 z.2
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hD2 : ContinuousOn (iteratedFDerivWithin ℝ 2 F S) S :=
+    φ.smooth.continuousOn_iteratedFDerivWithin
+      (by
+        change (2 : WithTop (ℕ∞)) ≤ ((⊤ : ℕ∞) : WithTop (ℕ∞))
+        exact WithTop.coe_le_coe.mpr le_top) hUD
+  let W : Set (ℝ × Space) := Set.Icc (0 : ℝ) T ×ˢ K
+  have hW : IsCompact W := isCompact_Icc.prod hK
+  have hWS : W ⊆ S := by
+    rintro ⟨t, x⟩ htx
+    exact Set.mem_prod.mpr ⟨Set.mem_Ici.mpr htx.1.1, Set.mem_univ x⟩
+  have hn : ContinuousOn (fun z : ℝ × Space =>
+      ‖iteratedFDerivWithin ℝ 2 F S z‖) W := hD2.norm.mono hWS
+  obtain ⟨C, hC⟩ := hW.bddAbove_image hn
+  let Q : ℝ := ∑ i : Fin 3,
+    ∏ j, ‖(![(0, basisVector i), (0, basisVector i)] j : ℝ × Space)‖
+  have hQ : 0 ≤ Q := Finset.sum_nonneg fun _ _ => Finset.prod_nonneg fun _ _ => norm_nonneg _
+  refine ⟨max C 0 * Q, mul_nonneg (le_max_right C 0) hQ, ?_⟩
+  intro t ht x hx
+  have hzW : (t, x) ∈ W :=
+      Set.mem_prod.mpr ⟨⟨ht.1.le, ht.2⟩, hx⟩
+  have hnorm : ‖iteratedFDerivWithin ℝ 2 F S (t, x)‖ ≤ max C 0 :=
+      le_trans (hC ⟨(t, x), hzW, rfl⟩) (le_max_left C 0)
+  rw [schwartzLaplacian_apply (φ.field t) t x]
+  unfold laplacian
+  calc
+      ‖∑ i : Fin 3, (fderiv ℝ (fun y => (fderiv ℝ (⇑(φ.field t)) y)
+          (basisVector i)) x) (basisVector i)‖
+          ≤ ∑ i : Fin 3, ‖(fderiv ℝ (fun y => (fderiv ℝ (⇑(φ.field t)) y)
+            (basisVector i)) x) (basisVector i)‖ := norm_sum_le _ _
+      _ = ∑ i : Fin 3, ‖(iteratedFDerivWithin ℝ 2 F S (t, x))
+            ![(0, basisVector i), (0, basisVector i)]‖ := by
+            apply Finset.sum_congr rfl
+            intro i _
+            rw [second_spatial_bridge φ ht.1 x i]
+            have hSnhds : S ∈ nhds (t, x) := by
+              apply Filter.mem_of_superset
+                ((isOpen_Ioi.prod isOpen_univ).mem_nhds
+                  (show (t, x) ∈ Set.Ioi (0 : ℝ) ×ˢ (Set.univ : Set Space) from
+                    ⟨Set.mem_Ioi.mpr ht.1, Set.mem_univ x⟩))
+              exact fun z hz => ⟨Set.mem_Ici.mpr hz.1.le, Set.mem_univ z.2⟩
+            have hsets : S =ᶠ[nhds (t, x)] Set.univ := by
+              filter_upwards [hSnhds] with z hz
+              change (z ∈ S) = (z ∈ (Set.univ : Set (ℝ × Space)))
+              exact propext (iff_true_intro hz)
+            rw [← iteratedFDerivWithin_univ]
+            rw [iteratedFDerivWithin_congr_set hsets 2]
+      _ ≤ ∑ i : Fin 3, max C 0 *
+            ∏ j, ‖(![(0, basisVector i), (0, basisVector i)] j : ℝ × Space)‖ := by
+            gcongr with i
+            exact (ContinuousMultilinearMap.le_opNorm _ _).trans
+              (mul_le_mul_of_nonneg_right hnorm
+                (Finset.prod_nonneg fun _ _ => norm_nonneg _))
+      _ = max C 0 * Q := by simp [Q, Finset.mul_sum]
+
+theorem schwartzLaplacian_eq_zero_of_not_mem
+    (φ : DivergenceFreeTestFunction) {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → φ.field t x = 0)
+    (t : ℝ) {x : Space} (hx : x ∉ K) :
+    schwartzLaplacian (φ.field t) x = 0 := by
+  rw [schwartzLaplacian_apply (φ.field t) t x]
+  unfold laplacian
+  apply Finset.sum_eq_zero
+  intro i _
+  let O : Set Space := Kᶜ
+  have hOopen : IsOpen O := hK.isClosed.isOpen_compl
+  have hxO : x ∈ O := hx
+  have hfirst : (fun y : Space => fderiv ℝ (⇑(φ.field t)) y (basisVector i))
+      =ᶠ[nhds x] (fun _ : Space => (0 : Space)) := by
+    filter_upwards [hOopen.eventually_mem hxO] with y hy
+    have hzero : (⇑(φ.field t) : Space → Space) =ᶠ[nhds y]
+        (fun _ : Space => (0 : Space)) := by
+      filter_upwards [hOopen.eventually_mem hy] with z hz
+      exact hspace t z hz
+    have hfd : fderiv ℝ (⇑(φ.field t)) y =
+        fderiv ℝ (fun _ : Space => (0 : Space)) y := hzero.fderiv_eq
+    rw [hfd]
+    simp
+  have hfd2 : fderiv ℝ (fun y : Space =>
+      fderiv ℝ (⇑(φ.field t)) y (basisVector i)) x =
+      fderiv ℝ (fun _ : Space => (0 : Space)) x := hfirst.fderiv_eq
+  rw [hfd2]
+  simp
+
+theorem exists_integrable_laplacian_l2_majorant
+    (φ : DivergenceFreeTestFunction) :
+    ∃ T M : ℝ, 0 < T ∧ 0 ≤ M ∧
+      IntegrableOn (fun _t : ℝ => M) (Set.Ioc (0 : ℝ) T) ∧
+      ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+        (∫ x : Space, ‖schwartzLaplacian (φ.field t) x‖ ^ 2) ≤ M := by
+  obtain ⟨T, K, hT, hK, hfield, _hderiv⟩ := φ.exists_compact_spacetime_carrier
+  obtain ⟨C, hC, hbound⟩ := exists_uniform_laplacian_bound φ hK
+  let M : ℝ := volume.real K * C ^ 2
+  have hM : 0 ≤ M := mul_nonneg measureReal_nonneg (sq_nonneg C)
+  refine ⟨T, M, hT, hM, integrableOn_const (hs := measure_Ioc_lt_top.ne), ?_⟩
+  intro t ht
+  have heq : (∫ x : Space, ‖schwartzLaplacian (φ.field t) x‖ ^ 2) =
+      ∫ x in K, ‖schwartzLaplacian (φ.field t) x‖ ^ 2 := by
+    rw [← MeasureTheory.integral_indicator hK.measurableSet]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+    by_cases hx : x ∈ K
+    · simp [hx]
+    · simp [hx, schwartzLaplacian_eq_zero_of_not_mem φ hK
+        (fun s y hy => hfield s y (Or.inr hy)) t hx]
+  rw [heq]
+  have hf : IntegrableOn (fun x : Space => ‖schwartzLaplacian (φ.field t) x‖ ^ 2) K :=
+    (integrable_norm_sq_schwartz (schwartzLaplacian (φ.field t))).integrableOn
+  have hg : IntegrableOn (fun _x : Space => C ^ 2) K :=
+    integrableOn_const (hs := hK.measure_lt_top.ne)
+  calc
+    (∫ x in K, ‖schwartzLaplacian (φ.field t) x‖ ^ 2) ≤ ∫ _x in K, C ^ 2 := by
+      exact setIntegral_mono_on hf hg hK.measurableSet fun x hx =>
+        pow_le_pow_left₀ (norm_nonneg _) (hbound t ht x hx) 2
+    _ = volume.real K * C ^ 2 := by simp [smul_eq_mul]
+
+theorem aestronglyMeasurable_laplacian_pairing_restrict_Ioc
+    (φ : DivergenceFreeTestFunction) (u : VelocityEvolution)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2) (ν T : ℝ) :
+    AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (u t x) ((ν • schwartzLaplacian (φ.field t)) x))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := by
+  let S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ (Set.univ : Set Space)
+  let F : ℝ × Space → Space := fun z => φ.field z.1 z.2
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hD2 : ContinuousOn (iteratedFDerivWithin ℝ 2 F S) S :=
+    φ.smooth.continuousOn_iteratedFDerivWithin
+      (by
+        change (2 : WithTop (ℕ∞)) ≤ ((⊤ : ℕ∞) : WithTop (ℕ∞))
+        exact WithTop.coe_le_coe.mpr le_top) hUD
+  let clamp : ℝ × Space → ℝ × Space := fun z => (max z.1 0, z.2)
+  have hclamp : Continuous clamp := (continuous_fst.max continuous_const).prodMk continuous_snd
+  have hmap : Set.MapsTo clamp Set.univ S := by
+    intro z _
+    exact ⟨Set.mem_Ici.mpr (le_max_right z.1 0), Set.mem_univ z.2⟩
+  have hDclamp : Continuous fun z : ℝ × Space =>
+      iteratedFDerivWithin ℝ 2 F S (clamp z) :=
+    hD2.comp_continuous hclamp (fun z => hmap (Set.mem_univ z))
+  let L : ℝ × Space → Space := fun z => ∑ i : Fin 3,
+    (iteratedFDerivWithin ℝ 2 F S (clamp z))
+      ![(0, basisVector i), (0, basisVector i)]
+  have hL : Continuous L := by
+    apply continuous_finsetSum
+    intro i _
+    exact (ContinuousMultilinearMap.apply ℝ (fun _ : Fin 2 => ℝ × Space) Space
+      ![(0, basisVector i), (0, basisVector i)]).continuous.comp hDclamp
+  have hjoint : Measurable fun z : ℝ × Space =>
+      officialInner (u z.1 z.2) (ν • L z) :=
+    by
+      rw [show (fun z : ℝ × Space => officialInner (u z.1 z.2) (ν • L z)) =
+        fun z => ∑ i : Fin 3, u z.1 z.2 i * (ν • L z) i by
+          funext z; rw [officialInner_eq_sum]]
+      exact Finset.measurable_sum _ fun i _ =>
+        ((measurable_pi_apply i).comp humeas).mul
+          ((measurable_pi_apply i).comp (hL.const_smul ν).measurable)
+  have hfull : StronglyMeasurable fun t : ℝ => ∫ x : Space,
+      officialInner (u t x) (ν • L (t, x)) :=
+    hjoint.stronglyMeasurable.integral_prod_right'
+  refine hfull.aestronglyMeasurable.congr ?_
+  refine (ae_restrict_iff' measurableSet_Ioc).mpr
+    (Filter.Eventually.of_forall fun t ht => ?_)
+  apply MeasureTheory.integral_congr_ae
+  exact Filter.Eventually.of_forall fun x => by
+    change officialInner (u t x) (ν • L (t, x)) =
+      officialInner (u t x) (ν • schwartzLaplacian (φ.field t) x)
+    congr 1
+    rw [schwartzLaplacian_apply (φ.field t) t x]
+    unfold laplacian L clamp
+    apply congrArg (fun v : Space => ν • v)
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [second_spatial_bridge φ ht.1 x i]
+    have hSnhds : S ∈ nhds (t, x) := by
+      apply Filter.mem_of_superset
+        ((isOpen_Ioi.prod isOpen_univ).mem_nhds
+          (show (t, x) ∈ Set.Ioi (0 : ℝ) ×ˢ (Set.univ : Set Space) from
+            ⟨Set.mem_Ioi.mpr ht.1, Set.mem_univ x⟩))
+      exact fun z hz => ⟨Set.mem_Ici.mpr hz.1.le, Set.mem_univ z.2⟩
+    have hsets : S =ᶠ[nhds (t, x)] Set.univ := by
+      filter_upwards [hSnhds] with z hz
+      change (z ∈ S) = (z ∈ (Set.univ : Set (ℝ × Space)))
+      exact propext (iff_true_intro hz)
+    rw [max_eq_left ht.1.le]
+    rw [← iteratedFDerivWithin_univ]
+    rw [iteratedFDerivWithin_congr_set hsets 2]
+
+theorem aestronglyMeasurable_timeDeriv_pairing_restrict_Ioc
+    (φ : DivergenceFreeTestFunction) (u : VelocityEvolution)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2) (T : ℝ) :
+    AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (u t x) (φ.timeDerivSchwartz t x))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := by
+  let Φ : Space → ℝ → Space := fun x t => φ.field (max t 0) x
+  have hΦcont : Continuous Φ.uncurry := by
+    have hmap : ∀ z : Space × ℝ,
+        (max z.2 0, z.1) ∈ (Set.Ici (0 : ℝ)) ×ˢ (Set.univ : Set Space) := by
+      intro z
+      exact ⟨Set.mem_Ici.mpr (le_max_right z.2 0), Set.mem_univ z.1⟩
+    exact φ.smooth.continuousOn.comp_continuous
+      ((continuous_snd.max continuous_const).prodMk continuous_fst) hmap
+  have hD : Measurable fun z : ℝ × Space =>
+      fderiv ℝ (Φ z.2) z.1 1 := by
+    have hma : Measurable fun z : Space × ℝ => fderiv ℝ (Φ z.1) z.2 1 :=
+      measurable_fderiv_apply_const_with_param ℝ hΦcont 1
+    exact hma.comp (measurable_snd.prodMk measurable_fst)
+  have hjoint : Measurable fun z : ℝ × Space =>
+      officialInner (u z.1 z.2) (fderiv ℝ (Φ z.2) z.1 1) := by
+    rw [show (fun z : ℝ × Space =>
+        officialInner (u z.1 z.2) (fderiv ℝ (Φ z.2) z.1 1)) =
+      fun z => ∑ i : Fin 3, u z.1 z.2 i * (fderiv ℝ (Φ z.2) z.1 1) i by
+        funext z; rw [officialInner_eq_sum]]
+    exact Finset.measurable_sum _ fun i _ =>
+      ((measurable_pi_apply i).comp humeas).mul ((measurable_pi_apply i).comp hD)
+  have hfull : StronglyMeasurable fun t : ℝ => ∫ x : Space,
+      officialInner (u t x) (fderiv ℝ (Φ x) t 1) :=
+    hjoint.stronglyMeasurable.integral_prod_right'
+  refine hfull.aestronglyMeasurable.congr ?_
+  refine (ae_restrict_iff' measurableSet_Ioc).mpr
+    (Filter.Eventually.of_forall fun t ht => ?_)
+  apply MeasureTheory.integral_congr_ae
+  exact Filter.Eventually.of_forall fun x => by
+    change officialInner (u t x) (fderiv ℝ (Φ x) t 1) =
+      officialInner (u t x) (φ.timeDerivSchwartz t x)
+    congr 1
+    rw [← φ.timeDeriv_eq t ht.1.le x]
+    unfold timeDerivative
+    have hmax : (fun s : ℝ => φ.field (max s 0) x) =ᶠ[nhds t]
+        (fun s : ℝ => φ.field s x) := by
+      filter_upwards [Ioi_mem_nhds ht.1] with s hs
+      rw [max_eq_left hs.le]
+    have hfd : fderiv ℝ (fun s : ℝ => φ.field (max s 0) x) t =
+        fderiv ℝ (fun s : ℝ => φ.field s x) t := hmax.fderiv_eq
+    have hIci : Set.Ici (0 : ℝ) ∈ nhds t :=
+      Filter.mem_of_superset (Ioi_mem_nhds ht.1) Set.Ioi_subset_Ici_self
+    rw [fderivWithin_of_mem_nhds hIci]
+    exact congrArg (fun L : ℝ →L[ℝ] Space => L 1) hfd
+
+set_option maxHeartbeats 2000000 in
+theorem exists_subseq_commonWindow_tendsto_linear_and_weakPairing
+    (ν : ℝ) (φ : DivergenceFreeTestFunction)
+    (uSeq : ℕ → VelocityEvolution) (u : VelocityEvolution) (E : ℝ) (hE : 0 ≤ E)
+    (humeas : JointlyMeasurable uSeq)
+    (humeasU : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (huint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t → Integrable fun x : Space => ‖uSeq k t x‖ ^ 2)
+    (huintU : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (huE : ∀ (k : ℕ) (t : ℝ), 0 < t → (∫ x : Space, ‖uSeq k t x‖ ^ 2) ≤ E)
+    (huEU : ∀ t : ℝ, 0 < t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ E)
+    (hlim : StrongL2LocLimit uSeq u) :
+    ∃ ψ : ℕ → ℕ, StrictMono ψ ∧ ∃ T : ℝ, 0 < T ∧
+      (∀ s : ℝ, T ≤ s → φ.field s = 0) ∧
+      (∀ s : ℝ, T ≤ s → φ.timeDerivSchwartz s = 0) ∧
+      Filter.Tendsto
+        (fun j => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (uSeq (ψ j) t x) (φ.timeDerivSchwartz t x))
+        Filter.atTop
+        (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (u t x) (φ.timeDerivSchwartz t x))) ∧
+      Filter.Tendsto
+        (fun j => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (uSeq (ψ j) t x) ((ν • schwartzLaplacian (φ.field t)) x))
+        Filter.atTop
+        (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          officialInner (u t x) ((ν • schwartzLaplacian (φ.field t)) x))) ∧
+      Filter.Tendsto
+        (fun j => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          weakPairingDensity ν (uSeq (ψ j)) φ t x)
+        Filter.atTop
+        (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          weakPairingDensity ν u φ t x)) := by
+  obtain ⟨T, K, hT, hK, hfield, hderiv⟩ := φ.exists_compact_spacetime_carrier
+  obtain ⟨C1, hC1, hC1bound⟩ := φ.exists_uniform_timeDeriv_bound hK
+  let M1 : ℝ := volume.real K * C1 ^ 2
+  have hM1 : 0 ≤ M1 := mul_nonneg measureReal_nonneg (sq_nonneg C1)
+  have hM1bound : ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+      (∫ x : Space, ‖φ.timeDerivSchwartz t x‖ ^ 2) ≤ M1 := by
+    intro t ht
+    exact φ.timeDeriv_norm_sq_le_volume_mul_bound hK
+      (fun s x hx => hderiv s x (Or.inr hx)) hC1bound t ⟨ht.1.le, ht.2⟩
+  obtain ⟨C3, hC3, hC3bound⟩ :=
+    exists_uniform_laplacian_bound (T := T) φ hK
+  let M3 : ℝ := volume.real K * C3 ^ 2
+  have hM3 : 0 ≤ M3 := mul_nonneg measureReal_nonneg (sq_nonneg C3)
+  have hM3bound : ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+      (∫ x : Space, ‖schwartzLaplacian (φ.field t) x‖ ^ 2) ≤ M3 := by
+    intro t ht
+    have heq : (∫ x : Space, ‖schwartzLaplacian (φ.field t) x‖ ^ 2) =
+        ∫ x in K, ‖schwartzLaplacian (φ.field t) x‖ ^ 2 := by
+      rw [← MeasureTheory.integral_indicator hK.measurableSet]
+      refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+      by_cases hx : x ∈ K
+      · simp [hx]
+      · simp [hx, schwartzLaplacian_eq_zero_of_not_mem φ hK
+          (fun s y hy => hfield s y (Or.inr hy)) t hx]
+    rw [heq]
+    have hf : IntegrableOn (fun x : Space => ‖schwartzLaplacian (φ.field t) x‖ ^ 2) K :=
+      (integrable_norm_sq_schwartz (schwartzLaplacian (φ.field t))).integrableOn
+    have hg : IntegrableOn (fun _x : Space => C3 ^ 2) K :=
+      integrableOn_const (hs := hK.measure_lt_top.ne)
+    calc
+      (∫ x in K, ‖schwartzLaplacian (φ.field t) x‖ ^ 2) ≤ ∫ _x in K, C3 ^ 2 := by
+        exact setIntegral_mono_on hf hg hK.measurableSet fun x hx =>
+          pow_le_pow_left₀ (norm_nonneg _) (hC3bound t ht x hx) 2
+      _ = volume.real K * C3 ^ 2 := by simp [smul_eq_mul]
+  obtain ⟨C2, hC2, hC2bound⟩ := φ.exists_uniform_spatialFDeriv_bound hK
+  have hseminorm : ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+      (SchwartzMap.seminorm ℝ 0 1) (φ.field t) ≤ C2 := by
+    intro t ht
+    apply SchwartzMap.seminorm_le_bound ℝ 0 1 (φ.field t) hC2
+    intro x
+    rw [pow_zero, one_mul, norm_iteratedFDeriv_one]
+    by_cases hx : x ∈ K
+    · exact hC2bound t ⟨ht.1.le, ht.2⟩ x hx
+    · have hevent : (⇑(φ.field t) : Space → Space) =ᶠ[nhds x]
+          (fun _ : Space => (0 : Space)) := by
+        filter_upwards [hK.isClosed.isOpen_compl.eventually_mem hx] with y hy
+        exact hfield t y (Or.inr hy)
+      have hz : fderiv ℝ (⇑(φ.field t)) x = 0 := by simpa using hevent.fderiv_eq
+      simp [hz, hC2]
+  let B1 : ℝ := (3 / 2 : ℝ) * (E + M1)
+  let B2 : ℝ := 3 * C2 * E
+  let B3 : ℝ := (3 / 2 : ℝ) * (E + ‖ν‖ ^ 2 * M3)
+  have hB1 : 0 ≤ B1 := mul_nonneg (by norm_num) (add_nonneg hE hM1)
+  have hB2 : 0 ≤ B2 := mul_nonneg (mul_nonneg (by norm_num) hC2) hE
+  have hB3 : 0 ≤ B3 := mul_nonneg (by norm_num)
+    (add_nonneg hE (mul_nonneg (sq_nonneg ‖ν‖) hM3))
+  have hbound1 : ∀ (k : ℕ) (t : ℝ), t ∈ Set.Ioc (0 : ℝ) T →
+      |∫ x : Space, officialInner (uSeq k t x) (φ.timeDerivSchwartz t x)| ≤ B1 := by
+    intro k t ht
+    exact (abs_integral_officialInner_le_three_halves
+      ((humeas k).comp measurable_prodMk_left)
+      (φ.timeDerivSchwartz t).continuous.measurable (huint k t ht.1.le)
+      (integrable_norm_sq_schwartz (φ.timeDerivSchwartz t))).trans
+      (mul_le_mul_of_nonneg_left (add_le_add (huE k t ht.1) (hM1bound t ht)) (by norm_num))
+  have hb3sq : ∀ t : ℝ, t ∈ Set.Ioc (0 : ℝ) T →
+      (∫ x : Space, ‖(ν • schwartzLaplacian (φ.field t) : SchwartzVelocity) x‖ ^ 2)
+        ≤ ‖ν‖ ^ 2 * M3 := by
+    intro t ht
+    rw [show (∫ x : Space, ‖(ν • schwartzLaplacian (φ.field t) : SchwartzVelocity) x‖ ^ 2) =
+        ‖ν‖ ^ 2 * (∫ x : Space, ‖schwartzLaplacian (φ.field t) x‖ ^ 2) by
+      simp_rw [smul_apply, norm_smul, mul_pow, MeasureTheory.integral_const_mul]]
+    exact mul_le_mul_of_nonneg_left (hM3bound t ht) (sq_nonneg ‖ν‖)
+  have hbound3 : ∀ (k : ℕ) (t : ℝ), t ∈ Set.Ioc (0 : ℝ) T →
+      |∫ x : Space, officialInner (uSeq k t x)
+        ((ν • schwartzLaplacian (φ.field t)) x)| ≤ B3 := by
+    intro k t ht
+    exact (abs_integral_officialInner_le_three_halves
+      ((humeas k).comp measurable_prodMk_left)
+      (ν • schwartzLaplacian (φ.field t)).continuous.measurable (huint k t ht.1.le)
+      (integrable_norm_sq_schwartz (ν • schwartzLaplacian (φ.field t)))).trans
+      (mul_le_mul_of_nonneg_left (add_le_add (huE k t ht.1) (hb3sq t ht)) (by norm_num))
+  have hbound2 : ∀ (k : ℕ) (t : ℝ), t ∈ Set.Ioc (0 : ℝ) T →
+      |∫ x : Space, officialInner (uSeq k t x)
+        (fderiv ℝ (⇑(φ.field t)) x (uSeq k t x))| ≤ B2 := by
+    intro k t ht
+    have hs := abs_integral_convection_pairing_le_energy (φ.field t) E
+      ((humeas k).comp measurable_prodMk_left) (huint k t ht.1.le) (huE k t ht.1)
+    exact hs.trans (by
+      simpa [B2] using mul_le_mul_of_nonneg_right
+        (mul_le_mul_of_nonneg_left (hseminorm t ht) (by norm_num)) hE)
+  have hdint : ∀ (k : ℕ) (t : ℝ), 0 ≤ t →
+      Integrable fun x : Space => ‖uSeq k t x - u t x‖ ^ 2 := by
+    intro k t ht
+    exact integrable_norm_sub_sq (uSeq k t) (u t)
+      (((humeas k).comp measurable_prodMk_left).sub
+        (humeasU.comp measurable_prodMk_left)) (huint k t ht) (huintU t ht)
+  have hbd : ∀ (k : ℕ) (t : ℝ), 0 < t →
+      (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2) ≤ 4 * E := by
+    intro k t ht
+    have hb : (∫ x : Space, ‖uSeq k t x - u t x‖ ^ 2) ≤
+        ∫ x : Space, (2 * ‖uSeq k t x‖ ^ 2 + 2 * ‖u t x‖ ^ 2) := by
+      refine integral_mono (hdint k t ht.le)
+        (((huint k t ht.le).const_mul 2).add ((huintU t ht.le).const_mul 2)) ?_
+      intro x
+      exact sq_norm_sub_le_two (uSeq k t x) (u t x)
+    rw [integral_add ((huint k t ht.le).const_mul 2) ((huintU t ht.le).const_mul 2),
+      MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul] at hb
+    linarith [huE k t ht, huEU t ht]
+  obtain ⟨ψ, hψ, hae⟩ := exists_subseq_ae_tendsto_l2loc_slices
+    uSeq u T (4 * E) humeas humeasU huint huintU hbd hlim
+  have hmeas1 : ∀ j : ℕ, AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (uSeq (ψ j) t x) (φ.timeDerivSchwartz t x))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := fun j =>
+    aestronglyMeasurable_timeDeriv_pairing_restrict_Ioc φ (uSeq (ψ j))
+      (humeas (ψ j)) T
+  have hmeas2 : ∀ j : ℕ, AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (uSeq (ψ j) t x)
+          (fderiv ℝ (⇑(φ.field t)) x (uSeq (ψ j) t x)))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := fun j =>
+    φ.aestronglyMeasurable_convection_pairing_restrict_Ioc
+      (uSeq (ψ j)) (humeas (ψ j)) T
+  have hmeas3 : ∀ j : ℕ, AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space,
+        officialInner (uSeq (ψ j) t x) ((ν • schwartzLaplacian (φ.field t)) x))
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := fun j =>
+    aestronglyMeasurable_laplacian_pairing_restrict_Ioc φ (uSeq (ψ j))
+      (humeas (ψ j)) ν T
+  have hlim1 : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)), Filter.Tendsto
+      (fun j => ∫ x : Space, officialInner (uSeq (ψ j) t x) (φ.timeDerivSchwartz t x))
+      Filter.atTop (nhds (∫ x : Space, officialInner (u t x) (φ.timeDerivSchwartz t x))) := by
+    filter_upwards [hae, ae_restrict_mem measurableSet_Ioc] with t htloc htmem
+    exact tendsto_integral_officialInner_of_l2loc (fun j => uSeq (ψ j) t) (u t)
+      (⇑(φ.timeDerivSchwartz t)) (4 * E)
+      (fun j => (humeas (ψ j)).comp measurable_prodMk_left)
+      (humeasU.comp measurable_prodMk_left)
+      (φ.timeDerivSchwartz t).continuous.measurable
+      (fun j => huint (ψ j) t htmem.1.le) (huintU t htmem.1.le)
+      (integrable_norm_sq_schwartz (φ.timeDerivSchwartz t))
+      (fun j => hbd (ψ j) t htmem.1) htloc
+  have hlim3 : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)), Filter.Tendsto
+      (fun j => ∫ x : Space,
+        officialInner (uSeq (ψ j) t x) ((ν • schwartzLaplacian (φ.field t)) x))
+      Filter.atTop (nhds (∫ x : Space,
+        officialInner (u t x) ((ν • schwartzLaplacian (φ.field t)) x))) := by
+    filter_upwards [hae, ae_restrict_mem measurableSet_Ioc] with t htloc htmem
+    exact tendsto_integral_officialInner_of_l2loc (fun j => uSeq (ψ j) t) (u t)
+      (⇑(ν • schwartzLaplacian (φ.field t))) (4 * E)
+      (fun j => (humeas (ψ j)).comp measurable_prodMk_left)
+      (humeasU.comp measurable_prodMk_left)
+      (ν • schwartzLaplacian (φ.field t)).continuous.measurable
+      (fun j => huint (ψ j) t htmem.1.le) (huintU t htmem.1.le)
+      (integrable_norm_sq_schwartz (ν • schwartzLaplacian (φ.field t)))
+      (fun j => hbd (ψ j) t htmem.1) htloc
+  have hlimFull : ∀ᵐ t ∂(volume.restrict (Set.Ioc (0 : ℝ) T)), Filter.Tendsto
+      (fun j => ∫ x : Space, weakPairingDensity ν (uSeq (ψ j)) φ t x)
+      Filter.atTop (nhds (∫ x : Space, weakPairingDensity ν u φ t x)) := by
+    filter_upwards [hae, ae_restrict_mem measurableSet_Ioc] with t htloc htmem
+    exact tendsto_integral_weakPairingDensity_of_l2loc ν φ t htmem.1.le
+      (fun j => uSeq (ψ j) t) (u t) (4 * E) (mul_nonneg (by norm_num) hE)
+      (fun j => (humeas (ψ j)).comp measurable_prodMk_left)
+      (humeasU.comp measurable_prodMk_left)
+      (fun j => huint (ψ j) t htmem.1.le) (huintU t htmem.1.le)
+      (fun j => le_trans (huE (ψ j) t htmem.1) (by nlinarith))
+      (le_trans (huEU t htmem.1) (by nlinarith))
+      (fun j => hbd (ψ j) t htmem.1) htloc
+  have H1 : Filter.Tendsto
+      (fun j => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        officialInner (uSeq (ψ j) t x) (φ.timeDerivSchwartz t x))
+      Filter.atTop (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        officialInner (u t x) (φ.timeDerivSchwartz t x))) := by
+    apply MeasureTheory.tendsto_integral_of_dominated_convergence (fun _t : ℝ => B1)
+    · exact hmeas1
+    · exact integrableOn_const (hs := measure_Ioc_lt_top.ne)
+    · intro j
+      refine (ae_restrict_iff' measurableSet_Ioc).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      rw [Real.norm_eq_abs]
+      exact hbound1 (ψ j) t ht
+    · exact hlim1
+  have H3 : Filter.Tendsto
+      (fun j => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        officialInner (uSeq (ψ j) t x) ((ν • schwartzLaplacian (φ.field t)) x))
+      Filter.atTop (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        officialInner (u t x) ((ν • schwartzLaplacian (φ.field t)) x))) := by
+    apply MeasureTheory.tendsto_integral_of_dominated_convergence (fun _t : ℝ => B3)
+    · exact hmeas3
+    · exact integrableOn_const (hs := measure_Ioc_lt_top.ne)
+    · intro j
+      refine (ae_restrict_iff' measurableSet_Ioc).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      rw [Real.norm_eq_abs]
+      exact hbound3 (ψ j) t ht
+    · exact hlim3
+  -- The full density uses the same window, subsequence, and three majorants.
+  have hsplit : ∀ (v : VelocityEvolution) (t : ℝ), 0 ≤ t →
+      Measurable (v t) → Integrable (fun x : Space => ‖v t x‖ ^ 2) →
+      (∫ x : Space, weakPairingDensity ν v φ t x) =
+        (∫ x : Space, officialInner (v t x) (φ.timeDerivSchwartz t x)) +
+        (∫ x : Space, officialInner (v t x)
+          (fderiv ℝ (⇑(φ.field t)) x (v t x))) +
+        (∫ x : Space, officialInner (v t x)
+          ((ν • schwartzLaplacian (φ.field t)) x)) := by
+    intro v t ht hvmeas hv2
+    let b1 : SchwartzVelocity := φ.timeDerivSchwartz t
+    let b3 : SchwartzVelocity := ν • schwartzLaplacian (φ.field t)
+    have hdec : ∀ x : Space, weakPairingDensity ν v φ t x =
+        officialInner (v t x) (b1 x) +
+        officialInner (v t x) (fderiv ℝ (⇑(φ.field t)) x (v t x)) +
+        officialInner (v t x) (b3 x) := by
+      intro x
+      unfold weakPairingDensity
+      rw [officialInner_add_right, officialInner_add_right]
+      congr 1
+      · congr 1
+        · congr 1
+          exact φ.timeDeriv_eq t ht x
+      · congr 1
+        show ν • laplacian (fun s => (φ.field s : Space → Space)) t x =
+          (ν • schwartzLaplacian (φ.field t) : SchwartzVelocity) x
+        rw [smul_apply, schwartzLaplacian_apply (φ.field t) t x]
+        rfl
+    have hint1 : Integrable fun x : Space => officialInner (v t x) (b1 x) :=
+      integrable_officialInner_pairing hvmeas b1.continuous.measurable hv2
+        (integrable_norm_sq_schwartz b1)
+    have hint2 : Integrable fun x : Space =>
+        officialInner (v t x) (fderiv ℝ (⇑(φ.field t)) x (v t x)) :=
+      integrable_convection_pairing (φ.field t) hvmeas hv2
+    have hint3 : Integrable fun x : Space => officialInner (v t x) (b3 x) :=
+      integrable_officialInner_pairing hvmeas b3.continuous.measurable hv2
+        (integrable_norm_sq_schwartz b3)
+    calc
+      (∫ x : Space, weakPairingDensity ν v φ t x) =
+          ∫ x : Space, (officialInner (v t x) (b1 x) +
+            officialInner (v t x) (fderiv ℝ (⇑(φ.field t)) x (v t x)) +
+            officialInner (v t x) (b3 x)) :=
+        integral_congr_ae (Filter.Eventually.of_forall hdec)
+      _ = ((∫ x : Space, officialInner (v t x) (b1 x)) +
+            (∫ x : Space, officialInner (v t x)
+              (fderiv ℝ (⇑(φ.field t)) x (v t x)))) +
+            ∫ x : Space, officialInner (v t x) (b3 x) := by
+        calc
+          (∫ x : Space, officialInner (v t x) (b1 x) +
+              officialInner (v t x) (fderiv ℝ (⇑(φ.field t)) x (v t x)) +
+              officialInner (v t x) (b3 x)) =
+              (∫ x : Space, officialInner (v t x) (b1 x) +
+                officialInner (v t x) (fderiv ℝ (⇑(φ.field t)) x (v t x))) +
+              ∫ x : Space, officialInner (v t x) (b3 x) := by
+                simpa only [Pi.add_apply] using integral_add (hint1.add hint2) hint3
+          _ = _ := by
+            rw [show (∫ x : Space, officialInner (v t x) (b1 x) +
+                officialInner (v t x) (fderiv ℝ (⇑(φ.field t)) x (v t x))) =
+              (∫ x : Space, officialInner (v t x) (b1 x)) +
+                ∫ x : Space, officialInner (v t x)
+                  (fderiv ℝ (⇑(φ.field t)) x (v t x)) by
+                    simpa only [Pi.add_apply] using integral_add hint1 hint2]
+  have hmeasFull : ∀ j : ℕ, AEStronglyMeasurable
+      (fun t : ℝ => ∫ x : Space, weakPairingDensity ν (uSeq (ψ j)) φ t x)
+      (volume.restrict (Set.Ioc (0 : ℝ) T)) := by
+    intro j
+    refine (((hmeas1 j).add (hmeas2 j)).add (hmeas3 j)).congr ?_
+    refine (ae_restrict_iff' measurableSet_Ioc).mpr
+      (Filter.Eventually.of_forall fun t ht => ?_)
+    exact (hsplit (uSeq (ψ j)) t ht.1.le
+      ((humeas (ψ j)).comp measurable_prodMk_left)
+      (huint (ψ j) t ht.1.le)).symm
+  have hboundFull : ∀ (j : ℕ) (t : ℝ), t ∈ Set.Ioc (0 : ℝ) T →
+      |∫ x : Space, weakPairingDensity ν (uSeq (ψ j)) φ t x| ≤ B1 + B2 + B3 := by
+    intro j t ht
+    rw [hsplit (uSeq (ψ j)) t ht.1.le
+      ((humeas (ψ j)).comp measurable_prodMk_left) (huint (ψ j) t ht.1.le)]
+    calc
+      |((∫ x : Space, officialInner (uSeq (ψ j) t x) (φ.timeDerivSchwartz t x)) +
+          (∫ x : Space, officialInner (uSeq (ψ j) t x)
+            (fderiv ℝ (⇑(φ.field t)) x (uSeq (ψ j) t x)))) +
+          (∫ x : Space, officialInner (uSeq (ψ j) t x)
+            ((ν • schwartzLaplacian (φ.field t)) x))| ≤
+          |∫ x : Space, officialInner (uSeq (ψ j) t x) (φ.timeDerivSchwartz t x)| +
+          |∫ x : Space, officialInner (uSeq (ψ j) t x)
+            (fderiv ℝ (⇑(φ.field t)) x (uSeq (ψ j) t x))| +
+          |∫ x : Space, officialInner (uSeq (ψ j) t x)
+            ((ν • schwartzLaplacian (φ.field t)) x)| :=
+        (abs_add_le _ _).trans (add_le_add (abs_add_le _ _) (le_refl _))
+      _ ≤ B1 + B2 + B3 := add_le_add (add_le_add
+        (hbound1 (ψ j) t ht) (hbound2 (ψ j) t ht)) (hbound3 (ψ j) t ht)
+  have Hfull : Filter.Tendsto
+      (fun j => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        weakPairingDensity ν (uSeq (ψ j)) φ t x)
+      Filter.atTop (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        weakPairingDensity ν u φ t x)) := by
+    apply MeasureTheory.tendsto_integral_of_dominated_convergence
+      (fun _t : ℝ => B1 + B2 + B3)
+    · exact hmeasFull
+    · exact integrableOn_const (hs := measure_Ioc_lt_top.ne)
+    · intro j
+      refine (ae_restrict_iff' measurableSet_Ioc).mpr
+        (Filter.Eventually.of_forall fun t ht => ?_)
+      rw [Real.norm_eq_abs]
+      exact hboundFull j t ht
+    · exact hlimFull
+  exact ⟨ψ, hψ, T, hT,
+    fun s hs => by apply SchwartzMap.ext; intro x; exact hfield s x (Or.inl hs),
+    fun s hs => by apply SchwartzMap.ext; intro x; exact hderiv s x (Or.inl hs),
+    H1, H3, Hfull⟩
+
+
 /-- **[CERTIFIED — the residue of `exists_lerayLimitData`, isolated.]**  Once
 the limit weak-form identity is supplied for a compactness limit of the
 Galerkin sequence, `LerayLimitData` follows.  The energy clauses come from
@@ -6180,7 +6821,7 @@ theorem exists_lerayLimitData_of_weakClauses (ν : ℝ) (u₀ : SchwartzVelocity
            datum_pairing_integrable := datum_pairing_integrable ν u₀
            weak_form := hform }⟩
 
-/-- **[NAMED RESIDUAL — Galerkin limit passage; Leray, Acta Math. 63 (1934)
+/-- **[CERTIFIED — Galerkin limit passage; Leray, Acta Math. 63 (1934)
 §§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a
 Galerkin approximation, `aubin_lions_l2loc_compactness` (invoked on the
 `kinetic_bounded`, `enstrophy_bounded`, `time_equicontinuous`,
@@ -6298,15 +6939,79 @@ producer.  Their measurability leaf
 `measurable_setIntegral_of_jointlyMeasurable_nonneg` is what makes the
 time-integrand measurable without an integrability hypothesis at negative
 times.  The quadratic DCT theorem above now consumes this subsequence through
-the signed-pairing measurability leaf.  The full weak-density time assembly's
-two linear time-limit legs remain. -/
+the signed-pairing measurability leaf.
+
+**The common-window time assembly is certified (2026-08-23).**  The same
+compactness-extracted subsequence carries dominated-convergence limits for the
+time-derivative, viscous Laplacian, and quadratic convection legs on one test
+horizon.  Clamped joint Fréchet derivatives supply signed time measurability;
+compact spatial carriers and uniform second-derivative bounds supply the
+Laplacian majorant.  Adding the fixed datum pairing and using uniqueness
+against `G.weak_consistent` proves the complete weak form and closes
+`exists_lerayLimitData`. -/
 
 
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
     (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
     (G : GalerkinApproximation ν u₀) :
     Nonempty (LerayLimitData ν u₀) := by
-  sorry
+  obtain ⟨u, σ, hσ, humeas, huint, huoff, hlim⟩ :=
+    exists_galerkinLimit_energy_le ν u₀ G
+  let E : ℝ := ∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2
+  have hE : 0 ≤ E := datumOfficialEnergy_nonneg u₀
+  have huEU : ∀ t : ℝ, 0 < t → (∫ x : Space, ‖u t x‖ ^ 2) ≤ E := by
+    intro t ht
+    exact Navier.Analysis.EnergyNormBridge.intNormSq_le_of_kineticEnergy_le
+      u t E (humeas.comp measurable_prodMk_left).aestronglyMeasurable
+      (huint t ht.le) (huoff t ht.le)
+  have hform : ∀ φ : DivergenceFreeTestFunction,
+      (∫ t in Set.Ici (0 : ℝ), ∫ x : Space, weakPairingDensity ν u φ t x) =
+        -(∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) := by
+    intro φ
+    obtain ⟨ψ, hψ, T, hT, hfield, hderiv, _H1, _H3, Hfull⟩ :=
+      exists_subseq_commonWindow_tendsto_linear_and_weakPairing
+        ν φ (fun k => G.approx (σ k)) u E hE
+        (fun k => G.jointly_measurable (σ k)) humeas
+        (fun k t ht => G.sq_integrable (σ k) t ht) huint
+        (fun k t ht => le_trans (G.kinetic_bounded (σ k) t ht.le) G.bound_le)
+        huEU hlim
+    have hσψ : StrictMono (σ ∘ ψ) := hσ.comp hψ
+    have hres := (G.weak_consistent φ).comp hσψ.tendsto_atTop
+    change Filter.Tendsto
+      (fun j : ℕ => weakFormResidual ν u₀ (G.approx ((σ ∘ ψ) j)) φ)
+      Filter.atTop (nhds 0) at hres
+    have hseq : (fun j : ℕ => weakFormResidual ν u₀ (G.approx ((σ ∘ ψ) j)) φ) =
+        fun j => (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          weakPairingDensity ν (G.approx ((σ ∘ ψ) j)) φ t x) +
+          (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) := by
+      funext j
+      unfold weakFormResidual
+      change (∫ t in Set.Ici (0 : ℝ), ∫ x : Space,
+          weakPairingDensity ν (G.approx ((σ ∘ ψ) j)) φ t x) +
+        (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) = _
+      rw [weakForm_time_integral_eq_Ioc ν (G.approx ((σ ∘ ψ) j)) φ hT.le
+        hfield hderiv]
+    rw [hseq] at hres
+    have hconst : Filter.Tendsto
+        (fun _j : ℕ => ∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))
+        Filter.atTop
+        (nhds (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))) :=
+      tendsto_const_nhds
+    have hsum := Hfull.add hconst
+    have heq : (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+          weakPairingDensity ν u φ t x) +
+          (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) = 0 :=
+      tendsto_nhds_unique hsum hres
+    rw [weakForm_time_integral_eq_Ioc ν u φ hT.le hfield hderiv]
+    linarith
+  exact ⟨{ limit := u
+           sq_integrable := fun t ht => huint t ht.le
+           datum_sq_integrable := integrable_norm_sq_schwartz u₀
+           energy_le := fun t ht => huoff t ht.le
+           pairing_integrable := pairing_integrable ν u humeas huint
+           datum_pairing_integrable := datum_pairing_integrable ν u₀
+           weak_form := hform }⟩
+
 
 theorem leray_of_galerkinApproximation (ν : ℝ) (hν : 0 < ν)
     (u₀ : SchwartzVelocity) (hu₀ : DivergenceFreeInitial u₀)
@@ -6323,7 +7028,7 @@ theorem leray_of_galerkinApproximation (ν : ℝ) (hν : 0 < ν)
 downstream of `GalerkinBasis`: it composes the relocated
 `galerkin_approximation_exists` with `leray_of_galerkinApproximation` above.
 Its remaining `sorryAx` reach is exactly the named residuals
-`hspace`/`htime`/`hweak` (GalerkinBasis) and `exists_lerayLimitData` (here).
+`hspace`/`htime`/`hweak` in `GalerkinBasis`; the limit passage here is certified.
 -/
 
 end Navier.Analysis.LerayWeak
