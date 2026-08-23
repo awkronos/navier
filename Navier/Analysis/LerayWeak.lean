@@ -124,8 +124,10 @@ open Navier.Analysis.EnergyNormBridge
 ## Test functions
 -/
 
-/-- A divergence-free, Schwartz-sliced, compact-in-time test function on
-nonnegative spacetime. -/
+/-- A divergence-free, compact-spacetime test function on nonnegative
+spacetime, presented through Schwartz spatial slices.  The common compact
+spatial carriers rule out slice supports escaping to infinity as time
+approaches the terminal horizon. -/
 structure DivergenceFreeTestFunction where
   /-- The Schwartz slice at each time. -/
   field : ℝ → SchwartzVelocity
@@ -146,6 +148,12 @@ structure DivergenceFreeTestFunction where
   /-- The time derivative has the same classical compact-time behavior. -/
   compact_time_deriv : ∃ T : ℝ, 0 < T ∧
     ∀ t : ℝ, T ≤ t → timeDerivSchwartz t = 0
+  /-- All test slices vanish off one compact spatial carrier. -/
+  compact_space : ∃ K : Set Space, IsCompact K ∧
+    ∀ t : ℝ, ∀ x : Space, x ∉ K → field t x = 0
+  /-- All time-derivative slices vanish off one compact spatial carrier. -/
+  compact_space_deriv : ∃ K : Set Space, IsCompact K ∧
+    ∀ t : ℝ, ∀ x : Space, x ∉ K → timeDerivSchwartz t x = 0
   /-- Every slice is divergence-free. -/
   divergence_free : ∀ t : ℝ, DivergenceFreeInitial (field t)
 
@@ -163,6 +171,8 @@ def zeroTestFunction : DivergenceFreeTestFunction where
     simpa [this] using contDiffOn_const
   compact_time := ⟨1, one_pos, fun _ _ => rfl⟩
   compact_time_deriv := ⟨1, one_pos, fun _ _ => rfl⟩
+  compact_space := ⟨∅, isCompact_empty, by simp⟩
+  compact_space_deriv := ⟨∅, isCompact_empty, by simp⟩
   divergence_free := by
     intro t x
     simp [staticDivergence]
@@ -415,6 +425,18 @@ noncomputable def witnessTest : DivergenceFreeTestFunction where
     have hderiv : deriv envelope t = 0 := by
       rw [hevent.deriv_eq, deriv_const]
     rw [hderiv, zero_smul]⟩
+  compact_space := ⟨tsupport phifun, phifun_supp, by
+    intro t x hx
+    have hphi : phiSchwartz x = 0 := by
+      rw [phiSchwartz_apply]
+      exact image_eq_zero_of_notMem_tsupport hx
+    simp [hphi]⟩
+  compact_space_deriv := ⟨tsupport phifun, phifun_supp, by
+    intro t x hx
+    have hphi : phiSchwartz x = 0 := by
+      rw [phiSchwartz_apply]
+      exact image_eq_zero_of_notMem_tsupport hx
+    simp [hphi]⟩
   divergence_free := by
     intro t x
     show staticDivergence (fun y => (envelope t • phiSchwartz) y) x = 0
@@ -4664,6 +4686,35 @@ theorem DivergenceFreeTestFunction.exists_horizon (φ : DivergenceFreeTestFuncti
     fun s hs => h1 s (le_trans (le_max_left _ _) hs),
     fun s hs => h2 s (le_trans (le_max_right _ _) hs)⟩
 
+/-- One time horizon and one compact spatial carrier work simultaneously for
+the test field and its time derivative.  Restricted to nonnegative time, this
+is the compact-spacetime support needed for uniform estimates on test
+factors. -/
+theorem DivergenceFreeTestFunction.exists_compact_spacetime_carrier
+    (φ : DivergenceFreeTestFunction) :
+    ∃ T : ℝ, ∃ K : Set Space, 0 < T ∧ IsCompact K ∧
+      (∀ t : ℝ, ∀ x : Space, T ≤ t ∨ x ∉ K → φ.field t x = 0) ∧
+      (∀ t : ℝ, ∀ x : Space,
+        T ≤ t ∨ x ∉ K → φ.timeDerivSchwartz t x = 0) := by
+  obtain ⟨T, hT, hfield, hderiv⟩ := φ.exists_horizon
+  obtain ⟨K₁, hK₁, hspace⟩ := φ.compact_space
+  obtain ⟨K₂, hK₂, hspaceDeriv⟩ := φ.compact_space_deriv
+  refine ⟨T, K₁ ∪ K₂, hT, hK₁.union hK₂, ?_, ?_⟩
+  · intro t x htx
+    rcases htx with ht | hx
+    · rw [hfield t ht]
+      rfl
+    · apply hspace t x
+      intro hx₁
+      exact hx (Set.mem_union_left K₂ hx₁)
+  · intro t x htx
+    rcases htx with ht | hx
+    · rw [hderiv t ht]
+      rfl
+    · apply hspaceDeriv t x
+      intro hx₂
+      exact hx (Set.mem_union_right K₁ hx₂)
+
 /-- A function vanishing beyond `T ≥ 0` has the same integral over `Ici 0` and
 over the finite window `Ioc 0 T`; no integrability hypothesis is needed since
 the two indicators agree off the null set `{0}`. -/
@@ -5686,28 +5737,17 @@ carried instead by the Schwartz decay `‖x‖·‖∇φ(x)‖ ≤ K`); and thei
 `tendsto_integral_weakPairingDensity_of_l2loc`, the complete spatial limit
 passage for `∫ₓ weakPairingDensity` at each fixed time.
 
-**The exact remaining obstruction (statement hygiene, recorded 2026-08-11).**
-What is left is precisely step (d)'s interchange of `lim_m` with `∫_{(0,T]} dt`,
-and it is blocked by a second statement-level gap: `DivergenceFreeTestFunction`
-imposes **no uniform-in-time control** on the Schwartz seminorms of its slices,
-so `t ↦ ‖φ(t)‖_{L²}` and `t ↦ ‖∂ₜφ(t)‖_{L²}` may be unbounded on `[0,T)` and
-the weak-form time integrand then has no `m`-uniform integrable majorant.
-
-Witness (every field of the structure checked): take divergence-free Schwartz
-fields `ψ_n` with pairwise disjoint supports marching to spatial infinity and
-`‖ψ_n‖_{L²} = 1`, and scalar bumps `f_n ∈ C_c^∞((T − 1/n, T − 1/(n+1)))` with
-`sup|f_n| = n` and `∫|f_n'| = 2n`; set `φ(t) := Σ_n f_n(t)·ψ_n`.  At each `t` at
-most one term is nonzero, so every slice is Schwartz and divergence-free;
-`timeDerivSchwartz t := Σ_n f_n'(t)·ψ_n` is Schwartz; both vanish for `t ≥ T`;
-and the sum is jointly smooth on `Ici 0 ×ˢ univ`, because every point of the
-closed half-space has a neighborhood meeting only finitely many `supp ψ_n`, and
-each of those finitely many `f_n` already vanishes near `T`.  Yet
-`sup_{t<T} ‖φ(t)‖_{L²} = ∞` and `∫₀^T ‖∂ₜφ(t)‖_{L²} dt = ∞`.
-
-So dominated convergence in `t` is unavailable, and with it the `L¹(0,T)`
-route: extracting an a.e.-`t` subsequence from `StrongL2LocLimit` supplies the
-pointwise hypothesis that the fixed-time passage above discharges, but supplies
-no majorant.
+**The statement-level obstruction is repaired (lane N1, 2026-08-22).**  The
+test-function record now requires one compact spatial carrier for all slices
+and one for all time-derivative slices.  Together with the existing common
+time horizon, `exists_compact_spacetime_carrier` combines them into a single
+compact-spacetime carrier on the nonnegative half-space.  This excludes the
+previous counterexample, whose supports escaped to spatial infinity as time
+approached the horizon.  The remaining work is now theorem construction, not
+statement repair: derive a uniform integrable time majorant for the three
+weak-pairing legs from joint smoothness on that compact carrier and the
+Galerkin energy bounds, then apply dominated convergence to the a.e.-in-time
+subsequence below.
 
 **The pointwise half is now certified (lane N3, 2026-08-21).**  That extraction
 is no longer a gap: `exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral`
@@ -5719,18 +5759,9 @@ vanishes at **every** radius — exactly the `hloc` hypothesis of
 producer.  Their measurability leaf
 `measurable_setIntegral_of_jointlyMeasurable_nonneg` is what makes the
 time-integrand measurable without an integrability hypothesis at negative
-times.  What remains of step (d) is therefore *only* the majorant, i.e. only
-the statement-level gap below — the analytic work in front of it is banked.  This does **not** falsify the statement — under Bochner's
-junk-value convention both sides can vanish on such a test — it closes off
-every domination-based route.  Closing the headline needs one of: (i) a
-uniform-in-time seminorm field on `DivergenceFreeTestFunction` (still a
-subclass of the classical `C_c^∞` test class, whose slices are uniformly
-compactly supported, so the existence statement would remain
-weaker-or-equal to Leray's); (ii) an argument that never forms a `t`-majorant;
-or (iii) a limit representative with compactly supported slices, which
-Aubin–Lions does not provide.  Item (i) is a statement-level change and is
-deliberately **not** taken here; the fixed-time passage above is exactly the
-interface such a repair would consume. -/
+times.  What remains of step (d) is therefore only construction of the
+compact-carrier majorant and its dominated-convergence assembly; the required
+support interface is now present. -/
 
 
 theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
