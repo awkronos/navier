@@ -304,6 +304,89 @@ theorem not_exists_terminal_X2_bound_of_mixedTimeBound :
   have hN0 : 0 ≤ (N : ℝ) := Nat.cast_nonneg N
   nlinarith [sq_nonneg ((N : ℝ) + 1)]
 
+/-- **Mixed time control does not bound even the time integral of the extra
+mode moment.**  A unit-length profile at mode `N`, scaled by `(N+1)⁻¹`,
+has mixed bound one but integrated `𝒳²` mass `N+1`.  Thus the missing
+half-generator mass is a genuine additional product/graph norm, not a
+consequence of `MixedTimeBound`. -/
+theorem not_exists_integrated_X2_bound_of_mixedTimeBound :
+    ¬ ∃ C : ℝ, ∀ u : ℝ → ℕ → ℝ,
+      MixedTimeBound 1 (fun n : ℕ ↦ (n : ℝ) + 1) u 1 →
+        (∫ t in Ioi (0 : ℝ),
+          normX2 (fun n : ℕ ↦ (n : ℝ) + 1) (u t)) ≤ C := by
+  rintro ⟨C, hC⟩
+  obtain ⟨N, hN⟩ := exists_nat_gt C
+  let q : ℝ := (N : ℝ) + 1
+  have hN0 : (0 : ℝ) ≤ (N : ℝ) := Nat.cast_nonneg N
+  have hq : 1 ≤ q := by dsimp [q]; linarith
+  have hqpos : 0 < q := lt_of_lt_of_le zero_lt_one hq
+  let u : ℝ → ℕ → ℝ := fun t n ↦
+    if t ∈ Ioc (0 : ℝ) 1 ∧ n = N then q⁻¹ else 0
+  have hXm1 : ∀ t : ℝ,
+      normXm1 (fun n : ℕ ↦ (n : ℝ) + 1) (u t) ≤ 1 := by
+    intro t
+    by_cases ht : t ∈ Ioc (0 : ℝ) 1
+    · unfold normXm1 wNorm
+      rw [tsum_eq_single N]
+      · simp only [u, ht, true_and, if_true]
+        rw [abs_of_pos (inv_pos.mpr hqpos)]
+        change q⁻¹ * q⁻¹ ≤ 1
+        have hi0 : 0 ≤ q⁻¹ := inv_nonneg.mpr hqpos.le
+        have hi1 : q⁻¹ ≤ 1 := (inv_le_one_iff₀).2 (Or.inr hq)
+        nlinarith
+      · intro n hn
+        simp [u, hn]
+    · have ht' : ¬ (0 < t ∧ t ≤ 1) := by simpa [Set.mem_Ioc] using ht
+      simp [normXm1, wNorm, u, ht']
+  have hX1 : (fun t : ℝ =>
+      (1 : ℝ) * normX1 (fun n : ℕ ↦ (n : ℝ) + 1) (u t)) =
+      fun t ↦ (Ioc (0 : ℝ) 1).indicator (fun _ ↦ (1 : ℝ)) t := by
+    funext t
+    by_cases ht : t ∈ Ioc (0 : ℝ) 1
+    · unfold normX1 wNorm
+      rw [tsum_eq_single N]
+      · simp only [u, ht, true_and, if_true, one_mul]
+        rw [abs_of_pos (inv_pos.mpr hqpos)]
+        simp [Set.indicator_of_mem ht, q, hqpos.ne']
+      · intro n hn
+        simp [u, hn]
+    · have ht' : ¬ (0 < t ∧ t ≤ 1) := by simpa [Set.mem_Ioc] using ht
+      simp [normX1, wNorm, u, ht', Set.indicator]
+  have hX2 : (fun t : ℝ =>
+      normX2 (fun n : ℕ ↦ (n : ℝ) + 1) (u t)) =
+      fun t ↦ (Ioc (0 : ℝ) 1).indicator (fun _ ↦ q) t := by
+    funext t
+    by_cases ht : t ∈ Ioc (0 : ℝ) 1
+    · unfold normX2 wNorm
+      rw [tsum_eq_single N]
+      · simp only [u, ht, true_and, if_true]
+        rw [abs_of_pos (inv_pos.mpr hqpos)]
+        rw [Set.indicator_of_mem ht]
+        change q ^ 2 * q⁻¹ = q
+        field_simp
+      · intro n hn
+        simp [u, hn]
+    · have ht' : ¬ (0 < t ∧ t ≤ 1) := by simpa [Set.mem_Ioc] using ht
+      simp [normX2, wNorm, u, ht', Set.indicator]
+  have hmixed : MixedTimeBound 1 (fun n : ℕ ↦ (n : ℝ) + 1) u 1 := by
+    constructor
+    · intro t _ht
+      exact hXm1 t
+    · rw [hX1, setIntegral_indicator measurableSet_Ioc]
+      have hs : Ioi (0 : ℝ) ∩ Ioc 0 1 = Ioc 0 1 := by ext x; simp
+      rw [hs]
+      norm_num
+  have hbound := hC u hmixed
+  have hX2mass : (∫ t in Ioi (0 : ℝ),
+      normX2 (fun n : ℕ ↦ (n : ℝ) + 1) (u t)) = q := by
+    rw [hX2, setIntegral_indicator measurableSet_Ioc]
+    have hs : Ioi (0 : ℝ) ∩ Ioc 0 1 = Ioc 0 1 := by ext x; simp
+    rw [hs]
+    simp
+  rw [hX2mass] at hbound
+  dsimp [q] at hbound
+  linarith
+
 /-- The inverse-time endpoint majorant produced by one extra derivative of
 the Duhamel heat kernel is not interval-integrable at zero. -/
 theorem not_intervalIntegrable_inverseTime_zero {δ : ℝ} (hδ : 0 < δ) :
@@ -492,6 +575,7 @@ end Navier.Analysis.LeiLinTimeMixed
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTime_sum_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X1_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X2_bound_of_mixedTimeBound
+#print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_integrated_X2_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_intervalIntegrable_inverseTime_zero
 #print axioms Navier.Analysis.LeiLinTimeMixed.inverseSqrtTime_L1_product_endpoint_obstruction
 #print axioms Navier.Analysis.LeiLinTimeMixed.le_div_one_sub_of_volterra_sqrt
