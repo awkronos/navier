@@ -16,6 +16,9 @@ linear identities.  This module closes those leaves:
    under `L∞_t` majorants of the critical norms;
 3. `heat_mixedTimeBound` — free evolution satisfies the spacetime mixed majorant
    `‖f‖_{𝒳^{-1}}` on each half (hence sum `2‖f‖_{𝒳^{-1}}`).
+4. `terminal_X1_le_of_backward_sqrt_modulus` — the exact repair for terminal
+   sampling: trailing integrated `𝒳¹` control plus a backward square-root time
+   modulus bounds the terminal `𝒳¹` value.
 
 These feed the coercive critical-norm path for
 `CriticalMildMixedTerminalBound` / `navier.bounded-chain-direct-limit`.  No
@@ -250,6 +253,67 @@ theorem not_exists_terminal_X1_bound_of_mixedTimeBound :
   rw [hvalue] at hterminal
   linarith
 
+/-! ## The minimal terminal-sampling repair -/
+
+/-- **A backward square-root modulus converts trailing integral control into
+terminal pointwise control.**
+
+If `f T` differs from every value on the preceding window of length `δ` by
+at most `L √(T-s)`, then
+
+`f T ≤ δ⁻¹ ∫_(T-δ)^T f + L √δ`.
+
+This is the smallest extra interface needed to defeat the measure-zero spike
+in `not_exists_terminal_X1_bound_of_mixedTimeBound`: it asks only for a
+one-sided modulus on the window actually averaged. -/
+theorem terminal_le_average_add_of_backward_sqrt_modulus
+    {f : ℝ → ℝ} {T δ L A : ℝ}
+    (hδ : 0 < δ)
+    (hL : 0 ≤ L)
+    (hf : IntervalIntegrable f volume (T - δ) T)
+    (hmod : ∀ s ∈ Icc (T - δ) T,
+      f T ≤ f s + L * Real.sqrt (T - s))
+    (hA : (∫ s in (T - δ)..T, f s) ≤ A) :
+    f T ≤ A / δ + L * Real.sqrt δ := by
+  have hδle : T - δ ≤ T := by linarith
+  have hsqrt : ∀ s ∈ Icc (T - δ) T,
+      Real.sqrt (T - s) ≤ Real.sqrt δ := by
+    intro s hs
+    exact Real.sqrt_le_sqrt (by linarith [hs.1])
+  have hpoint : ∀ s ∈ Icc (T - δ) T,
+      f T - L * Real.sqrt δ ≤ f s := by
+    intro s hs
+    have hL : L * Real.sqrt (T - s) ≤ L * Real.sqrt δ := by
+      exact mul_le_mul_of_nonneg_left (hsqrt s hs) hL
+    linarith [hmod s hs]
+  have havg : δ * (f T - L * Real.sqrt δ) ≤
+      ∫ s in (T - δ)..T, f s := by
+    have hmono := intervalIntegral.integral_mono_on hδle
+      intervalIntegral.intervalIntegrable_const hf hpoint
+    simpa [intervalIntegral.integral_const, smul_eq_mul] using hmono
+  have hmul : δ * f T ≤ A + δ * (L * Real.sqrt δ) := by
+    linarith
+  have hdiv : f T ≤ (A + δ * (L * Real.sqrt δ)) / δ :=
+    (le_div_iff₀ hδ).2 (by simpa [mul_comm] using hmul)
+  calc
+    f T ≤ (A + δ * (L * Real.sqrt δ)) / δ := hdiv
+    _ = A / δ + L * Real.sqrt δ := by field_simp
+
+/-- The preceding sampling lemma specialized to the actual `𝒳¹` quantity.
+It makes the repaired consumer shape explicit: a trailing `𝒳¹` mass plus a
+backward square-root time modulus controls the terminal `𝒳¹` value. -/
+theorem terminal_X1_le_of_backward_sqrt_modulus {G : Type*}
+    {sigma : G → ℝ} {u : ℝ → G → ℝ} {T δ L A : ℝ}
+    (hδ : 0 < δ)
+    (hL : 0 ≤ L)
+    (hint : IntervalIntegrable (fun t => normX1 sigma (u t)) volume (T - δ) T)
+    (hmod : ∀ s ∈ Icc (T - δ) T,
+      normX1 sigma (u T) ≤
+        normX1 sigma (u s) + L * Real.sqrt (T - s))
+    (hmass : (∫ s in (T - δ)..T, normX1 sigma (u s)) ≤ A) :
+    normX1 sigma (u T) ≤ A / δ + L * Real.sqrt δ :=
+  terminal_le_average_add_of_backward_sqrt_modulus hδ hL hint hmod hmass
+
 /-- **Free heat evolution has spacetime mixed majorant `‖f‖_{𝒳^{-1}}`.** -/
 theorem heat_mixedTimeBound [Countable G] {ν : ℝ} {σ f : G → ℝ}
     (hν : 0 < ν) (hσ : ∀ k, 0 ≤ σ k)
@@ -278,6 +342,8 @@ end Navier.Analysis.LeiLinTimeMixed
 #print axioms Navier.Analysis.LeiLinTimeMixed.integral_sqrt_mul_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.integrableOn_sqrt_mul
 #print axioms Navier.Analysis.LeiLinTimeMixed.integral_bilinear_Xm1_le
+#print axioms Navier.Analysis.LeiLinTimeMixed.terminal_le_average_add_of_backward_sqrt_modulus
+#print axioms Navier.Analysis.LeiLinTimeMixed.terminal_X1_le_of_backward_sqrt_modulus
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTime_sum_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X1_bound_of_mixedTimeBound
