@@ -460,6 +460,41 @@ theorem terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
       rw [intervalIntegral.integral_const_mul]]
     exact mul_le_mul_of_nonneg_left hmomentMass (Real.sqrt_nonneg ν)
 
+/-- Consumer for a small-window Volterra estimate on the integrated
+half-generator moment.  Once the split-input Duhamel bound supplies the stated
+recurrence, scalar absorption eliminates the unknown moment mass. -/
+theorem terminal_X1_le_of_halfGeneratorMoment_volterra
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R T δ A H c : ℝ} (hR : 0 ≤ R)
+    (hT : 0 ≤ T) (hδ : 0 < δ) (hδT : δ ≤ T)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) T, ‖u s‖ ≤ R)
+    (hmild : ∀ (s : ℝ) (hs : s ∈ Set.Icc (0 : ℝ) T),
+      u s = criticalMildImage ν hν u₀ u hu s hs.1)
+    (hhalf : ∀ s ∈ Set.Icc (T - δ) T,
+      Summable fun m : LatticeMode =>
+        ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖)
+    (hint : IntervalIntegrable
+      (fun s => normX1 latticeModeSize (weightedAmplitude (u s)))
+      MeasureTheory.volume (T - δ) T)
+    (hmoment : IntervalIntegrable (fun s => heatHalfGeneratorMoment (u s))
+      MeasureTheory.volume (T - δ) T)
+    (hmass : (∫ s in (T - δ)..T,
+      normX1 latticeModeSize (weightedAmplitude (u s))) ≤ A)
+    (hsmall : c * Real.sqrt δ < 1)
+    (hvolterra : (∫ s in (T - δ)..T, heatHalfGeneratorMoment (u s)) ≤
+      H + c * Real.sqrt δ *
+        (∫ s in (T - δ)..T, heatHalfGeneratorMoment (u s))) :
+    normX1 latticeModeSize (weightedAmplitude (u T)) ≤
+      (A + (Real.sqrt ν * (H / (1 - c * Real.sqrt δ))) * Real.sqrt δ) / δ +
+        (2 * R ^ 2 / Real.sqrt ν) * Real.sqrt δ := by
+  have hmomentMass : (∫ s in (T - δ)..T, heatHalfGeneratorMoment (u s)) ≤
+      H / (1 - c * Real.sqrt δ) :=
+    le_div_one_sub_of_volterra_sqrt hsmall hvolterra
+  exact terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
+    ν hν u₀ u huc hu hR hT hδ hδT huR hmild hhalf hint hmoment hmass hmomentMass
+
 /-- Every physical mode amplitude family is unconditionally `𝒳^{-1}`-summable:
 the inverse weight is bounded by `1` off the zero mode (lattice separation),
 and vanishes at the zero mode. -/
@@ -728,6 +763,7 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_halfGeneratorMoment_volterra
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX0_add_normX1_le_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_weightedLattice_le_of_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed
