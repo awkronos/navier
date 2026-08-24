@@ -154,6 +154,7 @@ import Navier.Analysis.LeiLinCoerciveTerminal
 import Navier.Analysis.LeiLinTimeMixed
 import Navier.Analysis.LeiLinPositiveRestart
 import Navier.Analysis.LeiLinPositiveRestartGalerkin
+import Navier.Analysis.LeiLinPositiveRestartBootstrap
 
 /-!
 # Navier
