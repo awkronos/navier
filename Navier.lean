@@ -152,6 +152,7 @@ import Navier.Analysis.LeiLinFixedPoint
 import Navier.Analysis.LeiLinSmallDataObstruction
 import Navier.Analysis.LeiLinCoerciveTerminal
 import Navier.Analysis.LeiLinTimeMixed
+import Navier.Analysis.LeiLinPositiveRestart
 
 /-!
 # Navier
