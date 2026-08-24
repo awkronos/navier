@@ -1,5 +1,6 @@
 import Navier.Analysis.LeiLinBilinear
 import Navier.Analysis.LeiLinLinearEstimate
+import Navier.Analysis.CriticalMildHeatTimeKernel
 
 /-!
 # Spacetime mixed-norm leaves for the Lei–Lin route
@@ -38,6 +39,7 @@ open Navier.Analysis.LeiLinSpace
 open Navier.Analysis.LeiLinBilinear
 open Navier.Analysis.LeiLinLinearEstimate
 open Navier.Analysis.WienerAlgebraConvolution
+open Navier.Analysis.CriticalMildHeatTimeKernel
 
 variable {G : Type*}
 
@@ -308,6 +310,38 @@ theorem not_intervalIntegrable_inverseTime_zero {δ : ℝ} (hδ : 0 < δ) :
     ¬ IntervalIntegrable (fun τ : ℝ => τ⁻¹) volume 0 δ := by
   simp [intervalIntegrable_inv_iff, hδ.ne]
 
+/-- The square-root kernel is `L¹`, but multiplying it by an arbitrary `L¹`
+input can recreate the nonintegrable inverse-time endpoint.  Thus pointwise
+Volterra control cannot be obtained from `L¹` input data alone, even though
+the double-time average remains the correct integrable target. -/
+theorem inverseSqrtTime_L1_product_endpoint_obstruction :
+    IntervalIntegrable inverseSqrtTime volume 0 1 ∧
+      ¬ IntervalIntegrable
+        (fun τ : ℝ => inverseSqrtTime τ * inverseSqrtTime τ) volume 0 1 := by
+  refine ⟨inverseSqrtTime_intervalIntegrable 1, ?_⟩
+  intro hsq
+  have heq : Set.EqOn
+      (fun τ : ℝ => inverseSqrtTime τ * inverseSqrtTime τ)
+      (fun τ : ℝ => τ⁻¹) (Set.uIoo (0 : ℝ) 1) := by
+    intro τ hτ
+    have hτpos : 0 < τ := by simpa [Set.uIoo_of_le (by norm_num : (0 : ℝ) ≤ 1)] using hτ.1
+    unfold inverseSqrtTime
+    change τ ^ (-(1 / 2 : ℝ)) * τ ^ (-(1 / 2 : ℝ)) = τ⁻¹
+    rw [← Real.rpow_add hτpos]
+    norm_num [Real.rpow_neg_one]
+  have hinv : IntervalIntegrable (fun τ : ℝ => τ⁻¹) volume 0 1 :=
+    hsq.congr_uIoo heq
+  exact not_intervalIntegrable_inverseTime_zero (δ := 1) zero_lt_one hinv
+
+/-- Scalar absorption for the averaged half-moment Volterra recurrence. -/
+theorem le_div_one_sub_of_volterra_sqrt
+    {B H c δ : ℝ} (hsmall : c * Real.sqrt δ < 1)
+    (hrec : B ≤ H + c * Real.sqrt δ * B) :
+    B ≤ H / (1 - c * Real.sqrt δ) := by
+  have hden : 0 < 1 - c * Real.sqrt δ := by linarith
+  apply (le_div_iff₀ hden).2
+  nlinarith
+
 /-! ## The minimal terminal-sampling repair -/
 
 /-- **A backward square-root modulus converts trailing integral control into
@@ -459,3 +493,5 @@ end Navier.Analysis.LeiLinTimeMixed
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X1_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X2_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_intervalIntegrable_inverseTime_zero
+#print axioms Navier.Analysis.LeiLinTimeMixed.inverseSqrtTime_L1_product_endpoint_obstruction
+#print axioms Navier.Analysis.LeiLinTimeMixed.le_div_one_sub_of_volterra_sqrt
