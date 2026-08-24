@@ -253,6 +253,61 @@ theorem not_exists_terminal_X1_bound_of_mixedTimeBound :
   rw [hvalue] at hterminal
   linarith
 
+/-- The next homogeneous mode moment, used to model the one-extra-mode
+half-generator domain on the physical amplitude. -/
+def normX2 (σ f : G → ℝ) : ℝ :=
+  wNorm (fun k => (σ k) ^ 2) f
+
+/-- **Mixed time control does not bound the extra mode moment.**
+
+The same checked measure-zero spike obstruction already appears one mode
+moment above `𝒳¹`: `MixedTimeBound` controls no pointwise `𝒳²` value.  This
+falsifies that precise functional implication only; an actual mild trajectory
+has additional structure which must be used separately. -/
+theorem not_exists_terminal_X2_bound_of_mixedTimeBound :
+    ¬ ∃ C : ℝ, ∀ u : ℝ → ℕ → ℝ,
+      MixedTimeBound 1 (fun n : ℕ => (n : ℝ) + 1) u 1 →
+        normX2 (fun n : ℕ => (n : ℝ) + 1) (u 1) ≤ C := by
+  rintro ⟨C, hC⟩
+  obtain ⟨N, hN⟩ := exists_nat_gt C
+  let u : ℝ → ℕ → ℝ := fun t n => if t = 1 ∧ n = N then 1 else 0
+  have hmixed : MixedTimeBound 1 (fun n : ℕ => (n : ℝ) + 1) u 1 := by
+    constructor
+    · intro t _ht
+      by_cases ht : t = 1
+      · subst t
+        unfold normXm1 wNorm
+        rw [tsum_eq_single N]
+        · simp only [u, and_self, if_true, abs_one, mul_one]
+          exact (inv_le_one_iff₀).2 (Or.inr (by norm_num))
+        · intro n hn
+          simp [u, hn]
+      · simp [normXm1, wNorm, u, ht]
+    · have hae :
+          (fun t : ℝ => (1 : ℝ) * normX1 (fun n : ℕ => (n : ℝ) + 1) (u t))
+            =ᵐ[volume.restrict (Ioi (0 : ℝ))] 0 := by
+          filter_upwards [(volume.restrict (Ioi (0 : ℝ))).ae_ne (1 : ℝ)] with t ht
+          simp [normX1, wNorm, u, ht]
+      rw [integral_congr_ae hae]
+      norm_num
+  have hterminal := hC u hmixed
+  have hvalue :
+      normX2 (fun n : ℕ => (n : ℝ) + 1) (u 1) = ((N : ℝ) + 1) ^ 2 := by
+    unfold normX2 wNorm
+    rw [tsum_eq_single N]
+    · simp [u]
+    · intro n hn
+      simp [u, hn]
+  rw [hvalue] at hterminal
+  have hN0 : 0 ≤ (N : ℝ) := Nat.cast_nonneg N
+  nlinarith [sq_nonneg ((N : ℝ) + 1)]
+
+/-- The inverse-time endpoint majorant produced by one extra derivative of
+the Duhamel heat kernel is not interval-integrable at zero. -/
+theorem not_intervalIntegrable_inverseTime_zero {δ : ℝ} (hδ : 0 < δ) :
+    ¬ IntervalIntegrable (fun τ : ℝ => τ⁻¹) volume 0 δ := by
+  simp [intervalIntegrable_inv_iff, hδ.ne]
+
 /-! ## The minimal terminal-sampling repair -/
 
 /-- **A backward square-root modulus converts trailing integral control into
@@ -314,6 +369,60 @@ theorem terminal_X1_le_of_backward_sqrt_modulus {G : Type*}
     normX1 sigma (u T) ≤ A / δ + L * Real.sqrt δ :=
   terminal_le_average_add_of_backward_sqrt_modulus hδ hL hint hmod hmass
 
+/-- **Integrated-coefficient terminal sampler.**
+
+Uniform control of the square-root modulus coefficient is unnecessary.  It
+is enough to integrate its nonnegative variable part over the trailing
+window.  This is the minimal consumer matching an `L¹` half-generator moment:
+
+`f(T) ≤ (A + B√δ)/δ + L√δ`.
+-/
+theorem terminal_le_average_add_of_integrated_backward_sqrt_modulus
+    {f M : ℝ → ℝ} {T δ L A B : ℝ}
+    (hδ : 0 < δ) (hL : 0 ≤ L)
+    (hM0 : ∀ s ∈ Icc (T - δ) T, 0 ≤ M s)
+    (hf : IntervalIntegrable f volume (T - δ) T)
+    (hM : IntervalIntegrable M volume (T - δ) T)
+    (hmod : ∀ s ∈ Icc (T - δ) T,
+      f T ≤ f s + (M s + L) * Real.sqrt (T - s))
+    (hA : (∫ s in (T - δ)..T, f s) ≤ A)
+    (hB : (∫ s in (T - δ)..T, M s) ≤ B) :
+    f T ≤ (A + B * Real.sqrt δ) / δ + L * Real.sqrt δ := by
+  have hδle : T - δ ≤ T := by linarith
+  have hsqrt : ∀ s ∈ Icc (T - δ) T,
+      Real.sqrt (T - s) ≤ Real.sqrt δ := by
+    intro s hs
+    exact Real.sqrt_le_sqrt (by linarith [hs.1])
+  have hpoint : ∀ s ∈ Icc (T - δ) T,
+      f T - L * Real.sqrt δ ≤ f s + M s * Real.sqrt δ := by
+    intro s hs
+    have hMs : M s * Real.sqrt (T - s) ≤ M s * Real.sqrt δ :=
+      mul_le_mul_of_nonneg_left (hsqrt s hs) (hM0 s hs)
+    have hLs : L * Real.sqrt (T - s) ≤ L * Real.sqrt δ :=
+      mul_le_mul_of_nonneg_left (hsqrt s hs) hL
+    linarith [hmod s hs]
+  have hMscaled : IntervalIntegrable (fun s => M s * Real.sqrt δ)
+      volume (T - δ) T := hM.mul_const _
+  have hsum : IntervalIntegrable (fun s => f s + M s * Real.sqrt δ)
+      volume (T - δ) T := hf.add hMscaled
+  have havg : δ * (f T - L * Real.sqrt δ) ≤
+      ∫ s in (T - δ)..T, (f s + M s * Real.sqrt δ) := by
+    have hmono := intervalIntegral.integral_mono_on hδle
+      intervalIntegral.intervalIntegrable_const hsum hpoint
+    simpa [intervalIntegral.integral_const, smul_eq_mul] using hmono
+  have hsplit : (∫ s in (T - δ)..T, (f s + M s * Real.sqrt δ)) =
+      (∫ s in (T - δ)..T, f s) +
+        (∫ s in (T - δ)..T, M s) * Real.sqrt δ := by
+    rw [intervalIntegral.integral_add hf hMscaled,
+      intervalIntegral.integral_mul_const]
+  rw [hsplit] at havg
+  have hbudget : δ * (f T - L * Real.sqrt δ) ≤ A + B * Real.sqrt δ :=
+    havg.trans (add_le_add hA
+      (mul_le_mul_of_nonneg_right hB (Real.sqrt_nonneg δ)))
+  have hdiv : f T - L * Real.sqrt δ ≤ (A + B * Real.sqrt δ) / δ :=
+    (le_div_iff₀ hδ).2 (by simpa [mul_comm] using hbudget)
+  linarith
+
 /-- **Free heat evolution has spacetime mixed majorant `‖f‖_{𝒳^{-1}}`.** -/
 theorem heat_mixedTimeBound [Countable G] {ν : ℝ} {σ f : G → ℝ}
     (hν : 0 < ν) (hσ : ∀ k, 0 ≤ σ k)
@@ -344,6 +453,9 @@ end Navier.Analysis.LeiLinTimeMixed
 #print axioms Navier.Analysis.LeiLinTimeMixed.integral_bilinear_Xm1_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.terminal_le_average_add_of_backward_sqrt_modulus
 #print axioms Navier.Analysis.LeiLinTimeMixed.terminal_X1_le_of_backward_sqrt_modulus
+#print axioms Navier.Analysis.LeiLinTimeMixed.terminal_le_average_add_of_integrated_backward_sqrt_modulus
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTime_sum_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X1_bound_of_mixedTimeBound
+#print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X2_bound_of_mixedTimeBound
+#print axioms Navier.Analysis.LeiLinTimeMixed.not_intervalIntegrable_inverseTime_zero
