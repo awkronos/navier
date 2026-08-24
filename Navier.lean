@@ -156,6 +156,7 @@ import Navier.Analysis.LeiLinPositiveRestart
 import Navier.Analysis.LeiLinPositiveRestartGalerkin
 import Navier.Analysis.LeiLinPositiveRestartBootstrap
 import Navier.Analysis.LeiLinPositiveRestartFractional
+import Navier.Analysis.LeiLinPositiveRestartEnergy
 
 /-!
 # Navier
