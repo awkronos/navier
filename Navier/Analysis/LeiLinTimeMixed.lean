@@ -290,6 +290,248 @@ half-generator domain on the physical amplitude. -/
 def normX2 (σ f : G → ℝ) : ℝ :=
   wNorm (fun k => (σ k) ^ 2) f
 
+private theorem heatMode_frequency_mul_shift
+    (ν : ℝ) (σ f : G → ℝ) (a t : ℝ) (k : G) :
+    heatMode ν σ t (fun j => σ j * heatMode ν σ a f j) k =
+      σ k * heatMode ν σ (a + t) f k := by
+  unfold heatMode
+  simp only
+  calc
+    Real.exp (-(ν * σ k ^ 2 * t)) *
+        (σ k * (Real.exp (-(ν * σ k ^ 2 * a)) * f k)) =
+      σ k * (Real.exp (-(ν * σ k ^ 2 * t)) *
+        Real.exp (-(ν * σ k ^ 2 * a)) * f k) := by ring
+    _ = σ k * (Real.exp (-(ν * σ k ^ 2 * (a + t))) * f k) := by
+      rw [← Real.exp_add]
+      congr 3
+      ring
+
+private theorem normX1_heatMode_frequency_mul_shift_eq_normX2
+    (ν : ℝ) (σ f : G → ℝ) (hσ : ∀ k, 0 ≤ σ k) (a t : ℝ) :
+    normX1 σ (heatMode ν σ t (fun j => σ j * heatMode ν σ a f j)) =
+      normX2 σ (heatMode ν σ (a + t) f) := by
+  unfold normX1 normX2 wNorm
+  apply tsum_congr
+  intro k
+  rw [heatMode_frequency_mul_shift]
+  rw [abs_mul, abs_of_nonneg (hσ k)]
+  ring
+
+private theorem shifted_frequency_mul_pointwise
+    {ν a : ℝ} {σ f : G → ℝ} (hν : 0 < ν) (ha : 0 < a)
+    (hσ : ∀ k, 0 ≤ σ k) (k : G) :
+    (σ k)⁻¹ * |σ k * heatMode ν σ a f k| ≤
+      (Real.sqrt (ν * a))⁻¹ * ((σ k)⁻¹ * |f k|) := by
+  have hε : 0 < ν * a := mul_pos hν ha
+  by_cases hk : σ k = 0
+  · simp [hk]
+  · have hgain := Real.abs_mulExpNegMulSq_le hε (x := σ k)
+    rw [Real.mulExpNegSq_apply] at hgain
+    have hexp : -(ν * a * σ k * σ k) = -(ν * (σ k) ^ 2 * a) := by ring
+    rw [hexp] at hgain
+    rw [abs_mul, abs_of_nonneg (hσ k), heatMode_abs]
+    rw [show (σ k)⁻¹ * (σ k * (Real.exp (-(ν * (σ k) ^ 2 * a)) * |f k|)) =
+        (σ k * Real.exp (-(ν * (σ k) ^ 2 * a))) * ((σ k)⁻¹ * |f k|) by field_simp]
+    exact mul_le_mul_of_nonneg_right
+      (by simpa [abs_of_nonneg (mul_nonneg (hσ k) (Real.exp_pos _).le)] using hgain)
+      (mul_nonneg (inv_nonneg.mpr (hσ k)) (abs_nonneg _))
+
+private theorem shifted_frequency_mul_inW
+    {ν a : ℝ} {σ f : G → ℝ} (hν : 0 < ν) (ha : 0 < a)
+    (hσ : ∀ k, 0 ≤ σ k) (hf : InW (fun k => (σ k)⁻¹) f) :
+    InW (fun k => (σ k)⁻¹)
+      (fun k => σ k * heatMode ν σ a f k) := by
+  exact Summable.of_nonneg_of_le
+    (fun k => mul_nonneg (inv_nonneg.mpr (hσ k)) (abs_nonneg _))
+    (shifted_frequency_mul_pointwise hν ha hσ)
+    (hf.mul_left (Real.sqrt (ν * a))⁻¹)
+
+private theorem normXm1_shifted_frequency_mul_le
+    {ν a : ℝ} {σ f : G → ℝ} (hν : 0 < ν) (ha : 0 < a)
+    (hσ : ∀ k, 0 ≤ σ k) (hf : InW (fun k => (σ k)⁻¹) f) :
+    normXm1 σ (fun k => σ k * heatMode ν σ a f k) ≤
+      (Real.sqrt (ν * a))⁻¹ * normXm1 σ f := by
+  have h := Summable.tsum_le_tsum
+    (shifted_frequency_mul_pointwise hν ha hσ)
+    (shifted_frequency_mul_inW hν ha hσ hf)
+    (hf.mul_left _)
+  simpa [normXm1, wNorm, tsum_mul_left] using h
+
+private theorem integrableOn_heat_X1
+    [Countable G] {ν : ℝ} {σ f : G → ℝ} (hν : 0 < ν)
+    (hσ : ∀ k, 0 ≤ σ k) (hf : InW (fun k => (σ k)⁻¹) f) :
+    IntegrableOn (fun t => ν * normX1 σ (heatMode ν σ t f)) (Ioi (0 : ℝ)) := by
+  let F : G → ℝ → ℝ := fun k t => ν * (σ k * |heatMode ν σ t f k|)
+  have hpt : ∀ t : ℝ, ν * normX1 σ (heatMode ν σ t f) = ∑' k, F k t := by
+    intro t
+    rw [normX1, wNorm]
+    exact (tsum_mul_left).symm
+  have hnn : ∀ k t, 0 ≤ F k t := by
+    intro k t
+    exact mul_nonneg hν.le (mul_nonneg (hσ k) (abs_nonneg _))
+  have hint : ∀ k, IntegrableOn (F k) (Ioi (0 : ℝ)) := fun k =>
+    integrableOn_mode_all hν hσ k
+  have hmeas : ∀ k, AEStronglyMeasurable (F k)
+      (volume.restrict (Ioi (0 : ℝ))) := fun k => (hint k).aestronglyMeasurable
+  have hval : ∀ k, (∫ t in Ioi (0 : ℝ), F k t) = (σ k)⁻¹ * |f k| := fun k =>
+    integral_mode_eq hν hσ k
+  have hlint : ∀ k, (∫⁻ t in Ioi (0 : ℝ), ‖F k t‖₊) =
+      ENNReal.ofReal ((σ k)⁻¹ * |f k|) := by
+    intro k
+    have h1 : (∫⁻ t in Ioi (0 : ℝ), ENNReal.ofReal (F k t)) =
+        ENNReal.ofReal (∫ t in Ioi (0 : ℝ), F k t) :=
+      (ofReal_integral_eq_lintegral_ofReal (hint k)
+        (Filter.Eventually.of_forall fun t => hnn k t)).symm
+    rw [← hval k, ← h1]
+    refine lintegral_congr fun t => ?_
+    rw [Real.nnnorm_of_nonneg (hnn k t), ENNReal.ofReal]
+    exact congrArg _ (Real.toNNReal_of_nonneg (hnn k t)).symm
+  have hfinite : (∑' k, ∫⁻ t in Ioi (0 : ℝ), ‖F k t‖₊) ≠ ⊤ := by
+    have hnn' : ∀ k, 0 ≤ (σ k)⁻¹ * |f k| := fun k =>
+      mul_nonneg (inv_nonneg.mpr (hσ k)) (abs_nonneg _)
+    have heq : (∑' k, ∫⁻ t in Ioi (0 : ℝ), ‖F k t‖₊) =
+        ENNReal.ofReal (∑' k, (σ k)⁻¹ * |f k|) := by
+      rw [ENNReal.ofReal_tsum_of_nonneg hnn' hf]
+      exact tsum_congr hlint
+    rw [heq]
+    exact ENNReal.ofReal_ne_top
+  refine ⟨?_, ?_⟩
+  · exact (AEStronglyMeasurable.tsum hmeas).congr
+      (Filter.Eventually.of_forall fun t => (hpt t).symm)
+  · rw [hasFiniteIntegral_def]
+    have hle : (∫⁻ t in Ioi (0 : ℝ), ‖∑' k, F k t‖ₑ) ≤
+        ∑' k, ∫⁻ t in Ioi (0 : ℝ), ‖F k t‖ₑ := by
+      calc
+        (∫⁻ t in Ioi (0 : ℝ), ‖∑' k, F k t‖ₑ) ≤
+            ∫⁻ t in Ioi (0 : ℝ), ∑' k, ‖F k t‖ₑ := by
+          gcongr with t
+          exact enorm_tsum_le_tsum_enorm
+        _ = ∑' k, ∫⁻ t in Ioi (0 : ℝ), ‖F k t‖ₑ := by
+          rw [lintegral_tsum fun k => (hmeas k).enorm]
+    calc
+      (∫⁻ t in Ioi (0 : ℝ), ‖ν * normX1 σ (heatMode ν σ t f)‖ₑ) =
+          ∫⁻ t in Ioi (0 : ℝ), ‖∑' k, F k t‖ₑ := by
+        apply lintegral_congr
+        intro t
+        rw [hpt t]
+      _ ≤ ∑' k, ∫⁻ t in Ioi (0 : ℝ), ‖F k t‖ₑ := hle
+      _ < ⊤ := lt_top_iff_ne_top.mpr (by simpa only [enorm_eq_nnnorm] using hfinite)
+
+private theorem heat_X2_future_mass_le
+    [Countable G] {ν a : ℝ} {σ f : G → ℝ}
+    (hν : 0 < ν) (ha : 0 < a) (hσ : ∀ k, 0 ≤ σ k)
+    (hf : InW (fun k => (σ k)⁻¹) f) :
+    (∫ t in Ioi (0 : ℝ), ν * normX2 σ (heatMode ν σ (a + t) f)) ≤
+      (Real.sqrt (ν * a))⁻¹ * normXm1 σ f := by
+  let g : G → ℝ := fun k => σ k * heatMode ν σ a f k
+  have hg : InW (fun k => (σ k)⁻¹) g :=
+    shifted_frequency_mul_inW hν ha hσ hf
+  have heq := heat_L1_time_eq hν hσ hg
+  rw [show (∫ t in Ioi (0 : ℝ), ν * normX2 σ (heatMode ν σ (a + t) f)) =
+      ∫ t in Ioi (0 : ℝ), ν * normX1 σ (heatMode ν σ t g) by
+    apply setIntegral_congr_fun measurableSet_Ioi
+    intro t _ht
+    dsimp [g]
+    rw [normX1_heatMode_frequency_mul_shift_eq_normX2 ν σ f hσ a t]]
+  rw [heq]
+  exact normXm1_shifted_frequency_mul_le hν ha hσ hf
+
+private theorem integrableOn_heat_X2_future
+    [Countable G] {ν a : ℝ} {σ f : G → ℝ}
+    (hν : 0 < ν) (ha : 0 < a) (hσ : ∀ k, 0 ≤ σ k)
+    (hf : InW (fun k => (σ k)⁻¹) f) :
+    IntegrableOn (fun t => ν * normX2 σ (heatMode ν σ (a + t) f))
+      (Ioi (0 : ℝ)) := by
+  let g : G → ℝ := fun k => σ k * heatMode ν σ a f k
+  have hg : InW (fun k => (σ k)⁻¹) g :=
+    shifted_frequency_mul_inW hν ha hσ hf
+  have hi := integrableOn_heat_X1 hν hσ hg
+  apply hi.congr_fun
+  · intro t _ht
+    dsimp [g]
+    rw [normX1_heatMode_frequency_mul_shift_eq_normX2 ν σ f hσ a t]
+  · exact measurableSet_Ioi
+
+/-- **Positive-time viscous gain of three mode powers.**  Critical
+`𝒳⁻¹` data acquire an integrable future `𝒳²` tail after every waiting time
+`a > 0`, at parabolic cost `(νa)⁻¹/²`.  Both integrability and the quantitative
+mass estimate are included, so the integral conclusion is non-vacuous. -/
+-- Citation: Lei--Lin, CPAM 64 (2011), Fourier heat multiplier estimate.
+theorem heat_X2_future_integrable_and_mass_le
+    [Countable G] {ν a : ℝ} {σ f : G → ℝ}
+    (hν : 0 < ν) (ha : 0 < a) (hσ : ∀ k, 0 ≤ σ k)
+    (hf : InW (fun k => (σ k)⁻¹) f) :
+    IntegrableOn (fun t => ν * normX2 σ (heatMode ν σ (a + t) f))
+        (Ioi (0 : ℝ)) ∧
+      (∫ t in Ioi (0 : ℝ), ν * normX2 σ (heatMode ν σ (a + t) f)) ≤
+        (Real.sqrt (ν * a))⁻¹ * normXm1 σ f :=
+  ⟨integrableOn_heat_X2_future hν ha hσ hf,
+    heat_X2_future_mass_le hν ha hσ hf⟩
+
+/-- **Sharp initial-time obstruction for the linear heat flow.**  No constant
+controls the full `L¹_t 𝒳²` heat mass by the critical `𝒳⁻¹` norm.  A single
+mode `N`, normalized to have critical norm one, has `𝒳²` heat mass `N+1`.
+Thus viscosity yields the preceding estimate only away from the initial
+endpoint; nonlinear cancellation cannot repair a failure already present in
+the free equation. -/
+-- Citation: modewise heat identity, Lei--Lin, CPAM 64 (2011), Sec. 2.
+theorem not_exists_heat_X2_mass_le_Xm1 :
+    ¬ ∃ C : ℝ, ∀ f : ℕ → ℝ,
+      InW (fun n : ℕ => ((n : ℝ) + 1)⁻¹) f →
+      (∫ t in Ioi (0 : ℝ),
+        normX2 (fun n : ℕ => (n : ℝ) + 1)
+          (heatMode 1 (fun n : ℕ => (n : ℝ) + 1) t f)) ≤
+        C * normXm1 (fun n : ℕ => (n : ℝ) + 1) f := by
+  rintro ⟨C, hC⟩
+  obtain ⟨N, hN⟩ := exists_nat_gt C
+  let σ : ℕ → ℝ := fun n => (n : ℝ) + 1
+  let q : ℝ := (N : ℝ) + 1
+  let f : ℕ → ℝ := fun n => if n = N then q else 0
+  let g : ℕ → ℝ := fun n => σ n * heatMode 1 σ 0 f n
+  have hq : 0 < q := by dsimp [q]; positivity
+  have hσ : ∀ n, 0 ≤ σ n := by intro n; dsimp [σ]; positivity
+  have hf : InW (fun n => (σ n)⁻¹) f := by
+    apply summable_of_ne_finset_zero (s := ({N} : Finset ℕ))
+    intro n hn
+    have hn' : n ≠ N := by simpa using hn
+    simp [f, hn']
+  have hg : InW (fun n => (σ n)⁻¹) g := by
+    apply summable_of_ne_finset_zero (s := ({N} : Finset ℕ))
+    intro n hn
+    have hn' : n ≠ N := by simpa using hn
+    simp [g, f, heatMode, hn']
+  have heq := heat_L1_time_eq (ν := (1 : ℝ)) (σ := σ) (f := g)
+    zero_lt_one hσ hg
+  have hmass : (∫ t in Ioi (0 : ℝ), normX2 σ (heatMode 1 σ t f)) = q := by
+    rw [show (∫ t in Ioi (0 : ℝ), normX2 σ (heatMode 1 σ t f)) =
+        ∫ t in Ioi (0 : ℝ), (1 : ℝ) * normX1 σ (heatMode 1 σ t g) by
+      apply setIntegral_congr_fun measurableSet_Ioi
+      intro t _ht
+      dsimp [g]
+      rw [normX1_heatMode_frequency_mul_shift_eq_normX2 1 σ f hσ 0 t]
+      simp]
+    rw [heq]
+    unfold normXm1 wNorm
+    rw [tsum_eq_single N]
+    · simp [g, f, heatMode, σ, q, hq.ne']
+    · intro n hn
+      simp [g, f, heatMode, hn]
+  have hnorm : normXm1 σ f = 1 := by
+    unfold normXm1 wNorm
+    rw [tsum_eq_single N]
+    · rw [show f N = q by simp [f]]
+      change (σ N)⁻¹ * |q| = 1
+      rw [show σ N = q by rfl, abs_of_pos hq]
+      exact inv_mul_cancel₀ hq.ne'
+    · intro n hn
+      simp [f, hn]
+  have hbound := hC f hf
+  change (∫ t in Ioi (0 : ℝ), normX2 σ (heatMode 1 σ t f)) ≤
+    C * normXm1 σ f at hbound
+  rw [hmass, hnorm, mul_one] at hbound
+  dsimp [q] at hbound
+  linarith
+
 /-- **Mixed time control does not bound the extra mode moment.**
 
 The same checked measure-zero spike obstruction already appears one mode
@@ -605,6 +847,8 @@ end Navier.Analysis.LeiLinTimeMixed
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTime_sum_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X1_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_bound_of_nonnegative_integral_budget
+#print axioms Navier.Analysis.LeiLinTimeMixed.heat_X2_future_integrable_and_mass_le
+#print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_heat_X2_mass_le_Xm1
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X2_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_integrated_X2_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_intervalIntegrable_inverseTime_zero
