@@ -6821,6 +6821,55 @@ theorem exists_lerayLimitData_of_weakClauses (ν : ℝ) (u₀ : SchwartzVelocity
            datum_pairing_integrable := datum_pairing_integrable ν u₀
            weak_form := hform }⟩
 
+/-- **Cofinal common-window limit interface.**  If a strictly increasing
+subsequence of Galerkin approximants converges in the complete weak pairing on
+one horizon containing the support of the test and the approximants' weak-form
+residuals converge to zero, uniqueness of real limits identifies the limit
+field's weak form.  This is the final representation-transport step consumed
+by `exists_lerayLimitData`; it assumes neither Leray data nor any regularity
+conclusion. -/
+theorem weakForm_of_cofinal_commonWindow_limit
+    (ν : ℝ) (u₀ : SchwartzVelocity) (G : GalerkinApproximation ν u₀)
+    (φ : DivergenceFreeTestFunction) (u : VelocityEvolution)
+    (σ : ℕ → ℕ) (hσ : StrictMono σ) {T : ℝ} (hT0 : 0 ≤ T)
+    (hfield : ∀ s : ℝ, T ≤ s → φ.field s = 0)
+    (hderiv : ∀ s : ℝ, T ≤ s → φ.timeDerivSchwartz s = 0)
+    (hlimit : Filter.Tendsto
+      (fun j => ∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        weakPairingDensity ν (G.approx (σ j)) φ t x)
+      Filter.atTop
+      (nhds (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        weakPairingDensity ν u φ t x))) :
+    (∫ t in Set.Ici (0 : ℝ), ∫ x : Space, weakPairingDensity ν u φ t x) =
+      -(∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) := by
+  have hres := (G.weak_consistent φ).comp hσ.tendsto_atTop
+  change Filter.Tendsto
+    (fun j : ℕ => weakFormResidual ν u₀ (G.approx (σ j)) φ)
+    Filter.atTop (nhds 0) at hres
+  have hseq : (fun j : ℕ => weakFormResidual ν u₀ (G.approx (σ j)) φ) =
+      fun j => (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        weakPairingDensity ν (G.approx (σ j)) φ t x) +
+        (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) := by
+    funext j
+    unfold weakFormResidual
+    change (∫ t in Set.Ici (0 : ℝ), ∫ x : Space,
+        weakPairingDensity ν (G.approx (σ j)) φ t x) +
+      (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) = _
+    rw [weakForm_time_integral_eq_Ioc ν (G.approx (σ j)) φ hT0 hfield hderiv]
+  rw [hseq] at hres
+  have hconst : Filter.Tendsto
+      (fun _j : ℕ => ∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))
+      Filter.atTop
+      (nhds (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))) :=
+    tendsto_const_nhds
+  have hsum := hlimit.add hconst
+  have heq : (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
+        weakPairingDensity ν u φ t x) +
+        (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) = 0 :=
+    tendsto_nhds_unique hsum hres
+  rw [weakForm_time_integral_eq_Ioc ν u φ hT0 hfield hderiv]
+  linarith
+
 /-- **[CERTIFIED — Galerkin limit passage; Leray, Acta Math. 63 (1934)
 §§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a
 Galerkin approximation, `aubin_lions_l2loc_compactness` (invoked on the
@@ -6975,35 +7024,8 @@ theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
         (fun k t ht => G.sq_integrable (σ k) t ht) huint
         (fun k t ht => le_trans (G.kinetic_bounded (σ k) t ht.le) G.bound_le)
         huEU hlim
-    have hσψ : StrictMono (σ ∘ ψ) := hσ.comp hψ
-    have hres := (G.weak_consistent φ).comp hσψ.tendsto_atTop
-    change Filter.Tendsto
-      (fun j : ℕ => weakFormResidual ν u₀ (G.approx ((σ ∘ ψ) j)) φ)
-      Filter.atTop (nhds 0) at hres
-    have hseq : (fun j : ℕ => weakFormResidual ν u₀ (G.approx ((σ ∘ ψ) j)) φ) =
-        fun j => (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
-          weakPairingDensity ν (G.approx ((σ ∘ ψ) j)) φ t x) +
-          (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) := by
-      funext j
-      unfold weakFormResidual
-      change (∫ t in Set.Ici (0 : ℝ), ∫ x : Space,
-          weakPairingDensity ν (G.approx ((σ ∘ ψ) j)) φ t x) +
-        (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) = _
-      rw [weakForm_time_integral_eq_Ioc ν (G.approx ((σ ∘ ψ) j)) φ hT.le
-        hfield hderiv]
-    rw [hseq] at hres
-    have hconst : Filter.Tendsto
-        (fun _j : ℕ => ∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))
-        Filter.atTop
-        (nhds (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x))) :=
-      tendsto_const_nhds
-    have hsum := Hfull.add hconst
-    have heq : (∫ t in Set.Ioc (0 : ℝ) T, ∫ x : Space,
-          weakPairingDensity ν u φ t x) +
-          (∫ x : Space, officialInner (u₀ x) ((φ.field 0) x)) = 0 :=
-      tendsto_nhds_unique hsum hres
-    rw [weakForm_time_integral_eq_Ioc ν u φ hT.le hfield hderiv]
-    linarith
+    exact weakForm_of_cofinal_commonWindow_limit ν u₀ G φ u (σ ∘ ψ)
+      (hσ.comp hψ) hT.le hfield hderiv Hfull
   exact ⟨{ limit := u
            sq_integrable := fun t ht => huint t ht.le
            datum_sq_integrable := integrable_norm_sq_schwartz u₀
