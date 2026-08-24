@@ -1,4 +1,5 @@
 import Navier.Analysis.LeiLinBilinear
+import Navier.Analysis.LeiLinTimeMixed
 import Navier.Analysis.CriticalMildBoundedContinuation
 import Navier.Analysis.CriticalMildWeightedBanach
 import Navier.Analysis.CriticalMildSeries
@@ -36,11 +37,13 @@ open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedSpace
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildDuhamelBochner
+open Navier.Analysis.CriticalMildHeatFlowLinear
 open Navier.Analysis.CriticalMildBoundedContinuation
 open Navier.Analysis.CriticalMildPathFixedPoint
 open Navier.Analysis.CriticalMildSelfMap
 open Navier.Analysis.LeiLinSpace
 open Navier.Analysis.LeiLinBilinear
+open Navier.Analysis.LeiLinTimeMixed
 
 /-- Homogeneous mode size `|k|` on the lattice carrier. -/
 def latticeModeSize (m : LatticeMode) : ℝ :=
@@ -327,6 +330,79 @@ theorem normX1_shifted_trajectory_le_add_sqrt
         (CriticalMildQuantitativeRestart.norm_shifted_trajectory_sub_le_sqrt
           ν hν u₀ u huc hu hR ht hr huR hmild_t hmild_tr hheat)
 
+/-- The actual mild `𝒳¹` modulus obtained from the honest half-generator
+moment of the earlier endpoint. -/
+theorem normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t r : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t) (hr : 0 ≤ r)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) (t + r), ‖u s‖ ≤ R)
+    (hmild_t : u t = criticalMildImage ν hν u₀ u hu t ht)
+    (hmild_tr : u (t + r) =
+      criticalMildImage ν hν u₀ u hu (t + r) (add_nonneg ht hr))
+    (hhalf : Summable fun m : LatticeMode =>
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u t m‖) :
+    normX1 latticeModeSize (weightedAmplitude (u (t + r))) ≤
+      normX1 latticeModeSize (weightedAmplitude (u t)) +
+        (Real.sqrt ν * heatHalfGeneratorMoment (u t) +
+          2 * R ^ 2 / Real.sqrt ν) * Real.sqrt r := by
+  apply normX1_shifted_trajectory_le_add_sqrt
+    ν hν u₀ u huc hu hR ht hr huR hmild_t hmild_tr
+  exact norm_weightedHeatFlow_sub_le_sqrt_mul_halfGeneratorMoment
+    ν r hν.le hr (u t) (hu t) hhalf
+
+/-- **Terminal `𝒳¹` control from the smallest complete smoothing interface.**
+
+On one trailing window, assume only the actual mild equation, a radius bound,
+an integrable `𝒳¹` mass `A`, and a uniform bound `H` on the one-extra-mode
+half-generator moment.  Then the terminal sampler yields the explicit constant
+produced by the heat and Duhamel estimates. -/
+theorem terminal_X1_le_of_trailingMass_and_halfGeneratorMoment
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R H T δ A : ℝ} (hR : 0 ≤ R) (hH : 0 ≤ H)
+    (hT : 0 ≤ T) (hδ : 0 < δ) (hδT : δ ≤ T)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) T, ‖u s‖ ≤ R)
+    (hmild : ∀ (s : ℝ) (hs : s ∈ Set.Icc (0 : ℝ) T),
+      u s = criticalMildImage ν hν u₀ u hu s hs.1)
+    (hhalf : ∀ s ∈ Set.Icc (T - δ) T,
+      Summable fun m : LatticeMode =>
+        ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖)
+    (hHbound : ∀ s ∈ Set.Icc (T - δ) T,
+      heatHalfGeneratorMoment (u s) ≤ H)
+    (hint : IntervalIntegrable
+      (fun s => normX1 latticeModeSize (weightedAmplitude (u s)))
+      MeasureTheory.volume (T - δ) T)
+    (hmass : (∫ s in (T - δ)..T,
+      normX1 latticeModeSize (weightedAmplitude (u s))) ≤ A) :
+    normX1 latticeModeSize (weightedAmplitude (u T)) ≤
+      A / δ + (Real.sqrt ν * H + 2 * R ^ 2 / Real.sqrt ν) * Real.sqrt δ := by
+  apply terminal_X1_le_of_backward_sqrt_modulus hδ
+    (add_nonneg (mul_nonneg (Real.sqrt_nonneg ν) hH)
+      (by positivity : 0 ≤ 2 * R ^ 2 / Real.sqrt ν)) hint
+  · intro s hs
+    have hs0 : 0 ≤ s := by linarith [hs.1]
+    have hr : 0 ≤ T - s := sub_nonneg.mpr hs.2
+    have hsT : s + (T - s) = T := by ring
+    have hstep := normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
+      ν hν u₀ u huc hu hR hs0 hr
+      (by simpa [hsT] using huR)
+      (hmild s ⟨hs0, hs.2⟩)
+      (by simpa [hsT] using hmild T ⟨hT, le_rfl⟩)
+      (hhalf s hs)
+    rw [hsT] at hstep
+    refine hstep.trans ?_
+    have hcoef :
+        Real.sqrt ν * heatHalfGeneratorMoment (u s) + 2 * R ^ 2 / Real.sqrt ν ≤
+          Real.sqrt ν * H + 2 * R ^ 2 / Real.sqrt ν := by
+      gcongr
+      exact hHbound s hs
+    exact add_le_add le_rfl
+      (mul_le_mul_of_nonneg_right hcoef (Real.sqrt_nonneg (T - s)))
+  · exact hmass
+
 /-- Every physical mode amplitude family is unconditionally `𝒳^{-1}`-summable:
 the inverse weight is bounded by `1` off the zero mode (lattice separation),
 and vanishes at the zero mode. -/
@@ -592,6 +668,8 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.InW_inv_latticeModeSize
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_weightedAmplitude_le_add_norm_sub
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX0_add_normX1_le_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_weightedLattice_le_of_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed
