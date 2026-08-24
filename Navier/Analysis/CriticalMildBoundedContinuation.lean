@@ -39,6 +39,33 @@ def CriticalMildTerminalNormBound (ν : ℝ) (hν : 0 < ν)
         (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) →
       ‖u.1 ⟨T, ⟨hT, le_rfl⟩⟩‖ ≤ M
 
+/-- **Finite-chart Oseen--Duhamel terminal estimate.**  The terminal value of
+an actual critical mild chart is controlled by the heat contraction and the
+literal nonlinear Bochner integral.  The dependence on the chart horizon and
+radius remains explicit; in particular, this does not manufacture the uniform
+constant required by `CriticalMildTerminalNormBound`. -/
+theorem terminal_norm_le_heatDuhamel_budget
+    (ν : ℝ) (hν : 0 < ν) (a : WeightedLatticeBanach)
+    {T R : ℝ} (hT : 0 ≤ T) (u : CriticalMildPathBall T R)
+    (hmild : ∀ τ : Icc (0 : ℝ) T,
+      u.1 τ = criticalMildImage ν hν a
+        (criticalMildPathExtension T hT u.1)
+        (criticalMildPathBallExtension_divergenceFree hT u) τ.1 τ.2.1) :
+    ‖u.1 ⟨T, ⟨hT, le_rfl⟩⟩‖ ≤
+      ‖a‖ + (2 * Real.sqrt T / Real.sqrt ν) * R ^ 2 := by
+  let ext : ℝ → WeightedLatticeBanach := criticalMildPathExtension T hT u.1
+  have hextc : Continuous ext := continuous_criticalMildPathExtension T hT u.1
+  have hextdf : ∀ s, LatticeDivergenceFree (ext s) :=
+    criticalMildPathBallExtension_divergenceFree hT u
+  have hR : 0 ≤ R :=
+    (norm_nonneg (u.1 ⟨T, ⟨hT, le_rfl⟩⟩)).trans
+      (criticalMildPathBall_norm_le u ⟨T, ⟨hT, le_rfl⟩⟩)
+  have hextR : ∀ s ∈ Ioc (0 : ℝ) T, ‖ext s‖ ≤ R := by
+    intro s _hs
+    exact criticalMildPathBallExtension_norm_le hT u s
+  rw [hmild ⟨T, ⟨hT, le_rfl⟩⟩]
+  exact norm_criticalMildImage_le ν hν a ext hextc hextdf hR hT hextR
+
 /-- The explicit restart duration determined only by viscosity and `M`. -/
 abbrev boundedRestartDuration (ν M : ℝ) : ℝ :=
   criticalMildBoundedHorizon ν M
@@ -64,6 +91,9 @@ structure CriticalMildBoundedState (ν : ℝ) (hν : 0 < ν)
       (criticalMildPathExtension horizon horizon_nonneg path.1)
       (criticalMildPathBallExtension_divergenceFree horizon_nonneg path) τ.1 τ.2.1
   terminal_norm_le : ‖path.1 ⟨horizon, ⟨horizon_nonneg, le_rfl⟩⟩‖ ≤ M
+  terminal_norm_le_heatDuhamel :
+    ‖path.1 ⟨horizon, ⟨horizon_nonneg, le_rfl⟩⟩‖ ≤
+      ‖a‖ + (2 * Real.sqrt horizon / Real.sqrt ν) * radius ^ 2
 
 theorem exists_initial_boundedState (ν : ℝ) (hν : 0 < ν)
     (a : WeightedLatticeBanach) (M : ℝ) (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
@@ -74,7 +104,8 @@ theorem exists_initial_boundedState (ν : ℝ) (hν : 0 < ν)
     exists_criticalMild_trajectory_at_bounded_selector ν hν M hM a ha
   let x : CriticalMildBoundedState ν hν a M :=
     ⟨boundedRestartDuration ν M, criticalMildBoundedRadius M, hT.le, u, hu,
-      hbound hT.le u hu⟩
+      hbound hT.le u hu,
+      terminal_norm_le_heatDuhamel_budget ν hν a hT.le u hu⟩
   exact ⟨x, rfl⟩
 
 /-- A bounded state has a compatible successor whose horizon is increased by
@@ -121,7 +152,8 @@ theorem exists_bounded_successor (ν : ℝ) (hν : 0 < ν)
   let y : CriticalMildBoundedState ν hν a M :=
     ⟨x.horizon + boundedRestartDuration ν M,
       max x.radius (criticalMildBoundedRadius M), hw_nonneg, w, hw_mild,
-      hbound hw_nonneg w hw_mild⟩
+      hbound hw_nonneg w hw_mild,
+      terminal_norm_le_heatDuhamel_budget ν hν a hw_nonneg w hw_mild⟩
   have hxy : x.horizon < y.horizon := by
     dsimp [y]
     linarith [boundedRestartDuration_pos ν hν M hM]
@@ -310,6 +342,7 @@ theorem continuous_bounded_global_mild_on_nonneg_of_terminalNormBound
 end Navier.Analysis.CriticalMildBoundedContinuation
 
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.exists_bounded_successor
+#print axioms Navier.Analysis.CriticalMildBoundedContinuation.terminal_norm_le_heatDuhamel_budget
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.boundedContinuationChain_horizon_lower
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.boundedContinuationChain_cofinal
 #print axioms Navier.Analysis.CriticalMildBoundedContinuation.continuous_bounded_global_mild_on_nonneg_of_terminalNormBound
