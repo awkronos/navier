@@ -255,6 +255,36 @@ theorem not_exists_terminal_X1_bound_of_mixedTimeBound :
   rw [hvalue] at hterminal
   linarith
 
+/-- **An a.e. dissipation budget has no terminal trace.**  Nonnegativity and
+finite `L¹` mass, even with full interval integrability, cannot control the
+chosen endpoint because the integral is insensitive to a singleton.  Any
+direct `𝒳¹` energy route therefore needs a quantitative trace/modulus theorem
+beyond the a.e. Lei--Lin dissipation inequality. -/
+theorem not_exists_terminal_bound_of_nonnegative_integral_budget :
+    ¬ ∃ C : ℝ, ∀ f : ℝ → ℝ,
+      (∀ t, 0 ≤ f t) →
+      IntervalIntegrable f volume 0 1 →
+      (∫ t in (0 : ℝ)..1, f t) ≤ 1 →
+      f 1 ≤ C := by
+  rintro ⟨C, hC⟩
+  obtain ⟨N, hN⟩ := exists_nat_gt C
+  let f : ℝ → ℝ := fun t ↦ if t = 1 then (N : ℝ) else 0
+  have hf0 : ∀ t, 0 ≤ f t := by
+    intro t
+    simp only [f]
+    split <;> positivity
+  have hae : f =ᵐ[volume.restrict (Set.uIoc (0 : ℝ) 1)] 0 := by
+    filter_upwards [(volume.restrict (Set.uIoc (0 : ℝ) 1)).ae_ne (1 : ℝ)] with t ht
+    simp [f, ht]
+  have hfint : IntervalIntegrable f volume 0 1 :=
+    intervalIntegral.intervalIntegrable_const.congr_ae hae.symm
+  have hfintegral : (∫ t in (0 : ℝ)..1, f t) = 0 := by
+    rw [intervalIntegral.integral_congr_ae_restrict hae]
+    simp
+  have hterminal := hC f hf0 hfint (by rw [hfintegral]; norm_num)
+  simp [f] at hterminal
+  linarith
+
 /-- The next homogeneous mode moment, used to model the one-extra-mode
 half-generator domain on the physical amplitude. -/
 def normX2 (σ f : G → ℝ) : ℝ :=
@@ -574,6 +604,7 @@ end Navier.Analysis.LeiLinTimeMixed
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTime_sum_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X1_bound_of_mixedTimeBound
+#print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_bound_of_nonnegative_integral_budget
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X2_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_integrated_X2_bound_of_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.not_intervalIntegrable_inverseTime_zero

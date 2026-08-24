@@ -255,6 +255,38 @@ theorem InW_latticeModeSize (u : WeightedLatticeBanach) :
   rw [norm_apply_eq_weight_mul_amplitude u k, abs_of_nonneg ha]
   nlinarith [latticeModeSize_nonneg k]
 
+/-- On the half-generator graph domain, its moment is exactly the physical
+`𝒳¹ + 𝒳²` mass.  This identifies the extra endpoint hypothesis
+without hiding it behind the completed carrier representation. -/
+theorem heatHalfGeneratorMoment_eq_normX1_add_normX2
+    (u : WeightedLatticeBanach)
+    (hhalf : Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u m‖) :
+    heatHalfGeneratorMoment u =
+      normX1 latticeModeSize (weightedAmplitude u) +
+        normX2 latticeModeSize (weightedAmplitude u) := by
+  have h1 := InW_latticeModeSize u
+  have h2 : Summable fun m : LatticeMode ↦
+      latticeModeSize m ^ 2 * |weightedAmplitude u m| := by
+    apply Summable.of_nonneg_of_le
+      (fun m ↦ mul_nonneg (sq_nonneg _) (abs_nonneg _))
+      (fun m ↦ ?_) hhalf
+    have hm0 := latticeModeSize_nonneg m
+    have ha := weightedAmplitude_nonneg u m
+    rw [norm_apply_eq_weight_mul_amplitude u m, abs_of_nonneg ha]
+    change latticeModeSize m ^ 2 * weightedAmplitude u m ≤
+      latticeModeSize m * ((1 + latticeModeSize m) * weightedAmplitude u m)
+    nlinarith
+  unfold heatHalfGeneratorMoment normX1 normX2 wNorm
+  rw [← Summable.tsum_add h1 h2]
+  apply tsum_congr
+  intro m
+  have ha := weightedAmplitude_nonneg u m
+  rw [norm_apply_eq_weight_mul_amplitude u m, abs_of_nonneg ha]
+  change latticeModeSize m *
+      ((1 + latticeModeSize m) * weightedAmplitude u m) = _
+  ring
+
 /-- The `𝒳¹` part of the physical amplitude is 1-Lipschitz with respect to
 the completed inhomogeneous weighted-lattice norm. -/
 theorem normX1_weightedAmplitude_le_add_norm_sub
@@ -497,6 +529,59 @@ theorem terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
       simp only [M]
       rw [intervalIntegral.integral_const_mul]]
     exact mul_le_mul_of_nonneg_left hmomentMass (Real.sqrt_nonneg ν)
+
+/-- **Minimal strengthened endpoint.**  The existing trailing `L¹_t 𝒳¹`
+budget closes the terminal sampler once it is augmented by exactly the
+trailing `L¹_t 𝒳²` mass.  The graph-moment identity converts these two
+physical budgets into the half-generator mass consumed by the actual mild
+modulus theorem. -/
+theorem terminal_X1_le_of_trailingMass_and_X2Mass
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R T δ A C : ℝ} (hR : 0 ≤ R)
+    (hT : 0 ≤ T) (hδ : 0 < δ) (hδT : δ ≤ T)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) T, ‖u s‖ ≤ R)
+    (hmild : ∀ (s : ℝ) (hs : s ∈ Set.Icc (0 : ℝ) T),
+      u s = criticalMildImage ν hν u₀ u hu s hs.1)
+    (hhalf : ∀ s ∈ Set.Icc (T - δ) T,
+      Summable fun m : LatticeMode ↦
+        ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖)
+    (hintX1 : IntervalIntegrable
+      (fun s ↦ normX1 latticeModeSize (weightedAmplitude (u s)))
+      MeasureTheory.volume (T - δ) T)
+    (hintX2 : IntervalIntegrable
+      (fun s ↦ normX2 latticeModeSize (weightedAmplitude (u s)))
+      MeasureTheory.volume (T - δ) T)
+    (hmassX1 : (∫ s in (T - δ)..T,
+      normX1 latticeModeSize (weightedAmplitude (u s))) ≤ A)
+    (hmassX2 : (∫ s in (T - δ)..T,
+      normX2 latticeModeSize (weightedAmplitude (u s))) ≤ C) :
+    normX1 latticeModeSize (weightedAmplitude (u T)) ≤
+      (A + (Real.sqrt ν * (A + C)) * Real.sqrt δ) / δ +
+        (2 * R ^ 2 / Real.sqrt ν) * Real.sqrt δ := by
+  have hwindow : T - δ ≤ T := by linarith
+  let X1 : ℝ → ℝ := fun s ↦ normX1 latticeModeSize (weightedAmplitude (u s))
+  let X2 : ℝ → ℝ := fun s ↦ normX2 latticeModeSize (weightedAmplitude (u s))
+  let M : ℝ → ℝ := fun s ↦ heatHalfGeneratorMoment (u s)
+  have heq : Set.EqOn (fun s ↦ X1 s + X2 s) M
+      (Set.uIoc (T - δ) T) := by
+    intro s hs
+    rw [Set.uIoc_of_le hwindow] at hs
+    exact (heatHalfGeneratorMoment_eq_normX1_add_normX2
+      (u s) (hhalf s ⟨hs.1.le, hs.2⟩)).symm
+  have hmoment : IntervalIntegrable M MeasureTheory.volume (T - δ) T :=
+    (hintX1.add hintX2).congr heq
+  have hmomentEq : (∫ s in (T - δ)..T, M s) =
+      ∫ s in (T - δ)..T, X1 s + X2 s := by
+    apply intervalIntegral.integral_congr_ae
+    exact Filter.Eventually.of_forall fun s hs ↦ (heq hs).symm
+  have hmomentMass : (∫ s in (T - δ)..T, M s) ≤ A + C := by
+    rw [hmomentEq, intervalIntegral.integral_add hintX1 hintX2]
+    exact add_le_add hmassX1 hmassX2
+  exact terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
+    ν hν u₀ u huc hu hR hT hδ hδT huR hmild hhalf hintX1 hmoment
+    hmassX1 hmomentMass
 
 /-- Consumer for a small-window Volterra estimate on the integrated
 half-generator moment.  Once the split-input Duhamel bound supplies the stated
@@ -795,6 +880,7 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_eq_normX0_add_normX1
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.one_le_latticeModeSize_of_ne_zero
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.InW_latticeModeSize
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.heatHalfGeneratorMoment_eq_normX1_add_normX2
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.InW_inv_latticeModeSize
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_weightedAmplitude_le_add_norm_sub
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt
@@ -802,6 +888,7 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.heatHalfGeneratorMoment_mild_le_volterra
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_X2Mass
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_halfGeneratorMoment_volterra
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX0_add_normX1_le_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_weightedLattice_le_of_mixed
