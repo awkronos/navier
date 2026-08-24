@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Deterministic spectral Navier--Stokes benchmark on an exact ABC flow.
+"""Objective pseudo-spectral Navier--Stokes benchmark on an ABC flow.
 
-The Arnold--Beltrami--Childress mode satisfies ``curl u = u`` and its
-quadratic term is a pure pressure gradient.  After Leray projection the
-periodic incompressible Navier--Stokes evolution is therefore the heat
-semigroup ``u(t) = exp(-nu*t) u(0)``.  This harness advances that Fourier mode
-and checks the computed field against the exact solution on a three-dimensional
-grid.  It is deliberately standard-library only so the Studio solver sweep can
-run it in an isolated Python environment.
+This samples the periodic velocity field, transforms all three components to
+Fourier space, advances viscosity with a spectral integrating factor, and
+transforms back every step.  The ABC Beltrami flow has an independent exact
+answer because Leray projection removes its quadratic pressure gradient.
+
+The compute bottleneck is the repeated three-dimensional FFT/IFFT pair over
+``grid**3`` modes.  Accuracy is measured independently by field, energy,
+divergence, and projected-nonlinearity residuals.
 """
 
 from __future__ import annotations
@@ -17,72 +18,98 @@ import json
 import math
 import time
 
+import numpy as np
 
-def abc_velocity(x: float, y: float, z: float) -> tuple[float, float, float]:
-    return (
-        math.sin(z) + math.cos(y),
-        math.sin(x) + math.cos(z),
-        math.sin(y) + math.cos(x),
+
+def _grid(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    points = 2.0 * math.pi * np.arange(n, dtype=np.float64) / n
+    return np.meshgrid(points, points, points, indexing="ij")
+
+
+def _abc_field(n: int) -> np.ndarray:
+    x, y, z = _grid(n)
+    return np.stack(
+        (np.sin(z) + np.cos(y), np.sin(x) + np.cos(z), np.sin(y) + np.cos(x))
     )
+
+
+def _wave_numbers(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    k = np.fft.fftfreq(n, d=1.0 / n)
+    kx, ky, kz = np.meshgrid(k, k, k, indexing="ij")
+    return kx, ky, kz, kx * kx + ky * ky + kz * kz
+
+
+def _leray_project(vector_hat: np.ndarray, kx, ky, kz, k2) -> np.ndarray:
+    dot = kx * vector_hat[0] + ky * vector_hat[1] + kz * vector_hat[2]
+    scale = np.divide(dot, k2, out=np.zeros_like(dot), where=k2 != 0.0)
+    projected = vector_hat.copy()
+    projected[0] -= kx * scale
+    projected[1] -= ky * scale
+    projected[2] -= kz * scale
+    return projected
+
+
+def _projected_nonlinearity_l2(field: np.ndarray, kx, ky, kz, k2) -> float:
+    field_hat = np.fft.fftn(field, axes=(1, 2, 3))
+    gradients = np.empty((3, 3, *field.shape[1:]), dtype=np.float64)
+    for component in range(3):
+        for axis, wave in enumerate((kx, ky, kz)):
+            gradients[component, axis] = np.fft.ifftn(
+                1j * wave * field_hat[component]
+            ).real
+    advective = np.einsum("aijk,caijk->cijk", field, gradients)
+    projected_hat = _leray_project(
+        np.fft.fftn(advective, axes=(1, 2, 3)), kx, ky, kz, k2
+    )
+    projected = np.fft.ifftn(projected_hat, axes=(1, 2, 3)).real
+    return float(np.linalg.norm(projected.ravel()) / math.sqrt(projected.size))
 
 
 def solve(grid: int, steps: int, viscosity: float, dt: float) -> dict[str, float]:
     if grid < 4 or steps < 1 or viscosity <= 0.0 or dt <= 0.0:
         raise ValueError("grid >= 4, steps >= 1, viscosity > 0, and dt > 0 required")
 
+    initial = _abc_field(grid)
+    field_hat = np.fft.fftn(initial, axes=(1, 2, 3))
+    kx, ky, kz, k2 = _wave_numbers(grid)
+    field_hat = _leray_project(field_hat, kx, ky, kz, k2)
+    heat_step = np.exp(-viscosity * k2 * dt)
+
     started = time.perf_counter()
-    spacing = 2.0 * math.pi / grid
-    amplitude = 1.0
-    heat_step = math.exp(-viscosity * dt)
     for _ in range(steps):
-        amplitude *= heat_step
-
-    exact_amplitude = math.exp(-viscosity * steps * dt)
-    error_sq = 0.0
-    exact_sq = 0.0
-    initial_sq = 0.0
-    divergence_linf = 0.0
-
-    for i in range(grid):
-        x = i * spacing
-        for j in range(grid):
-            y = j * spacing
-            for k in range(grid):
-                z = k * spacing
-                base = abc_velocity(x, y, z)
-                computed = tuple(amplitude * value for value in base)
-                exact = tuple(exact_amplitude * value for value in base)
-                error_sq += sum((a - b) ** 2 for a, b in zip(computed, exact))
-                exact_sq += sum(value * value for value in exact)
-                initial_sq += sum(value * value for value in base)
-
-                # Each ABC component is independent of its own coordinate.
-                # Evaluate the centered discrete divergence anyway, so an
-                # indexing or component regression is measured rather than
-                # assumed away by the analytic argument.
-                ux_p = amplitude * abc_velocity((i + 1) * spacing, y, z)[0]
-                ux_m = amplitude * abc_velocity((i - 1) * spacing, y, z)[0]
-                uy_p = amplitude * abc_velocity(x, (j + 1) * spacing, z)[1]
-                uy_m = amplitude * abc_velocity(x, (j - 1) * spacing, z)[1]
-                uz_p = amplitude * abc_velocity(x, y, (k + 1) * spacing)[2]
-                uz_m = amplitude * abc_velocity(x, y, (k - 1) * spacing)[2]
-                divergence = (ux_p - ux_m + uy_p - uy_m + uz_p - uz_m) / (2.0 * spacing)
-                divergence_linf = max(divergence_linf, abs(divergence))
-
+        field_hat *= heat_step
+        # Materialize every step so the workload is an actual 3D spectral
+        # evolution, not one scalar multiplication dressed as a solver.
+        field = np.fft.ifftn(field_hat, axes=(1, 2, 3)).real
+        field_hat = np.fft.fftn(field, axes=(1, 2, 3))
     elapsed = max(time.perf_counter() - started, 1e-12)
-    relative_l2_error = math.sqrt(error_sq / exact_sq) if exact_sq else 0.0
-    measured_energy_ratio = exact_sq / initial_sq if initial_sq else 0.0
+
+    final = np.fft.ifftn(field_hat, axes=(1, 2, 3)).real
+    exact = math.exp(-viscosity * steps * dt) * initial
+    relative_l2_error = float(
+        np.linalg.norm((final - exact).ravel()) / np.linalg.norm(exact.ravel())
+    )
+    measured_energy_ratio = float(
+        np.vdot(final, final).real / np.vdot(initial, initial).real
+    )
     expected_energy_ratio = math.exp(-2.0 * viscosity * steps * dt)
     energy_relative_error = (
         abs(measured_energy_ratio - expected_energy_ratio) / expected_energy_ratio
         if expected_energy_ratio
         else 0.0
     )
+    divergence_hat = 1j * (kx * field_hat[0] + ky * field_hat[1] + kz * field_hat[2])
+    divergence_linf = float(np.max(np.abs(np.fft.ifftn(divergence_hat).real)))
+    transforms = 2 * steps + 8
     return {
-        "energy_decay_accuracy_pct": 100.0 * max(0.0, 1.0 - energy_relative_error),
-        "beltrami_l2_rel_error": relative_l2_error,
+        "l2_rel_error": relative_l2_error,
+        "energy_decay_rel_error": float(energy_relative_error),
         "divergence_linf": divergence_linf,
-        "solver_steps_per_s": steps / elapsed,
+        "projected_nonlinear_l2": _projected_nonlinearity_l2(
+            initial, kx, ky, kz, k2
+        ),
+        "spectral_grid_updates_per_s": float(steps * grid**3 / elapsed),
+        "fft_transforms_per_s": float(transforms / elapsed),
         "grid_points": float(grid**3),
     }
 
