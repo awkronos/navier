@@ -403,6 +403,63 @@ theorem terminal_X1_le_of_trailingMass_and_halfGeneratorMoment
       (mul_le_mul_of_nonneg_right hcoef (Real.sqrt_nonneg (T - s)))
   · exact hmass
 
+/-- **Terminal `𝒳¹` control from an integrated half-generator moment.**
+
+The uniform moment bound in the preceding theorem can be weakened to its
+trailing `L¹` mass `B`.  The cost is the scale-correct sampling term
+`√ν B √δ / δ`; no pointwise moment majorant is assumed. -/
+theorem terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R T δ A B : ℝ} (hR : 0 ≤ R)
+    (hT : 0 ≤ T) (hδ : 0 < δ) (hδT : δ ≤ T)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) T, ‖u s‖ ≤ R)
+    (hmild : ∀ (s : ℝ) (hs : s ∈ Set.Icc (0 : ℝ) T),
+      u s = criticalMildImage ν hν u₀ u hu s hs.1)
+    (hhalf : ∀ s ∈ Set.Icc (T - δ) T,
+      Summable fun m : LatticeMode =>
+        ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖)
+    (hint : IntervalIntegrable
+      (fun s => normX1 latticeModeSize (weightedAmplitude (u s)))
+      MeasureTheory.volume (T - δ) T)
+    (hmoment : IntervalIntegrable (fun s => heatHalfGeneratorMoment (u s))
+      MeasureTheory.volume (T - δ) T)
+    (hmass : (∫ s in (T - δ)..T,
+      normX1 latticeModeSize (weightedAmplitude (u s))) ≤ A)
+    (hmomentMass : (∫ s in (T - δ)..T,
+      heatHalfGeneratorMoment (u s)) ≤ B) :
+    normX1 latticeModeSize (weightedAmplitude (u T)) ≤
+      (A + (Real.sqrt ν * B) * Real.sqrt δ) / δ +
+        (2 * R ^ 2 / Real.sqrt ν) * Real.sqrt δ := by
+  let M : ℝ → ℝ := fun s => Real.sqrt ν * heatHalfGeneratorMoment (u s)
+  apply terminal_le_average_add_of_integrated_backward_sqrt_modulus
+    (f := fun s => normX1 latticeModeSize (weightedAmplitude (u s)))
+    (M := M) (T := T) (A := A) (B := Real.sqrt ν * B)
+    hδ (by positivity : 0 ≤ 2 * R ^ 2 / Real.sqrt ν)
+  · intro s _hs
+    exact mul_nonneg (Real.sqrt_nonneg ν) (heatHalfGeneratorMoment_nonneg (u s))
+  · exact hint
+  · exact hmoment.const_mul _
+  · intro s hs
+    have hs0 : 0 ≤ s := by linarith [hs.1]
+    have hr : 0 ≤ T - s := sub_nonneg.mpr hs.2
+    have hsT : s + (T - s) = T := by ring
+    have hstep := normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
+      ν hν u₀ u huc hu hR hs0 hr
+      (by simpa [hsT] using huR)
+      (hmild s ⟨hs0, hs.2⟩)
+      (by simpa [hsT] using hmild T ⟨hT, le_rfl⟩)
+      (hhalf s hs)
+    rw [hsT] at hstep
+    simpa [M] using hstep
+  · exact hmass
+  · rw [show (∫ s in (T - δ)..T, M s) =
+        Real.sqrt ν * ∫ s in (T - δ)..T, heatHalfGeneratorMoment (u s) by
+      simp only [M]
+      rw [intervalIntegral.integral_const_mul]]
+    exact mul_le_mul_of_nonneg_left hmomentMass (Real.sqrt_nonneg ν)
+
 /-- Every physical mode amplitude family is unconditionally `𝒳^{-1}`-summable:
 the inverse weight is bounded by `1` off the zero mode (lattice separation),
 and vanishes at the zero mode. -/
@@ -670,6 +727,7 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_halfGeneratorMoment
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX0_add_normX1_le_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_weightedLattice_le_of_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed

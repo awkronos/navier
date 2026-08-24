@@ -1,4 +1,5 @@
 import Navier.Analysis.CriticalMildHeatCarrierAlgebra
+import Navier.Analysis.CriticalMildPathIntegrand
 
 /-!
 # Bounded linear completed critical heat flow
@@ -22,6 +23,7 @@ open Navier.Analysis.CriticalMildHeatCarrierAlgebra
 open Navier.Analysis.CriticalMildHeatSmoothing
 open Navier.Analysis.CriticalMildWeightedBilinear
 open Navier.Analysis.CriticalMildDuhamelBochner
+open Navier.Analysis.CriticalMildPathIntegrand
 open Navier.Analysis.CriticalMildSeries
 
 /-- Re-encoding a decoded coefficient recovers the completed carrier
@@ -252,6 +254,119 @@ theorem norm_weightedHeatFlow_sub_le_sqrt_mul_halfGeneratorMoment
       rfl
     _ = Real.sqrt ν * heatHalfGeneratorMoment u * Real.sqrt r := by ring
 
+/-! ## Positive-time half-generator smoothing -/
+
+/-- Positive heat time creates one extra homogeneous mode moment with the
+parabolic `1 / √(ντ)` cost. -/
+theorem summable_halfGeneratorMoment_weightedHeatFlow
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    Summable fun m : LatticeMode =>
+      ‖complexFrequency (latticeFrequency m)‖ *
+        ‖weightedHeatFlow ν τ hν.le hτ.le u m‖ := by
+  have hpoint : ∀ m : LatticeMode,
+      ‖complexFrequency (latticeFrequency m)‖ *
+          ‖weightedHeatFlow ν τ hν.le hτ.le u m‖ ≤
+        (Real.sqrt (ν * τ))⁻¹ * ‖u m‖ := by
+    intro m
+    rw [weightedHeatFlow_apply_of_divergenceFree ν τ hν.le hτ.le u hu m,
+      norm_smul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (complexHeatDecay_nonneg ν τ (latticeFrequency m))]
+    simpa [mul_assoc] using mul_le_mul_of_nonneg_right
+      (latticeHeat_frequency_gain ν τ (mul_pos hν hτ) m) (norm_nonneg (u m))
+  exact ((by simpa using u.2.summable : Summable fun m : LatticeMode => ‖u m‖).mul_left
+    (Real.sqrt (ν * τ))⁻¹).of_nonneg_of_le
+      (fun _ => mul_nonneg (norm_nonneg _) (norm_nonneg _)) hpoint
+
+/-- Quantitative positive-time version of the preceding summability result. -/
+theorem heatHalfGeneratorMoment_weightedHeatFlow_le
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    heatHalfGeneratorMoment (weightedHeatFlow ν τ hν.le hτ.le u) ≤
+      (Real.sqrt (ν * τ))⁻¹ * ‖u‖ := by
+  have hpoint : ∀ m : LatticeMode,
+      ‖complexFrequency (latticeFrequency m)‖ *
+          ‖weightedHeatFlow ν τ hν.le hτ.le u m‖ ≤
+        (Real.sqrt (ν * τ))⁻¹ * ‖u m‖ := by
+    intro m
+    rw [weightedHeatFlow_apply_of_divergenceFree ν τ hν.le hτ.le u hu m,
+      norm_smul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (complexHeatDecay_nonneg ν τ (latticeFrequency m))]
+    simpa [mul_assoc] using mul_le_mul_of_nonneg_right
+      (latticeHeat_frequency_gain ν τ (mul_pos hν hτ) m) (norm_nonneg (u m))
+  have hdom : Summable fun m : LatticeMode =>
+      (Real.sqrt (ν * τ))⁻¹ * ‖u m‖ :=
+    (by simpa using u.2.summable : Summable fun m : LatticeMode => ‖u m‖).mul_left _
+  unfold heatHalfGeneratorMoment
+  calc
+    (∑' m : LatticeMode,
+        ‖complexFrequency (latticeFrequency m)‖ *
+          ‖weightedHeatFlow ν τ hν.le hτ.le u m‖) ≤
+        ∑' m : LatticeMode, (Real.sqrt (ν * τ))⁻¹ * ‖u m‖ :=
+      (summable_halfGeneratorMoment_weightedHeatFlow ν τ hν hτ u hu).tsum_le_tsum
+        hpoint hdom
+    _ = (Real.sqrt (ν * τ))⁻¹ * ‖u‖ := by
+      rw [tsum_mul_left]
+      simp [lp.norm_eq_tsum_rpow]
+
+/-- Applying an additional heat interval to the completed nonlinear output
+only adds that interval to its existing output-frequency heat lag. -/
+theorem weightedHeatFlow_heatRegularizedSpectralOutput
+    (ν r τ : ℝ) (hν : 0 < ν) (hr : 0 < r) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    weightedHeatFlow ν r hν.le hr.le
+        (heatRegularizedSpectralOutput ν τ hν hτ u v hu) =
+      heatRegularizedSpectralOutput ν (r + τ) hν (add_pos hr hτ) u v hu := by
+  ext m i
+  rw [weightedHeatFlow_apply]
+  unfold weightedHeatFlowCoordinate
+  rw [weightedLatticeCoefficient_heatRegularizedSpectralOutput,
+    heatRegularizedSpectralOutput_apply]
+  unfold heatRegularizedSpectralOutputFiber
+  rw [ComplexFrequencyHeatLeray.complexFrequencyHeatLeray_semigroup]
+
+/-- The actual positive-lag Duhamel integrand has one extra mode moment, with
+the sharp parabolic order `1 / (ντ)`.  Its nonintegrable endpoint order is the
+precise obstruction to deriving a Duhamel moment from a radius bound alone. -/
+theorem heatHalfGeneratorMoment_heatRegularizedSpectralOutput_le
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    heatHalfGeneratorMoment
+        (heatRegularizedSpectralOutput ν τ hν hτ u v hu) ≤
+      (2 / (ν * τ)) * ‖u‖ * ‖v‖ := by
+  let a : ℝ := τ / 2
+  have ha : 0 < a := by dsimp [a]; linarith
+  let z := heatRegularizedSpectralOutput ν a hν ha u v hu
+  have hz : LatticeDivergenceFree z :=
+    heatRegularizedSpectralOutput_divergenceFree ν a hν ha u v hu
+  have hsemigroup := weightedHeatFlow_heatRegularizedSpectralOutput
+    ν a a hν ha ha u v hu
+  have haa : a + a = τ := by dsimp [a]; ring
+  have hsemigroup' : weightedHeatFlow ν a hν.le ha.le z =
+      heatRegularizedSpectralOutput ν τ hν hτ u v hu := by
+    dsimp [z]
+    simpa only [haa] using hsemigroup
+  have hmoment := heatHalfGeneratorMoment_weightedHeatFlow_le ν a hν ha z hz
+  rw [hsemigroup'] at hmoment
+  have hnorm : ‖z‖ ≤ (Real.sqrt (ν * a))⁻¹ * ‖u‖ * ‖v‖ := by
+    dsimp [z]
+    exact norm_heatRegularizedSpectralOutput_le ν a hν ha u v hu
+  refine hmoment.trans ?_
+  calc
+    (Real.sqrt (ν * a))⁻¹ * ‖z‖ ≤
+        (Real.sqrt (ν * a))⁻¹ *
+          ((Real.sqrt (ν * a))⁻¹ * ‖u‖ * ‖v‖) := by
+      exact mul_le_mul_of_nonneg_left hnorm (inv_nonneg.mpr (Real.sqrt_nonneg _))
+    _ = (2 / (ν * τ)) * ‖u‖ * ‖v‖ := by
+      have hνα : 0 < ν * a := mul_pos hν ha
+      have hs : Real.sqrt (ν * a) ≠ 0 := ne_of_gt (Real.sqrt_pos.2 hνα)
+      rw [show (Real.sqrt (ν * a))⁻¹ *
+          ((Real.sqrt (ν * a))⁻¹ * ‖u‖ * ‖v‖) =
+        ((Real.sqrt (ν * a)) ^ 2)⁻¹ * ‖u‖ * ‖v‖ by field_simp]
+      rw [Real.sq_sqrt hνα.le]
+      dsimp [a]
+      field_simp
+
 end Navier.Analysis.CriticalMildHeatFlowLinear
 
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.weightedHeatFlowCLM
@@ -260,3 +375,7 @@ end Navier.Analysis.CriticalMildHeatFlowLinear
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.one_sub_exp_neg_le_sqrt
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.weightedHeatFlow_apply_of_divergenceFree
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.norm_weightedHeatFlow_sub_le_sqrt_mul_halfGeneratorMoment
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.summable_halfGeneratorMoment_weightedHeatFlow
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment_weightedHeatFlow_le
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.weightedHeatFlow_heatRegularizedSpectralOutput
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment_heatRegularizedSpectralOutput_le
