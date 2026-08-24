@@ -78,6 +78,69 @@ theorem norm_criticalMildRestartImage_le
             norm_criticalMildDuhamelTail_le_sqrt_sub
               ν hν u huc hu hR ht (show t ≤ t + r by linarith) huR)
 
+/-- **Exact precursor to a backward square-root time modulus.**
+
+For a genuine mild trajectory, the increment across one restart interval is
+the terminal-data heat increment plus the literal Duhamel tail.  The latter
+already has the required `O(√r)` bound, so the only remaining modulus input is
+the linear same-weight heat increment at `u t`. -/
+theorem norm_shifted_trajectory_sub_le_heatIncrement_add_sqrt
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t r : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t) (hr : 0 ≤ r)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) (t + r), ‖u s‖ ≤ R)
+    (hmild_t : u t = criticalMildImage ν hν u₀ u hu t ht)
+    (hmild_tr : u (t + r) =
+      criticalMildImage ν hν u₀ u hu (t + r) (add_nonneg ht hr)) :
+    ‖u (t + r) - u t‖ ≤
+      ‖weightedHeatFlow ν r hν.le hr (u t) - u t‖ +
+        (2 * Real.sqrt r / Real.sqrt ν) * R ^ 2 := by
+  have hrestart := criticalMildRestartImage_eq_shifted_trajectory
+    ν hν u₀ u huc hu hR ht hr huR hmild_t hmild_tr
+  rw [← hrestart]
+  unfold criticalMildRestartImage criticalMildTerminalData
+  calc
+    ‖weightedHeatFlow ν r hν.le hr (u t) +
+          criticalMildDuhamelRestartTail ν hν u hu t r - u t‖ =
+        ‖(weightedHeatFlow ν r hν.le hr (u t) - u t) +
+          criticalMildDuhamelRestartTail ν hν u hu t r‖ := by
+      congr 1
+      abel
+    _ ≤ ‖weightedHeatFlow ν r hν.le hr (u t) - u t‖ +
+          ‖criticalMildDuhamelRestartTail ν hν u hu t r‖ := norm_add_le _ _
+    _ ≤ ‖weightedHeatFlow ν r hν.le hr (u t) - u t‖ +
+          (2 * Real.sqrt r / Real.sqrt ν) * R ^ 2 := by
+      apply add_le_add le_rfl
+      rw [criticalMildDuhamelRestartTail_eq_tail ν hν u hu t r hr]
+      simpa only [add_sub_cancel_left] using
+        norm_criticalMildDuhamelTail_le_sqrt_sub
+          ν hν u huc hu hR ht (show t ≤ t + r by linarith) huR
+
+/-- If the terminal datum has a square-root heat increment with constant `L`,
+the actual mild trajectory inherits a backward square-root modulus with the
+explicit nonlinear contribution `2 R² / √ν`. -/
+theorem norm_shifted_trajectory_sub_le_sqrt
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R L t r : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t) (hr : 0 ≤ r)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) (t + r), ‖u s‖ ≤ R)
+    (hmild_t : u t = criticalMildImage ν hν u₀ u hu t ht)
+    (hmild_tr : u (t + r) =
+      criticalMildImage ν hν u₀ u hu (t + r) (add_nonneg ht hr))
+    (hheat : ‖weightedHeatFlow ν r hν.le hr (u t) - u t‖ ≤ L * Real.sqrt r) :
+    ‖u (t + r) - u t‖ ≤
+      (L + 2 * R ^ 2 / Real.sqrt ν) * Real.sqrt r := by
+  refine (norm_shifted_trajectory_sub_le_heatIncrement_add_sqrt
+    ν hν u₀ u huc hu hR ht hr huR hmild_t hmild_tr).trans ?_
+  calc
+    ‖weightedHeatFlow ν r hν.le hr (u t) - u t‖ +
+        (2 * Real.sqrt r / Real.sqrt ν) * R ^ 2 ≤
+      L * Real.sqrt r + (2 * Real.sqrt r / Real.sqrt ν) * R ^ 2 :=
+        add_le_add hheat le_rfl
+    _ = (L + 2 * R ^ 2 / Real.sqrt ν) * Real.sqrt r := by ring
+
 /-- A bounded terminal value therefore stays inside the explicitly enlarged
 radius on a single restart interval. -/
 theorem norm_criticalMildRestartImage_le_terminal_budget
@@ -160,5 +223,7 @@ end Navier.Analysis.CriticalMildQuantitativeRestart
 #print axioms Navier.Analysis.CriticalMildQuantitativeRestart.exists_criticalMild_trajectory_at_bounded_selector
 #print axioms Navier.Analysis.CriticalMildQuantitativeRestart.criticalMildBoundedHorizon_restart_budget
 #print axioms Navier.Analysis.CriticalMildQuantitativeRestart.norm_criticalMildRestartImage_le
+#print axioms Navier.Analysis.CriticalMildQuantitativeRestart.norm_shifted_trajectory_sub_le_heatIncrement_add_sqrt
+#print axioms Navier.Analysis.CriticalMildQuantitativeRestart.norm_shifted_trajectory_sub_le_sqrt
 #print axioms Navier.Analysis.CriticalMildQuantitativeRestart.norm_criticalMildRestartImage_le_terminal_budget
 #print axioms Navier.Analysis.CriticalMildQuantitativeRestart.norm_criticalMildRestartImage_le_bounded_radius

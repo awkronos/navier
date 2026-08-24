@@ -35,6 +35,7 @@ open Navier.Analysis.ComplexLerayNorm
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedSpace
 open Navier.Analysis.CriticalMildWeightedBanach
+open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildBoundedContinuation
 open Navier.Analysis.CriticalMildPathFixedPoint
 open Navier.Analysis.CriticalMildSelfMap
@@ -247,6 +248,84 @@ theorem InW_latticeModeSize (u : WeightedLatticeBanach) :
   have ha := weightedAmplitude_nonneg u k
   rw [norm_apply_eq_weight_mul_amplitude u k, abs_of_nonneg ha]
   nlinarith [latticeModeSize_nonneg k]
+
+/-- The `𝒳¹` part of the physical amplitude is 1-Lipschitz with respect to
+the completed inhomogeneous weighted-lattice norm. -/
+theorem normX1_weightedAmplitude_le_add_norm_sub
+    (u v : WeightedLatticeBanach) :
+    normX1 latticeModeSize (weightedAmplitude u) ≤
+      normX1 latticeModeSize (weightedAmplitude v) + ‖u - v‖ := by
+  have hu := InW_latticeModeSize u
+  have hv := InW_latticeModeSize v
+  have hd := summable_norm_weighted (u - v)
+  have hpoint : ∀ m : LatticeMode,
+      latticeModeSize m * |weightedAmplitude u m| ≤
+        latticeModeSize m * |weightedAmplitude v m| + ‖(u - v) m‖ := by
+    intro m
+    have hσ := latticeModeSize_nonneg m
+    have hau := weightedAmplitude_nonneg u m
+    have hav := weightedAmplitude_nonneg v m
+    rw [abs_of_nonneg hau, abs_of_nonneg hav]
+    by_cases huv : weightedAmplitude u m ≤ weightedAmplitude v m
+    · have hleft : latticeModeSize m * weightedAmplitude u m ≤
+          latticeModeSize m * weightedAmplitude v m :=
+        mul_le_mul_of_nonneg_left huv hσ
+      exact hleft.trans (le_add_of_nonneg_right (norm_nonneg _))
+    · have hdiff : 0 ≤ weightedAmplitude u m - weightedAmplitude v m :=
+        by linarith [lt_of_not_ge huv]
+      have hcoord := norm_sub_norm_le (u m) (v m)
+      rw [norm_apply_eq_weight_mul_amplitude u m,
+        norm_apply_eq_weight_mul_amplitude v m] at hcoord
+      have hscale : latticeModeSize m *
+            (weightedAmplitude u m - weightedAmplitude v m) ≤
+          (1 + latticeModeSize m) *
+            (weightedAmplitude u m - weightedAmplitude v m) := by
+        nlinarith
+      have hcarrier : (1 + latticeModeSize m) *
+            (weightedAmplitude u m - weightedAmplitude v m) ≤ ‖(u - v) m‖ := by
+        calc
+          (1 + latticeModeSize m) *
+              (weightedAmplitude u m - weightedAmplitude v m) =
+            (1 + latticeModeSize m) * weightedAmplitude u m -
+              (1 + latticeModeSize m) * weightedAmplitude v m := by ring
+          _ ≤ ‖(u - v) m‖ := by simpa using hcoord
+      nlinarith
+  calc
+    normX1 latticeModeSize (weightedAmplitude u) ≤
+        ∑' m : LatticeMode,
+          (latticeModeSize m * |weightedAmplitude v m| + ‖(u - v) m‖) :=
+      hu.tsum_le_tsum hpoint (hv.add hd)
+    _ = normX1 latticeModeSize (weightedAmplitude v) + ‖u - v‖ := by
+      rw [hv.tsum_add hd, norm_eq_tsum_norm]
+      rfl
+
+/-- **Backward `𝒳¹` modulus for an actual mild trajectory, reduced to the
+linear heat increment.**  The nonlinear part contributes the explicit
+`2 R² / √ν` square-root constant; no qualitative common-interval remainder
+survives the restart identity. -/
+theorem normX1_shifted_trajectory_le_add_sqrt
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R L t r : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t) (hr : 0 ≤ r)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) (t + r), ‖u s‖ ≤ R)
+    (hmild_t : u t = criticalMildImage ν hν u₀ u hu t ht)
+    (hmild_tr : u (t + r) =
+      criticalMildImage ν hν u₀ u hu (t + r) (add_nonneg ht hr))
+    (hheat : ‖CriticalMildHeatFlow.weightedHeatFlow ν r hν.le hr (u t) - u t‖ ≤
+      L * Real.sqrt r) :
+    normX1 latticeModeSize (weightedAmplitude (u (t + r))) ≤
+      normX1 latticeModeSize (weightedAmplitude (u t)) +
+        (L + 2 * R ^ 2 / Real.sqrt ν) * Real.sqrt r := by
+  calc
+    normX1 latticeModeSize (weightedAmplitude (u (t + r))) ≤
+        normX1 latticeModeSize (weightedAmplitude (u t)) + ‖u (t + r) - u t‖ :=
+      normX1_weightedAmplitude_le_add_norm_sub _ _
+    _ ≤ normX1 latticeModeSize (weightedAmplitude (u t)) +
+        (L + 2 * R ^ 2 / Real.sqrt ν) * Real.sqrt r := by
+      exact add_le_add le_rfl
+        (CriticalMildQuantitativeRestart.norm_shifted_trajectory_sub_le_sqrt
+          ν hν u₀ u huc hu hR ht hr huR hmild_t hmild_tr hheat)
 
 /-- Every physical mode amplitude family is unconditionally `𝒳^{-1}`-summable:
 the inverse weight is bounded by `1` off the zero mode (lattice separation),
@@ -511,6 +590,8 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.one_le_latticeModeSize_of_ne_zero
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.InW_latticeModeSize
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.InW_inv_latticeModeSize
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_weightedAmplitude_le_add_norm_sub
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX0_add_normX1_le_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.norm_weightedLattice_le_of_mixed
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed
