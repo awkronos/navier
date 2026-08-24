@@ -204,6 +204,52 @@ def MixedTimeBound (ν : ℝ) (σ : G → ℝ) (u : ℝ → G → ℝ) (K : ℝ)
   (∀ t ≥ (0 : ℝ), normXm1 σ (u t) ≤ K) ∧
     (∫ t in Ioi (0 : ℝ), ν * normX1 σ (u t)) ≤ K
 
+/-- **A spacetime mixed bound alone has no terminal `𝒳¹` consequence.**
+
+For the fixed unbounded weight `σ(n) = n + 1`, a profile concentrated at one
+time and one sufficiently high mode has `L∞_t 𝒳⁻¹` norm at most one
+and zero `L¹_t 𝒳¹` mass, but an arbitrarily large `𝒳¹` value at that
+time.  Thus `MixedTimeBound` cannot by itself supply the pointwise terminal
+`𝒳¹` term used by `CriticalMildMixedTerminalBound`; a valid bridge needs
+additional time regularity with quantitative point-evaluation control.  This
+falsifies only that overstrong interface, not any Navier--Stokes estimate. -/
+theorem not_exists_terminal_X1_bound_of_mixedTimeBound :
+    ¬ ∃ C : ℝ, ∀ u : ℝ → ℕ → ℝ,
+      MixedTimeBound 1 (fun n : ℕ => (n : ℝ) + 1) u 1 →
+        normX1 (fun n : ℕ => (n : ℝ) + 1) (u 1) ≤ C := by
+  rintro ⟨C, hC⟩
+  obtain ⟨N, hN⟩ := exists_nat_gt C
+  let u : ℝ → ℕ → ℝ := fun t n => if t = 1 ∧ n = N then 1 else 0
+  have hmixed : MixedTimeBound 1 (fun n : ℕ => (n : ℝ) + 1) u 1 := by
+    constructor
+    · intro t _ht
+      by_cases ht : t = 1
+      · subst t
+        unfold normXm1 wNorm
+        rw [tsum_eq_single N]
+        · simp only [u, and_self, if_true, abs_one, mul_one]
+          exact (inv_le_one_iff₀).2 (Or.inr (by norm_num))
+        · intro n hn
+          simp [u, hn]
+      · simp [normXm1, wNorm, u, ht]
+    · have hae :
+          (fun t : ℝ => (1 : ℝ) * normX1 (fun n : ℕ => (n : ℝ) + 1) (u t))
+            =ᵐ[volume.restrict (Ioi (0 : ℝ))] 0 := by
+          filter_upwards [(volume.restrict (Ioi (0 : ℝ))).ae_ne (1 : ℝ)] with t ht
+          simp [normX1, wNorm, u, ht]
+      rw [integral_congr_ae hae]
+      norm_num
+  have hterminal := hC u hmixed
+  have hvalue :
+      normX1 (fun n : ℕ => (n : ℝ) + 1) (u 1) = (N : ℝ) + 1 := by
+    unfold normX1 wNorm
+    rw [tsum_eq_single N]
+    · simp [u]
+    · intro n hn
+      simp [u, hn]
+  rw [hvalue] at hterminal
+  linarith
+
 /-- **Free heat evolution has spacetime mixed majorant `‖f‖_{𝒳^{-1}}`.** -/
 theorem heat_mixedTimeBound [Countable G] {ν : ℝ} {σ f : G → ℝ}
     (hν : 0 < ν) (hσ : ∀ k, 0 ≤ σ k)
@@ -234,3 +280,4 @@ end Navier.Analysis.LeiLinTimeMixed
 #print axioms Navier.Analysis.LeiLinTimeMixed.integral_bilinear_Xm1_le
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTimeBound
 #print axioms Navier.Analysis.LeiLinTimeMixed.heat_mixedTime_sum_le
+#print axioms Navier.Analysis.LeiLinTimeMixed.not_exists_terminal_X1_bound_of_mixedTimeBound
