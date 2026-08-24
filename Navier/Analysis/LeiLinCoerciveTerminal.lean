@@ -37,7 +37,10 @@ open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedSpace
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.CriticalMildDuhamelBochner
+open Navier.Analysis.CriticalMildHeatFlow
 open Navier.Analysis.CriticalMildHeatFlowLinear
+open Navier.Analysis.CriticalMildHeatTimeKernel
+open Navier.Analysis.CriticalMildPathIntegrand
 open Navier.Analysis.CriticalMildBoundedContinuation
 open Navier.Analysis.CriticalMildPathFixedPoint
 open Navier.Analysis.CriticalMildSelfMap
@@ -351,6 +354,41 @@ theorem normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
     ν hν u₀ u huc hu hR ht hr huR hmild_t hmild_tr
   exact norm_weightedHeatFlow_sub_le_sqrt_mul_halfGeneratorMoment
     ν r hν.le hr (u t) (hu t) hhalf
+
+/-- **Actual mild graph-norm recurrence.**  Positive-time heat smoothing and
+the graph-norm Bochner/Tonelli theorem give the fractional Volterra inequality
+for a literal mild trajectory. -/
+theorem heatHalfGeneratorMoment_mild_le_volterra
+    (ν : ℝ) (hν : 0 < ν) (u₀ : WeightedLatticeBanach)
+    (hu₀ : LatticeDivergenceFree u₀)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t : ℝ} (hR : 0 ≤ R) (ht : 0 < t)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) t, ‖u s‖ ≤ R)
+    (hM : ∀ s ∈ Set.Ioc (0 : ℝ) t, Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖)
+    (hweighted : IntervalIntegrable
+      (fun s ↦ inverseSqrtTime (t - s) * ‖u s‖ *
+        heatHalfGeneratorMoment (u s)) MeasureTheory.volume 0 t)
+    (hmild : u t = criticalMildImage ν hν u₀ u hu t ht.le) :
+    heatHalfGeneratorMoment (u t) ≤
+      (Real.sqrt (ν * t))⁻¹ * ‖u₀‖ +
+        2 * (Real.sqrt ν)⁻¹ *
+          ∫ s in (0 : ℝ)..t, inverseSqrtTime (t - s) * ‖u s‖ *
+            heatHalfGeneratorMoment (u s) := by
+  have hheatSum := summable_halfGeneratorMoment_weightedHeatFlow
+    ν t hν ht u₀ hu₀
+  have hduhamelSum := summable_halfGeneratorMoment_criticalMildDuhamel_of_weighted
+    ν hν u huc hu hR ht.le huR hM hweighted
+  have hadd := heatHalfGeneratorMoment_add_le
+    (weightedHeatFlow ν t hν.le ht.le u₀)
+    (criticalMildDuhamel ν hν u hu t) hheatSum hduhamelSum
+  rw [hmild]
+  unfold criticalMildImage
+  exact hadd.trans (add_le_add
+    (heatHalfGeneratorMoment_weightedHeatFlow_le ν t hν ht u₀ hu₀)
+    (heatHalfGeneratorMoment_criticalMildDuhamel_le_weighted
+      ν hν u huc hu hR ht.le huR hM hweighted))
 
 /-- **Terminal `𝒳¹` control from the smallest complete smoothing interface.**
 
@@ -761,6 +799,7 @@ end Navier.Analysis.LeiLinCoerciveTerminal
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_weightedAmplitude_le_add_norm_sub
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.normX1_shifted_trajectory_le_add_sqrt_of_halfGeneratorMoment
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.heatHalfGeneratorMoment_mild_le_volterra
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_integrated_halfGeneratorMoment
 #print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_halfGeneratorMoment_volterra

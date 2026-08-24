@@ -161,6 +161,106 @@ theorem heatHalfGeneratorMoment_nonneg (u : WeightedLatticeBanach) :
   unfold heatHalfGeneratorMoment
   exact tsum_nonneg fun m => mul_nonneg (norm_nonneg _) (norm_nonneg _)
 
+/-- Subadditivity of the half-generator graph norm on its summable domain. -/
+theorem heatHalfGeneratorMoment_add_le
+    (u v : WeightedLatticeBanach)
+    (hu : Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u m‖)
+    (hv : Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖v m‖) :
+    heatHalfGeneratorMoment (u + v) ≤
+      heatHalfGeneratorMoment u + heatHalfGeneratorMoment v := by
+  have hpoint : ∀ m : LatticeMode,
+      ‖complexFrequency (latticeFrequency m)‖ * ‖(u + v) m‖ ≤
+        ‖complexFrequency (latticeFrequency m)‖ * ‖u m‖ +
+          ‖complexFrequency (latticeFrequency m)‖ * ‖v m‖ := by
+    intro m
+    change _ * ‖u m + v m‖ ≤ _
+    exact (mul_le_mul_of_nonneg_left (norm_add_le _ _) (norm_nonneg _)).trans_eq (by ring)
+  have hright : Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u m‖ +
+        ‖complexFrequency (latticeFrequency m)‖ * ‖v m‖ := hu.add hv
+  unfold heatHalfGeneratorMoment
+  calc
+    (∑' m : LatticeMode,
+        ‖complexFrequency (latticeFrequency m)‖ * ‖(u + v) m‖) ≤
+      ∑' m : LatticeMode,
+        (‖complexFrequency (latticeFrequency m)‖ * ‖u m‖ +
+          ‖complexFrequency (latticeFrequency m)‖ * ‖v m‖) :=
+      Summable.tsum_le_tsum hpoint
+        (hright.of_nonneg_of_le
+          (fun _ ↦ mul_nonneg (norm_nonneg _) (norm_nonneg _)) hpoint) hright
+    _ = (∑' m : LatticeMode,
+        ‖complexFrequency (latticeFrequency m)‖ * ‖u m‖) +
+      ∑' m : LatticeMode,
+        ‖complexFrequency (latticeFrequency m)‖ * ‖v m‖ :=
+      Summable.tsum_add hu hv
+
+/-- Every finite graph-norm mode sum passes through an actual Bochner integral.
+This is the monotone core of the full graph-norm estimate. -/
+theorem sum_heatHalfGeneratorMoment_integral_le_integral
+    {α : Type*} [MeasurableSpace α] {μ : Measure α} {S : Set α}
+    (F : Finset LatticeMode)
+    (f : α → WeightedLatticeBanach)
+    (hf : IntegrableOn f S μ)
+    (hfsum : ∀ᵐ s ∂μ.restrict S, Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖f s m‖)
+    (hfM : IntegrableOn (fun s ↦ heatHalfGeneratorMoment (f s)) S μ) :
+    (∑ m ∈ F, ‖complexFrequency (latticeFrequency m)‖ *
+      ‖(∫ s in S, f s ∂μ) m‖) ≤
+      ∫ s in S, heatHalfGeneratorMoment (f s) ∂μ := by
+  have hcoord (m : LatticeMode) :
+      (∫ s in S, f s ∂μ) m = ∫ s in S, f s m ∂μ := by
+    change (lp.evalCLM ℂ (fun _ : LatticeMode ↦ ComplexE3) 1 m)
+        (∫ s in S, f s ∂μ) = _
+    exact (lp.evalCLM ℂ (fun _ : LatticeMode ↦ ComplexE3) 1 m).integral_comp_comm hf |>.symm
+  have hcoordInt (m : LatticeMode) : IntegrableOn (fun s ↦ f s m) S μ :=
+    (lp.evalCLM ℂ (fun _ : LatticeMode ↦ ComplexE3) 1 m).integrable_comp hf
+  have htermInt (m : LatticeMode) : IntegrableOn
+      (fun s ↦ ‖complexFrequency (latticeFrequency m)‖ * ‖f s m‖) S μ :=
+    (hcoordInt m).norm.const_mul _
+  calc
+    ∑ m ∈ F, ‖complexFrequency (latticeFrequency m)‖ *
+        ‖(∫ s in S, f s ∂μ) m‖ ≤
+      ∑ m ∈ F, ‖complexFrequency (latticeFrequency m)‖ *
+        (∫ s in S, ‖f s m‖ ∂μ) := by
+      apply Finset.sum_le_sum
+      intro m hm
+      rw [hcoord m]
+      exact mul_le_mul_of_nonneg_left
+        (norm_integral_le_integral_norm _) (norm_nonneg _)
+    _ = ∫ s in S, ∑ m ∈ F,
+        ‖complexFrequency (latticeFrequency m)‖ * ‖f s m‖ ∂μ := by
+      rw [integral_finsetSum F (fun m _ ↦ htermInt m)]
+      simp_rw [integral_const_mul]
+    _ ≤ ∫ s in S, heatHalfGeneratorMoment (f s) ∂μ := by
+      apply integral_mono_ae
+      · exact integrable_finsetSum F fun m _ ↦ htermInt m
+      · exact hfM
+      · filter_upwards [hfsum] with s hs
+        unfold heatHalfGeneratorMoment
+        exact hs.sum_le_tsum F fun m _ ↦
+          mul_nonneg (norm_nonneg _) (norm_nonneg _)
+
+/-- The half-generator graph norm passes through an actual Bochner integral.
+The proof uses finite mode sums, coordinatewise Bochner functoriality, and
+monotone passage to the full mode sum. -/
+theorem heatHalfGeneratorMoment_integral_le_integral
+    {α : Type*} [MeasurableSpace α] {μ : Measure α} {S : Set α}
+    (f : α → WeightedLatticeBanach)
+    (hf : IntegrableOn f S μ)
+    (hfsum : ∀ᵐ s ∂μ.restrict S, Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖f s m‖)
+    (hfM : IntegrableOn (fun s ↦ heatHalfGeneratorMoment (f s)) S μ) :
+    heatHalfGeneratorMoment (∫ s in S, f s ∂μ) ≤
+      ∫ s in S, heatHalfGeneratorMoment (f s) ∂μ := by
+  unfold heatHalfGeneratorMoment
+  apply Real.tsum_le_of_sum_le
+  · intro m
+    exact mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  · intro F
+    exact sum_heatHalfGeneratorMoment_integral_le_integral F f hf hfsum hfM
+
 /-- On divergence-free data, the completed heat flow is literal scalar heat
 decay on every encoded carrier coordinate. -/
 theorem weightedHeatFlow_apply_of_divergenceFree
@@ -507,6 +607,29 @@ theorem frequency_mul_norm_constrainedHeatRegularizedFiber_le
         hhalfSum
     _ = outputHeatHalfMomentFiberMajorant ν τ u v k := rfl
 
+/-- The split-input majorant proves that the nonlinear heat output lies in the
+half-generator graph domain whenever both inputs do. -/
+theorem summable_halfGeneratorMoment_heatRegularizedSpectralOutput_split
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u)
+    (huM : Summable fun m : LatticeMode =>
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u m‖)
+    (hvM : Summable fun m : LatticeMode =>
+      ‖complexFrequency (latticeFrequency m)‖ * ‖v m‖) :
+    Summable fun k : LatticeMode =>
+      ‖complexFrequency (latticeFrequency k)‖ *
+        ‖heatRegularizedSpectralOutput ν τ hν hτ u v hu k‖ := by
+  have hout := summable_outputHeatHalfMomentFiberMajorant ν τ u v huM hvM
+  apply hout.of_nonneg_of_le
+  · intro k
+    exact mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  · intro k
+    rw [heatRegularizedSpectralOutput_apply]
+    rw [← constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
+      ν τ hν hτ u v hu k]
+    exact frequency_mul_norm_constrainedHeatRegularizedFiber_le
+      ν τ hν hτ u v hu huM hvM k
+
 set_option maxHeartbeats 800000 in
 /-- **Integrable nonlinear half-moment estimate.**  Assigning the extra output
 frequency to the two inputs replaces the nonintegrable `1/(ντ)` radius bound
@@ -596,6 +719,24 @@ theorem heatHalfGeneratorMoment_criticalMildPathIntegrand_le_split
   rw [outputHeatGain_eq_inverseSqrtTime ν (t - s) hν hlag]
   ring
 
+/-- Every strict-time evolving-path integrand lies in the half-generator
+graph domain when the path value at the source time does. -/
+theorem summable_halfGeneratorMoment_criticalMildPathIntegrand
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {t s : ℝ} (hst : s < t)
+    (hM : Summable fun m : LatticeMode =>
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖) :
+    Summable fun m : LatticeMode =>
+      ‖complexFrequency (latticeFrequency m)‖ *
+        ‖criticalMildPathIntegrand ν hν u hu t s m‖ := by
+  have hlag : 0 < t - s := sub_pos.mpr hst
+  unfold criticalMildPathIntegrand
+  rw [positiveTimeHeatRegularizedSpectralOutput_of_pos ν hν _ _ (hu s) hlag]
+  exact summable_halfGeneratorMoment_heatRegularizedSpectralOutput_split
+    ν (t - s) hν hlag (u s) (u s) (hu s) hM hM
+
 /-- The exact weighted-time hypothesis exposed by the split estimate is
 sufficient for integrability of the nonlinear half-generator moment.  This is
 strictly stronger than unweighted `L¹` control of the input half moment: the
@@ -638,6 +779,119 @@ theorem intervalIntegrable_heatHalfGeneratorMoment_criticalMildPathIntegrand_of_
     simp [criticalMildPathIntegrand, positiveTimeHeatRegularizedSpectralOutput,
       heatHalfGeneratorMoment, inverseSqrtTime]
 
+/-- **Graph-norm Bochner/Tonelli estimate for the actual evolving Duhamel
+integral.**  The exact Bochner integral inherits the split-input Volterra
+bound, with no abstract graph-norm bridge assumption. -/
+theorem heatHalfGeneratorMoment_criticalMildDuhamel_le_weighted
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) t, ‖u s‖ ≤ R)
+    (hM : ∀ s ∈ Set.Ioc (0 : ℝ) t, Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖)
+    (hweighted : IntervalIntegrable
+      (fun s ↦ inverseSqrtTime (t - s) * ‖u s‖ *
+        heatHalfGeneratorMoment (u s)) volume 0 t) :
+    heatHalfGeneratorMoment (criticalMildDuhamel ν hν u hu t) ≤
+      2 * (Real.sqrt ν)⁻¹ *
+        ∫ s in (0 : ℝ)..t, inverseSqrtTime (t - s) * ‖u s‖ *
+          heatHalfGeneratorMoment (u s) := by
+  have hactual := integrableOn_criticalMildPathIntegrand
+    ν hν u huc hu hR ht huR
+  have hpathInterval :=
+    intervalIntegrable_heatHalfGeneratorMoment_criticalMildPathIntegrand_of_weighted
+      ν hν u huc hu ht hM hweighted
+  have hpath : IntegrableOn
+      (fun s ↦ heatHalfGeneratorMoment
+        (criticalMildPathIntegrand ν hν u hu t s)) (Set.Ioc 0 t) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le ht).mp hpathInterval
+  have hpathsum : ∀ᵐ s ∂volume.restrict (Set.Ioc 0 t),
+      Summable fun m : LatticeMode ↦
+        ‖complexFrequency (latticeFrequency m)‖ *
+          ‖criticalMildPathIntegrand ν hν u hu t s m‖ := by
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+    by_cases hst : s < t
+    · exact summable_halfGeneratorMoment_criticalMildPathIntegrand
+        ν hν u hu hst (hM s hs)
+    · have hst' : s = t := le_antisymm hs.2 (not_lt.mp hst)
+      subst s
+      simp [criticalMildPathIntegrand, positiveTimeHeatRegularizedSpectralOutput]
+  have hbase := heatHalfGeneratorMoment_integral_le_integral
+    (criticalMildPathIntegrand ν hν u hu t) hactual hpathsum hpath
+  have hweightedOn : IntegrableOn
+      (fun s ↦ inverseSqrtTime (t - s) * ‖u s‖ *
+        heatHalfGeneratorMoment (u s)) (Set.Ioc 0 t) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le ht).mp hweighted
+  unfold criticalMildDuhamel
+  calc
+    heatHalfGeneratorMoment
+        (∫ s in Set.Ioc 0 t, criticalMildPathIntegrand ν hν u hu t s) ≤
+      ∫ s in Set.Ioc 0 t, heatHalfGeneratorMoment
+        (criticalMildPathIntegrand ν hν u hu t s) := hbase
+    _ ≤ ∫ s in Set.Ioc 0 t, 2 * (Real.sqrt ν)⁻¹ *
+        (inverseSqrtTime (t - s) * ‖u s‖ *
+          heatHalfGeneratorMoment (u s)) := by
+      apply integral_mono_ae hpath (hweightedOn.const_mul _)
+      filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+      by_cases hst : s < t
+      · simpa only [mul_assoc] using
+          heatHalfGeneratorMoment_criticalMildPathIntegrand_le_split
+            ν hν u hu hst (hM s hs)
+      · have hst' : s = t := le_antisymm hs.2 (not_lt.mp hst)
+        subst s
+        simp [criticalMildPathIntegrand, positiveTimeHeatRegularizedSpectralOutput,
+          heatHalfGeneratorMoment, inverseSqrtTime]
+    _ = 2 * (Real.sqrt ν)⁻¹ *
+        ∫ s in (0 : ℝ)..t, inverseSqrtTime (t - s) * ‖u s‖ *
+          heatHalfGeneratorMoment (u s) := by
+      rw [← intervalIntegral.integral_of_le ht,
+        intervalIntegral.integral_const_mul]
+
+/-- Under the same weighted Volterra hypothesis, the actual Duhamel integral
+lies in the half-generator graph domain (not merely the base Banach space). -/
+theorem summable_halfGeneratorMoment_criticalMildDuhamel_of_weighted
+    (ν : ℝ) (hν : 0 < ν)
+    (u : ℝ → WeightedLatticeBanach) (huc : Continuous u)
+    (hu : ∀ s, LatticeDivergenceFree (u s))
+    {R t : ℝ} (hR : 0 ≤ R) (ht : 0 ≤ t)
+    (huR : ∀ s ∈ Set.Ioc (0 : ℝ) t, ‖u s‖ ≤ R)
+    (hM : ∀ s ∈ Set.Ioc (0 : ℝ) t, Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ * ‖u s m‖)
+    (hweighted : IntervalIntegrable
+      (fun s ↦ inverseSqrtTime (t - s) * ‖u s‖ *
+        heatHalfGeneratorMoment (u s)) volume 0 t) :
+    Summable fun m : LatticeMode ↦
+      ‖complexFrequency (latticeFrequency m)‖ *
+        ‖criticalMildDuhamel ν hν u hu t m‖ := by
+  have hactual := integrableOn_criticalMildPathIntegrand
+    ν hν u huc hu hR ht huR
+  have hpathInterval :=
+    intervalIntegrable_heatHalfGeneratorMoment_criticalMildPathIntegrand_of_weighted
+      ν hν u huc hu ht hM hweighted
+  have hpath : IntegrableOn
+      (fun s ↦ heatHalfGeneratorMoment
+        (criticalMildPathIntegrand ν hν u hu t s)) (Set.Ioc 0 t) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le ht).mp hpathInterval
+  have hpathsum : ∀ᵐ s ∂volume.restrict (Set.Ioc 0 t),
+      Summable fun m : LatticeMode ↦
+        ‖complexFrequency (latticeFrequency m)‖ *
+          ‖criticalMildPathIntegrand ν hν u hu t s m‖ := by
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with s hs
+    by_cases hst : s < t
+    · exact summable_halfGeneratorMoment_criticalMildPathIntegrand
+        ν hν u hu hst (hM s hs)
+    · have hst' : s = t := le_antisymm hs.2 (not_lt.mp hst)
+      subst s
+      simp [criticalMildPathIntegrand, positiveTimeHeatRegularizedSpectralOutput]
+  apply summable_of_sum_le
+  · intro m
+    exact mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  · intro F
+    unfold criticalMildDuhamel
+    exact sum_heatHalfGeneratorMoment_integral_le_integral F
+      (criticalMildPathIntegrand ν hν u hu t) hactual hpathsum hpath
+
 end Navier.Analysis.CriticalMildHeatFlowLinear
 
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.weightedHeatFlowCLM
@@ -653,3 +907,7 @@ end Navier.Analysis.CriticalMildHeatFlowLinear
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment_heatRegularizedSpectralOutput_le_split
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment_criticalMildPathIntegrand_le_split
 #print axioms Navier.Analysis.CriticalMildHeatFlowLinear.intervalIntegrable_heatHalfGeneratorMoment_criticalMildPathIntegrand_of_weighted
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment_integral_le_integral
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.summable_halfGeneratorMoment_heatRegularizedSpectralOutput_split
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment_criticalMildDuhamel_le_weighted
+#print axioms Navier.Analysis.CriticalMildHeatFlowLinear.summable_halfGeneratorMoment_criticalMildDuhamel_of_weighted
