@@ -43,14 +43,29 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+import multiprocessing as _mp
+
 import numpy as np
 
+# FFT backend: pyFFTW (fastest, pre-planned) > scipy.fft > numpy.fft.
+_HAS_PYFFTW = False
+_HAS_SCIPY_FFT = False
 try:
-    import scipy.fft as _fft
+    import pyfftw
+    from pyfftw.interfaces import scipy_fft as _fft
 
-    _HAS_SCIPY_FFT = True
+    pyfftw.config.NUM_THREADS = 1  # N=16 arrays too small for multi-threading
+    from pyfftw.interfaces.cache import enable as _fftw_enable_cache
+
+    _fftw_enable_cache()
+    _HAS_SCIPY_FFT = _HAS_PYFFTW = True
 except ImportError:
-    _HAS_SCIPY_FFT = False
+    try:
+        import scipy.fft as _fft
+
+        _HAS_SCIPY_FFT = True
+    except ImportError:
+        pass  # fall through to numpy.fft below
 
 
 # --------------------------------------------------------------------------
@@ -93,15 +108,15 @@ def mesh(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return np.meshgrid(points, points, points, indexing="ij")
 
 
-def forward(field: np.ndarray) -> np.ndarray:
+def forward(field: np.ndarray, overwrite: bool = False) -> np.ndarray:
     if _HAS_SCIPY_FFT:
-        return _fft.rfftn(field, axes=(1, 2, 3))
+        return _fft.rfftn(field, axes=(1, 2, 3), overwrite_x=overwrite)
     return np.fft.rfftn(field, axes=(1, 2, 3))
 
 
-def inverse(field_hat: np.ndarray, n: int) -> np.ndarray:
+def inverse(field_hat: np.ndarray, n: int, overwrite: bool = False) -> np.ndarray:
     if _HAS_SCIPY_FFT:
-        return _fft.irfftn(field_hat, s=(n, n, n), axes=(1, 2, 3))
+        return _fft.irfftn(field_hat, s=(n, n, n), axes=(1, 2, 3), overwrite_x=overwrite)
     return np.fft.irfftn(field_hat, s=(n, n, n), axes=(1, 2, 3))
 
 
@@ -118,13 +133,11 @@ def leray(vector_hat: np.ndarray, sp: Spectral) -> np.ndarray:
 
 
 def curl_hat(vector_hat: np.ndarray, sp: Spectral) -> np.ndarray:
-    return np.stack(
-        (
-            1j * (sp.ky * vector_hat[2] - sp.kz * vector_hat[1]),
-            1j * (sp.kz * vector_hat[0] - sp.kx * vector_hat[2]),
-            1j * (sp.kx * vector_hat[1] - sp.ky * vector_hat[0]),
-        )
-    )
+    out = np.empty_like(vector_hat)
+    out[0] = 1j * (sp.ky * vector_hat[2] - sp.kz * vector_hat[1])
+    out[1] = 1j * (sp.kz * vector_hat[0] - sp.kx * vector_hat[2])
+    out[2] = 1j * (sp.kx * vector_hat[1] - sp.ky * vector_hat[0])
+    return out
 
 
 def divergence_linf(vector_hat: np.ndarray, sp: Spectral) -> float:
@@ -154,8 +167,8 @@ def enstrophy(vector_hat: np.ndarray, sp: Spectral) -> float:
 def nonlinear_hat(vector_hat: np.ndarray, sp: Spectral, dealias: bool) -> np.ndarray:
     """Projected rotational nonlinearity ``P_L[(omega x u)_hat]``."""
     work = vector_hat * sp.dealias if dealias else vector_hat
-    u = inverse(work, sp.n)
-    w = inverse(curl_hat(work, sp), sp.n)
+    u = inverse(work, sp.n)  # cannot overwrite work — still needed for curl
+    w = inverse(curl_hat(work, sp), sp.n, overwrite=True)  # curl_hat output is fresh
     cross = np.stack(
         (
             w[1] * u[2] - w[2] * u[1],
@@ -163,7 +176,7 @@ def nonlinear_hat(vector_hat: np.ndarray, sp: Spectral, dealias: bool) -> np.nda
             w[0] * u[1] - w[1] * u[0],
         )
     )
-    cross_hat = forward(cross)
+    cross_hat = forward(cross, overwrite=True)  # cross is fresh
     if dealias:
         cross_hat *= sp.dealias
     return leray(cross_hat, sp)
