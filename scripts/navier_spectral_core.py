@@ -165,10 +165,19 @@ def step_ifrk4(
     dealias: bool,
     forcing=None,
     time: float = 0.0,
+    e_full: np.ndarray | None = None,
+    e_half: np.ndarray | None = None,
 ) -> np.ndarray:
-    """One integrating-factor RK4 step of the projected momentum equation."""
-    e_full = np.exp(-viscosity * sp.k2 * dt)
-    e_half = np.exp(-viscosity * sp.k2 * 0.5 * dt)
+    """One integrating-factor RK4 step of the projected momentum equation.
+
+    Precomputed ``e_full = exp(-viscosity * k2 * dt)`` and
+    ``e_half = exp(-viscosity * k2 * 0.5 * dt)`` can be passed to avoid
+    recomputing the exponentials on every call (the ``evolve`` loop does this).
+    """
+    if e_full is None:
+        e_full = np.exp(-viscosity * sp.k2 * dt)
+    if e_half is None:
+        e_half = np.exp(-viscosity * sp.k2 * 0.5 * dt)
 
     def rhs(v_hat: np.ndarray, t: float) -> np.ndarray:
         out = -nonlinear_hat(v_hat, sp, dealias)
@@ -193,10 +202,13 @@ def evolve(
     forcing=None,
     t0: float = 0.0,
 ) -> np.ndarray:
+    e_full = np.exp(-viscosity * sp.k2 * dt)
+    e_half = np.exp(-viscosity * sp.k2 * 0.5 * dt)
     state = vector_hat.copy()
     for index in range(steps):
         state = step_ifrk4(
-            state, sp, viscosity, dt, dealias, forcing, t0 + index * dt
+            state, sp, viscosity, dt, dealias, forcing, t0 + index * dt,
+            e_full, e_half,
         )
     return state
 
