@@ -130,17 +130,59 @@ def run_mms(grid: int, steps: int, viscosity: float, final_time: float) -> dict:
         else float("nan")
     )
 
+    # Multi-dt convergence study: fit log-log slope across several dt values.
+    multi_order = _multi_dt_convergence_order(sp, exact_hat, forcing,
+                                               viscosity, final_time, dt)
+
     # 4 RHS evaluations per IFRK4 step, 9 real transforms per evaluation.
     transforms = steps * 4 * 9
     return {
         "l2_rel_error": error,
         "l2_rel_error_half_dt": error_refined,
         "time_convergence_order": float(order),
+        "time_convergence_order_multi_dt": multi_order,
         "divergence_linf": divergence_linf(state, sp),
         "spectral_grid_updates_per_s": float(steps * grid**3 / elapsed),
         "fft_transforms_per_s": float(transforms / elapsed),
         "wall_s": float(elapsed),
     }
+
+
+def _multi_dt_convergence_order(
+    sp, exact_hat, forcing, viscosity, final_time, dt_base
+) -> float:
+    """Fit log10(error) = p * log10(dt) + c across 5 dt values via LLS.
+
+    dt values: dt_base / [1, 2, 4, 6, 8] (same final_time, scaled steps).
+    Returns the slope *p* (design value 4 for IFRK4), or NaN if any
+    sub-run produces a zero error.
+    """
+    ratios = (1, 2, 4, 6, 8)
+    errors = []
+    dts = []
+    for ratio in ratios:
+        dt_sub = dt_base / ratio
+        steps_sub = max(round(final_time / dt_sub), 1)
+        state_sub = evolve(
+            exact_hat(0.0), sp, viscosity, dt_sub, steps_sub, True, forcing, 0.0
+        )
+        err = relative_l2(state_sub, exact_hat(final_time), sp)
+        if err <= 0.0:
+            return float("nan")
+        errors.append(math.log10(err))
+        dts.append(math.log10(dt_sub))
+
+    # Linear least-squares: y = p*x + c
+    n = len(dts)
+    sx = sum(dts)
+    sy = sum(errors)
+    sxx = sum(x * x for x in dts)
+    sxy = sum(x * y for x, y in zip(dts, errors))
+    denom = n * sxx - sx * sx
+    if denom == 0.0:
+        return float("nan")
+    p = (n * sxy - sx * sy) / denom
+    return float(p)
 
 
 def run_inviscid_drift(grid: int, steps: int, final_time: float) -> float:
