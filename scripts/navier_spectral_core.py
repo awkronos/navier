@@ -45,6 +45,13 @@ from dataclasses import dataclass
 
 import numpy as np
 
+try:
+    import scipy.fft as _fft
+
+    _HAS_SCIPY_FFT = True
+except ImportError:
+    _HAS_SCIPY_FFT = False
+
 
 # --------------------------------------------------------------------------
 # grid, wavenumbers, projector
@@ -87,22 +94,27 @@ def mesh(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def forward(field: np.ndarray) -> np.ndarray:
+    if _HAS_SCIPY_FFT:
+        return _fft.rfftn(field, axes=(1, 2, 3))
     return np.fft.rfftn(field, axes=(1, 2, 3))
 
 
 def inverse(field_hat: np.ndarray, n: int) -> np.ndarray:
+    if _HAS_SCIPY_FFT:
+        return _fft.irfftn(field_hat, s=(n, n, n), axes=(1, 2, 3))
     return np.fft.irfftn(field_hat, s=(n, n, n), axes=(1, 2, 3))
 
 
 def leray(vector_hat: np.ndarray, sp: Spectral) -> np.ndarray:
-    """Orthogonal projection onto the divergence-free subspace."""
+    """Orthogonal projection onto the divergence-free subspace.
+
+    MUTATES vector_hat in place (all callers pass a fresh array)."""
     dot = sp.kx * vector_hat[0] + sp.ky * vector_hat[1] + sp.kz * vector_hat[2]
     scale = dot * sp.inv_k2
-    out = vector_hat.copy()
-    out[0] -= sp.kx * scale
-    out[1] -= sp.ky * scale
-    out[2] -= sp.kz * scale
-    return out
+    vector_hat[0] -= sp.kx * scale
+    vector_hat[1] -= sp.ky * scale
+    vector_hat[2] -= sp.kz * scale
+    return vector_hat
 
 
 def curl_hat(vector_hat: np.ndarray, sp: Spectral) -> np.ndarray:
