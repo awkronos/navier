@@ -246,6 +246,7 @@ structure GalerkinBasisFamily where
       schwartzL2Inner (u - ∑ j ∈ Finset.range m, c j • w j)
         (u - ∑ j ∈ Finset.range m, c j • w j) < ε
 
+
 /-- A **raw countable divergence-free family** whose finite spans are
 `L²`-dense in the divergence-free Schwartz class and which is
 `L²`-linearly-independent (no nonzero finite combination has zero `L²`
@@ -1210,6 +1211,31 @@ noncomputable def curlSchwartzCLM : SchwartzVelocity →L[ℝ] SchwartzVelocity 
 theorem curlSchwartzCLM_apply (u : SchwartzVelocity) (x : Space) :
     curlSchwartzCLM u x = staticCurl u x := by
   simp [curlSchwartzCLM, staticCurl, SchwartzMap.lineDerivOp_apply_eq_fderiv]
+
+/-- **H(curl) convergence of the L2 projection (standalone lemma, CONJECTURE).**
+For every divergence-free Schwartz field `phi`, the L2-orthogonal projection
+onto the first `m` modes converges in the H(curl) graph norm, i.e.
+`‖curl(P_m phi - phi)‖_{L2} -> 0` as `m -> oo`.
+This property is **not** a consequence of L2 density alone (the L2 projection
+onto a finite-dimensional subspace does not commute with the curl operator on
+R3, whose continuous spectrum prevents finite-rank spectral projections).  It
+is a genuine additional structural condition that must be supplied by the basis
+construction.  On R3 this lemma is a CONJECTURE (scientific-frontier gap) for
+the Gram-Schmidt basis of a dense sequence.
+See `FourierGalerkinBasis.lean` for a construction framework. -/
+theorem curl_proj_converges (W : GalerkinBasisFamily)
+    (phi : SchwartzVelocity) (hphi : DivergenceFreeInitial phi) :
+    Filter.Tendsto (fun m : Nat =>
+      ‖toL2 (curlSchwartzCLM (W.proj m phi - phi))‖)
+    Filter.atTop (nhds 0) := by
+  -- OPEN: The L2 projection onto a Gram-Schmidt basis of a dense
+  -- divergence-free family does NOT guarantee H(curl) convergence of the
+  -- projection on R3, because the curl operator has continuous spectrum
+  -- (no finite-rank spectral projection).  This is a genuine
+  -- scientific-frontier gap: closing it requires a spectral basis
+  -- (Fourier-Plancherel on a periodic domain, or a wavelet/frame
+  -- construction with explicit frequency-truncation error bounds).
+  sorry
 
 /-- The componentwise Laplacian retained as a Schwartz velocity. -/
 noncomputable def laplacianSchwartz (u : SchwartzVelocity) : SchwartzVelocity :=

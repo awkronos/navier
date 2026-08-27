@@ -378,7 +378,128 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
     have hweak : ∀ phi : DivergenceFreeTestFunction,
         Filter.Tendsto (fun m => weakFormResidual nu u0 (W.modalApprox cChoice m) phi)
           Filter.atTop (nhds 0) := by
-      sorry
+      intro phi
+      -- 1. Compactly supported test function: pick T large enough
+      obtain ⟨T_phi, hTpos, hφzero⟩ := phi.compact_time
+      obtain ⟨T_phi', hTpos', hφ'zero⟩ := phi.compact_time_deriv
+      let T := max T_phi T_phi'
+      have hTpos : 0 < T := lt_max_of_lt_left hTpos
+      have hT : 0 ≤ T := by linarith
+      have hφzero' : ∀ t, T ≤ t → phi.field t = 0 := by
+        intro t ht; exact hφzero t (le_trans (le_max_left _ _) ht)
+      have hφ''zero : ∀ t, T ≤ t → phi.timeDerivSchwartz t = 0 := by
+        intro t ht; exact hφ'zero t (le_trans (le_max_right _ _) ht)
+      -- 2. hmodal_deriv: derivative of modal test coefficients follows from
+      -- phi.smooth and the chain rule applied to the linear map
+      -- initialCoefficients (·) m.
+      have hmodal_deriv : ∀ (m : ℕ) (t : ℝ),
+          HasDerivAt (W.modalTestCoefficients phi.field m)
+            (W.modalTestCoefficients phi.timeDerivSchwartz m t) t := by
+        intro m t
+        -- CONJECTURE: The derivative of the L² inner product against each basis
+        -- element follows from the pointwise timeDeriv_eq and the DCT.
+        -- This is a standard lemma: HasDerivAt (fun s => schwartzL2Inner (phi.field s) w)
+        --   (schwartzL2Inner (phi.timeDerivSchwartz t) w) t.
+        sorry
+      have hmodal_deriv_cont : ∀ m, Continuous (W.modalTestCoefficients phi.timeDerivSchwartz m) := by
+        intro m
+        -- CONJECTURE: The map t ↦ initialCoefficients (phi.timeDerivSchwartz t) m is
+        -- continuous because phi.timeDerivSchwartz is continuous in the Schwartz topology
+        -- (by phi.smooth) and initialCoefficients is continuous.
+        sorry
+      -- 3. All integrability hypotheses: the integrands are continuous on ℝ,
+      -- hence integrable on the compact interval [0,T].  The proofs are
+      -- straightforward from the continuity of the various maps
+      -- (coefficientEnstrophy, curlSchwartzCLM, etc.) but are not yet
+      -- mechanized as standalone lemmas, so we leave them as CONJECTURE.
+      have henstrophyIntegrable : ∀ m, IntegrableOn
+          (fun t => W.coefficientEnstrophy (cChoice m t)) (Set.Ioc (0 : ℝ) T) := by
+        intro m
+        -- CONJECTURE: W.coefficientEnstrophy is continuous in its argument
+        sorry
+      have errorSqIntegrable : ∀ m, IntegrableOn (fun t =>
+          ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
+          (Set.Ioc (0 : ℝ) T) := by
+        intro m
+        -- CONJECTURE: The integrand is continuous on [0,T]
+        sorry
+      have pairingIntervalIntegrable : ∀ m, IntervalIntegrable (fun t =>
+          nu * schwartzL2Inner (W.coefficientField (cChoice m t))
+            (W.laplacianProjectionCommutator m (phi.field t))) volume 0 T := by
+        intro m
+        -- CONJECTURE: The integrand is continuous on [0,T]
+        sorry
+      have hlapInt : ∀ m, IntervalIntegrable (fun t =>
+          nu * schwartzL2Inner (W.coefficientField (cChoice m t))
+            (W.laplacianProjectionCommutator m (phi.field t))) volume 0 T :=
+        pairingIntervalIntegrable
+      have hconvInt : ∀ m, IntervalIntegrable (fun t =>
+          schwartzL2Inner (W.coefficientField (cChoice m t))
+            (W.convectionTestProjectionCommutator m (W.coefficientField (cChoice m t))
+              (phi.field t))) volume 0 T := by
+        intro m
+        -- CONJECTURE: The integrand is continuous on [0,T]
+        sorry
+      have hmainInt : ∀ m, IntervalIntegrable (fun t =>
+          schwartzL2Inner (W.coefficientField (cChoice m t)) (phi.timeDerivSchwartz t) +
+          schwartzL2Inner (W.coefficientField (cChoice m t))
+            (nu • laplacianSchwartz (phi.field t) +
+              convectionSchwartzBilin (W.coefficientField (cChoice m t)) (phi.field t)))
+          volume 0 T := by
+        intro m
+        -- CONJECTURE: The integrand is continuous on [0,T]
+        sorry
+      -- 4. hcurlError: the spacetime integral of the squared curl error → 0.
+      -- This is the critical step.  From the pointwise curl convergence
+      -- (curl_proj_converges W) and the Dominated Convergence Theorem, the
+      -- spacetime integral tends to zero.  The integrable dominating function
+      -- is the essential supremum of the curl error, whose existence follows
+      -- from the Banach-Steinhaus theorem (equicontinuity of curl∘P_m on the
+      -- Schwartz space).  This is a standard functional analysis argument not
+      -- yet mechanized in the pinned Mathlib.
+      have hcurlError : Filter.Tendsto (fun m =>
+          ∫ t in Set.Ioc (0 : ℝ) T,
+            ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
+          Filter.atTop (nhds 0) := by
+        -- CONJECTURE: scientific-frontier gap (Banach-Steinhaus + DCT).
+        sorry
+      -- 5. hlap: from hcurlError via the Cauchy-Schwarz estimate
+      have hlap : Filter.Tendsto (fun m =>
+          ∫ t in (0 : ℝ)..T, nu * schwartzL2Inner (W.coefficientField (cChoice m t))
+            (W.laplacianProjectionCommutator m (phi.field t)))
+          Filter.atTop (nhds 0) := by
+        apply hlap_tendsto_zero_of_curlSqError_tendsto_zero W cChoice (phi.field)
+          phi.divergence_free nu T enstrophyBound hT ?_ ?_ ?_ ?_ hcurlError
+        · intro m; exact henstCoef m T hT
+        · exact henstrophyIntegrable
+        · exact errorSqIntegrable
+        · exact pairingIntervalIntegrable
+      -- 6. hconv: the integral of the convection commutator → 0.
+      -- CONJECTURE: The L² norm of the convection commutator,
+      --   ‖convectionSchwartzBilin (W.coefficientField (cChoice m t))
+      --      (W.proj m (phi.field t) - phi.field t)‖,
+      -- tends to 0 as m → ∞, uniformly in t.  This follows from the curl
+      -- convergence (curl_proj_converges W), the identity ‖∇v‖² = ‖curl v‖²
+      -- for divergence-free v, and the Ladyzhenskaya inequality.  Together
+      -- with the L² bound on the coefficient field (hc_norm), the lemma
+      -- convectionTestProjection_pairing_tendsto_zero_of_L2 then gives hconv.
+      -- The full proof requires ~200 LOC and is the second open sub-leaf.
+      have hconv : Filter.Tendsto (fun m =>
+          ∫ t in (0 : ℝ)..T, schwartzL2Inner (W.coefficientField (cChoice m t))
+            (W.convectionTestProjectionCommutator m (W.coefficientField (cChoice m t))
+              (phi.field t)))
+          Filter.atTop (nhds 0) := by
+        sorry
+      -- 7. Apply modalFlow_fixedTest_projectedResidual_tendsto_of_commutators
+      have hprojected : Filter.Tendsto
+          (fun m => weakFormResidual nu (W.proj m u0) (W.modalApprox cChoice m) phi)
+          Filter.atTop (nhds 0) :=
+        modalFlow_fixedTest_projectedResidual_tendsto_of_commutators W nu u0 cChoice
+          hc_deriv hc0 phi T hT hφzero' hφ''zero
+          hmodal_deriv hmodal_deriv_cont hmainInt hlapInt hconvInt hlap hconv
+      -- 8. Apply modalApprox_fixedTest_weakConsistent_of_projectedDatum
+      exact modalApprox_fixedTest_weakConsistent_of_projectedDatum W nu u0 hu0 cChoice
+        phi hprojected
     -- Assemble
     refine ⟨{
       approx := W.modalApprox cChoice
