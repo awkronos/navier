@@ -683,4 +683,59 @@ theorem modalApprox_fixedTest_weakConsistent_of_fixed_proj
   exact modalApprox_fixedTest_weakConsistent_of_projectedDatum
     W ν u₀ hu₀ c φ hprojected
 
+/-- **The viscous commutator vanishes under L²-convergence of the curl-projection error.**
+
+The `abs_intervalIntegral_laplacianProjectionCommutator_le` bound gives a spacetime
+Cauchy--Schwarz estimate: for each mode `m`, the commutator interval integral is
+bounded by `|ν|·√enstrophyBound·√(∫‖curl(P_m φ - φ)‖² dt)`.  If the right-hand
+factor tends to zero, the commutator integral tends to zero.
+
+This theorem isolates the exact mathematical condition needed to close the
+`hlap` subgap of `hweak`: the vanishing of the spacetime curl-projection error.
+No dominated convergence, no pointwise convergence, and no H¹-boundedness of the
+projection is assumed — the `abs` bound supplies the squeeze directly.
+
+The four integrability hypotheses (`henstrophyIntegrable`, `errorSqIntegrable`,
+`pairingIntervalIntegrable`) are per-`m` and are satisfied for any Schwartz test
+family and any coefficient curve with bounded enstrophy.  The `hcurlError`
+hypothesis is the genuinely open condition.
+
+Citation: Temam, *Navier--Stokes Equations*, Chapter III, Section 3. -/
+theorem hlap_tendsto_zero_of_curlSqError_tendsto_zero
+    (W : GalerkinBasisFamily)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (φ : ℝ → SchwartzVelocity) (hφ : ∀ t, DivergenceFreeInitial (φ t))
+    (ν T enstrophyBound : ℝ) (hT : 0 ≤ T)
+    (henstrophy : ∀ m,
+      (∫ t in Set.Ioc (0 : ℝ) T, W.coefficientEnstrophy (c m t)) ≤ enstrophyBound)
+    (henstrophyIntegrable : ∀ m, IntegrableOn
+      (fun t => W.coefficientEnstrophy (c m t)) (Set.Ioc (0 : ℝ) T))
+    (errorSqIntegrable : ∀ m, IntegrableOn (fun t =>
+      ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+      (Set.Ioc (0 : ℝ) T))
+    (pairingIntervalIntegrable : ∀ m, IntervalIntegrable (fun t =>
+      ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (φ t))) volume 0 T)
+    (hcurlError : Filter.Tendsto (fun m =>
+      ∫ t in Set.Ioc (0 : ℝ) T,
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2)
+      Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun m =>
+      ∫ t in (0 : ℝ)..T, ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (φ t)))
+      Filter.atTop (nhds 0) := by
+  apply squeeze_zero_norm (a := fun m =>
+    |ν| * Real.sqrt enstrophyBound * Real.sqrt
+      (∫ t in Set.Ioc (0 : ℝ) T,
+        ‖toL2 (curlSchwartzCLM (W.proj m (φ t) - φ t))‖ ^ 2))
+  · intro m
+    rw [Real.norm_eq_abs]
+    exact abs_intervalIntegral_laplacianProjectionCommutator_le
+      W (c m) φ hφ ν T enstrophyBound hT (henstrophy m) (henstrophyIntegrable m)
+      (errorSqIntegrable m) (pairingIntervalIntegrable m)
+  · have hsqrt := hcurlError.sqrt
+    have hconst : Filter.Tendsto (fun _ : ℕ => |ν| * Real.sqrt enstrophyBound)
+        Filter.atTop (nhds (|ν| * Real.sqrt enstrophyBound)) := tendsto_const_nhds
+    simpa using hconst.mul hsqrt
+
 end Navier.Analysis.GalerkinBasis
