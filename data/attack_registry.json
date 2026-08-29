@@ -152,7 +152,7 @@
     {
       "id": "ref.prodi.1959",
       "kind": "PRIMARY",
-      "citation": "Giovanni Prodi, Un teorema di unicit\u00e0 per le equazioni di Navier-Stokes, Annali di Matematica Pura ed Applicata 48, 173-182.",
+      "citation": "Giovanni Prodi, Un teorema di unicità per le equazioni di Navier-Stokes, Annali di Matematica Pura ed Applicata 48, 173-182.",
       "year": 1959,
       "locator": "doi:10.1007/BF02410664",
       "relevance": "Introduces an integrability criterion separating conditional regularity from the unresolved unconditional bound."
@@ -184,7 +184,7 @@
     {
       "id": "ref.gallagher.koch.planchon2013",
       "kind": "PRIMARY",
-      "citation": "Isabelle Gallagher, Gabriel S. Koch, and Fabrice Planchon, A profile decomposition approach to the L^\u221e_t(L^3_x) Navier-Stokes regularity criterion, Mathematische Annalen 355.",
+      "citation": "Isabelle Gallagher, Gabriel S. Koch, and Fabrice Planchon, A profile decomposition approach to the L^∞_t(L^3_x) Navier-Stokes regularity criterion, Mathematische Annalen 355.",
       "year": 2013,
       "locator": "doi:10.1007/s00208-012-0830-0",
       "relevance": "Develops profile decomposition and critical-element machinery for a Navier-Stokes regularity criterion."
@@ -224,7 +224,7 @@
     {
       "id": "ref.albritton.brue.colombo2022",
       "kind": "PRIMARY",
-      "citation": "Dallas Albritton, Elia Bru\u00e9, and Maria Colombo, Non-Uniqueness of Leray Solutions of the Forced Navier-Stokes Equations, Annals of Mathematics 196.",
+      "citation": "Dallas Albritton, Elia Brué, and Maria Colombo, Non-Uniqueness of Leray Solutions of the Forced Navier-Stokes Equations, Annals of Mathematics 196.",
       "year": 2022,
       "locator": "doi:10.4007/annals.2022.196.1.3",
       "relevance": "Marks the forced Leray nonuniqueness boundary and prevents transport of weak forced pathology to the smooth exact endpoint."
@@ -1210,7 +1210,7 @@
       "id": "evidence.surface.fefferman_a",
       "kind": "FORMAL_SURFACE_SNAPSHOT",
       "claim_tier": "SCAFFOLD",
-      "summary": "The committed Problem module defines the public Fefferman A proposition and all five statement-A representation residuals; this snapshot proves no inhabitant.",
+      "summary": "The committed Problem module defines the public Fefferman A proposition and the four statement-A representation residuals remaining at HEAD (the former norm residual was transported through its consumers and retired); this snapshot proves no inhabitant.",
       "reference_ids": [
         "ref.problem_statement.fefferman2000"
       ],
@@ -1219,10 +1219,10 @@
       ],
       "provenance": {
         "source_locator": "repo:Navier/Problem.lean",
-        "source_revision": "2896490fc8b9c5ddba1ec185fd49c9f2462ac149",
+        "source_revision": "cce23b444e56caa3243869962cbcb51070b6e055",
         "immutable": true,
-        "observed_at": "2026-07-14T22:58:16Z",
-        "artifact_sha256": "340254a52f87a3ea1c5b60a0c407c3227648912ed75bc1c55daf5ac378916a3d"
+        "observed_at": "2026-08-29T19:19:38Z",
+        "artifact_sha256": "ce73278fb740a6ee9e8f36627f789cd4a102635599bce94d9e1527e37ce952f6"
       },
       "receipt": null
     },
