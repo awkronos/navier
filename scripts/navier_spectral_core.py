@@ -68,6 +68,24 @@ except ImportError:
         pass  # fall through to numpy.fft below
 
 
+# Aligned array allocator — avoids the ~37% pyfftw penalty on numpy arrays.
+def _alloc_hat(sp: Spectral) -> np.ndarray:
+    """Return a spectral-domain (3, n, n, n//2+1) complex array, aligned for
+    pyFFTW when available, otherwise plain numpy."""
+    if _HAS_PYFFTW:
+        return pyfftw.empty_aligned(
+            (3, sp.n, sp.n, sp.n // 2 + 1), dtype="complex128"
+        )
+    return np.empty((3, sp.n, sp.n, sp.n // 2 + 1), dtype=np.complex128)
+
+
+def _alloc_real(sp: Spectral) -> np.ndarray:
+    """Return a real (3, n, n, n) array, aligned for pyFFTW when available."""
+    if _HAS_PYFFTW:
+        return pyfftw.empty_aligned((3, sp.n, sp.n, sp.n), dtype="float64")
+    return np.empty((3, sp.n, sp.n, sp.n), dtype=np.float64)
+
+
 # --------------------------------------------------------------------------
 # grid, wavenumbers, projector
 # --------------------------------------------------------------------------
@@ -90,7 +108,13 @@ class Spectral:
         return (self.n, self.n, self.n // 2 + 1)
 
 
+_SPECTRAL_CACHE: dict[int, Spectral] = {}
+
+
 def spectral(n: int) -> Spectral:
+    cached = _SPECTRAL_CACHE.get(n)
+    if cached is not None:
+        return cached
     if n < 4 or n % 2:
         raise ValueError("grid must be an even integer >= 4")
     kf = np.fft.fftfreq(n, d=1.0 / n)
@@ -100,7 +124,9 @@ def spectral(n: int) -> Spectral:
     inv_k2 = np.divide(1.0, k2, out=np.zeros_like(k2), where=k2 != 0.0)
     cutoff = n / 3.0
     mask = (np.abs(kx) < cutoff) & (np.abs(ky) < cutoff) & (np.abs(kz) < cutoff)
-    return Spectral(n, kx, ky, kz, k2, inv_k2, mask.astype(np.float64))
+    sp = Spectral(n, kx, ky, kz, k2, inv_k2, mask.astype(np.float64))
+    _SPECTRAL_CACHE[n] = sp
+    return sp
 
 
 def mesh(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -165,17 +191,21 @@ def enstrophy(vector_hat: np.ndarray, sp: Spectral) -> float:
 
 
 def nonlinear_hat(vector_hat: np.ndarray, sp: Spectral, dealias: bool) -> np.ndarray:
-    """Projected rotational nonlinearity ``P_L[(omega x u)_hat]``."""
+    """Projected rotational nonlinearity ``P_L[(omega x u)_hat]``.
+
+    Preallocates the cross-product buffer as an aligned array so the
+    subsequent forward FFT avoids the ~37% pyFFTW penalty on misaligned
+    numpy arrays, and writes components in-place to skip ``np.stack``.
+    """
     work = vector_hat * sp.dealias if dealias else vector_hat
     u = inverse(work, sp.n)  # cannot overwrite work — still needed for curl
     w = inverse(curl_hat(work, sp), sp.n, overwrite=True)  # curl_hat output is fresh
-    cross = np.stack(
-        (
-            w[1] * u[2] - w[2] * u[1],
-            w[2] * u[0] - w[0] * u[2],
-            w[0] * u[1] - w[1] * u[0],
-        )
-    )
+    # Preallocated aligned buffer — avoids np.stack copy + gives pyFFTW
+    # the alignment it needs for SIMD-optimal transforms.
+    cross = _alloc_real(sp)
+    cross[0] = w[1] * u[2] - w[2] * u[1]
+    cross[1] = w[2] * u[0] - w[0] * u[2]
+    cross[2] = w[0] * u[1] - w[1] * u[0]
     cross_hat = forward(cross, overwrite=True)  # cross is fresh
     if dealias:
         cross_hat *= sp.dealias

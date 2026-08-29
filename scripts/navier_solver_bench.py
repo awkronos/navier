@@ -50,6 +50,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import time
 
 import numpy as np
@@ -90,6 +91,32 @@ except ImportError:  # invoked from outside scripts/
         spectral,
         taylor_green_field,
     )
+
+
+def _loadavg() -> list[float] | None:
+    """Return [1, 5, 15] minute load averages, or None on failure."""
+    try:
+        raw = os.popen("sysctl -n vm.loadavg 2>/dev/null").read().strip()
+        if raw:
+            parts = raw.strip("{}").split()
+            return [float(p) for p in parts[:3]]
+    except Exception:
+        pass
+    return None
+
+
+def _stats(values: list[float]) -> tuple[float, float, float]:
+    """Mean, standard deviation, coefficient of variation (CV = std/mean)."""
+    n = len(values)
+    if n == 0:
+        return (float("nan"), float("nan"), float("nan"))
+    mean = sum(values) / n
+    if n == 1:
+        return (mean, 0.0, 0.0)
+    var = sum((v - mean) ** 2 for v in values) / (n - 1)
+    std = math.sqrt(var)
+    cv = std / mean if mean != 0.0 else float("nan")
+    return (mean, std, cv)
 
 
 def _rms(field: np.ndarray) -> float:
@@ -280,14 +307,45 @@ def main() -> int:
     parser.add_argument("--viscosity", type=float, default=0.05)
     parser.add_argument("--dt", type=float, default=0.05)
     parser.add_argument("--final-time", type=float, default=1.0)
+    parser.add_argument("--reps", type=int, default=1,
+                        help="repeat measurement N times for CV reporting")
     parser.add_argument(
         "--case", choices=("mms", "tgv", "abc", "all"), default="mms"
     )
     args = parser.parse_args()
-    metrics = solve(
-        args.grid, args.steps, args.viscosity, args.dt, args.case, args.final_time
-    )
-    print(json.dumps({"status": "PASS", "metrics": metrics}, sort_keys=True))
+    if args.reps < 1:
+        raise ValueError("--reps must be >= 1")
+
+    # Collect loadavg before measurement.
+    la = _loadavg()
+
+    all_metrics: list[dict[str, float]] = []
+    for _ in range(args.reps):
+        m = solve(
+            args.grid, args.steps, args.viscosity, args.dt,
+            args.case, args.final_time,
+        )
+        all_metrics.append(m)
+
+    if args.reps == 1:
+        print(json.dumps({"status": "PASS", "metrics": all_metrics[0]}, sort_keys=True))
+        return 0
+
+    # Multi-rep: collate key metrics with statistics.
+    stat_keys = ["spectral_grid_updates_per_s", "wall_s",
+                 "l2_rel_error", "time_convergence_order"]
+    report: dict[str, object] = {"status": "PASS", "n": args.reps}
+    if la:
+        report["loadavg"] = la
+    for key in all_metrics[0]:
+        vals = [m[key] for m in all_metrics]
+        if key in stat_keys:
+            mean, std, cv = _stats(vals)
+            report[key] = {"mean": mean, "std": std, "cv": cv}
+        else:
+            # Deterministic metrics: report the first value.
+            report[key] = vals[0]
+    print(json.dumps(report, sort_keys=True))
     return 0
 
 
