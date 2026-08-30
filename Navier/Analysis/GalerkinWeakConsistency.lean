@@ -668,9 +668,12 @@ theorem modalApprox_fixedTest_weakConsistent_of_fixed_proj
             (W.coefficientField (c m t)) (φ.field t))) volume 0 T := by
       simpa only [hconvPair] using
         (intervalIntegrable_const (c := (0 : ℝ)) (μ := volume) (a := 0) (b := T))
+    have hmodal_cont : Continuous (W.modalTestCoefficients φ.field m) :=
+      continuous_iff_continuousAt.mpr fun t => (hmodal_deriv m t).continuousAt
     have heq := modalFlow_projectedTest_splitResidualWeakEquation_at
       W ν c hc φ φ.timeDerivSchwartz T hT hφzero m
-        (hmodal_deriv m) (hmodal_deriv_cont m)
+        hmodal_cont.continuousOn (fun t _ => hmodal_deriv m t)
+        (hmodal_deriv_cont m).continuousOn
     have hidentify := weakFormResidual_modalApprox_eq_interval
       W ν (W.proj m u₀) c φ m T hT hφzero hφ'zero
     rw [intervalIntegral.integral_add ((hmainInt m).add hlapInt) hconvInt,

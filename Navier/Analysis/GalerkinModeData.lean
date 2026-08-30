@@ -42,6 +42,192 @@ open Navier.Analysis.LerayWeak
 open Navier.Analysis.OfficialABEncoding
 open Navier.Analysis.Vorticity
 
+private theorem testField_eval_hasDerivAt
+    (phi : DivergenceFreeTestFunction) {t : ℝ} (ht : 0 < t) (x : Space) :
+    HasDerivAt (fun s : ℝ => phi.field s x) (phi.timeDerivSchwartz t x) t := by
+  let S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ
+  let F : ℝ × Space → Space := fun z => phi.field z.1 z.2
+  have hz : (t, x) ∈ S := ⟨ht.le, Set.mem_univ x⟩
+  have hF : HasFDerivWithinAt F (fderivWithin ℝ F S (t, x)) S (t, x) :=
+    ((phi.smooth (t, x) hz).differentiableWithinAt
+      (by simp)).hasFDerivWithinAt
+  have hi : HasFDerivAt (fun s : ℝ => (s, x))
+      (ContinuousLinearMap.inl ℝ ℝ Space) t := hasFDerivAt_prodMk_left t x
+  have hmaps : Set.MapsTo (fun s : ℝ => (s, x)) (Set.Ici 0) S :=
+    fun s hs => ⟨hs, Set.mem_univ x⟩
+  have hcomp := HasFDerivWithinAt.comp t hF hi.hasFDerivWithinAt hmaps
+  rw [show (F ∘ (fun s : ℝ => (s, x))) = (fun s => phi.field s x) from rfl] at hcomp
+  have hwithin : HasDerivWithinAt (fun s : ℝ => phi.field s x)
+      (phi.timeDerivSchwartz t x) (Set.Ici 0) t := by
+    rw [← phi.timeDeriv_eq t ht.le x]
+    unfold timeDerivative
+    rw [hcomp.fderivWithin ((uniqueDiffOn_Ici 0) t ht.le),
+      ContinuousLinearMap.comp_apply, ContinuousLinearMap.inl_apply]
+    exact hcomp.hasDerivWithinAt
+  exact hwithin.hasDerivAt
+    (Filter.mem_of_superset (Ioi_mem_nhds ht) (Set.Ioi_subset_Ici_self))
+
+private theorem officialInner_hasDerivAt_left {f : ℝ → Space} {f' : Space}
+    {t : ℝ} (h : HasDerivAt f f' t) (y : Space) :
+    @HasDerivAt ℝ _ ℝ Real.normedAddCommGroup.toAddCommGroup
+      RCLike.toInnerProductSpaceReal.toModule _ _
+      (fun s => officialInner (f s) y) (officialInner f' y) t := by
+  let L : Space →L[ℝ] ℝ := LinearMap.mkContinuous
+    { toFun := fun x => officialInner x y
+      map_add' := fun x z => officialInner_add_left x z y
+      map_smul' := fun c x => officialInner_smul_left c x y }
+    (3 * ‖y‖) (fun x => by
+      rw [Real.norm_eq_abs]
+      calc
+        |officialInner x y| ≤ 3 * (‖x‖ * ‖y‖) := abs_officialInner_le_three x y
+        _ = (3 * ‖y‖) * ‖x‖ := by ring)
+  change @HasDerivAt ℝ _ ℝ Real.normedAddCommGroup.toAddCommGroup
+    RCLike.toInnerProductSpaceReal.toModule _ _ (L ∘ f) (L f') t
+  exact L.hasFDerivAt.comp_hasDerivAt t h
+
+private theorem testPairing_hasDerivAt
+    (phi : DivergenceFreeTestFunction) {t : ℝ} (ht : 0 < t)
+    (w : SchwartzVelocity) :
+    @HasDerivAt ℝ _ ℝ Real.normedAddCommGroup.toAddCommGroup
+      RCLike.toInnerProductSpaceReal.toModule _ _
+      (fun s => schwartzL2Inner (phi.field s) w)
+      (schwartzL2Inner (phi.timeDerivSchwartz t) w) t := by
+  obtain ⟨K, hK, hspace⟩ := phi.compact_space_deriv
+  obtain ⟨C, _hC, hCbound⟩ :=
+    phi.exists_uniform_timeDeriv_bound (T := 2 * t) hK
+  let s : Set ℝ := Set.Icc (t / 2) (3 * t / 2)
+  let bound : Space → ℝ := fun x => (3 * C) * ‖w x‖
+  have ht2 : 0 < t / 2 := by linarith
+  have htop : 3 * t / 2 ≤ 2 * t := by linarith
+  have hs : s ∈ nhds t := by
+    exact Icc_mem_nhds (by linarith) (by linarith)
+  have hF_meas : ∀ᶠ r in nhds t,
+      AEStronglyMeasurable (fun x => officialInner (phi.field r x) (w x)) volume :=
+    Filter.Eventually.of_forall fun r =>
+      (schwartzPairing_integrable (phi.field r) w).aestronglyMeasurable
+  have hF_int : Integrable (fun x => officialInner (phi.field t x) (w x)) volume :=
+    schwartzPairing_integrable (phi.field t) w
+  have hF'_meas : AEStronglyMeasurable
+      (fun x => officialInner (phi.timeDerivSchwartz t x) (w x)) volume :=
+    (schwartzPairing_integrable (phi.timeDerivSchwartz t) w).aestronglyMeasurable
+  have hbound_int : Integrable bound volume := by
+    exact (SchwartzMap.integrable w).norm.const_mul (3 * C)
+  have hbound : ∀ᵐ x ∂(volume : Measure Space), ∀ r ∈ s,
+      ‖officialInner (phi.timeDerivSchwartz r x) (w x)‖ ≤ bound x := by
+    filter_upwards with x
+    intro r hr
+    by_cases hx : x ∈ K
+    · have hrange : r ∈ Set.Icc (0 : ℝ) (2 * t) := by
+        dsimp [s] at hr
+        exact ⟨(le_of_lt ht2).trans hr.1, hr.2.trans htop⟩
+      have htd := hCbound r hrange x hx
+      rw [Real.norm_eq_abs]
+      calc
+        |officialInner (phi.timeDerivSchwartz r x) (w x)|
+            ≤ 3 * (‖phi.timeDerivSchwartz r x‖ * ‖w x‖) :=
+          abs_officialInner_le_three _ _
+        _ ≤ 3 * (C * ‖w x‖) := by gcongr
+        _ = bound x := by simp only [bound]; ring
+    · rw [hspace r x hx, officialInner_zero_left, norm_zero]
+      dsimp [bound]
+      positivity
+  have hdiff : ∀ᵐ x ∂(volume : Measure Space), ∀ r ∈ s,
+      @HasDerivAt ℝ _ ℝ Real.normedAddCommGroup.toAddCommGroup
+        RCLike.toInnerProductSpaceReal.toModule _ _
+        (fun q => officialInner (phi.field q x) (w x))
+        (officialInner (phi.timeDerivSchwartz r x) (w x)) r := by
+    filter_upwards with x
+    intro r hr
+    apply officialInner_hasDerivAt_left
+    apply testField_eval_hasDerivAt phi
+    dsimp [s] at hr
+    exact lt_of_lt_of_le ht2 hr.1
+  exact (hasDerivAt_integral_of_dominated_loc_of_deriv_le
+    hs hF_meas hF_int hF'_meas hbound hbound_int hdiff).2
+
+private theorem timeDeriv_joint_continuousOn
+    (phi : DivergenceFreeTestFunction) :
+    ContinuousOn (fun z : ℝ × Space => phi.timeDerivSchwartz z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := by
+  let S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ
+  let F : ℝ × Space → Space := fun z => phi.field z.1 z.2
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hD : ContinuousOn
+      (fun z : ℝ × Space => fderivWithin ℝ F S z (1, 0)) S :=
+    ((phi.smooth.continuousOn_fderivWithin hUD (by norm_num)).clm_apply
+      continuousOn_const)
+  have hbridge : ∀ z ∈ S,
+      fderivWithin ℝ F S z (1, 0) = phi.timeDerivSchwartz z.1 z.2 := by
+    rintro ⟨t, x⟩ hz
+    rw [← phi.timeDeriv_eq t hz.1 x]
+    unfold timeDerivative
+    have hF : HasFDerivWithinAt F (fderivWithin ℝ F S (t, x)) S (t, x) :=
+      ((phi.smooth (t, x) hz).differentiableWithinAt (by simp)).hasFDerivWithinAt
+    have hi : HasFDerivAt (fun s : ℝ => (s, x))
+        (ContinuousLinearMap.inl ℝ ℝ Space) t := hasFDerivAt_prodMk_left t x
+    have hmaps : Set.MapsTo (fun s : ℝ => (s, x)) (Set.Ici 0) S :=
+      fun s hs => ⟨hs, Set.mem_univ x⟩
+    have hcomp := HasFDerivWithinAt.comp t hF hi.hasFDerivWithinAt hmaps
+    rw [show (F ∘ (fun s : ℝ => (s, x))) = (fun s => phi.field s x) from rfl]
+      at hcomp
+    rw [hcomp.fderivWithin ((uniqueDiffOn_Ici 0) t hz.1),
+      ContinuousLinearMap.comp_apply, ContinuousLinearMap.inl_apply]
+  exact hD.congr (fun z hz => (hbridge z hz).symm)
+
+private theorem testPairing_continuousOn_of_joint_compact
+    {f : ℝ → SchwartzVelocity} {s : Set ℝ}
+    (hjoint : ContinuousOn (fun z : ℝ × Space => f z.1 z.2)
+      (s ×ˢ Set.univ))
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → f t x = 0)
+    (w : SchwartzVelocity) :
+    ContinuousOn (fun t => schwartzL2Inner (f t) w) s := by
+  unfold schwartzL2Inner
+  apply continuousOn_integral_of_compact_support hK
+  · simp only [officialInner_eq_sum]
+    apply continuousOn_finsetSum
+    intro i _
+    exact ((continuous_apply i).comp_continuousOn hjoint).mul
+      ((((continuous_apply i).comp w.continuous).comp continuous_snd).continuousOn)
+  · intro t x _ht hx
+    rw [hspace t x hx, officialInner_zero_left]
+
+private theorem modalTestCoefficients_continuousOn_of_joint_compact
+    (W : GalerkinBasisFamily) {f : ℝ → SchwartzVelocity} {s : Set ℝ}
+    (hjoint : ContinuousOn (fun z : ℝ × Space => f z.1 z.2)
+      (s ×ˢ Set.univ))
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → f t x = 0)
+    (m : ℕ) : ContinuousOn (W.modalTestCoefficients f m) s := by
+  let L : (Fin m → ℝ) →L[ℝ] EuclideanSpace ℝ (Fin m) :=
+    (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin m => ℝ)).symm.toContinuousLinearMap
+  have hraw : ContinuousOn
+      (fun t : ℝ => fun i : Fin m => schwartzL2Inner (f t) (W.w i)) s := by
+    rw [continuousOn_pi]
+    intro i
+    exact testPairing_continuousOn_of_joint_compact hjoint hK hspace (W.w i)
+  change ContinuousOn
+    (fun t : ℝ => L (fun i : Fin m => schwartzL2Inner (f t) (W.w i))) s
+  exact L.continuous.comp_continuousOn hraw
+
+private theorem modalTestCoefficients_hasDerivAt
+    (W : GalerkinBasisFamily) (phi : DivergenceFreeTestFunction)
+    (m : ℕ) {t : ℝ} (ht : 0 < t) :
+    HasDerivAt (W.modalTestCoefficients phi.field m)
+      (W.modalTestCoefficients phi.timeDerivSchwartz m t) t := by
+  let L : (Fin m → ℝ) →L[ℝ] EuclideanSpace ℝ (Fin m) :=
+    (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin m => ℝ)).symm.toContinuousLinearMap
+  have hraw : HasDerivAt
+      (fun s : ℝ => fun i : Fin m => schwartzL2Inner (phi.field s) (W.w i))
+      (fun i : Fin m => schwartzL2Inner (phi.timeDerivSchwartz t) (W.w i)) t := by
+    rw [hasDerivAt_pi]
+    intro i
+    exact testPairing_hasDerivAt phi ht (W.w i)
+  change HasDerivAt
+    (fun s : ℝ => L (fun i : Fin m => schwartzL2Inner (phi.field s) (W.w i)))
+    (L (fun i : Fin m => schwartzL2Inner (phi.timeDerivSchwartz t) (W.w i))) t
+  exact L.hasFDerivAt.comp_hasDerivAt t hraw
+
 /-- **Aubin–Lions time regularity for the Galerkin coefficient flow
 (certified, no `sorry`).**  A coefficient flow solving the projected Galerkin
 ODE, with a uniform time-integrated enstrophy bound, is `L²`-in-time
@@ -389,24 +575,37 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
         intro t ht; exact hφzero t (le_trans (le_max_left _ _) ht)
       have hφ''zero : ∀ t, T ≤ t → phi.timeDerivSchwartz t = 0 := by
         intro t ht; exact hφ'zero t (le_trans (le_max_right _ _) ht)
-      -- 2. hmodal_deriv: derivative of modal test coefficients follows from
-      -- phi.smooth and the chain rule applied to the linear map
-      -- initialCoefficients (·) m.
-      have hmodal_deriv : ∀ (m : ℕ) (t : ℝ),
+      -- 2. Modal coefficient regularity on the actual FTC window.
+      obtain ⟨Kfield, hKfield, hfield_space⟩ := phi.compact_space
+      obtain ⟨Kderiv, hKderiv, hderiv_space⟩ := phi.compact_space_deriv
+      have hwindow : Set.Icc (0 : ℝ) T ×ˢ (Set.univ : Set Space) ⊆
+          Set.Ici (0 : ℝ) ×ˢ (Set.univ : Set Space) := by
+        rintro ⟨t, x⟩ htx
+        exact ⟨htx.1.1, Set.mem_univ x⟩
+      have hfield_joint : ContinuousOn
+          (fun z : ℝ × Space => phi.field z.1 z.2)
+          (Set.Icc (0 : ℝ) T ×ˢ Set.univ) :=
+        phi.smooth.continuousOn.mono hwindow
+      have hderiv_joint : ContinuousOn
+          (fun z : ℝ × Space => phi.timeDerivSchwartz z.1 z.2)
+          (Set.Icc (0 : ℝ) T ×ˢ Set.univ) :=
+        (timeDeriv_joint_continuousOn phi).mono hwindow
+      have hmodal_cont : ∀ m, ContinuousOn
+          (W.modalTestCoefficients phi.field m) (Set.Icc (0 : ℝ) T) := by
+        intro m
+        exact modalTestCoefficients_continuousOn_of_joint_compact W
+          hfield_joint hKfield hfield_space m
+      have hmodal_deriv : ∀ (m : ℕ) (t : ℝ), t ∈ Set.Ioo (0 : ℝ) T →
           HasDerivAt (W.modalTestCoefficients phi.field m)
             (W.modalTestCoefficients phi.timeDerivSchwartz m t) t := by
-        intro m t
-        -- CONJECTURE: The derivative of the L² inner product against each basis
-        -- element follows from the pointwise timeDeriv_eq and the DCT.
-        -- This is a standard lemma: HasDerivAt (fun s => schwartzL2Inner (phi.field s) w)
-        --   (schwartzL2Inner (phi.timeDerivSchwartz t) w) t.
-        sorry
-      have hmodal_deriv_cont : ∀ m, Continuous (W.modalTestCoefficients phi.timeDerivSchwartz m) := by
+        intro m t ht
+        exact modalTestCoefficients_hasDerivAt W phi m ht.1
+      have hmodal_deriv_cont : ∀ m, ContinuousOn
+          (W.modalTestCoefficients phi.timeDerivSchwartz m)
+          (Set.Icc (0 : ℝ) T) := by
         intro m
-        -- CONJECTURE: The map t ↦ initialCoefficients (phi.timeDerivSchwartz t) m is
-        -- continuous because phi.timeDerivSchwartz is continuous in the Schwartz topology
-        -- (by phi.smooth) and initialCoefficients is continuous.
-        sorry
+        exact modalTestCoefficients_continuousOn_of_joint_compact W
+          hderiv_joint hKderiv hderiv_space m
       -- 3. All integrability hypotheses: the integrands are continuous on ℝ,
       -- hence integrable on the compact interval [0,T].  The proofs are
       -- straightforward from the continuity of the various maps
@@ -500,7 +699,7 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
           Filter.atTop (nhds 0) :=
         modalFlow_fixedTest_projectedResidual_tendsto_of_commutators W nu u0 cChoice
           hc_deriv hc0 phi T hT hφzero' hφ''zero
-          hmodal_deriv hmodal_deriv_cont hmainInt hlapInt hconvInt hlap hconv
+          hmodal_cont hmodal_deriv hmodal_deriv_cont hmainInt hlapInt hconvInt hlap hconv
       -- 8. Apply modalApprox_fixedTest_weakConsistent_of_projectedDatum
       exact modalApprox_fixedTest_weakConsistent_of_projectedDatum W nu u0 hu0 cChoice
         phi hprojected
