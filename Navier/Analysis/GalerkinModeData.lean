@@ -415,8 +415,12 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
       have henstrophyIntegrable : ∀ m, IntegrableOn
           (fun t => W.coefficientEnstrophy (cChoice m t)) (Set.Ioc (0 : ℝ) T) := by
         intro m
-        -- CONJECTURE: W.coefficientEnstrophy is continuous in its argument
-        sorry
+        have hcont : ContinuousOn
+            (fun t => W.coefficientEnstrophy (cChoice m t))
+            (Set.Icc (0 : ℝ) T) :=
+          (coefficientFlow_enstrophy_continuousOn W cChoice hc_deriv m).mono
+            (fun _ ht => Set.mem_Ici.mpr ht.1)
+        exact hcont.integrableOn_Icc.mono_set Set.Ioc_subset_Icc_self
       have errorSqIntegrable : ∀ m, IntegrableOn (fun t =>
           ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
           (Set.Ioc (0 : ℝ) T) := by
