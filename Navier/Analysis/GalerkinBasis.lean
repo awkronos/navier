@@ -4240,9 +4240,11 @@ theorem modalFlow_retainedSpan_weakEquation (W : GalerkinBasisFamily)
       HasDerivWithinAt (c m)
         (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
         (Set.Ici (0 : ℝ)) t)
-    (m : ℕ) (b b' : ℝ → EuclideanSpace ℝ (Fin m))
-    (hb : ∀ t : ℝ, HasDerivAt b (b' t) t) (hb'_cont : Continuous b')
-    (T : ℝ) (hT : 0 ≤ T) (hb_zero : ∀ t : ℝ, T ≤ t → b t = 0) :
+    (m : ℕ) (b b' : ℝ → EuclideanSpace ℝ (Fin m)) (T : ℝ)
+    (hb_cont : ContinuousOn b (Set.Icc (0 : ℝ) T))
+    (hb : ∀ t ∈ Set.Ioo (0 : ℝ) T, HasDerivAt b (b' t) t)
+    (hb'_cont : ContinuousOn b' (Set.Icc (0 : ℝ) T))
+    (hT : 0 ≤ T) (hb_zero : ∀ t : ℝ, T ≤ t → b t = 0) :
     (∫ t in (0 : ℝ)..T,
         schwartzL2Inner (W.coefficientField (c m t))
           (W.coefficientField (b' t)) +
@@ -4260,16 +4262,14 @@ theorem modalFlow_retainedSpan_weakEquation (W : GalerkinBasisFamily)
   have hc_cont : ContinuousOn (c m) (Set.Icc (0 : ℝ) T) := by
     intro t ht
     exact (hc m t ht.1).continuousWithinAt.mono Set.Icc_subset_Ici_self
-  have hb_cont : Continuous b := continuous_iff_continuousAt.mpr fun t =>
-    (hb t).continuousAt
   have hprod_cont : ContinuousOn (fun t => inner ℝ (c m t) (b t))
-      (Set.Icc (0 : ℝ) T) := hc_cont.inner hb_cont.continuousOn
+      (Set.Icc (0 : ℝ) T) := hc_cont.inner hb_cont
   have hF_comp : ContinuousOn (fun t => F (c m t)) (Set.Icc (0 : ℝ) T) :=
     hF_cont.comp_continuousOn hc_cont
   have hdensity_cont : ContinuousOn
       (fun t => inner ℝ (c m t) (b' t) + inner ℝ (F (c m t)) (b t))
       (Set.Icc (0 : ℝ) T) :=
-    (hc_cont.inner hb'_cont.continuousOn).add (hF_comp.inner hb_cont.continuousOn)
+    (hc_cont.inner hb'_cont).add (hF_comp.inner hb_cont)
   have hderiv : ∀ t ∈ Set.Ioo (0 : ℝ) T,
       HasDerivWithinAt (fun s => inner ℝ (c m s) (b s))
         (inner ℝ (c m t) (b' t) + inner ℝ (F (c m t)) (b t))
@@ -4279,7 +4279,7 @@ theorem modalFlow_retainedSpan_weakEquation (W : GalerkinBasisFamily)
       (show Set.Ioi t ⊆ Set.Ici (0 : ℝ) by
         intro s hs
         exact le_trans ht.1.le hs.le)
-    simpa only [F] using hc_right.inner ℝ (hb t).hasDerivWithinAt
+    simpa only [F] using hc_right.inner ℝ (hb t ht).hasDerivWithinAt
   have hint : IntervalIntegrable
       (fun t => inner ℝ (c m t) (b' t) + inner ℝ (F (c m t)) (b t))
       volume 0 T := by
@@ -4305,9 +4305,11 @@ theorem modalFlow_retainedSpan_physicalWeakEquation (W : GalerkinBasisFamily)
       HasDerivWithinAt (c m)
         (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
         (Set.Ici (0 : ℝ)) t)
-    (m : ℕ) (b b' : ℝ → EuclideanSpace ℝ (Fin m))
-    (hb : ∀ t : ℝ, HasDerivAt b (b' t) t) (hb'_cont : Continuous b')
-    (T : ℝ) (hT : 0 ≤ T) (hb_zero : ∀ t : ℝ, T ≤ t → b t = 0) :
+    (m : ℕ) (b b' : ℝ → EuclideanSpace ℝ (Fin m)) (T : ℝ)
+    (hb_cont : ContinuousOn b (Set.Icc (0 : ℝ) T))
+    (hb : ∀ t ∈ Set.Ioo (0 : ℝ) T, HasDerivAt b (b' t) t)
+    (hb'_cont : ContinuousOn b' (Set.Icc (0 : ℝ) T))
+    (hT : 0 ≤ T) (hb_zero : ∀ t : ℝ, T ≤ t → b t = 0) :
     (∫ t in (0 : ℝ)..T,
         schwartzL2Inner (W.coefficientField (c m t))
           (W.coefficientField (b' t)) +
@@ -4318,7 +4320,7 @@ theorem modalFlow_retainedSpan_physicalWeakEquation (W : GalerkinBasisFamily)
       schwartzL2Inner (W.coefficientField (c m 0))
         (W.coefficientField (b 0)) = 0 := by
   simpa only [projectedVectorField_pairing] using
-    modalFlow_retainedSpan_weakEquation W ν c hc m b b' hb hb'_cont T hT hb_zero
+    modalFlow_retainedSpan_weakEquation W ν c hc m b b' T hb_cont hb hb'_cont hT hb_zero
 
 /-- Apply the retained-span physical equation to the actual first-`m` modal
 projection of a compactly time-supported Schwartz test.  The hypothesis
@@ -4354,9 +4356,12 @@ theorem modalFlow_projectedTest_physicalWeakEquation
     simp [GalerkinBasisFamily.modalTestCoefficients, hφzero t ht,
       GalerkinBasisFamily.initialCoefficients, GalerkinBasisFamily.coeff,
       schwartzL2Inner_zero_left]
+  have hbcont : Continuous (W.modalTestCoefficients φ.field m) :=
+    continuous_iff_continuousAt.mpr fun t => (hmodal_deriv t).continuousAt
   have h := modalFlow_retainedSpan_physicalWeakEquation W ν c hc m
       (W.modalTestCoefficients φ.field m) (W.modalTestCoefficients φ' m)
-      hmodal_deriv hmodal_deriv_cont T hT.le hbzero
+      T hbcont.continuousOn (fun t _ => hmodal_deriv t)
+      hmodal_deriv_cont.continuousOn hT.le hbzero
   simp_rw [coefficientField_pairing_modalTestCoefficients] at h
   simpa only [coefficientField_modalTestCoefficients] using h
 
@@ -4489,10 +4494,13 @@ theorem modalFlow_projectedTest_splitResidualWeakEquation_at
     (φ : DivergenceFreeTestFunction) (φ' : ℝ → SchwartzVelocity)
     (T : ℝ) (hT : 0 ≤ T) (hφzero : ∀ t, T ≤ t → φ.field t = 0)
     (m : ℕ)
-    (hmodal_deriv : ∀ t : ℝ,
+    (hmodal_cont : ContinuousOn (W.modalTestCoefficients φ.field m)
+      (Set.Icc (0 : ℝ) T))
+    (hmodal_deriv : ∀ t ∈ Set.Ioo (0 : ℝ) T,
       HasDerivAt (W.modalTestCoefficients φ.field m)
         (W.modalTestCoefficients φ' m t) t)
-    (hmodal_deriv_cont : Continuous (W.modalTestCoefficients φ' m)) :
+    (hmodal_deriv_cont : ContinuousOn (W.modalTestCoefficients φ' m)
+      (Set.Icc (0 : ℝ) T)) :
     (∫ t in (0 : ℝ)..T,
         schwartzL2Inner (W.coefficientField (c m t)) (φ' t) +
         schwartzL2Inner (W.coefficientField (c m t))
@@ -4512,7 +4520,7 @@ theorem modalFlow_projectedTest_splitResidualWeakEquation_at
       schwartzL2Inner_zero_left]
   have h := modalFlow_retainedSpan_physicalWeakEquation W ν c hc m
     (W.modalTestCoefficients φ.field m) (W.modalTestCoefficients φ' m)
-    hmodal_deriv hmodal_deriv_cont T hT hbzero
+    T hmodal_cont hmodal_deriv hmodal_deriv_cont hT hbzero
   simp_rw [coefficientField_pairing_modalTestCoefficients] at h
   simp only [coefficientField_modalTestCoefficients] at h
   have hintegral :
@@ -4680,11 +4688,14 @@ theorem modalFlow_fixedTest_projectedResidual_tendsto_of_commutators
     (φ : DivergenceFreeTestFunction)
     (T : ℝ) (hT : 0 ≤ T) (hφzero : ∀ t, T ≤ t → φ.field t = 0)
     (hφ'zero : ∀ t, T ≤ t → φ.timeDerivSchwartz t = 0)
-    (hmodal_deriv : ∀ (m : ℕ) (t : ℝ),
+    (hmodal_cont : ∀ m, ContinuousOn
+      (W.modalTestCoefficients φ.field m) (Set.Icc (0 : ℝ) T))
+    (hmodal_deriv : ∀ (m : ℕ) (t : ℝ), t ∈ Set.Ioo (0 : ℝ) T →
       HasDerivAt (W.modalTestCoefficients φ.field m)
         (W.modalTestCoefficients φ.timeDerivSchwartz m t) t)
     (hmodal_deriv_cont : ∀ m,
-      Continuous (W.modalTestCoefficients φ.timeDerivSchwartz m))
+      ContinuousOn (W.modalTestCoefficients φ.timeDerivSchwartz m)
+        (Set.Icc (0 : ℝ) T))
     (hmainInt : ∀ m, IntervalIntegrable (fun t =>
       schwartzL2Inner (W.coefficientField (c m t)) (φ.timeDerivSchwartz t) +
       schwartzL2Inner (W.coefficientField (c m t))
@@ -4712,7 +4723,7 @@ theorem modalFlow_fixedTest_projectedResidual_tendsto_of_commutators
       Filter.atTop (nhds 0) := by
   have heq (m : ℕ) := modalFlow_projectedTest_splitResidualWeakEquation_at
     W ν c hc φ φ.timeDerivSchwartz T hT hφzero m
-      (hmodal_deriv m) (hmodal_deriv_cont m)
+      (hmodal_cont m) (hmodal_deriv m) (hmodal_deriv_cont m)
   have hidentify (m : ℕ) := weakFormResidual_modalApprox_eq_interval
     W ν (W.proj m u₀) c φ m T hT hφzero hφ'zero
   have hresidual : (fun m =>
