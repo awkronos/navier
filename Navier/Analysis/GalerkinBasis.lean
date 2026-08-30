@@ -1212,31 +1212,6 @@ theorem curlSchwartzCLM_apply (u : SchwartzVelocity) (x : Space) :
     curlSchwartzCLM u x = staticCurl u x := by
   simp [curlSchwartzCLM, staticCurl, SchwartzMap.lineDerivOp_apply_eq_fderiv]
 
-/-- **H(curl) convergence of the L2 projection (standalone lemma, CONJECTURE).**
-For every divergence-free Schwartz field `phi`, the L2-orthogonal projection
-onto the first `m` modes converges in the H(curl) graph norm, i.e.
-`‖curl(P_m phi - phi)‖_{L2} -> 0` as `m -> oo`.
-This property is **not** a consequence of L2 density alone (the L2 projection
-onto a finite-dimensional subspace does not commute with the curl operator on
-R3, whose continuous spectrum prevents finite-rank spectral projections).  It
-is a genuine additional structural condition that must be supplied by the basis
-construction.  On R3 this lemma is a CONJECTURE (scientific-frontier gap) for
-the Gram-Schmidt basis of a dense sequence.
-See `FourierGalerkinBasis.lean` for a construction framework. -/
-theorem curl_proj_converges (W : GalerkinBasisFamily)
-    (phi : SchwartzVelocity) (hphi : DivergenceFreeInitial phi) :
-    Filter.Tendsto (fun m : Nat =>
-      ‖toL2 (curlSchwartzCLM (W.proj m phi - phi))‖)
-    Filter.atTop (nhds 0) := by
-  -- OPEN: The L2 projection onto a Gram-Schmidt basis of a dense
-  -- divergence-free family does NOT guarantee H(curl) convergence of the
-  -- projection on R3, because the curl operator has continuous spectrum
-  -- (no finite-rank spectral projection).  This is a genuine
-  -- scientific-frontier gap: closing it requires a spectral basis
-  -- (Fourier-Plancherel on a periodic domain, or a wavelet/frame
-  -- construction with explicit frequency-truncation error bounds).
-  sorry
-
 /-- The componentwise Laplacian retained as a Schwartz velocity. -/
 noncomputable def laplacianSchwartz (u : SchwartzVelocity) : SchwartzVelocity :=
   ∑ i : Fin 3, ∂_{basisVector i} (∂_{basisVector i} u)
@@ -3461,6 +3436,191 @@ theorem proj_tendsto_self (W : GalerkinBasisFamily) (u₀ : SchwartzVelocity)
     _ ≤ schwartzL2Inner (u₀ - ∑ k ∈ Finset.range m, c k • W.w k)
                         (u₀ - ∑ k ∈ Finset.range m, c k • W.w k) := proj_best_approx W m u₀ c
     _ < ε := hmc
+
+/-- Curl of a Schwartz velocity is divergence-free.  This is the concrete
+constraint-preservation fact needed to apply the `L²` density of a Galerkin
+basis to the curl itself. -/
+theorem curlSchwartzCLM_divergenceFree (u : SchwartzVelocity) :
+    DivergenceFreeInitial (curlSchwartzCLM u) := by
+  intro x
+  have hfun : (fun y => curlSchwartzCLM u y) =
+      fun y => staticCurl (⇑u) y := by
+    funext y
+    exact curlSchwartzCLM_apply u y
+  rw [hfun]
+  exact Navier.Analysis.CurlIdentities.staticDivergence_staticCurl_eq_zero
+    (⇑u) x ((u.smooth 2).contDiffAt)
+
+/-- Every finite Galerkin projection contracts the squared `L²` norm. -/
+theorem proj_l2_sq_le (W : GalerkinBasisFamily) (m : ℕ) (u : SchwartzVelocity) :
+    ‖toL2 (W.proj m u)‖ ^ 2 ≤ ‖toL2 u‖ ^ 2 := by
+  rw [norm_toL2_sq, norm_toL2_sq]
+  have horth : schwartzL2Inner (u - W.proj m u) (W.proj m u) = 0 :=
+    residual_inner_span W m u (W.coeff u)
+  have hsplit : u = (u - W.proj m u) + W.proj m u := by abel
+  calc
+    schwartzL2Inner (W.proj m u) (W.proj m u) ≤
+        schwartzL2Inner (u - W.proj m u) (u - W.proj m u) +
+          schwartzL2Inner (W.proj m u) (W.proj m u) :=
+      le_add_of_nonneg_left (schwartzL2Inner_self_nonneg _)
+    _ = schwartzL2Inner ((u - W.proj m u) + W.proj m u)
+        ((u - W.proj m u) + W.proj m u) :=
+      (schwartzL2Inner_self_add_of_orthogonal _ _ horth).symm
+    _ = schwartzL2Inner u u := by rw [← hsplit]
+
+/-- **Uniform `H(curl)` stability from exact spectral commutation.**
+
+If the ordered finite projections commute with curl, their curl part is an
+ordinary `L²` orthogonal projection and hence has contraction constant one.
+This is the stability primitive a concrete Fourier/wavelet carrier must
+instantiate; it is a theorem parameter, not a field added to
+`GalerkinBasisFamily`. -/
+theorem curl_proj_sq_le_of_commutes (W : GalerkinBasisFamily)
+    (hcurl_commutes : ∀ (m : ℕ) (u : SchwartzVelocity),
+      curlSchwartzCLM (W.proj m u) = W.proj m (curlSchwartzCLM u))
+    (m : ℕ) (u : SchwartzVelocity) :
+    ‖toL2 (curlSchwartzCLM (W.proj m u))‖ ^ 2 ≤
+      ‖toL2 (curlSchwartzCLM u)‖ ^ 2 := by
+  rw [hcurl_commutes]
+  exact proj_l2_sq_le W m (curlSchwartzCLM u)
+
+/-- **`H(curl)` convergence for a curl-commuting spectral ordering.**
+
+Exact commutation reduces the curl error to the ordinary `L²` projection error
+of `curl phi`.  The latter converges by `proj_tendsto_self`, since curl of a
+Schwartz field is divergence-free.  This replaces the former false universal
+claim: `L²` density alone is insufficient, while a concrete spectral carrier
+only has to prove its explicit commutation identity. -/
+theorem curl_proj_converges_of_commutes (W : GalerkinBasisFamily)
+    (hcurl_commutes : ∀ (m : ℕ) (u : SchwartzVelocity),
+      curlSchwartzCLM (W.proj m u) = W.proj m (curlSchwartzCLM u))
+    (phi : SchwartzVelocity) :
+    Filter.Tendsto (fun m : Nat =>
+      ‖toL2 (curlSchwartzCLM (W.proj m phi - phi))‖)
+      Filter.atTop (nhds 0) := by
+  have hsq : Filter.Tendsto (fun m =>
+      ‖toL2 (curlSchwartzCLM phi - W.proj m (curlSchwartzCLM phi))‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+    simpa only [norm_toL2_sq] using
+      proj_tendsto_self W (curlSchwartzCLM phi)
+        (curlSchwartzCLM_divergenceFree phi)
+  have hnorm : Filter.Tendsto (fun m =>
+      ‖toL2 (curlSchwartzCLM phi - W.proj m (curlSchwartzCLM phi))‖)
+      Filter.atTop (nhds 0) := by
+    have hsqrt := hsq.sqrt
+    simpa only [Real.sqrt_sq (norm_nonneg _), Real.sqrt_zero] using hsqrt
+  have heq : (fun m : ℕ =>
+      ‖toL2 (curlSchwartzCLM (W.proj m phi - phi))‖) =
+      fun m => ‖toL2 (curlSchwartzCLM phi - W.proj m (curlSchwartzCLM phi))‖ := by
+    funext m
+    rw [map_sub, hcurl_commutes, toL2_sub, toL2_sub, norm_sub_rev]
+  rw [heq]
+  exact hnorm
+
+/-- Projection is additive under subtraction. -/
+theorem proj_sub (W : GalerkinBasisFamily) (m : ℕ) (u v : SchwartzVelocity) :
+    W.proj m (u - v) = W.proj m u - W.proj m v := by
+  unfold GalerkinBasisFamily.proj GalerkinBasisFamily.coeff
+  simp_rw [schwartzL2Inner_sub_left, sub_smul]
+  rw [Finset.sum_sub_distrib]
+
+/-- A finite combination of the first `M` modes is fixed by every later
+projection. -/
+theorem proj_sum_range_eq_of_le (W : GalerkinBasisFamily) {M m : ℕ}
+    (hMm : M ≤ m) (c : ℕ → ℝ) :
+    W.proj m (∑ j ∈ Finset.range M, c j • W.w j) =
+      ∑ j ∈ Finset.range M, c j • W.w j := by
+  have hcoeff (i : ℕ) :
+      W.coeff (∑ j ∈ Finset.range M, c j • W.w j) i =
+        if i < M then c i else 0 := by
+    unfold GalerkinBasisFamily.coeff
+    rw [schwartzL2Inner_sum_left]
+    by_cases hi : i < M
+    · rw [if_pos hi, Finset.sum_eq_single i]
+      · rw [schwartzL2Inner_smul_left, W.orthonormal i i,
+          if_pos rfl, mul_one]
+      · intro j _ hji
+        rw [schwartzL2Inner_smul_left, W.orthonormal j i,
+          if_neg hji, mul_zero]
+      · exact fun hi' => (hi' (Finset.mem_range.mpr hi)).elim
+    · rw [if_neg hi]
+      apply Finset.sum_eq_zero
+      intro j hj
+      have hji : j ≠ i := by
+        intro hji
+        subst i
+        exact hi (Finset.mem_range.mp hj)
+      rw [schwartzL2Inner_smul_left, W.orthonormal j i,
+        if_neg hji, mul_zero]
+  unfold GalerkinBasisFamily.proj
+  conv_lhs =>
+    enter [2, i]
+    rw [hcoeff i]
+  rw [← Finset.sum_subset (Finset.range_mono hMm) (fun i _ hiM => by
+    have hnot : ¬i < M := by simpa only [Finset.mem_range] using hiM
+    simp only [hnot, if_false, zero_smul])]
+  apply Finset.sum_congr rfl
+  intro i hi
+  rw [if_pos (Finset.mem_range.mp hi)]
+
+set_option maxHeartbeats 3000000 in
+/-- **Curl convergence from graph-density and uniformly `H¹`-bounded partial
+projections.**
+
+This is the exact analytic consumer for a divergence-free Hermite/wavelet
+ordering on `ℝ³`.  Graph-density supplies a finite modal approximant, later
+projections fix it, and the uniform graph bound controls the remaining error.
+Neither property is added to `GalerkinBasisFamily`; a concrete construction
+passes its two proved theorems directly. -/
+theorem curl_proj_converges (W : GalerkinBasisFamily)
+    (hgraph_dense : ∀ u : SchwartzVelocity, DivergenceFreeInitial u →
+      ∀ ε : ℝ, 0 < ε → ∃ (M : ℕ) (c : ℕ → ℝ),
+        ‖toL2 (u - ∑ j ∈ Finset.range M, c j • W.w j)‖ < ε ∧
+        ‖toL2 (curlSchwartzCLM
+          (u - ∑ j ∈ Finset.range M, c j • W.w j))‖ < ε)
+    (hstable : ∃ C : ℝ, 0 ≤ C ∧ ∀ (m : ℕ) (u : SchwartzVelocity),
+      ‖toL2 (curlSchwartzCLM (W.proj m u))‖ ≤
+        C * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖))
+    (phi : SchwartzVelocity) (hphi : DivergenceFreeInitial phi) :
+    Filter.Tendsto (fun m : Nat =>
+      ‖toL2 (curlSchwartzCLM (W.proj m phi - phi))‖)
+      Filter.atTop (nhds 0) := by
+  obtain ⟨C, hC, hstable⟩ := hstable
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  let δ := ε / (2 * C + 1)
+  have hden : 0 < 2 * C + 1 := by linarith
+  have hδ : 0 < δ := div_pos hε hden
+  obtain ⟨M, c, hL2, hcurl⟩ := hgraph_dense phi hphi δ hδ
+  let v : SchwartzVelocity := ∑ j ∈ Finset.range M, c j • W.w j
+  refine ⟨M, fun m hm => ?_⟩
+  have hfix : W.proj m v = v := proj_sum_range_eq_of_le W hm c
+  have herr : W.proj m phi - phi = W.proj m (phi - v) - (phi - v) := by
+    rw [proj_sub, hfix]
+    abel
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _), herr, map_sub,
+    toL2_sub]
+  calc
+    ‖toL2 (curlSchwartzCLM (W.proj m (phi - v))) -
+        toL2 (curlSchwartzCLM (phi - v))‖ ≤
+        ‖toL2 (curlSchwartzCLM (W.proj m (phi - v)))‖ +
+          ‖toL2 (curlSchwartzCLM (phi - v))‖ := norm_sub_le _ _
+    _ ≤ C * (‖toL2 (phi - v)‖ +
+          ‖toL2 (curlSchwartzCLM (phi - v))‖) +
+        ‖toL2 (curlSchwartzCLM (phi - v))‖ :=
+      add_le_add (hstable m (phi - v)) le_rfl
+    _ < C * (δ + δ) + δ := by
+      have hsum : ‖toL2 (phi - v)‖ +
+          ‖toL2 (curlSchwartzCLM (phi - v))‖ < δ + δ :=
+        add_lt_add (by simpa only [v] using hL2) (by simpa only [v] using hcurl)
+      have hmul := mul_le_mul_of_nonneg_left hsum.le hC
+      have hlast : ‖toL2 (curlSchwartzCLM (phi - v))‖ < δ := by
+        simpa only [v] using hcurl
+      linarith
+    _ = ε := by
+      dsimp [δ]
+      field_simp
+      ring
 
 /-!
 ## The `initial_converges` field, delivered
