@@ -313,10 +313,94 @@ private theorem schwartzL2Inner_neg_right_local (f g : SchwartzVelocity) :
   rw [schwartzL2Inner_comm, schwartzL2Inner_neg_left,
     schwartzL2Inner_comm g f]
 
+private theorem schwartzL2Inner_sub_right_local (f g h : SchwartzVelocity) :
+    schwartzL2Inner f (g - h) =
+      schwartzL2Inner f g - schwartzL2Inner f h := by
+  rw [sub_eq_add_neg, schwartzL2Inner_add_right,
+    schwartzL2Inner_neg_right_local, ← sub_eq_add_neg]
+
 private theorem schwartzL2Inner_neg_neg_local (f g : SchwartzVelocity) :
     schwartzL2Inner (-f) (-g) = schwartzL2Inner f g := by
   rw [schwartzL2Inner_neg_left, schwartzL2Inner_neg_right_local]
   ring
+
+private theorem convectionSchwartzBilin_add_left_local
+    (u v z : SchwartzVelocity) :
+    convectionSchwartzBilin (u + v) z =
+      convectionSchwartzBilin u z + convectionSchwartzBilin v z := by
+  simp [convectionSchwartzBilin, componentSchwartz, Finset.sum_add_distrib]
+
+private theorem convectionSchwartzBilin_add_right_local
+    (u v z : SchwartzVelocity) :
+    convectionSchwartzBilin u (v + z) =
+      convectionSchwartzBilin u v + convectionSchwartzBilin u z := by
+  have hderiv : ∀ i : Fin 3, ∂_{basisVector i} (v + z) =
+      ∂_{basisVector i} v + ∂_{basisVector i} z := by
+    intro i
+    exact map_add (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i)) v z
+  simp [convectionSchwartzBilin, hderiv, Finset.sum_add_distrib]
+
+private theorem convectionSchwartzBilin_smul_left_local
+    (r : ℝ) (u v : SchwartzVelocity) :
+    convectionSchwartzBilin (r • u) v = r • convectionSchwartzBilin u v := by
+  simp [convectionSchwartzBilin, componentSchwartz, Finset.smul_sum]
+
+private theorem convectionSchwartzBilin_smul_right_local
+    (r : ℝ) (u v : SchwartzVelocity) :
+    convectionSchwartzBilin u (r • v) = r • convectionSchwartzBilin u v := by
+  have hderiv : ∀ i : Fin 3, ∂_{basisVector i} (r • v) =
+      r • ∂_{basisVector i} v := by
+    intro i
+    exact map_smul (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i)) r v
+  simp [convectionSchwartzBilin, hderiv, Finset.smul_sum]
+
+private theorem convectionSchwartzBilin_sum_left_local
+    {ι : Type*} [DecidableEq ι] (s : Finset ι)
+    (u : ι → SchwartzVelocity) (v : SchwartzVelocity) :
+    convectionSchwartzBilin (∑ i ∈ s, u i) v =
+      ∑ i ∈ s, convectionSchwartzBilin (u i) v := by
+  induction s using Finset.induction_on with
+  | empty => simp [convectionSchwartzBilin, componentSchwartz]
+  | insert i s hi => simp [convectionSchwartzBilin_add_left_local, *]
+
+private theorem convectionSchwartzBilin_sum_right_local
+    {ι : Type*} [DecidableEq ι] (s : Finset ι)
+    (u : SchwartzVelocity) (v : ι → SchwartzVelocity) :
+    convectionSchwartzBilin u (∑ i ∈ s, v i) =
+      ∑ i ∈ s, convectionSchwartzBilin u (v i) := by
+  induction s using Finset.induction_on with
+  | empty =>
+      have hderiv : ∀ i : Fin 3,
+          ∂_{basisVector i} (0 : SchwartzVelocity) = 0 := by
+        intro i
+        exact map_zero (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i))
+      simp [convectionSchwartzBilin, hderiv]
+  | insert i s hi => simp [convectionSchwartzBilin_add_right_local, *]
+
+private theorem convectionSchwartz_coefficientField_local
+    (W : GalerkinBasisFamily) (m : ℕ) (a : EuclideanSpace ℝ (Fin m)) :
+    convectionSchwartz (W.coefficientField a) =
+      ∑ j : Fin m, ∑ k : Fin m,
+        (a j * a k) • convectionSchwartzBilin (W.w j) (W.w k) := by
+  unfold convectionSchwartz
+  rw [show W.coefficientField a = ∑ i : Fin m, a i • W.w i from rfl,
+    convectionSchwartzBilin_sum_left_local]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [convectionSchwartzBilin_smul_left_local,
+    convectionSchwartzBilin_sum_right_local, Finset.smul_sum]
+  apply Finset.sum_congr rfl
+  intro k _
+  rw [convectionSchwartzBilin_smul_right_local, smul_smul]
+
+private theorem convectionSchwartzBilin_sub_right_local
+    (u v z : SchwartzVelocity) :
+    convectionSchwartzBilin u (v - z) =
+      convectionSchwartzBilin u v - convectionSchwartzBilin u z := by
+  rw [sub_eq_add_neg, convectionSchwartzBilin_add_right_local,
+    show -z = (-1 : ℝ) • z by simp,
+    convectionSchwartzBilin_smul_right_local]
+  simp only [neg_smul, one_smul, sub_eq_add_neg]
 
 /-- **Aubin–Lions time regularity for the Galerkin coefficient flow
 (certified, no `sorry`).**  A coefficient flow solving the projected Galerkin
@@ -798,8 +882,79 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
           nu * schwartzL2Inner (W.coefficientField (cChoice m t))
             (W.laplacianProjectionCommutator m (phi.field t))) volume 0 T := by
         intro m
-        -- CONJECTURE: The integrand is continuous on [0,T]
-        sorry
+        have hcChoice_cont : ContinuousOn (cChoice m) (Set.Icc (0 : ℝ) T) := by
+          intro t ht
+          exact (hc_deriv m t ht.1).continuousWithinAt.mono Set.Icc_subset_Ici_self
+        have hcurl_joint : ContinuousOn
+            (fun z : ℝ × Space => curlSchwartzCLM (phi.field z.1) z.2)
+            (Set.Icc (0 : ℝ) T ×ˢ Set.univ) :=
+          (testCurl_joint_continuousOn phi).mono hwindow
+        have hcurl_space : ∀ t : ℝ, ∀ x : Space, x ∉ Kfield →
+            curlSchwartzCLM (phi.field t) x = 0 :=
+          fun t x hx => testCurl_eq_zero_of_not_mem phi hKfield hfield_space t hx
+        have hmodeError (i : Fin m) : ContinuousOn (fun t =>
+            schwartzL2Inner (curlSchwartzCLM (W.w i))
+              (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t)))
+            (Set.Icc (0 : ℝ) T) := by
+          have hprojMode : ContinuousOn (fun t =>
+              W.stokesOperator m (W.modalTestCoefficients phi.field m t) i)
+              (Set.Icc (0 : ℝ) T) :=
+            (PiLp.proj (p := (2 : ENNReal)) (𝕜 := ℝ)
+              (β := fun _ : Fin m => ℝ) i).continuous.comp_continuousOn
+                ((W.stokesOperator m).continuous.comp_continuousOn (hmodal_cont m))
+          have htestMode : ContinuousOn (fun t =>
+              schwartzL2Inner (curlSchwartzCLM (W.w i))
+                (curlSchwartzCLM (phi.field t))) (Set.Icc (0 : ℝ) T) :=
+            (testPairing_continuousOn_of_joint_compact hcurl_joint hKfield
+              hcurl_space (curlSchwartzCLM (W.w i))).congr
+                (fun t _ => schwartzL2Inner_comm _ _)
+          refine (hprojMode.sub htestMode).congr ?_
+          intro t _
+          change schwartzL2Inner (curlSchwartzCLM (W.w i))
+              (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t)) =
+            W.stokesOperator m (W.modalTestCoefficients phi.field m t) i -
+              schwartzL2Inner (curlSchwartzCLM (W.w i))
+                (curlSchwartzCLM (phi.field t))
+          rw [← coefficientField_modalTestCoefficients W phi.field m t, map_sub,
+            schwartzL2Inner_sub_right_local, stokesOperator_apply]
+        have hcurlPair : ContinuousOn (fun t =>
+            schwartzL2Inner (curlSchwartzCLM (W.coefficientField (cChoice m t)))
+              (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t)))
+            (Set.Icc (0 : ℝ) T) := by
+          have hsum : ContinuousOn (fun t => ∑ i : Fin m,
+              cChoice m t i * schwartzL2Inner (curlSchwartzCLM (W.w i))
+                (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t)))
+              (Set.Icc (0 : ℝ) T) := by
+            apply continuousOn_finsetSum
+            intro i _
+            have hcoord : ContinuousOn (fun t => cChoice m t i)
+                (Set.Icc (0 : ℝ) T) :=
+              (PiLp.proj (p := (2 : ENNReal)) (𝕜 := ℝ)
+                (β := fun _ : Fin m => ℝ) i).continuous.comp_continuousOn
+                  hcChoice_cont
+            exact hcoord.mul (hmodeError i)
+          refine hsum.congr ?_
+          intro t _
+          change schwartzL2Inner
+              (curlSchwartzCLM (W.coefficientField (cChoice m t)))
+              (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t)) =
+            ∑ i : Fin m, cChoice m t i *
+              schwartzL2Inner (curlSchwartzCLM (W.w i))
+                (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))
+          rw [show W.coefficientField (cChoice m t) =
+              ∑ i : Fin m, cChoice m t i • W.w i from rfl,
+            map_sum, schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro i _
+          rw [map_smul, schwartzL2Inner_smul_left]
+        have hpairing : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+              (W.laplacianProjectionCommutator m (phi.field t)))
+            (Set.Icc (0 : ℝ) T) := by
+          exact hcurlPair.neg.congr fun t _ =>
+            coefficientField_laplacianProjectionCommutator_pairing_eq_neg_curl_error
+              W (cChoice m t) (phi.field t) (phi.divergence_free t)
+        exact (hpairing.const_mul nu).intervalIntegrable_of_Icc hT
       have hlapInt : ∀ m, IntervalIntegrable (fun t =>
           nu * schwartzL2Inner (W.coefficientField (cChoice m t))
             (W.laplacianProjectionCommutator m (phi.field t))) volume 0 T :=
@@ -809,8 +964,92 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
             (W.convectionTestProjectionCommutator m (W.coefficientField (cChoice m t))
               (phi.field t))) volume 0 T := by
         intro m
-        -- CONJECTURE: The integrand is continuous on [0,T]
-        sorry
+        have hcChoice_cont : ContinuousOn (cChoice m) (Set.Icc (0 : ℝ) T) := by
+          intro t ht
+          exact (hc_deriv m t ht.1).continuousWithinAt.mono Set.Icc_subset_Ici_self
+        have hcoord (i : Fin m) : ContinuousOn (fun t => cChoice m t i)
+            (Set.Icc (0 : ℝ) T) :=
+          (PiLp.proj (p := (2 : ENNReal)) (𝕜 := ℝ)
+            (β := fun _ : Fin m => ℝ) i).continuous.comp_continuousOn hcChoice_cont
+        have hprojected : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+              (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                (W.coefficientField (W.modalTestCoefficients phi.field m t))))
+            (Set.Icc (0 : ℝ) T) := by
+          have hB : ContinuousOn (fun t => W.convectionOperator m (cChoice m t))
+              (Set.Icc (0 : ℝ) T) :=
+            (convectionOperator_contDiff W m).continuous.comp_continuousOn hcChoice_cont
+          refine (hB.inner (hmodal_cont m)).congr ?_
+          intro t _
+          change schwartzL2Inner (W.coefficientField (cChoice m t))
+              (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                (W.coefficientField (W.modalTestCoefficients phi.field m t))) =
+            inner ℝ (W.convectionOperator m (cChoice m t))
+              (W.modalTestCoefficients phi.field m t)
+          rw [← coefficientField_l2_inner,
+            convectionOperator_pairing]
+        have hfixedConvection : ContinuousOn (fun t =>
+            schwartzL2Inner (convectionSchwartz (W.coefficientField (cChoice m t)))
+              (phi.field t)) (Set.Icc (0 : ℝ) T) := by
+          have hsum : ContinuousOn (fun t => ∑ j : Fin m, ∑ k : Fin m,
+              (cChoice m t j * cChoice m t k) *
+                schwartzL2Inner (convectionSchwartzBilin (W.w j) (W.w k))
+                  (phi.field t)) (Set.Icc (0 : ℝ) T) := by
+            apply continuousOn_finsetSum
+            intro j _
+            apply continuousOn_finsetSum
+            intro k _
+            have htest : ContinuousOn (fun t =>
+                schwartzL2Inner (convectionSchwartzBilin (W.w j) (W.w k))
+                  (phi.field t)) (Set.Icc (0 : ℝ) T) :=
+              (testPairing_continuousOn_of_joint_compact hfield_joint hKfield
+                hfield_space (convectionSchwartzBilin (W.w j) (W.w k))).congr
+                  (fun t _ => schwartzL2Inner_comm _ _)
+            exact ((hcoord j).mul (hcoord k)).mul htest
+          refine hsum.congr ?_
+          intro t _
+          change schwartzL2Inner
+              (convectionSchwartz (W.coefficientField (cChoice m t)))
+              (phi.field t) = ∑ j : Fin m, ∑ k : Fin m,
+                (cChoice m t j * cChoice m t k) *
+                  schwartzL2Inner (convectionSchwartzBilin (W.w j) (W.w k))
+                    (phi.field t)
+          rw [convectionSchwartz_coefficientField_local,
+            schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro j _
+          rw [schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro k _
+          rw [schwartzL2Inner_smul_left]
+        have hfixed : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+              (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                (phi.field t))) (Set.Icc (0 : ℝ) T) := by
+          exact hfixedConvection.neg.congr fun t _ =>
+            schwartzL2Inner_convection_skew
+              (W.coefficientField (cChoice m t)) (phi.field t)
+              (coefficientField_divergenceFree W (cChoice m t))
+        have hcomm : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+              (W.convectionTestProjectionCommutator m
+                (W.coefficientField (cChoice m t)) (phi.field t)))
+            (Set.Icc (0 : ℝ) T) := by
+          refine (hprojected.sub hfixed).congr ?_
+          intro t _
+          change schwartzL2Inner (W.coefficientField (cChoice m t))
+              (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                (W.proj m (phi.field t) - phi.field t)) =
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+                (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                  (W.coefficientField (W.modalTestCoefficients phi.field m t))) -
+              schwartzL2Inner (W.coefficientField (cChoice m t))
+                (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                  (phi.field t))
+          rw [convectionSchwartzBilin_sub_right_local,
+            schwartzL2Inner_sub_right_local,
+            ← coefficientField_modalTestCoefficients W phi.field m t]
+        exact hcomm.intervalIntegrable_of_Icc hT
       have hmainInt : ∀ m, IntervalIntegrable (fun t =>
           schwartzL2Inner (W.coefficientField (cChoice m t)) (phi.timeDerivSchwartz t) +
           schwartzL2Inner (W.coefficientField (cChoice m t))
