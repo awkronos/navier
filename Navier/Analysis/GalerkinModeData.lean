@@ -1057,8 +1057,151 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
               convectionSchwartzBilin (W.coefficientField (cChoice m t)) (phi.field t)))
           volume 0 T := by
         intro m
-        -- CONJECTURE: The integrand is continuous on [0,T]
-        sorry
+        have hcChoice_cont : ContinuousOn (cChoice m) (Set.Icc (0 : ℝ) T) := by
+          intro t ht
+          exact (hc_deriv m t ht.1).continuousWithinAt.mono Set.Icc_subset_Ici_self
+        have hcoord (i : Fin m) : ContinuousOn (fun t => cChoice m t i)
+            (Set.Icc (0 : ℝ) T) :=
+          (PiLp.proj (p := (2 : ENNReal)) (𝕜 := ℝ)
+            (β := fun _ : Fin m => ℝ) i).continuous.comp_continuousOn hcChoice_cont
+        have htimePairing : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+              (phi.timeDerivSchwartz t)) (Set.Icc (0 : ℝ) T) := by
+          have hsum : ContinuousOn (fun t => ∑ i : Fin m,
+              cChoice m t i * schwartzL2Inner (W.w i)
+                (phi.timeDerivSchwartz t)) (Set.Icc (0 : ℝ) T) := by
+            apply continuousOn_finsetSum
+            intro i _
+            have htest : ContinuousOn (fun t =>
+                schwartzL2Inner (W.w i) (phi.timeDerivSchwartz t))
+                (Set.Icc (0 : ℝ) T) :=
+              (testPairing_continuousOn_of_joint_compact hderiv_joint hKderiv
+                hderiv_space (W.w i)).congr
+                  (fun t _ => schwartzL2Inner_comm _ _)
+            exact (hcoord i).mul htest
+          refine hsum.congr ?_
+          intro t _
+          change schwartzL2Inner (W.coefficientField (cChoice m t))
+              (phi.timeDerivSchwartz t) = ∑ i : Fin m,
+                cChoice m t i * schwartzL2Inner (W.w i)
+                  (phi.timeDerivSchwartz t)
+          rw [show W.coefficientField (cChoice m t) =
+              ∑ i : Fin m, cChoice m t i • W.w i from rfl,
+            schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro i _
+          rw [schwartzL2Inner_smul_left]
+        have hcurl_joint : ContinuousOn
+            (fun z : ℝ × Space => curlSchwartzCLM (phi.field z.1) z.2)
+            (Set.Icc (0 : ℝ) T ×ˢ Set.univ) :=
+          (testCurl_joint_continuousOn phi).mono hwindow
+        have hcurl_space : ∀ t : ℝ, ∀ x : Space, x ∉ Kfield →
+            curlSchwartzCLM (phi.field t) x = 0 :=
+          fun t x hx => testCurl_eq_zero_of_not_mem phi hKfield hfield_space t hx
+        have hcurlPairing : ContinuousOn (fun t =>
+            schwartzL2Inner (curlSchwartzCLM (W.coefficientField (cChoice m t)))
+              (curlSchwartzCLM (phi.field t))) (Set.Icc (0 : ℝ) T) := by
+          have hsum : ContinuousOn (fun t => ∑ i : Fin m,
+              cChoice m t i * schwartzL2Inner (curlSchwartzCLM (W.w i))
+                (curlSchwartzCLM (phi.field t))) (Set.Icc (0 : ℝ) T) := by
+            apply continuousOn_finsetSum
+            intro i _
+            have htest : ContinuousOn (fun t =>
+                schwartzL2Inner (curlSchwartzCLM (W.w i))
+                  (curlSchwartzCLM (phi.field t))) (Set.Icc (0 : ℝ) T) :=
+              (testPairing_continuousOn_of_joint_compact hcurl_joint hKfield
+                hcurl_space (curlSchwartzCLM (W.w i))).congr
+                  (fun t _ => schwartzL2Inner_comm _ _)
+            exact (hcoord i).mul htest
+          refine hsum.congr ?_
+          intro t _
+          change schwartzL2Inner
+              (curlSchwartzCLM (W.coefficientField (cChoice m t)))
+              (curlSchwartzCLM (phi.field t)) = ∑ i : Fin m,
+                cChoice m t i * schwartzL2Inner (curlSchwartzCLM (W.w i))
+                  (curlSchwartzCLM (phi.field t))
+          rw [show W.coefficientField (cChoice m t) =
+              ∑ i : Fin m, cChoice m t i • W.w i from rfl,
+            map_sum, schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro i _
+          rw [map_smul, schwartzL2Inner_smul_left]
+        have hlaplacianPairing : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+              (laplacianSchwartz (phi.field t))) (Set.Icc (0 : ℝ) T) := by
+          refine hcurlPairing.neg.congr ?_
+          intro t _
+          have hcurl := schwartzL2Inner_curl_eq_neg_laplacian
+            (W.coefficientField (cChoice m t)) (phi.field t)
+              (phi.divergence_free t)
+          linarith
+        have hfixedConvection : ContinuousOn (fun t =>
+            schwartzL2Inner (convectionSchwartz (W.coefficientField (cChoice m t)))
+              (phi.field t)) (Set.Icc (0 : ℝ) T) := by
+          have hsum : ContinuousOn (fun t => ∑ j : Fin m, ∑ k : Fin m,
+              (cChoice m t j * cChoice m t k) *
+                schwartzL2Inner (convectionSchwartzBilin (W.w j) (W.w k))
+                  (phi.field t)) (Set.Icc (0 : ℝ) T) := by
+            apply continuousOn_finsetSum
+            intro j _
+            apply continuousOn_finsetSum
+            intro k _
+            have htest : ContinuousOn (fun t =>
+                schwartzL2Inner (convectionSchwartzBilin (W.w j) (W.w k))
+                  (phi.field t)) (Set.Icc (0 : ℝ) T) :=
+              (testPairing_continuousOn_of_joint_compact hfield_joint hKfield
+                hfield_space (convectionSchwartzBilin (W.w j) (W.w k))).congr
+                  (fun t _ => schwartzL2Inner_comm _ _)
+            exact ((hcoord j).mul (hcoord k)).mul htest
+          refine hsum.congr ?_
+          intro t _
+          change schwartzL2Inner
+              (convectionSchwartz (W.coefficientField (cChoice m t)))
+              (phi.field t) = ∑ j : Fin m, ∑ k : Fin m,
+                (cChoice m t j * cChoice m t k) *
+                  schwartzL2Inner (convectionSchwartzBilin (W.w j) (W.w k))
+                    (phi.field t)
+          rw [convectionSchwartz_coefficientField_local,
+            schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro j _
+          rw [schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro k _
+          rw [schwartzL2Inner_smul_left]
+        have hconvectionPairing : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+              (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                (phi.field t))) (Set.Icc (0 : ℝ) T) := by
+          exact hfixedConvection.neg.congr fun t _ =>
+            schwartzL2Inner_convection_skew
+              (W.coefficientField (cChoice m t)) (phi.field t)
+              (coefficientField_divergenceFree W (cChoice m t))
+        have hmain : ContinuousOn (fun t =>
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+                (phi.timeDerivSchwartz t) +
+              schwartzL2Inner (W.coefficientField (cChoice m t))
+                (nu • laplacianSchwartz (phi.field t) +
+                  convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                    (phi.field t))) (Set.Icc (0 : ℝ) T) := by
+          refine (htimePairing.add
+            ((hlaplacianPairing.const_mul nu).add hconvectionPairing)).congr ?_
+          intro t _
+          change schwartzL2Inner (W.coefficientField (cChoice m t))
+                (phi.timeDerivSchwartz t) +
+              schwartzL2Inner (W.coefficientField (cChoice m t))
+                (nu • laplacianSchwartz (phi.field t) +
+                  convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                    (phi.field t)) =
+            schwartzL2Inner (W.coefficientField (cChoice m t))
+                (phi.timeDerivSchwartz t) +
+              (nu * schwartzL2Inner (W.coefficientField (cChoice m t))
+                  (laplacianSchwartz (phi.field t)) +
+                schwartzL2Inner (W.coefficientField (cChoice m t))
+                  (convectionSchwartzBilin (W.coefficientField (cChoice m t))
+                    (phi.field t)))
+          rw [schwartzL2Inner_add_right, schwartzL2Inner_smul_right]
+        exact hmain.intervalIntegrable_of_Icc hT
       -- 4. hcurlError: the spacetime integral of the squared curl error → 0.
       -- This is the critical step.  From the pointwise curl convergence
       -- (curl_proj_converges W) and the Dominated Convergence Theorem, the
