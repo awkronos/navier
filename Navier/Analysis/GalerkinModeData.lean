@@ -228,6 +228,96 @@ private theorem modalTestCoefficients_hasDerivAt
     (L (fun i : Fin m => schwartzL2Inner (phi.timeDerivSchwartz t) (W.w i))) t
   exact L.hasFDerivAt.comp_hasDerivAt t hraw
 
+private theorem testCurl_joint_continuousOn
+    (phi : DivergenceFreeTestFunction) :
+    ContinuousOn (fun z : ℝ × Space => curlSchwartzCLM (phi.field z.1) z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := by
+  let S : Set (ℝ × Space) := Set.Ici (0 : ℝ) ×ˢ Set.univ
+  let F : ℝ × Space → Space := fun z => phi.field z.1 z.2
+  let J : Space →L[ℝ] ℝ × Space := ContinuousLinearMap.inr ℝ ℝ Space
+  have hUD : UniqueDiffOn ℝ S := (uniqueDiffOn_Ici 0).prod uniqueDiffOn_univ
+  have hD : ContinuousOn (fun z : ℝ × Space => fderivWithin ℝ F S z) S :=
+    phi.smooth.continuousOn_fderivWithin hUD (by norm_num)
+  have hbridge : ∀ z ∈ S,
+      (fderivWithin ℝ F S z).comp J = fderiv ℝ (⇑(phi.field z.1)) z.2 := by
+    rintro ⟨t, x⟩ hz
+    have hF : HasFDerivWithinAt F (fderivWithin ℝ F S (t, x)) S (t, x) :=
+      ((phi.smooth (t, x) hz).differentiableWithinAt (by simp)).hasFDerivWithinAt
+    have hi : HasFDerivAt (fun y : Space => (t, y)) J x :=
+      hasFDerivAt_prodMk_right t x
+    have hmaps : Set.MapsTo (fun y : Space => (t, y)) Set.univ S :=
+      fun y _ => ⟨hz.1, Set.mem_univ y⟩
+    have hcomp := HasFDerivWithinAt.comp x hF hi.hasFDerivWithinAt hmaps
+    rw [show (F ∘ (fun y : Space => (t, y))) = (⇑(phi.field t) : Space → Space)
+      from rfl] at hcomp
+    have heq := hcomp.fderivWithin (uniqueDiffOn_univ x (Set.mem_univ x))
+    simpa only [fderivWithin_univ] using heq.symm
+  have hspatial : ContinuousOn
+      (fun z : ℝ × Space => fderiv ℝ (⇑(phi.field z.1)) z.2) S :=
+    (hD.clm_comp (show ContinuousOn (fun _ : ℝ × Space => J) S from
+      continuousOn_const)).congr (fun z hz => (hbridge z hz).symm)
+  rw [show (fun z : ℝ × Space => curlSchwartzCLM (phi.field z.1) z.2) =
+      fun z => ∑ i : Fin 3,
+        (crossProduct (basisVector i)).toContinuousLinearMap
+          ((fderiv ℝ (⇑(phi.field z.1)) z.2) (basisVector i)) by
+    funext z
+    rw [curlSchwartzCLM_apply]
+    rfl]
+  apply continuousOn_finsetSum
+  intro i _
+  exact (crossProduct (basisVector i)).toContinuousLinearMap.continuous.comp_continuousOn
+    (hspatial.clm_apply continuousOn_const)
+
+private theorem testCurl_eq_zero_of_not_mem
+    (phi : DivergenceFreeTestFunction) {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    (t : ℝ) {x : Space} (hx : x ∉ K) :
+    curlSchwartzCLM (phi.field t) x = 0 := by
+  have hevent : (⇑(phi.field t) : Space → Space) =ᶠ[nhds x]
+      (fun _ : Space => (0 : Space)) := by
+    filter_upwards [hK.isClosed.isOpen_compl.eventually_mem hx] with y hy
+    exact hspace t y hy
+  have hfd : fderiv ℝ (⇑(phi.field t)) x = 0 := by
+    simpa using hevent.fderiv_eq
+  rw [curlSchwartzCLM_apply]
+  simp [staticCurl, hfd]
+
+private theorem testSelfPairing_continuousOn_of_joint_compact
+    {f : ℝ → SchwartzVelocity} {s : Set ℝ}
+    (hjoint : ContinuousOn (fun z : ℝ × Space => f z.1 z.2)
+      (s ×ˢ Set.univ))
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → f t x = 0) :
+    ContinuousOn (fun t => schwartzL2Inner (f t) (f t)) s := by
+  unfold schwartzL2Inner
+  apply continuousOn_integral_of_compact_support hK
+  · simp only [officialInner_eq_sum]
+    apply continuousOn_finsetSum
+    intro i _
+    exact ((continuous_apply i).comp_continuousOn hjoint).mul
+      ((continuous_apply i).comp_continuousOn hjoint)
+  · intro t x _ht hx
+    rw [hspace t x hx, officialInner_zero_left]
+
+private theorem schwartzL2Inner_finset_sum_left_local
+    {ι : Type*} [DecidableEq ι] (s : Finset ι)
+    (f : ι → SchwartzVelocity) (g : SchwartzVelocity) :
+    schwartzL2Inner (∑ i ∈ s, f i) g = ∑ i ∈ s, schwartzL2Inner (f i) g := by
+  induction s using Finset.induction_on with
+  | empty => simp only [Finset.sum_empty, schwartzL2Inner_zero_left]
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha, schwartzL2Inner_add_left, ih, Finset.sum_insert ha]
+
+private theorem schwartzL2Inner_neg_right_local (f g : SchwartzVelocity) :
+    schwartzL2Inner f (-g) = -schwartzL2Inner f g := by
+  rw [schwartzL2Inner_comm, schwartzL2Inner_neg_left,
+    schwartzL2Inner_comm g f]
+
+private theorem schwartzL2Inner_neg_neg_local (f g : SchwartzVelocity) :
+    schwartzL2Inner (-f) (-g) = schwartzL2Inner f g := by
+  rw [schwartzL2Inner_neg_left, schwartzL2Inner_neg_right_local]
+  ring
+
 /-- **Aubin–Lions time regularity for the Galerkin coefficient flow
 (certified, no `sorry`).**  A coefficient flow solving the projected Galerkin
 ODE, with a uniform time-integrated enstrophy bound, is `L²`-in-time
@@ -624,8 +714,86 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
           ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
           (Set.Ioc (0 : ℝ) T) := by
         intro m
-        -- CONJECTURE: The integrand is continuous on [0,T]
-        sorry
+        have hcurl_joint : ContinuousOn
+            (fun z : ℝ × Space => curlSchwartzCLM (phi.field z.1) z.2)
+            (Set.Icc (0 : ℝ) T ×ˢ Set.univ) :=
+          (testCurl_joint_continuousOn phi).mono hwindow
+        have hcurl_space : ∀ t : ℝ, ∀ x : Space, x ∉ Kfield →
+            curlSchwartzCLM (phi.field t) x = 0 :=
+          fun t x hx => testCurl_eq_zero_of_not_mem phi hKfield hfield_space t hx
+        have hprojSelf : ContinuousOn (fun t =>
+            W.coefficientEnstrophy (W.modalTestCoefficients phi.field m t))
+            (Set.Icc (0 : ℝ) T) := by
+          have hbase : ContinuousOn (fun t => inner ℝ
+              (W.stokesOperator m (W.modalTestCoefficients phi.field m t))
+              (W.modalTestCoefficients phi.field m t)) (Set.Icc (0 : ℝ) T) :=
+            ((W.stokesOperator m).continuous.comp_continuousOn (hmodal_cont m)).inner
+              (hmodal_cont m)
+          exact hbase.congr fun t _ =>
+            (stokesOperator_inner_eq_enstrophy W m
+              (W.modalTestCoefficients phi.field m t)).symm
+        have hmix : ContinuousOn (fun t =>
+            schwartzL2Inner
+              (curlSchwartzCLM
+                (W.coefficientField (W.modalTestCoefficients phi.field m t)))
+              (curlSchwartzCLM (phi.field t))) (Set.Icc (0 : ℝ) T) := by
+          have hsum : ContinuousOn (fun t => ∑ i : Fin m,
+              W.modalTestCoefficients phi.field m t i *
+                schwartzL2Inner (curlSchwartzCLM (phi.field t))
+                  (curlSchwartzCLM (W.w i))) (Set.Icc (0 : ℝ) T) := by
+            apply continuousOn_finsetSum
+            intro i _
+            have hcoord : ContinuousOn
+                (fun t => W.modalTestCoefficients phi.field m t i)
+                (Set.Icc (0 : ℝ) T) :=
+              (PiLp.proj (p := (2 : ENNReal)) (𝕜 := ℝ)
+                (β := fun _ : Fin m => ℝ) i).continuous.comp_continuousOn (hmodal_cont m)
+            exact hcoord.mul
+              (testPairing_continuousOn_of_joint_compact hcurl_joint hKfield
+                hcurl_space (curlSchwartzCLM (W.w i)))
+          refine hsum.congr ?_
+          intro t _
+          change schwartzL2Inner
+              (curlSchwartzCLM
+                (W.coefficientField (W.modalTestCoefficients phi.field m t)))
+              (curlSchwartzCLM (phi.field t)) = _
+          rw [show W.coefficientField (W.modalTestCoefficients phi.field m t) =
+              ∑ i : Fin m, W.modalTestCoefficients phi.field m t i • W.w i from rfl,
+            map_sum, schwartzL2Inner_finset_sum_left_local]
+          apply Finset.sum_congr rfl
+          intro i _
+          rw [map_smul, schwartzL2Inner_smul_left, schwartzL2Inner_comm]
+        have htestSelf : ContinuousOn (fun t =>
+            schwartzL2Inner (curlSchwartzCLM (phi.field t))
+              (curlSchwartzCLM (phi.field t))) (Set.Icc (0 : ℝ) T) :=
+          testSelfPairing_continuousOn_of_joint_compact
+            hcurl_joint hKfield hcurl_space
+        have herr (t : ℝ) :
+            ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2 =
+              W.coefficientEnstrophy (W.modalTestCoefficients phi.field m t) -
+                2 * schwartzL2Inner
+                  (curlSchwartzCLM
+                    (W.coefficientField (W.modalTestCoefficients phi.field m t)))
+                  (curlSchwartzCLM (phi.field t)) +
+                schwartzL2Inner (curlSchwartzCLM (phi.field t))
+                  (curlSchwartzCLM (phi.field t)) := by
+          rw [norm_toL2_sq,
+            ← coefficientField_modalTestCoefficients W phi.field m t, map_sub,
+            sub_eq_add_neg, schwartzL2Inner_add_left, schwartzL2Inner_add_right,
+            schwartzL2Inner_add_right,
+            schwartzL2Inner_neg_left, schwartzL2Inner_neg_right_local,
+            schwartzL2Inner_neg_neg_local,
+            coefficientEnstrophy_eq_curlSchwartz,
+            schwartzL2Inner_comm (curlSchwartzCLM (phi.field t))
+              (curlSchwartzCLM
+                (W.coefficientField (W.modalTestCoefficients phi.field m t)))]
+          ring
+        have hcont : ContinuousOn (fun t =>
+            ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
+            (Set.Icc (0 : ℝ) T) := by
+          exact (hprojSelf.sub (hmix.const_mul 2)).add htestSelf |>.congr
+            (fun t _ => herr t)
+        exact hcont.integrableOn_Icc.mono_set Set.Ioc_subset_Icc_self
       have pairingIntervalIntegrable : ∀ m, IntervalIntegrable (fun t =>
           nu * schwartzL2Inner (W.coefficientField (cChoice m t))
             (W.laplacianProjectionCommutator m (phi.field t))) volume 0 T := by
