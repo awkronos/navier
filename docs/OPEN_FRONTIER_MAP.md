@@ -3,7 +3,7 @@
 ## Verdict
 
 The formal support graph has advanced materially, but the three-dimensional
-Navier--Stokes Navier--Stokes problem is not solved.  There is still no term
+Navier--Stokes problem is not solved.  There is still no term
 inhabiting `Navier.ProblemStatements.WholeSpaceGlobalRegularity`, `Navier.ProblemStatements.PeriodicGlobalRegularity`, `Navier.ProblemStatements.WholeSpaceBreakdown`, or
 `Navier.ProblemStatements.PeriodicBreakdown`.  The repository therefore remains
 `SCAFFOLDED / SCIENTIFIC_FRONTIER`.
@@ -20,6 +20,13 @@ their own receipts.  The audits establish the named lower theorems only.  They
 are not an endpoint certificate.
 
 ## Compiler-confirmed residual sorries (10 at 2026-08-18 HEAD `2c69626`; 9 at the triage pins) — triage 2026-08-15, re-verified 2026-08-17 and 2026-08-18
+
+**The triage table below is the current source; the wave narration under it is
+dated provenance and its file:line pins have moved.** Verified 2026-08-31 by
+`grep -n sorry` over the named files: `LerayWeak.lean` and `GalerkinBasis.lean`
+now carry zero `sorry` tokens, and the two that were pinned there live at
+`GalerkinModeData.lean:1218` and `:1245` after `ab84fff`. Rows #4 and #10 were
+the same declaration and are merged into #4.
 
 `lake build` at `main@f1b496f` on a clean tree completes successfully (8729
 jobs) and emits exactly nine `declaration uses 'sorry'` warnings.  This is the
@@ -93,13 +100,13 @@ its declaration.
 | 1 | `exists_biotSavartLogTextbook` | `BKMLogBootstrap.lean:364` | infrastructure-blocked | Biot–Savart representation `∇u = PV(∇K ∗ ω)` for divergence-free Schwartz fields. The entire Calderón–Zygmund **size** layer (near field, log shell, far field) is already certified in-file; only the representation is Mathlib-absent (re-verified 2026-08-17: no Riesz/Biot–Savart in Mathlib at this pin) |
 | 2 | `exists_locallyUniformSliceDecay` | `BKMLogBootstrap.lean:1491` | infrastructure-blocked | Propagation of Schwartz seminorm bounds, locally uniform in time, along the flow — the genuinely PDE-dependent conjunct. In-file note proves no dominating function exists from `velocity_smooth` alone, so the NS clauses must be used |
 | 3 | `exists_sobolevOrderEnergyEstimate` | `BKMLogBootstrap.lean:1563` | infrastructure-blocked | Kato–Ponce commutator bound `\|⟨D^n(u·∇u), D^n u⟩\| ≤ C‖∇u‖_∞‖u‖²_{H^n}` (CPAM 41 (1988) 891–907); Majda–Bertozzi Prop. 3.7; ~600 LOC. Order summation already certified (`BKMLogLeaves.exists_hasDerivAt_sum_range_le`) |
-| 4 | `exists_galerkinModeData` | `LerayWeak.lean:1492` | infrastructure-blocked | `time_equicontinuous` + `weak_consistent` from the finite-mode energy identity and the `∂ₜu_m ∈ L²(0,T;H⁻¹)` bound (~100 LOC). Both Pattern-A fields from the Aubin–Lions repair are already discharged |
+| 4 | `exists_galerkinModeData` | `GalerkinModeData.lean:1218`, `:1245` | infrastructure-blocked | Two sub-leaves inside one declaration. `:1218` (`hcurlError`) — spacetime `L²` curl-projection error → 0, via Banach–Steinhaus equicontinuity of `curl ∘ P_m` on the Schwartz space plus DCT. `:1245` (`hconv`) — convection-commutator pairing → 0 from `curl_proj_converges`, `‖∇v‖ = ‖curl v‖` for divergence-free `v`, and Ladyzhenskaya; ~200 LOC. The former `hspace`/`htime`/`hweak` inventory is **retired**: `hspace` is discharged through `GalerkinSpaceEquicontinuity.spaceEquicontinuous_of_modalFamily` and `htime` through `timeEquicontinuous_of_coefficientDisplacement` ∘ `galerkinCoefficientFlow_timeEquicontinuous` |
 | 5 | `exists_lerayLimitData` | `LerayWeak.lean:5522` | **statement-level barrier** | Every domination-based route is closed off by the in-file unbounded-test-field construction (`sup_{t<T}‖φ(t)‖_{L²} = ∞`). Not a falsification; closing it needs a uniform-in-time seminorm field on the test class, an argument forming no `t`-majorant, or a compactly-supported-slice representative. The statement-level change is deliberately not taken |
 | 6 | `prodiSerrin_layer_farField_bounded` | `ConditionalRegularity.lean:721` | infrastructure-blocked | Duhamel representation of an arbitrary `PartialClassicalSolution` + Leray projector as a pointwise bounded kernel. Kato, *Math. Z.* 187 (1984); Giga–Miyakawa, *ARMA* 89 (1985); ~300 LOC. Gaussian kernel, its `L^s` norms and the Young layer already land in `HeatSemigroupSmoothing` |
 | 7 | `prodiSerrin_interior_outerRegion_bounded` | `ConditionalRegularity.lean:791` | infrastructure-blocked | Cutoff integration by parts against the local energy identity, plus an `L^r` pressure bound. Blocked in turn on the Calderón–Zygmund near-field cancellation, named residual in `SingularIntegralPrelims` |
 | 8 | `constantinFefferman_layer_farField_bounded` | `ConditionalRegularity.lean:866` | infrastructure-blocked | Same layer as #6 with the uniform `L²` mass bracket replacing per-slice `L^p` |
-| 9 | `constantinFefferman_interior_outerRegion_bounded` | `ConditionalRegularity.lean:951` | infrastructure-blocked | Integral enstrophy budget (pointwise stretching identity already lands as `Enstrophy.vorticityTransportEquation`), near-field cancellation as in #7, and `SobolevEmbedding`'s `H³ ↪ L^∞` which still carries a disclosed Plancherel `sorryAx` |
-| 10 | `exists_galerkinModeData` | `GalerkinBasis.lean:3549` | infrastructure-blocked | Added by `42acbbe`; three named-residual tokens in one declaration (one compiler warning, three source sorries at :3642/:3645/:3667): `hspace` — wire `modalApprox_uniformEnstrophyBound` into the dissipation-bound lemma's `hdiss`; `htime` — uniform bound on the projected Stokes+convection ODE vector field (Simon-type `∂ₜu_m ∈ L²(0,T;H⁻¹)`, ~100 LOC); `hweak` — limit/integral interchange with no `t`-uniform majorant (routes named in `NAVIER-RESIDUALS-2026-08-17.md` #3). Shares its blockers with #4 |
+| 9 | `constantinFefferman_interior_outerRegion_bounded` | `ConditionalRegularity.lean:951` | infrastructure-blocked | Integral enstrophy budget (pointwise stretching identity already lands as `Enstrophy.vorticityTransportEquation`), near-field cancellation as in #7, and `SobolevEmbedding`'s `H³ ↪ L^∞`. (Correction: the closing embedding `sobolevEmbeddingDomination_H3` is **not** the sorryAx carrier — `NAVIER-RESIDUALS-2026-08-17.md` §N4 records `#print axioms` on it returning `{propext, Classical.choice, Quot.sound}` since `19192df`. The disclosed Plancherel `sorryAx` belongs to `exists_sobolev_intermediate`, a different declaration in the same file) |
+| 10 | — | — | **merged into #4** | This row and #4 were the same declaration recorded at two file:line pins. `ab84fff` moved `exists_galerkinModeData` and its Aubin–Lions leaf out of `GalerkinBasis.lean` into `GalerkinModeData.lean`; `GalerkinBasis.lean` and `LerayWeak.lean` now carry no `sorry` token at all. Row #4 is the single current entry. The row number is kept so earlier references to "#10" still resolve |
 
 Three residuals (#1, #7, #9) route through one shared blocker — the
 Calderón–Zygmund near-field cancellation in `SingularIntegralPrelims` — which
