@@ -44,8 +44,6 @@ import ctypes
 import math
 from dataclasses import dataclass
 
-import multiprocessing as _mp
-
 import numpy as np
 
 # FFT backend: pyFFTW (fastest, pre-planned) > scipy.fft > numpy.fft.
@@ -378,10 +376,6 @@ def _plans(sp: Spectral) -> "_Plans":
 
 def _fast_available() -> bool:
     return _LIB is not None and _HAS_PYFFTW
-
-
-def _p(array: np.ndarray):
-    return _accel.ptr(array)
 
 
 def _nl_into(
