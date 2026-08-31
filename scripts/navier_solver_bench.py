@@ -53,6 +53,22 @@ import math
 import os
 import time
 
+# --------------------------------------------------------------------------
+# Thread pinning MUST happen before numpy (and therefore BLAS/FFTW) is
+# imported: these variables are read once, at library load.  An unpinned
+# thread count makes the throughput metric depend on how many cores the OS
+# felt like giving the process, which is not a property of the solver.
+# ``setdefault`` so an explicit outer setting still wins.
+# --------------------------------------------------------------------------
+for _var in (
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+):
+    os.environ.setdefault(_var, "1")
+
 import numpy as np
 
 try:
@@ -71,6 +87,7 @@ try:
         spectral,
         taylor_green_field,
     )
+    from navier_accel import status as accel_status
 except ImportError:  # invoked from outside scripts/
     import os
     import sys
@@ -91,32 +108,142 @@ except ImportError:  # invoked from outside scripts/
         spectral,
         taylor_green_field,
     )
+    from navier_accel import status as accel_status  # type: ignore[no-redef]
+
+
+# --------------------------------------------------------------------------
+# timing
+# --------------------------------------------------------------------------
+#
+# WHY THE THROUGHPUT METRIC IS CPU TIME, NOT WALL CLOCK
+# -----------------------------------------------------
+# Measured 2026-08-31 on macbook-satellite (18 cores), evolve of 20 steps at
+# N = 16, 15 repetitions, loadavg 35:
+#
+#     wall clock   min 0.06327  median 0.16001  max 0.30676   -> 4.8x spread
+#     CPU time     min 0.02765  median 0.02922                -> 1.06x spread
+#
+# The registry row recorded between_run_cv 0.4015 and mde_pct 97.26 for this
+# metric: a throughput number that cannot resolve anything smaller than a 2x
+# change is not a measurement, and the loop had been withholding its delta
+# under delta_reason_code host_load for exactly this reason.  All of that
+# variance is other processes competing for cores, none of it is the solver.
+#
+# CPU time is the right instrument here BECAUSE the solver is deliberately
+# single-threaded: FFTW plans are built with threads=1 and the BLAS/OMP
+# thread caps are pinned at the top of this file.  For a single-threaded
+# process CPU time is what wall clock would have been on an idle host, so it
+# is the same quantity the quiet-host anchor measured -- just observable
+# without owning the machine.
+#
+# That is only true while the process really is single-threaded, and a
+# multi-threaded solver would look WORSE on CPU time while being faster, so
+# the invariant is checked rather than assumed: ``cpu <= wall * 1.05`` over
+# the timed window is recorded as ``single_threaded``, and a run that fails
+# it is flagged and the metric marked invalid.  Wall-clock throughput and
+# host load are reported alongside, never silently dropped.
+
+_LOAD_PER_CORE_QUIET = 0.75  # matches the estate host-load gate
 
 
 def _loadavg() -> list[float] | None:
     """Return [1, 5, 15] minute load averages, or None on failure."""
     try:
+        return list(os.getloadavg())
+    except (OSError, AttributeError):
+        pass
+    try:
         raw = os.popen("sysctl -n vm.loadavg 2>/dev/null").read().strip()
         if raw:
-            parts = raw.strip("{}").split()
-            return [float(p) for p in parts[:3]]
+            return [float(p) for p in raw.strip("{}").split()[:3]]
     except Exception:
         pass
     return None
 
 
-def _stats(values: list[float]) -> tuple[float, float, float]:
-    """Mean, standard deviation, coefficient of variation (CV = std/mean)."""
+def _cores() -> int:
+    return os.cpu_count() or 1
+
+
+def _host_load() -> dict:
+    """Load snapshot and the quiet/contended verdict the metric is stamped with."""
+    la = _loadavg()
+    cores = _cores()
+    per_core = (la[0] / cores) if la else float("nan")
+    return {
+        "loadavg": la,
+        "cores": cores,
+        "load_per_core": per_core,
+        "quiet_host": bool(la) and per_core < _LOAD_PER_CORE_QUIET,
+        "quiet_threshold_per_core": _LOAD_PER_CORE_QUIET,
+    }
+
+
+def _spread(values: list[float]) -> dict:
+    """Robust spread summary: median, min, quartiles, IQR/median, CV."""
     n = len(values)
-    if n == 0:
-        return (float("nan"), float("nan"), float("nan"))
-    mean = sum(values) / n
-    if n == 1:
-        return (mean, 0.0, 0.0)
-    var = sum((v - mean) ** 2 for v in values) / (n - 1)
-    std = math.sqrt(var)
-    cv = std / mean if mean != 0.0 else float("nan")
-    return (mean, std, cv)
+    ordered = sorted(values)
+    mean = sum(ordered) / n
+    if n > 1:
+        var = sum((v - mean) ** 2 for v in ordered) / (n - 1)
+        cv = math.sqrt(var) / mean if mean else float("nan")
+    else:
+        cv = 0.0
+
+    def quantile(q: float) -> float:
+        if n == 1:
+            return ordered[0]
+        pos = q * (n - 1)
+        lo = int(math.floor(pos))
+        hi = min(lo + 1, n - 1)
+        return ordered[lo] + (pos - lo) * (ordered[hi] - ordered[lo])
+
+    median = quantile(0.5)
+    q1, q3 = quantile(0.25), quantile(0.75)
+    return {
+        "n": n,
+        "min": ordered[0],
+        "q1": q1,
+        "median": median,
+        "q3": q3,
+        "max": ordered[-1],
+        "iqr": q3 - q1,
+        "iqr_over_median": (q3 - q1) / median if median else float("nan"),
+        "cv": cv,
+        "mean": mean,
+    }
+
+
+def time_kernel(fn, reps: int, warmup: int) -> dict:
+    """Time ``fn`` ``reps`` times after ``warmup`` discarded calls.
+
+    Warmup is not optional bookkeeping: the first call to a given grid builds
+    the FFTW plans, compiles nothing but touches every scratch buffer for the
+    first time, and pays every page fault in the working set.  Measured at
+    N=16 the first evolve costs several times the steady-state one.
+
+    Returns wall and CPU spreads plus the single-threaded verdict.
+    """
+    for _ in range(max(warmup, 0)):
+        fn()
+    walls: list[float] = []
+    cpus: list[float] = []
+    for _ in range(reps):
+        c0 = time.process_time()
+        w0 = time.perf_counter()
+        fn()
+        walls.append(max(time.perf_counter() - w0, 1e-12))
+        cpus.append(max(time.process_time() - c0, 1e-12))
+    total_cpu, total_wall = sum(cpus), sum(walls)
+    return {
+        "wall_s": _spread(walls),
+        "cpu_s": _spread(cpus),
+        "warmup_discarded": max(warmup, 0),
+        "cpu_over_wall": total_cpu / total_wall,
+        # A single-threaded process cannot accumulate CPU time faster than
+        # wall time; 1.05 leaves room for timer granularity only.
+        "single_threaded": (total_cpu / total_wall) <= 1.05,
+    }
 
 
 def _rms(field: np.ndarray) -> float:
@@ -140,9 +267,7 @@ def run_mms(grid: int, steps: int, viscosity: float, final_time: float) -> dict:
     _, exact_hat, forcing = mms_problem(sp, viscosity)
     dt = final_time / steps
 
-    started = time.perf_counter()
     state = evolve(exact_hat(0.0), sp, viscosity, dt, steps, True, forcing, 0.0)
-    elapsed = max(time.perf_counter() - started, 1e-12)
 
     error = relative_l2(state, exact_hat(final_time), sp)
 
@@ -161,17 +286,12 @@ def run_mms(grid: int, steps: int, viscosity: float, final_time: float) -> dict:
     multi_order = _multi_dt_convergence_order(sp, exact_hat, forcing,
                                                viscosity, final_time, dt)
 
-    # 4 RHS evaluations per IFRK4 step, 9 real transforms per evaluation.
-    transforms = steps * 4 * 9
     return {
         "l2_rel_error": error,
         "l2_rel_error_half_dt": error_refined,
         "time_convergence_order": float(order),
         "time_convergence_order_multi_dt": multi_order,
         "divergence_linf": divergence_linf(state, sp),
-        "spectral_grid_updates_per_s": float(steps * grid**3 / elapsed),
-        "fft_transforms_per_s": float(transforms / elapsed),
-        "wall_s": float(elapsed),
     }
 
 
@@ -227,9 +347,7 @@ def run_tgv(grid: int, steps: int, viscosity: float, final_time: float) -> dict:
     sp = spectral(grid)
     state_hat = leray(forward(taylor_green_field(grid)), sp)
     start_energy = energy(state_hat, sp)
-    started = time.perf_counter()
     final = evolve(state_hat, sp, viscosity, final_time / steps, steps, True)
-    elapsed = max(time.perf_counter() - started, 1e-12)
     final_energy = energy(final, sp)
     # Mean dissipation rate over the interval, -dE/dt in the bulk sense.
     return {
@@ -237,8 +355,62 @@ def run_tgv(grid: int, steps: int, viscosity: float, final_time: float) -> dict:
         "tgv_enstrophy": float(enstrophy(final, sp)),
         "tgv_mean_dissipation": float((start_energy - final_energy) / final_time),
         "tgv_divergence_linf": divergence_linf(final, sp),
-        "spectral_grid_updates_per_s": float(steps * grid**3 / elapsed),
-        "wall_s": float(elapsed),
+    }
+
+
+def run_throughput(
+    grid: int, steps: int, viscosity: float, final_time: float,
+    reps: int, warmup: int,
+) -> dict:
+    """Headline performance instance, timed in isolation.
+
+    PREVIOUSLY THIS WAS A BUG, not just noisy.  ``run_mms`` and ``run_tgv``
+    each wrote a key named ``spectral_grid_updates_per_s`` into one shared
+    metrics dict, and ``--case all`` (which is what every registered suite
+    runs) called mms first and tgv second -- so the published headline was
+    silently the TGV timing and the MMS timing was overwritten and lost.
+    Timing now lives in exactly one place and neither accuracy instance
+    reports a rate.
+
+    The timed region is the stepping kernel ONLY: grid construction, the
+    initial projection and every diagnostic are outside it.  Plans and page
+    faults are paid in the discarded warmup.
+    """
+    sp = spectral(grid)
+    state_hat = leray(forward(taylor_green_field(grid)), sp)
+    dt = final_time / steps
+
+    timing = time_kernel(
+        lambda: evolve(state_hat, sp, viscosity, dt, steps, True), reps, warmup
+    )
+    updates = float(steps * grid**3)
+    # 4 RHS evaluations per IFRK4 step; each does one batched 6-component
+    # inverse and one batched 3-component forward real transform.
+    transforms = float(steps * 4 * 9)
+
+    cpu, wall = timing["cpu_s"], timing["wall_s"]
+    valid = bool(timing["single_threaded"])
+    headline = updates / cpu["min"] if valid else float("nan")
+    return {
+        "spectral_grid_updates_per_s": headline,
+        "spectral_grid_updates_per_s_median": (
+            updates / cpu["median"] if valid else float("nan")
+        ),
+        "spectral_grid_updates_per_s_wall": updates / wall["min"],
+        "fft_transforms_per_s": (
+            transforms / cpu["min"] if valid else float("nan")
+        ),
+        "timing_clock": "cpu_process_time_best_of_n",
+        "timing_reps": timing["cpu_s"]["n"],
+        "timing_warmup_discarded": timing["warmup_discarded"],
+        "timing_cpu_iqr_over_median": cpu["iqr_over_median"],
+        "timing_cpu_cv": cpu["cv"],
+        "timing_wall_iqr_over_median": wall["iqr_over_median"],
+        "timing_wall_cv": wall["cv"],
+        "timing_cpu_over_wall": timing["cpu_over_wall"],
+        "timing_single_threaded": valid,
+        "cpu_s": cpu["min"],
+        "wall_s": wall["min"],
     }
 
 
@@ -275,14 +447,23 @@ def solve(
     dt: float,
     case: str = "mms",
     final_time: float | None = None,
+    reps: int = 5,
+    warmup: int = 2,
 ) -> dict[str, float]:
     if grid < 4 or grid % 2 or steps < 1 or viscosity <= 0.0 or dt <= 0.0:
         raise ValueError(
             "even grid >= 4, steps >= 1, viscosity > 0, and dt > 0 required"
         )
+    if reps < 1:
+        raise ValueError("reps must be >= 1")
     horizon = final_time if final_time is not None else steps * dt
 
     metrics: dict[str, float] = {}
+    # Headline performance first: extract_headline binds to the first measured
+    # spec, and the registered sota_ref lives on this axis.
+    metrics.update(
+        run_throughput(grid, steps, viscosity, horizon, reps, warmup)
+    )
     if case in ("mms", "all"):
         metrics.update(run_mms(grid, steps, viscosity, horizon))
     if case in ("tgv", "all"):
@@ -297,6 +478,7 @@ def solve(
         grid, max(steps // 2, 4), horizon
     )
     metrics["grid_points"] = float(grid**3)
+    metrics["accelerator"] = accel_status()
     return metrics
 
 
@@ -307,8 +489,20 @@ def main() -> int:
     parser.add_argument("--viscosity", type=float, default=0.05)
     parser.add_argument("--dt", type=float, default=0.05)
     parser.add_argument("--final-time", type=float, default=1.0)
-    parser.add_argument("--reps", type=int, default=1,
-                        help="repeat measurement N times for CV reporting")
+    parser.add_argument(
+        "--reps", type=int, default=5,
+        help="timed repetitions of the stepping kernel (accuracy metrics are "
+             "deterministic and are computed once)",
+    )
+    parser.add_argument(
+        "--warmup", type=int, default=2,
+        help="discarded calls before timing, to pay FFTW planning and page faults",
+    )
+    parser.add_argument(
+        "--require-quiet", action="store_true",
+        help="refuse to publish a measurement when 1-minute loadavg per core "
+             "is at or above the quiet threshold",
+    )
     parser.add_argument(
         "--case", choices=("mms", "tgv", "abc", "all"), default="mms"
     )
@@ -316,36 +510,47 @@ def main() -> int:
     if args.reps < 1:
         raise ValueError("--reps must be >= 1")
 
-    # Collect loadavg before measurement.
-    la = _loadavg()
+    host_before = _host_load()
 
-    all_metrics: list[dict[str, float]] = []
-    for _ in range(args.reps):
-        m = solve(
-            args.grid, args.steps, args.viscosity, args.dt,
-            args.case, args.final_time,
-        )
-        all_metrics.append(m)
-
-    if args.reps == 1:
-        print(json.dumps({"status": "PASS", "metrics": all_metrics[0]}, sort_keys=True))
+    # REFUSE-TO-MEASURE is opt-in, and that is a measured decision rather than
+    # a softening.  Both hosts in this estate sit far above the quiet
+    # threshold essentially all the time (macbook-satellite loadavg 33-113 on
+    # 18 cores, Studio 97 on 32, observed across this whole session), so a
+    # hard refusal would make the row permanently unmeasurable -- which is
+    # what the null parity_ratio and withheld deltas already amounted to.
+    # The CPU-time clock is what makes the number survive that load; the flag
+    # exists for when a caller genuinely needs a wall-clock-grade reading.
+    if args.require_quiet and not host_before["quiet_host"]:
+        print(json.dumps({
+            "status": "SKIP",
+            "reason": "host_load_above_quiet_threshold",
+            "host_before": host_before,
+        }, sort_keys=True))
         return 0
 
-    # Multi-rep: collate key metrics with statistics.
-    stat_keys = ["spectral_grid_updates_per_s", "wall_s",
-                 "l2_rel_error", "time_convergence_order"]
-    report: dict[str, object] = {"status": "PASS", "n": args.reps}
-    if la:
-        report["loadavg"] = la
-    for key in all_metrics[0]:
-        vals = [m[key] for m in all_metrics]
-        if key in stat_keys:
-            mean, std, cv = _stats(vals)
-            report[key] = {"mean": mean, "std": std, "cv": cv}
-        else:
-            # Deterministic metrics: report the first value.
-            report[key] = vals[0]
-    print(json.dumps(report, sort_keys=True))
+    metrics = solve(
+        args.grid, args.steps, args.viscosity, args.dt,
+        args.case, args.final_time, args.reps, args.warmup,
+    )
+    host_after = _host_load()
+
+    status = "PASS"
+    if not metrics.get("timing_single_threaded", True):
+        # CPU time is only a stand-in for quiet-host wall time while the
+        # process is single-threaded.  If it is not, say so instead of
+        # publishing a number that flatters a solver for using more cores.
+        status = "FAIL"
+
+    print(json.dumps({
+        "status": status,
+        "metrics": metrics,
+        "host_before": host_before,
+        "host_after": host_after,
+        "measurement_quality": (
+            "quiet" if host_before["quiet_host"] and host_after["quiet_host"]
+            else "contended"
+        ),
+    }, sort_keys=True))
     return 0
 
 
