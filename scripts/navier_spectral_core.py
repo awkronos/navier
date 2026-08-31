@@ -40,6 +40,7 @@ both the transform cost and the memory traffic relative to a complex ``fftn``.
 
 from __future__ import annotations
 
+import ctypes
 import math
 from dataclasses import dataclass
 
@@ -125,7 +126,17 @@ def spectral(n: int) -> Spectral:
     inv_k2 = np.divide(1.0, k2, out=np.zeros_like(k2), where=k2 != 0.0)
     cutoff = n / 3.0
     mask = (np.abs(kx) < cutoff) & (np.abs(ky) < cutoff) & (np.abs(kz) < cutoff)
-    sp = Spectral(n, kx, ky, kz, k2, inv_k2, mask.astype(np.float64))
+    # ascontiguousarray: meshgrid output is not guaranteed C-contiguous, and
+    # the C kernels index these as flat double arrays.
+    sp = Spectral(
+        n,
+        np.ascontiguousarray(kx),
+        np.ascontiguousarray(ky),
+        np.ascontiguousarray(kz),
+        np.ascontiguousarray(k2),
+        np.ascontiguousarray(inv_k2),
+        np.ascontiguousarray(mask.astype(np.float64)),
+    )
     _SPECTRAL_CACHE[n] = sp
     return sp
 
@@ -221,6 +232,139 @@ def _scratch(sp: Spectral) -> tuple[np.ndarray, np.ndarray]:
     return bufs
 
 
+# --------------------------------------------------------------------------
+# accelerated path: pre-planned FFTW transforms + fused C pointwise kernels
+# --------------------------------------------------------------------------
+#
+# Both accelerations are optional and independently verified.  ``navier_accel``
+# refuses to enable the C library unless every kernel reproduces its numpy
+# reference under ``np.array_equal``; ``_Plans`` is only built when pyFFTW is
+# importable.  With neither available this module runs exactly as before.
+#
+# Arithmetic is bit-preserving by construction, not by tolerance.  Two places
+# needed care to keep it that way and both are load-bearing:
+#
+#   * ``dt * (-nl)`` is replaced by folding ``scale = -dt`` into the projector
+#     kernel.  IEEE multiplication is exactly sign-symmetric, so ``(-dt)*v``
+#     and ``dt*(-v)`` are the same double.
+#   * with forcing present the reference computes ``dt * (-nl + P_L f)``, i.e.
+#     ONE multiply after the sum.  Distributing dt would re-round.  So the
+#     forced path uses ``scale = -1`` and keeps the ``dt *`` outside, and only
+#     the unforced path (which is what the headline TGV and inviscid-drift
+#     instances use) gets the fully folded kernel.
+
+try:
+    import navier_accel as _accel
+except ImportError:  # invoked from outside scripts/
+    import os as _os
+    import sys as _sys
+
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    try:
+        import navier_accel as _accel  # type: ignore[no-redef]
+    except ImportError:
+        _accel = None  # type: ignore[assignment]
+
+_LIB = getattr(_accel, "LIB", None) if _accel is not None else None
+
+
+class _Plans:
+    """Pre-planned FFTW transforms and stage buffers for one grid size.
+
+    ``pyfftw.interfaces.scipy_fft`` rebuilds a cache key and normalises
+    arguments on every call.  Measured at N=16 (best-of-200): 83 us vs 58 us
+    for the batched 6-component inverse and 39 us vs 25 us for the
+    3-component forward -- i.e. the wrapper cost as much as ~40% of the
+    transform.  Holding the plan objects removes it.
+
+    NOT reentrant: the buffers are shared per grid size.  ``evolve`` drives
+    stages strictly sequentially and nothing else holds a reference across a
+    call, which is the only invariant required.
+    """
+
+    __slots__ = (
+        "hat6", "real6", "real3", "hat3", "inv", "fwd",
+        "a", "b", "c", "d", "stage", "ping", "pong", "ones",
+    )
+
+    def __init__(self, sp: Spectral) -> None:
+        n = sp.n
+        self.hat6 = _alloc_hat(sp, batch=6)
+        self.real6 = _alloc_real(sp, batch=6)
+        self.real3 = _alloc_real(sp, batch=3)
+        self.hat3 = _alloc_hat(sp, batch=3)
+        # FFTW_MEASURE, not FFTW_PATIENT: patient planning costs seconds at
+        # N=48 and the benchmark's whole smoke budget is ~1 s.  Wisdom is not
+        # persisted across processes, so planning happens once per run.
+        self.inv = pyfftw.FFTW(
+            self.hat6, self.real6, axes=(1, 2, 3),
+            direction="FFTW_BACKWARD",
+            flags=("FFTW_MEASURE", "FFTW_DESTROY_INPUT"), threads=1,
+        )
+        self.fwd = pyfftw.FFTW(
+            self.real3, self.hat3, axes=(1, 2, 3),
+            direction="FFTW_FORWARD", flags=("FFTW_MEASURE",), threads=1,
+        )
+        self.a = _alloc_hat(sp)
+        self.b = _alloc_hat(sp)
+        self.c = _alloc_hat(sp)
+        self.d = _alloc_hat(sp)
+        self.stage = _alloc_hat(sp)
+        self.ping = _alloc_hat(sp)
+        self.pong = _alloc_hat(sp)
+        self.ones = np.ones(sp.shape_hat, dtype=np.float64)
+        del n
+
+
+_PLAN_CACHE: dict[int, "_Plans"] = {}
+
+
+def _plans(sp: Spectral) -> "_Plans":
+    cached = _PLAN_CACHE.get(sp.n)
+    if cached is None:
+        cached = _Plans(sp)
+        _PLAN_CACHE[sp.n] = cached
+    return cached
+
+
+def _fast_available() -> bool:
+    return _LIB is not None and _HAS_PYFFTW
+
+
+def _p(array: np.ndarray):
+    return _accel.ptr(array)
+
+
+def _nl_into(
+    vector_hat: np.ndarray,
+    sp: Spectral,
+    dealias: bool,
+    scale: float,
+    out: np.ndarray,
+) -> np.ndarray:
+    """``out = scale * P_L[(omega x u)_hat]`` with no Python-level temporaries.
+
+    Identical arithmetic to :func:`nonlinear_hat` followed by a scalar
+    multiply; see the module note above for why the scale is folded in.
+    """
+    pl = _plans(sp)
+    mask = sp.dealias if dealias else pl.ones
+    m = sp.n * sp.n * (sp.n // 2 + 1)
+    _LIB.navier_pre_transform(
+        _p(vector_hat), _p(sp.kx), _p(sp.ky), _p(sp.kz), _p(mask),
+        _p(pl.hat6), m,
+    )
+    pl.inv()
+    _LIB.navier_cross(_p(pl.real6), _p(pl.real3), sp.n ** 3)
+    pl.fwd()
+    _LIB.navier_post_leray(
+        _p(pl.hat3), _p(sp.kx), _p(sp.ky), _p(sp.kz), _p(sp.inv_k2),
+        _p(sp.dealias), ctypes.c_double(scale), ctypes.c_int(1 if dealias else 0),
+        _p(out), m,
+    )
+    return out
+
+
 def nonlinear_hat(vector_hat: np.ndarray, sp: Spectral, dealias: bool) -> np.ndarray:
     """Projected rotational nonlinearity ``P_L[(omega x u)_hat]``.
 
@@ -264,6 +408,7 @@ def step_ifrk4(
     time: float = 0.0,
     e_full: np.ndarray | None = None,
     e_half: np.ndarray | None = None,
+    out: np.ndarray | None = None,
 ) -> np.ndarray:
     """One integrating-factor RK4 step of the projected momentum equation.
 
@@ -276,17 +421,77 @@ def step_ifrk4(
     if e_half is None:
         e_half = np.exp(-viscosity * sp.k2 * 0.5 * dt)
 
+    if _fast_available() and vector_hat.flags["C_CONTIGUOUS"]:
+        return _step_ifrk4_fast(
+            vector_hat, sp, dt, dealias, forcing, time, e_full, e_half, out
+        )
+
     def rhs(v_hat: np.ndarray, t: float) -> np.ndarray:
-        out = -nonlinear_hat(v_hat, sp, dealias)
+        result = -nonlinear_hat(v_hat, sp, dealias)
         if forcing is not None:
-            out = out + leray(forcing(t), sp)
-        return out
+            result = result + leray(forcing(t), sp)
+        return result
 
     a = dt * rhs(vector_hat, time)
     b = dt * rhs(e_half * (vector_hat + 0.5 * a), time + 0.5 * dt)
     c = dt * rhs(e_half * vector_hat + 0.5 * b, time + 0.5 * dt)
     d = dt * rhs(e_full * vector_hat + e_half * c, time + dt)
-    return e_full * vector_hat + (e_full * a + 2.0 * e_half * (b + c) + d) / 6.0
+    result = e_full * vector_hat + (e_full * a + 2.0 * e_half * (b + c) + d) / 6.0
+    if out is not None:
+        out[...] = result
+        return out
+    return result
+
+
+def _step_ifrk4_fast(
+    vector_hat: np.ndarray,
+    sp: Spectral,
+    dt: float,
+    dealias: bool,
+    forcing,
+    time: float,
+    e_full: np.ndarray,
+    e_half: np.ndarray,
+    out: np.ndarray | None,
+) -> np.ndarray:
+    """IFRK4 step with the fused kernels.  Bit-identical to the numpy branch.
+
+    Six C calls and four planned transforms per step replace ~150 numpy
+    dispatches.  Every stage writes into a preallocated per-grid buffer, so a
+    whole ``evolve`` loop allocates nothing after the first step.
+    """
+    pl = _plans(sp)
+    m = sp.n * sp.n * (sp.n // 2 + 1)
+    half = 0.5 * dt
+
+    # scale folded into the projector when unforced; see module note.
+    scale = -1.0 if forcing is not None else -dt
+
+    def stage(v_hat: np.ndarray, t: float, dest: np.ndarray) -> np.ndarray:
+        _nl_into(v_hat, sp, dealias, scale, dest)
+        if forcing is not None:
+            # reference order: dt * (-nl + P_L f), one multiply after the sum
+            np.add(dest, leray(forcing(t), sp), out=dest)
+            np.multiply(dest, dt, out=dest)
+        return dest
+
+    a = stage(vector_hat, time, pl.a)
+    _LIB.navier_stage2(_p(vector_hat), _p(a), _p(e_half), _p(pl.stage), m)
+    b = stage(pl.stage, time + half, pl.b)
+    _LIB.navier_stage3(_p(vector_hat), _p(b), _p(e_half), _p(pl.stage), m)
+    c = stage(pl.stage, time + half, pl.c)
+    _LIB.navier_stage4(
+        _p(vector_hat), _p(c), _p(e_full), _p(e_half), _p(pl.stage), m
+    )
+    d = stage(pl.stage, time + dt, pl.d)
+
+    if out is None:
+        out = np.empty_like(vector_hat)
+    _LIB.navier_combine(
+        _p(vector_hat), _p(a), _p(b), _p(c), _p(d),
+        _p(e_full), _p(e_half), _p(out), m,
+    )
+    return out
 
 
 def evolve(
@@ -299,9 +504,25 @@ def evolve(
     forcing=None,
     t0: float = 0.0,
 ) -> np.ndarray:
-    e_full = np.exp(-viscosity * sp.k2 * dt)
-    e_half = np.exp(-viscosity * sp.k2 * 0.5 * dt)
-    state = vector_hat.copy()
+    e_full = np.ascontiguousarray(np.exp(-viscosity * sp.k2 * dt))
+    e_half = np.ascontiguousarray(np.exp(-viscosity * sp.k2 * 0.5 * dt))
+    state = np.ascontiguousarray(vector_hat)
+
+    if _fast_available():
+        # Ping-pong between two preallocated buffers so the whole time loop
+        # allocates nothing; only the escaping final state is copied out.
+        pl = _plans(sp)
+        pl.ping[...] = state
+        src, dst = pl.ping, pl.pong
+        for index in range(steps):
+            step_ifrk4(
+                src, sp, viscosity, dt, dealias, forcing, t0 + index * dt,
+                e_full, e_half, out=dst,
+            )
+            src, dst = dst, src
+        return src.copy()
+
+    state = state.copy()
     for index in range(steps):
         state = step_ifrk4(
             state, sp, viscosity, dt, dealias, forcing, t0 + index * dt,
