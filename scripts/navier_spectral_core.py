@@ -285,10 +285,12 @@ class _Plans:
     __slots__ = (
         "hat6", "real6", "real3", "hat3", "inv", "fwd",
         "a", "b", "c", "d", "stage", "ping", "pong", "ones",
+        "m", "p3", "_ptrs", "_efac", "sp",
     )
 
     def __init__(self, sp: Spectral) -> None:
         n = sp.n
+        self.sp = sp
         self.hat6 = _alloc_hat(sp, batch=6)
         self.real6 = _alloc_real(sp, batch=6)
         self.real3 = _alloc_real(sp, batch=3)
@@ -313,7 +315,54 @@ class _Plans:
         self.ping = _alloc_hat(sp)
         self.pong = _alloc_hat(sp)
         self.ones = np.ones(sp.shape_hat, dtype=np.float64)
+        self.m = n * n * (n // 2 + 1)
+        self.p3 = n * n * n
+        # ``ndarray.ctypes.data_as`` builds a fresh ctypes object on every
+        # call -- measured 7.7 us each, and one RHS evaluation needs sixteen
+        # of them, which is more than the transforms it wraps.  Every buffer
+        # here is long-lived, so the pointers are made once.  The cache keys
+        # on the buffer address and RETAINS the array, which is what keeps
+        # that address valid; it is bounded and cleared if a caller streams
+        # short-lived arrays through it.
+        self._ptrs: dict[int, tuple[np.ndarray, object]] = {}
+        self._efac: dict[tuple[float, float], tuple[np.ndarray, np.ndarray]] = {}
+        for buf in (
+            sp.kx, sp.ky, sp.kz, sp.k2, sp.inv_k2, sp.dealias, self.ones,
+            self.hat6, self.real6, self.real3, self.hat3,
+            self.a, self.b, self.c, self.d, self.stage, self.ping, self.pong,
+        ):
+            self.ptr(buf)
         del n
+
+    def ptr(self, array: np.ndarray):
+        """Cached ``double *`` for ``array``."""
+        key = array.ctypes.data
+        hit = self._ptrs.get(key)
+        if hit is not None and hit[0] is array:
+            return hit[1]
+        if len(self._ptrs) > 128:
+            self._ptrs.clear()
+        made = _accel.ptr(array)
+        self._ptrs[key] = (array, made)
+        return made
+
+    def factors(self, viscosity: float, dt: float) -> tuple[np.ndarray, np.ndarray]:
+        """Cached ``(exp(-nu k^2 dt), exp(-nu k^2 dt/2))`` for this grid.
+
+        ``evolve`` is called repeatedly at the same (nu, dt) by the
+        convergence study, and these are also pointer-cache entries, so
+        recomputing them each time would both cost two ``np.exp`` passes and
+        churn the pointer cache."""
+        key = (viscosity, dt)
+        hit = self._efac.get(key)
+        if hit is None:
+            k2 = self.sp.k2
+            full = np.ascontiguousarray(np.exp(-viscosity * k2 * dt))
+            half = np.ascontiguousarray(np.exp(-viscosity * k2 * 0.5 * dt))
+            self.ptr(full)
+            self.ptr(half)
+            hit = self._efac[key] = (full, half)
+        return hit
 
 
 _PLAN_CACHE: dict[int, "_Plans"] = {}
@@ -348,19 +397,17 @@ def _nl_into(
     multiply; see the module note above for why the scale is folded in.
     """
     pl = _plans(sp)
+    q = pl.ptr
     mask = sp.dealias if dealias else pl.ones
-    m = sp.n * sp.n * (sp.n // 2 + 1)
     _LIB.navier_pre_transform(
-        _p(vector_hat), _p(sp.kx), _p(sp.ky), _p(sp.kz), _p(mask),
-        _p(pl.hat6), m,
+        q(vector_hat), q(sp.kx), q(sp.ky), q(sp.kz), q(mask), q(pl.hat6), pl.m,
     )
     pl.inv()
-    _LIB.navier_cross(_p(pl.real6), _p(pl.real3), sp.n ** 3)
+    _LIB.navier_cross(q(pl.real6), q(pl.real3), pl.p3)
     pl.fwd()
     _LIB.navier_post_leray(
-        _p(pl.hat3), _p(sp.kx), _p(sp.ky), _p(sp.kz), _p(sp.inv_k2),
-        _p(sp.dealias), ctypes.c_double(scale), ctypes.c_int(1 if dealias else 0),
-        _p(out), m,
+        q(pl.hat3), q(sp.kx), q(sp.ky), q(sp.kz), q(sp.inv_k2), q(sp.dealias),
+        scale, 1 if dealias else 0, q(out), pl.m,
     )
     return out
 
@@ -461,7 +508,8 @@ def _step_ifrk4_fast(
     whole ``evolve`` loop allocates nothing after the first step.
     """
     pl = _plans(sp)
-    m = sp.n * sp.n * (sp.n // 2 + 1)
+    q = pl.ptr
+    m = pl.m
     half = 0.5 * dt
 
     # scale folded into the projector when unforced; see module note.
@@ -475,21 +523,19 @@ def _step_ifrk4_fast(
             np.multiply(dest, dt, out=dest)
         return dest
 
+    pv, pef, peh = q(vector_hat), q(e_full), q(e_half)
     a = stage(vector_hat, time, pl.a)
-    _LIB.navier_stage2(_p(vector_hat), _p(a), _p(e_half), _p(pl.stage), m)
+    _LIB.navier_stage2(pv, q(a), peh, q(pl.stage), m)
     b = stage(pl.stage, time + half, pl.b)
-    _LIB.navier_stage3(_p(vector_hat), _p(b), _p(e_half), _p(pl.stage), m)
+    _LIB.navier_stage3(pv, q(b), peh, q(pl.stage), m)
     c = stage(pl.stage, time + half, pl.c)
-    _LIB.navier_stage4(
-        _p(vector_hat), _p(c), _p(e_full), _p(e_half), _p(pl.stage), m
-    )
+    _LIB.navier_stage4(pv, q(c), pef, peh, q(pl.stage), m)
     d = stage(pl.stage, time + dt, pl.d)
 
     if out is None:
         out = np.empty_like(vector_hat)
     _LIB.navier_combine(
-        _p(vector_hat), _p(a), _p(b), _p(c), _p(d),
-        _p(e_full), _p(e_half), _p(out), m,
+        pv, q(a), q(b), q(c), q(d), pef, peh, q(out), m,
     )
     return out
 
@@ -504,14 +550,13 @@ def evolve(
     forcing=None,
     t0: float = 0.0,
 ) -> np.ndarray:
-    e_full = np.ascontiguousarray(np.exp(-viscosity * sp.k2 * dt))
-    e_half = np.ascontiguousarray(np.exp(-viscosity * sp.k2 * 0.5 * dt))
     state = np.ascontiguousarray(vector_hat)
 
     if _fast_available():
         # Ping-pong between two preallocated buffers so the whole time loop
         # allocates nothing; only the escaping final state is copied out.
         pl = _plans(sp)
+        e_full, e_half = pl.factors(viscosity, dt)
         pl.ping[...] = state
         src, dst = pl.ping, pl.pong
         for index in range(steps):
@@ -522,6 +567,8 @@ def evolve(
             src, dst = dst, src
         return src.copy()
 
+    e_full = np.exp(-viscosity * sp.k2 * dt)
+    e_half = np.exp(-viscosity * sp.k2 * 0.5 * dt)
     state = state.copy()
     for index in range(steps):
         state = step_ifrk4(
