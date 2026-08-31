@@ -34,6 +34,13 @@ MATLAB*, ch. 10): the stiff viscous operator is integrated exactly by
 ``exp(-nu |k|^2 h)`` and the nonlinear remainder by classical RK4, giving fourth
 order in ``h`` with no viscous stability restriction.
 
+Forcing contract: ``evolve`` / ``step_ifrk4`` accept an optional time-dependent
+forcing returned by ``forcing(t)``, which must already be the Leray-projected
+forcing ``P_L[f_hat](t)`` (divergence-free).  ``P_L`` is idempotent on its own
+range, so no projection is applied inside the integrator; callers that assemble
+``f_hat`` from raw (unprojected) pieces must project before handing it in.
+``mms_problem`` satisfies the contract by construction.
+
 Real fields are carried as half-spectrum ``rfftn`` coefficients, which halves
 both the transform cost and the memory traffic relative to a complex ``fftn``.
 """
@@ -255,7 +262,13 @@ def step_ifrk4(
     def rhs(v_hat: np.ndarray, t: float) -> np.ndarray:
         out = -nonlinear_hat(v_hat, sp, dealias)
         if forcing is not None:
-            out = out + leray(forcing(t), sp)
+            # Contract: ``forcing(t)`` must return the *projected* forcing
+            # ``P_L[f_hat](t)``.  ``P_L`` is idempotent on its own range, so
+            # re-projecting here (the historic ``leray(forcing(t))``) was a
+            # redundant O(N^3) pass over arrays already carrying round-off-level
+            # divergence.  ``mms_problem`` satisfies the contract by
+            # construction: every term of ``forcing`` is already solenoidal.
+            out = out + forcing(t)
         return out
 
     a = dt * rhs(vector_hat, time)
@@ -344,6 +357,11 @@ def mms_problem(sp: Spectral, viscosity: float, dealias: bool = True):
     Because ``P_L[(curl v x v)]`` is evaluated with the same discrete operator
     the solver uses, the spatial discretization is exact and the residual error
     is purely temporal.  That isolates the time integrator's convergence order.
+
+    Every term of ``forcing`` is carried in the solenoidal subspace (``v_hat``,
+    ``nl_hat`` and ``visc_hat`` are all Leray-projected), so the return value
+    satisfies the forcing contract of ``evolve``: it is already the projected
+    forcing and the integrator does not re-project it.
     """
     base = taylor_green_field(sp.n)
     base_hat = leray(forward(base), sp)
