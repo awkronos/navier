@@ -69,21 +69,22 @@ except ImportError:
 
 
 # Aligned array allocator — avoids the ~37% pyfftw penalty on numpy arrays.
-def _alloc_hat(sp: Spectral) -> np.ndarray:
-    """Return a spectral-domain (3, n, n, n//2+1) complex array, aligned for
-    pyFFTW when available, otherwise plain numpy."""
+def _alloc_hat(sp: Spectral, batch: int = 3) -> np.ndarray:
+    """Return a spectral-domain (batch, n, n, n//2+1) complex array, aligned
+    for pyFFTW when available, otherwise plain numpy."""
     if _HAS_PYFFTW:
         return pyfftw.empty_aligned(
-            (3, sp.n, sp.n, sp.n // 2 + 1), dtype="complex128"
+            (batch, sp.n, sp.n, sp.n // 2 + 1), dtype="complex128"
         )
-    return np.empty((3, sp.n, sp.n, sp.n // 2 + 1), dtype=np.complex128)
+    return np.empty((batch, sp.n, sp.n, sp.n // 2 + 1), dtype=np.complex128)
 
 
-def _alloc_real(sp: Spectral) -> np.ndarray:
-    """Return a real (3, n, n, n) array, aligned for pyFFTW when available."""
+def _alloc_real(sp: Spectral, batch: int = 3) -> np.ndarray:
+    """Return a real (batch, n, n, n) array, aligned for pyFFTW when
+    available."""
     if _HAS_PYFFTW:
-        return pyfftw.empty_aligned((3, sp.n, sp.n, sp.n), dtype="float64")
-    return np.empty((3, sp.n, sp.n, sp.n), dtype=np.float64)
+        return pyfftw.empty_aligned((batch, sp.n, sp.n, sp.n), dtype="float64")
+    return np.empty((batch, sp.n, sp.n, sp.n), dtype=np.float64)
 
 
 # --------------------------------------------------------------------------
@@ -158,8 +159,11 @@ def leray(vector_hat: np.ndarray, sp: Spectral) -> np.ndarray:
     return vector_hat
 
 
-def curl_hat(vector_hat: np.ndarray, sp: Spectral) -> np.ndarray:
-    out = np.empty_like(vector_hat)
+def curl_hat(
+    vector_hat: np.ndarray, sp: Spectral, out: np.ndarray | None = None
+) -> np.ndarray:
+    if out is None:
+        out = np.empty_like(vector_hat)
     out[0] = 1j * (sp.ky * vector_hat[2] - sp.kz * vector_hat[1])
     out[1] = 1j * (sp.kz * vector_hat[0] - sp.kx * vector_hat[2])
     out[2] = 1j * (sp.kx * vector_hat[1] - sp.ky * vector_hat[0])
@@ -190,23 +194,61 @@ def enstrophy(vector_hat: np.ndarray, sp: Spectral) -> float:
 # --------------------------------------------------------------------------
 
 
+# Per-grid scratch buffers for nonlinear_hat, allocated once and reused across
+# every IFRK4 stage instead of malloc'd fresh on each of the 4 RHS calls per
+# step.  Safe because each call fully overwrites and fully consumes every
+# buffer before returning a *new* array (leray()/forward() output is never
+# aliased to a scratch buffer) -- evolve() drives stages strictly
+# sequentially, so there is never a live reader of a stale buffer.
+#
+# ``combo`` stacks the dealiased velocity (components 0:3) and its curl
+# (components 3:6) into ONE (6, n, n, n//2+1) array so the two inverse
+# transforms the original code issued separately collapse into a single
+# batched ``irfftn`` call -- same total FLOPs (rfftn/irfftn already batch
+# over the leading axis independently per slice), but one fewer Python/FFT
+# dispatch per RHS evaluation.
+_SCRATCH_CACHE: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+
+
+def _scratch(sp: Spectral) -> tuple[np.ndarray, np.ndarray]:
+    """Return ``(combo_hat[6], cross_real[3])`` scratch buffers for grid
+    ``sp.n``, aligned for pyFFTW when available."""
+    cached = _SCRATCH_CACHE.get(sp.n)
+    if cached is not None:
+        return cached
+    bufs = (_alloc_hat(sp, batch=6), _alloc_real(sp, batch=3))
+    _SCRATCH_CACHE[sp.n] = bufs
+    return bufs
+
+
 def nonlinear_hat(vector_hat: np.ndarray, sp: Spectral, dealias: bool) -> np.ndarray:
     """Projected rotational nonlinearity ``P_L[(omega x u)_hat]``.
 
-    Preallocates the cross-product buffer as an aligned array so the
-    subsequent forward FFT avoids the ~37% pyFFTW penalty on misaligned
-    numpy arrays, and writes components in-place to skip ``np.stack``.
+    Uses preallocated, aligned scratch buffers so the four RHS evaluations
+    per IFRK4 step reuse the same memory instead of allocating fresh arrays
+    every call, and stacks the dealiased velocity and its curl into one
+    6-component buffer so they transform to physical space in a SINGLE
+    batched inverse FFT rather than two separate calls (the forward/inverse
+    wrappers already batch over the leading axis per-slice, so stacking is
+    numerically identical to two independent transforms -- it only removes
+    a redundant Python/FFT dispatch). Components are written in-place to
+    skip ``np.stack``.
     """
-    work = vector_hat * sp.dealias if dealias else vector_hat
-    u = inverse(work, sp.n)  # cannot overwrite work — still needed for curl
-    w = inverse(curl_hat(work, sp), sp.n, overwrite=True)  # curl_hat output is fresh
-    # Preallocated aligned buffer — avoids np.stack copy + gives pyFFTW
-    # the alignment it needs for SIMD-optimal transforms.
-    cross = _alloc_real(sp)
+    combo, cross = _scratch(sp)
+    work = combo[:3]
+    curl_buf = combo[3:]
+    if dealias:
+        np.multiply(vector_hat, sp.dealias, out=work)
+    else:
+        work[...] = vector_hat
+    curl_hat(work, sp, out=curl_buf)
+    uw = inverse(combo, sp.n, overwrite=True)  # combo is scratch, safe to consume
+    u = uw[:3]
+    w = uw[3:]
     cross[0] = w[1] * u[2] - w[2] * u[1]
     cross[1] = w[2] * u[0] - w[0] * u[2]
     cross[2] = w[0] * u[1] - w[1] * u[0]
-    cross_hat = forward(cross, overwrite=True)  # cross is fresh
+    cross_hat = forward(cross, overwrite=True)  # cross is scratch, safe to consume
     if dealias:
         cross_hat *= sp.dealias
     return leray(cross_hat, sp)
