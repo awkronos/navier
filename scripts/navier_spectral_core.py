@@ -47,25 +47,69 @@ import multiprocessing as _mp
 
 import numpy as np
 
-# FFT backend: pyFFTW (fastest, pre-planned) > scipy.fft > numpy.fft.
+# FFT backend: pyFFTW (compat layer, pre-planned) > scipy.fft > numpy.fft.
+# Runtime switching via set_fft_backend() for benchmark comparison.
 _HAS_PYFFTW = False
 _HAS_SCIPY_FFT = False
+_FFT_BACKEND = "numpy"
+
+# Keep separate references so set_fft_backend can dispatch independently.
+_PYFFTW_FWD = None  # pyfftw.interfaces.scipy_fft.rfftn
+_PYFFTW_INV = None  # pyfftw.interfaces.scipy_fft.irfftn
+_SCIPY_FWD = None   # scipy.fft.rfftn
+_SCIPY_INV = None   # scipy.fft.irfftn
+_NUMPY_FWD = np.fft.rfftn
+_NUMPY_INV = np.fft.irfftn
+
 try:
     import pyfftw
-    from pyfftw.interfaces import scipy_fft as _fft
 
-    pyfftw.config.NUM_THREADS = 1  # N=16 arrays too small for multi-threading
+    pyfftw.config.NUM_THREADS = 1
     from pyfftw.interfaces.cache import enable as _fftw_enable_cache
 
     _fftw_enable_cache()
-    _HAS_SCIPY_FFT = _HAS_PYFFTW = True
-except ImportError:
-    try:
-        import scipy.fft as _fft
+    from pyfftw.interfaces import scipy_fft as _pyfftw_fft
 
+    _PYFFTW_FWD = _pyfftw_fft.rfftn
+    _PYFFTW_INV = _pyfftw_fft.irfftn
+    _HAS_PYFFTW = True
+except ImportError:
+    pass
+
+if not _HAS_PYFFTW:
+    try:
+        import scipy.fft as _scipy_fft
+
+        _SCIPY_FWD = _scipy_fft.rfftn
+        _SCIPY_INV = _scipy_fft.irfftn
         _HAS_SCIPY_FFT = True
     except ImportError:
-        pass  # fall through to numpy.fft below
+        pass
+
+# Default: pyFFTW if available, else scipy, else numpy.
+if _HAS_PYFFTW:
+    _FFT_BACKEND = "pyfftw"
+elif _HAS_SCIPY_FFT:
+    _FFT_BACKEND = "scipy"
+
+
+def set_fft_backend(name: str) -> None:
+    """Switch FFT back-end at runtime for benchmark comparisons.
+
+    ``name`` one of ``"pyfftw"``, ``"scipy"``, ``"numpy"``.
+    Raises ``ValueError`` if the requested backend is not available.
+    """
+    global _FFT_BACKEND
+    backends = {
+        "pyfftw": _HAS_PYFFTW,
+        "scipy": _HAS_SCIPY_FFT,
+        "numpy": True,
+    }
+    if name not in backends:
+        raise ValueError(f"unknown backend: {name}")
+    if not backends[name]:
+        raise ValueError(f"{name} is not available")
+    _FFT_BACKEND = name
 
 
 # --------------------------------------------------------------------------
@@ -109,15 +153,19 @@ def mesh(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def forward(field: np.ndarray, overwrite: bool = False) -> np.ndarray:
-    if _HAS_SCIPY_FFT:
-        return _fft.rfftn(field, axes=(1, 2, 3), overwrite_x=overwrite)
-    return np.fft.rfftn(field, axes=(1, 2, 3))
+    if _FFT_BACKEND == "pyfftw":
+        return _PYFFTW_FWD(field, axes=(1, 2, 3), overwrite_x=overwrite)
+    if _FFT_BACKEND == "scipy":
+        return _SCIPY_FWD(field, axes=(1, 2, 3), overwrite_x=overwrite)
+    return _NUMPY_FWD(field, axes=(1, 2, 3))
 
 
 def inverse(field_hat: np.ndarray, n: int, overwrite: bool = False) -> np.ndarray:
-    if _HAS_SCIPY_FFT:
-        return _fft.irfftn(field_hat, s=(n, n, n), axes=(1, 2, 3), overwrite_x=overwrite)
-    return np.fft.irfftn(field_hat, s=(n, n, n), axes=(1, 2, 3))
+    if _FFT_BACKEND == "pyfftw":
+        return _PYFFTW_INV(field_hat, s=(n, n, n), axes=(1, 2, 3), overwrite_x=overwrite)
+    if _FFT_BACKEND == "scipy":
+        return _SCIPY_INV(field_hat, s=(n, n, n), axes=(1, 2, 3), overwrite_x=overwrite)
+    return _NUMPY_INV(field_hat, s=(n, n, n), axes=(1, 2, 3))
 
 
 def leray(vector_hat: np.ndarray, sp: Spectral) -> np.ndarray:
