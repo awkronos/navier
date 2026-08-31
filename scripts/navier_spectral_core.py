@@ -183,7 +183,12 @@ def divergence_linf(vector_hat: np.ndarray, sp: Spectral) -> float:
     div_hat = 1j * (
         sp.kx * vector_hat[0] + sp.ky * vector_hat[1] + sp.kz * vector_hat[2]
     )
-    return float(np.max(np.abs(np.fft.irfftn(div_hat, s=(sp.n,) * 3))))
+    # axes is explicit: numpy 2.0 deprecates s-without-axes and will raise.
+    # For this 3-D input the default was already the last three axes, so the
+    # value is unchanged.
+    return float(
+        np.max(np.abs(np.fft.irfftn(div_hat, s=(sp.n,) * 3, axes=(0, 1, 2))))
+    )
 
 
 def energy(vector_hat: np.ndarray, sp: Spectral) -> float:
