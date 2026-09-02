@@ -73,6 +73,8 @@ import Navier.Analysis.MultiFrequencyMild
 import Navier.Analysis.FrequencyMildGlobal
 import Navier.Analysis.DissipativeODEGlobal
 import Navier.Analysis.EnergyDissipation
+import Navier.Analysis.GronwallAffine
+import Navier.Analysis.KatoPonceLeibniz
 import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.GalerkinModeData
 import Navier.Analysis.GalerkinHMinusOne

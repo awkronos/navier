@@ -3,6 +3,8 @@ import Navier.Analysis.BKMLogLeaves
 import Navier.Analysis.UniformDecayDominated
 import Navier.Analysis.BiotSavartKernel
 import Navier.Analysis.EnergyNormBridge
+import Navier.Analysis.GronwallAffine
+import Navier.Analysis.KatoPonceLeibniz
 
 /-!
 # BKM log bootstrap: from the Biot–Savart log inequality to the criterion
@@ -2298,8 +2300,9 @@ def SliceSeminormLocallyBounded {ν : ℝ} {u₀ : SchwartzVelocity}
       SchwartzMap.seminorm ℝ 0 n (S.slice t) ≤ M ∧
         SchwartzMap.seminorm ℝ 2 n (S.slice t) ≤ M
 
-/-- **[NAMED RESIDUAL — locally uniform propagation of Schwartz seminorms along
-the flow; Majda–Bertozzi §3.2.3; est ~200 LOC.]**  The whole PDE content of
+/-! ### The residual of `sliceSeminorm_locallyBounded`, and its route
+
+**[Majda–Bertozzi §3.2.3; est ~200 LOC.]**  The whole PDE content of
 `exists_sliceLocallyUniformDecayBound`, and nothing else: near every
 nonnegative time, the seminorms `‖u(t)‖_{0,n}`, `‖u(t)‖_{2,n}` for `n < 4` admit
 a single bound.
@@ -2336,11 +2339,115 @@ every slice Schwartz — no locally uniform `M` exists.  This is the same witnes
 that makes `sup_s ‖v(s,x)‖²(1 + ‖x‖)⁴ ~ C‖x‖` diverge at the decay end
 (`sup_s ‖v(s,x)‖² = (3/4)^{3/2}e^{−3/2}‖x‖^{−3}`), as the certified equivalence
 requires.  The predicate therefore genuinely consumes the Navier–Stokes clauses
-of `IsClassicalSolution`, not merely `velocity_smooth`. -/
+of `IsClassicalSolution`, not merely `velocity_smooth`.
+-/
+
+/-- **The weighted-energy differential inequality the PDE supplies**
+(Majda–Bertozzi §3.2.3, the *hypothesis* half of the argument).
+
+Near every nonnegative time there is a window `[0,T]`, a scalar control `E`
+dominating the quartic-weighted pointwise size of every derivative of order
+`n < 4`, and continuous nonnegative `a, b` with
+
+  `E' ≤ a·E + b`   on `(0,T)`.
+
+`a` is the commutator/Calderón–Zygmund rate `C(1 + ‖∇u‖_∞)` produced by
+`[x^α, u·∇]D^β u` together with the pressure bound on `∇²(-Δ)^{-1}`; `b`
+collects the unweighted forcing, which is controlled by
+`uniformly_bounded_energy`.  The additive `b` is exactly why the *purely
+multiplicative* Grönwall lemmas already in this repository
+(`gronwall_log_apriori`) do not suffice.
+
+This is a **strictly lower** obligation than `SliceSeminormLocallyBounded`:
+the theorem immediately below derives the latter from it, kernel-clean. -/
+def WeightedEnergyAffineControl {ν : ℝ} {u₀ : SchwartzVelocity}
+    (S : SchwartzSlicedSolution ν u₀) : Prop :=
+  ∀ t₀ ∈ Set.Ici (0 : ℝ), ∃ T : ℝ, t₀ < T ∧ ∃ E E' a b : ℝ → ℝ,
+    ContinuousOn a (Set.Icc 0 T) ∧ ContinuousOn b (Set.Icc 0 T) ∧
+    (∀ t ∈ Set.Icc 0 T, 0 ≤ a t) ∧ (∀ t ∈ Set.Icc 0 T, 0 ≤ b t) ∧
+    ContinuousOn E (Set.Icc 0 T) ∧
+    (∀ t ∈ Set.Ioo 0 T, HasDerivAt E (E' t) t) ∧
+    (∀ t ∈ Set.Ioo 0 T, E' t ≤ a t * E t + b t) ∧
+    (∀ t ∈ Set.Icc 0 T, ∀ n : ℕ, n < 4 → ∀ x : Space,
+      ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ E t * (1 + ‖x‖) ^ (-4 : ℝ))
+
+/-- **[NAMED RESIDUAL — the weighted energy identity and its commutator /
+Calderón–Zygmund pressure estimate; Majda–Bertozzi §3.2.3; est ~200 LOC.]**
+The *whole* remaining PDE content of `sliceSeminorm_locallyBounded`.
+
+Differentiating `E(t) = Σ_{|α| ≤ 2, |β| ≤ 5} ‖x^α D^β u(t)‖²_{L²}` along the
+flow produces (i) the viscous good term `−2ν‖∇(x^α D^β u)‖²_{L²} ≤ 0`, (ii) the
+commutator term `⟨[x^α, u·∇]D^β u, x^α D^β u⟩` bounded by `C(1+‖∇u‖_∞)·E`, and
+(iii) the pressure term, bounded via the Calderón–Zygmund estimate on
+`∇²(-Δ)^{-1}`; the unweighted forcing is controlled by
+`S.solution.uniformly_bounded_energy`.  That is exactly the shape
+`WeightedEnergyAffineControl` records.
+
+**What this residual no longer carries.**  The Grönwall step and the passage
+from the weighted control to the two Schwartz seminorms are certified below in
+`sliceSeminormLocallyBounded_of_weightedEnergyAffineControl`, using the new
+affine time-dependent Grönwall leaf
+`Navier.Analysis.GronwallAffine.gronwall_affine_apriori`. -/
+theorem weightedEnergyAffineControl_of_navierStokes
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
+    WeightedEnergyAffineControl S := by
+  sorry
+
+/-- **[CERTIFIED — no `sorry` in this declaration; the Grönwall + extraction
+step of `sliceSeminorm_locallyBounded`.]**  The weighted-energy differential
+inequality forces the locally uniform seminorm bound.
+
+Two named edges are discharged here and are no longer residual:
+
+* the **affine time-dependent Grönwall step**
+  `Navier.Analysis.GronwallAffine.exists_bound_of_affine_gronwall`
+  (`E' ≤ a·E + b` with continuous nonnegative `a, b` gives one constant `M`
+  bounding `E` on the whole window) — Mathlib carries only the *constant-rate*
+  `gronwallBound`, and this repository carried only the *multiplicative*
+  `gronwall_log_apriori`, which needs `Y > 0` and has no forcing term;
+* the passage from the weighted `L²`/pointwise control to the two Schwartz
+  seminorms, which is `schwartz_seminorm_le_of_sq_decay` above.
+
+What remains residual is therefore exactly the *derivation* of
+`WeightedEnergyAffineControl` from the Navier–Stokes clauses — the weighted
+energy identity, its commutator estimate and the Calderón–Zygmund pressure
+bound — and nothing else. -/
+theorem sliceSeminormLocallyBounded_of_weightedEnergyAffineControl
+    {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀)
+    (h : WeightedEnergyAffineControl S) :
+    SliceSeminormLocallyBounded S := by
+  intro t₀ ht₀
+  obtain ⟨T, hT₀T, E, E', a, b, hac, hbc, hanonneg, hbnonneg, hEc, hEderiv,
+    hEbound, hdecay⟩ := h t₀ ht₀
+  have hT : (0 : ℝ) ≤ T := le_trans ht₀ (le_of_lt hT₀T)
+  obtain ⟨M, hM⟩ := Navier.Analysis.GronwallAffine.exists_bound_of_affine_gronwall
+    hT hac hbc hanonneg hbnonneg hEc hEderiv hEbound
+  refine ⟨T - t₀, Real.sqrt M, by linarith, ?_⟩
+  intro t ht n hn
+  have htIcc : t ∈ Set.Icc (0 : ℝ) T := by
+    refine ⟨ht.1, ?_⟩
+    have := Metric.mem_ball.mp ht.2
+    rw [Real.dist_eq] at this
+    have := abs_lt.mp this
+    linarith [this.2]
+  have hpt : ∀ x : Space,
+      ‖iteratedFDeriv ℝ n (⇑(S.slice t)) x‖ ^ 2 ≤ M * (1 + ‖x‖) ^ (-4 : ℝ) := by
+    intro x
+    have hw : (0 : ℝ) ≤ (1 + ‖x‖) ^ (-4 : ℝ) :=
+      Real.rpow_nonneg (by positivity) _
+    exact le_trans (hdecay t htIcc n hn x)
+      (mul_le_mul_of_nonneg_right (hM t htIcc) hw)
+  exact schwartz_seminorm_le_of_sq_decay (S.slice t) n hpt
+
+/-- **[NAMED RESIDUAL, strictly reduced.]**  Only the derivation of
+`WeightedEnergyAffineControl` remains: the Grönwall step and the seminorm
+extraction are certified in
+`sliceSeminormLocallyBounded_of_weightedEnergyAffineControl` above. -/
 theorem sliceSeminorm_locallyBounded
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
-    SliceSeminormLocallyBounded S := by
-  sorry
+    SliceSeminormLocallyBounded S :=
+  sliceSeminormLocallyBounded_of_weightedEnergyAffineControl S
+    (weightedEnergyAffineControl_of_navierStokes S)
 
 /-- **[DERIVED, certified.]**  The reverse implication of the equivalence: a
 locally uniform quartic decay bound gives locally uniform seminorm bounds.
@@ -2493,11 +2600,28 @@ gradient majorant `G`, and for **one** derivative order `n < 4` at a time, the
 order-`n` energy `t ↦ ∫ ‖D^n u(t,x)‖² dx` is differentiable on positive time
 with derivative at most `C·G(t)·‖u(t)‖²_{H³}`.
 
-**Dependencies.**  Differentiation under the `L²(ℝ³)` integral for the
-jointly-smooth slices; the pressure term vanishing after integration by parts
-(incompressibility); the viscous term `−2ν∫‖D^{n+1}u‖²` being `≤ 0` for
-`ν ≥ 0`; and the Kato–Ponce commutator bound
-`|⟨D^n(u·∇u), D^n u⟩| ≤ C‖∇u‖_∞‖u‖²_{H^n}` for `n ≤ 3`.
+**Dependencies still carried.**  Differentiation under the `L²(ℝ³)` integral
+for the jointly-smooth slices; the pressure term vanishing after integration by
+parts (incompressibility); the viscous term `−2ν∫‖D^{n+1}u‖²` being `≤ 0` for
+`ν ≥ 0`; the divergence-free cancellation `⟨u·∇D^n u, D^n u⟩ = 0` that removes
+the top-order Leibniz term; and the Gagliardo–Nirenberg interpolation that
+converts `Σ_{i≥1} ‖D^i u‖_∞‖D^{n−i+1}u‖_{L²}` into `‖∇u‖_∞‖u‖_{H^n}`.
+
+**What is no longer residual — the Leibniz + Hölder core of the integer-order
+Kato–Ponce estimate.**  For integer `n` the commutator bound is *not* the
+fractional Kato–Ponce theorem: it is the bilinear Leibniz rule followed by
+`L²`-Hölder with the low-order factor in `L^∞`.  Both steps are now certified
+kernel-clean in `Navier/Analysis/KatoPonceLeibniz.lean`:
+
+* `Navier.Analysis.KatoPonceLeibniz.norm_iteratedFDeriv_bilinear_le_of_supBound`
+  — Leibniz with a sup majorant on the first factor;
+* `Navier.Analysis.KatoPonceLeibniz.integral_mul_norm_le_sqrt_mul_sqrt`
+  — the `p = q = 2` Hölder step in this repository's
+  `√(∫‖D^n u‖²)` energy vocabulary;
+* `Navier.Analysis.KatoPonceLeibniz.integral_norm_iteratedFDeriv_bilinear_mul_le`
+  — the assembly
+  `∫‖D^n B(f,g)‖·‖D^n h‖ ≤ ‖B‖ Σ_i C(n,i)·A_i·‖D^{n−i}g‖_{L²}·‖D^n h‖_{L²}`,
+  which is exactly the pairing the energy estimate takes.
 
 **What is no longer residual.**  Summing the four orders — the differentiability
 of the `H³` energy and the accumulation of the four bounds into the single
