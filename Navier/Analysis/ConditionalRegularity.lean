@@ -1195,6 +1195,189 @@ theorem duhamelRepresentation_layer
           + duhamelNonlinear sol t x := by
   sorry
 
+/-! ### The heat-smoothing half of the Duhamel estimate, discharged
+
+The two `duhamelNonlinear_bounded_of_*` leaves below were each described as a
+`~250 LOC` estimate whose route is "`L^r → L^∞` heat smoothing, integrated in
+`s` against the slice norm".  That whole route is now a *theorem*
+(`duhamelNonlinear_bounded_of_source_Lr`), kernel-clean, with the two
+supporting facts it needs also proved here:
+
+* `intervalIntegral_sub_rpow_neg` — the time integral
+  `∫₀ᵗ (t−s)^{−a} ds = t^{1−a}/(1−a)` for `a < 1`.  The docstrings previously
+  asserted in prose that "the exponent condition is exactly what makes
+  `∫₀ᵗ (t−s)^{−3/(2r)}‖F(s)‖_r ds` converge"; this is that sentence, checked.
+* `heatKernel_convolution_norm_vec_le_uniform` — the vector-valued `L^r → L^∞`
+  smoothing bound with the constant hoisted ABOVE the field.  The existing
+  `HeatSemigroupSmoothing.heatKernel_convolution_norm_vec_le` puts `∃ C` *after*
+  fixing `f`, so it cannot be applied to the family `s ↦ duhamelSource sol s`
+  and produce one constant; hoisting is what makes the time integration
+  possible at all, and the constant really is field-independent because it
+  comes from `heatKernel_Lr_scaling`.
+
+What is left of the two leaves after this is exactly an `L^r` bound on the
+*source* `duhamelSource sol s = f − ((u·∇)u + ∇p)` uniformly on the layer,
+i.e. `L^r` control of `(u·∇)u` and of `∇p` — plus two side conditions
+(slice measurability, and interval-integrability in `s` of the inner
+convolution's norm).  No heat-semigroup, Young, or time-integrability
+mathematics remains in them. -/
+
+/-- **The Duhamel time integral (certified, no `sorry`).**  For `a < 1`,
+
+  `∫₀ᵗ (t − s)^{−a} ds = t^{1−a} / (1 − a)`.
+
+This is the convergence the Prodi–Serrin exponent condition buys: with
+`a = 3/(2r)` the integral is finite exactly when `r > 3/2`. -/
+theorem intervalIntegral_sub_rpow_neg {t a : ℝ} (ha1 : a < 1) :
+    (∫ s in (0 : ℝ)..t, (t - s) ^ (-a)) = t ^ (1 - a) / (1 - a) := by
+  have h1 : (∫ s in (0 : ℝ)..t, (t - s) ^ (-a)) = ∫ u in (t - t)..(t - 0), u ^ (-a) := by
+    rw [intervalIntegral.integral_comp_sub_left (fun u : ℝ => u ^ (-a)) t]
+  rw [h1]
+  simp only [sub_self, sub_zero]
+  rw [integral_rpow (Or.inl (by linarith))]
+  have h0 : (0 : ℝ) ^ (-a + 1) = 0 := Real.zero_rpow (by linarith)
+  rw [h0]
+  have h2 : -a + 1 = 1 - a := by ring
+  rw [h2]
+  ring
+
+/-- **Interval integrability of the Duhamel time weight (certified, no
+`sorry`).**  `s ↦ (t − s)^{−a}` is interval integrable on `[0,t]` whenever
+`−1 < −a`. -/
+theorem intervalIntegrable_sub_rpow_neg {t a : ℝ} (ha : -1 < -a) :
+    IntervalIntegrable (fun s : ℝ => (t - s) ^ (-a)) volume 0 t := by
+  have h := (intervalIntegral.intervalIntegrable_rpow' (a := t) (b := 0) ha).comp_sub_left t
+  simpa using h
+
+/-- **`L^r → L^∞` heat smoothing, vector valued, with the constant hoisted
+above the field (certified, no `sorry`).**  For `r > 1` there is one
+`C = C(r,ν) > 0` such that for *every* measurable `g` with `‖g‖^r` integrable,
+every `t > 0` and every `x`,
+
+  `‖∫ G^ν_t(x−y) • g(y) dy‖ ≤ C · t^{−3/(2r)} · ‖g‖_{L^r}`.
+
+The quantifier order is the whole point (`epistemic-rigor.md` §"Quantifier
+order is a satisfiability question").  `HeatSemigroupSmoothing.
+heatKernel_convolution_norm_vec_le` states the same bound with `∃ C` *inside*
+the scope of `f`, which cannot be integrated in time against a moving slice.
+The constant is genuinely field-independent: it is the one produced by
+`heatKernel_Lr_scaling`, a statement about the kernel alone. -/
+theorem heatKernel_convolution_norm_vec_le_uniform {ν : ℝ} (hν : 0 < ν) {r : ℝ}
+    (hr : 1 < r) :
+    ∃ C : ℝ, 0 < C ∧ ∀ g : Space → Space, Measurable g →
+      Integrable (fun y : Space => ‖g y‖ ^ r) →
+      ∀ t : ℝ, 0 < t → ∀ x : Space,
+        ‖∫ y : Space, heatKernel ν t (x - y) • g y‖
+          ≤ C * t ^ (-(3 : ℝ) / (2 * r)) * (∫ y : Space, ‖g y‖ ^ r) ^ (1 / r) := by
+  obtain ⟨C, hC0, hC⟩ := heatKernel_Lr_scaling hν hr
+  refine ⟨C, hC0, fun g hgm hgr t ht x => ?_⟩
+  have hgnorm : Measurable (fun y : Space => ‖g y‖) := hgm.norm
+  have hgnorm_int : Integrable (fun y : Space => |‖g y‖| ^ r) :=
+    hgr.congr (Filter.Eventually.of_forall (fun y => by simp))
+  have h_nonneg_int : 0 ≤ ∫ y : Space, heatKernel ν t (x - y) * ‖g y‖ :=
+    integral_nonneg (fun y => mul_nonneg (heatKernel_nonneg hν ht (x - y)) (norm_nonneg _))
+  calc
+    ‖∫ y : Space, heatKernel ν t (x - y) • g y‖
+        ≤ ∫ y : Space, ‖heatKernel ν t (x - y) • g y‖ := norm_integral_le_integral_norm _
+    _ = ∫ y : Space, heatKernel ν t (x - y) * ‖g y‖ := by
+      refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+      simp [norm_smul, Real.norm_eq_abs, abs_of_nonneg (heatKernel_nonneg hν ht (x - y))]
+    _ = |∫ y : Space, heatKernel ν t (x - y) * ‖g y‖| := by rw [abs_of_nonneg h_nonneg_int]
+    _ ≤ (∫ y : Space, heatKernel ν t y ^ (r / (r - 1))) ^ ((r - 1) / r) *
+          (∫ y : Space, |‖g y‖| ^ r) ^ (1 / r) :=
+        heatKernel_convolution_abs_le hν ht hr hgnorm_int hgnorm x
+    _ = C * t ^ (-(3 : ℝ) / (2 * r)) * (∫ y : Space, ‖g y‖ ^ r) ^ (1 / r) := by
+        rw [hC t ht]; simp
+
+/-- **[THEOREM — the Duhamel correction is bounded on the layer as soon as the
+SOURCE is bounded in `L^r`, `r > 3/2`.]**  No `sorry`, no axiom beyond the
+Mathlib triple.
+
+  `‖N(t,x)‖ ≤ C₀(r,ν) · S · δ^{1−3/(2r)} / (1 − 3/(2r))`   for `0 < t ≤ δ`,
+
+where `S` bounds the `L^r` norms of `duhamelSource sol s` on the layer.
+
+This is the complete `L^r → L^∞`-smoothing-plus-time-integration route that
+`duhamelNonlinear_bounded_of_Lp` and `duhamelNonlinear_bounded_of_L2` were both
+described as needing.  The threshold `r > 3/2` is not decoration: it is exactly
+`3/(2r) < 1`, the condition under which `intervalIntegral_sub_rpow_neg`
+converges, and the Prodi–Serrin exponent `p > 3` sits strictly above it.
+
+Statement hygiene.  `S` bounds the norm of `duhamelSource`, which is a
+*definition* (`f − ((u·∇)u + ∇p)`), not a parameter — so this is not the
+conclusion in disguise: nothing here says anything about `sol.velocity`, and a
+bound on the source is a genuinely different (and strictly lower) object than a
+bound on the Duhamel integral of the source.  `hNint` is a measurability-class
+side condition on one explicitly written function, not an estimate.
+
+Reference for the classical statement: Kato, Math. Z. 187 (1984) 471–480, §2;
+Giga–Miyakawa, Arch. Ration. Mech. Anal. 89 (1985) 267–281. -/
+theorem duhamelNonlinear_bounded_of_source_Lr {ν : ℝ} (hν : 0 < ν) {f : ForceField}
+    {u₀ : VelocityField} {T : ℝ} (sol : PartialClassicalSolution ν f u₀ T)
+    {δ : ℝ} (hδ0 : 0 < δ)
+    {r : ℝ} (hr : 3 / 2 < r)
+    (hsm : ∀ s : ℝ, 0 ≤ s → s ≤ δ → Measurable (duhamelSource sol s))
+    (hsi : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      Integrable (fun y : Space => ‖duhamelSource sol s y‖ ^ r))
+    (S : ℝ) (hS : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      (∫ y : Space, ‖duhamelSource sol s y‖ ^ r) ^ (1 / r) ≤ S)
+    (hNint : ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      IntervalIntegrable
+        (fun s : ℝ => ‖∫ y : Space, heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖)
+        volume 0 t) :
+    ∃ C : ℝ, ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      ‖duhamelNonlinear sol t x‖ ≤ C := by
+  have hr1 : (1 : ℝ) < r := by linarith
+  have hrpos : (0 : ℝ) < r := by linarith
+  obtain ⟨a, ha_def⟩ : ∃ a : ℝ, a = 3 / (2 * r) := ⟨_, rfl⟩
+  have ha0 : 0 < a := by rw [ha_def]; positivity
+  have ha1 : a < 1 := by
+    rw [ha_def, div_lt_one (by positivity)]
+    linarith
+  have hna : -(3 : ℝ) / (2 * r) = -a := by rw [ha_def]; ring
+  obtain ⟨C₀, hC₀0, hC₀⟩ := heatKernel_convolution_norm_vec_le_uniform (ν := ν) hν hr1
+  have hS0 : 0 ≤ S := by
+    refine le_trans ?_ (hS 0 le_rfl hδ0.le)
+    exact Real.rpow_nonneg (integral_nonneg fun y => Real.rpow_nonneg (norm_nonneg _) _) _
+  refine ⟨C₀ * S * (δ ^ (1 - a) / (1 - a)), fun t ht0 htδ x => ?_⟩
+  have hIIrhs : IntervalIntegrable (fun s : ℝ => C₀ * S * (t - s) ^ (-a)) volume 0 t :=
+    (intervalIntegrable_sub_rpow_neg (t := t) (a := a) (by linarith)).const_mul _
+  have hunfold : duhamelNonlinear sol t x
+      = ∫ s in (0 : ℝ)..t,
+          (∫ y : Space, heatKernel ν (t - s) (x - y) • duhamelSource sol s y) := rfl
+  have hkey : ‖duhamelNonlinear sol t x‖
+      ≤ ∫ s in (0 : ℝ)..t, C₀ * S * (t - s) ^ (-a) := by
+    rw [hunfold]
+    calc ‖∫ s in (0 : ℝ)..t,
+            (∫ y : Space, heatKernel ν (t - s) (x - y) • duhamelSource sol s y)‖
+        ≤ ∫ s in (0 : ℝ)..t,
+            ‖∫ y : Space, heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖ :=
+          intervalIntegral.norm_integral_le_integral_norm ht0.le
+      _ ≤ ∫ s in (0 : ℝ)..t, C₀ * S * (t - s) ^ (-a) := by
+          refine intervalIntegral.integral_mono_on_of_le_Ioo ht0.le
+            (hNint t ht0 htδ x) hIIrhs ?_
+          intro s hs
+          have hs0 : 0 ≤ s := le_of_lt hs.1
+          have hsδ : s ≤ δ := le_trans hs.2.le htδ
+          have hts : 0 < t - s := by linarith [hs.2]
+          have hb := hC₀ (duhamelSource sol s) (hsm s hs0 hsδ) (hsi s hs0 hsδ) (t - s) hts x
+          rw [hna] at hb
+          refine hb.trans ?_
+          have hpow : (0 : ℝ) ≤ (t - s) ^ (-a) := Real.rpow_nonneg hts.le _
+          have hSs := hS s hs0 hsδ
+          calc C₀ * (t - s) ^ (-a) *
+                (∫ y : Space, ‖duhamelSource sol s y‖ ^ r) ^ (1 / r)
+              ≤ C₀ * (t - s) ^ (-a) * S :=
+                mul_le_mul_of_nonneg_left hSs (by positivity)
+            _ = C₀ * S * (t - s) ^ (-a) := by ring
+  refine hkey.trans ?_
+  rw [intervalIntegral.integral_const_mul, intervalIntegral_sub_rpow_neg ha1]
+  have hmono : t ^ (1 - a) ≤ δ ^ (1 - a) :=
+    Real.rpow_le_rpow ht0.le htδ (by linarith)
+  have hden : (0 : ℝ) < 1 - a := by linarith
+  have hCS : (0 : ℝ) ≤ C₀ * S := by positivity
+  gcongr
+
 /-- **[LEAF — `L^p` smoothing bound on the Duhamel correction; est ~250 LOC.]**
 Under the Prodi–Serrin mixed-norm hypothesis the Duhamel correction is
 uniformly bounded on the layer.
@@ -1213,7 +1396,31 @@ on `∇p`.  The `∇p` half is available with no singular-integral input from
 
 This leaf is strictly lower than `prodiSerrin_layer_farField_bounded`: it is a
 bound on one explicitly written integral, and it says nothing about
-`sol.velocity`. -/
+`sol.velocity`.
+
+**Residual narrowed 2026-09-02, and the estimate itself is no longer part of
+it.**  `duhamelNonlinear_bounded_of_source_Lr` (above, kernel-clean, axioms
+`[propext, Classical.choice, Quot.sound]`) proves the entire `L^r → L^∞`
+smoothing-plus-time-integration route for every `r > 3/2`, with the constant
+hoisted above the slice.  The Prodi–Serrin exponent `p > 3` satisfies
+`p > 3/2`, so this leaf now needs from that theorem exactly three things and
+nothing else:
+
+* a uniform `L^p` bound `S` on the *source* `duhamelSource sol s` over the
+  layer — i.e. `L^p` control of `(u·∇)u` and `∇p`, which is where the
+  remaining mathematics is;
+* slice measurability of `duhamelSource sol s`;
+* interval integrability in `s` of
+  `‖∫ G^ν_{t−s}(x−·) • duhamelSource sol s‖`.
+
+The `∇p` half of the first item is already available from
+`PressureNormalization.pressureGradient_eq_of_solution` /
+`memLp_pressureGradient_of_terms` with no singular-integral input.  What is
+genuinely open is the `(u·∇)u` half: the `L^p` slice hypothesis on `u` does
+not bound `∇u`.  Nothing about the heat semigroup, Young's inequality, or the
+convergence of `∫₀ᵗ (t−s)^{−3/(2p)} ds` remains here — those are theorems now
+(`intervalIntegral_sub_rpow_neg`,
+`heatKernel_convolution_norm_vec_le_uniform`). -/
 theorem duhamelNonlinear_bounded_of_Lp
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -1244,7 +1451,19 @@ field of infinite `L²` mass.
 Classical route: the same `L^r → L^∞` heat smoothing
 (`heatKernel_convolution_smoothing_le`) with `r = 2`, integrated against the
 energy bound [Kato, Math. Z. 187 (1984) 471–480].
-Depends on: `L²` control of `duhamelSource`, i.e. of `(u·∇)u` and `∇p`. -/
+Depends on: `L²` control of `duhamelSource`, i.e. of `(u·∇)u` and `∇p`.
+
+**Residual narrowed 2026-09-02.**  `r = 2 > 3/2`, so
+`duhamelNonlinear_bounded_of_source_Lr` (above, kernel-clean, axioms
+`[propext, Classical.choice, Quot.sound]`) discharges the whole
+`L² → L^∞`-smoothing-and-time-integration argument this leaf was described as
+needing.  What is left is exactly: a uniform `L²` bound on the *source* over
+the layer, slice measurability of `duhamelSource sol s`, and interval
+integrability in `s` of `‖∫ G^ν_{t−s}(x−·) • duhamelSource sol s‖`.  The
+`∇p` half of the source bound is available without singular integrals
+(`memLp_pressureGradient_of_terms`); the open half is `L²` control of
+`(u·∇)u`, which the energy bracket `hmass` alone does not supply — it bounds
+`u`, not `∇u`.  That gap, and not the heat semigroup, is the mathematics. -/
 theorem duhamelNonlinear_bounded_of_L2
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
