@@ -30,6 +30,7 @@ import Navier.Analysis.ComplexLerayNorm
 import Navier.Analysis.ComplexFrequencyHeatLeray
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.CurlIdentities
+import Navier.Analysis.CurlDerivativeBridge
 import Navier.Analysis.EnergyPressureCancellation
 import Navier.Analysis.EnergyPressureIntegral
 import Navier.Analysis.EnergyConvectionCancellation
@@ -74,6 +75,7 @@ import Navier.Analysis.FrequencyMildGlobal
 import Navier.Analysis.DissipativeODEGlobal
 import Navier.Analysis.EnergyDissipation
 import Navier.Analysis.GronwallAffine
+import Navier.Analysis.WeightedCommutator
 import Navier.Analysis.KatoPonceLeibniz
 import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.GalerkinModeData
