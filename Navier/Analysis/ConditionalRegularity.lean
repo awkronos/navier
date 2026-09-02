@@ -1066,10 +1066,211 @@ theorem prodiSerrin_gaussianConvectionSplit_tendsto
     hν sol hp hint ht0 htT hτ x₀ j
   simpa only [zero_add] using htail.add hgradient
 
-/-- **[LEAF — Prodi–Serrin far-field layer tail; est ~300 LOC.]**  Outside one
+/-! ### The Duhamel (variation-of-constants) decomposition of the layer leaves
+
+Both far-field layer leaves — `prodiSerrin_layer_farField_bounded` and
+`constantinFefferman_layer_farField_bounded` — previously carried the *whole*
+Kato mild-solution argument inside one `sorry`, described only in prose ("the
+Duhamel formula is the missing piece").  A prose description is not a carrier:
+nothing in the file named the object whose bound was missing, so neither leaf
+could be attacked below itself.
+
+The decomposition below makes that object real.  Reading the momentum equation
+as a forced heat equation `∂ₜu − νΔu = −((u·∇)u + ∇p)` names the source
+(`duhamelSource`) and the variation-of-constants correction
+(`duhamelNonlinear`) as explicit integrals of estate-defined quantities —
+`convection`, `pressureGradient` and `heatKernel` — with no opaque carrier and
+no Leray projector.  `layerBound_of_duhamelNonlinear_bounded` then discharges
+the layer conclusion from the representation plus a uniform bound on that one
+correction, kernel-clean.
+
+Statement hygiene, checked before landing.  The pinning matters and is the
+whole point: an interface that merely postulated *some* function `N` with
+`u = e^{tνΔ}u₀ + N` and `‖N‖ ≤ C` would be satisfied by `N := u − e^{tνΔ}u₀`
+for every solution whatsoever, making the hypothesis bundle an alias of the
+conclusion (`epistemic-rigor.md` §"UNDER-SPECIFIED relative to its consumer").
+`duhamelNonlinear` is a *definition*, not a parameter, so that route is closed:
+`duhamelRepresentation_layer` is a genuine analytic assertion about a specific
+integral, and `duhamelNonlinear_bounded_of_*` is a genuine estimate on it.
+-/
+
+/-- **The Navier–Stokes Duhamel source** `−((u·∇)u + ∇p)`.  This is the
+momentum equation read as a forced heat equation `∂ₜu − νΔu = duhamelSource`;
+every ingredient is estate-defined (`Navier.convection`,
+`Navier.pressureGradient`), so no Leray projector and no opaque carrier
+appears. -/
+def duhamelSource {ν : ℝ} {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T) (s : ℝ) (y : Space) : Space :=
+  f s y - (convection sol.velocity s y + pressureGradient sol.pressure s y)
+
+/-- **The Duhamel nonlinear correction**
+
+  `N(t,x) = ∫₀ᵗ ∫_{ℝ³} G^ν_{t−s}(x−y) · duhamelSource(s,y) dy ds`,
+
+the variation-of-constants term of the mild formulation.  Concretely defined,
+hence a real carrier: the residual leaves below are estimates *about this
+integral*, not restatements of the conclusion they support. -/
+def duhamelNonlinear {ν : ℝ} {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T) (t : ℝ) (x : Space) : Space :=
+  ∫ s in (0 : ℝ)..t,
+    (∫ y : Space, heatKernel ν (t - s) (x - y) • duhamelSource sol s y)
+
+/-- **The layer bound reduces to a bound on the Duhamel correction alone.**
+
+Given the variation-of-constants representation on `(0,δ]` and a uniform bound
+`C` on the nonlinear correction there, the solution is bounded by `B₀ + C` on
+the *whole* closed layer `[0,δ]` and on *all* of space — strictly stronger than
+the far-field conclusion the two layer leaves need, which is why they can both
+consume it with `ϱ = 0`.
+
+The linear half is `heatFlow_initialDatum_bounded` (kernel-clean, already in
+this file): the heat flow of a `B₀`-bounded datum is `B₀`-bounded because the
+kernel is nonnegative with unit mass.  The `t = 0` endpoint is
+`sol.initial_condition`.  Nothing here is conditional on `L^p` or `L²` data —
+those enter only in the estimate on `duhamelNonlinear`. -/
+theorem layerBound_of_duhamelNonlinear_bounded
+    {ν : ℝ} (hν : 0 < ν) {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T) {B₀ : ℝ}
+    (hu₀ : ∀ x : Space, ‖u₀ x‖ ≤ B₀)
+    {δ : ℝ} (hδ0 : 0 < δ)
+    (hrep : ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      sol.velocity t x
+        = (∫ y : Space, heatKernel ν t (x - y) • u₀ y) + duhamelNonlinear sol t x)
+    {C : ℝ} (hC : ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      ‖duhamelNonlinear sol t x‖ ≤ C) :
+    ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
+      ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
+  have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
+      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
+    heatFlow_initialDatum_bounded hν sol hu₀
+  have hC0 : 0 ≤ C :=
+    le_trans (norm_nonneg _) (hC (δ / 2) (by linarith) (by linarith) 0)
+  have hB0 : 0 ≤ B₀ := le_trans (norm_nonneg _) (hu₀ 0)
+  refine ⟨0, B₀ + C, fun t ht0 htδ x _ => ?_⟩
+  rcases eq_or_lt_of_le ht0 with h0 | hpos
+  · have : sol.velocity t x = u₀ x := by
+      rw [← h0, sol.initial_condition]
+    rw [this]
+    exact le_trans (hu₀ x) (by linarith)
+  · rw [hrep t hpos htδ x]
+    exact le_trans (norm_add_le _ _)
+      (add_le_add (hheat0 t hpos x) (hC t hpos htδ x))
+
+/-- **[LEAF — the variation-of-constants representation; est ~400 LOC.]**  On
+the closed layer `(0,δ]` a partial classical solution equals the heat flow of
+its initial datum plus the Duhamel correction of the momentum-equation source.
+
+This is the *only* place the mild formulation is asserted, and it is asserted
+about explicitly named integrals rather than described in prose.
+
+Classical route: `sol.equation` gives `∂ₜu − νΔu = duhamelSource` pointwise;
+Duhamel/variation of constants for the heat semigroup on `ℝ³` then converts the
+pointwise ODE-in-`t` statement into the integral identity, which requires
+`d/ds ∫ G^ν_{t−s}(x−y) u(s,y) dy = ∫ G^ν_{t−s}(x−y) (duhamelSource)(s,y) dy`
+and the boundary behaviour `G^ν_{t−s} → δ` as `s → t`
+[Kato, Math. Z. 187 (1984) 471–480, §1; Giga–Miyakawa, Arch. Ration. Mech.
+Anal. 89 (1985) 267–281].
+
+Frontier status: the estate has the kernel and its `L^s` norms
+(`HeatSemigroupSmoothing.integral_heatKernel_rpow`, `heatKernel_Lr_scaling`),
+the Young/convolution layer (`heatKernel_convolution_abs_le`,
+`heatKernel_convolution_smoothing_le`), an exact finite-cutoff momentum
+representation (`WholeSpaceDuhamel.cutoff_testedMomentum_coordinate`) and its
+interior-time FTC composition
+(`WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated`).  What is
+missing is the removal of the spatial cutoff without a Gaussian test function:
+`WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` shows this is a
+genuine limit step, and its boundary terms need tail control of `u` and `∇u`
+that no per-slice integrability hypothesis supplies.
+
+This leaf is strictly lower than the two layer leaves it replaces: it carries
+no conclusion about boundedness at all, only the identity. -/
+theorem duhamelRepresentation_layer
+    {ν : ℝ} (hν : 0 < ν) {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T)
+    {δ : ℝ} (hδ0 : 0 < δ) (hδT : δ < T) :
+    ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      sol.velocity t x
+        = (∫ y : Space, heatKernel ν t (x - y) • u₀ y)
+          + duhamelNonlinear sol t x := by
+  sorry
+
+/-- **[LEAF — `L^p` smoothing bound on the Duhamel correction; est ~250 LOC.]**
+Under the Prodi–Serrin mixed-norm hypothesis the Duhamel correction is
+uniformly bounded on the layer.
+
+Classical route: `‖∫ G^ν_{t−s}(x−·) F(s,·)‖_∞ ≤ C(r,ν)(t−s)^{−3/(2r)}‖F(s)‖_r`
+— which the estate already certifies as
+`HeatSemigroupSmoothing.heatKernel_convolution_smoothing_le` — integrated in
+`s` against the critical mixed norm `∫₀^{T'}‖u(s)‖_p^q ds ≤ M`.  The exponent
+condition `2/q + 3/p = 1` with `p > 3` is exactly what makes
+`∫₀ᵗ (t−s)^{−3/(2r)} ‖F(s)‖_r ds` converge.
+Depends on: `‖duhamelSource(s)‖_r` control, i.e. `L^r` bounds on `(u·∇)u` and
+on `∇p`.  The `∇p` half is available with no singular-integral input from
+`PressureNormalization.pressureGradient_eq_of_solution` /
+`memLp_pressureGradient_of_terms`; the `(u·∇)u` half needs a gradient bound the
+`L^p` slice hypothesis alone does not give.
+
+This leaf is strictly lower than `prodiSerrin_layer_farField_bounded`: it is a
+bound on one explicitly written integral, and it says nothing about
+`sol.velocity`. -/
+theorem duhamelNonlinear_bounded_of_Lp
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
+    (hcrit : Navier.Scaling.CriticalLine p q)
+    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    (M : ℝ)
+    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      (∫ s in (0 : ℝ)..T',
+        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
+    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      IntervalIntegrable
+        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
+    {δ : ℝ} (hδ0 : 0 < δ) (hδT : δ < T) :
+    ∃ C : ℝ, ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      ‖duhamelNonlinear sol t x‖ ≤ C := by
+  sorry
+
+/-- **[LEAF — `L²` smoothing bound on the Duhamel correction; est ~250 LOC.]**
+The Constantin–Fefferman twin of `duhamelNonlinear_bounded_of_Lp`, with the
+uniform `L²` mass bracket replacing the critical mixed norm.
+
+Carries `hL2` alongside `hmass` for the reason recorded in
+`massBracket_vacuous_of_infiniteMass`: the bracket alone is satisfied by every
+field of infinite `L²` mass.
+
+Classical route: the same `L^r → L^∞` heat smoothing
+(`heatKernel_convolution_smoothing_le`) with `r = 2`, integrated against the
+energy bound [Kato, Math. Z. 187 (1984) 471–480].
+Depends on: `L²` control of `duhamelSource`, i.e. of `(u·∇)u` and `∇p`. -/
+theorem duhamelNonlinear_bounded_of_L2
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    (E : ℝ) (hE : 0 ≤ E)
+    (hL2 : ∀ t : ℝ, 0 ≤ t → t < T →
+      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2))
+    (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
+      (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
+    {δ : ℝ} (hδ0 : 0 < δ) (hδT : δ < T) :
+    ∃ C : ℝ, ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      ‖duhamelNonlinear sol t x‖ ≤ C := by
+  sorry
+
+/-- **[ASSEMBLY — Prodi–Serrin far-field layer tail.]**  Outside one
 closed ball, a partial classical solution with bounded initial datum and
 per-slice `L^p` integrability (`p > 3`) is uniformly bounded on the closed
 initial layer `[0,δ]`.
+
+**Decomposed 2026-09-02 (lane NAVIER2).**  This is no longer a leaf: the proof
+below is a kernel-clean assembly of `layerBound_of_duhamelNonlinear_bounded`
+over two strictly lower named residuals, `duhamelRepresentation_layer` (shared
+with the Constantin–Fefferman twin) and `duhamelNonlinear_bounded_of_Lp`.  The
+conclusion it actually gets from that reduction is stronger than the one stated
+here — `ϱ = 0`, i.e. the bound holds on all of space — and the far-field form is
+kept because it is what the caller consumes.  The prose route recorded below is
+retained as the reference for the two residuals.
 
 This is the residual of `prodiSerrin_initialLayer_bounded` *after*
 `compactSpaceTime_bounded` discharges the compact core.  It is the original
@@ -1143,56 +1344,16 @@ theorem prodiSerrin_layer_farField_bounded
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
       ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
-  -- The classical proof uses the Duhamel formula:
-  --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds
-  -- The first term (heat flow of the initial data) is bounded by B₀
-  -- (since ∫ G_t = 1 and u₀ is bounded by B₀).  The second term (the
-  -- Duhamel integral) is controlled by the L^p → L^∞ smoothing estimate
-  -- for the heat semigroup, using the per-slice L^p integrability of the
-  -- velocity.
-  --
-  -- What the estate CAN prove: the heat kernel convolution of the initial
-  -- data is bounded by B₀.  Separately, the pointwise PDE has an exact
-  -- finite-cutoff momentum representation and an interior-time integrated
-  -- form.  Neither finite-cutoff result reaches the Gaussian test, so the
-  -- unrestricted Duhamel formula is not yet available.
-  obtain ⟨B₀, hu₀⟩ := hu₀
-  -- The heat kernel convolution of the initial data is bounded by B₀, because
-  -- the kernel is nonnegative and integrates to 1.  Now a standalone
-  -- kernel-clean theorem, shared with the Constantin–Fefferman far-field leaf.
-  have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
-      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
-    heatFlow_initialDatum_bounded hν sol hu₀
-  -- The actual cutoff limit is now consumed at this far-field leaf.  On the
-  -- concrete interior interval `[δ/2,δ]`, the whole finite-cutoff PDE side
-  -- converges to the Gaussian-tested momentum increment.  The remaining gap
-  -- is to split and bound that limit in the Duhamel/Leray form.
-  have hcutoffGaussianAtHalfTime :=
-    prodiSerrin_gaussianCutoffMomentumRhs_tendsto hν sol hp hint
-      (a := δ / 2) (b := δ) (τ := δ / 2) (by linarith) (by linarith) hδT
-      (by linarith) (0 : Space) (0 : Fin 3)
-  -- The complete convection split is no longer part of the gap: `p > 3`
-  -- supplies Gaussian-weighted `L¹` majorants for both `Dχ_R · G` and
-  -- `χ_R · DG`, and their sum converges to the Gaussian-gradient term.
-  have hconvectionSplitAtHalfTime :=
-    prodiSerrin_gaussianConvectionSplit_tendsto hν sol hp hint
-      (t := δ / 2) (τ := δ / 2) (by linarith) (by linarith) (by linarith)
-      (0 : Space) (0 : Fin 3)
-  -- GAP: The velocity is the heat flow of the initial data PLUS the Duhamel
-  -- integral (the nonlinear correction).  The Duhamel formula,
-  --   u(t) = e^{tνΔ} u₀ - ∫_0^t e^{(t-s)νΔ} P∇·(u⊗u) ds,
-  -- now has a certified combined cutoff-to-Gaussian limit in
-  -- `hcutoffGaussianAtHalfTime`.  Its complete convection component is now
-  -- identified by `hconvectionSplitAtHalfTime`.  What remains is (i)
-  -- convergence of the viscosity/pressure terms, (ii) uniform domination as
-  -- the Gaussian time lag approaches zero, and (iii) the Leray projector P as
-  -- a pointwise bounded singular integral kernel.
-  --
-  -- The Duhamel argument would combine `hheat0` with the combined Gaussian
-  -- cutoff limit only after its three spatial terms are identified; a
-  -- raw-pressure `L^p` shortcut remains invalid by pressure gauge freedom. Then
-  -- `heatKernel_convolution_norm_vec_le` would bound the nonlinear integral.
-  sorry
+  -- Now an assembly, not a leaf.  `layerBound_of_duhamelNonlinear_bounded`
+  -- discharges the conclusion kernel-clean from two strictly lower named
+  -- facts: the variation-of-constants representation and a uniform bound on
+  -- the Duhamel correction under the critical mixed norm.  The linear half
+  -- (`heatFlow_initialDatum_bounded`) is inside that reduction.
+  obtain ⟨B₀, hu₀B⟩ := hu₀
+  obtain ⟨C, hC⟩ :=
+    duhamelNonlinear_bounded_of_Lp hν sol p q hp hq hcrit hint M hM hMint hδ0 hδT
+  exact layerBound_of_duhamelNonlinear_bounded hν sol hu₀B hδ0
+    (duhamelRepresentation_layer hν sol hδ0 hδT) hC
 
 /-- **Prodi–Serrin initial layer.**  With a bounded initial datum, a partial
 classical solution carrying per-slice `L^p` integrability (`p > 3`) is
@@ -1285,9 +1446,35 @@ no `MemLp`/`Integrable` estimate for `sol.pressure` exists in the estate"
 is now exactly one named leaf: a **local** `L²` bound `∫ (χp)² ≤ …` for the
 normalized pressure, which still needs the Calderón–Zygmund representation
 `p = Σ RᵢRⱼ(uᵢuⱼ)`.
-`CZNearField` certifies the pointwise Hörmander core; the transform's `L^r`
-bounds stay a named residual in `SingularIntegralPrelims`, so the pressure
-representation is not yet available. -/
+
+**Status repair 2026-09-02 (lane NAVIER2).**  The sentence this paragraph used
+to end with — "the transform's `L^r` bounds stay a named residual in
+`SingularIntegralPrelims`" — is no longer true at `r = 2`, and `r = 2` is the
+only exponent this blocker needs.  Plancherel is present in the pinned Mathlib
+`v4.31.0` (`Mathlib/Analysis/Fourier/LpSpace.lean`), and the whole `p = 2`
+Calderón–Zygmund layer is now certified kernel-clean:
+`SingularIntegralPrelims.l2_multiplier_bound` (every bounded Fourier multiplier
+is `L²`-bounded with the same constant), `exists_l2_multiplier_apply` (the
+operator exists, so the bound is not about an empty hypothesis set),
+`doubleRiesz_l2_bound` and `exists_doubleRieszTransform` (`‖RᵢRⱼf‖₂ ≤ ‖f‖₂`,
+realised), and — on this estate's own carrier `Space = Fin 3 → ℝ`, transported
+along the volume-preserving coordinate identification —
+`PressureL2Riesz.pressure_l2_bound_space`:
+
+  `P = Σᵢⱼ RᵢRⱼ(wᵢⱼ)`  ⟹  `‖P‖₂ ≤ Σᵢⱼ ‖wᵢⱼ‖₂`.
+
+So blocker (b) has halved.  What is left of it is *not* an operator bound at
+all: it is the **representation** `p = Σᵢⱼ RᵢRⱼ(uᵢuⱼ)` itself — the solution of
+the pressure Poisson equation `−Δp = Σᵢⱼ ∂ᵢ∂ⱼ(uᵢuⱼ)` for a partial classical
+solution, together with the localisation of the resulting global `L²` bound to
+`∫ (χp)²`.  `CZNearField` certifies the pointwise Hörmander core; the `r ≠ 2`
+theory (weak-`(1,1)`, Marcinkiewicz) remains genuinely Mathlib-absent but is
+not needed here.
+
+The remaining blockers of this leaf are therefore three, and the pressure one
+is now the smallest: (i) the integrated Caccioppoli inequality, (ii) the
+parabolic Moser/De Giorgi iteration to `L^∞`, and (iii) the pressure
+representation above. -/
 theorem prodiSerrin_interior_outerRegion_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
@@ -1368,9 +1555,14 @@ theorem prodiSerrin_interior_bounded
   exact interiorBound_of_outerRegion (m := (δ + T) / 2) sol.velocity_smooth
     hδ0.le (by linarith) htail
 
-/-- **[LEAF — Constantin–Fefferman far-field layer tail; est ~220 LOC.]**
+/-- **[ASSEMBLY — Constantin–Fefferman far-field layer tail.]**
 Outside one closed ball, a finite-energy partial classical solution with
 bounded initial datum is uniformly bounded on the closed initial layer `[0,δ]`.
+
+**Decomposed 2026-09-02 (lane NAVIER2).**  No longer a leaf: a kernel-clean
+assembly of `layerBound_of_duhamelNonlinear_bounded` over
+`duhamelRepresentation_layer` (shared with the Prodi–Serrin twin) and
+`duhamelNonlinear_bounded_of_L2`.
 
 Carries the integrability hypothesis `hL2` alongside the numeric bracket
 `hmass`.  Both are needed: by `massBracket_vacuous_of_infiniteMass` the bracket
@@ -1406,21 +1598,14 @@ theorem constantinFefferman_layer_farField_bounded
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
       ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
-  -- The same Duhamel gap as `prodiSerrin_layer_farField_bounded`, with the
-  -- uniform L² mass bracket replacing the per-slice L^p control.  The linear
-  -- half is discharged by the shared theorem `heatFlow_initialDatum_bounded`:
-  obtain ⟨B₀, hu₀⟩ := hu₀
-  have hheat0 : ∀ t : ℝ, 0 < t → ∀ x : Space,
-      ‖∫ y : Space, heatKernel ν t (x - y) • u₀ y‖ ≤ B₀ :=
-    heatFlow_initialDatum_bounded hν sol hu₀
-  --
-  -- The classical route uses the Kato mild-solution short-time L^∞ bound with
-  -- the L² mass replacing the L^p slice control in the Duhamel estimate.  The
-  -- Duhamel formula is the same missing piece: without it the nonlinear
-  -- correction term cannot be bounded, and the `hL2` integrability alone does
-  -- not imply spatial decay (the strain flow witness at
-  -- `strainFlow_farField_unbounded` shows this directly).
-  sorry
+  -- The same assembly as `prodiSerrin_layer_farField_bounded`, with the
+  -- uniform `L²` mass bracket replacing the critical mixed norm in the bound
+  -- on the Duhamel correction.  The representation leaf is shared.
+  obtain ⟨B₀, hu₀B⟩ := hu₀
+  obtain ⟨C, hC⟩ :=
+    duhamelNonlinear_bounded_of_L2 hν sol E hE hL2 hmass hδ0 hδT
+  exact layerBound_of_duhamelNonlinear_bounded hν sol hu₀B hδ0
+    (duhamelRepresentation_layer hν sol hδ0 hδT) hC
 
 /-- **Constantin–Fefferman initial layer.**  With a bounded initial datum, the
 uniform `L²` mass bracket and its integrability hypothesis, a finite-energy
@@ -1483,8 +1668,18 @@ the enstrophy stays bounded, whence `L^∞` by Sobolev embedding
 Constantin, SIAM Rev. 36 (1994) 73–98].
 Depends on: the Biot–Savart singular integral and its Calderón–Zygmund
 bounds, the enstrophy identity from `Navier.Analysis.Enstrophy`, and the
-`H² ↪ L^∞` Sobolev embedding on `ℝ³` — the singular-integral layer is the
-same Mathlib gap as in the Beale–Kato–Majda tower.
+`H² ↪ L^∞` Sobolev embedding on `ℝ³`.
+
+**Status repair 2026-09-02 (lane NAVIER2).**  The `L²` half of the
+singular-integral dependency is no longer a gap:
+`SingularIntegralPrelims.riesz_l2_bound` / `exists_rieszTransform` certify
+`‖Rⱼf‖₂ ≤ ‖f‖₂` kernel-clean via Plancherel, which is present in the pinned
+Mathlib.  That is *not* enough for this leaf, and the docstring should not be
+read as claiming it is: the Constantin–Fefferman stretching term needs the
+Biot–Savart **representation** of `∇u` in the pairwise-vorticity form that
+`hcoh` depletes, plus `L^r` control for `r ≠ 2` in the enstrophy budget, and
+both remain absent.  What has changed is that the operator-boundedness half of
+the dependency is discharged at the exponent where the energy space lives.
 
 Frontier status (N4 sweep 2026-08-18): `Enstrophy` lands the pointwise
 identity `vorticityTransportEquation`; the integral enstrophy budget
