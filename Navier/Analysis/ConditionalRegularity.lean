@@ -1110,14 +1110,36 @@ preserves the velocity while leaving the raw pressure outside `L^p`.  The
 in-repo Duhamel developments
 `FrequencyDuhamel`/`CriticalMild*` act on one-frequency or lattice encodings,
 not on pointwise classical solutions; and the Leray projector as a pointwise
-bounded kernel. -/
+bounded kernel.
+
+**Statement repair 2026-09-02 (lane NAVIER).**  This leaf previously carried
+no Serrin criterion at all: only a bounded initial datum and *per-slice* `L^p`
+integrability, with no control of `t ↦ ‖u(t)‖_{L^p}` as a function of time.
+That is strictly stronger than Prodi–Serrin and it is not what the leaf's own
+stated route consumes — the Duhamel estimate needs
+`∫₀^{T'} ‖u(s)‖_{L^p}^q ds ≤ M` on the critical line, which is precisely the
+Ladyzhenskaya–Prodi–Serrin hypothesis the theorem is named after.  The
+mixed-norm data `(q, hq, hcrit, M, hM, hMint)` is now carried here.  It costs
+the consumer nothing: `prodiSerrin_velocity_bounded`, the only caller of the
+chain, already holds all six and previously discarded them on the
+initial-layer branch while forwarding them on the interior branch.  The leaf
+is therefore *strictly lower* than before, and its route is now stated over
+the hypotheses that route actually uses. -/
 theorem prodiSerrin_layer_farField_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
     (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (p : ℝ) (hp : 3 < p)
+    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
+    (hcrit : Navier.Scaling.CriticalLine p q)
     (hint : ∀ t : ℝ, 0 ≤ t → t < T →
       Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    (M : ℝ)
+    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      (∫ s in (0 : ℝ)..T',
+        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
+    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      IntervalIntegrable
+        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
       ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
@@ -1185,14 +1207,23 @@ theorem prodiSerrin_initialLayer_bounded
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
     (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (p : ℝ) (hp : 3 < p)
+    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
+    (hcrit : Navier.Scaling.CriticalLine p q)
     (hint : ∀ t : ℝ, 0 ≤ t → t < T →
       Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
+    (M : ℝ)
+    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      (∫ s in (0 : ℝ)..T',
+        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
+    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
+      IntervalIntegrable
+        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
     (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ R₁ : ℝ, ∀ t : ℝ, 0 ≤ t → t < T → t ≤ δ → ∀ x : Space,
       ‖sol.velocity t x‖ ≤ R₁ := by
   obtain ⟨ϱ, R₂, htail⟩ :=
-    prodiSerrin_layer_farField_bounded hν sol hu₀ p hp hint δ hδ0 hδT
+    prodiSerrin_layer_farField_bounded hν sol hu₀ p q hp hq hcrit hint M hM hMint
+      δ hδ0 hδT
   obtain ⟨R, hR⟩ :=
     uniformBound_of_farField_window (a := 0) (b := δ) sol.velocity_smooth
       le_rfl hδT htail
@@ -1575,7 +1606,8 @@ theorem prodiSerrin_velocity_bounded
   have hδ0 : 0 < T / 2 := by linarith
   have hδT : T / 2 < T := by linarith
   obtain ⟨R₁, hR₁⟩ :=
-    prodiSerrin_initialLayer_bounded hν sol hu₀ p hp hint (T / 2) hδ0 hδT
+    prodiSerrin_initialLayer_bounded hν sol hu₀ p q hp hq hcrit hint M hM hMint
+      (T / 2) hδ0 hδT
   obtain ⟨R₂, hR₂⟩ :=
     prodiSerrin_interior_bounded hν sol p q hp hq hcrit hint M hM hMint
       (T / 2) hδ0 hδT
