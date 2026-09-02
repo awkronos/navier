@@ -5,6 +5,7 @@ import Navier.Analysis.BiotSavartKernel
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.GronwallAffine
 import Navier.Analysis.KatoPonceLeibniz
+import Navier.Analysis.CurlDerivativeBridge
 
 /-!
 # BKM log bootstrap: from the Biot–Savart log inequality to the criterion
@@ -424,9 +425,12 @@ above, and `exists_biotSavartLogTextbook` is derived from it below.
 
 **What this residual still carries** (and nothing more).  The Biot–Savart
 representation `∇u = PV(∇K ∗ ω)` with its local term, for divergence-free
-Schwartz fields — genuinely Mathlib-absent — together with the curl-component
-bridge (`‖Dⁿ(staticCurl u)‖ ≤ ‖D^{n+1}u‖` bookkeeping) feeding the vorticity
-into `exists_agmonMorreyBound`.
+Schwartz fields — genuinely Mathlib-absent.  **The curl-component bridge is no
+longer part of it**: `CurlDerivativeBridge.exists_norm_iteratedFDeriv_staticCurl_le`
+certifies `‖Dⁿ(staticCurl u)(x)‖ ≤ C‖D^{n+1}u(x)‖` at *every* order `n` with a
+single constant (and `officialEuclideanNorm_staticCurl_le` gives the order-`0`
+case in the Euclidean point norm the majorant `Mω` uses), which is exactly the
+bookkeeping that feeds the vorticity into `exists_agmonMorreyBound`.
 
 **What it no longer carries.**  The three kernel size estimates are already
 certified at the bottom of this file: near field
@@ -484,8 +488,9 @@ genuine rather than cosmetic.
 
 **Dependencies still carried by the lower residual (Mathlib-absent).**  The
 Biot–Savart representation `∇u = ∇K ∗ ω` for the homogeneous degree `−3`
-kernel `∇K`, with its local term, for divergence-free Schwartz fields; and the
-curl-component bridge feeding the vorticity into `exists_agmonMorreyBound`.
+kernel `∇K`, with its local term, for divergence-free Schwartz fields — and
+nothing else; the curl-component bridge is certified in
+`Navier.Analysis.CurlDerivativeBridge`.
 
 **What is no longer residual.**  The cutoff optimisation is certified as
 `le_of_forall_cutoff_le` above.  The passage from this citable shape to the
@@ -507,9 +512,10 @@ cutoff optimisation at `ρ ≈ ‖u‖_{H³}^{-4}` produces the `log(e + ‖u‖
 factor.  What remains genuinely Mathlib-absent is the Biot–Savart
 *representation* `∇u = PV(∇K ∗ ω)` (with its local term) for divergence-free
 Schwartz fields, which is what converts these kernel estimates into a bound
-on `‖∇u‖_∞`; the residual also carries the curl-component bridge
-(`‖Dⁿ(staticCurl u)‖ ≤ ‖D^{n+1}u‖` bookkeeping) feeding the vorticity into
-`exists_agmonMorreyBound`. -/
+on `‖∇u‖_∞`.  The curl-component bridge that feeds the vorticity into
+`exists_agmonMorreyBound` is **no longer residual**: it is certified at every
+derivative order, with one constant, as
+`CurlDerivativeBridge.exists_norm_iteratedFDeriv_staticCurl_le`. -/
 theorem exists_biotSavartLogTextbook :
     ∃ C : ℝ, 0 < C ∧
       ∀ (u : SchwartzVelocity), DivergenceFreeInitial u →
