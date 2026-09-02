@@ -474,6 +474,159 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
   exact galerkinCoefficientFlow_timeEquicontinuous_of_convectionEstimate W hν c hc
     enstrophyBound henst hC0 (fun m a b => hC W m a b)
 
+/-- `‖·‖_{L²}` of a Schwartz velocity as the square root of its own `L²`
+pairing.  Bridges `norm_toL2_sq` to the continuity lemmas, which are stated
+for the pairing. -/
+private theorem norm_toL2_eq_sqrt (u : SchwartzVelocity) :
+    ‖toL2 u‖ = Real.sqrt (schwartzL2Inner u u) := by
+  rw [← norm_toL2_sq]
+  exact (Real.sqrt_sq (norm_nonneg _)).symm
+
+/-- Time continuity of `t ↦ ‖f t‖_{L²}` for a jointly continuous, uniformly
+compactly supported slice family. -/
+private theorem norm_toL2_continuousOn_of_joint_compact
+    {f : ℝ → SchwartzVelocity} {s : Set ℝ}
+    (hjoint : ContinuousOn (fun z : ℝ × Space => f z.1 z.2) (s ×ˢ Set.univ))
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → f t x = 0) :
+    ContinuousOn (fun t => ‖toL2 (f t)‖) s := by
+  have h := testSelfPairing_continuousOn_of_joint_compact hjoint hK hspace
+  exact (Real.continuous_sqrt.comp_continuousOn h).congr
+    fun t _ => norm_toL2_eq_sqrt (f t)
+
+/-- **[NAMED RESIDUAL — an `H(curl)`-stable divergence-free Galerkin basis of
+`ℝ³`; Lemarié-Rieusset, *Rev. Mat. Iberoamericana* **8** (1992) 221–237
+(divergence-free wavelet bases); Urban, *Wavelet Methods for Elliptic PDEs*
+(2009) Ch. 5; Robinson–Rodrigo–Sadowski, *The Three-Dimensional Navier–Stokes
+Equations* Ch. 4; est ~450 LOC.]**
+
+A `GalerkinBasisFamily` whose finite spans are dense in the *graph* norm of
+`curl` and whose `L²`-orthogonal projections are uniformly `H(curl)`-bounded.
+
+**Why this is a genuinely new obligation, and not a repackaging of
+`exists_galerkinBasisFamily`.**  `dense_span` is `L²`-density only, and an
+`L²`-orthogonal projection is not `H¹`-bounded for an arbitrary ordering; the
+two clauses here are exactly the hypotheses `curl_proj_converges` consumes,
+and they are what the weak-consistency limit passage of
+`exists_galerkinModeData` needs (see `curlSqError_integral_tendsto_zero`
+immediately below, which is kernel-clean given them).
+
+**The exact-commutation route is not an alternative: it is unsatisfiable.**
+`curl_proj_converges_of_commutes` and `curl_proj_sq_le_of_commutes` assume
+`curl ∘ P_m = P_m ∘ curl`.  That hypothesis has no witness on `ℝ³`.  Taking
+`m = 1` and `u = w 0` gives `curl (w 0) = λ • w 0` with
+`λ = ⟪curl (w 0), w 0⟫`; since `w 0` is divergence-free,
+`-Δ (w 0) = curl (curl (w 0)) = λ² • w 0`, so the Fourier transform of `w 0`
+— itself Schwartz, hence continuous — is supported in the sphere `‖ξ‖ = |λ|`,
+a null set, forcing `w 0 = 0` against `⟪w 0, w 0⟫ = 1`.  (The same argument
+kills the "Stokes-eigenbasis realization" suggested in the route analysis of
+`exists_galerkinModeData`: the Stokes operator on the whole space has no
+`L²` eigenfunctions.)  Status of that argument: **ARGUED, NOT MECHANIZED** —
+it needs vector-valued Plancherel on `ℝ³`, which the pinned Mathlib
+does not carry for `SchwartzVelocity`; it is recorded here so the dead route
+is not attempted again, and it is why this leaf asks for *stability*
+(`C`-bounded) rather than *commutation* (`C = 1`, equality).
+
+**Satisfiability.**  Divergence-free wavelet bases on `ℝ³` supply both
+clauses: their multiresolution spans are dense in `H(curl)` and the
+associated `L²`-orthogonal projections are `H^s`-stable for `|s| < 3/2`
+uniformly in the level, with `C` the Riesz constant of the basis.  This
+existence is not certified in-repo; it is the whole content of this leaf. -/
+theorem exists_hCurlStableGalerkinBasisFamily :
+    ∃ W : GalerkinBasisFamily,
+      (∀ u : SchwartzVelocity, DivergenceFreeInitial u →
+        ∀ ε : ℝ, 0 < ε → ∃ (M : ℕ) (c : ℕ → ℝ),
+          ‖toL2 (u - ∑ j ∈ Finset.range M, c j • W.w j)‖ < ε ∧
+          ‖toL2 (curlSchwartzCLM
+            (u - ∑ j ∈ Finset.range M, c j • W.w j))‖ < ε) ∧
+      (∃ C : ℝ, 0 ≤ C ∧ ∀ (m : ℕ) (u : SchwartzVelocity),
+        ‖toL2 (curlSchwartzCLM (W.proj m u))‖ ≤
+          C * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖)) := by
+  sorry
+
+/-- **[CERTIFIED — no `sorry` in this declaration.]**  The spacetime curl
+projection error of a fixed test function vanishes in the limit.
+
+Given graph-density and uniform `H(curl)`-stability of the projections — the
+two clauses of `exists_hCurlStableGalerkinBasisFamily` — the pointwise-in-time
+limit is `curl_proj_converges`, and the dominating function is the uniform
+stability bound applied to the test slice itself, which is continuous in time
+and hence integrable on the finite window.  Dominated convergence closes it.
+
+This replaces the former inline "Banach–Steinhaus + DCT" conjecture of
+`exists_galerkinModeData`: no equicontinuity argument is needed once the
+stability constant is a hypothesis rather than something to be extracted. -/
+theorem curlSqError_integral_tendsto_zero (W : GalerkinBasisFamily)
+    (hgraph_dense : ∀ u : SchwartzVelocity, DivergenceFreeInitial u →
+      ∀ ε : ℝ, 0 < ε → ∃ (M : ℕ) (c : ℕ → ℝ),
+        ‖toL2 (u - ∑ j ∈ Finset.range M, c j • W.w j)‖ < ε ∧
+        ‖toL2 (curlSchwartzCLM
+          (u - ∑ j ∈ Finset.range M, c j • W.w j))‖ < ε)
+    (hstable : ∃ C : ℝ, 0 ≤ C ∧ ∀ (m : ℕ) (u : SchwartzVelocity),
+      ‖toL2 (curlSchwartzCLM (W.proj m u))‖ ≤
+        C * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖))
+    (phi : DivergenceFreeTestFunction) {T : ℝ}
+    (hint : ∀ m : ℕ, IntegrableOn (fun t =>
+      ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
+      (Set.Ioc (0 : ℝ) T)) :
+    Filter.Tendsto (fun m : ℕ =>
+        ∫ t in Set.Ioc (0 : ℝ) T,
+          ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+  classical
+  obtain ⟨C, hC, hstab⟩ := hstable
+  obtain ⟨Kfield, hKfield, hfield_space⟩ := phi.compact_space
+  have hfield_joint : ContinuousOn (fun z : ℝ × Space => phi.field z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := phi.smooth.continuousOn
+  have hcurl_joint : ContinuousOn
+      (fun z : ℝ × Space => curlSchwartzCLM (phi.field z.1) z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := testCurl_joint_continuousOn phi
+  have hcurl_space : ∀ t : ℝ, ∀ x : Space, x ∉ Kfield →
+      curlSchwartzCLM (phi.field t) x = 0 :=
+    fun t x hx => testCurl_eq_zero_of_not_mem phi hKfield hfield_space t hx
+  have hn0 : ContinuousOn (fun t => ‖toL2 (phi.field t)‖) (Set.Ici (0 : ℝ)) :=
+    norm_toL2_continuousOn_of_joint_compact hfield_joint hKfield hfield_space
+  have hn1 : ContinuousOn (fun t => ‖toL2 (curlSchwartzCLM (phi.field t))‖)
+      (Set.Ici (0 : ℝ)) :=
+    norm_toL2_continuousOn_of_joint_compact hcurl_joint hKfield hcurl_space
+  set g : ℝ → ℝ := fun t =>
+    (C * (‖toL2 (phi.field t)‖ + ‖toL2 (curlSchwartzCLM (phi.field t))‖)
+      + ‖toL2 (curlSchwartzCLM (phi.field t))‖) ^ 2 with hgdef
+  have hgcont : ContinuousOn g (Set.Ici (0 : ℝ)) :=
+    (((hn0.add hn1).const_mul C).add hn1).pow 2
+  have hgint : IntegrableOn g (Set.Ioc (0 : ℝ) T) :=
+    ((hgcont.mono Set.Icc_subset_Ici_self).integrableOn_Icc).mono_set
+      Set.Ioc_subset_Icc_self
+  have hbd : ∀ (m : ℕ) (t : ℝ),
+      ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ≤
+        C * (‖toL2 (phi.field t)‖ + ‖toL2 (curlSchwartzCLM (phi.field t))‖)
+          + ‖toL2 (curlSchwartzCLM (phi.field t))‖ := by
+    intro m t
+    rw [map_sub, toL2_sub]
+    exact (norm_sub_le _ _).trans
+      (add_le_add (hstab m (phi.field t)) le_rfl)
+  have hlim : ∀ t : ℝ, Filter.Tendsto (fun m : ℕ =>
+      ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+    intro t
+    have h := curl_proj_converges W hgraph_dense ⟨C, hC, hstab⟩
+      (phi.field t) (phi.divergence_free t)
+    simpa using h.pow 2
+  have hmain := MeasureTheory.tendsto_integral_of_dominated_convergence
+    (μ := (volume.restrict (Set.Ioc (0 : ℝ) T)))
+    (F := fun (m : ℕ) (t : ℝ) =>
+      ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
+    (f := fun _ : ℝ => (0 : ℝ)) g
+    (fun m => (hint m).aestronglyMeasurable) hgint
+    (fun m => Filter.Eventually.of_forall fun t => by
+      have h0 : (0 : ℝ) ≤
+          ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2 := by
+        positivity
+      rw [Real.norm_eq_abs, abs_of_nonneg h0, hgdef]
+      exact pow_le_pow_left₀ (norm_nonneg _) (hbd m t) 2)
+    (Filter.Eventually.of_forall hlim)
+  simpa using hmain
+
 /-- **Finite-mode Galerkin construction from the certified divergence-free
     basis (Temam III.3; Constantin--Foias II; Leray, Acta Math. 63 (1934) sections 18--20).**
 
@@ -503,8 +656,12 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
   theorem exists_galerkinModeData (nu : ℝ) (hnu : 0 < nu)
       (u0 : SchwartzVelocity) (hu0 : DivergenceFreeInitial u0) :
       Nonempty (GalerkinModeData nu u0) := by
-    -- 1. Certified divergence-free basis
-    obtain ⟨W⟩ := exists_galerkinBasisFamily
+    -- 1. Divergence-free basis with graph-density and uniform H(curl)-stable
+    -- projections (`exists_hCurlStableGalerkinBasisFamily`).  This is a
+    -- STRENGTHENING of step 1: `exists_galerkinBasisFamily` alone gives only
+    -- `L²`-density, which is provably insufficient for the weak-consistency
+    -- limit passage at step 10 (see the leaf's docstring).
+    obtain ⟨W, hgraph_dense, hstable⟩ := exists_hCurlStableGalerkinBasisFamily
     -- 2. For each m, get a forward coefficient curve solving the projected ODE
     have hB_skew (m : ℕ) (a : EuclideanSpace ℝ (Fin m)) :
         inner ℝ (W.convectionOperator m a) a = 0 :=
@@ -1203,19 +1360,19 @@ theorem galerkinCoefficientFlow_timeEquicontinuous (W : GalerkinBasisFamily)
           rw [schwartzL2Inner_add_right, schwartzL2Inner_smul_right]
         exact hmain.intervalIntegrable_of_Icc hT
       -- 4. hcurlError: the spacetime integral of the squared curl error → 0.
-      -- This is the critical step.  From the pointwise curl convergence
-      -- (curl_proj_converges W) and the Dominated Convergence Theorem, the
-      -- spacetime integral tends to zero.  The integrable dominating function
-      -- is the essential supremum of the curl error, whose existence follows
-      -- from the Banach-Steinhaus theorem (equicontinuity of curl∘P_m on the
-      -- Schwartz space).  This is a standard functional analysis argument not
-      -- yet mechanized in the pinned Mathlib.
+      -- CLOSED, kernel-clean, by `curlSqError_integral_tendsto_zero` above:
+      -- pointwise-in-time convergence is `curl_proj_converges` against
+      -- `hgraph_dense`/`hstable`, and the dominating function is the uniform
+      -- stability bound applied to the test slice itself, continuous in time
+      -- hence integrable on the finite window.  No Banach-Steinhaus argument
+      -- is needed: the stability constant is supplied by step 1's basis leaf
+      -- instead of being extracted.
       have hcurlError : Filter.Tendsto (fun m =>
           ∫ t in Set.Ioc (0 : ℝ) T,
             ‖toL2 (curlSchwartzCLM (W.proj m (phi.field t) - phi.field t))‖ ^ 2)
-          Filter.atTop (nhds 0) := by
-        -- CONJECTURE: scientific-frontier gap (Banach-Steinhaus + DCT).
-        sorry
+          Filter.atTop (nhds 0) :=
+        curlSqError_integral_tendsto_zero W hgraph_dense hstable phi
+          errorSqIntegrable
       -- 5. hlap: from hcurlError via the Cauchy-Schwarz estimate
       have hlap : Filter.Tendsto (fun m =>
           ∫ t in (0 : ℝ)..T, nu * schwartzL2Inner (W.coefficientField (cChoice m t))
