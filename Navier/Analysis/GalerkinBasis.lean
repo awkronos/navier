@@ -3472,9 +3472,48 @@ theorem proj_l2_sq_le (W : GalerkinBasisFamily) (m : ℕ) (u : SchwartzVelocity)
 
 If the ordered finite projections commute with curl, their curl part is an
 ordinary `L²` orthogonal projection and hence has contraction constant one.
-This is the stability primitive a concrete Fourier/wavelet carrier must
-instantiate; it is a theorem parameter, not a field added to
-`GalerkinBasisFamily`. -/
+
+**VACUOUS on `ℝ³` — the hypothesis `hcurl_commutes` is UNSATISFIABLE
+(argued 2026-09-02, lane NAVIER2; not yet mechanized).**  This theorem is true
+and kernel-clean; it is true *for the wrong reason*, because no
+`GalerkinBasisFamily` on `ℝ³` satisfies its hypothesis.  Nothing in the
+repository consumes it, and no future Galerkin work may route through
+commutation.
+
+The refutation.  Take `m = 1` and `u = W.w 0`.  Commutation plus the
+orthonormality of the family (`W.orthonormal`) forces the rank-one projection
+to fix `curl (W.w 0)`, i.e.
+
+  `curl (w₀) = λ • w₀`,   `λ = ⟪curl (w₀), w₀⟫`.
+
+`w₀` is divergence-free, so `curl curl = grad div − Δ` gives
+
+  `−Δ w₀ = curl (curl w₀) = λ² • w₀`,
+
+a positive-eigenvalue eigenfunction of `−Δ` on `ℝ³` lying in `L²` (indeed
+Schwartz).  There are none.  Two independent proofs:
+
+* *Fourier.*  Plancherel (present in the pinned Mathlib as
+  `MeasureTheory.Lp.fourierTransformₗᵢ`, `Mathlib/Analysis/Fourier/LpSpace.lean`)
+  turns the equation into `(‖ξ‖² − λ²) ŵ₀(ξ) = 0`, so `ŵ₀` vanishes off the
+  sphere `‖ξ‖ = |λ|`.  `ŵ₀` is continuous (`w₀` is Schwartz), hence `ŵ₀ ≡ 0`
+  and `w₀ = 0`.
+* *Rellich–Pohozaev.*  Pairing `−Δw₀ = λ²w₀` with `w₀` gives
+  `∫|∇w₀|² = λ²∫|w₀|²`; pairing with `x·∇w₀` gives the Pohozaev identity
+  `((n−2)/2)∫|∇w₀|² = (n/2)λ²∫|w₀|²`.  At `n = 3` the two force
+  `λ²∫|w₀|² = 0`.  If `λ ≠ 0` then `w₀ = 0`; if `λ = 0` then `curl w₀ = 0` and
+  `div w₀ = 0` give `Δw₀ = 0`, and a harmonic Schwartz field is `0` by
+  Liouville.
+
+Either way `w₀ = 0`, contradicting `W.orthonormal 0 0 = 1`.
+
+Status of this note: the argument above is complete mathematics, argued and
+checked by hand, and it is **not** mechanized — mechanizing it needs the
+vector-valued Fourier transform of `curl` and of `Δ` on Schwartz fields, or the
+Pohozaev multiplier identity, ~350 LOC either way (registry row NAVIER-01).
+Under `epistemic-rigor.md` it is therefore a CONJECTURE with a complete
+informal proof, not a THEOREM, and it is recorded here rather than as a Lean
+`sorry` because a `sorry` would be a claim the compiler is asked to trust. -/
 theorem curl_proj_sq_le_of_commutes (W : GalerkinBasisFamily)
     (hcurl_commutes : ∀ (m : ℕ) (u : SchwartzVelocity),
       curlSchwartzCLM (W.proj m u) = W.proj m (curlSchwartzCLM u))
@@ -3488,9 +3527,14 @@ theorem curl_proj_sq_le_of_commutes (W : GalerkinBasisFamily)
 
 Exact commutation reduces the curl error to the ordinary `L²` projection error
 of `curl phi`.  The latter converges by `proj_tendsto_self`, since curl of a
-Schwartz field is divergence-free.  This replaces the former false universal
-claim: `L²` density alone is insufficient, while a concrete spectral carrier
-only has to prove its explicit commutation identity. -/
+Schwartz field is divergence-free.
+
+**VACUOUS on `ℝ³` for the same reason as `curl_proj_sq_le_of_commutes`**: the
+hypothesis `hcurl_commutes` is unsatisfiable, by the argument recorded in that
+theorem's docstring.  The sentence this docstring used to end with — that "a
+concrete spectral carrier only has to prove its explicit commutation identity"
+— is FALSE and is withdrawn: no carrier on `ℝ³` can prove it.  Nothing in the
+repository consumes this theorem. -/
 theorem curl_proj_converges_of_commutes (W : GalerkinBasisFamily)
     (hcurl_commutes : ∀ (m : ℕ) (u : SchwartzVelocity),
       curlSchwartzCLM (W.proj m u) = W.proj m (curlSchwartzCLM u))
