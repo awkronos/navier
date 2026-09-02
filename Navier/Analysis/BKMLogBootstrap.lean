@@ -6,6 +6,7 @@ import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.GronwallAffine
 import Navier.Analysis.KatoPonceLeibniz
 import Navier.Analysis.CurlDerivativeBridge
+import Navier.Analysis.WeightedCommutator
 
 /-!
 # BKM log bootstrap: from the Biot–Savart log inequality to the criterion
@@ -2358,7 +2359,9 @@ dominating the quartic-weighted pointwise size of every derivative of order
   `E' ≤ a·E + b`   on `(0,T)`.
 
 `a` is the commutator/Calderón–Zygmund rate `C(1 + ‖∇u‖_∞)` produced by
-`[x^α, u·∇]D^β u` together with the pressure bound on `∇²(-Δ)^{-1}`; `b`
+`[x^α, u·∇]D^β u` (whose order-zero character is certified in
+`Navier.Analysis.WeightedCommutator`) together with the pressure bound on
+`∇²(-Δ)^{-1}`; `b`
 collects the unweighted forcing, which is controlled by
 `uniformly_bounded_energy`.  The additive `b` is exactly why the *purely
 multiplicative* Grönwall lemmas already in this repository
@@ -2391,9 +2394,21 @@ commutator term `⟨[x^α, u·∇]D^β u, x^α D^β u⟩` bounded by `C(1+‖∇
 
 **What this residual no longer carries.**  The Grönwall step and the passage
 from the weighted control to the two Schwartz seminorms are certified below in
-`sliceSeminormLocallyBounded_of_weightedEnergyAffineControl`, using the new
-affine time-dependent Grönwall leaf
-`Navier.Analysis.GronwallAffine.gronwall_affine_apriori`. -/
+`sliceSeminormLocallyBounded_of_weightedEnergyAffineControl`, using the affine
+time-dependent Grönwall leaf
+`Navier.Analysis.GronwallAffine.gronwall_affine_apriori`.  The **commutator
+identity** in (ii) is certified in `Navier.Analysis.WeightedCommutator`:
+
+  `convectiveDeriv_coord_smul`      `[x_j, u·∇] f = − u_j·f`
+  `convectiveDeriv_coord_pow_smul`  `[(x_j)^k, u·∇] f = − k(x_j)^{k−1}u_j·f`
+
+so the commutator is proved to be of **order zero in `f`** — it costs no
+derivative, trading one power of the weight for one power of `u`.  That is
+precisely why (ii) is bounded by `C(1+‖∇u‖_∞)·E` and hence why the inequality
+closes as the *affine* `E' ≤ aE + b` rather than a quasilinear one.  What
+remains residual here is the weighted energy *identity* (differentiation of
+`E` under the integral along the flow) and the Calderón–Zygmund pressure
+bound on `∇²(-Δ)^{-1}`, and nothing else. -/
 theorem weightedEnergyAffineControl_of_navierStokes
     {ν : ℝ} {u₀ : SchwartzVelocity} (S : SchwartzSlicedSolution ν u₀) :
     WeightedEnergyAffineControl S := by
