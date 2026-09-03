@@ -6870,6 +6870,25 @@ theorem weakForm_of_cofinal_commonWindow_limit
   rw [weakForm_time_integral_eq_Ioc ν u φ hT0 hfield hderiv]
   linarith
 
+/-- **Leray test-function interface.**  Packages the spatial integrability and
+finite-time support facts used by `exists_lerayLimitData` at its exact test
+function quantifiers. -/
+theorem leray_test_function_interface (ν : ℝ) (u : VelocityEvolution)
+    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
+    (huint : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
+    (φ : DivergenceFreeTestFunction) :
+    (∀ t : ℝ, 0 < t → Integrable fun x : Space => weakPairingDensity ν u φ t x) ∧
+    (∃ T : ℝ, 0 < T ∧ (∀ s : ℝ, T ≤ s → φ.field s = 0) ∧
+      (∀ s : ℝ, T ≤ s → φ.timeDerivSchwartz s = 0) ∧
+      (∫ t in Set.Ici (0:ℝ), ∫ x : Space, weakPairingDensity ν u φ t x) =
+        ∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, weakPairingDensity ν u φ t x) :=
+by
+  refine ⟨?_, ?_⟩
+  · exact fun t ht => pairing_integrable ν u humeas huint φ t ht
+  · obtain ⟨T, hT, hfield, hderiv⟩ := φ.exists_horizon
+    refine ⟨T, hT, hfield, hderiv, ?_⟩
+    exact weakForm_time_integral_eq_Ioc ν u φ hT.le hfield hderiv
+
 /-- **[CERTIFIED — Galerkin limit passage; Leray, Acta Math. 63 (1934)
 §§21–23; Temam III.3.3; Constantin–Foias, *NSE* II; est ~700 LOC.]**  From a
 Galerkin approximation, `aubin_lions_l2loc_compactness` (invoked on the
@@ -7030,7 +7049,8 @@ theorem exists_lerayLimitData (ν : ℝ) (hν : 0 < ν)
            sq_integrable := fun t ht => huint t ht.le
            datum_sq_integrable := integrable_norm_sq_schwartz u₀
            energy_le := fun t ht => huoff t ht.le
-           pairing_integrable := pairing_integrable ν u humeas huint
+           pairing_integrable := fun φ t ht =>
+             (leray_test_function_interface ν u humeas (fun s hs => huint s hs) φ).1 t ht
            datum_pairing_integrable := datum_pairing_integrable ν u₀
            weak_form := hform }⟩
 
@@ -7041,41 +7061,6 @@ theorem leray_of_galerkinApproximation (ν : ℝ) (hν : 0 < ν)
     ∃ u : VelocityEvolution, IsLerayHopfWeakSolution ν u₀ u :=
   (exists_lerayLimitData ν hν u₀ hu₀ G).elim
     (fun D => ⟨patchInitial D.limit u₀, isLerayHopfWeakSolution_patchInitial ν u₀ D⟩)
-
-/-- **Leray test-function interface.**  The divergence-free test-function and
-forcing interface consumed by the Leray compactness proof (N2 →
-`exists_lerayLimitData`) at its exact consumer quantifiers.
-
-For any divergence-free test function `φ` with the standard compact spacetime
-carrier, joint smoothness, and certified time-derivative slice, and for any
-velocity evolution `u` with jointly measurable and `L²` slices:
-
-1. **Weak-pairing integrability** — the `weakPairingDensity` pairing
-   `⟨u, ∂ₜφ + u·∇φ + νΔφ⟩` is `x`-integrable for every positive time `t > 0`.
-2. **Finite-window representation** — the weak-pairing density vanishes past
-   the test's time horizon `T`, so the half-line weak-form time integral
-   `∫_{Ici 0}` equals the finite-window integral over `Ioc 0 T`.
-
-This packages, at the consumer's quantifiers, exactly the test-function inputs
-that `exists_lerayLimitData` uses from `DivergenceFreeTestFunction`:
-integrable weak pairing plus the truncation of the time integral to the
-test's compact time support, which together are the minimal guarantees the
-weak formulation's consumer needs before entering the limit passage. -/
-theorem leray_test_function_interface (ν : ℝ) (u : VelocityEvolution)
-    (humeas : Measurable fun z : ℝ × Space => u z.1 z.2)
-    (huint : ∀ t : ℝ, 0 ≤ t → Integrable fun x : Space => ‖u t x‖ ^ 2)
-    (φ : DivergenceFreeTestFunction) :
-    (∀ t : ℝ, 0 < t → Integrable fun x : Space => weakPairingDensity ν u φ t x) ∧
-    (∃ T : ℝ, 0 < T ∧ (∀ s : ℝ, T ≤ s → φ.field s = 0) ∧
-      (∀ s : ℝ, T ≤ s → φ.timeDerivSchwartz s = 0) ∧
-      (∫ t in Set.Ici (0:ℝ), ∫ x : Space, weakPairingDensity ν u φ t x) =
-        ∫ t in Set.Ioc (0:ℝ) T, ∫ x : Space, weakPairingDensity ν u φ t x) :=
-by
-  refine ⟨?_, ?_⟩
-  · exact fun t ht => pairing_integrable ν u humeas huint φ t ht
-  · obtain ⟨T, hT, hfield, hderiv⟩ := φ.exists_horizon
-    refine ⟨T, hT, hfield, hderiv, ?_⟩
-    exact weakForm_time_integral_eq_Ioc ν u φ hT.le hfield hderiv
 
 /-!
 ## Existence skeleton
