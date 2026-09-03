@@ -44,26 +44,23 @@ its difficulty.  The mathematical content proved here is exactly the passage
 from the half-open family to the closed half-space
 (`contDiffOn_ici_of_forall_before`) plus the assembly.
 
-**SATISFIABILITY.**  Both hypothesis shapes are checked at a genuine point of
-their own quantifier range, against the repository's history of vacuity
-defects.  `zero_is_solution_before` inhabits every clause of the body of
-`HalfLineClassicalExistence` with the zero pair, and
-`zero_satisfies_energyClause` inhabits the conclusion of
-`WholeSpaceEnergyClause`, including the `Integrable` conjunct whose omission
-elsewhere in this repository produced a vacuous energy bracket.  Neither
-hypothesis is refutable by the pressure gauge freedom: no hypothesis here
-asserts uniqueness of the pressure, which is only determined up to an additive
-function of time and would have made an agreement-style hypothesis FALSE and
-the endpoint vacuous.
+**SATISFIABILITY.**  The original smoke test checked only that the conclusion
+of `WholeSpaceEnergyClause` holds for the zero solution.  That does not inhabit
+the universally quantified clause.  In fact `not_wholeSpaceEnergyClause` below
+refutes it: the smooth accelerating flow `u(t,x) = t e₀` with linear pressure
+`p(t,x) = -x₀` solves the unforced equation from zero data, but has
+nonintegrable positive-time energy density.  Thus the conditional endpoint is
+vacuous as stated; it cannot serve as a crown reduction until the solution
+class includes an honest spatial-growth or pressure-normalization condition.
 
 **NON-VACUITY.**  Neither hypothesis follows from the ambient typeclasses:
 `Space`, `VelocityEvolution` and `PressureEvolution` are plain function types
 carrying no PDE content, and both hypotheses quantify over the Schwartz data of
 the actual problem.
 
-Scope: this is a conditional reduction of Fefferman statement A to two named
-analytic residuals.  It is NOT a solution, NOT a global-regularity theorem, and
-it does not shrink the frontier by itself.
+Scope: this implication is kernel-valid but its energy premise is refuted below.
+It is NOT a solution, NOT a global-regularity theorem, and not a sound crown
+reduction until that false premise is repaired.
 -/
 
 set_option autoImplicit false
@@ -147,10 +144,10 @@ def WholeSpaceEnergyClause : Prop :=
 `HalfLineClassicalExistence → WholeSpaceEnergyClause →
 Navier.ProblemStatements.WholeSpaceGlobalRegularity`.
 
-This is a reduction, not a solution.  Both hypotheses are open; nothing in this
-repository proves either.  The theorem exists so that the endpoint has a typed
-inhabitant whose hypothesis list is the current residual and can be diffed as
-waves close pieces of it.
+This is an implication, not a solution.  `HalfLineClassicalExistence` is open;
+`WholeSpaceEnergyClause` is false for the current unconstrained smooth solution
+class by `not_wholeSpaceEnergyClause` below.  Therefore this theorem is vacuous
+as a crown reduction until the energy premise is repaired.
 
 Scope: conditional.  No global-regularity claim is made, and neither hypothesis
 is discharged here. -/
@@ -180,11 +177,11 @@ theorem wholeSpaceGlobalRegularity_of_halfLineExistence_and_energyClause
       finite_energy := hfin
       uniformly_bounded_energy := hbnd }
 
-/-! ## Satisfiability smoke tests
+/-! ## Boundary tests and falsification
 
-Both hypothesis bodies are inhabited at a real point of their quantifier
-range.  These are guards against the vacuity failures recorded for this
-repository, not evidence for the hypotheses themselves. -/
+The zero tests show that the local solution body and the energy conclusion are
+individually inhabitable.  They do not inhabit the universally quantified
+`WholeSpaceEnergyClause`; the accelerating-flow witness below refutes it. -/
 
 /-- The zero pair satisfies every PDE clause in the body of
 `HalfLineClassicalExistence`, for every viscosity and every horizon.  The
@@ -219,6 +216,98 @@ theorem zero_satisfies_energyClause :
     exact integrable_zero Space ℝ volume
   · simp [kineticEnergy]
 
+/-! ### N6 falsification: smoothness and the PDE do not force finite energy -/
+
+/-- A spatially uniform flow accelerating in the first coordinate. -/
+def acceleratingVelocity : VelocityEvolution := fun t _ => t • basisVector 0
+
+/-- The linear pressure whose gradient drives `acceleratingVelocity`. -/
+def acceleratingPressure : PressureEvolution := fun _ x => -x 0
+
+theorem acceleratingVelocity_smooth :
+    SmoothVelocityOnNonnegativeTime acceleratingVelocity := by
+  unfold SmoothVelocityOnNonnegativeTime acceleratingVelocity
+  fun_prop
+
+theorem acceleratingPressure_smooth :
+    SmoothPressureOnNonnegativeTime acceleratingPressure := by
+  unfold SmoothPressureOnNonnegativeTime acceleratingPressure
+  fun_prop
+
+theorem acceleratingVelocity_initial :
+    ∀ x : Space, acceleratingVelocity 0 x = (0 : SchwartzVelocity) x := by
+  intro x
+  simp [acceleratingVelocity]
+
+theorem acceleratingVelocity_incompressible :
+    Incompressible acceleratingVelocity := by
+  intro t _ht x
+  change ∑ i : Fin 3,
+    fderiv ℝ (fun _ : Space => t • basisVector 0) x (basisVector i) i = 0
+  simp
+
+/-- The accelerating flow solves the unforced equation for every viscosity.
+Its acceleration is supplied by the gradient of the linear pressure. -/
+theorem acceleratingVelocity_satisfiesNavierStokes (ν : ℝ) :
+    SatisfiesNavierStokes ν zeroForce acceleratingVelocity acceleratingPressure := by
+  intro t ht x
+  change fderivWithin ℝ (fun s : ℝ => s • basisVector 0) (Set.Ici 0) t 1 +
+      fderiv ℝ (fun _ : Space => t • basisVector 0) x (t • basisVector 0) =
+    ν • (∑ i : Fin 3,
+      fderiv ℝ (fun y : Space =>
+        fderiv ℝ (fun _ : Space => t • basisVector 0) y (basisVector i)) x
+          (basisVector i)) -
+      (fun i => fderiv ℝ (fun y : Space => -y 0) x (basisVector i)) + zeroForce t x
+  have htime :
+      fderivWithin ℝ (fun s : ℝ => s • basisVector 0) (Set.Ici 0) t =
+        (ContinuousLinearMap.id ℝ ℝ).smulRight (basisVector 0) := by
+    simpa only [id_eq] using
+      ((hasFDerivAt_id t).smul_const (basisVector 0)).hasFDerivWithinAt.fderivWithin
+        (uniqueDiffOn_Ici 0 t ht)
+  rw [htime]
+  simp only [fderiv_fun_neg]
+  rw [fderiv_apply differentiableAt_id 0]
+  ext i
+  fin_cases i <;> simp [basisVector, zeroForce]
+
+/-- At time `1`, the accelerating flow has a nonzero constant energy density on
+the infinite-volume space `Space = Fin 3 → ℝ`. -/
+theorem acceleratingVelocity_not_integrable :
+    ¬ Integrable (fun x : Space => ‖acceleratingVelocity 1 x‖ ^ 2) := by
+  have hb : basisVector 0 ≠ 0 := by
+    intro h
+    have hi := congrFun h 0
+    simpa [basisVector] using hi
+  have hc : ‖basisVector 0‖ ^ 2 ≠ (0 : ℝ) :=
+    pow_ne_zero 2 (norm_ne_zero_iff.mpr hb)
+  have hfinite : ¬ IsFiniteMeasure (volume : Measure Space) := by
+    intro h
+    have hlt := h.measure_univ_lt_top
+    rw [show volume (Set.univ : Set Space) = ⊤ by
+      rw [show (Set.univ : Set Space) = Set.pi Set.univ (fun _ => Set.univ) by simp]
+      rw [volume_pi_pi]
+      simp] at hlt
+    exact (lt_self_iff_false ⊤).mp hlt
+  rw [show (fun x : Space => ‖acceleratingVelocity 1 x‖ ^ 2) =
+      (fun _ : Space => ‖basisVector 0‖ ^ 2) by
+        funext x
+        simp [acceleratingVelocity]]
+  rw [integrable_const_iff]
+  exact not_or_intro hc hfinite
+
+/-- **N6 is false as stated.**  Smoothness, incompressibility, the unforced
+equation, and Schwartz initial data do not imply the endpoint energy clause
+without a spatial-growth or pressure-normalization condition. -/
+theorem not_wholeSpaceEnergyClause : ¬ WholeSpaceEnergyClause := by
+  intro henergy
+  have hconclusion := henergy 1 one_pos (0 : SchwartzVelocity)
+    Navier.ProblemStatements.divergenceFreeInitial_zero
+    acceleratingVelocity acceleratingPressure
+    acceleratingVelocity_smooth acceleratingPressure_smooth
+    acceleratingVelocity_initial acceleratingVelocity_incompressible
+    (acceleratingVelocity_satisfiesNavierStokes 1)
+  exact acceleratingVelocity_not_integrable (hconclusion.1 1 zero_le_one)
+
 end Navier.Analysis.GlobalRegularityEndpoint
 
 #print axioms Navier.Analysis.GlobalRegularityEndpoint.contDiffOn_ici_of_forall_before
@@ -226,3 +315,4 @@ end Navier.Analysis.GlobalRegularityEndpoint
   Navier.Analysis.GlobalRegularityEndpoint.wholeSpaceGlobalRegularity_of_halfLineExistence_and_energyClause
 #print axioms Navier.Analysis.GlobalRegularityEndpoint.zero_is_solution_before
 #print axioms Navier.Analysis.GlobalRegularityEndpoint.zero_satisfies_energyClause
+#print axioms Navier.Analysis.GlobalRegularityEndpoint.not_wholeSpaceEnergyClause
