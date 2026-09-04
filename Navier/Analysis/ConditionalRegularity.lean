@@ -1579,13 +1579,31 @@ theorem duhamelSource_continuousAt_interior
     exact hdp.continuousAt.clm_apply continuousAt_const
   exact continuousAt_const.sub (hcon.add hgrad)
 
-/-- The spatial heat convolution has an integrable time norm under a uniform
+/-- The vector heat convolution exists as a Bochner integral whenever its
+source lies in `L^r`, for `r > 1`. Scalar Hölder integrability dominates the
+actual vector integrand. -/
+theorem heatKernel_smul_integrable_of_integrable_rpow
+    {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t) {r : ℝ} (hr : 1 < r)
+    {g : Space → Space} (hgm : Measurable g)
+    (hgr : Integrable (fun y : Space => ‖g y‖ ^ r)) (x : Space) :
+    Integrable (fun y : Space => heatKernel ν t (x - y) • g y) := by
+  have hK : Continuous (fun y : Space => heatKernel ν t (x - y)) := by
+    unfold heatKernel
+    fun_prop
+  have hint := integrable_heatKernel_mul_of_integrable_rpow hν ht hr
+    (by simpa only [abs_norm] using hgr) hgm.norm x
+  apply hint.mono' (hK.aestronglyMeasurable.smul hgm.aestronglyMeasurable)
+  filter_upwards [] with y
+  rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (heatKernel_nonneg hν ht _)]
+
+/-- Both integrals defining the Duhamel convolution exist under a uniform
 source `L^r` bound, for `r > 3/2`. Joint source continuity supplies parameter
-measurability; the heat estimate is dominated by `(t-s)^(-3/(2r))`.
-This constructs the time-integrability input used by the Duhamel bound.
+measurability; the heat estimate is dominated by `(t-s)^(-3/(2r))`. The
+spatial integral exists at every interior time, and the resulting vector
+function is integrable in time.
 
 Reference: Kato, Math. Z. 187 (1984), Section 2. -/
-theorem duhamelConvolution_intervalIntegrable_of_source_Lr
+theorem duhamelConvolution_integrable_of_source_Lr
     {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν zeroForce u₀ T)
     {δ : ℝ} (hδT : δ < T) {r : ℝ} (hr : 3 / 2 < r)
@@ -1594,9 +1612,20 @@ theorem duhamelConvolution_intervalIntegrable_of_source_Lr
     (S : ℝ) (hS : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
       (∫ y : Space, ‖duhamelSource sol s y‖ ^ r) ^ (1 / r) ≤ S)
     {t : ℝ} (ht0 : 0 < t) (htδ : t ≤ δ) (x : Space) :
-    IntervalIntegrable
-      (fun s : ℝ => ‖∫ y : Space,
-        heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖) volume 0 t := by
+    (∀ s ∈ Ioo 0 t, Integrable (fun y : Space =>
+      heatKernel ν (t - s) (x - y) • duhamelSource sol s y)) ∧
+      IntervalIntegrable
+        (fun s : ℝ => ∫ y : Space,
+          heatKernel ν (t - s) (x - y) • duhamelSource sol s y) volume 0 t := by
+  have hspace : ∀ s ∈ Ioo 0 t, Integrable (fun y : Space =>
+      heatKernel ν (t - s) (x - y) • duhamelSource sol s y) := by
+    intro s hs
+    have hsδ : s ≤ δ := hs.2.le.trans htδ
+    exact heatKernel_smul_integrable_of_integrable_rpow hν
+      (sub_pos.mpr hs.2) (by linarith : 1 < r)
+      (duhamelSource_slice_measurable sol hs.1.le (hsδ.trans_lt hδT))
+      (hsi s hs.1.le hsδ) x
+  refine ⟨hspace, ?_⟩
   have hF : ContinuousOn
       (fun z : ℝ × Space =>
         heatKernel ν (t - z.1) (x - z.2) • duhamelSource sol z.1 z.2)
@@ -1625,7 +1654,7 @@ theorem duhamelConvolution_intervalIntegrable_of_source_Lr
   have hmeas := hF.aestronglyMeasurable (μ := volume.prod volume)
     (measurableSet_Ioo.prod MeasurableSet.univ)
   rw [← Measure.restrict_prod_eq_prod_univ] at hmeas
-  have him := hmeas.integral_prod_right'.norm
+  have him := hmeas.integral_prod_right'
   obtain ⟨C, hCpos, hC⟩ := heatKernel_convolution_norm_vec_le_uniform hν
     (show 1 < r by linarith)
   have ha : -1 < -(3 : ℝ) / (2 * r) := by
@@ -1645,13 +1674,28 @@ theorem duhamelConvolution_intervalIntegrable_of_source_Lr
   have hbound := hC (duhamelSource sol s)
     (duhamelSource_slice_measurable sol hs.1.le (hsδ.trans_lt hδT))
     (hsi s hs.1.le hsδ) (t - s) (sub_pos.mpr hs.2) x
-  rw [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _)]
   calc
     _ ≤ C * (t - s) ^ (-(3 : ℝ) / (2 * r)) *
         (∫ y : Space, ‖duhamelSource sol s y‖ ^ r) ^ (1 / r) := hbound
     _ ≤ C * (t - s) ^ (-(3 : ℝ) / (2 * r)) * S :=
       mul_le_mul_of_nonneg_left (hS s hs.1.le hsδ) (by positivity)
     _ = C * S * (t - s) ^ (-(3 : ℝ) / (2 * r)) := by ring
+
+/-- The time-integrable vector convolution supplies the norm-integrability
+input of the original Duhamel bound. -/
+theorem duhamelConvolution_intervalIntegrable_of_source_Lr
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {δ : ℝ} (hδT : δ < T) {r : ℝ} (hr : 3 / 2 < r)
+    (hsi : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      Integrable (fun y : Space => ‖duhamelSource sol s y‖ ^ r))
+    (S : ℝ) (hS : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      (∫ y : Space, ‖duhamelSource sol s y‖ ^ r) ^ (1 / r) ≤ S)
+    {t : ℝ} (ht0 : 0 < t) (htδ : t ≤ δ) (x : Space) :
+    IntervalIntegrable
+      (fun s : ℝ => ‖∫ y : Space,
+        heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖) volume 0 t :=
+  (duhamelConvolution_integrable_of_source_Lr hν sol hδT hr hsi S hS ht0 htδ x).2.norm
 
 
 /-- **[LEAF — `L^p` smoothing bound on the Duhamel correction; est ~250 LOC.]**
