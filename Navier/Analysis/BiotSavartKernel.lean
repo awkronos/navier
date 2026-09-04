@@ -30,6 +30,7 @@ set_option autoImplicit false
 noncomputable section
 
 open Set
+open scoped BigOperators
 
 namespace Navier.Analysis.BiotSavartKernel
 
@@ -82,6 +83,134 @@ theorem bsKernelScalar_pos_of_ne_zero {x : Space} (hx : x ≠ 0) :
 /-- The scalar kernel vanishes at the origin by definition. -/
 theorem bsKernelScalar_zero : bsKernelScalar 0 = 0 := by
   rw [bsKernelScalar, if_pos rfl]
+
+/-!
+## The vector kernel and its off-origin derivative
+-/
+
+/-- The actual vector kernel `z/(4π|z|³)`, assigned the irrelevant value zero
+at the singular point.  The velocity Biot--Savart integrand is obtained from
+this by crossing with the vorticity. -/
+def bsVectorKernel (x : Space) : Space :=
+  bsKernelScalar x • x
+
+/-- The squared Euclidean radius along a coordinate line has derivative
+`2 xᵢ` at the line origin. -/
+private theorem radiusSq_coordinateLine_hasDerivAt (x : Space) (i : Fin 3) :
+    HasDerivAt
+      (∑ k : Fin 3, (fun t : ℝ => x k + t * basisVector i k) ^ 2)
+      (2 * x i) 0 := by
+  classical
+  have hsum := HasDerivAt.sum (x := (0 : ℝ)) (u := Finset.univ)
+      (A := fun k : Fin 3 => (fun t : ℝ => x k + t * basisVector i k) ^ 2)
+      (A' := fun k : Fin 3 => 2 * x k * basisVector i k)
+      (fun k _ => by
+        have hlin : HasDerivAt (fun t : ℝ => x k + t * basisVector i k)
+            (basisVector i k) 0 := by
+          simpa only [id_eq, mul_one, add_zero, mul_comm] using
+            (hasDerivAt_id 0).mul_const (basisVector i k) |>.const_add (x k)
+        simpa only [Nat.cast_ofNat, Nat.reduceSub, pow_one, zero_mul, add_zero]
+          using hlin.pow 2)
+  have hd : (∑ k : Fin 3, 2 * x k * basisVector i k) = 2 * x i := by
+    simp [basisVector, Pi.single_apply]
+  rw [← hd]
+  exact hsum
+
+/-- Coordinate-line derivative of the official Euclidean radius away from
+the origin: `d/dt |x+t eᵢ| at 0 = xᵢ/|x|`. -/
+theorem officialEuclideanNorm_coordinateLine_hasDerivAt
+    {x : Space} (hx : x ≠ 0) (i : Fin 3) :
+    HasDerivAt
+      (fun t : ℝ => officialEuclideanNorm (x + t • basisVector i))
+      (x i / officialEuclideanNorm x) 0 := by
+  have hq := (radiusSq_coordinateLine_hasDerivAt x i).sqrt ?_
+  · have hfun : (fun t : ℝ => officialEuclideanNorm (x + t • basisVector i)) =
+        (fun t : ℝ => Real.sqrt
+          ((∑ k : Fin 3, (fun s : ℝ => x k + s * basisVector i k) ^ 2) t)) := by
+      funext t
+      rw [officialEuclideanNorm_eq_sqrt_sum_sq]
+      congr 1
+      rw [Finset.sum_apply]
+      apply Finset.sum_congr rfl
+      intro k _
+      simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, sq_abs, Pi.pow_apply]
+    rw [hfun]
+    have hsum : (∑ k : Fin 3, x k ^ 2) = officialEuclideanNorm x ^ 2 := by
+      rw [officialEuclideanNorm_eq_sqrt_sum_sq]
+      rw [Real.sq_sqrt (Finset.sum_nonneg fun k _ => sq_nonneg |x k|)]
+      simp only [sq_abs]
+    convert hq using 1
+    rw [show Real.sqrt ((∑ k : Fin 3,
+          (fun s : ℝ => x k + s * basisVector i k) ^ 2) 0) =
+          officialEuclideanNorm x by
+      rw [Finset.sum_apply]
+      simp only [Pi.pow_apply, zero_mul, add_zero]
+      rw [hsum, Real.sqrt_sq (officialEuclideanNorm_nonneg x)]]
+    have hr : officialEuclideanNorm x ≠ 0 :=
+      (officialEuclideanNorm_eq_zero_iff x).not.mpr hx
+    field_simp
+  · rw [show ((∑ k : Fin 3,
+        (fun s : ℝ => x k + s * basisVector i k) ^ 2) 0) =
+        officialEuclideanNorm x ^ 2 by
+      rw [Finset.sum_apply]
+      simp only [Pi.pow_apply, zero_mul, add_zero]
+      rw [officialEuclideanNorm_eq_sqrt_sum_sq]
+      rw [Real.sq_sqrt (Finset.sum_nonneg fun k _ => sq_nonneg |x k|)]
+      simp only [sq_abs]]
+    exact pow_ne_zero 2 ((officialEuclideanNorm_eq_zero_iff x).not.mpr hx)
+
+/-- **Off-origin Biot--Savart kernel derivative.**  The coordinate derivative
+of `z ↦ zⱼ/(4π|z|³)` is the trace-free Calderón--Zygmund tensor
+`(4π)⁻¹(δᵢⱼ|z|⁻³ - 3zᵢzⱼ|z|⁻⁵)`.  The missing value at the origin is the
+separate distributional local term in the principal-value formula. -/
+theorem bsVectorKernel_coordinateLine_hasDerivAt
+    {x : Space} (hx : x ≠ 0) (i j : Fin 3) :
+    HasDerivAt (fun t : ℝ => bsVectorKernel (x + t • basisVector i) j)
+      ((1 / (4 * Real.pi)) *
+        ((basisVector i j) / officialEuclideanNorm x ^ 3 -
+          3 * x i * x j / officialEuclideanNorm x ^ 5)) 0 := by
+  have hnorm := officialEuclideanNorm_coordinateLine_hasDerivAt hx i
+  have hnorm3 := hnorm.pow 3
+  have hr : officialEuclideanNorm x ≠ 0 :=
+    (officialEuclideanNorm_eq_zero_iff x).not.mpr hx
+  have hinv := hnorm3.inv (by simpa using pow_ne_zero 3 hr)
+  have hcoord : HasDerivAt (fun t : ℝ => (x + t • basisVector i) j)
+      (basisVector i j) 0 := by
+    simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, id_eq, mul_one,
+      add_zero, mul_comm] using
+      ((hasDerivAt_id 0).mul_const (basisVector i j)).const_add (x j)
+  have hproduct := hcoord.mul hinv
+  have hscaled := hproduct.const_mul (1 / (4 * Real.pi))
+  have hlocal : ∀ᶠ t : ℝ in nhds 0, x + t • basisVector i ≠ 0 := by
+    have hcont : ContinuousAt (fun t : ℝ => x + t • basisVector i) 0 := by
+      fun_prop
+    exact hcont.eventually_ne (by simpa using hx)
+  have hsame :
+      (fun t : ℝ => bsVectorKernel (x + t • basisVector i) j) =ᶠ[nhds 0]
+        (fun t : ℝ => (1 / (4 * Real.pi)) *
+          ((x + t • basisVector i) j *
+            (officialEuclideanNorm (x + t • basisVector i) ^ 3)⁻¹)) := by
+    filter_upwards [hlocal] with t ht
+    rw [bsVectorKernel, Pi.smul_apply, smul_eq_mul,
+      bsKernelScalar_apply_of_ne_zero ht]
+    simp only [one_div]
+    ring
+  have hscaled' := hscaled.congr_of_eventuallyEq hsame
+  dsimp at hscaled'
+  have heq :
+      (1 / (4 * Real.pi)) *
+          ((basisVector i j) / officialEuclideanNorm x ^ 3 -
+            3 * x i * x j / officialEuclideanNorm x ^ 5) =
+        1 / (4 * Real.pi) *
+          (basisVector i j * (officialEuclideanNorm x ^ 3)⁻¹ +
+            x j * (-(3 * officialEuclideanNorm x ^ 2 *
+                  (x i / officialEuclideanNorm x)) /
+                (officialEuclideanNorm x ^ 3) ^ 2)) := by
+    simp only [one_div]
+    field_simp
+    ring
+  rw [heq]
+  simpa only [zero_smul, add_zero, zero_mul] using hscaled'
 
 /-!
 ## Homogeneity of degree −3
