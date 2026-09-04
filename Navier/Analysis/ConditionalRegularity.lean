@@ -6,6 +6,7 @@ import Navier.Analysis.ESSInputs
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.HeatSemigroupSmoothing
 import Navier.Analysis.WholeSpaceCutoffLimit
+import Navier.EnergyObstruction
 
 /-!
 # Conditional regularity bridges: Prodi–Serrin and Constantin–Fefferman
@@ -1156,6 +1157,57 @@ theorem layerBound_of_duhamelNonlinear_bounded
     exact le_trans (norm_add_le _ _)
       (add_le_add (hheat0 t hpos x) (hC t hpos htδ x))
 
+/-- If a partial solution's velocity vanishes identically, its momentum
+equation forces the exact Duhamel source to vanish throughout the solution
+interval.  Pressure and forcing may be nonzero separately, but cancel in the
+source as the equation requires. -/
+theorem duhamelSource_eq_zero_of_velocity_eq_zero
+    {ν : ℝ} {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T)
+    (hvelocity : sol.velocity = (0 : VelocityEvolution))
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T) (x : Space) :
+    duhamelSource sol t x = 0 := by
+  have heq := sol.equation t ht0 htT x
+  rw [hvelocity] at heq
+  unfold duhamelSource
+  rw [hvelocity]
+  simp [timeDerivative, convection, spatialDerivative, laplacian] at heq ⊢
+  simpa [sub_eq_add_neg, add_comm] using heq.symm
+
+/-- The variation-of-constants identity is explicit in the homogeneous zero
+velocity case.  The initial datum and Duhamel source are both forced to vanish
+by fields already present in `PartialClassicalSolution`; no semigroup theorem
+or added representation hypothesis is used. -/
+theorem duhamelRepresentation_layer_of_velocity_eq_zero
+    {ν : ℝ} (_hν : 0 < ν) {f : ForceField} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν f u₀ T)
+    (hvelocity : sol.velocity = (0 : VelocityEvolution))
+    {δ : ℝ} (_hδ0 : 0 < δ) (hδT : δ < T) :
+    ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      sol.velocity t x
+        = (∫ y : Space, heatKernel ν t (x - y) • u₀ y)
+          + duhamelNonlinear sol t x := by
+  have hu₀ : u₀ = (0 : VelocityField) := by
+    rw [← sol.initial_condition, hvelocity]
+    rfl
+  intro t ht0 htδ x
+  rw [hvelocity]
+  change 0 = (∫ y : Space, heatKernel ν t (x - y) • u₀ y) +
+    duhamelNonlinear sol t x
+  have hheat : (∫ y : Space, heatKernel ν t (x - y) • u₀ y) = 0 := by
+    rw [hu₀]
+    simp
+  rw [hheat, zero_add]
+  symm
+  unfold duhamelNonlinear
+  apply intervalIntegral.integral_zero_ae
+  exact Filter.Eventually.of_forall fun s hs ↦ by
+    rw [Set.uIoc_of_le ht0.le] at hs
+    have hs0 : 0 ≤ s := hs.1.le
+    have hsT : s < T := lt_of_le_of_lt (le_trans hs.2 htδ) hδT
+    simp_rw [duhamelSource_eq_zero_of_velocity_eq_zero sol hvelocity hs0 hsT]
+    simp
+
 /-- **[LEAF — the variation-of-constants representation; est ~400 LOC.]**  On
 the closed layer `(0,δ]` a partial classical solution equals the heat flow of
 its initial datum plus the Duhamel correction of the momentum-equation source.
@@ -1193,7 +1245,116 @@ theorem duhamelRepresentation_layer
       sol.velocity t x
         = (∫ y : Space, heatKernel ν t (x - y) • u₀ y)
           + duhamelNonlinear sol t x := by
-  sorry
+  by_cases hvelocity : sol.velocity = (0 : VelocityEvolution)
+  · exact duhamelRepresentation_layer_of_velocity_eq_zero
+      hν sol hvelocity hδ0 hδT
+  · sorry
+
+/-- Every zero-force Duhamel source slice strictly before the terminal time is
+spatially `C∞`.  Thus the measurability premise of the general `L^r` Duhamel
+estimate is automatic for a partial classical solution; only integrability and
+the quantitative source bound remain analytic inputs. -/
+theorem duhamelSource_slice_contDiff
+    {ν : ℝ} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T) :
+    ContDiff ℝ ∞ (duhamelSource sol t) := by
+  have hu : ContDiff ℝ ∞ (sol.velocity t) :=
+    velocity_slice_contDiff sol ht0 htT
+  have hp : ContDiff ℝ ∞ (sol.pressure t) :=
+    pressure_slice_contDiff sol ht0 htT
+  have hconvection : ContDiff ℝ ∞ (convection sol.velocity t) := by
+    change ContDiff ℝ ∞
+      (fun x ↦ fderiv ℝ (sol.velocity t) x (sol.velocity t x))
+    exact (hu.fderiv_right (by simp)).clm_apply hu
+  have hpressure : ContDiff ℝ ∞ (pressureGradient sol.pressure t) := by
+    change ContDiff ℝ ∞
+      (fun x ↦ fun i ↦ fderiv ℝ (sol.pressure t) x (basisVector i))
+    refine contDiff_pi.2 fun i ↦ ?_
+    exact (hp.fderiv_right (by simp)).clm_apply contDiff_const
+  change ContDiff ℝ ∞ (fun x ↦
+    zeroForce t x - (convection sol.velocity t x + pressureGradient sol.pressure t x))
+  simpa only [zeroForce] using contDiff_const.sub (hconvection.add hpressure)
+
+/-- Spatial measurability of the zero-force Duhamel source, obtained from the
+actual solution smoothness rather than carried as an extra hypothesis. -/
+theorem duhamelSource_slice_measurable
+    {ν : ℝ} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {t : ℝ} (ht0 : 0 ≤ t) (htT : t < T) :
+    Measurable (duhamelSource sol t) :=
+  (duhamelSource_slice_contDiff sol ht0 htT).continuous.measurable
+
+/-- The spatial `L²` mass of convection has scaling weight `+3` under the
+Navier--Stokes parabolic dilation.  This is the quantitative obstruction behind
+the missing source bound: velocity energy has weight `-1`, while convection
+grows at weight `+3`. -/
+theorem convectionL2Mass_parabolicScaled
+    (c : ℝ) (hc : 0 < c) (u : VelocityEvolution) (t : ℝ) :
+    (∫ x : Space, ‖convection
+        (Navier.Analysis.Covariance.parabolicScaledVelocity c u) t x‖ ^ 2) =
+      c ^ 3 * ∫ x : Space, ‖convection u (c ^ 2 * t) x‖ ^ 2 := by
+  simp_rw [Navier.Analysis.Covariance.convection_scaled]
+  let g : Space → Space := fun x ↦ convection u (c ^ 2 * t) x
+  change (∫ x : Space, ‖c ^ 3 • g (c • x)‖ ^ 2) =
+    c ^ 3 * ∫ x : Space, ‖g x‖ ^ 2
+  have hnorm : ∀ y : Space, ‖c ^ 3 • g y‖ ^ 2 =
+      c ^ 6 • ‖g y‖ ^ 2 := by
+    intro y
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (pow_pos hc 3)]
+    simp only [smul_eq_mul]
+    ring
+  have hscale : 0 < (c ^ 3)⁻¹ := by positivity
+  simp_rw [hnorm]
+  rw [integral_smul]
+  rw [MeasureTheory.Measure.integral_comp_smul volume
+    (fun x ↦ ‖g x‖ ^ 2) c]
+  simp only [Module.finrank_fin_fun, abs_of_pos hscale, smul_eq_mul]
+  field_simp
+
+/-- **Energy-only convection control is scale-impossible.**  Starting from
+any slice with positive convection `L²` mass, parabolic dilation can keep the
+velocity `L²` mass below its original value while making the convection mass
+exceed any prescribed number.  Therefore the energy bracket in
+`duhamelNonlinear_bounded_of_L2` cannot by itself supply the uniform source
+bound; a derivative estimate using additional PDE structure is indispensable. -/
+theorem energyBound_cannot_control_convectionL2
+    (u : VelocityEvolution)
+    (hconv : 0 < ∫ x : Space, ‖convection u 0 x‖ ^ 2) :
+    ∀ K : ℝ, ∃ c : ℝ, 0 < c ∧
+      (∫ x : Space,
+          ‖Navier.Analysis.Covariance.parabolicScaledVelocity c u 0 x‖ ^ 2) ≤
+        ∫ x : Space, ‖u 0 x‖ ^ 2 ∧
+      K < ∫ x : Space, ‖convection
+        (Navier.Analysis.Covariance.parabolicScaledVelocity c u) 0 x‖ ^ 2 := by
+  intro K
+  let A : ℝ := ∫ x : Space, ‖convection u 0 x‖ ^ 2
+  let c : ℝ := max 1 (K / A + 1)
+  have hA : 0 < A := hconv
+  have hc1 : 1 ≤ c := le_max_left _ _
+  have hc : 0 < c := lt_of_lt_of_le zero_lt_one hc1
+  refine ⟨c, hc, ?_, ?_⟩
+  · change (∫ x : Space, ‖c • u (c ^ 2 * 0) (c • x)‖ ^ 2) ≤
+      ∫ x : Space, ‖u 0 x‖ ^ 2
+    simp only [mul_zero]
+    rw [Navier.EnergyObstruction.l2_energy_dilation c hc (u 0)]
+    simp only [smul_eq_mul]
+    rw [← div_eq_inv_mul]
+    apply (div_le_iff₀ hc).2
+    have hmass : 0 ≤ ∫ x : Space, ‖u 0 x‖ ^ 2 :=
+      integral_nonneg fun x ↦ sq_nonneg ‖u 0 x‖
+    nlinarith
+  · rw [convectionL2Mass_parabolicScaled c hc u 0]
+    simp only [mul_zero]
+    have hKc : K < c * A := by
+      apply (div_lt_iff₀ hA).1
+      exact lt_of_lt_of_le (lt_add_one (K / A)) (le_max_right _ _)
+    have hcubic : c ≤ c ^ 3 := by
+      have hfac : 0 ≤ (c - 1) * (c ^ 2 + c) :=
+        mul_nonneg (by linarith) (by nlinarith [sq_nonneg c])
+      nlinarith
+    change K < c ^ 3 * A
+    exact hKc.trans_le (mul_le_mul_of_nonneg_right hcubic hA.le)
 
 /-! ### The heat-smoothing half of the Duhamel estimate, discharged
 
@@ -1457,9 +1618,11 @@ Depends on: `L²` control of `duhamelSource`, i.e. of `(u·∇)u` and `∇p`.
 `duhamelNonlinear_bounded_of_source_Lr` (above, kernel-clean, axioms
 `[propext, Classical.choice, Quot.sound]`) discharges the whole
 `L² → L^∞`-smoothing-and-time-integration argument this leaf was described as
-needing.  What is left is exactly: a uniform `L²` bound on the *source* over
-the layer, slice measurability of `duhamelSource sol s`, and interval
-integrability in `s` of `‖∫ G^ν_{t−s}(x−·) • duhamelSource sol s‖`.  The
+needing.  Spatial measurability of the source is now discharged by
+`duhamelSource_slice_measurable`.  What is left is exactly: slice `L²`
+integrability and a uniform `L²` bound on the *source* over the layer, plus
+interval integrability in `s` of
+`‖∫ G^ν_{t−s}(x−·) • duhamelSource sol s‖`.  The
 `∇p` half of the source bound is available without singular integrals
 (`memLp_pressureGradient_of_terms`); the open half is `L²` control of
 `(u·∇)u`, which the energy bracket `hmass` alone does not supply — it bounds
@@ -1475,7 +1638,28 @@ theorem duhamelNonlinear_bounded_of_L2
     {δ : ℝ} (hδ0 : 0 < δ) (hδT : δ < T) :
     ∃ C : ℝ, ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
       ‖duhamelNonlinear sol t x‖ ≤ C := by
-  sorry
+  have hsm : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      Measurable (duhamelSource sol s) := by
+    intro s hs0 hsδ
+    exact duhamelSource_slice_measurable sol hs0 (lt_of_le_of_lt hsδ hδT)
+  have hsi : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      Integrable (fun y : Space => ‖duhamelSource sol s y‖ ^ (2 : ℝ)) := by
+    -- SCIENTIFIC_FRONTIER: `L²` control of convection and pressure gradient.
+    sorry
+  obtain ⟨S, hS⟩ : ∃ S : ℝ, ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      (∫ y : Space, ‖duhamelSource sol s y‖ ^ (2 : ℝ)) ^ (1 / (2 : ℝ)) ≤ S := by
+    -- SCIENTIFIC_FRONTIER: uniform source bound; the energy controls `u`,
+    -- not the derivative in `(u·∇)u`.
+    sorry
+  have hNint : ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
+      IntervalIntegrable
+        (fun s : ℝ => ‖∫ y : Space,
+          heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖)
+        volume 0 t := by
+    -- SCIENTIFIC_FRONTIER: joint time measurability of the convolution norm.
+    sorry
+  exact duhamelNonlinear_bounded_of_source_Lr hν sol hδ0
+    (r := 2) (by norm_num) hsm hsi S hS hNint
 
 /-- **[ASSEMBLY — Prodi–Serrin far-field layer tail.]**  Outside one
 closed ball, a partial classical solution with bounded initial datum and

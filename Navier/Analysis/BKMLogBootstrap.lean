@@ -7,6 +7,7 @@ import Navier.Analysis.GronwallAffine
 import Navier.Analysis.KatoPonceLeibniz
 import Navier.Analysis.CurlDerivativeBridge
 import Navier.Analysis.WeightedCommutator
+import Mathlib.Analysis.SpecialFunctions.Pow.Integral
 
 /-!
 # BKM log bootstrap: from the Biot–Savart log inequality to the criterion
@@ -54,10 +55,14 @@ exactly `gronwall_log_apriori`; unwinding gives the doubly-exponential bound
   `∫_{ρ ≤ |z| < 1} 1/(4π|z|³) ≤ (2·vol(B₁)/π)·(1 + log(1/ρ)/log 2)`.  This is
   the layer that *produces* the logarithm in Beale–Kato–Majda: the annulus
   meets only `⌊log₂(1/ρ)⌋ + 1` unit-scale dyadic shells and each carries the
-  same scale-invariant mass.  With the near-field bound
-  `integral_norm_mul_bsKernelScalar_ball_le` and the far-field bound above,
-  the Calderón–Zygmund **size layer** for `exists_biotSavartLogTextbook` is
-  complete; the residual there is the representation `∇u = PV(∇K ∗ ω)`.
+  same scale-invariant mass.  The integer-weight near-field bound
+  `integral_norm_mul_bsKernelScalar_ball_le` and the far-field bound are also
+  certified.  The actual Morrey weight has the exact sharp scaling
+  `I(ρ) = ρ^(1/4) I(1)` by
+  `integral_norm_rpow_oneFourth_mul_bsKernelScalar_ball_eq`, and
+  `integral_norm_bsKernelScalar_smul_of_holder_le` packages the quantitative
+  Hölder convolution estimate.  The representation `∇u = PV(∇K ∗ ω)`
+  remains in `exists_biotSavartKernelSplitting`.
 * the four analytic inputs below are **derived**, each from one named residual
   plus a certified leaf in `Navier/Analysis/BKMLogLeaves.lean`.
 
@@ -424,19 +429,25 @@ strictly lower residual, because the passage from this `ρ`-indexed family to
 the `ρ`-free logarithmic shape is now certified as `le_of_forall_cutoff_le`
 above, and `exists_biotSavartLogTextbook` is derived from it below.
 
-**What this residual still carries** (and nothing more).  The Biot–Savart
-representation `∇u = PV(∇K ∗ ω)` with its local term, for divergence-free
-Schwartz fields — genuinely Mathlib-absent.  **The curl-component bridge is no
+**What this residual still carries.**  The Biot–Savart representation
+`∇u = PV(∇K ∗ ω)` with its local term, for divergence-free Schwartz fields —
+genuinely Mathlib-absent — and the tensor/operator-norm reduction from that
+representation to the three certified scalar kernel regions.  **The
+curl-component bridge is no
 longer part of it**: `CurlDerivativeBridge.exists_norm_iteratedFDeriv_staticCurl_le`
 certifies `‖Dⁿ(staticCurl u)(x)‖ ≤ C‖D^{n+1}u(x)‖` at *every* order `n` with a
 single constant (and `officialEuclideanNorm_staticCurl_le` gives the order-`0`
 case in the Euclidean point norm the majorant `Mω` uses), which is exactly the
 bookkeeping that feeds the vorticity into `exists_agmonMorreyBound`.
 
-**What it no longer carries.**  The three kernel size estimates are already
-certified at the bottom of this file: near field
+**What it no longer carries.**  The integer-weight near-field estimate is
+certified at the bottom of this file:
 `integral_norm_mul_bsKernelScalar_ball_le` (`O(ρ)` against the cancellation
-weight `‖z‖`), logarithmic shell `integral_bsKernelScalar_annulus_le_log`
+weight `‖z‖`); the exact fractional scaling and its quantitative Hölder
+convolution consumer are
+`integral_norm_rpow_oneFourth_mul_bsKernelScalar_ball_eq` and
+`integral_norm_bsKernelScalar_smul_of_holder_le`.  The logarithmic shell
+`integral_bsKernelScalar_annulus_le_log`
 (`O(1 + log(1/ρ))`), far field `integrableOn_bsKernelScalar_sq_farField`
 (`L²`, paired with `‖ω‖_{L²}` by Cauchy–Schwarz); the Hölder-`1/4` near-field
 input is `exists_agmonMorreyBound`; and the cutoff optimisation is
@@ -489,18 +500,20 @@ genuine rather than cosmetic.
 
 **Dependencies still carried by the lower residual (Mathlib-absent).**  The
 Biot–Savart representation `∇u = ∇K ∗ ω` for the homogeneous degree `−3`
-kernel `∇K`, with its local term, for divergence-free Schwartz fields — and
-nothing else; the curl-component bridge is certified in
-`Navier.Analysis.CurlDerivativeBridge`.
+kernel `∇K`, with its local term, for divergence-free Schwartz fields, and
+the tensor/operator-norm reduction to the certified scalar kernel estimates.
+The fractional near-field moment, including its sharp `ρ^(1/4)` scaling, and
+the curl-component bridge are certified below and in
+`Navier.Analysis.CurlDerivativeBridge`, respectively.
 
 **What is no longer residual.**  The cutoff optimisation is certified as
 `le_of_forall_cutoff_le` above.  The passage from this citable shape to the
 `log (1 + Ms)` shape the bootstrap consumes — including the transfer to an
 arbitrary `H³`-majorant `Ms` — is certified in
 `BKMLogLeaves.bkm_log_shape_transfer`, at the cost of the constant factor `3`.
-The whole Calderón–Zygmund **size layer** is now certified at the bottom of
-this file: near field `integral_norm_mul_bsKernelScalar_ball_le` (`O(ρ)` with
-the cancellation weight `‖z‖`), logarithmic shell
+The integer-weight near field `integral_norm_mul_bsKernelScalar_ball_le`
+(`O(ρ)` with cancellation weight `‖z‖`) and fractional-weight integrability
+are certified at the bottom of this file, as are the logarithmic shell
 `integral_bsKernelScalar_annulus_le_log` (`O(1 + log(1/ρ))`, the source of the
 logarithm), far field `integrableOn_bsKernelScalar_sq_farField` (`L²`, paired
 with `‖ω‖_{L²}` by Cauchy–Schwarz).  The near-field **Hölder input** is
@@ -3060,6 +3073,198 @@ theorem measurable_bsKernelScalar : Measurable bsKernelScalar := by
   exact measurable_const.div
     (measurable_const.mul ((continuous_officialEuclideanNorm.pow 3).measurable))
 
+/-- **The actual Hölder-`1/4` near-field kernel is locally integrable.**
+
+After Morrey cancellation, the singular factor is
+`|z|^(1/4) |z|^(-3) = |z|^(-11/4)`.  Since `11/4 < 3`, the finite-dimensional
+power-integrability criterion applies on every ball.  This is the precise
+integrability input used when `exists_agmonMorreyBound` is paired with the
+Biot–Savart kernel; the previously certified `|z|`-weighted estimate alone
+does not imply this fractional endpoint near the origin. -/
+theorem integrableOn_norm_rpow_oneFourth_mul_bsKernelScalar_ball (ρ : ℝ) :
+    IntegrableOn
+      (fun z : Space => ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z)
+      (Metric.ball 0 ρ) volume := by
+  apply integrableOn_ball_of_norm_le_rpow
+    (E := Space) (F := ℝ) (C := 1 / (4 * Real.pi))
+      (by simp) (by norm_num : (11 : ℝ) / 4 < Module.finrank ℝ Space)
+  · filter_upwards with z
+    by_cases hz : z = 0
+    · subst z
+      simp [bsKernelScalar_zero]
+    · have hn : 0 < ‖z‖ := norm_pos_iff.mpr hz
+      have hoge : ‖z‖ ≤ officialEuclideanNorm z := norm_le_officialEuclideanNorm z
+      have hden : 4 * Real.pi * ‖z‖ ^ 3 ≤
+          4 * Real.pi * officialEuclideanNorm z ^ 3 :=
+        mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hn.le hoge 3) (by positivity)
+      rw [Real.norm_of_nonneg
+        (mul_nonneg (Real.rpow_nonneg (norm_nonneg z) _)
+          (bsKernelScalar_nonneg z)), bsKernelScalar_apply_of_ne_zero hz]
+      calc
+        ‖z‖ ^ ((1 : ℝ) / 4) *
+              (1 / (4 * Real.pi * officialEuclideanNorm z ^ 3)) ≤
+            ‖z‖ ^ ((1 : ℝ) / 4) * (1 / (4 * Real.pi * ‖z‖ ^ 3)) :=
+          mul_le_mul_of_nonneg_left
+            (one_div_le_one_div_of_le (by positivity) hden)
+            (Real.rpow_nonneg (norm_nonneg z) _)
+        _ = (1 / (4 * Real.pi)) * ‖z‖ ^ (-((11 : ℝ) / 4)) := by
+          rw [show ‖z‖ ^ (3 : ℕ) = ‖z‖ ^ (3 : ℝ) by
+            exact (Real.rpow_natCast ‖z‖ 3).symm]
+          calc
+            ‖z‖ ^ ((1 : ℝ) / 4) *
+                (1 / (4 * Real.pi * ‖z‖ ^ (3 : ℝ))) =
+              (1 / (4 * Real.pi)) *
+                (‖z‖ ^ ((1 : ℝ) / 4) * (‖z‖ ^ (3 : ℝ))⁻¹) := by ring
+            _ = (1 / (4 * Real.pi)) * ‖z‖ ^ (-((11 : ℝ) / 4)) := by
+              rw [← Real.rpow_neg hn.le, ← Real.rpow_add hn]
+              norm_num
+  · have hpowMeas : Measurable (fun z : Space => ‖z‖ ^ ((1 : ℝ) / 4)) :=
+      (continuous_norm.rpow_const fun _ => Or.inr (by norm_num)).measurable
+    exact (hpowMeas.mul measurable_bsKernelScalar).aestronglyMeasurable
+
+/-- The fractional Morrey-weighted kernel is homogeneous of degree `-11/4`.
+This is the scaling identity behind the sharp `ρ^(1/4)` near-field mass. -/
+theorem norm_rpow_oneFourth_mul_bsKernelScalar_smul
+    {ρ : ℝ} (hρ : 0 < ρ) (z : Space) :
+    ‖ρ • z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar (ρ • z) =
+      ρ ^ (-((11 : ℝ) / 4)) *
+        (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+  by_cases hz : z = 0
+  · subst z
+    simp [bsKernelScalar_zero]
+  · rw [norm_smul, Real.norm_eq_abs, abs_of_pos hρ,
+      bsKernelScalar_homogeneous ρ z hρ.ne' hz, abs_of_pos hρ,
+      Real.mul_rpow hρ.le (norm_nonneg z)]
+    have hinv : ρ⁻¹ ^ (3 : ℕ) = ρ ^ (-(3 : ℝ)) := by
+      rw [inv_pow, ← Real.rpow_natCast, ← Real.rpow_neg hρ.le]
+      norm_num
+    rw [hinv]
+    calc
+      ρ ^ ((1 : ℝ) / 4) * ‖z‖ ^ ((1 : ℝ) / 4) *
+          (ρ ^ (-(3 : ℝ)) * bsKernelScalar z) =
+          (ρ ^ ((1 : ℝ) / 4) * ρ ^ (-(3 : ℝ))) *
+            (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by ring
+      _ = ρ ^ (-((11 : ℝ) / 4)) *
+          (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+        rw [← Real.rpow_add hρ]
+        norm_num
+
+/-- **Sharp fractional near-field mass.**  The degree-`-11/4` weighted
+Biot–Savart kernel has exactly the dimensionally predicted ball scaling
+`I(ρ) = ρ^(1/4) I(1)`. -/
+theorem integral_norm_rpow_oneFourth_mul_bsKernelScalar_ball_eq
+    {ρ : ℝ} (hρ : 0 < ρ) :
+    (∫ z in Metric.ball (0 : Space) ρ,
+        ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) =
+      ρ ^ ((1 : ℝ) / 4) *
+        ∫ z in Metric.ball (0 : Space) 1,
+          ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z := by
+  let f : Space → ℝ :=
+    fun z => ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z
+  have hchange := Measure.setIntegral_comp_smul_of_pos volume f
+    (Metric.ball (0 : Space) 1) hρ
+  rw [smul_unitBall_of_pos hρ] at hchange
+  simp only [f, norm_rpow_oneFourth_mul_bsKernelScalar_smul hρ] at hchange
+  rw [MeasureTheory.integral_const_mul] at hchange
+  have hd : Module.finrank ℝ Space = 3 := by simp
+  simp only [hd, smul_eq_mul] at hchange
+  have hρ3 : ρ ^ (3 : ℕ) ≠ 0 := pow_ne_zero 3 hρ.ne'
+  have hcoeff : ρ ^ (3 : ℝ) * ρ ^ (-((11 : ℝ) / 4)) =
+      ρ ^ ((1 : ℝ) / 4) := by
+    rw [← Real.rpow_add hρ]
+    norm_num
+  calc
+    (∫ z in Metric.ball (0 : Space) ρ,
+        ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) =
+        ρ ^ (3 : ℕ) * ((ρ ^ (3 : ℕ))⁻¹ *
+          ∫ z in Metric.ball (0 : Space) ρ,
+            ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+          field_simp
+    _ = ρ ^ (3 : ℕ) *
+        (ρ ^ (-((11 : ℝ) / 4)) *
+          ∫ z in Metric.ball (0 : Space) 1,
+            ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+          rw [← hchange]
+    _ = ρ ^ ((1 : ℝ) / 4) *
+        ∫ z in Metric.ball (0 : Space) 1,
+          ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z := by
+          rw [show ρ ^ (3 : ℕ) = ρ ^ (3 : ℝ) by
+            exact (Real.rpow_natCast ρ 3).symm]
+          rw [← mul_assoc, hcoeff]
+
+/-- **Hölder cancellation makes the Biot–Savart near-field convolution
+integrable.**  This is the direct consumer form of
+`integrableOn_norm_rpow_oneFourth_mul_bsKernelScalar_ball`: any strongly
+measurable vector difference bounded by `H·|z|^(1/4)` can be multiplied by the
+degree-`-3` kernel on a ball. -/
+theorem integrableOn_bsKernelScalar_smul_of_holder
+    (F : Space → Space) (H ρ : ℝ) (hH : 0 ≤ H)
+    (hF : AEStronglyMeasurable F volume)
+    (hholder : ∀ z, ‖F z‖ ≤ H * ‖z‖ ^ ((1 : ℝ) / 4)) :
+    IntegrableOn (fun z => bsKernelScalar z • F z) (Metric.ball 0 ρ) volume := by
+  have hbase :=
+    (integrableOn_norm_rpow_oneFourth_mul_bsKernelScalar_ball ρ).const_mul H
+  refine hbase.mono' ?_ ?_
+  · exact (measurable_bsKernelScalar.aestronglyMeasurable.smul hF).restrict
+  · filter_upwards with z
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (bsKernelScalar_nonneg z)]
+    have hknn := bsKernelScalar_nonneg z
+    have hleft := mul_le_mul_of_nonneg_left (hholder z) hknn
+    calc
+      bsKernelScalar z * ‖F z‖ ≤
+          bsKernelScalar z * (H * ‖z‖ ^ ((1 : ℝ) / 4)) := hleft
+      _ = |H| * (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+        rw [abs_of_nonneg hH]
+        ring
+      _ = H * (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+        rw [abs_of_nonneg hH]
+
+/-- **Quantitative Hölder near-field convolution bound.**  A vector
+difference controlled by `H·|z|^(1/4)` contributes at most the universal
+unit-ball weighted-kernel mass times `H·ρ^(1/4)`.  This is the precise
+near-field estimate consumed by `exists_biotSavartKernelSplitting` once the
+principal-value Biot–Savart representation supplies the difference. -/
+theorem integral_norm_bsKernelScalar_smul_of_holder_le
+    (F : Space → Space) (H : ℝ) {ρ : ℝ} (hH : 0 ≤ H) (hρ : 0 < ρ)
+    (hF : AEStronglyMeasurable F volume)
+    (hholder : ∀ z, ‖F z‖ ≤ H * ‖z‖ ^ ((1 : ℝ) / 4)) :
+    (∫ z in Metric.ball (0 : Space) ρ,
+        ‖bsKernelScalar z • F z‖) ≤
+      H * ρ ^ ((1 : ℝ) / 4) *
+        ∫ z in Metric.ball (0 : Space) 1,
+          ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z := by
+  have hleft : IntegrableOn (fun z => ‖bsKernelScalar z • F z‖)
+      (Metric.ball (0 : Space) ρ) volume :=
+    (integrableOn_bsKernelScalar_smul_of_holder F H ρ hH hF hholder).norm
+  have hright : IntegrableOn
+      (fun z : Space => H * (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z))
+      (Metric.ball (0 : Space) ρ) volume :=
+    (integrableOn_norm_rpow_oneFourth_mul_bsKernelScalar_ball ρ).const_mul H
+  calc
+    (∫ z in Metric.ball (0 : Space) ρ,
+        ‖bsKernelScalar z • F z‖) ≤
+        ∫ z in Metric.ball (0 : Space) ρ,
+          H * (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+      refine setIntegral_mono_on hleft hright Metric.isOpen_ball.measurableSet ?_
+      intro z _
+      rw [norm_smul, Real.norm_eq_abs,
+        abs_of_nonneg (bsKernelScalar_nonneg z)]
+      calc
+        bsKernelScalar z * ‖F z‖ ≤
+            bsKernelScalar z * (H * ‖z‖ ^ ((1 : ℝ) / 4)) :=
+          mul_le_mul_of_nonneg_left (hholder z) (bsKernelScalar_nonneg z)
+        _ = H * (‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by ring
+    _ = H * (∫ z in Metric.ball (0 : Space) ρ,
+          ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+      rw [MeasureTheory.integral_const_mul]
+    _ = H * (ρ ^ ((1 : ℝ) / 4) *
+          ∫ z in Metric.ball (0 : Space) 1,
+            ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z) := by
+      rw [integral_norm_rpow_oneFourth_mul_bsKernelScalar_ball_eq hρ]
+    _ = H * ρ ^ ((1 : ℝ) / 4) *
+          ∫ z in Metric.ball (0 : Space) 1,
+            ‖z‖ ^ ((1 : ℝ) / 4) * bsKernelScalar z := by ring
+
 /-- The dyadic Calderón–Zygmund shell: radii in `(ρ/2^(k+1), ρ/2^k]`,
 intersected with the ball of radius `ρ`. -/
 def czShell (ρ : ℝ) (k : ℕ) : Set Space :=
@@ -3299,9 +3504,11 @@ the far-field half is `integrableOn_bsKernelScalar_sq_farField` and the
 logarithmic middle shell is `integral_bsKernelScalar_annulus_le_log` below.
 Paired against the vorticity through `|ω(x−z) − ω(x)| ≤ C‖z‖^{1/4}` (the
 certified Morrey–Agmon leaf `exists_agmonMorreyBound`, at `H³`-of-`u` cost)
-the near-field convolution is `O(ρ^{1/4}·‖u‖_{H³})` — the form the cutoff
-optimisation consumes.  What remains residual for the textbook log inequality
-is the Biot–Savart representation `∇u = PV(∇K ∗ ω)` itself. -/
+the fractional integrand is locally integrable by
+`integrableOn_bsKernelScalar_smul_of_holder`, and its quantitative
+`O(ρ^{1/4}·‖u‖_{H³})` kernel bound — the form the cutoff optimisation
+consumes — is `integral_norm_bsKernelScalar_smul_of_holder_le`.  The
+Biot–Savart representation `∇u = PV(∇K ∗ ω)` remains residual. -/
 theorem integral_norm_mul_bsKernelScalar_ball_le {ρ : ℝ} (hρ : 0 < ρ) :
     ∫ z in Metric.ball (0 : Space) ρ, ‖z‖ * bsKernelScalar z
       ≤ 2 * (volume (Metric.ball (0 : Space) 1)).toReal / Real.pi * ρ := by
@@ -3341,11 +3548,12 @@ mass: amplitude `≤ 2·8ᵏ/π` against volume `≤ 8⁻ᵏ·vol(B₁)`.  So th
 `(2·vol(B₁)/π)·N`, and the dyadic count `N` is exactly `log₂(1/ρ)` rounded up
 — the logarithmic divergence of `∫ |z|⁻³` in three dimensions.
 
-Together with `integral_norm_mul_bsKernelScalar_ball_le` (near field, weight
-`‖z‖`) and `integrableOn_bsKernelScalar_sq_farField` (far field, `L²`), this
-completes the Calderón–Zygmund **size layer** for
-`exists_biotSavartLogTextbook`.  The remaining residual for that theorem is
-the Biot–Savart representation `∇u = PV(∇K ∗ ω)` itself.
+Together with `integral_norm_mul_bsKernelScalar_ball_le` (near field, integer
+weight `‖z‖`) and `integrableOn_bsKernelScalar_sq_farField` (far field, `L²`),
+this closes those three stated estimates.  The actual Morrey cancellation uses
+the fractional weight `‖z‖^(1/4)`; its exact quantitative `O(ρ^(1/4))`
+scaling and Hölder convolution form are certified above.  The Biot–Savart
+principal-value representation remains for `exists_biotSavartLogTextbook`.
 -/
 
 /-- **Unit-scale shell amplitude bound (certified).**  On the dyadic shell
@@ -3720,8 +3928,3 @@ end Navier.Analysis.BealeKatoMajda
 #print axioms Navier.Analysis.BealeKatoMajda.integral_bsKernelScalar_annulus_le_log
 #print axioms Navier.Analysis.BealeKatoMajda.exists_agmonMorreyBound
 #print axioms Navier.Analysis.BealeKatoMajda.exists_fderivSupBound_of_sobolevH3
-
-
-
-
-
