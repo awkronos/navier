@@ -494,6 +494,35 @@ private theorem norm_toL2_continuousOn_of_joint_compact
   exact (Real.continuous_sqrt.comp_continuousOn h).congr
     fun t _ => norm_toL2_eq_sqrt (f t)
 
+/-- Exact curl--projection commutation forces the first Galerkin mode to be a
+curl eigenfield.  This is the finite-dimensional algebraic half of the
+whole-space obstruction: ruling out Schwartz curl eigenfields is sufficient
+to refute the commutation route. -/
+theorem curl_proj_commutes_forces_first_mode_eigenfield
+    (W : GalerkinBasisFamily)
+    (hcurl_commutes : ∀ (m : ℕ) (u : SchwartzVelocity),
+      curlSchwartzCLM (W.proj m u) = W.proj m (curlSchwartzCLM u)) :
+    curlSchwartzCLM (W.w 0) =
+      schwartzL2Inner (curlSchwartzCLM (W.w 0)) (W.w 0) • W.w 0 := by
+  calc
+    curlSchwartzCLM (W.w 0) = curlSchwartzCLM (W.proj 1 (W.w 0)) := by
+      rw [proj_basis W (by omega)]
+    _ = W.proj 1 (curlSchwartzCLM (W.w 0)) := hcurl_commutes 1 (W.w 0)
+    _ = schwartzL2Inner (curlSchwartzCLM (W.w 0)) (W.w 0) • W.w 0 := by
+      simp [GalerkinBasisFamily.proj, GalerkinBasisFamily.coeff]
+
+/-- A no-eigenfield theorem for the first mode refutes exact projection--curl
+commutation.  The remaining analytic leaf is precisely the absence of
+Schwartz curl eigenfields on `ℝ³`; no basis-construction assumptions are hidden
+in this reduction. -/
+theorem not_curl_proj_commutes_of_first_mode_not_eigenfield
+    (W : GalerkinBasisFamily)
+    (hnoeig : ∀ a : ℝ, curlSchwartzCLM (W.w 0) ≠ a • W.w 0) :
+    ¬ ∀ (m : ℕ) (u : SchwartzVelocity),
+      curlSchwartzCLM (W.proj m u) = W.proj m (curlSchwartzCLM u) := by
+  intro hcomm
+  exact hnoeig _ (curl_proj_commutes_forces_first_mode_eigenfield W hcomm)
+
 /-- **[NAMED RESIDUAL — an `H(curl)`-stable divergence-free Galerkin basis of
 `ℝ³`; Lemarié-Rieusset, *Rev. Mat. Iberoamericana* **8** (1992) 221–237
 (divergence-free wavelet bases); Urban, *Wavelet Methods for Elliptic PDEs*
@@ -518,7 +547,11 @@ immediately below, which is kernel-clean given them).
 `λ = ⟪curl (w 0), w 0⟫`; since `w 0` is divergence-free,
 `-Δ (w 0) = curl (curl (w 0)) = λ² • w 0`, so the Fourier transform of `w 0`
 — itself Schwartz, hence continuous — is supported in the sphere `‖ξ‖ = |λ|`,
-a null set, forcing `w 0 = 0` against `⟪w 0, w 0⟫ = 1`.  (The same argument
+a null set, forcing `w 0 = 0` against `⟪w 0, w 0⟫ = 1`.  The finite-mode
+reduction is now mechanized by
+`curl_proj_commutes_forces_first_mode_eigenfield` and
+`not_curl_proj_commutes_of_first_mode_not_eigenfield`; the exact remaining
+leaf is the no-Schwartz-curl-eigenfield theorem.  (The same argument
 kills the "Stokes-eigenbasis realization" suggested in the route analysis of
 `exists_galerkinModeData`: the Stokes operator on the whole space has no
 `L²` eigenfunctions.)  Status of that argument: **ARGUED, NOT MECHANIZED** —
