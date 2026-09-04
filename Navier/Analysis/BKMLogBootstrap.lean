@@ -2,6 +2,7 @@ import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogLeaves
 import Navier.Analysis.UniformDecayDominated
 import Navier.Analysis.BiotSavartKernel
+import Navier.Analysis.CZNearField
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.GronwallAffine
 import Navier.Analysis.KatoPonceLeibniz
@@ -95,6 +96,7 @@ set_option autoImplicit false
 noncomputable section
 
 open Set MeasureTheory intervalIntegral
+open scoped LineDeriv Matrix
 
 namespace Navier.Analysis.BealeKatoMajda
 
@@ -103,6 +105,7 @@ open Navier.Analysis.BKMLogLeaves
 open Navier.Analysis.UniformDecayDominated
 open Navier.Analysis.Vorticity
 open Navier.Analysis.BiotSavartKernel
+open Navier.Analysis.CZNearField
 open Navier.Analysis.EnergyNormBridge
 open Navier.Analysis.OfficialABEncoding
 open Navier.Breakdown
@@ -416,8 +419,276 @@ theorem le_of_forall_cutoff_le
     nlinarith [mul_nonneg hB hMω]
   linarith
 
-/-- **[NAMED RESIDUAL — Biot–Savart representation + Calderón–Zygmund
-three-term split; BKM 1984 Lemma 1; Majda–Bertozzi Prop. 3.8; Stein,
+/-!
+### Schwartz vorticity and the exact representation residual
+
+The near-field Morrey estimate applies to Schwartz maps.  The first two
+declarations construct the curl inside Schwartz space and prove, rather than
+assume, the derivative-loss estimate `H²(curl u) ≤ C H³(u)`.  The final
+declaration isolates the one remaining analytic primitive: the physical-space
+principal-value Biot--Savart representation, including its local term and the
+finite tensor reduction to the certified radial kernel estimates below.
+-/
+
+/-- The coordinate curl of a Schwartz velocity, retained as a Schwartz map. -/
+def staticCurlSchwartz (u : SchwartzVelocity) : SchwartzVelocity :=
+  ∑ i : Fin 3,
+    SchwartzMap.postcompCLM (𝕜 := ℝ)
+      (crossProduct (basisVector i)).toContinuousLinearMap
+      (∂_{basisVector i} u)
+
+@[simp] theorem staticCurlSchwartz_apply (u : SchwartzVelocity) (x : Space) :
+    staticCurlSchwartz u x = staticCurl (⇑u) x := by
+  simp [staticCurlSchwartz, staticCurl, SchwartzMap.lineDerivOp_apply_eq_fderiv]
+
+private theorem integrable_normSq_iteratedFDeriv_early
+    (u : SchwartzVelocity) (n : ℕ) :
+    Integrable (fun x : Space => ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2) := by
+  have hM : ∀ x, ‖iteratedFDeriv ℝ n (⇑u) x‖ ≤
+      (SchwartzMap.seminorm ℝ 0 n) u :=
+    fun x => u.norm_iteratedFDeriv_le_seminorm ℝ n x
+  have hcont : Continuous
+      (fun x : Space => ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2) :=
+    ((ContDiff.continuous_iteratedFDeriv (m := n) (hf := u.smooth ⊤)
+      (by exact_mod_cast le_top)).norm).pow 2
+  refine ((SchwartzMap.integrable_pow_mul_iteratedFDeriv volume u 0 n).const_mul
+    ((SchwartzMap.seminorm ℝ 0 n) u)).mono'
+      hcont.aestronglyMeasurable (Filter.Eventually.of_forall fun x => ?_)
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have hs : ‖iteratedFDeriv ℝ n (⇑u) x‖ ^ 2 =
+      ‖iteratedFDeriv ℝ n (⇑u) x‖ *
+        ‖iteratedFDeriv ℝ n (⇑u) x‖ := by ring
+  rw [hs]
+  calc
+    ‖iteratedFDeriv ℝ n (⇑u) x‖ *
+          ‖iteratedFDeriv ℝ n (⇑u) x‖
+        ≤ (SchwartzMap.seminorm ℝ 0 n) u *
+            (‖x‖ ^ 0 * ‖iteratedFDeriv ℝ n (⇑u) x‖) := by
+          simp only [pow_zero, one_mul]
+          exact mul_le_mul_of_nonneg_right (hM x) (norm_nonneg _)
+    _ = _ := rfl
+
+/-- The Schwartz curl loses exactly one derivative in `L²`, uniformly through
+orders `0,1,2`; this is the quantitative input needed by Morrey--Agmon. -/
+theorem exists_staticCurlSchwartz_h2_le_h3 :
+    ∃ C : ℝ, 0 < C ∧ ∀ u : SchwartzVelocity,
+      sobolevH2NormSq (staticCurlSchwartz u) ≤ C * sobolevH3NormSq u := by
+  obtain ⟨K, hKpos, hK⟩ :=
+    Navier.Analysis.CurlDerivativeBridge.exists_norm_iteratedFDeriv_staticCurl_le
+  refine ⟨3 * K ^ 2, by positivity, fun u => ?_⟩
+  have horder : ∀ n : ℕ, n < 3 →
+      (∫ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(staticCurlSchwartz u)) x‖ ^ 2) ≤
+          K ^ 2 * sobolevH3NormSq u := by
+    intro n hn
+    have hpoint : ∀ x : Space,
+        ‖iteratedFDeriv ℝ n (⇑(staticCurlSchwartz u)) x‖ ^ 2 ≤
+          K ^ 2 * ‖iteratedFDeriv ℝ (n + 1) (⇑u) x‖ ^ 2 := by
+      intro x
+      have hc := hK n (⇑u) (u.smooth (n + 1)) x
+      have hfun : (⇑(staticCurlSchwartz u) : Space → Space) =
+          staticCurl (⇑u) := by
+        funext y
+        exact staticCurlSchwartz_apply u y
+      rw [hfun]
+      nlinarith [norm_nonneg (iteratedFDeriv ℝ n (staticCurl (⇑u)) x),
+        norm_nonneg (iteratedFDeriv ℝ (n + 1) (⇑u) x)]
+    have hint : Integrable (fun x : Space =>
+        K ^ 2 * ‖iteratedFDeriv ℝ (n + 1) (⇑u) x‖ ^ 2) :=
+      (integrable_normSq_iteratedFDeriv_early u (n + 1)).const_mul _
+    calc
+      (∫ x : Space,
+          ‖iteratedFDeriv ℝ n (⇑(staticCurlSchwartz u)) x‖ ^ 2)
+          ≤ ∫ x : Space,
+              K ^ 2 * ‖iteratedFDeriv ℝ (n + 1) (⇑u) x‖ ^ 2 :=
+        integral_mono_of_nonneg
+          (Filter.Eventually.of_forall fun x => by positivity) hint
+          (Filter.Eventually.of_forall hpoint)
+      _ = K ^ 2 *
+          (∫ x : Space, ‖iteratedFDeriv ℝ (n + 1) (⇑u) x‖ ^ 2) :=
+        integral_const_mul _ _
+      _ ≤ K ^ 2 * sobolevH3NormSq u := by
+        refine mul_le_mul_of_nonneg_left ?_ (sq_nonneg K)
+        exact sobolevOrderNormSq_le_sobolevH3NormSq u (by omega)
+  rw [sobolevH2NormSq]
+  calc
+    (∑ n ∈ Finset.range 3,
+        ∫ x : Space,
+          ‖iteratedFDeriv ℝ n (⇑(staticCurlSchwartz u)) x‖ ^ 2)
+        ≤ ∑ _n ∈ Finset.range 3, K ^ 2 * sobolevH3NormSq u :=
+      Finset.sum_le_sum fun n hn => horder n (Finset.mem_range.mp hn)
+    _ = 3 * K ^ 2 * sobolevH3NormSq u := by simp; ring
+
+/-- The tensor used by the physical-space BKM split is exactly the off-origin
+coordinate derivative of the actual vector Biot--Savart kernel, including the
+normalizing factor `(4π)⁻¹`.  Thus `bsGradKernel` is no longer merely a model
+size kernel at the splitting boundary. -/
+theorem bsVectorKernel_coordinateLine_hasDerivAt_gradKernel
+    {x : Space} (hx : x ≠ 0) (i j : Fin 3) :
+    HasDerivAt (fun t : ℝ => bsVectorKernel (x + t • basisVector i) j)
+      ((1 / (4 * Real.pi)) * bsGradKernel i j x) 0 := by
+  by_cases hij : i = j
+  · subst j
+    simpa [bsGradKernel, hx, basisVector, Pi.single_apply] using
+      bsVectorKernel_coordinateLine_hasDerivAt hx i i
+  · have hji : j ≠ i := Ne.symm hij
+    simpa [bsGradKernel, hx, basisVector, Pi.single_apply, hij, hji] using
+      bsVectorKernel_coordinateLine_hasDerivAt hx i j
+
+/-- The coefficient of the origin-supported term in the distributional
+derivative `∂ᵢ(zⱼ/(4π|z|³))`.  Its trace is the unit point mass required by
+`div (z/(4π|z|³)) = δ₀`. -/
+def bsKernelDistributionLocalTerm (i j : Fin 3) : ℝ :=
+  (1 / 3 : ℝ) * basisVector i j
+
+/-- The three diagonal local coefficients sum to one, fixing the normalization
+of the origin term independently of the principal-value tensor. -/
+theorem bsKernelDistributionLocalTerm_trace :
+    (∑ i : Fin 3, bsKernelDistributionLocalTerm i i) = 1 := by
+  simp [bsKernelDistributionLocalTerm, basisVector]
+
+/-- Away from the origin, multiplying the vector kernel by a differentiable
+test factor gives exactly the two integrands used in cutoff integration by
+parts: the cutoff-boundary derivative and the Calderón--Zygmund tensor term. -/
+theorem bsVectorKernel_testFactor_coordinateLine_hasDerivAt
+    {φ : Space → ℝ} {x : Space} (hx : x ≠ 0) (i j : Fin 3) (dφ : ℝ)
+    (hφ : HasDerivAt (fun t : ℝ => φ (x + t • basisVector i)) dφ 0) :
+    HasDerivAt
+      ((fun t : ℝ => φ (x + t • basisVector i)) *
+        (fun t : ℝ => bsVectorKernel (x + t • basisVector i) j))
+      (dφ * bsVectorKernel x j +
+        φ x * ((1 / (4 * Real.pi)) * bsGradKernel i j x)) 0 := by
+  simpa only [zero_smul, add_zero] using
+    hφ.mul (bsVectorKernel_coordinateLine_hasDerivAt_gradKernel hx i j)
+
+/-- **Punctured-space integration by parts for the Biot--Savart kernel.**
+When the support of `ψ` avoids the origin, differentiating the test factor
+times `zⱼ/(4π|z|³)` produces exactly the cutoff-boundary term and the
+`bsGradKernel` principal-value integrand.  The hypotheses are precisely the
+integrability and differentiability inputs of whole-space integration by
+parts; no representation of the velocity is assumed.
+
+Closing a family of punctures at the origin adds
+`bsKernelDistributionLocalTerm i j * φ 0`; that limiting step, rather than the
+off-origin calculus or finite-cutoff integration by parts, remains below. -/
+theorem integral_bsGradKernel_testFactor_ibp_away
+    {φ ψ : Space → ℝ} (i j : Fin 3)
+    (haway : ∀ x ∈ tsupport ψ, x ≠ 0)
+    (hφdiff : ∀ x ∈ tsupport ψ, DifferentiableAt ℝ φ x)
+    (hψdiff : ∀ x ∈ tsupport
+      (φ * fun z : Space => bsVectorKernel z j), DifferentiableAt ℝ ψ x)
+    (hgdiff : ∀ x ∈ tsupport ψ,
+      DifferentiableAt ℝ (φ * fun z : Space => bsVectorKernel z j) x)
+    (hintLeft : Integrable (fun x : Space =>
+      ψ x * (fderiv ℝ φ x (basisVector i) * bsVectorKernel x j +
+        φ x * ((1 / (4 * Real.pi)) * bsGradKernel i j x))))
+    (hintRight : Integrable (fun x : Space =>
+      fderiv ℝ ψ x (basisVector i) *
+        (φ * fun z : Space => bsVectorKernel z j) x))
+    (hintProduct : Integrable (fun x : Space =>
+      ψ x * (φ * fun z : Space => bsVectorKernel z j) x)) :
+    (∫ x : Space,
+      ψ x * (fderiv ℝ φ x (basisVector i) * bsVectorKernel x j +
+        φ x * ((1 / (4 * Real.pi)) * bsGradKernel i j x))) =
+      - ∫ x : Space, fderiv ℝ ψ x (basisVector i) *
+        (φ * fun z : Space => bsVectorKernel z j) x := by
+  let g : Space → ℝ := φ * fun z : Space => bsVectorKernel z j
+  have hline : ∀ x : Space,
+      HasDerivAt (fun t : ℝ => x + t • basisVector i) (basisVector i) 0 := by
+    intro x
+    simpa only [id_eq, one_smul] using
+      (hasDerivAt_id (0 : ℝ)).smul_const (basisVector i) |>.const_add x
+  have hdirection : ∀ x ∈ tsupport ψ,
+      fderiv ℝ g x (basisVector i) =
+        fderiv ℝ φ x (basisVector i) * bsVectorKernel x j +
+          φ x * ((1 / (4 * Real.pi)) * bsGradKernel i j x) := by
+    intro x hx
+    have hφline : HasDerivAt (fun t : ℝ => φ (x + t • basisVector i))
+        (fderiv ℝ φ x (basisVector i)) 0 := by
+      have hφat : HasFDerivAt φ (fderiv ℝ φ x)
+          (x + (0 : ℝ) • basisVector i) := by
+        simpa only [zero_smul, add_zero] using (hφdiff x hx).hasFDerivAt
+      simpa [Function.comp_def] using
+        hφat.comp_hasDerivAt 0 (hline x)
+    have hproduct := bsVectorKernel_testFactor_coordinateLine_hasDerivAt
+      (haway x hx) i j _ hφline
+    have hgat : HasFDerivAt g (fderiv ℝ g x)
+        (x + (0 : ℝ) • basisVector i) := by
+      simpa only [zero_smul, add_zero] using (hgdiff x hx).hasFDerivAt
+    have hgline : HasDerivAt (fun t : ℝ => g (x + t • basisVector i))
+        (fderiv ℝ g x (basisVector i)) 0 := by
+      simpa [Function.comp_def] using
+        hgat.comp_hasDerivAt 0 (hline x)
+    have hsame :
+        ((fun t : ℝ => φ (x + t • basisVector i)) *
+          (fun t : ℝ => bsVectorKernel (x + t • basisVector i) j)) =ᶠ[nhds 0]
+          (fun t : ℝ => g (x + t • basisVector i)) :=
+      Filter.Eventually.of_forall fun _ => rfl
+    exact (hgline.congr_of_eventuallyEq hsame.symm).unique hproduct
+  have hpoint : ∀ x : Space,
+      ψ x * fderiv ℝ g x (basisVector i) =
+        ψ x * (fderiv ℝ φ x (basisVector i) * bsVectorKernel x j +
+          φ x * ((1 / (4 * Real.pi)) * bsGradKernel i j x)) := by
+    intro x
+    by_cases hψ : ψ x = 0
+    · simp [hψ]
+    · have hx : x ∈ tsupport ψ :=
+        subset_closure (by simpa [Function.mem_support] using hψ)
+      rw [hdirection x hx]
+  have hintDerivative : Integrable (fun x : Space =>
+      ψ x * fderiv ℝ g x (basisVector i)) := by
+    exact hintLeft.congr (Filter.Eventually.of_forall fun x => (hpoint x).symm)
+  have hcore := integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable
+    hintRight hintDerivative hintProduct hψdiff hgdiff
+  change (∫ x : Space, ψ x * fderiv ℝ g x (basisVector i)) =
+      - ∫ x : Space, fderiv ℝ ψ x (basisVector i) * g x at hcore
+  rw [integral_congr_ae (Filter.Eventually.of_forall hpoint)] at hcore
+  simpa [g] using hcore
+
+/-- **[NAMED RESIDUAL -- exact physical-space Biot--Savart representation.]**
+For a supplied `H²` upper bound on the Schwartz vorticity, the principal-value
+formula for `∇u` splits into its locally integrable Morrey-cancellation term,
+logarithmic annulus, local distributional term, and square-integrable far
+field.
+
+This is strictly below the BKM statement: its Sobolev quantity belongs to the
+vorticity itself, before the proved curl derivative-loss bridge below converts
+it to `H³(u)`, and no cutoff optimization occurs.  The off-origin connection
+between the actual vector kernel derivative and `bsGradKernel` is certified by
+`bsVectorKernel_coordinateLine_hasDerivAt_gradKernel`; the radial estimates
+are the certified near/shell/far theorems below.  The finite punctured
+integration-by-parts step is
+`integral_bsGradKernel_testFactor_ibp_away`.  What remains here is the
+puncture-closing limit with its origin local term, its application to the
+velocity, and finite tensor norm bookkeeping. -/
+theorem exists_biotSavartKernelSplit_of_curlH2 :
+    ∃ A B F : ℝ, 0 < A ∧ 0 < B ∧ 0 < F ∧
+      ∀ (u : SchwartzVelocity), DivergenceFreeInitial u →
+        ∀ H₂ Mω M₂ : ℝ,
+          sobolevH2NormSq (staticCurlSchwartz u) ≤ H₂ →
+          (∀ x : Space,
+            officialEuclideanNorm (staticCurl (⇑u) x) ≤ Mω) →
+          (∫ x : Space,
+            officialEuclideanNorm (staticCurl (⇑u) x) ^ 2) ≤ M₂ →
+          ∀ ρ : ℝ, 0 < ρ → ρ ≤ 1 →
+          ∀ x : Space,
+            ‖fderiv ℝ (⇑u) x‖ ≤
+              A * ρ ^ ((1 : ℝ) / 4) * Real.sqrt H₂
+                + B * Mω * (1 + Real.log (1 / ρ))
+                + F * Real.sqrt M₂ := by
+  have kernelDerivativeCertificate :
+      ∀ (z : Space), z ≠ 0 → ∀ i j : Fin 3,
+        HasDerivAt (fun t : ℝ => bsVectorKernel (z + t • basisVector i) j)
+          ((1 / (4 * Real.pi)) * bsGradKernel i j z) 0 :=
+    fun z hz i j => bsVectorKernel_coordinateLine_hasDerivAt_gradKernel hz i j
+  have localTermNormalization :
+      (∑ i : Fin 3, bsKernelDistributionLocalTerm i i) = 1 :=
+    bsKernelDistributionLocalTerm_trace
+  sorry
+
+/-- **[DERIVED from `exists_biotSavartKernelSplit_of_curlH2`.]**
+Biot–Savart representation + Calderón–Zygmund three-term split; BKM 1984
+Lemma 1; Majda–Bertozzi Prop. 3.8; Stein,
 *Singular Integrals* (1970) Ch. II §4; est ~350 LOC.]**  For a divergence-free
 Schwartz field and **every** cutoff scale `ρ ∈ (0, 1]`, the velocity gradient
 splits as
@@ -429,7 +700,7 @@ strictly lower residual, because the passage from this `ρ`-indexed family to
 the `ρ`-free logarithmic shape is now certified as `le_of_forall_cutoff_le`
 above, and `exists_biotSavartLogTextbook` is derived from it below.
 
-**What this residual still carries.**  The Biot–Savart representation
+**What the lower residual still carries.**  The Biot–Savart representation
 `∇u = PV(∇K ∗ ω)` with its local term, for divergence-free Schwartz fields —
 genuinely Mathlib-absent — and the tensor/operator-norm reduction from that
 representation to the three certified scalar kernel regions.  **The
@@ -472,7 +743,18 @@ theorem exists_biotSavartKernelSplitting :
               A * ρ ^ ((1 : ℝ) / 4) * Real.sqrt (sobolevH3NormSq u)
                 + B * Mω * (1 + Real.log (1 / ρ))
                 + F * Real.sqrt M₂ := by
-  sorry
+  obtain ⟨K, hKpos, hK⟩ := exists_staticCurlSchwartz_h2_le_h3
+  obtain ⟨A, B, F, hApos, hBpos, hFpos, hsplit⟩ :=
+    exists_biotSavartKernelSplit_of_curlH2
+  refine ⟨A * Real.sqrt K, B, F, by positivity, hBpos, hFpos, ?_⟩
+  intro u hdiv Mω M₂ hMω hM₂ ρ hρ0 hρ1 x
+  have hcurlH2 : sobolevH2NormSq (staticCurlSchwartz u) ≤
+      K * sobolevH3NormSq u := by
+    simpa [sobolevH2NormSq, sobolevH3NormSq] using hK u
+  have hbound := hsplit u hdiv
+    (K * sobolevH3NormSq u) Mω M₂ hcurlH2 hMω hM₂ ρ hρ0 hρ1 x
+  rw [Real.sqrt_mul hKpos.le] at hbound
+  convert hbound using 1 <;> ring
 
 /-- **[DERIVED — no `sorry` in this declaration.  Reduced to the strictly lower
 residual `exists_biotSavartKernelSplitting` (Biot–Savart representation +
@@ -489,7 +771,8 @@ majorants stay hypothesis-carried; the right-hand side is monotone in both, so
 this form follows from the classical statement.
 
 **Status.**  This declaration is *conditional*, not closed: it is proved from
-`exists_biotSavartKernelSplitting`, which still carries an honest `sorry`.  The
+`exists_biotSavartKernelSplitting`, which propagates the honest lower residual
+`exists_biotSavartKernelSplit_of_curlH2`.  The
 constant produced here is `max A (max (4B) F)` in that residual's constants.
 
 **What the derivation certifies.**  Exactly the log-producing step: the
@@ -3928,3 +4211,10 @@ end Navier.Analysis.BealeKatoMajda
 #print axioms Navier.Analysis.BealeKatoMajda.integral_bsKernelScalar_annulus_le_log
 #print axioms Navier.Analysis.BealeKatoMajda.exists_agmonMorreyBound
 #print axioms Navier.Analysis.BealeKatoMajda.exists_fderivSupBound_of_sobolevH3
+#print axioms Navier.Analysis.BiotSavartKernel.bsVectorKernel_coordinateLine_hasDerivAt
+#print axioms Navier.Analysis.BealeKatoMajda.bsVectorKernel_coordinateLine_hasDerivAt_gradKernel
+#print axioms Navier.Analysis.BealeKatoMajda.bsKernelDistributionLocalTerm_trace
+#print axioms Navier.Analysis.BealeKatoMajda.integral_bsGradKernel_testFactor_ibp_away
+#print axioms Navier.Analysis.BealeKatoMajda.exists_staticCurlSchwartz_h2_le_h3
+#print axioms Navier.Analysis.BealeKatoMajda.exists_biotSavartKernelSplit_of_curlH2
+#print axioms Navier.Analysis.BealeKatoMajda.exists_biotSavartKernelSplitting
