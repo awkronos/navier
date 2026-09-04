@@ -1539,6 +1539,121 @@ theorem duhamelNonlinear_bounded_of_source_Lr {ν : ℝ} (hν : 0 < ν) {f : For
   have hCS : (0 : ℝ) ≤ C₀ * S := by positivity
   gcongr
 
+/-- Joint interior continuity of the actual zero-force momentum source.
+Spatial derivatives depend continuously on time because the velocity and
+pressure are smooth in space-time. -/
+theorem duhamelSource_continuousAt_interior
+    {ν : ℝ} {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {z : ℝ × Space} (hz : z.1 ∈ Ioo 0 T) :
+    ContinuousAt (fun z : ℝ × Space => duhamelSource sol z.1 z.2) z := by
+  have hnhds : spacetimeBefore T ∈ nhds z := by
+    have hsub : Ioo 0 T ×ˢ (univ : Set Space) ⊆ spacetimeBefore T := by
+      intro p hp
+      exact ⟨⟨hp.1.1.le, hp.1.2⟩, hp.2⟩
+    exact Filter.mem_of_superset
+      ((isOpen_Ioo.prod isOpen_univ).mem_nhds ⟨hz, mem_univ _⟩) hsub
+  have hu : ContDiffAt ℝ ∞ (fun z : ℝ × Space => sol.velocity z.1 z.2) z :=
+    sol.velocity_smooth.contDiffAt hnhds
+  have hp : ContDiffAt ℝ ∞ (fun z : ℝ × Space => sol.pressure z.1 z.2) z :=
+    sol.pressure_smooth.contDiffAt hnhds
+  have hdu : ContDiffAt ℝ 0
+      (fun z : ℝ × Space => fderiv ℝ (sol.velocity z.1) z.2) z := by
+    apply ContDiffAt.fderiv (n := ∞) (g := fun z : ℝ × Space => z.2)
+    · exact hu.comp (z, z.2) (contDiffAt_fst.fst.prodMk contDiffAt_snd)
+    · exact contDiffAt_snd
+    · simp
+  have hdp : ContDiffAt ℝ 0
+      (fun z : ℝ × Space => fderiv ℝ (sol.pressure z.1) z.2) z := by
+    apply ContDiffAt.fderiv (n := ∞) (g := fun z : ℝ × Space => z.2)
+    · exact hp.comp (z, z.2) (contDiffAt_fst.fst.prodMk contDiffAt_snd)
+    · exact contDiffAt_snd
+    · simp
+  have hcon : ContinuousAt
+      (fun z : ℝ × Space => convection sol.velocity z.1 z.2) z :=
+    hdu.continuousAt.clm_apply hu.continuousAt
+  have hgrad : ContinuousAt
+      (fun z : ℝ × Space => pressureGradient sol.pressure z.1 z.2) z := by
+    apply continuousAt_pi.2
+    intro i
+    exact hdp.continuousAt.clm_apply continuousAt_const
+  exact continuousAt_const.sub (hcon.add hgrad)
+
+/-- The spatial heat convolution has an integrable time norm under a uniform
+source `L^r` bound, for `r > 3/2`. Joint source continuity supplies parameter
+measurability; the heat estimate is dominated by `(t-s)^(-3/(2r))`.
+This constructs the time-integrability input used by the Duhamel bound.
+
+Reference: Kato, Math. Z. 187 (1984), Section 2. -/
+theorem duhamelConvolution_intervalIntegrable_of_source_Lr
+    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
+    (sol : PartialClassicalSolution ν zeroForce u₀ T)
+    {δ : ℝ} (hδT : δ < T) {r : ℝ} (hr : 3 / 2 < r)
+    (hsi : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      Integrable (fun y : Space => ‖duhamelSource sol s y‖ ^ r))
+    (S : ℝ) (hS : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
+      (∫ y : Space, ‖duhamelSource sol s y‖ ^ r) ^ (1 / r) ≤ S)
+    {t : ℝ} (ht0 : 0 < t) (htδ : t ≤ δ) (x : Space) :
+    IntervalIntegrable
+      (fun s : ℝ => ‖∫ y : Space,
+        heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖) volume 0 t := by
+  have hF : ContinuousOn
+      (fun z : ℝ × Space =>
+        heatKernel ν (t - z.1) (x - z.2) • duhamelSource sol z.1 z.2)
+      (Ioo 0 t ×ˢ univ) := by
+    intro z hz
+    have hts : 0 < t - z.1 := sub_pos.mpr hz.1.2
+    have hK : ContinuousAt
+        (fun z : ℝ × Space => heatKernel ν (t - z.1) (x - z.2)) z := by
+      unfold heatKernel
+      have htime : ContinuousAt (fun z : ℝ × Space => t - z.1) z :=
+        continuousAt_const.sub continuousAt_fst
+      have hbase : ContinuousAt
+          (fun z : ℝ × Space => 4 * Real.pi * ν * (t - z.1)) z :=
+        continuousAt_const.mul htime
+      have hpow := hbase.rpow_const (p := -(3 : ℝ) / 2)
+        (Or.inl (by positivity : 4 * Real.pi * ν * (t - z.1) ≠ 0))
+      have hinv := (continuousAt_const.mul htime).inv₀
+        (by positivity : 4 * ν * (t - z.1) ≠ 0)
+      have hsum : Continuous
+          (fun z : ℝ × Space => ∑ i : Fin 3, (x i - z.2 i) ^ 2) := by
+        fun_prop
+      exact hpow.mul (Real.continuous_exp.continuousAt.comp
+        (hinv.neg.mul hsum.continuousAt))
+    exact (hK.smul (duhamelSource_continuousAt_interior sol
+      ⟨hz.1.1, (hz.1.2.trans_le htδ).trans hδT⟩)).continuousWithinAt
+  have hmeas := hF.aestronglyMeasurable (μ := volume.prod volume)
+    (measurableSet_Ioo.prod MeasurableSet.univ)
+  rw [← Measure.restrict_prod_eq_prod_univ] at hmeas
+  have him := hmeas.integral_prod_right'.norm
+  obtain ⟨C, hCpos, hC⟩ := heatKernel_convolution_norm_vec_le_uniform hν
+    (show 1 < r by linarith)
+  have ha : -1 < -(3 : ℝ) / (2 * r) := by
+    have hrpos : 0 < r := by linarith
+    apply (lt_div_iff₀ (by positivity : 0 < 2 * r)).2
+    linarith
+  have hw : IntervalIntegrable
+      (fun s : ℝ => C * S * (t - s) ^ (-(3 : ℝ) / (2 * r))) volume 0 t := by
+    simpa only [neg_div] using
+      (intervalIntegrable_sub_rpow_neg (t := t) (a := 3 / (2 * r))
+        (by simpa only [neg_div] using ha)).const_mul (C * S)
+  rw [intervalIntegrable_iff_integrableOn_Ioo_of_le ht0.le] at hw ⊢
+  refine hw.mono' him ?_
+  filter_upwards [ae_restrict_mem measurableSet_Ioo] with s hs
+  have hsδ : s ≤ δ := hs.2.le.trans htδ
+  have hts : 0 < t - s := sub_pos.mpr hs.2
+  have hbound := hC (duhamelSource sol s)
+    (duhamelSource_slice_measurable sol hs.1.le (hsδ.trans_lt hδT))
+    (hsi s hs.1.le hsδ) (t - s) (sub_pos.mpr hs.2) x
+  rw [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _)]
+  calc
+    _ ≤ C * (t - s) ^ (-(3 : ℝ) / (2 * r)) *
+        (∫ y : Space, ‖duhamelSource sol s y‖ ^ r) ^ (1 / r) := hbound
+    _ ≤ C * (t - s) ^ (-(3 : ℝ) / (2 * r)) * S :=
+      mul_le_mul_of_nonneg_left (hS s hs.1.le hsδ) (by positivity)
+    _ = C * S * (t - s) ^ (-(3 : ℝ) / (2 * r)) := by ring
+
+
 /-- **[LEAF — `L^p` smoothing bound on the Duhamel correction; est ~250 LOC.]**
 Under the Prodi–Serrin mixed-norm hypothesis the Duhamel correction is
 uniformly bounded on the layer.
@@ -1570,9 +1685,11 @@ nothing else:
 * a uniform `L^p` bound `S` on the *source* `duhamelSource sol s` over the
   layer — i.e. `L^p` control of `(u·∇)u` and `∇p`, which is where the
   remaining mathematics is;
-* slice measurability of `duhamelSource sol s`;
-* interval integrability in `s` of
-  `‖∫ G^ν_{t−s}(x−·) • duhamelSource sol s‖`.
+* slice integrability of `‖duhamelSource sol s‖^p`.
+
+Joint source continuity and time integrability of the convolution norm are
+now constructed by `duhamelConvolution_intervalIntegrable_of_source_Lr`
+from the same source bound. They impose no independent remaining premise.
 
 The `∇p` half of the first item is already available from
 `PressureNormalization.pressureGradient_eq_of_solution` /
@@ -1620,9 +1737,10 @@ Depends on: `L²` control of `duhamelSource`, i.e. of `(u·∇)u` and `∇p`.
 `L² → L^∞`-smoothing-and-time-integration argument this leaf was described as
 needing.  Spatial measurability of the source is now discharged by
 `duhamelSource_slice_measurable`.  What is left is exactly: slice `L²`
-integrability and a uniform `L²` bound on the *source* over the layer, plus
-interval integrability in `s` of
-`‖∫ G^ν_{t−s}(x−·) • duhamelSource sol s‖`.  The
+integrability and a uniform `L²` bound on the *source* over the layer.
+`duhamelConvolution_intervalIntegrable_of_source_Lr` now proves the
+time-integrability premise from these same inputs and actual joint source
+regularity. The
 `∇p` half of the source bound is available without singular integrals
 (`memLp_pressureGradient_of_terms`); the open half is `L²` control of
 `(u·∇)u`, which the energy bracket `hmass` alone does not supply — it bounds
@@ -1656,8 +1774,9 @@ theorem duhamelNonlinear_bounded_of_L2
         (fun s : ℝ => ‖∫ y : Space,
           heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖)
         volume 0 t := by
-    -- SCIENTIFIC_FRONTIER: joint time measurability of the convolution norm.
-    sorry
+    intro t ht0 htδ x
+    exact duhamelConvolution_intervalIntegrable_of_source_Lr hν sol hδT
+      (r := 2) (by norm_num) hsi S hS ht0 htδ x
   exact duhamelNonlinear_bounded_of_source_Lr hν sol hδ0
     (r := 2) (by norm_num) hsm hsi S hS hNint
 
