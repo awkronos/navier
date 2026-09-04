@@ -675,6 +675,18 @@ theorem sum_integral_fderiv_sq_eq_curl_sq_of_divFree (u : SchwartzVelocity)
   rw [sum_integral_fderiv_sq_eq_curl_sq_add_div_sq u]
   simp [hzero]
 
+/-- The actual curl energy of a divergence-free velocity is the weighted
+Fourier mass of its Euclidean complexification. This exposes the comparison
+needed by frequency-band Galerkin projections. -/
+theorem curl_sq_eq_fourierWeight_of_divFree (u : SchwartzVelocity)
+    (hu : DivergenceFreeInitial u) :
+    (∫ x : Space, officialEuclideanNorm (staticCurl u x) ^ 2) =
+      4 * Real.pi ^ 2 * ∫ ξ : EuclSpace,
+        ‖ξ‖ ^ 2 * ‖(𝓕 (euclModel u)) ξ‖ ^ 2 := by
+  rw [← sum_integral_fderiv_sq_eq_curl_sq_of_divFree u hu]
+  rw [Finset.sum_congr rfl (fun i _ => grad_energy_transport u i)]
+  exact sum_integral_lineDeriv_sq (euclModel u)
+
 /-- **The dissipation bridge.**  For a divergence-free Schwartz field, the
 `L²` energy of the full Fréchet derivative (operator norm) is bounded by
 three times the enstrophy.  This is the exact estimate that turns the Galerkin
