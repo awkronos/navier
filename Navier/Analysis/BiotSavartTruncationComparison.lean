@@ -1,4 +1,5 @@
 import Navier.Analysis.BiotSavartFiniteRadius
+import Navier.Analysis.BiotSavartNearBounds
 
 /-!
 # Smooth versus sharp Biot--Savart truncations
@@ -527,6 +528,140 @@ theorem smoothSharpCZError_one (ε : ℝ) (i j : Fin 3) :
   apply integral_congr_ae
   filter_upwards [] with y
   ring
+
+/-- The trace-free Calderón--Zygmund tensor has zero integral on every
+Euclidean annulus.  This is the exact constant-mode cancellation needed to
+split a sharp principal value at a second positive radius. -/
+theorem integral_scaled_bsGradKernel_euclideanAnnulus_eq_zero
+    (ε ρ : ℝ) (i j : Fin 3) :
+    (∫ z in {z : Space |
+        ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ},
+      (1 / (4 * Real.pi)) * bsGradKernel i j z) = 0 := by
+  let h : ℝ → ℝ := fun r => if ε < r ∧ r < ρ then 1 else 0
+  let g : EuclideanThree → ℝ := fun y =>
+    h ‖y‖ * ((1 / (4 * Real.pi)) * euclideanCZTensor i j y)
+  have hpoint : ∀ x : Space,
+      Set.indicator {z : Space |
+          ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ}
+        (fun z => (1 / (4 * Real.pi)) * bsGradKernel i j z) x =
+        g (officialEuclideanPoint x) := by
+    intro x
+    by_cases hs : x ∈ {z : Space |
+        ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ}
+    · rw [Set.indicator_of_mem hs]
+      have hh : ε < ‖officialEuclideanPoint x‖ ∧
+          ‖officialEuclideanPoint x‖ < ρ := by
+        exact hs
+      dsimp only [g, h]
+      rw [if_pos hh, one_mul]
+      by_cases hx : x = 0
+      · subst x
+        have hp : officialEuclideanPoint (0 : Space) = 0 := rfl
+        rw [euclideanCZTensor, if_pos hp, bsGradKernel]
+        simp
+      · have hy : officialEuclideanPoint x ≠ 0 := by
+          intro hy
+          apply hx
+          funext k
+          have hk := congrArg (fun y : EuclideanThree => y k) hy
+          simpa using hk
+        rw [euclideanCZTensor, if_neg hy,
+          bsGradKernel_apply_of_ne_zero hx]
+        simp only [officialEuclideanNorm, officialEuclideanPoint_apply]
+    · rw [Set.indicator_of_notMem hs]
+      have hh : ¬(ε < ‖officialEuclideanPoint x‖ ∧
+          ‖officialEuclideanPoint x‖ < ρ) := by
+        exact hs
+      simp [g, h, hh]
+  have hset : {z : Space |
+      ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ} =
+      {z : Space | ε < officialEuclideanNorm z} ∩
+        {z : Space | officialEuclideanNorm z < ρ} := by
+    ext z
+    simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+  have hsmeas : MeasurableSet {z : Space |
+      ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ} := by
+    rw [hset]
+    exact (measurableSet_lt measurable_const
+      continuous_officialEuclideanNorm.measurable).inter
+      (measurableSet_lt continuous_officialEuclideanNorm.measurable
+        measurable_const)
+  rw [← MeasureTheory.integral_indicator hsmeas]
+  rw [show (fun x : Space =>
+      Set.indicator {z : Space |
+          ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ}
+        (fun z => (1 / (4 * Real.pi)) * bsGradKernel i j z) x) =
+      fun x => g (officialEuclideanPoint x) by
+    funext x
+    exact hpoint x]
+  rw [integral_space_comp_officialEuclideanPoint]
+  have hzero := integral_radial_euclideanCZTensor_zero
+    (fun r => h r * (1 / (4 * Real.pi))) i j
+  convert hzero using 1
+  apply integral_congr_ae
+  filter_upwards [] with y
+  dsimp only [g]
+  ring
+
+/-- With positive inner radius, the annular tensor in the cancellation theorem
+is genuinely Bochner integrable. -/
+theorem integrableOn_scaled_bsGradKernel_euclideanAnnulus
+    {ε ρ : ℝ} (hε : 0 < ε) (i j : Fin 3) :
+    IntegrableOn (fun z : Space =>
+      (1 / (4 * Real.pi)) * bsGradKernel i j z)
+      {z : Space |
+        ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ} volume := by
+  let s : Set Space := {z : Space |
+    ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ}
+  let C : ℝ := 1 / (Real.pi * ε ^ 3)
+  have hsball : s ⊆ Metric.ball (0 : Space) ρ := by
+    intro z hz
+    rw [Metric.mem_ball, dist_zero_right]
+    exact lt_of_le_of_lt (norm_le_officialEuclideanNorm z) hz.2
+  have hsfinite : volume s ≠ ⊤ := by
+    exact ne_top_of_le_ne_top
+      (measure_ball_lt_top (μ := volume) (x := (0 : Space)) (r := ρ)).ne
+      (measure_mono hsball)
+  have hconst : IntegrableOn (fun _ : Space => C) s volume :=
+    integrableOn_const hsfinite
+  apply hconst.mono'
+  · exact (measurable_const.mul (measurable_bsGradKernel i j)).aestronglyMeasurable.restrict
+  · filter_upwards [self_mem_ae_restrict
+      (show MeasurableSet s by
+        dsimp only [s]
+        have hset : {z : Space |
+            ε < officialEuclideanNorm z ∧ officialEuclideanNorm z < ρ} =
+            {z : Space | ε < officialEuclideanNorm z} ∩
+              {z : Space | officialEuclideanNorm z < ρ} := by
+          ext z
+          simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+        rw [hset]
+        exact (measurableSet_lt measurable_const
+          continuous_officialEuclideanNorm.measurable).inter
+          (measurableSet_lt continuous_officialEuclideanNorm.measurable
+            measurable_const))] with z hz
+    rw [Real.norm_eq_abs]
+    have hz0 : z ≠ 0 := by
+      intro hz0
+      subst z
+      have hzero : officialEuclideanNorm (0 : Space) = 0 := by
+        simp [officialEuclideanNorm, officialEuclideanPoint]
+      dsimp only [s, Set.mem_setOf_eq] at hz
+      rw [hzero] at hz
+      linarith
+    have hrpos : 0 < officialEuclideanNorm z := hε.trans hz.1
+    have hpow : ε ^ 3 ≤ officialEuclideanNorm z ^ 3 :=
+      pow_le_pow_left₀ hε.le hz.1.le 3
+    calc
+      |1 / (4 * Real.pi) * bsGradKernel i j z|
+          ≤ 4 * bsKernelScalar z := scaled_bsGradKernel_abs_le i j z
+      _ = 1 / (Real.pi * officialEuclideanNorm z ^ 3) := by
+        rw [bsKernelScalar_apply_of_ne_zero hz0]
+        field_simp
+      _ ≤ 1 / (Real.pi * ε ^ 3) := by
+        exact one_div_le_one_div_of_le (by positivity)
+          (mul_le_mul_of_nonneg_left hpow Real.pi_pos.le)
+      _ = C := rfl
 
 private theorem sharpExteriorCutoff_mul (ε : ℝ) (g : Space → ℝ) :
     (fun x => sharpExteriorCutoff ε x * g x) =
