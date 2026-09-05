@@ -297,11 +297,11 @@ theorem fourier_postcompCLM_apply {F G : Type*} [NormedAddCommGroup F] [NormedSp
   rw [Circle.smul_def, Circle.smul_def, L.map_smul]
 
 /-- The divergence of the Euclidean model, as a scalar-`ℂ` Schwartz map. -/
-private def divModel (u : SchwartzVelocity) : SchwartzMap EuclSpace ℂ :=
+def divModel (u : SchwartzVelocity) : SchwartzMap EuclSpace ℂ :=
   ∑ i : Fin 3,
     SchwartzMap.postcompCLM (𝕜 := ℂ) (EuclideanSpace.proj i) (∂_{e3 i} (euclModel u))
 
-private theorem divModel_apply (u : SchwartzVelocity) (y : EuclSpace) :
+theorem divModel_apply (u : SchwartzVelocity) (y : EuclSpace) :
     divModel u y = (staticDivergence u (euclCoords y) : ℂ) := by
   have hcomp : ∀ i : Fin 3,
       (SchwartzMap.postcompCLM (𝕜 := ℂ) (EuclideanSpace.proj i) (∂_{e3 i} (euclModel u))) y
@@ -314,7 +314,7 @@ private theorem divModel_apply (u : SchwartzVelocity) (y : EuclSpace) :
   rw [staticDivergence, Complex.ofReal_sum]
 
 /-- The Fourier symbol of the divergence: `𝓕(div v) ξ = 2πi Σᵢ ξᵢ ûᵢ(ξ)`. -/
-private theorem fourier_divModel (u : SchwartzVelocity) (ξ : EuclSpace) :
+theorem fourier_divModel (u : SchwartzVelocity) (ξ : EuclSpace) :
     (𝓕 (divModel u)) ξ =
       2 * Real.pi * Complex.I * ∑ i : Fin 3, (ξ i : ℂ) * ((𝓕 (euclModel u)) ξ) i := by
   rw [divModel, ← SchwartzMap.fourierTransformCLM_apply (𝕜 := ℂ), map_sum,
