@@ -6,8 +6,7 @@ or improve a verifier without promoting an unproved claim.
 
 ## Before editing
 
-1. Read `AGENTS.md`, `Navier/Problem.lean`, and the canonical registry at
-   `data/attack_registry.json`.
+1. Read `AGENTS.md` and `Navier/Problem.lean`.
 2. Claim a disjoint file set. Do not overwrite another writer's uncommitted
    work.
 3. State the route, the precise residual obligation, its consumer, and a
@@ -22,12 +21,12 @@ or improve a verifier without promoting an unproved claim.
 - A numerical result is an observation. It cannot realize an analytic payload
   or the problem endpoint.
 - An assumption may support a conditional theorem, but must remain visible in
-  both the type and the registry.
+  its theorem type.
 
 Do not add custom axioms, `sorry`, result-as-hypothesis wrappers, vacuous
-witnesses, domain substitutions, or duplicated status registries. If a route
-fails, preserve the smallest reproducible counterexample or mismatch and mark
-the affected edge fail-closed.
+witnesses, domain substitutions, or handwritten proof-status registries. If a
+route fails, preserve the smallest reproducible counterexample or mismatch in
+the mathematical source or a focused regression test.
 
 Experiment contributions must pin a tracked driver and every input to the
 declared Git revision. They must replay in the isolated snapshot without
@@ -41,7 +40,6 @@ Run the focused checks serially:
 
 ```bash
 python3 -m unittest discover -s tests -v
-python3 scripts/validate_registry.py data/attack_registry.json
 lake env lean Navier.lean
 lake env lean Navier/AxiomAudit.lean
 ```

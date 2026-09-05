@@ -3,33 +3,16 @@ import Navier.Frontier
 /-!
 # Current disposition of the formal statement-A surface
 
-The canonical proposition `ProblemStatements.WholeSpaceGlobalRegularity` is kept conjectural.  Its readiness
-bit is therefore false.  The finite dependency view is exposed for navigation,
-but there is no theorem accepting a proof program, dependency bundle, or
-endpoint hypothesis and returning statement A.  Open convention bridges mean
-this formal surface is not described as definitionally identical to
+The canonical proposition `ProblemStatements.WholeSpaceGlobalRegularity` is
+kept visible without a hand-maintained status value.  The finite dependency
+view is for navigation; it does not prove statement A.  Open convention bridges
+mean this formal surface is not described as definitionally identical to
 Fefferman's official prose.
 -/
 
 set_option autoImplicit false
 
 namespace Navier.ProblemStatements
-
-/-- The present proof-bearing disposition of the formal statement-A surface.
-
-This value contains no proof of `WholeSpaceGlobalRegularity`; it records the honest
-scientific-frontier status. -/
-def wholeSpaceGlobalRegularityDisposition : ScientificDisposition WholeSpaceGlobalRegularity :=
-  .conjectural
-
-/-- The current proof-erased status is conjectural. -/
-@[simp] theorem wholeSpaceGlobalRegularityDisposition_status :
-    ScientificDisposition.status wholeSpaceGlobalRegularityDisposition =
-      ScientificStatus.conjectural := rfl
-
-/-- The statement-A surface is not theorem-ready in the current frontier. -/
-@[simp] theorem wholeSpaceGlobalRegularityDisposition_not_ready :
-    ScientificDisposition.readiness wholeSpaceGlobalRegularityDisposition = false := rfl
 
 /-- Immediate planning dependencies associated with the statement-A surface. -/
 def wholeSpaceGlobalRegularityFrontier : Finset Frontier.FrontierNode :=

@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  registry:
+  python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,26 +20,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Exercise fail-closed registry checks
+      - name: Run Python checks
         run: python3 -m unittest discover -s tests -v
-      - name: Validate canonical registry
-        run: python3 scripts/validate_registry.py data/attack_registry.json
-  replay:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Require macOS replay confinement
-        run: |
-          test -x /usr/bin/sandbox-exec
-          test ! -L /usr/bin/sandbox-exec
-      - name: Exercise confined experiment replay
-        run: >-
-          python3 -m unittest -v
-          tests.test_experiment_replay
-          tests.test_audit_regressions.ReplayAuditRegressionTests
 
   lean:
     runs-on: ubuntu-latest

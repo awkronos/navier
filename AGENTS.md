@@ -25,7 +25,6 @@ Verification:
 
 ```bash
 lake env lean Navier/Analysis/<Target>.lean
-python3 scripts/validate_registry.py data/attack_registry.json
 lake env lean Navier.lean
 ```
 

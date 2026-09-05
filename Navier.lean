@@ -129,7 +129,6 @@ import Navier.Routes.R7.FiniteAmplitudeDynamics
 import Navier.Routes.R7.FiniteReality
 import Navier.Routes.R7.FiniteSupportClosureObstruction
 import Navier.Routes.R7.GeneratedSupportStrictGrowth
-import Navier.Disposition
 import Navier.Frontier
 import Navier.ProblemFrontier
 import Navier.AxiomAudit
@@ -173,8 +172,8 @@ Umbrella module for the official A--D surfaces, parabolic and viscosity
 covariance, viscosity-one endpoint reductions, critical `L3` scaling,
 point-breakdown consumers, vector-calculus and guarded energy-identity leaves,
 algebraic scaling facts, frequencywise heat--Leray infrastructure, the R7
-symmetrized and recursively generated finite Fourier tests, proof-bearing
-dispositions, finite frontier map, and raw public axiom audit.
+symmetrized and recursively generated finite Fourier tests, finite frontier
+map, and raw public axiom audit.
 The problem endpoint remains conjectural; importing this module does not claim a
 solution of the global regularity problem.
 -/

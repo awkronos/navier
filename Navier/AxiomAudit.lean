@@ -362,25 +362,12 @@ finite-frontier facts.
 #print axioms Navier.Routes.R7.fullSixModeSquaredFrequencyRate_pos
 #print axioms Navier.Routes.R7.fullSixModeBalance
 
-#print axioms Navier.ScientificDisposition.readiness_realized
-#print axioms Navier.ScientificDisposition.readiness_falsified
-#print axioms Navier.ScientificDisposition.readiness_conditional
-#print axioms Navier.ScientificDisposition.readiness_conjectural
-#print axioms Navier.ScientificDisposition.readiness_quarantined
-#print axioms Navier.ScientificDisposition.readiness_eq_true_iff_status_eq_realized
-#print axioms Navier.ScientificDisposition.readiness_eq_false_iff_status_ne_realized
-#print axioms Navier.ScientificDisposition.proof_of_readiness
-#print axioms Navier.ScientificDisposition.nonrealized_cannot_be_ready
-#print axioms Navier.scientificStatus_card
-
 #print axioms Navier.Frontier.dependency_rank_decreases
 #print axioms Navier.Frontier.not_mem_own_dependencies
 #print axioms Navier.Frontier.nodes_card
 #print axioms Navier.Frontier.encodingResidual_is_tracked
 #print axioms Navier.Frontier.wholeSpaceGlobalRegularity_dependencies
 
-#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularityDisposition_status
-#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularityDisposition_not_ready
 #print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularityFrontier_eq
 #print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularity_not_self_dependent
 
