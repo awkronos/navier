@@ -1,4 +1,4 @@
-import Navier.Analysis.BKMLogBootstrap
+import Navier.Analysis.BiotSavartIntegrationByParts
 import Navier.Analysis.BiotSavartPuncture
 import Mathlib.Analysis.SpecialFunctions.SmoothTransition
 

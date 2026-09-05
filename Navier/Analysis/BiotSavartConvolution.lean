@@ -1,4 +1,5 @@
 import Navier.Analysis.BiotSavartPrincipalValue
+import Navier.Analysis.BiotSavartCore
 
 /-!
 # Translated Biot--Savart principal values
