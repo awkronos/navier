@@ -120,7 +120,7 @@ private theorem pvRegions_union {ε ρ : ℝ} (hερ : ε < ρ) (hρ1 : ρ ≤ 1
       · exact Or.inl (Or.inr ⟨le_of_not_gt hρ, h1⟩)
       · exact Or.inr (le_of_not_gt h1)
 
-private theorem integrable_piece
+theorem integrable_piece
     {ε : ℝ} (hε : 0 < ε) (i j : Fin 3)
     (φ : SchwartzMap Space ℝ) (x : Space)
     {s : Set Space} (hs : MeasurableSet s)
