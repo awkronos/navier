@@ -6,6 +6,7 @@ import Navier.Analysis.BiotSavartCore
 import Navier.Analysis.BiotSavartIntegrationByParts
 import Navier.Analysis.BiotSavartNearBounds
 import Navier.Analysis.BiotSavartGradientRecovery
+import Navier.Analysis.BiotSavartPVAssembly
 import Navier.Analysis.BiotSavartMorrey
 import Navier.Analysis.CZNearField
 import Navier.Analysis.EnergyNormBridge
@@ -500,15 +501,8 @@ theorem exists_biotSavartKernelSplit_of_curlH2 :
               A * ρ ^ ((1 : ℝ) / 4) * Real.sqrt H₂
                 + B * Mω * (1 + Real.log (1 / ρ))
                 + F * Real.sqrt M₂ := by
-  have kernelDerivativeCertificate :
-      ∀ (z : Space), z ≠ 0 → ∀ i j : Fin 3,
-        HasDerivAt (fun t : ℝ => bsVectorKernel (z + t • basisVector i) j)
-          ((1 / (4 * Real.pi)) * bsGradKernel i j z) 0 :=
-    fun z hz i j => bsVectorKernel_coordinateLine_hasDerivAt_gradKernel hz i j
-  have localTermNormalization :
-      (∑ i : Fin 3, bsKernelDistributionLocalTerm i i) = 1 :=
-    bsKernelDistributionLocalTerm_trace
-  sorry
+  exact
+    Navier.Analysis.BiotSavartPVAssembly.exists_gradient_bound_of_curlH2
 
 /-- **[DERIVED from `exists_biotSavartKernelSplit_of_curlH2`.]**
 Biot–Savart representation + Calderón–Zygmund three-term split; BKM 1984
