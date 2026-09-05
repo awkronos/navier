@@ -1,4 +1,3 @@
-import Navier.Disposition
 import Navier.Problem
 import Navier.Scaling
 

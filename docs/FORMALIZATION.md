@@ -3,7 +3,7 @@
 Status: **SCAFFOLDED / SCIENTIFIC_FRONTIER**
 
 The formal source tree now exists. `Navier/Problem.lean` is the canonical
-statement-A encoding; `Navier/Scaling.lean`, `Navier/Disposition.lean`, and
+statement-A encoding; `Navier/Scaling.lean` and
 `Navier/Frontier.lean` provide checked algebraic and status infrastructure.
 `Navier/ProblemFrontier.lean` fixes the conjectural disposition, and
 `Navier/AxiomAudit.lean` emits the complete public trace. They do not realize
@@ -72,20 +72,20 @@ periodic pressure, as required by Fefferman's erratum.
 | F6 | proposed `Navier/Regularity/Criteria.lean` | Serrin and endpoint-\(L^3\) conditional continuation contracts | hypotheses and scaling match primary results | open analytic port |
 | F7 | proposed `Navier/Routes/*/Payload.lean` | one narrow route certificate per ATTACK.md | theorem uses only lower nodes and exposes its first residual | scientific frontier |
 | F8 | proposed `Navier/Bridges/GlobalContinuation.lean` | local theory + route certificate \(\Rightarrow\) global smooth finite-energy solution | dependency/no-circular-import audit | open conditional wiring |
-| F9 | `Navier/Disposition.lean`, `Navier/Frontier.lean`, `Navier/ProblemFrontier.lean`, `Navier/AxiomAudit.lean` | proof-bearing status gate, ranked dependency view, conjectural statement-A disposition, and exhaustive public axiom commands | compile plus raw axiom audit | implemented status/audit scaffold; blocked on F7 |
+| F9 | `Navier/Frontier.lean`, `Navier/ProblemFrontier.lean`, `Navier/AxiomAudit.lean` | ranked dependency view and public axiom commands | compile plus raw axiom audit | implemented navigation and verification support; blocked on F7 |
 
 The implemented parts of F0–F3 are reusable infrastructure; the table keeps
 their unimplemented analytic portions explicit. F5/F6 are substantial
 translations of known analysis. F7 is where new mathematics must occur. F8
-and the status wiring in F9 must remain thin consumers so their completion
+and the navigation wiring in F9 must remain thin consumers so their completion
 cannot disguise an empty F7.
 
 ## 3. Data contracts
 
 The implemented `IsClassicalSolution` contains smoothness, trace,
 incompressibility, the pointwise PDE, integrability, and one uniform energy
-bound. `ScientificDisposition` carries proof evidence only in its `realized`
-constructor, and the current statement-A disposition is `conjectural`.
+bound. Formal status is determined from the exact declaration and fresh kernel
+output; the source carries no parallel status object.
 
 The following additional proposed structures should contain data and proved
 laws only:

@@ -10,18 +10,15 @@ row before making any build or closure claim.
 
 The repository separates kernel-checked infrastructure, conditional regularity
 routes, open analytic payloads, computational observations, and falsified
-approaches so none can be promoted by wording alone. The compiler-receipt
-reconciliation of the report row against a fresher checkout lives in
-[`NAVIER-RESIDUALS-2026-08-17.md`](NAVIER-RESIDUALS-2026-08-17.md); that ledger
-is a dated snapshot with per-file `lake env lean` receipts, not a live count.
+approaches. Lean source and fresh compiler output determine formal status.
 
 The primary formal surface is Fefferman's whole-space
 existence-and-smoothness statement (A): for every positive viscosity and every
 rapidly decaying smooth divergence-free initial velocity on `ℝ³`, with zero
 forcing, there is a smooth global solution with uniformly bounded energy.
-The machine registry also tracks official breakdown alternative (C) as a
-distinct forced endpoint; it does not confuse zero-force singularity,
-weak-solution nonuniqueness, or averaged-model blowup with C.
+The Lean source also states official breakdown alternative (C) as a distinct
+forced endpoint; it does not confuse zero-force singularity, weak-solution
+nonuniqueness, or averaged-model blowup with C.
 
 ## What is here
 
@@ -31,8 +28,6 @@ weak-solution nonuniqueness, or averaged-model blowup with C.
 - [`docs/OPEN_FRONTIER_MAP.md`](docs/OPEN_FRONTIER_MAP.md): the checked support
   layer, the twelve-lane open-obligation map, and the endpoint dependency
   picture.
-- [`data/attack_registry.json`](data/attack_registry.json): the sole
-  machine-readable status/dependency/evidence registry, checked fail-closed.
 - [`Navier/Problem.lean`](Navier/Problem.lean): concrete derivatives,
   equation, solution predicate, and the direct statement-A encoding.
 - [`Navier/Scaling.lean`](Navier/Scaling.lean): axiom-audited algebraic
@@ -52,7 +47,7 @@ also open.
 
 ## Verify
 
-The complete focused check is serial by design:
+The focused check is serial by design:
 
 ```bash
 make check

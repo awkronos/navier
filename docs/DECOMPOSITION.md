@@ -155,9 +155,7 @@ The proposed namespace split is intentionally one-way:
     Navier.Problem
 
 Navier.Problem may import the bridge. Route payload modules may not import
-Navier.Problem. The machine-readable registry in
-`data/attack_registry.json` mirrors these edges and its validator rejects an
-experiment or wrong-domain payload on an exact endpoint proof path.
+Navier.Problem. Lean imports and theorem types expose these dependencies.
 
 ## 8. Closure conditions
 
@@ -169,7 +167,7 @@ For a positive resolution, closure requires all of the following:
 - source and model/domain audit;
 - single-file Lean compilation and raw axiom output limited to the repository's
   accepted kernel primitives;
-- fresh registry and artifact validators.
+- current-source compilation of the exact consumer.
 
 Until then the honest verdict is **DECOMPOSED**, with the first unresolved
 mathematical leaf on each route recorded above.
