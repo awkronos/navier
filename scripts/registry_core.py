@@ -1,4 +1,4 @@
-"""Fail-closed validation and derived status for the Navier attack registry.
+"""Fail-closed validation for the Navier attack registry.
 
 The validator intentionally uses only the Python standard library.  The JSON
 Schema is the interchange contract; this module enforces the same closed-world
@@ -1818,53 +1818,6 @@ def assert_valid_registry(
     )
     if not result.valid:
         raise RegistryValidationError(result.errors)
-
-
-def derived_status(data: dict[str, Any]) -> dict[str, Any]:
-    """Derive a deterministic status view from an already validated registry."""
-
-    obligations = data["obligations"]
-    approaches = data["approaches"]
-    dispositions = Counter(node["disposition"] for node in obligations)
-    tiers = Counter(node["claim_tier"] for node in obligations)
-    endpoints = [
-        {
-            "id": node["id"],
-            "branch": node["domain"]["endpoint_branch"],
-            "disposition": node["disposition"],
-            "residual": node["residual"]["statement"] if node["residual"] else None,
-        }
-        for node in obligations
-        if node["id"] in data["research_program"]["resolution_obligation_ids"]
-    ]
-    approach_rows = []
-    for approach in approaches:
-        nodes = [node for node in obligations if node["approach_id"] == approach["id"]]
-        approach_rows.append(
-            {
-                "id": approach["id"],
-                "status": approach["status"],
-                "obligation_count": len(nodes),
-                "closed": sum(node["disposition"] == "CLOSED" for node in nodes),
-                "open": sum(node["disposition"] not in {"CLOSED", "FALSIFIED", "REVERTED"} for node in nodes),
-                "blocked_barriers": sorted(
-                    review["barrier_id"]
-                    for review in approach["barrier_reviews"]
-                    if review["disposition"] == "BLOCKED"
-                ),
-            }
-        )
-    return {
-        "registry_id": data["registry_id"],
-        "registry_version": data["registry_version"],
-        "base_revision": data["base_revision"],
-        "global_disposition": data["research_program"]["global_disposition"],
-        "scientific_status": data["research_program"]["scientific_status"],
-        "dispositions": dict(sorted(dispositions.items())),
-        "claim_tiers": dict(sorted(tiers.items())),
-        "endpoints": endpoints,
-        "approaches": approach_rows,
-    }
 
 
 def clone_registry(data: dict[str, Any]) -> dict[str, Any]:
