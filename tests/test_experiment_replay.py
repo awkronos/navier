@@ -178,8 +178,8 @@ class ExperimentManifestTests(unittest.TestCase):
 
     def test_driver_must_be_under_experiments(self) -> None:
         manifest = valid_manifest()
-        manifest["run"]["driver_path"] = "scripts/render_status.py"
-        manifest["run"]["command"][1] = "scripts/render_status.py"
+        manifest["run"]["driver_path"] = "scripts/validate_registry.py"
+        manifest["run"]["command"][1] = "scripts/validate_registry.py"
         self.assertInvalid(manifest, "path must be under experiments/")
 
     def test_non_experiment_obligation_is_rejected(self) -> None:

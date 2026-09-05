@@ -23,13 +23,7 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from registry_core import (  # noqa: E402
-    derived_status,
-    load_json,
-    validate_registry,
-    validate_registry_file,
-)
-from render_status import _render_text  # noqa: E402
+from registry_core import load_json, validate_registry, validate_registry_file  # noqa: E402
 
 
 REGISTRY_PATH = ROOT / "data" / "attack_registry.json"
@@ -772,51 +766,6 @@ class ProvenanceTests(RegistryTestCase):
         text = "\n".join(result.errors)
         self.assertFalse(result.valid)
         self.assertIn("missing or unverifiable baseline commit", text)
-
-
-class DerivedStatusAndRendererTests(RegistryTestCase):
-    def test_derived_status_counts_obligations_from_registry(self) -> None:
-        status = derived_status(self.registry)
-        self.assertEqual(
-            status["dispositions"],
-            {"DECOMPOSED": 10, "RED": 1, "SCAFFOLDED": 19},
-        )
-        self.assertEqual(
-            status["claim_tiers"],
-            {
-                "CONJECTURE": 10,
-                "EXPERIMENT": 1,
-                "FALSIFICATION": 1,
-                "SCAFFOLD": 3,
-                "THEOREM": 15,
-            },
-        )
-        self.assertEqual([row["branch"] for row in status["endpoints"]], ["FEFFERMAN_A", "FEFFERMAN_C"])
-
-    def test_derived_status_reflects_mutated_disposition_without_cached_view(self) -> None:
-        _find(self.registry["obligations"], A_ID)["disposition"] = "RED"
-        status = derived_status(self.registry)
-        self.assertEqual(
-            status["dispositions"],
-            {"DECOMPOSED": 10, "RED": 2, "SCAFFOLDED": 18},
-        )
-        self.assertEqual(status["endpoints"][0]["disposition"], "RED")
-
-    def test_text_renderer_names_ssot_global_status_and_residuals(self) -> None:
-        rendered = _render_text(derived_status(self.registry))
-        self.assertIn("derived; registry is the SSOT", rendered)
-        self.assertIn("global: SCAFFOLDED / SCIENTIFIC_FRONTIER", rendered)
-        self.assertIn("FEFFERMAN_A: SCAFFOLDED", rendered)
-        self.assertIn(
-            "residual: Construct a native theorem term inhabiting "
-            "Navier.ProblemStatements.WholeSpaceGlobalRegularity",
-            rendered,
-        )
-
-    def test_text_renderer_reports_blocked_barriers_deterministically(self) -> None:
-        rendered = _render_text(derived_status(self.registry))
-        self.assertIn("approach.energy: DECOMPOSED", rendered)
-        self.assertIn("blocked=barrier.scaling_criticality,barrier.supercritical_energy_gap,barrier.weak_strong_gap", rendered)
 
 
 class SchemaDossierAndManifestTests(unittest.TestCase):

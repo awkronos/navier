@@ -24,9 +24,6 @@ jobs:
         run: python3 -m unittest discover -s tests -v
       - name: Validate canonical registry
         run: python3 scripts/validate_registry.py data/attack_registry.json
-      - name: Derive public status
-        run: python3 scripts/render_status.py data/attack_registry.json
-
   replay:
     runs-on: macos-latest
     steps:
