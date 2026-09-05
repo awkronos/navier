@@ -578,6 +578,53 @@ theorem sum_integral_fderiv_sq_eq_curl_sq_add_div_sq (u : SchwartzVelocity) :
 
 end SpaceTransport
 
+/-- The actual curl energy equals its three-component Fourier-symbol
+integral for every Schwartz velocity, including velocities with nonzero
+divergence. -/
+theorem curl_sq_eq_fourierCrossEnergy (u : SchwartzVelocity) :
+    (∫ x : Space, officialEuclideanNorm (staticCurl u x) ^ 2) =
+      4 * Real.pi ^ 2 * ∫ ξ : EuclSpace,
+        (‖(ξ 1 : ℂ) * (𝓕 (euclModel u)) ξ 2 -
+            (ξ 2 : ℂ) * (𝓕 (euclModel u)) ξ 1‖ ^ 2 +
+          ‖(ξ 2 : ℂ) * (𝓕 (euclModel u)) ξ 0 -
+            (ξ 0 : ℂ) * (𝓕 (euclModel u)) ξ 2‖ ^ 2 +
+          ‖(ξ 0 : ℂ) * (𝓕 (euclModel u)) ξ 1 -
+            (ξ 1 : ℂ) * (𝓕 (euclModel u)) ξ 0‖ ^ 2) := by
+  have hI (i j : Fin 3) := integrable_normSq_scalar (𝓕 (curlComp u i j))
+  have hI12 : Integrable (fun ξ : EuclSpace =>
+      ‖(𝓕 (curlComp u 1 2)) ξ‖ ^ 2 + ‖(𝓕 (curlComp u 2 0)) ξ‖ ^ 2) :=
+    (hI 1 2).add (hI 2 0)
+  rw [curl_energy_transport,
+    ← SchwartzMap.integral_norm_sq_fourier (curlComp u 1 2),
+    ← SchwartzMap.integral_norm_sq_fourier (curlComp u 2 0),
+    ← SchwartzMap.integral_norm_sq_fourier (curlComp u 0 1),
+    ← integral_add (hI 1 2) (hI 2 0),
+    ← integral_add hI12 (hI 0 1),
+    ← integral_const_mul]
+  apply integral_congr_ae
+  filter_upwards [] with ξ
+  have hnorm (z : ℂ) : ‖2 * (Real.pi : ℂ) * Complex.I * z‖ =
+      2 * Real.pi * ‖z‖ := by rw [norm_mul, norm_two_pi_i]
+  simp only [fourier_curlComp, hnorm]
+  ring
+
+/-- The Fourier transform of an actual divergence-free velocity is
+orthogonal to its real frequency vector at every frequency. -/
+theorem fourier_dot_eq_zero_of_divFree (u : SchwartzVelocity)
+    (hu : DivergenceFreeInitial u) (ξ : EuclSpace) :
+    ∑ i : Fin 3, (ξ i : ℂ) * (𝓕 (euclModel u)) ξ i = 0 := by
+  have hzero : divModel u = 0 := by
+    ext y
+    rw [divModel_apply]
+    simp [show staticDivergence u (euclCoords y) = 0 from hu _]
+  have hf : (𝓕 (divModel u)) ξ = 0 := by simp [hzero]
+  rw [fourier_divModel] at hf
+  apply (mul_eq_zero.mp hf).resolve_left
+  intro h
+  have hn := norm_two_pi_i
+  rw [h, norm_zero] at hn
+  nlinarith [Real.pi_pos]
+
 section OperatorNormBound
 
 /-- A vector is the sum of its basis components. -/
