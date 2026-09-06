@@ -39,11 +39,11 @@ nonuniqueness, or averaged-model blowup with C.
 - [`references/manifest.json`](references/manifest.json): checked primary and
   official source locators.
 
-The formal encoding deliberately keeps two convention bridges open
-(`SchwartzMap` versus Fefferman's coordinatewise decay, and Mathlib
-half-space smoothness versus the official boundary convention). The decisive
-global critical estimate, rigidity theorem, or exact breakdown witness is
-also open.
+The formal encoding has comparison theorems for Schwartz decay, half-space
+smoothness, coordinate derivatives, and the energy clause; see
+[`docs/FORMALIZATION.md`](docs/FORMALIZATION.md) for the exact declarations.
+They establish representation comparisons. The global regularity target
+requires a proof of the full existence proposition in `Navier/Problem.lean`.
 
 ## Verify
 

@@ -1,21 +1,20 @@
 # Navier — critical-path proof contract
 
-The exact mathematical surface is `Navier/Problem.lean`. Current status is
-`scientificFrontier`; local existence and conditional continuation are not
-global regularity.
+The exact mathematical surface is `Navier/Problem.lean`. Determine its status
+from current proofs or counterexamples; no instruction or planning label
+predetermines the mathematical outcome. Local existence and conditional
+continuation establish their stated conclusions.
 
 - Canonical plan: `~/.claude/plans/open-math-critical-path.md`.
-- Active row: `navier.bounded-chain-direct-limit` in
-  `~/.claude/todos/open-math-goals.json`.
-- Current node: parameterize the direct-limit consumer over a coherent cofinal
-  chain and instantiate `boundedContinuationChain`.
-- The remaining scientific hypothesis must stay explicit as
-  `CriticalMildTerminalNormBound`; do not claim it is constructed.
+- Select current obligations from exact theorem types and their consumers.
+  The lattice `CriticalMildTerminalNormBound` route requires a proved transport
+  to the whole-space endpoint. Retain an assumption in a conditional theorem's
+  type until its proof is supplied.
 
-Select only statements feeding that consumer. Do not add another chain record,
-cofinality alias, numerical surrogate, or result-as-hypothesis wrapper. A
-conditional theorem is valuable only if it reaches the actual global mild
-solution and isolates this sole estimate.
+Prioritize statements feeding the original whole-space consumer. Do not add
+redundant chain records, cofinality aliases, numerical surrogates, or
+result-as-hypothesis wrappers. A conditional theorem must have satisfiable
+hypotheses and supply an actual mathematical step to its named consumer.
 
 Before edits inspect path-scoped git status/diff and recent history. Temporary
 `sorry` is uncommitted search state only. One writer owns a file through its

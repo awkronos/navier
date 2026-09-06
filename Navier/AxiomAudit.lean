@@ -1,4 +1,5 @@
-import Navier.ProblemFrontier
+import Navier.Problem
+import Navier.Scaling
 import Navier.Analysis.CKNIntegralScaling
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.EnergyOfficialClause
@@ -74,25 +75,30 @@ import Navier.Analysis.MultiFrequencyMild
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.EnstrophyLimit
 import Navier.Analysis.LerayWeak
+import Navier.Analysis.PressureGaugeObstruction
 
 /-!
 # Raw axiom audit for the public formal infrastructure
 
 Each command below asks Lean for the transitive axioms of a named declaration.
-The resumed section below covers every public theorem added by the local,
-energy, CKN-scaling, and generated-frequency attack leaves.  The audit of
+The audit of
 `ProblemStatements.WholeSpaceGlobalRegularity` concerns only the canonical proposition's
 definition and its imported foundations; it does not construct an inhabitant
-and is not evidence that the conjectural endpoint is proved.  The proved
-declarations audited below are scaling arithmetic, disposition guards, and
-finite-frontier facts.
+and is not evidence that the endpoint is proved. The remaining commands
+audit the named analytic, algebraic, and falsification results.
 -/
 
 #print axioms Navier.ProblemStatements.WholeSpaceGlobalRegularity
+#print axioms Navier.Analysis.GlobalRegularityEndpoint.not_wholeSpaceEnergyClause
+#print axioms Navier.Analysis.PressureGaugeObstruction.not_rejectedSameGaugeContinuation
+#print axioms Navier.Analysis.CriticalControlDecomposition.pressureGradient_normalize_eq
+#print axioms Navier.Analysis.CriticalControlDecomposition.SolvesBefore.normalizePressure
+#print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+#print axioms Navier.Analysis.CriticalControlDecomposition.top_not_le_finiteCriticalBound
+#print axioms Navier.Analysis.CriticalControlDecomposition.acceleratingVelocity_not_admissible
 #print axioms Navier.ProblemStatements.PeriodicGlobalRegularity
 #print axioms Navier.ProblemStatements.WholeSpaceBreakdown
 #print axioms Navier.ProblemStatements.PeriodicBreakdown
-#print axioms Navier.problemEncodingResiduals_card
 #print axioms Navier.OfficialSurfaceSignatures.classicalSolution_signature
 #print axioms Navier.OfficialSurfaceSignatures.periodicClassicalSolution_signature
 #print axioms Navier.OfficialSurfaceSignatures.wholeSpaceGlobalRegularity_signature
@@ -362,15 +368,6 @@ finite-frontier facts.
 #print axioms Navier.Routes.R7.fullSixModeSquaredFrequencyRate_pos
 #print axioms Navier.Routes.R7.fullSixModeBalance
 
-#print axioms Navier.Frontier.dependency_rank_decreases
-#print axioms Navier.Frontier.not_mem_own_dependencies
-#print axioms Navier.Frontier.nodes_card
-#print axioms Navier.Frontier.encodingResidual_is_tracked
-#print axioms Navier.Frontier.wholeSpaceGlobalRegularity_dependencies
-
-#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularityFrontier_eq
-#print axioms Navier.ProblemStatements.wholeSpaceGlobalRegularity_not_self_dependent
-
 /-!
 ## Resumed full-map support leaves
 
@@ -624,6 +621,7 @@ These are support theorems, not inhabitants of an official problem endpoint.
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.uniqueDiffOn_halfSpace
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.continuousOn_iteratedFDerivWithin_of_halfSpaceSmooth
 #print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.halfSpaceSmooth_iff_extension_of_seeley
+#print axioms Navier.Analysis.HalfSpaceSmoothnessBridge.halfSpaceSmooth_iff_extension
 #print axioms Navier.Analysis.PeriodicQuotientBridge.invariant_add_integerLattice
 #print axioms Navier.Analysis.PeriodicQuotientBridge.spatiallyPeriodic_iff_factors_through_torus
 #print axioms Navier.Analysis.PeriodicQuotientBridge.periodicInitialDatum_iff_torus_realization

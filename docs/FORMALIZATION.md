@@ -1,242 +1,90 @@
-# Lean formalization roadmap
+# Formalization and verification
 
-Status: **SCAFFOLDED / SCIENTIFIC_FRONTIER**
+The target is `Navier.ProblemStatements.WholeSpaceGlobalRegularity` in
+[`Navier/Problem.lean`](../Navier/Problem.lean). It quantifies over every
+positive viscosity and every divergence-free Schwartz velocity on `ℝ³`,
+and asks for velocity and pressure satisfying the classical unforced PDE,
+initial condition, smoothness on nonnegative time, and uniformly bounded
+finite energy.
 
-The formal source tree now exists. `Navier/Problem.lean` is the canonical
-statement-A encoding; `Navier/Scaling.lean` and
-`Navier/Frontier.lean` provide checked algebraic and status infrastructure.
-`Navier/ProblemFrontier.lean` fixes the conjectural disposition, and
-`Navier/AxiomAudit.lean` emits the complete public trace. They do not realize
-the endpoint. Two convention-comparison residuals and the entire global
-analytic payload remain open. Alternative (A) on the whole space is the first
-formal target; interfaces described as “proposed” below do not yet exist in
-Lean.
+Prove this proposition or its negation at its exact type. No planning phase,
+status enum, instruction, or report fixes the outcome. A proof of a proposition's
+definition being well formed is not a term of that proposition.
 
-## 1. Target semantics
+## Representation comparisons
 
-The implemented top-level proposition has this logical shape:
+The comparison obligations have mathematical providers:
 
-\[
-\begin{aligned}
-\mathsf{FeffermanA}:\quad
-\forall \nu>0,\ \forall u^\circ,\quad&
-\mathsf{SmoothRapidDecay}(u^\circ)\ \land\
-\mathsf{DivergenceFree}(u^\circ)\\
-&\Longrightarrow
-\exists (u,p),\
-\mathsf{SolvesNS}_{\mathbb R^3}(\nu,0,u^\circ,u,p)\\
-&\hspace{42mm}\land\
-\mathsf{SmoothGlobal}(u,p)\\
-&\hspace{42mm}\land\
-\sup_{t\ge0}\int_{\mathbb R^3}|u(x,t)|^2\,dx<\infty .
-\end{aligned}
-\]
+| Comparison | Declaration | Module |
+| --- | --- | --- |
+| Schwartz data and coordinate decay | `fefferman_clause_four_iff_schwartz` | `Analysis/SchwartzConventionEquivalence.lean` |
+| Half-space smoothness and smooth extension | `halfSpaceSmooth_iff_extension` | `Analysis/SeeleySynthesis.lean` |
+| Fréchet and coordinate momentum equations | `satisfiesNavierStokes_iff_officialCoordinateEquations` | `Analysis/CoordinatePDEBridge.lean` |
+| Incompressibility in coordinates | `incompressible_iff_officialCoordinateDivergenceFree` | `Analysis/CoordinatePDEBridge.lean` |
+| Energy integrability and Euclidean energy | `currentWholeSpaceEnergyClause_iff_official` | `Analysis/EnergyOfficialClause.lean` |
 
-The current encoding represents rapid decay using Mathlib's `SchwartzMap`.
-Identifying that convention with Fefferman's coordinatewise quantifiers—for
-every multi-index \(\alpha\) and every \(K\), some constant
-\(C_{\alpha,K}\) bounds
-\(|\partial^\alpha u^\circ(x)|(1+|x|)^K\)—is the named
-`schwartzConventionEquivalence` residual.
+Their exact types record the regularity and measurability hypotheses.
+The retired `ProblemEncodingResidual`, `Frontier`, and `ProblemFrontier`
+enumerations were planning data; their cardinality and dependency theorems
+did not establish whether these comparisons were proved.
 
-**Status (rapid-decay direction): CLOSED.** `Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay`
-proves every Mathlib `SchwartzMap` on `ℝ³` satisfies Fefferman's coordinatewise
-rapid-decay bound (the safety-relevant half of clause (4): the carrier admits
-only rapidly-decaying data), kernel-clean. The companion smoothness half
-(`ContDiff ℝ ⊤` ↔ `SchwartzMap.smooth'`) is mathematically trivial but held
-back by a Lean-elaboration quirk (Mathlib states `ContDiff ℝ (↑⊤)`, which is
-propositionally but not definitionally equal to `⊤` and resists `rw`/`convert`
-at the `SchwartzMap.mk` field). It remains a documented encoding residual, not
-a scientific gap. The global solution domain includes
-\(t=0\), the initial trace is explicit, viscosity is positive, forcing is
-identically zero, and pressure and velocity are `ContDiffOn` the closed
-half-space. Equivalence of that within-derivative convention to Fefferman's
-boundary-smoothness wording is the separate
-`halfSpaceSmoothnessEquivalence` residual.
+## Rejected energy recovery
 
-Separate proposed definitions FeffermanB, FeffermanC, and FeffermanD should
-encode the exact periodic/forced alternatives. They are sibling targets and
-must not be definitionally conflated with A. The B/D surfaces must include
-periodic pressure, as required by Fefferman's erratum.
+`Analysis/GlobalRegularityEndpoint.lean` proves
+`not_wholeSpaceEnergyClause`. The flow `u(t,x) = t e₀` and
+pressure `p(t,x) = -x₀` satisfy the unforced equation from zero Schwartz
+data, but the energy density at time one is a positive constant on infinite
+volume. Smoothness and the PDE alone therefore do not imply finite energy
+for every solution. Endpoint implications using that false universal
+premise have been removed.
 
-## 2. Module order
+This counterexample concerns the universal energy-recovery assertion.
+The original endpoint asks for existence of a finite-energy solution;
+zero initial data have the zero solution. Any successful general construction
+must establish energy control for the solution it produces.
 
-| Phase | Module | Output | Verification boundary | Status |
-|---|---|---|---|---|
-| F0 | `Navier/Problem.lean` | Concrete \(\mathbb R^3\) fields, Fréchet/within derivatives, zero force, classical-solution predicate, statement-A encoding, two representation residuals | targeted compile plus official-quantifier audit | implemented scaffold; endpoint conjectural |
-| F1 | `Navier/Problem.lean` now; proposed `Navier/Analysis/VectorCalculus.lean` | divergence, gradient, convection, and Laplacian exist; curl, tensor divergence, Leray projection, and identities remain | identities on smooth compactly supported fields | partial |
-| F2 | `Navier/Problem.lean` now; proposed `Navier/Analysis/Spaces.lean` | Schwartz initial data and energy integrability exist; Sobolev, mixed, weak/suitable, and critical spaces remain | coercions, measurability, norm equality tests | partial |
-| F3 | `Navier/Scaling.lean` | algebraic exponent \(1-3/p-2/q\), critical-line equivalence, and finite/reciprocal examples | single-file compile and raw axiom audit | algebra implemented; equation/norm scaling open |
-| F4 | proposed `Navier/Analysis/Energy.lean` | smooth energy identity; weak and local energy contracts | compact-support cutoff and limit assumptions explicit | open |
-| F5 | proposed `Navier/LocalTheory/Contract.lean` | maximal local solution, uniqueness, restart, blowup-alternative interfaces | no endpoint/global witness in input records | open analytic port |
-| F6 | proposed `Navier/Regularity/Criteria.lean` | Serrin and endpoint-\(L^3\) conditional continuation contracts | hypotheses and scaling match primary results | open analytic port |
-| F7 | proposed `Navier/Routes/*/Payload.lean` | one narrow route certificate per ATTACK.md | theorem uses only lower nodes and exposes its first residual | scientific frontier |
-| F8 | proposed `Navier/Bridges/GlobalContinuation.lean` | local theory + route certificate \(\Rightarrow\) global smooth finite-energy solution | dependency/no-circular-import audit | open conditional wiring |
-| F9 | `Navier/Frontier.lean`, `Navier/ProblemFrontier.lean`, `Navier/AxiomAudit.lean` | ranked dependency view and public axiom commands | compile plus raw axiom audit | implemented navigation and verification support; blocked on F7 |
+## Pressure continuation repair
 
-The implemented parts of F0–F3 are reusable infrastructure; the table keeps
-their unimplemented analytic portions explicit. F5/F6 are substantial
-translations of known analysis. F7 is where new mathematics must occur. F8
-and the navigation wiring in F9 must remain thin consumers so their completion
-cannot disguise an empty F7.
+`Analysis/PressureGaugeObstruction.lean` proves
+`not_rejectedSameGaugeContinuation` for every velocity quantity `N`.
+The old interface demanded exact agreement of arbitrary pressure gauges.
+Zero velocity and `p(t,x)=(1-t)⁻¹` satisfy its input on `[0,1)`, but any
+smooth extension across one would be bounded on a compact time interval,
+contradicting agreement with this pressure.
 
-## 3. Data contracts
+`Analysis/CriticalControlDecomposition.lean` now uses
+`NormalizedContinuationFromCriticalControl`. The construction replaces each
+local pressure by `p(t,x)-p(t,0)`, proves that this preserves smoothness and
+the PDE, and carries that normalization through the continuation chain.
+The continuation class now requires finite-energy slices and the
+initial-energy inequality. The control quantity takes values in `ℝ≥0∞`,
+and its threshold is finite, so infinite control cannot pass the bound.
+The gluing theorem carries the local energy estimates into the exact original
+`WholeSpaceGlobalRegularity` conclusion. Its local existence, normalized
+continuation, and a priori bound remain explicit premises.
 
-The implemented `IsClassicalSolution` contains smoothness, trace,
-incompressibility, the pointwise PDE, integrability, and one uniform energy
-bound. Formal status is determined from the exact declaration and fresh kernel
-output; the source carries no parallel status object.
+## Carrier and hypothesis checks
 
-The following additional proposed structures should contain data and proved
-laws only:
+The critical mild continuation modules operate on weighted summable lattice
+Fourier coefficients indexed by `ℤ³`. A result about that carrier reaches
+the whole-space target only through a proved reconstruction and PDE/energy
+transport on `ℝ³`. A uniform terminal norm assumption is an analytic
+obligation, even when a direct-limit construction under it compiles.
 
-- **WholeSpaceDatum:** viscosity, positive-viscosity proof, initial velocity,
-  smoothness, divergence-free proof, and rapid-decay witnesses.
-- **NSSolutionOn:** time interval, velocity, pressure, smoothness on the stated
-  domain, equation proof, divergence-free proof, and initial trace.
-- **EnergyControlled:** one explicit constant and a proof of the uniform
-  \(L^2\) bound; not merely pointwise finiteness.
-- **MaximalSolution:** local solution, maximal time, compatibility/restart,
-  uniqueness, and a proved blowup alternative.
-- **CriticalControl:** the exact norm, exponents, critical-scaling equality,
-  and a proof of finiteness derived by a route theorem.
-- **PositiveRouteCertificate:** a tagged sum of narrowly typed R1–R10 outputs,
-  each with its own bridge theorem; never a field of type FeffermanA.
-- **BreakdownCertificate:** the separate R11 output consumed only by the exact
-  FeffermanC/FeffermanD branch; it cannot be passed to GlobalContinuation.
+Check each theorem's complete hypotheses. In particular, a pressure gauge
+may depend on time; velocity control alone does not control that gauge.
+A conditional theorem with a refuted premise cannot be used as a scientific
+reduction.
 
-For C/D, a BreakdownDatum must include the force and all of Fefferman's
-smoothness/decay or periodicity witnesses. “No global physically reasonable
-solution” is the conclusion, not an input field.
+## Verification
 
-## 4. First formal leaf: scaling
+Compile changed sources and their affected consumers with the pinned
+single-file Lean command, using the workspace build wrapper. Refresh exact
+dependency artifacts when necessary. Print fully qualified theorem types
+and raw `#print axioms`; strict proofs use only `propext`,
+`Classical.choice`, and `Quot.sound`.
 
-Scaling is the best first target because it is central to every route and
-independent of the unresolved PDE existence theory. The present Lean module
-proves only the scalar arithmetic of the exponent and critical line; it does
-not claim an analytic mixed-norm scaling theorem.
-
-The remaining formal sequence is:
-
-1. define \(S_\lambda u(x,t)=\lambda u(\lambda x,\lambda^2t)\) for
-   \(\lambda>0\);
-2. prove spatial \(L^p\) scaling by the dilation change-of-variables theorem;
-3. prove the time-dilation rule for \(L^q\);
-4. connect those analytic results to the already checked exponent
-   \(1-3/p-2/q\) and critical-line arithmetic;
-5. instantiate energy at \((p,q)=(2,\infty)\) and obtain exponent \(-1/2\);
-6. encode “energy alone is not scale coercive” as a precise sequence of
-   rescaled nonzero test fields whose energy norm tends to zero while the
-   critical norm remains fixed.
-
-Step 6 is an obstruction theorem, not a philosophical comment, and becomes a
-regression test against accidental energy-only promotions.
-
-**Status (step 6): REALIZED.** `Navier.EnergyObstruction.energy_not_scale_coercive`
-proves, for every nonzero `φ ∈ L² ∩ L³` on `ℝ³` with positive `L³` mass and every
-`ε > 0`, a rescaling `u_c(x) = c · φ(c · x)` whose `L²` energy is below `ε` while
-its scale-critical `L³` mass is unchanged and positive. The two scaling lemmas
-`l2_energy_dilation` (`L²` energy rescales by `c⁻¹`) and `l3_critical_dilation`
-(`L³` invariant) are proved by `MeasureTheory.Measure.integral_comp_smul` and
-`Module.finrank_fin_fun` (the change-of-variables on `ℝ³`). Kernel-clean; raw
-`#print axioms` ⊆ `{propext, Classical.choice, Quot.sound}`. This closes the
-formal side of falsification entry `F-001`. It does not advance the problem-statement
-endpoint.
-
-## 5. Known-result ports versus frontier payloads
-
-Each analytic result is formalized in two layers:
-
-- a **statement contract** that fixes all hypotheses and conclusions; and
-- a **realization theorem** whose proof is either ported from primary
-  mathematics or remains explicitly uninhabited.
-
-For example, a Serrin contract may consume a local smooth solution and a
-finite \(L_t^qL_x^p\) norm on \([0,T)\) with \(3/p+2/q\le1\), then produce
-continuation past \(T\). That theorem is a conditional bridge. It does not
-produce the norm. The R1 payload theorem must have the datum and lower PDE
-estimates as inputs and the norm bound as its conclusion.
-
-The same separation applies to:
-
-- Koch–Tataru/Banach fixed-point local theory versus arbitrary-data global
-  control;
-- Constantin–Fefferman conditional vorticity coherence versus automatic
-  coherence;
-- CKN epsilon/partial regularity versus exclusion of all singular points;
-- Gevrey smoothing versus a uniform positive radius;
-- weak existence versus smooth global existence.
-
-## 6. Polya use in Lean
-
-POLYA_MAP.md records the only currently matching theorem shapes. The initial
-formal uses should be limited to:
-
-- FixedPointBanach.apply after the complete Duhamel metric space and
-  contraction estimate exist;
-- Bootstrap.apply after the good-time set is proved nonempty, open, and closed;
-- VitaliCovering.apply after parabolic cylinders satisfy its Data contract;
-- CompactnessNormalFamilies.apply only for compact-domain equicontinuous
-  approximants;
-- small support uses of BanachSteinhaus.apply and TriangleInequality.apply.
-
-No import should be added for a catalogue-name match alone. In particular, the
-existing Polya EnergyMethod and DyadicDecomposition theorems have the wrong
-domains for PDE energy and Littlewood–Paley analysis.
-
-## 7. Anti-circularity implementation rules
-
-1. Before route modules are added, extract their lower data/operator imports
-   from `Navier/Problem.lean` so a route never imports a module that imports
-   the endpoint wrapper. The current combined statement file is acceptable
-   for fixing the surface, but is not the final producer/consumer split.
-2. A payload structure may not contain FeffermanA, global smoothness, no
-   finite blowup, or an equivalent continuation norm as an unproved field.
-3. Every assumption-bearing theorem receives a machine-readable hypothesis
-   inventory, including domain, force, equation, solution class, and scaling.
-4. A bridge proof cannot change the evidence status of its input payload.
-5. Model theorems live in a Quarantine namespace until a checked transfer
-   theorem reaches an exact problem-statement type.
-6. Numerical data types cannot coerce to proof-bearing route certificates.
-7. A theorem declaration with an axiom/sorry dependency remains conditional
-   even if every wrapper above it compiles.
-
-## 8. Native verification ladder
-
-At each phase, the implementation runs the narrowest native check:
-
-1. compile the edited module alone with the project's pinned Lean toolchain;
-2. compile Navier/Problem.lean only after its dependencies exist;
-3. run targeted positive and negative examples for exact quantifiers;
-4. emit raw #print axioms for each exported theorem;
-5. accept only \(\{\mathsf{propext},\mathsf{Classical.choice},
-   \mathsf{Quot.sound}\}\), plus an explicitly documented native_decide
-   witness where the repository policy permits it;
-6. validate the attack registry and reference manifest;
-7. bind every report to the exact Git revision and source bytes.
-
-Aggregate build success is insufficient for a claimed inhabitant if its axiom
-trace includes an open analytic payload. The trace of the proposition
-definition alone does not supply an inhabitant. Source grep is not an axiom
-audit.
-
-## 9. Roadmap exit criteria
-
-- **F0-A encoding milestone:** the current statement-A surface compiles, but
-  its two convention-equivalence residuals remain visible. Full F0 exit still
-  requires A–D round-trip tests against the official force, pressure,
-  periodicity, domain, and decay clauses.
-- **F3 algebra milestone:** the exponent and critical-line arithmetic compile
-  and are axiom-audited. Full F3 exit still requires equation covariance,
-  actual mixed-norm scaling, and the energy-supercritical obstruction theorem.
-- **F5/F6 exit:** local and conditional results compile with no concealed
-  endpoint hypothesis.
-- **F7 exit for A:** one of R1–R10 has a genuinely proved first residual,
-  survives all barrier tests, and has native evidence. R11 has a separate C/D
-  exit through an exact BreakdownCertificate.
-- **F9 exit:** a theorem inhabiting `Navier.ProblemStatements.WholeSpaceGlobalRegularity` compiles, its dependency
-  graph reaches that F7 realization, and its raw axiom audit is clean.
-
-Before F7, the honest project-level status remains
-**SCAFFOLDED / SCIENTIFIC_FRONTIER**, regardless of how much conditional
-infrastructure has been formalized.
+Source changes, compiler exit codes, and transitive axiom output support
+claims about checked declarations. A stale import or report supplies no
+current-source verification. Neither numerical observations nor successful
+compilation of a conditional implication discharges its assumptions.
