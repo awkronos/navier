@@ -88,3 +88,9 @@ Source changes, compiler exit codes, and transitive axiom output support
 claims about checked declarations. A stale import or report supplies no
 current-source verification. Neither numerical observations nor successful
 compilation of a conditional implication discharges its assumptions.
+
+`scripts/AuditAllAxioms.lean` rejects disallowed transitive axioms for every
+declaration originating in an imported Navier module, including private
+helpers and declarations outside the `Navier` namespace. It is part of
+`make check` and CI. The public import includes the Galerkin spectral support
+modules so they are covered by this check as well.

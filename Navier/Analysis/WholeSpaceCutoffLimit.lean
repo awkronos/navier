@@ -26,9 +26,6 @@ Gaussian-gradient, viscous, and pressure terms still needs their own spatial
 and time-uniform domination; no Leray bound, pressure normalization, or
 Duhamel representation is assumed here.
 
-Pattern classification: `representationTransport`; the finite-cutoff time
-integration, combined Gaussian transport, and cutoff-derivative tail lemma
-are `kernelClosed`; the termwise Duhamel consumer remains `scientificFrontier`.
 -/
 
 set_option autoImplicit false

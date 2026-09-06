@@ -9,178 +9,19 @@ import Navier.Analysis.WholeSpaceCutoffLimit
 import Navier.EnergyObstruction
 
 /-!
-# Conditional regularity bridges: Prodi–Serrin and Constantin–Fefferman
+# Conditional regularity estimates and counterexamples
 
-Two classical conditional-regularity criteria for the repository's partial
-classical solutions, stated as skeletons with hypothesis-carried norms
-(Step-0e: explicit integrability keeps the Bochner integrals honest; the
-conclusion is the same continuation surrogate as the BKM layer — a uniform
-velocity bound on `[0,T)`, which `PointEvaluationBreakdownWitness` machinery
-turns into "no pointwise blow-up").
+This module proves compact-region bounds, reductions to spatial tails,
+Gaussian cutoff and convolution estimates under explicit integrability
+hypotheses, and vorticity-direction geometry. The Duhamel representation is
+proved here for zero velocity; the general representation and source bounds
+needed for full Prodi–Serrin and Constantin–Fefferman criteria require further
+analytic proofs.
 
-Per the ladder (rung 5, R3 class, ≤1 conditional bridge per headline), these
-do not advance the headline; they delimit the conditional-regularity surface
-honestly.
-
-## Established leaves
-
-* `uniformBound_of_split` — order-theoretic assembly: an initial-layer bound on
-  `[0,δ]` and an interior bound on `(δ,T)` combine by `max` into the uniform
-  bound on `[0,T)`.  Shared by both bridges.
-* `serrin_exponent_gt_two` — on the critical line, `p > 3` forces `q > 2`.
-* `initialDatum_bounded_of_uniformBound` — the conclusion of either bridge
-  *entails* boundedness of `u₀`, which is why both now carry `hu₀`.
-* `uniformL2Mass_of_energyBound`, `energyBound_nonneg` — the uniform-in-time
-  `L²` mass bracket extracted from the hypothesis-carried energy bound.
-* `coherentVorticity_crossProduct_le_scaled` — the depletion factor `ε` that
-  direction coherence hands to the enstrophy stretching estimate at separations
-  `|x−y| ≤ ε·ρ`.  Informative exactly for `ε < 1`; see
-  `depletedCrossProduct_vacuous` for why the `ε = 1` instance is not.
-* `euclideanNormSq_eq_sum`, `crossProduct_smul_smul`,
-  `officialEuclideanNorm_crossProduct_le`, `crossProductBound_saturated`,
-  `officialEuclideanNorm_crossProduct_le_sub_of_unit`,
-  `officialEuclideanNorm_crossProduct_le_directionDist` — the Euclidean
-  cross-product geometry underlying Constantin–Fefferman: Lagrange's bound,
-  its saturation at an orthogonal pair, and the sharp comparison
-  `|ξ ⨯ η| ≤ |ξ − η|` for unit vectors.
-* `crossProductCoherent_of_directionLipschitz` — Lipschitz continuity of the
-  vorticity direction `ξ = ω/|ω|` on `{|ω| ≥ Ω₀}` implies the division-free
-  Constantin–Fefferman coherence bound.
-* `massBracket_vacuous_of_infiniteMass`,
-  `serrinMixedNorm_vacuous_of_nonIntegrableTime`, `depletedCrossProduct_vacuous`
-  — the three kernel-checked vacuity witnesses driving the Pattern-A repairs
-  recorded below.
-* `uniformL2Integrable_of_energyBound` — the integrability conjunct of a
-  hypothesis-carried energy bound, which `uniformL2Mass_of_energyBound`
-  discards.
-* `norm_continuousOn_spacetimeBefore`, `compactSpaceTime_bounded` — the
-  compact-set uniform bound on `[a,b] × K` for `0 ≤ a`, `b < T`, `K` compact.
-  This strengthens `Navier.Breakdown.bounded_pointEvaluation_of_smooth` from a
-  single spatial point to an arbitrary compact set, and it is the whole part of
-  both bridges that needs no analytic machinery.
-* `initialDatum_continuous`, `heatFlow_bounded_of_bounded`,
-  `heatFlow_initialDatum_bounded` — the linear half of the Duhamel estimate
-  shared by both far-field leaves: the initial datum of a partial classical
-  solution is continuous (hence measurable), and the Gaussian heat flow of any
-  measurable field bounded by `B` is again bounded by `B`, since the kernel is
-  nonnegative with unit mass.  Previously trapped inside the `sorry`-carrying
-  proof of `prodiSerrin_layer_farField_bounded`; now kernel-clean and reusable,
-  so what remains open in both far-field leaves is exactly the nonlinear
-  Duhamel correction.
-* `WholeSpaceDuhamel.cutoff_testedMomentum_coordinate` — the first honest
-  pointwise-solution representation leaf: against every smooth compactly
-  supported scalar test, the zero-force momentum equation is integrated by
-  parts with convection, viscosity, and pressure derivatives moved onto the
-  test.  Its first proof-producing consumer is
-  `WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated`: compact
-  support and the actual partial-solution smoothness justify differentiation
-  under the spatial integral and give the exact time-integrated tested
-  momentum balance on `[a,b] ⊂ (0,T)`.  This remains a standalone finite-cutoff
-  artifact, not a proof input to either far-field leaf.
-  `WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` proves why the
-  Gaussian itself still needs a cutoff-limit argument, while
-  `WholeSpaceDuhamel.cutoff_pressurePairing_add_const` keeps the pressure slot
-  gauge invariant.
-* `uniformBound_of_farField_window`, `interiorBound_of_outerRegion` — the two
-  reductions that discharge that compact core, leaving only decay at spatial
-  infinity (both windows) and uniformity as `t ↑ T` (interior window).
-
-## Falsification and repair (Pattern A)
-
-`massBracket_vacuous_of_infiniteMass` is a kernel-checked witness that the bare
-`L²` mass bracket
-
-`∀ t ∈ [0,T), (∫ x, ‖u t x‖ ^ 2) ∈ Set.Icc 0 E`
-
-is satisfied by *every* velocity field of infinite `L²` mass, for every
-`E ≥ 0`, because Lean's Bochner integral returns the junk value `0` off the
-integrable class.  Both Constantin–Fefferman leaves previously carried only
-that bracket, and were therefore **false as stated**: the shear flow
-`u(t,x) = (φ(t,x₃),0,0)`, `p ≡ 0`, built from a nonzero Tychonov solution `φ`
-of the one-dimensional heat equation with `φ(0,·) = 0`
-[Tychonov, Mat. Sb. 42 (1935) 199–216], is an exact zero-force classical
-solution with bounded (zero) initial datum whose vorticity is everywhere
-parallel to `e₂` — so every direction-coherence hypothesis holds for every
-`ρ`, `Ω₀` — while `φ` is unbounded
-on every strip by Tychonov uniqueness.  The repair adds the integrability
-hypothesis `hL2` to both leaves; `constantinFefferman_velocity_bounded` already
-holds it inside `henergy` and now forwards it via
-`uniformL2Integrable_of_energyBound`, so no caller pays for the repair.  The
-Prodi–Serrin leaves were unaffected: their `hint` is a genuine `Integrable`
-hypothesis and already excludes this class.
-
-### Second falsification and repair (Pattern A): the tautologous `hdep`
-
-`constantinFefferman_interior_outerRegion_bounded` additionally carried
-
-`|ω(x) ⨯ ω(y)| ≤ |ω(x)| · |ω(y)|` on `{|ω| ≥ Ω₀} × {|ω| ≥ Ω₀}`, `|x−y| ≤ ρ`
-
-as its supposed direction-coherence hypothesis `hdep`, obtained by
-specialising `coherentVorticity_crossProduct_le_scaled` to `ε = 1`.
-`depletedCrossProduct_vacuous` is the kernel-checked witness that this formula
-is a **tautology**: it is an instance of the unconditional Lagrange bound
-`officialEuclideanNorm_crossProduct_le`, its proof term discards every
-antecedent and never mentions `u`, `ρ` or `Ω₀`, and by
-`crossProductBound_saturated` it is attained with ratio `1` at an orthogonal
-pair.  So the leaf constrained the vorticity geometry not at all, whereas the
-Constantin–Fefferman mechanism *is* the depletion of the stretching term
-`α = (ξ·∇)u·ξ` caused by continuity of the direction field `ξ = ω/|ω|`; a
-cross-product magnitude bound expresses none of it.
-
-The repair is Pattern A — strengthening a hypothesis that was vacuous, hence
-a repair and not a weakening.  The leaf and
-`constantinFefferman_interior_bounded` now carry the genuine `ρ`-scaled
-coherence hypothesis `hcoh`, verbatim the one
-`constantinFefferman_velocity_bounded` already holds, so again no caller pays;
-the collapsing lemma `coherentVorticity_crossProduct_le` is deleted.  For
-callers holding the geometric form,
-`crossProductCoherent_of_directionLipschitz` derives `hcoh` from
-`|ξ(x) − ξ(y)| ≤ |x−y|/ρ` on the high-vorticity region.
-
-### Third falsification and repair (Pattern A): the untimed Serrin bracket
-
-The same junk-value defect recurs in the *temporal* slot.  `hM` encodes the
-Ladyzhenskaya–Prodi–Serrin hypothesis as
-`∀ T' < T, ∫₀^{T'} (∫|u|^p)^{q/p} ds ≤ M` with no conjunct asserting that the
-slice-norm profile is interval-integrable, and Lean's interval integral
-returns `0` off that class.  `serrinMixedNorm_vacuous_of_nonIntegrableTime` is
-the kernel-checked witness.  Repair: `prodiSerrin_interior_outerRegion_bounded`,
-`prodiSerrin_interior_bounded` and `prodiSerrin_velocity_bounded` now carry
-`hMint`.  This restores a conjunct the encoding dropped — `u ∈ L^q(0,T;L^p)`
-already asserts it — rather than adding a new assumption.
-
-## Bridges (assembled from named residual leaves)
-
-* `prodiSerrin_velocity_bounded` — the Ladyzhenskaya–Prodi–Serrin continuation
-  criterion: a critical mixed-norm bound `u ∈ L^q_t L^p_x`, `2/q + 3/p = 1`,
-  `p > 3`, forces a uniform velocity bound
-  [Prodi, Ann. Mat. Pura Appl. 48 (1959); Serrin, ARMA 9 (1962);
-  Escauriaza–Serëgin–Šverák (2003) for the `p = 3` endpoint].
-  Residuals: `prodiSerrin_layer_farField_bounded`,
-  `prodiSerrin_interior_outerRegion_bounded` — each the corresponding uniform
-  bound restricted to the outer region left over by `compactSpaceTime_bounded`.
-* `constantinFefferman_velocity_bounded` — the vorticity-direction coherence
-  criterion: if the direction of the vorticity is `ρ`-coherent (division-free
-  form: `|ω(x) ⨯ ω(y)| ≤ (|x−y|/ρ)·|ω(x)||ω(y)|`) wherever the vorticity is
-  large, a finite-energy classical solution stays bounded
-  [Constantin–Fefferman, Indiana Univ. Math. J. 42 (1993) 775–789].
-  Residuals: `constantinFefferman_layer_farField_bounded`,
-  `constantinFefferman_interior_outerRegion_bounded` — likewise restricted to
-  the outer region, the latter carrying `hcoh` itself after the tautology
-  repair recorded above.
-
-## Statement repair (bounded initial datum)
-
-Both bridges previously concluded a uniform bound on `[0,T)` from hypotheses
-that do not constrain `u₀` in `L^∞`.  Since `0 < T` (`terminalTime_pos`) and
-`velocity 0 = u₀`, the conclusion *includes* `∀ x, ‖u₀ x‖ ≤ R`, whereas
-`SmoothVelocityBefore` is `ContDiffOn` on `Set.Ico 0 T ×ˢ univ` — a purely
-local condition carrying no uniform spatial bound — and per-slice `L^p`
-integrability likewise does not imply boundedness.  Both statements therefore
-carry the explicit hypothesis `hu₀ : ∃ B₀, ∀ x, ‖u₀ x‖ ≤ B₀`, which the formal problem
-formulation supplies (Schwartz initial data).  `initialDatum_bounded_of_uniformBound`
-certifies that this hypothesis is *necessary*, hence minimal rather than an
-over-assumption.
+The explicit strain-flow counterexamples and integral vacuity witnesses show
+why smoothness, default-valued integrals, and unconditional cross-product
+bounds cannot supply the omitted analytic hypotheses. No admitted criterion
+is exported from this module.
 -/
 
 set_option autoImplicit false
@@ -317,45 +158,9 @@ theorem uniformL2Integrable_of_energyBound {u : VelocityEvolution} {T E : ℝ}
 
 /-! ### Falsification of the bare integral brackets -/
 
-/-- **The bare `L²` mass bracket is vacuous off the integrable class.**  Lean's
-Bochner integral returns the junk value `0` on a non-integrable integrand, so
-the hypothesis
-
-`∀ t ∈ [0,T), (∫ x, ‖u t x‖ ^ 2) ∈ Set.Icc 0 E`
-
-is satisfied by *every* velocity field of infinite `L²` mass, however large,
-for every `E ≥ 0`.  It therefore carries no information whatsoever outside the
-integrable class.
-
-This is the kernel-checked falsification witness for the previous statements of
-`constantinFefferman_initialLayer_bounded` and
-`constantinFefferman_interior_bounded`, which carried only that bracket and no
-integrability hypothesis.  A concrete inhabitant of the vacuous class: let `φ`
-be a nonzero Tychonov solution of the one-dimensional heat equation
-`∂ₜφ = ν ∂_z² φ` with `φ(0,·) = 0` [Tychonov, Mat. Sb. 42 (1935) 199–216], and
-put `u(t,x) = (φ(t,x₃), 0, 0)` with `p ≡ 0`.  Then
-
-* `u` is a genuine `PartialClassicalSolution ν zeroForce 0 T`: it is smooth,
-  `div u = ∂₁φ = 0`, the convection term `(u·∇)u = u₁ ∂₁ u` vanishes because
-  `φ` is independent of `x₁`, and the equation collapses to the heat equation;
-* its initial datum is `0`, so `hu₀` holds with `B₀ = 0`;
-* its vorticity `ω = (0, ∂₃φ, 0)` is everywhere parallel to `e₂`, so
-  `ω(x) ⨯ ω(y) = 0` and every direction-coherence hypothesis — the
-  tautologous `hdep` and the genuine `hcoh` alike — holds for every `ρ` and
-  `Ω₀`;
-* `x ↦ ‖u t x‖ ^ 2` is independent of `(x₁,x₂)` and not a.e. zero once
-  `φ(t,·) ≠ 0`, hence is not integrable on `ℝ³`, so this lemma supplies the
-  mass bracket for every `E ≥ 0`;
-* yet `φ` is unbounded on every strip `[0,δ] × ℝ`, since a heat solution that
-  is bounded on a strip and vanishes initially is identically zero by Tychonov
-  uniqueness.  Translating the activation time of `φ` from `0` to `δ` gives the
-  same refutation on the interior window `(δ,T)`.
-
-So both conclusions `∃ R, ∀ t, ∀ x, ‖u t x‖ ≤ R` fail while every hypothesis
-holds.  The repair is Pattern A: both Constantin–Fefferman leaves now carry the
-integrability hypothesis `hL2`, which the bridge's own `henergy` already
-supplies through `uniformL2Integrable_of_energyBound`, and which excludes this
-class outright at no cost to any caller. -/
+/-- Without integrability, the bare energy bracket is vacuous: the Bochner
+integral of a nonintegrable integrand is zero, so every nonnegative budget
+satisfies the bracket. -/
 theorem massBracket_vacuous_of_infiniteMass
     {u : VelocityEvolution} {T E : ℝ} (hE : 0 ≤ E)
     (hbad : ∀ t : ℝ, 0 ≤ t → t < T →
@@ -555,11 +360,8 @@ theorem officialEuclideanNorm_crossProduct_le (a b : Space) :
 
 /-- **The universal cross-product bound is saturated.**  At the orthogonal unit
 pair `e₁, e₂` the inequality of `officialEuclideanNorm_crossProduct_le` is an
-equality (ratio exactly `1`), so it cannot be sharpened by any constant and it
-separates no pair of vectors from any other.  Together with
-`officialEuclideanNorm_crossProduct_le` this is the falsification witness for
-the `hdep` hypothesis previously carried by
-`constantinFefferman_interior_outerRegion_bounded`. -/
+equality (ratio exactly `1`), so the coefficient in the unconditional bound
+cannot be decreased. -/
 theorem crossProductBound_saturated :
     officialEuclideanNorm ((![1, 0, 0] : Space) ⨯₃ (![0, 1, 0] : Space)) =
       officialEuclideanNorm (![1, 0, 0] : Space) *
@@ -642,30 +444,10 @@ theorem officialEuclideanNorm_crossProduct_le_directionDist (a b : Space) :
 
 /-! ### Falsification of the `ε = 1` depletion hypothesis -/
 
-/-- **The `ε = 1` depletion bound is a tautology.**  The statement
-
-`|ω(x) ⨯ ω(y)| ≤ |ω(x)| · |ω(y)|` whenever `|ω(x)|, |ω(y)| ≥ Ω₀` and `|x−y| ≤ ρ`
-
-holds for *every* velocity evolution `u`, every `T`, every `ρ` and every `Ω₀`,
-because it is an instance of the unconditional Lagrange bound
-`officialEuclideanNorm_crossProduct_le`.  Note the proof term below discards
-all three antecedents and never mentions `u`, `ρ` or `Ω₀`.
-
-This is the kernel-checked falsification witness for the previous statement of
-`constantinFefferman_interior_outerRegion_bounded`, which carried exactly this
-formula as its hypothesis `hdep` and therefore carried *no* geometric
-constraint on the vorticity direction at all — while the Constantin–Fefferman
-mechanism is precisely the depletion of the stretching term
-`α = (ξ·∇)u·ξ` produced by continuity of `ξ = ω/|ω|`.  By
-`crossProductBound_saturated` the bound is attained with ratio `1`, so it is
-not even a quantitatively useful universal estimate: it is the sharp form of
-"no information".
-
-The repair is Pattern A: the leaf now carries the genuine `ρ`-scaled
-Constantin–Fefferman coherence hypothesis `hcoh`, which its only caller
-`constantinFefferman_velocity_bounded` already holds verbatim, so no caller
-pays for the repair; and `crossProductCoherent_of_directionLipschitz` derives
-`hcoh` from Lipschitz continuity of the vorticity direction. -/
+/-- The unconditional cross-product bound holds regardless of distance or
+vorticity thresholds, and therefore supplies no direction-coherence control.
+`crossProductCoherent_of_directionLipschitz` gives a distance-dependent bound
+from an actual regularity hypothesis on the direction field. -/
 theorem depletedCrossProduct_vacuous (u : VelocityEvolution) (T ρ Ω₀ : ℝ) :
     ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
       Ω₀ ≤ officialEuclideanNorm (vorticity u t x) →
@@ -746,12 +528,8 @@ because the Gaussian kernel is nonnegative and integrates to `1`
 (`integral_heatKernel`).  No decay of `g` is used, and the constant is not
 inflated: at `g ≡ b` constant the bound is attained.
 
-This is the *linear half* of the Duhamel estimate shared by both far-field
-leaves below — `prodiSerrin_layer_farField_bounded` and
-`constantinFefferman_layer_farField_bounded` — where it bounds `e^{tνΔ}u₀` by
-`‖u₀‖_∞`.  Isolating it here makes it a kernel-clean, reusable theorem instead
-of a fragment trapped inside a `sorry`-carrying proof; what remains open in
-both leaves is exactly the nonlinear Duhamel correction. -/
+This bounds the linear term `e^{tνΔ}u₀` in a Duhamel representation by
+`‖u₀‖_∞`. -/
 theorem heatFlow_bounded_of_bounded {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t)
     {g : VelocityField} (hg : Measurable g) {B : ℝ} (hB : ∀ x : Space, ‖g x‖ ≤ B)
     (x : Space) :
@@ -1067,32 +845,13 @@ theorem prodiSerrin_gaussianConvectionSplit_tendsto
     hν sol hp hint ht0 htT hτ x₀ j
   simpa only [zero_add] using htail.add hgradient
 
-/-! ### The Duhamel (variation-of-constants) decomposition of the layer leaves
+/-! ### The Duhamel correction
 
-Both far-field layer leaves — `prodiSerrin_layer_farField_bounded` and
-`constantinFefferman_layer_farField_bounded` — previously carried the *whole*
-Kato mild-solution argument inside one `sorry`, described only in prose ("the
-Duhamel formula is the missing piece").  A prose description is not a carrier:
-nothing in the file named the object whose bound was missing, so neither leaf
-could be attacked below itself.
-
-The decomposition below makes that object real.  Reading the momentum equation
-as a forced heat equation `∂ₜu − νΔu = −((u·∇)u + ∇p)` names the source
-(`duhamelSource`) and the variation-of-constants correction
-(`duhamelNonlinear`) as explicit integrals of estate-defined quantities —
-`convection`, `pressureGradient` and `heatKernel` — with no opaque carrier and
-no Leray projector.  `layerBound_of_duhamelNonlinear_bounded` then discharges
-the layer conclusion from the representation plus a uniform bound on that one
-correction, kernel-clean.
-
-Statement hygiene, checked before landing.  The pinning matters and is the
-whole point: an interface that merely postulated *some* function `N` with
-`u = e^{tνΔ}u₀ + N` and `‖N‖ ≤ C` would be satisfied by `N := u − e^{tνΔ}u₀`
-for every solution whatsoever, making the hypothesis bundle an alias of the
-conclusion (`epistemic-rigor.md` §"UNDER-SPECIFIED relative to its consumer").
-`duhamelNonlinear` is a *definition*, not a parameter, so that route is closed:
-`duhamelRepresentation_layer` is a genuine analytic assertion about a specific
-integral, and `duhamelNonlinear_bounded_of_*` is a genuine estimate on it.
+The source `duhamelSource` and correction `duhamelNonlinear` below are explicit
+integrals of the convection, pressure gradient and heat kernel.
+`layerBound_of_duhamelNonlinear_bounded` combines a representation using this
+specific correction with a uniform bound on it. Proving the representation
+for an arbitrary solution still requires the analytic cutoff-limit argument.
 -/
 
 /-- **The Navier–Stokes Duhamel source** `−((u·∇)u + ∇p)`.  This is the
@@ -1208,47 +967,6 @@ theorem duhamelRepresentation_layer_of_velocity_eq_zero
     simp_rw [duhamelSource_eq_zero_of_velocity_eq_zero sol hvelocity hs0 hsT]
     simp
 
-/-- **[LEAF — the variation-of-constants representation; est ~400 LOC.]**  On
-the closed layer `(0,δ]` a partial classical solution equals the heat flow of
-its initial datum plus the Duhamel correction of the momentum-equation source.
-
-This is the *only* place the mild formulation is asserted, and it is asserted
-about explicitly named integrals rather than described in prose.
-
-Classical route: `sol.equation` gives `∂ₜu − νΔu = duhamelSource` pointwise;
-Duhamel/variation of constants for the heat semigroup on `ℝ³` then converts the
-pointwise ODE-in-`t` statement into the integral identity, which requires
-`d/ds ∫ G^ν_{t−s}(x−y) u(s,y) dy = ∫ G^ν_{t−s}(x−y) (duhamelSource)(s,y) dy`
-and the boundary behaviour `G^ν_{t−s} → δ` as `s → t`
-[Kato, Math. Z. 187 (1984) 471–480, §1; Giga–Miyakawa, Arch. Ration. Mech.
-Anal. 89 (1985) 267–281].
-
-Frontier status: the estate has the kernel and its `L^s` norms
-(`HeatSemigroupSmoothing.integral_heatKernel_rpow`, `heatKernel_Lr_scaling`),
-the Young/convolution layer (`heatKernel_convolution_abs_le`,
-`heatKernel_convolution_smoothing_le`), an exact finite-cutoff momentum
-representation (`WholeSpaceDuhamel.cutoff_testedMomentum_coordinate`) and its
-interior-time FTC composition
-(`WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated`).  What is
-missing is the removal of the spatial cutoff without a Gaussian test function:
-`WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` shows this is a
-genuine limit step, and its boundary terms need tail control of `u` and `∇u`
-that no per-slice integrability hypothesis supplies.
-
-This leaf is strictly lower than the two layer leaves it replaces: it carries
-no conclusion about boundedness at all, only the identity. -/
-theorem duhamelRepresentation_layer
-    {ν : ℝ} (hν : 0 < ν) {f : ForceField} {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν f u₀ T)
-    {δ : ℝ} (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
-      sol.velocity t x
-        = (∫ y : Space, heatKernel ν t (x - y) • u₀ y)
-          + duhamelNonlinear sol t x := by
-  by_cases hvelocity : sol.velocity = (0 : VelocityEvolution)
-  · exact duhamelRepresentation_layer_of_velocity_eq_zero
-      hν sol hvelocity hδ0 hδT
-  · sorry
 
 /-- Every zero-force Duhamel source slice strictly before the terminal time is
 spatially `C∞`.  Thus the measurability premise of the general `L^r` Duhamel
@@ -1315,9 +1033,8 @@ theorem convectionL2Mass_parabolicScaled
 /-- **Energy-only convection control is scale-impossible.**  Starting from
 any slice with positive convection `L²` mass, parabolic dilation can keep the
 velocity `L²` mass below its original value while making the convection mass
-exceed any prescribed number.  Therefore the energy bracket in
-`duhamelNonlinear_bounded_of_L2` cannot by itself supply the uniform source
-bound; a derivative estimate using additional PDE structure is indispensable. -/
+exceed any prescribed number. A uniform source estimate therefore requires
+more information than the velocity energy bracket alone. -/
 theorem energyBound_cannot_control_convectionL2
     (u : VelocityEvolution)
     (hconv : 0 < ∫ x : Space, ‖convection u 0 x‖ ^ 2) :
@@ -1458,9 +1175,8 @@ Mathlib triple.
 
 where `S` bounds the `L^r` norms of `duhamelSource sol s` on the layer.
 
-This is the complete `L^r → L^∞`-smoothing-plus-time-integration route that
-`duhamelNonlinear_bounded_of_Lp` and `duhamelNonlinear_bounded_of_L2` were both
-described as needing.  The threshold `r > 3/2` is not decoration: it is exactly
+This is an `L^r → L^∞` smoothing and time-integration estimate. The threshold
+`r > 3/2` is exactly
 `3/(2r) < 1`, the condition under which `intervalIntegral_sub_rpow_neg`
 converges, and the Prodi–Serrin exponent `p > 3` sits strictly above it.
 
@@ -1698,736 +1414,6 @@ theorem duhamelConvolution_intervalIntegrable_of_source_Lr
   (duhamelConvolution_integrable_of_source_Lr hν sol hδT hr hsi S hS ht0 htδ x).2.norm
 
 
-/-- **[LEAF — `L^p` smoothing bound on the Duhamel correction; est ~250 LOC.]**
-Under the Prodi–Serrin mixed-norm hypothesis the Duhamel correction is
-uniformly bounded on the layer.
-
-Classical route: `‖∫ G^ν_{t−s}(x−·) F(s,·)‖_∞ ≤ C(r,ν)(t−s)^{−3/(2r)}‖F(s)‖_r`
-— which the estate already certifies as
-`HeatSemigroupSmoothing.heatKernel_convolution_smoothing_le` — integrated in
-`s` against the critical mixed norm `∫₀^{T'}‖u(s)‖_p^q ds ≤ M`.  The exponent
-condition `2/q + 3/p = 1` with `p > 3` is exactly what makes
-`∫₀ᵗ (t−s)^{−3/(2r)} ‖F(s)‖_r ds` converge.
-Depends on: `‖duhamelSource(s)‖_r` control, i.e. `L^r` bounds on `(u·∇)u` and
-on `∇p`.  The `∇p` half is available with no singular-integral input from
-`PressureNormalization.pressureGradient_eq_of_solution` /
-`memLp_pressureGradient_of_terms`; the `(u·∇)u` half needs a gradient bound the
-`L^p` slice hypothesis alone does not give.
-
-This leaf is strictly lower than `prodiSerrin_layer_farField_bounded`: it is a
-bound on one explicitly written integral, and it says nothing about
-`sol.velocity`.
-
-**Residual narrowed 2026-09-02, and the estimate itself is no longer part of
-it.**  `duhamelNonlinear_bounded_of_source_Lr` (above, kernel-clean, axioms
-`[propext, Classical.choice, Quot.sound]`) proves the entire `L^r → L^∞`
-smoothing-plus-time-integration route for every `r > 3/2`, with the constant
-hoisted above the slice.  The Prodi–Serrin exponent `p > 3` satisfies
-`p > 3/2`, so this leaf now needs from that theorem exactly three things and
-nothing else:
-
-* a uniform `L^p` bound `S` on the *source* `duhamelSource sol s` over the
-  layer — i.e. `L^p` control of `(u·∇)u` and `∇p`, which is where the
-  remaining mathematics is;
-* slice integrability of `‖duhamelSource sol s‖^p`.
-
-Joint source continuity and time integrability of the convolution norm are
-now constructed by `duhamelConvolution_intervalIntegrable_of_source_Lr`
-from the same source bound. They impose no independent remaining premise.
-
-The `∇p` half of the first item is already available from
-`PressureNormalization.pressureGradient_eq_of_solution` /
-`memLp_pressureGradient_of_terms` with no singular-integral input.  What is
-genuinely open is the `(u·∇)u` half: the `L^p` slice hypothesis on `u` does
-not bound `∇u`.  Nothing about the heat semigroup, Young's inequality, or the
-convergence of `∫₀ᵗ (t−s)^{−3/(2p)} ds` remains here — those are theorems now
-(`intervalIntegral_sub_rpow_neg`,
-`heatKernel_convolution_norm_vec_le_uniform`). -/
-theorem duhamelNonlinear_bounded_of_Lp
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
-    (hcrit : Navier.Scaling.CriticalLine p q)
-    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
-    (M : ℝ)
-    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      (∫ s in (0 : ℝ)..T',
-        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
-    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      IntervalIntegrable
-        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
-    {δ : ℝ} (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ C : ℝ, ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
-      ‖duhamelNonlinear sol t x‖ ≤ C := by
-  sorry
-
-/-- **[LEAF — `L²` smoothing bound on the Duhamel correction; est ~250 LOC.]**
-The Constantin–Fefferman twin of `duhamelNonlinear_bounded_of_Lp`, with the
-uniform `L²` mass bracket replacing the critical mixed norm.
-
-Carries `hL2` alongside `hmass` for the reason recorded in
-`massBracket_vacuous_of_infiniteMass`: the bracket alone is satisfied by every
-field of infinite `L²` mass.
-
-Classical route: the same `L^r → L^∞` heat smoothing
-(`heatKernel_convolution_smoothing_le`) with `r = 2`, integrated against the
-energy bound [Kato, Math. Z. 187 (1984) 471–480].
-Depends on: `L²` control of `duhamelSource`, i.e. of `(u·∇)u` and `∇p`.
-
-**Residual narrowed 2026-09-02.**  `r = 2 > 3/2`, so
-`duhamelNonlinear_bounded_of_source_Lr` (above, kernel-clean, axioms
-`[propext, Classical.choice, Quot.sound]`) discharges the whole
-`L² → L^∞`-smoothing-and-time-integration argument this leaf was described as
-needing.  Spatial measurability of the source is now discharged by
-`duhamelSource_slice_measurable`.  What is left is exactly: slice `L²`
-integrability and a uniform `L²` bound on the *source* over the layer.
-`duhamelConvolution_intervalIntegrable_of_source_Lr` now proves the
-time-integrability premise from these same inputs and actual joint source
-regularity. The
-`∇p` half of the source bound is available without singular integrals
-(`memLp_pressureGradient_of_terms`); the open half is `L²` control of
-`(u·∇)u`, which the energy bracket `hmass` alone does not supply — it bounds
-`u`, not `∇u`.  That gap, and not the heat semigroup, is the mathematics. -/
-theorem duhamelNonlinear_bounded_of_L2
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (E : ℝ) (hE : 0 ≤ E)
-    (hL2 : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2))
-    (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
-      (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
-    {δ : ℝ} (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ C : ℝ, ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
-      ‖duhamelNonlinear sol t x‖ ≤ C := by
-  have hsm : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
-      Measurable (duhamelSource sol s) := by
-    intro s hs0 hsδ
-    exact duhamelSource_slice_measurable sol hs0 (lt_of_le_of_lt hsδ hδT)
-  have hsi : ∀ s : ℝ, 0 ≤ s → s ≤ δ →
-      Integrable (fun y : Space => ‖duhamelSource sol s y‖ ^ (2 : ℝ)) := by
-    -- SCIENTIFIC_FRONTIER: `L²` control of convection and pressure gradient.
-    sorry
-  obtain ⟨S, hS⟩ : ∃ S : ℝ, ∀ s : ℝ, 0 ≤ s → s ≤ δ →
-      (∫ y : Space, ‖duhamelSource sol s y‖ ^ (2 : ℝ)) ^ (1 / (2 : ℝ)) ≤ S := by
-    -- SCIENTIFIC_FRONTIER: uniform source bound; the energy controls `u`,
-    -- not the derivative in `(u·∇)u`.
-    sorry
-  have hNint : ∀ t : ℝ, 0 < t → t ≤ δ → ∀ x : Space,
-      IntervalIntegrable
-        (fun s : ℝ => ‖∫ y : Space,
-          heatKernel ν (t - s) (x - y) • duhamelSource sol s y‖)
-        volume 0 t := by
-    intro t ht0 htδ x
-    exact duhamelConvolution_intervalIntegrable_of_source_Lr hν sol hδT
-      (r := 2) (by norm_num) hsi S hS ht0 htδ x
-  exact duhamelNonlinear_bounded_of_source_Lr hν sol hδ0
-    (r := 2) (by norm_num) hsm hsi S hS hNint
-
-/-- **[ASSEMBLY — Prodi–Serrin far-field layer tail.]**  Outside one
-closed ball, a partial classical solution with bounded initial datum and
-per-slice `L^p` integrability (`p > 3`) is uniformly bounded on the closed
-initial layer `[0,δ]`.
-
-**Decomposed 2026-09-02 (lane NAVIER2).**  This is no longer a leaf: the proof
-below is a kernel-clean assembly of `layerBound_of_duhamelNonlinear_bounded`
-over two strictly lower named residuals, `duhamelRepresentation_layer` (shared
-with the Constantin–Fefferman twin) and `duhamelNonlinear_bounded_of_Lp`.  The
-conclusion it actually gets from that reduction is stronger than the one stated
-here — `ϱ = 0`, i.e. the bound holds on all of space — and the far-field form is
-kept because it is what the caller consumes.  The prose route recorded below is
-retained as the reference for the two residuals.
-
-This is the residual of `prodiSerrin_initialLayer_bounded` *after*
-`compactSpaceTime_bounded` discharges the compact core.  It is the original
-conclusion restricted to `ϱ ≤ ‖x‖`, hence strictly weaker, and it is not
-circular: establishing it nowhere uses the uniform bound it supports.
-
-Classical route: Kato's mild-solution theory in `L^∞ ∩ L^p` — the Duhamel
-formulation `u(t) = e^{tνΔ}u₀ − ∫₀^t e^{(t−s)νΔ} P ∇·(u ⊗ u) ds` gives a
-short-time `L^∞` bound from `‖u₀‖_∞`, and the `L^p → L^∞` smoothing of the heat
-semigroup turns the per-slice `L^p` control into decay at spatial infinity
-[Kato, Math. Z. 187 (1984) 471–480;
-Giga–Miyakawa, Arch. Ration. Mech. Anal. 89 (1985) 267–281].
-Depends on: the heat semigroup on `ℝ³` with its `L^p → L^∞` smoothing
-estimates, the Leray projector, and Duhamel/Gronwall — none currently in
-Mathlib.
-
-Frontier status: `HeatSemigroupSmoothing` now lands the Gaussian kernel, its
-`L^s` norms (`integral_heatKernel_rpow`, `heatKernel_Lr_scaling`), and the
-convolution (Young) layer — `heatKernel_convolution_abs_le` and
-`heatKernel_convolution_smoothing_le` give the pointwise smoothing bound
-`|∫ G_t^ν(x−y) f(y)| ≤ C(r,ν) t^{-3/(2r)} ‖f‖_r`.  The finite-cutoff spatial
-transport is now certified by
-`WholeSpaceDuhamel.cutoff_testedMomentum_coordinate`, and
-`WholeSpaceCutoffLimit.cutoffMomentumCoordinate_timeIntegrated` performs its
-interior-time FTC composition.  The theorems immediately above now prove
-convergence of the complete finite-cutoff right-hand side to the increment of
-Gaussian-tested momentum under the present `L^p` hypothesis and identify the
-complete product-rule convection limit.  Still missing: convergence of the
-viscosity/pressure terms, uniform domination in the Duhamel time variable, and
-the Leray projection.
-`WholeSpaceDuhamel.heatKernel_translate_not_hasCompactSupport` shows that this
-is a genuine limit step; its boundary terms require tail control of the
-solution and its first spatial derivatives that the per-slice `L^p` hypothesis
-alone does not supply (narrow bump constructions defeat such pointwise
-derivative decay).  Raw pressure `L^p` cannot replace that step:
-for every solution and finite positive exponent, some pressure gauge shift
-preserves the velocity while leaving the raw pressure outside `L^p`.  The
-in-repo Duhamel developments
-`FrequencyDuhamel`/`CriticalMild*` act on one-frequency or lattice encodings,
-not on pointwise classical solutions; and the Leray projector as a pointwise
-bounded kernel.
-
-**Statement repair 2026-09-02 (lane NAVIER).**  This leaf previously carried
-no Serrin criterion at all: only a bounded initial datum and *per-slice* `L^p`
-integrability, with no control of `t ↦ ‖u(t)‖_{L^p}` as a function of time.
-That is strictly stronger than Prodi–Serrin and it is not what the leaf's own
-stated route consumes — the Duhamel estimate needs
-`∫₀^{T'} ‖u(s)‖_{L^p}^q ds ≤ M` on the critical line, which is precisely the
-Ladyzhenskaya–Prodi–Serrin hypothesis the theorem is named after.  The
-mixed-norm data `(q, hq, hcrit, M, hM, hMint)` is now carried here.  It costs
-the consumer nothing: `prodiSerrin_velocity_bounded`, the only caller of the
-chain, already holds all six and previously discarded them on the
-initial-layer branch while forwarding them on the interior branch.  The leaf
-is therefore *strictly lower* than before, and its route is now stated over
-the hypotheses that route actually uses. -/
-theorem prodiSerrin_layer_farField_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
-    (hcrit : Navier.Scaling.CriticalLine p q)
-    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
-    (M : ℝ)
-    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      (∫ s in (0 : ℝ)..T',
-        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
-    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      IntervalIntegrable
-        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
-      ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
-  -- Now an assembly, not a leaf.  `layerBound_of_duhamelNonlinear_bounded`
-  -- discharges the conclusion kernel-clean from two strictly lower named
-  -- facts: the variation-of-constants representation and a uniform bound on
-  -- the Duhamel correction under the critical mixed norm.  The linear half
-  -- (`heatFlow_initialDatum_bounded`) is inside that reduction.
-  obtain ⟨B₀, hu₀B⟩ := hu₀
-  obtain ⟨C, hC⟩ :=
-    duhamelNonlinear_bounded_of_Lp hν sol p q hp hq hcrit hint M hM hMint hδ0 hδT
-  exact layerBound_of_duhamelNonlinear_bounded hν sol hu₀B hδ0
-    (duhamelRepresentation_layer hν sol hδ0 hδT) hC
-
-/-- **Prodi–Serrin initial layer.**  With a bounded initial datum, a partial
-classical solution carrying per-slice `L^p` integrability (`p > 3`) is
-uniformly bounded on any closed initial layer `[0,δ]` with `δ < T`.
-
-Assembled from the established compact core `compactSpaceTime_bounded`, routed
-through `uniformBound_of_farField_window`, and the named far-field residual
-`prodiSerrin_layer_farField_bounded`
-[Prodi, Ann. Mat. Pura Appl. 48 (1959) 173–182;
-Serrin, Arch. Rational Mech. Anal. 9 (1962) 187–195]. -/
-theorem prodiSerrin_initialLayer_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
-    (hcrit : Navier.Scaling.CriticalLine p q)
-    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
-    (M : ℝ)
-    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      (∫ s in (0 : ℝ)..T',
-        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
-    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      IntervalIntegrable
-        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ R₁ : ℝ, ∀ t : ℝ, 0 ≤ t → t < T → t ≤ δ → ∀ x : Space,
-      ‖sol.velocity t x‖ ≤ R₁ := by
-  obtain ⟨ϱ, R₂, htail⟩ :=
-    prodiSerrin_layer_farField_bounded hν sol hu₀ p q hp hq hcrit hint M hM hMint
-      δ hδ0 hδT
-  obtain ⟨R, hR⟩ :=
-    uniformBound_of_farField_window (a := 0) (b := δ) sol.velocity_smooth
-      le_rfl hδT htail
-  exact ⟨R, fun t ht0 _ htδ x => hR t ht0 htδ x⟩
-
-/-- **[LEAF — Prodi–Serrin interior outer region; est ~450 LOC.]**  Away from
-the initial time, the critical mixed-norm bound controls the velocity on the
-*outer* region of the interior window: far field `ϱ ≤ ‖x‖`, or late times
-`(δ+T)/2 < t`.  The temporal exponent hypothesis `2 < q` is exactly what
-`serrin_exponent_gt_two` supplies from `p > 3` on the critical line, and it is
-what makes the time integration in the Moser iteration converge.
-
-This is the residual of `prodiSerrin_interior_bounded` *after*
-`compactSpaceTime_bounded` discharges the compact core
-`[δ,(δ+T)/2] × closedBall 0 ϱ`.  It is the original conclusion restricted to
-the outer region, hence strictly weaker, and it is not circular.
-
-Classical route: Serrin's local regularity criterion — on every parabolic
-cylinder `Q_r(z)` with `r ≤ √δ` contained in `ℝ³ × (0,T)`, the critical norm
-controls `‖u‖_{L^∞(Q_{r/2})}`; the global bound `M` makes the resulting
-estimate uniform in the cylinder centre [Serrin, Arch. Ration. Mech. Anal. 9
-(1962) 187–195; Struwe, Comm. Pure Appl. Math. 41 (1988) 437–458].
-Depends on: parabolic Moser/De Giorgi iteration, the Caccioppoli inequality
-for the local energy, and the Biot–Savart representation of the pressure —
-none currently in Mathlib.
-
-Frontier status (N3 sweep 2026-08-21): `ParabolicCaccioppoli` lands the
-pointwise local energy identity `local_energy_balance` and the De
-Giorgi–Moser engine `deGiorgiMoser_tendsto_zero`, and former blocker (a)
-is now certified: `CutoffEnergyIbp.cutoffEnergy_ibp_eq` gives the cutoff
-IBP balance.  Blocker (b) — "an `L^r` pressure bound for `∫ χ² ⟨∇p, u⟩`;
-no `MemLp`/`Integrable` estimate for `sol.pressure` exists in the estate"
-— has now been *analysed rather than merely restated*, in
-`Navier.Analysis.PressureNormalization`, and it splits in three:
-
-* **The raw-pressure form of (b) is FALSE as stated.**
-  `PressureNormalization.not_forall_memLp_pressure` refutes it with an
-  explicit witness (that theorem's own axiom audit is in its file):
-  `SatisfiesNavierStokesBefore` constrains the pressure only through
-  `pressureGradient`, so `PressureNormalization.shiftPressure` produces, from
-  any solution, another solution with the same velocity and pressure shifted
-  by an arbitrary constant; a nonzero constant lies in no `L^r(ℝ³)` for
-  `0 < r < ∞`.  There was never a `MemLp` estimate for `sol.pressure` to find.
-* **The `∇p` half of (b) is discharged, with no singular-integral input.**
-  `PressureNormalization.pressureGradient_eq_of_solution` solves the momentum
-  equation for `∇p = ν Δu + f − ∂ₜu − (u·∇)u`, and
-  `memLp_pressureGradient_of_terms` / `integrable_pressureGradient_of_terms`
-  transport `MemLp`/`Integrable` from the velocity terms to `∇p`.
-* **The remaining residual is well posed after normalization.**  The
-  derivative-free slot `2 ∫ p · χ (∇χ·u)` of
-  `CutoffEnergyIbp.cutoffEnergy_pressure_ibp` is gauge invariant
-  (`PressureNormalization.cutoffPressure_add_const`, via the vanishing cutoff
-  flux `integral_cutoff_flux_eq_zero` of a divergence-free field), and the
-  `L^r`-normalized pressure is unique
-  (`PressureNormalization.pressure_eq_of_memLp`).
-
-`PressureNormalization.abs_cutoffPressure_le_localL2` then bounds that slot by
-`√(∫ (χp)²) · √(∫ (∇χ·u)²)`, the second factor unconditionally finite.  So (b)
-is now exactly one named leaf: a **local** `L²` bound `∫ (χp)² ≤ …` for the
-normalized pressure, which still needs the Calderón–Zygmund representation
-`p = Σ RᵢRⱼ(uᵢuⱼ)`.
-
-**Status repair 2026-09-02 (lane NAVIER2).**  The sentence this paragraph used
-to end with — "the transform's `L^r` bounds stay a named residual in
-`SingularIntegralPrelims`" — is no longer true at `r = 2`, and `r = 2` is the
-only exponent this blocker needs.  Plancherel is present in the pinned Mathlib
-`v4.31.0` (`Mathlib/Analysis/Fourier/LpSpace.lean`), and the whole `p = 2`
-Calderón–Zygmund layer is now certified kernel-clean:
-`SingularIntegralPrelims.l2_multiplier_bound` (every bounded Fourier multiplier
-is `L²`-bounded with the same constant), `exists_l2_multiplier_apply` (the
-operator exists, so the bound is not about an empty hypothesis set),
-`doubleRiesz_l2_bound` and `exists_doubleRieszTransform` (`‖RᵢRⱼf‖₂ ≤ ‖f‖₂`,
-realised), and — on this estate's own carrier `Space = Fin 3 → ℝ`, transported
-along the volume-preserving coordinate identification —
-`PressureL2Riesz.pressure_l2_bound_space`:
-
-  `P = Σᵢⱼ RᵢRⱼ(wᵢⱼ)`  ⟹  `‖P‖₂ ≤ Σᵢⱼ ‖wᵢⱼ‖₂`.
-
-So blocker (b) has halved.  What is left of it is *not* an operator bound at
-all: it is the **representation** `p = Σᵢⱼ RᵢRⱼ(uᵢuⱼ)` itself — the solution of
-the pressure Poisson equation `−Δp = Σᵢⱼ ∂ᵢ∂ⱼ(uᵢuⱼ)` for a partial classical
-solution, together with the localisation of the resulting global `L²` bound to
-`∫ (χp)²`.  `CZNearField` certifies the pointwise Hörmander core; the `r ≠ 2`
-theory (weak-`(1,1)`, Marcinkiewicz) remains genuinely Mathlib-absent but is
-not needed here.
-
-The remaining blockers of this leaf are therefore three, and the pressure one
-is now the smallest: (i) the integrated Caccioppoli inequality, (ii) the
-parabolic Moser/De Giorgi iteration to `L^∞`, and (iii) the pressure
-representation above. -/
-theorem prodiSerrin_interior_outerRegion_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
-    (hcrit : Navier.Scaling.CriticalLine p q)
-    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
-    (M : ℝ)
-    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      (∫ s in (0 : ℝ)..T',
-        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
-    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      IntervalIntegrable
-        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ ϱ R : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
-      (ϱ ≤ ‖x‖ ∨ (δ + T) / 2 < t) → ‖sol.velocity t x‖ ≤ R := by
-  -- The classical route is Serrin's local regularity criterion: on every parabolic
-  -- cylinder Q_r(z) with r ≤ √δ contained in ℝ³ × (0,T), the critical mixed-norm
-  -- bound controls ‖u‖_{L^∞(Q_{r/2})}; the global bound M makes the estimate
-  -- uniform in the cylinder centre.  This is a parabolic Moser/De Giorgi iteration
-  -- argument.
-  --
-  -- The estate has `ParabolicCaccioppoli` which lands:
-  --   * `local_energy_balance` — the pointwise local energy identity
-  --   * `deGiorgiMoser_tendsto_zero` — the De Giorgi–Moser engine
-  --   * `CutoffEnergyIbp.cutoffEnergy_ibp_eq` — the cutoff IBP balance
-  -- The integrated Caccioppoli inequality itself is still missing.  Its
-  -- pressure blocker has been analysed in `PressureNormalization`:
-  --   * `not_forall_memLp_pressure` — the raw-pressure `MemLp` statement is
-  --     FALSE for every `0 < r < ∞`, witness `shiftPressure sol 1`; the
-  --     system constrains `p` only through `∇p`, so `p` is free up to an
-  --     additive constant and a nonzero constant is in no `L^r(ℝ³)`.
-  --   * `pressureGradient_eq_of_solution`, `memLp_pressureGradient_of_terms`
-  --     — the `∇p` half is available outright from the momentum equation,
-  --     with no singular-integral input.
-  --   * `cutoffPressure_add_const`, `pressure_eq_of_memLp` — the
-  --     derivative-free Caccioppoli slot is gauge invariant and the
-  --     `L^r`-normalized pressure is unique, so the residual is well posed.
-  --   * `abs_cutoffPressure_le_localL2` — that slot is bounded by
-  --     √(∫ (χp)²)·√(∫ (∇χ·u)²), the second factor unconditionally finite.
-  -- What remains is a local `L²` bound on the NORMALIZED pressure, i.e. the
-  -- Calderón–Zygmund representation `p = Σ RᵢRⱼ(uᵢuⱼ)`.  `CZNearField`
-  -- certifies the pointwise Hörmander core, but the singular integral's L^r
-  -- bounds stay a named residual in `SingularIntegralPrelims`.
-  --
-  -- Without that bound, the De Giorgi–Moser engine cannot produce the
-  -- `L^∞_t L^∞_x` bound that the outer-region conclusion requires.
-  sorry
-
-/-- **Prodi–Serrin interior bound.**  Away from the initial time, the critical
-mixed-norm bound gives a uniform velocity bound on `(δ,T)`.
-
-Assembled from the established compact core `compactSpaceTime_bounded`, routed
-through `interiorBound_of_outerRegion` at the split time `(δ+T)/2`, and the
-named outer-region residual `prodiSerrin_interior_outerRegion_bounded`
-[Serrin, Arch. Rational Mech. Anal. 9 (1962) 187–195]. -/
-theorem prodiSerrin_interior_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (p q : ℝ) (hp : 3 < p) (hq : 2 < q)
-    (hcrit : Navier.Scaling.CriticalLine p q)
-    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
-    (M : ℝ)
-    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      (∫ s in (0 : ℝ)..T',
-        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
-    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      IntervalIntegrable
-        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T')
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ R₂ : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
-      ‖sol.velocity t x‖ ≤ R₂ := by
-  obtain ⟨ϱ, R, htail⟩ :=
-    prodiSerrin_interior_outerRegion_bounded hν sol p q hp hq hcrit hint M hM
-      hMint δ hδ0 hδT
-  exact interiorBound_of_outerRegion (m := (δ + T) / 2) sol.velocity_smooth
-    hδ0.le (by linarith) htail
-
-/-- **[ASSEMBLY — Constantin–Fefferman far-field layer tail.]**
-Outside one closed ball, a finite-energy partial classical solution with
-bounded initial datum is uniformly bounded on the closed initial layer `[0,δ]`.
-
-**Decomposed 2026-09-02 (lane NAVIER2).**  No longer a leaf: a kernel-clean
-assembly of `layerBound_of_duhamelNonlinear_bounded` over
-`duhamelRepresentation_layer` (shared with the Prodi–Serrin twin) and
-`duhamelNonlinear_bounded_of_L2`.
-
-Carries the integrability hypothesis `hL2` alongside the numeric bracket
-`hmass`.  Both are needed: by `massBracket_vacuous_of_infiniteMass` the bracket
-alone is satisfied by every field of infinite `L²` mass, which is what made the
-previous statement of `constantinFefferman_initialLayer_bounded` false.  The
-bridge supplies `hL2` for free through `uniformL2Integrable_of_energyBound`.
-
-This is the residual after `compactSpaceTime_bounded` discharges the compact
-core, so it is the original conclusion restricted to `ϱ ≤ ‖x‖`.
-
-Classical route: the same Kato mild-solution short-time `L^∞` bound as in
-`prodiSerrin_layer_farField_bounded`, with the `L²` mass replacing the `L^p`
-slice control in the Duhamel estimate [Kato, Math. Z. 187 (1984) 471–480].
-Depends on: the heat semigroup `L² → L^∞` smoothing estimate, the Leray
-projector, and Gronwall — none currently in Mathlib.
-
-Frontier status: identical to `prodiSerrin_layer_farField_bounded` with the
-uniform `L²` mass bracket replacing the per-slice `L^p` control — the
-kernel's `L^s` norms and the convolution (Young) layer exist
-(`HeatSemigroupSmoothing`, in particular
-`heatKernel_convolution_smoothing_le`); the Duhamel representation for an
-arbitrary `PartialClassicalSolution` and the pointwise Leray projector do
-not. -/
-theorem constantinFefferman_layer_farField_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (E : ℝ) (hE : 0 ≤ E)
-    (hL2 : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2))
-    (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
-      (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ ϱ R : ℝ, ∀ t : ℝ, 0 ≤ t → t ≤ δ → ∀ x : Space,
-      ϱ ≤ ‖x‖ → ‖sol.velocity t x‖ ≤ R := by
-  -- The same assembly as `prodiSerrin_layer_farField_bounded`, with the
-  -- uniform `L²` mass bracket replacing the critical mixed norm in the bound
-  -- on the Duhamel correction.  The representation leaf is shared.
-  obtain ⟨B₀, hu₀B⟩ := hu₀
-  obtain ⟨C, hC⟩ :=
-    duhamelNonlinear_bounded_of_L2 hν sol E hE hL2 hmass hδ0 hδT
-  exact layerBound_of_duhamelNonlinear_bounded hν sol hu₀B hδ0
-    (duhamelRepresentation_layer hν sol hδ0 hδT) hC
-
-/-- **Constantin–Fefferman initial layer.**  With a bounded initial datum, the
-uniform `L²` mass bracket and its integrability hypothesis, a finite-energy
-partial classical solution is uniformly bounded on any closed initial layer
-`[0,δ]` with `δ < T`.
-
-Assembled from `compactSpaceTime_bounded` via `uniformBound_of_farField_window`
-and the named residual `constantinFefferman_layer_farField_bounded`
-[Constantin–Fefferman, Indiana Univ. Math. J. 42 (1993) 775–789]. -/
-theorem constantinFefferman_initialLayer_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (E : ℝ) (hE : 0 ≤ E)
-    (hL2 : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2))
-    (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
-      (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ R₁ : ℝ, ∀ t : ℝ, 0 ≤ t → t < T → t ≤ δ → ∀ x : Space,
-      ‖sol.velocity t x‖ ≤ R₁ := by
-  obtain ⟨ϱ, R₂, htail⟩ :=
-    constantinFefferman_layer_farField_bounded hν sol hu₀ E hE hL2 hmass δ hδ0 hδT
-  obtain ⟨R, hR⟩ :=
-    uniformBound_of_farField_window (a := 0) (b := δ) sol.velocity_smooth
-      le_rfl hδT htail
-  exact ⟨R, fun t ht0 _ htδ x => hR t ht0 htδ x⟩
-
-/-- **[LEAF — Constantin–Fefferman interior outer region; est ~400 LOC.]**
-Away from the initial time, the uniform `L²` mass bracket with its
-integrability hypothesis, together with the `ρ`-scaled Constantin–Fefferman
-direction-coherence bound `hcoh`, controls the velocity on the *outer* region
-of the interior window: far field `ϱ ≤ ‖x‖`, or late times `(δ+T)/2 < t`.
-
-Carries `hL2` alongside `hmass` for the reason recorded in
-`massBracket_vacuous_of_infiniteMass`: the bracket alone is satisfied by every
-field of infinite `L²` mass, and the Tychonov shear flow described there has
-vorticity everywhere parallel to `e₂`, hence satisfies every direction
-hypothesis for every `ρ` and `Ω₀` while violating the conclusion.  That flow is
-precisely what the previous statement of this leaf failed to exclude.
-
-Carries `hcoh` rather than the collapsed `ε = 1` bound `hdep` it previously
-carried: by `depletedCrossProduct_vacuous` that bound is a tautology, satisfied
-by every velocity evolution whatsoever, so the leaf as previously stated
-asserted the Constantin–Fefferman conclusion with *no* geometric hypothesis on
-the vorticity direction.  `hcoh` is exactly the hypothesis the only caller
-`constantinFefferman_velocity_bounded` already holds, and
-`crossProductCoherent_of_directionLipschitz` supplies it from Lipschitz
-continuity of `ξ = ω/|ω|`.
-
-This is the residual after `compactSpaceTime_bounded` discharges the compact
-core `[δ,(δ+T)/2] × closedBall 0 ϱ`.
-
-Classical route: in the enstrophy budget the stretching term
-`∫ ω · ∇u · ω` is rewritten through the Biot–Savart singular integral as a
-kernel against `ω(x) ⨯ ω(y)`; direction coherence supplies the geometric
-depletion factor, so the stretching term is dominated by the viscous term and
-the enstrophy stays bounded, whence `L^∞` by Sobolev embedding
-[Constantin–Fefferman, Indiana Univ. Math. J. 42 (1993) 775–789;
-Constantin, SIAM Rev. 36 (1994) 73–98].
-Depends on: the Biot–Savart singular integral and its Calderón–Zygmund
-bounds, the enstrophy identity from `Navier.Analysis.Enstrophy`, and the
-`H² ↪ L^∞` Sobolev embedding on `ℝ³`.
-
-**Status repair 2026-09-02 (lane NAVIER2).**  The `L²` half of the
-singular-integral dependency is no longer a gap:
-`SingularIntegralPrelims.riesz_l2_bound` / `exists_rieszTransform` certify
-`‖Rⱼf‖₂ ≤ ‖f‖₂` kernel-clean via Plancherel, which is present in the pinned
-Mathlib.  That is *not* enough for this leaf, and the docstring should not be
-read as claiming it is: the Constantin–Fefferman stretching term needs the
-Biot–Savart **representation** of `∇u` in the pairwise-vorticity form that
-`hcoh` depletes, plus `L^r` control for `r ≠ 2` in the enstrophy budget, and
-both remain absent.  What has changed is that the operator-boundedness half of
-the dependency is discharged at the exponent where the energy space lives.
-
-Frontier status (N4 sweep 2026-08-18): `Enstrophy` lands the pointwise
-identity `vorticityTransportEquation`; the integral enstrophy budget
-stays open, and no sound Biot–Savart representation of `∇u`
-exists (routes use the open leaf `exists_biotSavartLogTextbook`).  The
-closing embedding IS residual-free: `sobolevEmbeddingDomination_H3` is
-vetted since `19192df` (N4-verified via `#print axioms`); caveat —
-it needs `SchwartzVelocity` slices; slice-Schwartz control stays open. -/
-theorem constantinFefferman_interior_outerRegion_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (E : ℝ) (hE : 0 ≤ E)
-    (hL2 : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2))
-    (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
-      (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
-    (ρ Ω₀ : ℝ) (hρ : 0 < ρ) (hΩ₀ : 0 < Ω₀)
-    (hcoh : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
-      Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t x) →
-      Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t y) →
-      officialEuclideanNorm
-          (vorticity sol.velocity t x ⨯₃ vorticity sol.velocity t y) ≤
-        (officialEuclideanNorm (fun i => x i - y i) / ρ) *
-          (officialEuclideanNorm (vorticity sol.velocity t x) *
-            officialEuclideanNorm (vorticity sol.velocity t y)))
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ ϱ R : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
-      (ϱ ≤ ‖x‖ ∨ (δ + T) / 2 < t) → ‖sol.velocity t x‖ ≤ R := by
-  -- The classical Constantin–Fefferman route: in the enstrophy budget the
-  -- stretching term ∫ ω·∇u·ω is rewritten through the Biot–Savart singular
-  -- integral as a kernel against ω(x) ⨯ ω(y); direction coherence supplies
-  -- the geometric depletion factor, so the stretching term is dominated by
-  -- the viscous term and the enstrophy stays bounded, whence L^∞ by Sobolev
-  -- embedding.
-  --
-  -- The estate has:
-  --   * `Enstrophy.vorticityTransportEquation` — the pointwise vorticity
-  --     transport equation
-  --   * `sobolevEmbeddingDomination_H3` — kernel-clean H² ↪ L^∞ Sobolev
-  --     embedding (for Schwartz slices)
-  --   * `hcoh` — the genuine Constantin–Fefferman direction coherence
-  -- Still missing:
-  --   * The integral enstrophy budget (the pointwise identity exists, but
-  --     the integrated identity with boundary terms at infinity is open)
-  --   * A kernel-clean Biot–Savart representation of ∇u (routes use the
-  --     open leaf `exists_biotSavartLogTextbook`)
-  --   * Slice-Schwartz control (the Sobolev embedding needs Schwartz slices)
-  -- Without the Biot–Savart representation, the stretching term cannot be
-  -- expressed in the pairwise-vorticity form that `hcoh` depletes.
-  sorry
-
-/-- **Constantin–Fefferman interior bound.**  Away from the initial time, the
-uniform `L²` mass bracket with its integrability hypothesis, together with the
-depleted cross-product bound, gives a uniform velocity bound on `(δ,T)`.
-
-Assembled from `compactSpaceTime_bounded` via `interiorBound_of_outerRegion` at
-the split time `(δ+T)/2` and the named outer-region residual
-`constantinFefferman_interior_outerRegion_bounded`
-[Constantin–Fefferman, Indiana Univ. Math. J. 42 (1993) 775–789]. -/
-theorem constantinFefferman_interior_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (E : ℝ) (hE : 0 ≤ E)
-    (hL2 : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2))
-    (hmass : ∀ t : ℝ, 0 ≤ t → t < T →
-      (∫ x : Space, ‖sol.velocity t x‖ ^ 2) ∈ Set.Icc (0 : ℝ) E)
-    (ρ Ω₀ : ℝ) (hρ : 0 < ρ) (hΩ₀ : 0 < Ω₀)
-    (hcoh : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
-      Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t x) →
-      Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t y) →
-      officialEuclideanNorm
-          (vorticity sol.velocity t x ⨯₃ vorticity sol.velocity t y) ≤
-        (officialEuclideanNorm (fun i => x i - y i) / ρ) *
-          (officialEuclideanNorm (vorticity sol.velocity t x) *
-            officialEuclideanNorm (vorticity sol.velocity t y)))
-    (δ : ℝ) (hδ0 : 0 < δ) (hδT : δ < T) :
-    ∃ R₂ : ℝ, ∀ t : ℝ, δ < t → t < T → ∀ x : Space,
-      ‖sol.velocity t x‖ ≤ R₂ := by
-  obtain ⟨ϱ, R, htail⟩ :=
-    constantinFefferman_interior_outerRegion_bounded hν sol E hE hL2 hmass
-      ρ Ω₀ hρ hΩ₀ hcoh δ hδ0 hδT
-  exact interiorBound_of_outerRegion (m := (δ + T) / 2) sol.velocity_smooth
-    hδ0.le (by linarith) htail
-
-/-! ### The two conditional-regularity bridges -/
-
-/-- **[Ladyzhenskaya–Prodi–Serrin; Prodi 1959, Serrin 1962, ESŠ 2003.]**  A
-partial classical solution on `[0,T)` with bounded initial datum whose
-velocity carries a finite critical mixed norm — `∫₀^{T'} (∫ |u|^p)^{q/p} ≤ M`
-uniformly in `T' < T`, with `(p,q)` on the Serrin critical line `2/q + 3/p = 1`
-and `p > 3` — is uniformly bounded on `[0,T)`.  The spatial integrability of
-`|u|^p` per time slice is hypothesis-carried so the mixed norm is a genuine
-integral, not the Bochner junk value.
-
-Assembled from `prodiSerrin_initialLayer_bounded` and
-`prodiSerrin_interior_bounded` at the split time `δ = T/2` via
-`uniformBound_of_split`, with the interior leaf's temporal exponent hypothesis
-supplied by `serrin_exponent_gt_two`.  The hypothesis `hu₀` is necessary by
-`initialDatum_bounded_of_uniformBound`. -/
-theorem prodiSerrin_velocity_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (p q : ℝ) (hp : 3 < p) (hcrit : Navier.Scaling.CriticalLine p q)
-    (hint : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ p))
-    (M : ℝ)
-    (hM : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      (∫ s in (0:ℝ)..T',
-        (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) ≤ M)
-    (hMint : ∀ T' : ℝ, 0 ≤ T' → T' < T →
-      IntervalIntegrable
-        (fun s : ℝ => (∫ x : Space, ‖sol.velocity s x‖ ^ p) ^ (q / p)) volume 0 T') :
-    ∃ R : ℝ, ∀ t : ℝ, 0 ≤ t → t < T → ∀ x : Space,
-      ‖sol.velocity t x‖ ≤ R := by
-  have hq : 2 < q := serrin_exponent_gt_two hp hcrit
-  have hT : 0 < T := sol.terminalTime_pos
-  have hδ0 : 0 < T / 2 := by linarith
-  have hδT : T / 2 < T := by linarith
-  obtain ⟨R₁, hR₁⟩ :=
-    prodiSerrin_initialLayer_bounded hν sol hu₀ p q hp hq hcrit hint M hM hMint
-      (T / 2) hδ0 hδT
-  obtain ⟨R₂, hR₂⟩ :=
-    prodiSerrin_interior_bounded hν sol p q hp hq hcrit hint M hM hMint
-      (T / 2) hδ0 hδT
-  exact uniformBound_of_split (fun t x => ‖sol.velocity t x‖) R₁ R₂ hR₁ hR₂
-
-/-- **[Constantin–Fefferman direction coherence; Indiana Univ. Math. J. 42
-(1993) 775–789.]**  A finite-energy partial classical solution with bounded
-initial datum whose vorticity direction is `ρ`-coherent in the high-vorticity
-region — in the division-free cross-product form
-`|ω(x) ⨯ ω(y)| ≤ (|x−y|/ρ)·|ω(x)|·|ω(y)|` whenever both vorticities exceed
-`Ω₀` — is uniformly bounded on `[0,T)`.  (`|sin θ(ω(x), ω(y))| ≤ |x−y|/ρ` in
-Constantin–Fefferman's notation; the cross product bilinearizes the sine.)
-
-Assembled from `constantinFefferman_initialLayer_bounded` and
-`constantinFefferman_interior_bounded` at the split time `δ = T/2` via
-`uniformBound_of_split`, with the `L²` mass bracket supplied by
-`uniformL2Mass_of_energyBound`/`energyBound_nonneg` and the direction-coherence
-hypothesis `hcoh` forwarded verbatim to the interior leaf.  (It was previously
-collapsed to the `ε = 1` bound `hdep` en route; `depletedCrossProduct_vacuous`
-shows that collapse discarded the entire hypothesis.)  The hypothesis `hu₀` is
-necessary by `initialDatum_bounded_of_uniformBound`. -/
-theorem constantinFefferman_velocity_bounded
-    {ν : ℝ} (hν : 0 < ν) {u₀ : VelocityField} {T : ℝ}
-    (sol : PartialClassicalSolution ν zeroForce u₀ T)
-    (hu₀ : ∃ B₀ : ℝ, ∀ x : Space, ‖u₀ x‖ ≤ B₀)
-    (E : ℝ)
-    (henergy : ∀ t : ℝ, 0 ≤ t → t < T →
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2) ∧
-        kineticEnergy sol.velocity t ≤ E)
-    (ρ Ω₀ : ℝ) (hρ : 0 < ρ) (hΩ₀ : 0 < Ω₀)
-    (hcoh : ∀ t : ℝ, 0 ≤ t → t < T → ∀ x y : Space,
-      Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t x) →
-      Ω₀ ≤ officialEuclideanNorm (vorticity sol.velocity t y) →
-      officialEuclideanNorm
-          (vorticity sol.velocity t x ⨯₃ vorticity sol.velocity t y) ≤
-        (officialEuclideanNorm (fun i => x i - y i) / ρ) *
-          (officialEuclideanNorm (vorticity sol.velocity t x) *
-            officialEuclideanNorm (vorticity sol.velocity t y))) :
-    ∃ R : ℝ, ∀ t : ℝ, 0 ≤ t → t < T → ∀ x : Space,
-      ‖sol.velocity t x‖ ≤ R := by
-  have hT : 0 < T := sol.terminalTime_pos
-  have henergy' : ∀ t : ℝ, 0 ≤ t → t < T →
-      AEStronglyMeasurable (sol.velocity t) volume ∧
-      Integrable (fun x : Space => ‖sol.velocity t x‖ ^ 2) ∧ kineticEnergy sol.velocity t ≤ E :=
-    fun t ht0 htT =>
-      ⟨Navier.Analysis.ESSInputs.PartialClassicalSolution.velocity_slice_aestronglyMeasurable
-          sol ht0 htT, henergy t ht0 htT⟩
-  have hE : 0 ≤ E := energyBound_nonneg hT henergy'
-  have hL2 := uniformL2Integrable_of_energyBound henergy'
-  have hmass := uniformL2Mass_of_energyBound henergy'
-  have hδ0 : 0 < T / 2 := by linarith
-  have hδT : T / 2 < T := by linarith
-  obtain ⟨R₁, hR₁⟩ :=
-    constantinFefferman_initialLayer_bounded hν sol hu₀ E hE hL2 hmass
-      (T / 2) hδ0 hδT
-  obtain ⟨R₂, hR₂⟩ :=
-    constantinFefferman_interior_bounded hν sol E hE hL2 hmass ρ Ω₀ hρ hΩ₀ hcoh
-      (T / 2) hδ0 hδT
-  exact uniformBound_of_split (fun t x => ‖sol.velocity t x‖) R₁ R₂ hR₁ hR₂
 
 /-! ### Sharpness: an explicit strain flow -/
 
@@ -2595,30 +1581,9 @@ lemma strainVelocity_farField_exceeds {t : ℝ} (ht : 0 < t) (ϱ R : ℝ) :
     have hR' : R ≤ |R| := le_abs_self R
     linarith
 
-/-- **Sharpness witness: the integrability hypotheses of the far-field leaves
-are load-bearing.**  For every viscosity `ν`, every horizon `T > 0` and every
-layer thickness `δ ∈ (0,T)`, the strain solution `strainSolution` satisfies
-*every* hypothesis of `prodiSerrin_layer_farField_bounded` and of
-`constantinFefferman_layer_farField_bounded` except the integrability clauses
-(`hint`, respectively `hL2`) — in particular its initial datum is bounded,
-being identically zero — and yet its far-field conclusion
-
-`∃ ϱ R, ∀ t ∈ [0,δ], ∀ x with ϱ ≤ ‖x‖, ‖u t x‖ ≤ R`
-
-is false: at any fixed `t > 0` the velocity grows linearly in `x`.
-
-Consequences.  (i) No proof of either far-field leaf can avoid using its
-integrability hypothesis; the smoothness, incompressibility, equation and
-bounded-initial-datum data are jointly insufficient.  (ii) Since the initial
-datum is zero and the flow is not, this is also a kernel-checked instance of
-non-uniqueness for `PartialClassicalSolution` in the absence of a decay or
-integrability clause — the elementary analogue of the Tychonov shear flow
-recorded in the falsification note above, with an explicit closed form in
-place of Tychonov's non-analytic series.
-
-Scope.  The witness does *not* refute the two leaves: the strain velocity is a
-nonzero linear field, so it fails `hint` and `hL2`.  This file does not
-formalize that failure; the statement below claims only what it proves. -/
+/-- An explicit smooth, divergence-free, zero-force strain solution with
+zero initial datum has unbounded velocity outside every spatial ball at
+positive times. Thus those hypotheses alone do not give a far-field bound. -/
 theorem strainFlow_farField_unbounded (ν : ℝ) {T δ : ℝ} (hT : 0 < T)
     (hδ0 : 0 < δ) (_hδT : δ < T) :
     (∃ B₀ : ℝ, ∀ x : Space, ‖(fun _ : Space => (0 : Space)) x‖ ≤ B₀) ∧
@@ -2752,15 +1717,9 @@ lemma strainVelocity_mixedNorm_intervalIntegrable
   rw [h]
   exact intervalIntegrable_const
 
-/-- **Sharpness for the two interior outer-region leaves.**  The strain
-solution satisfies every hypothesis of `prodiSerrin_interior_outerRegion_bounded`
-except `hint` — the mixed-norm budget `hM` and its integrability `hMint` hold
-for *every* `M ≥ 0` because the slice integrals take Lean's junk value `0` —
-and every hypothesis of `constantinFefferman_interior_outerRegion_bounded`
-except `hL2`, since its vorticity vanishes identically
-(`strainVelocity_vorticity`) so the direction-coherence hypothesis `hcoh` is
-vacuous, and the mass bracket `hmass` again holds for every `E ≥ 0`.  Its
-outer-region conclusion nevertheless fails. -/
+/-- The strain solution has zero vorticity and satisfies every nonnegative
+bare energy bracket through default-valued integrals, while the interior
+outer-region velocity bound fails. -/
 theorem strainFlow_interior_outerRegion_unbounded (ν : ℝ) {T δ : ℝ} (hT : 0 < T)
     (hδ0 : 0 < δ) (hδT : δ < T) :
     (∀ {E : ℝ}, 0 ≤ E → ∀ t : ℝ,

@@ -113,34 +113,6 @@ structure IsPeriodicClassicalSolution (nu : ℝ) (f : ForceField)
   velocity_periodic : SpatiallyPeriodicVelocity u
   pressure_periodic : SpatiallyPeriodicPressure p
 
-/-- Representation bridges still needed before identifying these precise
-Mathlib surfaces with Fefferman's prose without qualification.  Constructors
-remain historical names even after a bridge is retired from
-`officialSurfaceEncodingResiduals`. -/
-inductive OfficialSurfaceEncodingResidual where
-  | schwartzDatumCoordinatewiseEquivalence
-  | forceFrechetCoordinatewiseEquivalence
-  | halfSpaceSmoothnessEquivalence
-  | problemFrechetCoordinatePDEEquivalence
-  | wholeSpaceEnergyClauseEquivalence
-  | periodicLiftQuotientEquivalence
-  deriving DecidableEq, Repr, Fintype
-
-/-- The remaining alternative-surface representation obligations.  The
-periodic lift/quotient and half-space smoothness comparisons are retired: their
-exact representation theorems are consumed by the official data, force, and
-classical-solution contracts. -/
-def officialSurfaceEncodingResiduals : Finset OfficialSurfaceEncodingResidual :=
-  { .schwartzDatumCoordinatewiseEquivalence,
-    .forceFrechetCoordinatewiseEquivalence,
-    .problemFrechetCoordinatePDEEquivalence,
-    .wholeSpaceEnergyClauseEquivalence }
-
-/-- Four alternative-surface representation obligations remain active. -/
-theorem officialSurfaceEncodingResiduals_card :
-    officialSurfaceEncodingResiduals.card = 4 := by
-  decide
-
 namespace ProblemStatements
 
 /-- Fefferman alternative B: unforced global smooth periodic solutions for

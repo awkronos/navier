@@ -38,3 +38,5 @@ jobs:
           nanoda-allow-sorry: false
       - name: Emit public axiom audit
         run: lake env lean Navier/AxiomAudit.lean
+      - name: Reject disallowed transitive project axioms
+        run: lake env lean scripts/AuditAllAxioms.lean

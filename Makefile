@@ -16,3 +16,4 @@ lean:
 
 axioms:
 	lake env lean Navier/AxiomAudit.lean
+	lake env lean scripts/AuditAllAxioms.lean

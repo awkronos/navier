@@ -6,9 +6,8 @@ import Navier.Analysis.PressureNormalization
 /-!
 # Whole-space Duhamel: the finite-cutoff momentum identity
 
-This file supplies the first pointwise-classical-solution leaf on the route to
-the whole-space Duhamel formula used by
-`ConditionalRegularity.prodiSerrin_layer_farField_bounded`.
+This file supplies a finite-cutoff identity for pointwise classical solutions
+on the route to the whole-space Duhamel formula.
 
 The available `PartialClassicalSolution` record carries smoothness only on
 compact subsets of `[0,T) × ℝ³`; it does not carry spatial decay of velocity,
@@ -32,8 +31,6 @@ translate by compactly supported tests and justify the cutoff limit.  The
 present hypotheses do not provide the derivative/pressure tail domination
 needed for that limit, so this file does not assume it.
 
-Pattern classification: `representationTransport`; status of these leaves:
-`kernelClosed`; consumer status remains `scientificFrontier`.
 -/
 
 set_option autoImplicit false

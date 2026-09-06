@@ -1,6 +1,9 @@
 # Navier–Stokes attack blueprint
 
-Status: **SCAFFOLDED / SCIENTIFIC_FRONTIER**
+Historical research blueprint; proposed routes are not constraints on new proofs.
+Current dependencies and verification are described in `DECOMPOSITION.md`
+and `FORMALIZATION.md`. Status and line-number claims below belong to the
+development snapshots that produced this blueprint.
 Research program baseline (initial contract commit):
 **81448ed3e488b8b7d357ce430d52df4434f0c9cd**
 Primary formal target: **Fefferman alternative (A), whole space, zero force**
@@ -367,24 +370,12 @@ or logical kill test), and **observation-only** (computation).
   weak nonuniqueness is a boundary result [BUCKMASTER_VICOL2019],
   [ALBRITTON_BRUE_COLOMBO2022]; exact C/D remain **open-residual**.
 
-## 6. Route scheduling and promotion rule
+## 6. Using the blueprint
 
-The initial parallel wave is:
-
-1. build P0–P6 and the formal conditional bridge;
-2. probe R1, R3, R5, and R7 against explicit scale/triad tests;
-3. use R4/R9 only after pressure and compactness defects are represented;
-4. keep R2/R8 as local-theory and diagnostic lanes unless their global
-   constants become noncircular;
-5. keep R10 observational and R11 as the independent negative branch.
-
-A positive route R1–R10 may be promoted from **SCIENTIFIC_FRONTIER** only when
-its first open residual has a proof artifact whose assumptions are strictly
-below the endpoint, whose model/domain matches the consumer, and whose
-decisive step escapes the Tao-averaged obstruction for a stated exact-structure
-reason. R11 instead must meet the exact C/D admissibility and nonexistence
-types. A wrapper theorem that merely consumes a residual does not change route
-status.
+These routes are research suggestions. Any valid proof or counterexample at
+the exact target type is admissible, including one following a different
+decomposition. Compare the actual hypotheses and carrier of each result with
+its consumer and verify the proof with the pinned compiler and axiom audit.
 
 ## 7. Source keys
 
