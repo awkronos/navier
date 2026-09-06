@@ -12,20 +12,13 @@ equations in (1)--(7) and statement (A) of Charles Fefferman's official problem-
 problem description.  It quantifies over every positive viscosity and every
 divergence-free Schwartz initial datum, and it fixes the force to zero.
 
-Scope caveat: `SchwartzMap`, `ContDiffOn`, Fréchet derivatives, and a
-Lebesgue integral encode Fefferman's coordinatewise clauses.  Their comparison
-with the official datum, smoothness, PDE, and energy wording is deliberately
-retained in `ProblemEncodingResidual`; no unproved representation equivalence
-is asserted here.  The norm on `Fin 3 → ℝ` was a fifth such comparison until
-every consumer was transported to its Euclidean form; that residual is retired
-(see `Analysis.ForceNormBridge`).
-
-`kineticEnergy` uses the Euclidean density `∑ᵢ uᵢ²`, which discharged the
-energy-integrand clause of the former norm residual.  Every other clause of
-that residual has since been transported through its consumers — the Schwartz
-datum decay, the force alternatives, and statement A itself — so
-`currentSpaceNormEuclideanNormEquivalence` is retired: each of the four
-constructors below names a clause that is still open.
+`SchwartzMap`, `ContDiffOn`, Fréchet derivatives, and the Lebesgue integral
+encode the datum, smoothness, PDE, and energy clauses. Their comparison
+theorems live in `Analysis.SchwartzConventionEquivalence`,
+`Analysis.HalfSpaceSmoothnessBridge`, `Analysis.CoordinatePDEBridge`, and
+`Analysis.EnergyOfficialClause`. Norm transport is in
+`Analysis.ForceNormBridge`. These mathematical declarations, rather than a
+fixed enumeration of residuals, specify what has been established.
 -/
 
 set_option autoImplicit false
@@ -124,8 +117,7 @@ factor `½`.
 Choosing the Euclidean density here discharged *one clause* of the former
 `currentSpaceNormEuclideanNormEquivalence` residual — the energy integrand
 itself, which previously used the sup norm inherited by `Fin 3 → ℝ`.  The
-remaining clauses were then transported one by one, and the residual is now
-retired from `problemEncodingResiduals`.  `finite_energy` below still
+remaining clauses were then transported one by one. `finite_energy` below still
 *states* integrability of the inherited sup norm `‖u t x‖²`, and the Schwartz and
 force-decay clauses (here and in `Navier.OfficialProblem`) still state their
 weights and derivative bundles in the product norm.  Each of those is now
@@ -191,37 +183,6 @@ structure IsClassicalSolution (ν : ℝ) (f : ForceField)
   uniformly_bounded_energy :
     ∃ E : ℝ, 0 < E ∧ ∀ t : ℝ, 0 ≤ t → kineticEnergy u t < E
 
-/-- Named representation obligations left open when comparing the present
-Mathlib statement-A surface with Fefferman's coordinatewise clauses (1)--(7).
-
-These are metamathematical encoding residuals, not hypotheses of
-`ProblemStatements.WholeSpaceGlobalRegularity`; consequently they cannot be used to project a proof of the
-problem endpoint. -/
-inductive ProblemEncodingResidual where
-  /-- Mathlib's `SchwartzMap` seminorm convention versus Fefferman's
-  multi-index decay wording for the initial datum. -/
-  | schwartzConventionEquivalence
-  /-- `ContDiffOn` on `Ici 0 ×ˢ univ` versus the official `C^∞` on
-  `R^3 × [0,∞)`. -/
-  | halfSpaceSmoothnessEquivalence
-  /-- Total Frechet derivatives versus Fefferman's coordinatewise partial
-  derivatives in the momentum equation. -/
-  | problemFrechetCoordinatePDEEquivalence
-  /-- The Bochner-integral reading of clause (7) versus the official
-  whole-space energy wording. -/
-  | wholeSpaceEnergyClauseEquivalence
-  deriving DecidableEq, Repr, Fintype
-
-/-- The four remaining statement-A representation obligations.  The inherited
-and Euclidean norm forms have been transported through every consumer, including
-the force alternatives, so the former norm residual is retired. -/
-def problemEncodingResiduals : Finset ProblemEncodingResidual := Finset.univ
-
-/-- The statement-A surface currently exposes exactly four representation
-bridges, independently of its separate analytic existence frontier. -/
-theorem problemEncodingResiduals_card : problemEncodingResiduals.card = 4 := by
-  decide
-
 namespace ProblemStatements
 
 /-- The canonical formal encoding of Fefferman whole-space statement A.
@@ -231,11 +192,8 @@ there exist velocity and pressure fields that are smooth on nonnegative time,
 solve the actual unforced Navier--Stokes equation pointwise, attain `u0`, remain
 incompressible, and have uniformly bounded finite kinetic energy.
 
-This is the repository's scientific-frontier surface.  It is a proposition,
-not a theorem and not a conclusion hidden in a payload or proof-program
-argument.  The four `ProblemEncodingResidual` bridges above must close before
-this surface may be identified with the official textual conventions without
-qualification. -/
+This definition states the target proposition. Establishing it requires a
+proof of this exact type; refuting it requires a proof of its negation. -/
 def WholeSpaceGlobalRegularity : Prop :=
   ∀ ν : ℝ, 0 < ν →
     ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
