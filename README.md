@@ -3,10 +3,10 @@
 An evidence-gated, parallel mathematical research and formalization research_program
 for the three-dimensional incompressible Navier–Stokes problem.
 
-This repository does not claim a solution. Live repository proof status exists
-only in `/tmp/proof-report.json`. Refresh the central report with
-`~/.claude/scripts/proof-report-refresh.sh --oneline` and select the `navier`
-row before making any build or closure claim.
+This repository develops proofs and counterexamples for the exact problem
+statements below. Current source, compiler output, and transitive axiom
+dependencies supply the verification evidence. Cached reports are navigation
+aids and cannot determine a mathematical outcome.
 
 The repository separates kernel-checked infrastructure, conditional regularity
 routes, open analytic payloads, computational observations, and falsified
@@ -25,9 +25,8 @@ nonuniqueness, or averaged-model blowup with C.
 - [`docs/ATTACK.md`](docs/ATTACK.md): 11 parallel positive, rigidity,
   computational, and breakdown routes, each with a lower residual, kill test,
   and pivot.
-- [`docs/OPEN_FRONTIER_MAP.md`](docs/OPEN_FRONTIER_MAP.md): the checked support
-  layer, the twelve-lane open-obligation map, and the endpoint dependency
-  picture.
+- [`docs/OPEN_FRONTIER_MAP.md`](docs/OPEN_FRONTIER_MAP.md): mathematical
+  obligation navigation and the scope of the soundness cleanup.
 - [`Navier/Problem.lean`](Navier/Problem.lean): concrete derivatives,
   equation, solution predicate, and the direct statement-A encoding.
 - [`Navier/Scaling.lean`](Navier/Scaling.lean): axiom-audited algebraic

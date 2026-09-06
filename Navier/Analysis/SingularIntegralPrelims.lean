@@ -53,13 +53,8 @@ Marcinkiewicz interpolation.  The domain carrier is `EuclideanSpace ℝ (Fin 3)`
 `Space = Fin 3 → ℝ`; transporting along the measure-preserving coordinate
 equivalence is a separate step and is *not* performed here.
 
-## Honest residual
-
-The `L^r` theory for `r ≠ 2` — weak-`(1,1)` via the Calderón–Zygmund
-decomposition, Marcinkiewicz interpolation, `L^∞ → BMO` for homogeneous
-kernels on `ℝ³` (Stein, *Singular Integrals* 1970 Ch. II §4; Grafakos §4.3;
-genuinely Mathlib-absent) — is named in `BealeKatoMajda.lean` as
-`BKMAnalyticResidual.biotSavartLogInequality`.
+The `L²` multiplier results here do not establish weak-`(1,1)`, general
+`L^r`, or `L^∞ → BMO` bounds.
 
 Axiom set: `⊆ {propext, Classical.choice, Quot.sound}`.
 -/
@@ -395,12 +390,5 @@ theorem pressure_l2_bound_of_doubleRiesz_representation
   exact doubleRiesz_l2_bound i j (w i j) (R i j) (hR i j)
 
 end Riesz
-
-/-- The Calderón–Zygmund theorem is the genuinely Mathlib-absent deep input.
-Named as a residual so the assembly chain can cite the open leaf precisely. -/
-inductive CalderonZygmundResidual where
-  | czWeakTypeBound
-  | czBMOBound
-  deriving DecidableEq, Repr
 
 end Navier.Analysis.SingularIntegralPrelims

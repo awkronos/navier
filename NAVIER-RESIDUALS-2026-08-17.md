@@ -1,5 +1,10 @@
 # Navier Residual Ledger — 2026-08-17
 
+Historical receipts only. The counts, line numbers, and status claims below
+refer to the named 2026-08 commits. They are not current verification evidence
+or instructions to preserve an obligation. See `docs/FORMALIZATION.md` for
+the current verification method and `docs/OPEN_FRONTIER_MAP.md` for navigation.
+
 **UPDATED 2026-08-18 — Wave N5 count reconciliation (compiler-verified at `2c69626`)**
 
 This supersedes the 2026-08-17 Wave Ω580-N2 audit that previously occupied this

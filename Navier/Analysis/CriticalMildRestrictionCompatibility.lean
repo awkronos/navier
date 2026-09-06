@@ -3,11 +3,9 @@ import Navier.Analysis.CriticalMildLocalSelection
 /-!
 # Restriction compatibility for critical mild paths
 
-This module is a `scientificFrontier` coherence artifact, classified
-operationally as `dataContract` plus `representationTransport`.  It proves
-only that already constructed compatible finite-horizon mild paths restrict
-correctly.  A compatible increasing family and its direct-limit realization
-remain separate obligations.
+This module proves that constructed compatible finite-horizon mild paths
+restrict correctly. The direct-limit construction uses this compatibility
+in `CriticalMildDirectLimit`.
 -/
 
 set_option autoImplicit false

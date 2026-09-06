@@ -60,7 +60,6 @@ import Navier.Analysis.FourierBridge
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.VacuityAudit
 import Navier.Analysis.BKMLogBootstrap
-import Navier.Analysis.BKMLogBootstrapAnalysis
 import Navier.Analysis.GagliardoNirenberg
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.EnstrophyPointwise
@@ -78,11 +77,11 @@ import Navier.Analysis.GronwallAffine
 import Navier.Analysis.WeightedCommutator
 import Navier.Analysis.KatoPonceLeibniz
 import Navier.Analysis.GalerkinBasis
+import Navier.Analysis.GalerkinCurlGraphDensity
 import Navier.Analysis.GalerkinModeData
 import Navier.Analysis.GalerkinHMinusOne
 import Navier.Analysis.DivFreeGradientEnstrophy
 import Navier.Analysis.LerayWeak
-import Navier.Analysis.LerayWeakExistence
 import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.SeeleyExtension
 import Navier.Analysis.SeeleyMoments
@@ -173,6 +172,6 @@ point-breakdown consumers, vector-calculus and guarded energy-identity leaves,
 algebraic scaling facts, frequencywise heat--Leray infrastructure, the R7
 symmetrized and recursively generated finite Fourier tests, and raw public
 axiom audit.
-The problem endpoint remains conjectural; importing this module does not claim a
-solution of the global regularity problem.
+The global-regularity endpoint is the exact proposition in `Navier.Problem`.
+The mathematical conclusions of this module are the imported theorem types.
 -/

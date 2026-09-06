@@ -4,4 +4,4 @@ import Navier
 
 def main : IO Unit :=
   IO.println
-    "Navier: formal statement-A surface loaded; scientific status remains conjectural."
+    "Navier: formal whole-space statement-A surface loaded."

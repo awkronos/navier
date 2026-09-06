@@ -41,14 +41,9 @@ incompatible with the repository's `PointEvaluationBreakdownWitness` — i.e. a
 finite vorticity integral rules out pointwise blow-up, consuming the existing
 breakdown machinery of `Navier.Breakdown.MaximalNonextension`.
 
-## What remains open (`BKMAnalyticResidual`)
-
-The two genuinely Mathlib-absent PDE inputs that *produce* a `BKMControl` from a
-Navier–Stokes solution — the Biot–Savart / log-Sobolev inequality that yields
-the Grönwall differential inequality, and the Sobolev embedding that makes a
-higher-order norm dominate the velocity — are named residuals with references,
-`BKMAnalyticResidual`.  They are declared, never assumed: no `axiom`, and the
-certified theorems below depend on none of them.
+The fields of `BKMControl` specify the inputs consumed by the estimates below.
+Constructing those fields for a PDE solution requires proofs in that solution
+class; an enumeration of planned inputs would establish none of them.
 -/
 
 set_option autoImplicit false
@@ -153,8 +148,8 @@ It packages the a-priori structure of the continuation criterion:
 The rate is only continuous on the half-open `[0,T)`, so it may blow up as
 `t → T`; the finite-integral field is therefore a genuine restriction, not a
 consequence of continuity.  A `BKMControl` is *constructed*, so nothing here is
-assumed; the two Mathlib-absent PDE inputs that build one from a Navier–Stokes
-solution are named in `BKMAnalyticResidual`.
+assumed without being a field of the control supplied to a theorem. Proving
+that a Navier–Stokes solution admits such a control is a separate obligation.
 
 ## Pattern-A repair: the previous field list said nothing about the vorticity
 
@@ -287,36 +282,5 @@ def controlZero (T : ℝ) : BKMControl (fun _ _ => 0) T where
   finite_vorticity_integral := ⟨0, fun t _ => by simp⟩
 
 end BKMControl
-
-/-!
-## Named analytic residuals (honest decomposition, not axioms)
--/
-
-/-- The genuinely Mathlib-absent PDE inputs required to *construct* a
-`BKMControl` from a Navier–Stokes solution.  Each is a named residual with a
-literature reference; none is asserted here, and the certified theorems above
-depend on none of them.
-
-* `biotSavartLogInequality` — the Beale–Kato–Majda logarithmic estimate
-  `‖∇u‖_∞ ≲ C(1 + ‖ω‖_∞ (1 + log⁺‖u‖_{Hˢ}) + ‖ω‖_2)`, giving the Grönwall
-  differential inequality (BKM 1984, Lemma; Majda–Bertozzi §3.4).  ~400 LOC:
-  Biot–Savart kernel + Calderón–Zygmund singular-integral bound, both absent
-  from Mathlib.
-* `sobolevEmbeddingDomination` — `‖u‖_∞ ≤ C‖u‖_{Hˢ}` for `s > 3/2`, the Sobolev
-  embedding `Hˢ(ℝ³) ↪ L^∞`, making the regularity norm dominate the velocity.
-* `higherNormControlContinuity` — continuity/differentiability in time of
-  `t ↦ ‖u(t)‖_{Hˢ}` along a classical solution, the a-priori regularity of the
-  control quantity. -/
-inductive BKMAnalyticResidual where
-  | biotSavartLogInequality
-  | sobolevEmbeddingDomination
-  | higherNormControlContinuity
-  deriving DecidableEq, Repr, Fintype
-
-/-- The three analytic residuals of the criterion remain explicitly visible. -/
-def bkmAnalyticResiduals : Finset BKMAnalyticResidual := Finset.univ
-
-theorem bkmAnalyticResiduals_card : bkmAnalyticResiduals.card = 3 := by
-  decide
 
 end Navier.Analysis.BealeKatoMajda

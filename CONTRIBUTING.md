@@ -42,6 +42,7 @@ Run the focused checks serially:
 python3 -m unittest discover -s tests -v
 lake env lean Navier.lean
 lake env lean Navier/AxiomAudit.lean
+lake env lean scripts/AuditAllAxioms.lean
 ```
 
 The checks establish repository integrity; they do not establish either
