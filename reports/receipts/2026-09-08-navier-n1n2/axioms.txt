@@ -1,0 +1,4 @@
+#print axioms (raw)
+'Navier.Analysis.LerayWeak.leray_test_function_interface' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.Analysis.LerayWeak.exists_lerayLimitData' depends on axioms: [propext, Classical.choice, Quot.sound]
+RAW_EXIT=0

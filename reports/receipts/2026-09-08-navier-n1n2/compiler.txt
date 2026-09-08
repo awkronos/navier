@@ -1,0 +1,25 @@
+lake env lean Navier/Analysis/LerayWeak.lean  2026-09-08T08:40:39Z
+Navier/Analysis/LerayWeak.lean:2621:8: warning: `push_neg` has been deprecated. Prefer using `push Not` instead.
+If you'd rather continue using `push_neg` in your project, you can implement it as follows:
+```
+open Lean.Parser.Tactic in
+macro "push_neg" cfg:optConfig loc:(location)? : tactic =>
+  `(tactic| push $cfg:optConfig Not $[$loc]?)
+```
+Navier/Analysis/LerayWeak.lean:5788:32: warning: `SchwartzMap.add_apply` has been deprecated: Use `add_apply` instead
+
+Note: The updated constant is in a different namespace. Dot notation may need to be changed (e.g., from `x.add_apply` to `add_apply x`).
+Navier/Analysis/LerayWeak.lean:5831:10: warning: `SchwartzMap.smul_apply` has been deprecated: Use `smul_apply` instead
+
+Note: The updated constant is in a different namespace. Dot notation may need to be changed (e.g., from `x.smul_apply` to `smul_apply x`).
+Navier/Analysis/LerayWeak.lean:7022:39: warning: Variable name `hν` is not explicitly referenced.
+
+The binding can be removed (if unused) or named `_` (if used implicitly).
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+Navier/Analysis/LerayWeak.lean:7023:29: warning: Variable name `hu₀` is not explicitly referenced.
+
+The binding can be removed (if unused) or named `_` (if used implicitly).
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+RAW_EXIT=0

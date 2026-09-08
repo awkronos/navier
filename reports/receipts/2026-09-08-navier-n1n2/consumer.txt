@@ -1,0 +1,2 @@
+lake env lean reports/receipts/2026-09-08-navier-n1n2/consumer_scratch (scratch import check)
+RAW_EXIT=0
