@@ -5,8 +5,8 @@ from current proofs or counterexamples; no instruction or planning label
 predetermines the mathematical outcome. Local existence and conditional
 continuation establish their stated conclusions.
 
-- Canonical plan: `~/.claude/plans/open-math-critical-path.md`.
-- Select current obligations from exact theorem types and their consumers.
+- Select current obligations from `/tmp/open_math.json`, generated from exact
+  compiler types, axioms, and dependencies.
   The lattice `CriticalMildTerminalNormBound` route requires a proved transport
   to the whole-space endpoint. Retain an assumption in a conditional theorem's
   type until its proof is supplied.
@@ -23,6 +23,7 @@ verifier/commit boundary.
 Verification:
 
 ```bash
+~/.claude/scripts/open-math.py verify --project navier --report /tmp/proof-report.json --sidecar /tmp/open_math.json
 lake env lean Navier/Analysis/<Target>.lean
 lake env lean Navier.lean
 ```
