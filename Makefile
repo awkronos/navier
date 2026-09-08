@@ -6,7 +6,7 @@ PYTHON ?= python3
 check: test lean axioms
 
 proof:
-	@~/.claude/scripts/proof-report-refresh.sh --oneline
+	@~/.claude/scripts/open-math.py verify --project navier --report /tmp/proof-report.json --sidecar /tmp/open_math.json
 
 test:
 	$(PYTHON) -m unittest discover -s tests -v
