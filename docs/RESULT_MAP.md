@@ -5,12 +5,21 @@ it. The theorem type fixes the scope. Compiler acceptance and the raw
 transitive axiom list establish formal closure; neither can turn a forced
 counterexample into an unforced all-data regularity theorem.
 
-## The two endpoints
+## Existence and breakdown endpoints
 
 | Question | Exact Lean surface | Quantifiers and force | Status |
 | --- | --- | --- | --- |
 | Can one choose admissible data and forcing for which no global classical solution exists? | `Navier.ProblemStatements.WholeSpaceBreakdown` | For every `nu > 0`, there exist a divergence-free Schwartz datum and a rapidly decaying smooth force such that no global `IsClassicalSolution` exists | **THEOREM**, inhabited by `ConstructedBreakdown.wholeSpaceBreakdown` |
 | Does every admissible datum produce a global classical solution with no force? | `Navier.ProblemStatements.WholeSpaceGlobalRegularity` | For every `nu > 0` and every divergence-free Schwartz datum, there exist global velocity and pressure fields satisfying `IsClassicalSolution nu zeroForce` | **OPEN** in this repository |
+
+The periodic unforced existence proposition
+`Navier.ProblemStatements.PeriodicGlobalRegularity` (alternative B) also remains
+open. A new [periodic classical uniqueness theorem](../Navier/Analysis/PeriodicClassicalUniqueness.lean)
+proves equality of velocities at every positive viscosity under the native
+classical contract, including **periodic velocity and periodic pressure**.
+It consumes an assumed B witness to attach this proved uniqueness conclusion;
+it does not discharge B's existence premise. No equality of pressures is
+claimed, since a spatially constant pressure gauge remains free.
 
 The completed endpoint is the whole-space forced alternative C in the official
 problem statement. It is mathematically substantive: the proof constructs the
@@ -117,13 +126,77 @@ This frontier is useful because it identifies the nonlinear estimate that must
 do new work. It is not a reformulation that assumes the desired global
 solution.
 
+## Periodic evolution: checked providers and the remaining consumer
+
+**Normalization repair in progress.** The raw lattice interaction is a complex
+bilinear dot-product convolution, and its mild equation adds that interaction.
+The physical period-one Fourier equation instead requires `-2πi` times the
+projected convolution and heat rate `ν(2π)²|k|²`. Consequently the unrotated
+Fourier datum is not yet a valid physical evolution initializer. The active
+repair is the explicit change `A=-2πi û`, `μ=(2π)²ν`, with inverse
+`û=iA/(2π)`. Raw A then requires anti-Hermitian symmetry. The algebra and
+time-dependent reconstruction are being proved, not assumed here. A bound for
+every complex raw datum may be too strong; its exact quantifiers are under
+counterexample audit. This does not affect the forced-C construction.
+
+Fresh source compilers and raw axiom audits are in
+[the periodic-evolution receipt](../reports/receipts/2026-09-09-periodic-evolution/README.md).
+The [LSP endpoint examination](../reports/receipts/2026-09-09-regularity-status/README.md)
+separately records A/B/C/D, construction constraints, and the exact remaining
+terminal-bound quantifiers.
+
+| Mathematical step | Native source | Exact scope |
+| --- | --- | --- |
+| Literal Fourier initialization | [PeriodicDatumFourierBridge](../Navier/Analysis/PeriodicDatumFourierBridge.lean), [PeriodicDatumFourierConstraints](../Navier/Analysis/PeriodicDatumFourierConstraints.lean) | Every native smooth periodic datum has summable weighted coefficients; divergence freedom and Hermitian reality hold for the canonical initialized carrier. |
+| Exact initial reconstruction | [PeriodicNativeFourierInversion](../Navier/Analysis/PeriodicNativeFourierInversion.lean) | `nativeInitialReconstruction u₀ hu₀ = u₀`, with no inversion hypothesis. This closes the initial-data identity, not subsequent evolution. |
+| Physical Fourier reconstruction | [PeriodicFourierReconstruction](../Navier/Analysis/PeriodicFourierReconstruction.lean) | A weighted carrier gives a continuous periodic field; Hermitian coefficients give a real field. Higher derivatives require additional moment control. |
+| Pressure recovery | [PeriodicPressureRecovery](../Navier/Analysis/PeriodicPressureRecovery.lean) | Explicit pressure coefficients restore the unprojected mode equation from the projected one, with period-one `2π` factors. Time-dependent physical PDE realization remains to be consumed. |
+| Native energy dissipation | [PeriodicNativeEnergyBalance](../Navier/Analysis/PeriodicNativeEnergyBalance.lean) | Every assumed native unforced periodic classical solution satisfies `K(T)+ν∫₀ᵀD=K(0)` and `∫₀ᵀD≤K(0)/ν`. It does not assert existence. |
+| Native enstrophy evolution | [PeriodicEnstrophyControl](../Navier/Analysis/PeriodicEnstrophyControl.lean) | Derives `Z′=S−νDω` from the native physical PDE, with exact vortex stretching S. An actual cellwise gradient bound G gives `Z′+νDω≤2GZ`; control of G or depleted stretching remains required. |
+| Moving-frame transport | [PeriodicGalileanReduction](../Navier/Analysis/PeriodicGalileanReduction.lean) | The actual velocity `u(t,x+tc)-c` and translated pressure preserve the complete native periodic classical contract; subtracting a constant datum changes neither existence nor viscosity. |
+| Mean conservation and sharper terminal premise | [CriticalMildZeroMode](../Navier/Analysis/CriticalMildZeroMode.lean) | The original-data mild chart preserves its zero mode. A horizon-independent bound on only the nonzero modes feeds cofinal global mild continuation. The bound remains a hypothesis. |
+| Lag-separated smoothing | [CriticalMildPositiveTimeSmoothing](../Navier/Analysis/CriticalMildPositiveTimeSmoothing.lean) | The resolved Duhamel history has half-generator moment control for positive lag. The unestimated terminal strip is explicit. |
+| Dynamic endpoint cancellation | [PeriodicDynamicCriticalTail](../Navier/Analysis/PeriodicDynamicCriticalTail.lean) | The actual frozen nonlinear integral has moment at most `ν⁻¹‖u(T)‖²`; the evolving term has graph membership and a quantitative bound under an explicit Dini integral. |
+| Interior time modulus | [CriticalMildInteriorTimeModulus](../Navier/Analysis/CriticalMildInteriorTimeModulus.lean) | The actual bounded mild equation derives a local quarter-Hölder modulus and terminal-window Dini integrability. Constants depend on observation time and chart radius. |
+| Full positive-time raw smoothing | [CriticalMildFullPositiveTimeRegularity](../Navier/Analysis/CriticalMildFullPositiveTimeRegularity.lean) | Consumes the Dini window and frozen-source estimate to derive full half-generator membership, an explicit local bound and two-spatial-derivative coefficient summability. Higher moments/time jets and the physical decoder remain separate inputs. |
+| Energy versus fine-scale control | [PeriodicEnergyCriticalObstruction](../Navier/Analysis/PeriodicEnergyCriticalObstruction.lean) | Fixed-energy transverse mode examples have unbounded mixed critical quantity. This refutes a universal energy-only estimate over arbitrary fields, not a bound restricted to actual trajectories. |
+
+The existing raw global-control target is:
+
+```text
+for every viscosity ν > 0 and admissible initialized datum a,
+there exists a finite K(ν,a), independent of horizon T and chart radius R,
+such that every actual original-data mild chart satisfies
+  offZeroMixedCriticalQty ν (u(T)) ≤ K(ν,a).
+```
+
+Local Hölder regularity and a finite Dini integral on each chart do not yield
+this uniform K: their constants may grow with the chart radius. The active
+proof lanes audit whether this raw target is satisfiable, then address the
+physically initialized class, nonlinear stretching, mean-drift removal,
+and exact reconstruction of the evolving coefficients under the normalization
+above. Bounds proved for the raw complex equation are not automatically
+bounds for the native physical initialization.
+Neither A nor B is counted as closed by these providers.
+
 ## Numerical boundary
 
-The Rust CPU/WASM/WebGPU solver evolves ordinary periodic spectral flows. Its
-tests can validate implementation identities, convergence behavior and finite
-resolution diagnostics. No finite grid establishes a universal regularity or
-blowup theorem, and the solver is not an implementation of the full analytic
-counterexample construction.
+The Rust crate has two separate numerical surfaces. `AxisConstruction`
+evaluates a finite radial-series approximation to the analytic-axis profile,
+reconstructs velocity and pressure in its bounded similarity chart, and
+measures the profile-equation defects, divergence defect, and momentum
+residual. The CPU/WASM/WebGPU spectral solver separately evolves ordinary
+periodic flows. The [computed-construction note](COMPUTED_AXIS_CONSTRUCTION.md)
+records the exact equations, defaults, sampled domain, and omitted correction
+layers.
+
+The axis evaluator does not implement the annular matching, Borel background,
+covariance waves, correction cycles, or final spacetime localization that make
+the selected force globally smooth. Its displayed momentum residual is the
+force required by the finite reconstructed field, not the selected force of
+`ConstructedBreakdown.wholeSpaceBreakdown`. Tests can validate implementation
+identities and finite-resolution behavior. No finite grid, residual sample, or
+visual trajectory establishes a continuum regularity or breakdown theorem.
 
 For the final dependency-ordered rebuild, compiled-object hashes and raw eleven-
 endpoint audit, see

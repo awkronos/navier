@@ -1,14 +1,88 @@
-# Navier browser solver
+# Navier numerical crate
 
-This crate ports the numerical method in
-`reality/solvers/navier/navier_spectral_core.py` to Rust for native, WebAssembly,
-and WebGPU execution. It advances the unforced incompressible Navier–Stokes
-equations on `[0, 2π)^3` with the rotational nonlinearity, Fourier-space Leray
-projection, componentwise Orszag 2/3 dealiasing, and integrating-factor RK4.
+This crate exposes two distinct numerical instruments:
 
-The browser defaults to the Taylor–Green vortex. The returned velocity is an
-interleaved `Float32Array` of `(u, v, w)` values; the CPU-WASM calculation itself
-uses `f64`. Browser grids are bounded to `N ≤ 36` (`N ≤ 128` natively).
+1. `AxisConstruction` evaluates the finite analytic-axis profile iteration in
+   Appendix B of the construction, reconstructs a velocity-pressure field in a
+   bounded similarity chart, and samples its equation defects.
+2. `SpectralSolver` advances unforced incompressible Navier–Stokes benchmark
+   flows on `[0, 2π)^3` using the rotational nonlinearity, Fourier-space Leray
+   projection, componentwise Orszag 2/3 dealiasing, and integrating-factor RK4.
+
+Both compile for native Rust and WebAssembly. The periodic solver also has an
+independent WebGPU backend. These are numerical instruments; the Lean theorem
+and its compiler receipts are the proof-bearing artifacts.
+
+## Finite analytic-axis evaluator
+
+The default construction evaluator uses radial order 12, 257 equally spaced
+axial-similarity nodes, and 18 nonlinear iterations. It evaluates the exact
+coefficient integration rule used by the Appendix-B fixed-point map, computes
+the axis pressure datum by deterministic quadrature of the Appendix-A schedule,
+and reconstructs physical velocity and pressure from the similarity variables.
+The sampled chart is
+
+```text
+tau > 0,    |eta| <= 0.8,    Lambda X <= 3.2.
+```
+
+The remaining default parameters are `h = 0.001`, `j0 = 0.001`, schedule
+parameters `lambda = 0.04` and `m = 1`, radial scale `Lambda = 48`, and pressure
+amplitude `2`. These are deterministic numerical settings inside the analytic
+parameter ranges used by the implementation. A finite run does not certify all
+existential smallness and largeness thresholds of the completed construction.
+
+For every sampled point it returns velocity, pressure, and
+
+```text
+R = ∂t u + (u·∇)u − Δu + ∇p.
+```
+
+`R` is the force required by this finite reconstructed field. The reported
+momentum-residual RMS therefore measures the size of that field; it is not an
+error bound against the completed selected witness and is not the selected
+globally smooth force. The much smaller profile-equation RMS values measure the
+finite Appendix-B equations directly; these quantities have different units
+and purposes. Divergence and momentum residuals use centered finite differences
+in physical coordinates; the domain energy uses a tensor trapezoidal rule on
+the displayed bounded chart.
+
+The evaluator intentionally omits annular moment matching, cone modulation,
+the positive-order Borel background, primary covariance waves, the particular,
+signed and mean correction cycles, and final spacetime localization. Those
+layers are essential to the proof's globally smooth compact force. See the
+[computed-construction note](../docs/COMPUTED_AXIS_CONSTRUCTION.md) for the
+equations, algorithm, default parameters, validation, and interpretation of
+every diagnostic.
+
+Native Rust:
+
+```rust
+use navier_web::{AxisConstruction, AxisConstructionConfig};
+
+let axis = AxisConstruction::new(AxisConstructionConfig::default())?;
+let (velocity, pressure, residual, half_extent, diagnostics) =
+    axis.evaluate_grid(17, 0.05)?;
+```
+
+Browser JavaScript initializes the generated ES module and then calls:
+
+```js
+const axis = new ConstructionAxis(12, 18);
+axis.sample(17, 0.05);
+const velocity = axis.velocity();
+const pressure = axis.pressure();
+const residual = axis.residual();
+const diagnostics = axis.diagnostics();
+const metadata = axis.metadata();
+```
+
+## Periodic spectral solver
+
+The periodic browser experiment defaults to the Taylor–Green vortex. The
+returned velocity is an interleaved `Float32Array` of `(u, v, w)` values; the
+CPU-WASM calculation itself uses `f64`. Browser grids are bounded to `N ≤ 36`
+(`N ≤ 128` natively).
 Diagnostics report volume-mean energy and enstrophy,
 spectral divergence RMS, peak speed and vorticity, the retained-band tail-energy
 fraction and its resolution warning, simulated time, and finiteness.
@@ -32,7 +106,7 @@ device or pipeline creation errors, shader validation failures, and numerical
 parity failures. Ordinary test runs may skip only when no WebGPU adapter exists;
 every other initialization error remains a test failure.
 
-JavaScript initializes the generated ES module, constructs
+For the periodic solver, JavaScript constructs
 `new NavierSolver(grid, viscosity)`, calls `step(dt)`, `stepMany(dt, count)`, or
 `advanceBounded(duration, maxDt, cfl, maxSubsteps)`,
 then reads `velocity()`, `diagnostics()`, and `metadata()`.

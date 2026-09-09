@@ -173,8 +173,12 @@ diagnostic. Its finite numerical value is not a continuum continuation proof.
 The paper's core scales motivate separating energy from concentration: for
 remaining time τ, radial width is order τ^(1/2), axial width τ^(1/2−h),
 and speed τ^(−1/2−h), while energy is order τ^(1/2−3h) for small positive h.
-These are diagnostic motivation, not a numerical implementation of the full
-vortex construction.
+The Rust crate now evaluates a finite analytic-axis stage using Appendix B’s
+coefficient iteration and physical reconstruction. Its computed velocity,
+pressure and momentum residual are documented in
+[Computed axis construction](COMPUTED_AXIS_CONSTRUCTION.md). The outer matching,
+Borel background, covariance waves, correction series and final localization
+are not numerically implemented; this finite stage is not the full witness.
 
 ```bash
 python3 scripts/navier_adaptive_bench.py --case mms --grids 12 18 24
@@ -204,14 +208,17 @@ below this tail threshold alone does not establish spatial convergence.
 
 ## Verification
 
-The native port was checked with Lean 4.31.0 in dependency order: 511
+The initial private port review checked with Lean 4.31.0 in dependency order: 511
 construction modules and the 66-module finite-energy comparison closure all
-compiled from current source. Raw transitive axiom output for the selected
+compiled from the reviewed source snapshot. Raw transitive axiom output for the selected
 candidate, comparison theorem, transport endpoint, and final alternative-C
 consumer contains only `propext`, `Classical.choice`, and `Quot.sound`.
 The audit concerns these named declarations and does not convert the unresolved
-alternative A into a theorem. The solver core's 17 tests and the final Python
-verification suite's 29 tests passed in the private review cycle.
+alternative A into a theorem. Current incremental evidence is recorded in
+[the result map](RESULT_MAP.md) and dated receipts. The 2026-09-09 numerical
+review passed 32 Python tests and 11 Rust library tests; two device-specific
+Rust tests were ignored in that library invocation. The four construction
+tests include a radial-order refinement comparison.
 
 ```bash
 lake env lean Navier/Breakdown/CompactSmoothForce.lean
@@ -241,7 +248,7 @@ only `propext`, `Classical.choice`, and `Quot.sound`.
 The Rust GPU solver exposes `maxSpeed()` through an eight-byte reduction
 readback, including a non-finite flag. The interactive worker can therefore
 check CFL bounds before and after every step without reading the full field.
-Six GPU correctness tests passed on Apple M5 Max Metal. The Python suite now
-passes 29 tests, including artifact tampering, complete ABI inventory and
+Six GPU correctness tests passed on Apple M5 Max Metal. At that review, the Python suite
+passed 29 tests, including artifact tampering, complete ABI inventory and
 automatic shader provenance coverage. These numerical checks do not certify
 the infinite-dimensional PDE solution.

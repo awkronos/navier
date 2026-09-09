@@ -1,9 +1,86 @@
+mod construction;
 mod core;
 mod gpu;
 
+pub use construction::{
+    AxisConstruction, AxisConstructionConfig, AxisConstructionDiagnostics, AxisConstructionMetadata,
+};
 pub use core::{AdvanceReport, Diagnostics, SpectralSolver};
 pub use gpu::{GpuDiagnostics, WebGpuSpectralSolver};
 use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+pub struct ConstructionAxis {
+    inner: AxisConstruction,
+    velocity: Vec<f32>,
+    pressure: Vec<f32>,
+    residual: Vec<f32>,
+    domain_extent: [f64; 3],
+    diagnostics: Option<AxisConstructionDiagnostics>,
+}
+
+#[wasm_bindgen]
+impl ConstructionAxis {
+    #[wasm_bindgen(constructor)]
+    pub fn new(order: usize, iterations: usize) -> Result<ConstructionAxis, JsError> {
+        let config = AxisConstructionConfig {
+            radial_order: order,
+            iterations,
+            ..AxisConstructionConfig::default()
+        };
+        Ok(Self {
+            inner: AxisConstruction::new(config).map_err(|error| JsError::new(&error))?,
+            velocity: Vec::new(),
+            pressure: Vec::new(),
+            residual: Vec::new(),
+            domain_extent: [0.0; 3],
+            diagnostics: None,
+        })
+    }
+
+    pub fn sample(&mut self, grid: usize, tau: f64) -> Result<(), JsError> {
+        let (velocity, pressure, residual, half_extent, diagnostics) = self
+            .inner
+            .evaluate_grid(grid, tau)
+            .map_err(|error| JsError::new(&error))?;
+        self.velocity = velocity;
+        self.pressure = pressure;
+        self.residual = residual;
+        self.domain_extent = half_extent.map(|value| 2.0 * value);
+        self.diagnostics = Some(diagnostics);
+        Ok(())
+    }
+
+    pub fn velocity(&self) -> Vec<f32> {
+        self.velocity.clone()
+    }
+
+    pub fn pressure(&self) -> Vec<f32> {
+        self.pressure.clone()
+    }
+
+    pub fn residual(&self) -> Vec<f32> {
+        self.residual.clone()
+    }
+
+    #[wasm_bindgen(js_name = domainExtent)]
+    pub fn domain_extent(&self) -> Vec<f64> {
+        self.domain_extent.to_vec()
+    }
+
+    pub fn diagnostics(&self) -> Result<JsValue, JsError> {
+        let diagnostics = self
+            .diagnostics
+            .as_ref()
+            .ok_or_else(|| JsError::new("sample must be called before diagnostics"))?;
+        serde_wasm_bindgen::to_value(diagnostics).map_err(|error| JsError::new(&error.to_string()))
+    }
+
+    pub fn metadata(&self) -> Result<JsValue, JsError> {
+        serde_wasm_bindgen::to_value(&self.inner.metadata())
+            .map_err(|error| JsError::new(&error.to_string()))
+    }
+}
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
