@@ -26,6 +26,9 @@ project imports with the pinned single-file compiler in dependency order,
 refreshing their `.olean` artifacts. For the constructed alternative-C endpoint,
 `python3 scripts/verify_construction.py` performs that traversal, source checking,
 fingerprinted receipt generation, and the exact endpoint's raw axiom audit.
+Each reusable receipt binds the source, environment, transitive local
+dependencies, successful compiler exit, and SHA-256 of the produced `.olean`.
+A replaced compiled object invalidates every affected downstream receipt.
 See `solver/README.md` for the independently tested Rust/WASM/WebGPU build.
 Once the required artifacts are available,
 run the focused checks:

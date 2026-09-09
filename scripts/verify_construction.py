@@ -28,6 +28,12 @@ AUDITED_DECLARATIONS = (
     "Navier.Analysis.ForceRecursivePartials.forcedDataRapidDecay_bounds_successivePartials",
     "Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials",
     "Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate",
+    "Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials",
+    "Navier.Analysis.ForceCoordinateEquivalence.periodicForcedDataRapidDecay_iff_successivePartials",
+    "Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc",
+    "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile",
+    "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension",
+    "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation",
 )
 ALLOWED_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 
@@ -186,7 +192,9 @@ def fresh_modules(
         if (
             all(dependency in fresh for dependency in graph[module])
             and output.is_file()
+            and receipts.get(module, {}).get("exit_code") == 0
             and receipts.get(module, {}).get("fingerprint") == fingerprints[module]["fingerprint"]
+            and receipts.get(module, {}).get("output_sha256") == sha256(output.read_bytes())
         ):
             fresh.add(module)
     return fresh
@@ -282,6 +290,7 @@ def run(args: argparse.Namespace) -> int:
             "command": command,
             "log": str(log.relative_to(project_root)),
             "output": str(output.relative_to(project_root)),
+            "output_sha256": sha256(output.read_bytes()) if result.returncode == 0 else None,
         }
         return module, receipt, result.stdout
 

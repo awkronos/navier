@@ -88,9 +88,11 @@ The first command parses only the local import closure rooted at
 receipts. The second invokes the pinned compiler through `lake env lean`, once
 per stale source, and writes outputs into `.lake/build/lib/lean`. Receipts and
 logs live under `.lake/verify-construction`. A source hash, the environment
-hash, or any transitive local dependency fingerprint invalidates the affected
-receipt. Independent ready modules are compiled with bounded parallelism; the
-default is two workers.
+hash, any transitive local dependency fingerprint, a failed recorded exit, or
+a mismatch in the compiled `.olean` SHA-256 invalidates the affected receipt.
+Replacing or corrupting one compiled object therefore invalidates its
+transitive consumers as well. Independent ready modules are compiled with
+bounded parallelism; the default is two workers.
 
 For a shared workspace that requires serialized compiler materialization, pass
 its operator explicitly. The verifier does not hardcode a user or machine path:

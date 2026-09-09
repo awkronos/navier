@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-09-08",
+  "gitBaseRevision": "e7aba55ff119deb7de47819ca4b33e4d1c7b5d5c",
+  "snapshot": "uncommitted source snapshot identified by the hashes below",
+  "compiler": "Lean 4.31.0 arm64-apple-darwin24.6.0 68218e876d2a38b1985b8590fff244a83c321783 Release",
+  "rootModule": "Navier.Breakdown.ConstructedBreakdown",
+  "localClosureModules": 615,
+  "environmentFingerprint": "1dc7a917a47a421e2b8ae3f40375f0e4cf196f4ea189a15b8e3bfd2d368c086c",
+  "modules": {
+    "Navier.Breakdown.ConstructedBreakdown": {
+      "sourceSha256": "523efc908f78916425f5b184f81c2ea7de2a6b151b7fc061229562906615a9d7",
+      "dependencyFingerprint": "993935d633167208e488bd913be6e873d580e2bddadc1627af5f38924860d332",
+      "oleanSha256": "a931ce106f0332db7a4e8041d877d4853ea6c20459251891e8fd26c2cd6b07fb"
+    },
+    "Navier.Breakdown.NativeConstructionEndpoint": {
+      "sourceSha256": "b6580620b13894411cab3f952cb9bb888edfd0c9be9a671bde007f6cf057faed",
+      "dependencyFingerprint": "ab9447739c1af778e0a96e87e051719450995082f2f5c7fbb633640acad371ab",
+      "oleanSha256": "48475263f4776aa1e93ad73792e2227717e8590fc108c9747295c9bf5ab27255"
+    },
+    "Navier.Construction.R3ActualCandidate": {
+      "sourceSha256": "9f2ee0f2e1346f773ee491b2c0889ed9f65b539540d310679d27d5f04fb5f450",
+      "dependencyFingerprint": "7971001bf4b9276293bd131e8346ddc8fef9131a1308646eeb89a062e7001b73",
+      "oleanSha256": "6a29869c2d6dc9465dbf2bf19c9ec8c1826a3881d66f83ff69786c8dd9c99c45"
+    },
+    "Navier.Construction.R3FiniteEnergyComparison": {
+      "sourceSha256": "9df0dd9dcf76341466dda408c79f60ae10752dba8a54daad5f725a7f388ece9c",
+      "dependencyFingerprint": "30ee3d4d606766600c36454700af02c03db044a3ab76cd45f97134ed9ebdd28d",
+      "oleanSha256": "9945637e7f20f952f904b4c0ce5106b41c85df516f98b9e2064fc2ac75ec0b14"
+    },
+    "Navier.Analysis.ForceRecursivePartials": {
+      "sourceSha256": "84b723b6f40c910fd22d1683ab9d6a8223127b57f8e4d98d901383d62d22ac57",
+      "dependencyFingerprint": "9335a9a688f609d859802b388a95fa037dfa90298fb4a878447b40182f1d9bd6",
+      "oleanSha256": "84bc069fc6eb5fcb304ff20dcaa477bb285c85a070b7761556b69fd411b381fa"
+    },
+    "Navier.Analysis.ForceCoordinateEquivalence": {
+      "sourceSha256": "2a258875567da45294a006cdba93e2481c84c9bcb65e2700040d71472ff080b0",
+      "dependencyFingerprint": "4070202220e1d76d1a83bbb2d27ad64167a1007481fd533694edb92069e6e898",
+      "oleanSha256": "e26f87b9140258674d290006e47c872748b7321ba15429e74546befc7364cf28"
+    },
+    "Navier.Analysis.ConstructedForceExtension": {
+      "sourceSha256": "bce09def7ca162d2bda791632d7fb669581c107010add66ba6772797207b0859",
+      "dependencyFingerprint": "392008aed339d5cc5a55889c58116f148172082ba07ff61b0e5b1383d9bc96d8",
+      "oleanSha256": "0b3961cc512a2b24a07bc731aa7c64c8d03944135851a592381ddffef3abbe57"
+    },
+    "Navier.Analysis.SelectedCandidateEnergy": {
+      "sourceSha256": "9ff80470aec544a93e7918dd360f968b94ba4b67727a424094384c4d3f732201",
+      "dependencyFingerprint": "64a6ff78553220a7f188e764fcceaf176a6568043df8f2bf954cdb1523165ef2",
+      "oleanSha256": "0de8f9e60b485f81be35db280a54b6081f9d515ec75a5536566935a63b9c6f11"
+    },
+    "Navier.Analysis.ConstructedFiniteTimeObstruction": {
+      "sourceSha256": "c717c9dd49a30e469dfd2433871b80a3d17c2c01531a301516e11ee55efb8c04",
+      "dependencyFingerprint": "bd11f60b9b106568b26c23b27939d8f88b8c90d603b8f877a730f8a81cfd131b",
+      "oleanSha256": "f7bb4dcafb87126299b1791e9c8a139f288e414ccae09ae41449a2b5fa732df4"
+    }
+  },
+  "evidence": {
+    "axioms.txt": "00372241e9830597b1e2befb05c87a9522d31d3d9909f467d6bf5dc284bebbea",
+    "baseline-audit-recheck.txt": "81721a5e38a0496e3e864482bea5d6cdab7dd66db38335011d5cd0ad759bd109",
+    "conditional-audit.txt": "fc2cf77bbbf65529ed3784439939dda2579074267dcf45477a95725bf08480c8",
+    "full-rebuild.txt": "3e544a23085c359142aa8277cc6e4f635b0acc7208b08be29ba199ec0afb5be8",
+    "verifier.txt": "a37cfa6f121138ad8bb2f4d35123c11c195337b9be4eb9717373ff6aefcb76e6"
+  }
+}

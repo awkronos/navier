@@ -1,0 +1,43 @@
+Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown : Navier.ProblemStatements.WholeSpaceBreakdown
+'Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown' depends on axioms: [propext, Classical.choice, Quot.sound]
+Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce :
+  Navier.Analysis.ConstructedForceExtension.WholeSpaceBreakdownWithGloballySmoothForce
+'Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials (ν : ℝ) (hν : 0 < ν) :
+  ∃ u₀,
+    Navier.DivergenceFreeInitial u₀ ∧
+      ∃ f,
+        Navier.ForcedDataRapidDecay f ∧
+          (∀ (n K : ℕ) (axes : Fin n → Option (Fin 3)) (component : Fin 3),
+              ∃ C,
+                0 ≤ C ∧
+                  ∀ (t : ℝ),
+                    0 ≤ t →
+                      ∀ (x : Navier.Space),
+                        (1 + Navier.Breakdown.OfficialCDEncoding.euclideanNorm x + t) ^ K *
+                            |Navier.Analysis.ForceRecursivePartials.successivePartialWithin (fun z => f z.1 z.2) n
+                                (fun j => Navier.Breakdown.OfficialCDEncoding.spacetimeCoordinateDirection (axes j))
+                                (t, x) component| ≤
+                          C) ∧
+            ¬∃ u p, Navier.IsClassicalSolution ν f u₀ u p
+'Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate :
+  ∃ u p f,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧ Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u
+'Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+  (N : Navier.Analysis.CriticalControlDecomposition.CriticalQuantity)
+  (hlocal : Navier.Analysis.CriticalControlDecomposition.LocalClassicalExistence)
+  (hcont : Navier.Analysis.CriticalControlDecomposition.NormalizedContinuationFromCriticalControl N)
+  (hapriori : Navier.Analysis.CriticalControlDecomposition.APrioriCriticalControl N) :
+  Navier.ProblemStatements.WholeSpaceGlobalRegularity
+'Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

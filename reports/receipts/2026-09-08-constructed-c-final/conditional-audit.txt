@@ -1,0 +1,315 @@
+Navier.Construction.R3CompactCandidate.selected_compact_candidate :
+  ∃ u p f, Navier.Construction.R3CompactCandidate.Properties u p f
+'Navier.Construction.R3CompactCandidate.selected_compact_candidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution
+  {u v f : Navier.Construction.ProblemStatement.VelocityField}
+  {p q : Navier.Construction.ProblemStatement.PressureField}
+  (h : Navier.Construction.R3CompactCandidate.Properties u p f)
+  (hv : Navier.Construction.ComparatorBridge.GlobalSolutionRn f v q) : False
+'Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_compactCandidate
+  {u : Navier.Analysis.EuclideanPDETransport.EVelocityField} {p : Navier.Analysis.EuclideanPDETransport.EPressureField}
+  {f : Navier.Analysis.EuclideanPDETransport.EVelocityField}
+  (h : Navier.Construction.R3CompactCandidate.Properties u p f) : Navier.ProblemStatements.WholeSpaceBreakdown
+'Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_compactCandidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown : Navier.ProblemStatements.WholeSpaceBreakdown
+'Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown' depends on axioms: [propext, Classical.choice, Quot.sound]
+Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials (f : Navier.ForceField) :
+  Navier.ForcedDataRapidDecay f ↔
+    Navier.SmoothForceOnNonnegativeTime f ∧
+      Navier.Analysis.ForceCoordinateEquivalence.WholeSpaceSuccessivePartialDecay f
+'Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ForceCoordinateEquivalence.periodicForcedDataRapidDecay_iff_successivePartials (f : Navier.ForceField) :
+  Navier.PeriodicForcedDataRapidDecay f ↔
+    Navier.SpatiallyPeriodicForce f ∧
+      Navier.SmoothForceOnNonnegativeTime f ∧
+        Navier.Analysis.ForceCoordinateEquivalence.PeriodicSuccessivePartialDecay f
+'Navier.Analysis.ForceCoordinateEquivalence.periodicForcedDataRapidDecay_iff_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc
+  {u v f : Navier.Construction.ProblemStatement.VelocityField}
+  {p q : Navier.Construction.ProblemStatement.PressureField}
+  (h : Navier.Construction.R3CompactCandidate.Properties u p f) {T : ℝ} (hT1 : T < 1)
+  (hv : ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T))
+  (hq : ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T))
+  (hev : Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v)
+  (hdv :
+    ∀ t ∈ Set.Ioo 0 T,
+      ∀ (x : Navier.Construction.ProblemStatement.Space),
+        Navier.Construction.ProblemStatement.spatialDivergence v t x = 0)
+  (hNSv :
+    ∀ t ∈ Set.Ioo 0 T,
+      ∀ (x : Navier.Construction.ProblemStatement.Space),
+        Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x))
+  (hvzero : ∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) (t : ℝ) :
+  t ∈ Set.Icc 0 T → ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+'Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              (∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝),
+                  ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                    ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)) ∧
+                ∀ T < 1,
+                  ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝)
+                    (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField✝),
+                    ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T) →
+                      ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T) →
+                        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v →
+                          (∀ t ∈ Set.Ioo 0 T,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                            (∀ t ∈ Set.Ioo 0 T,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                              (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                                ∀ t ∈ Set.Icc 0 T,
+                                  ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝),
+                ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                  ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              ¬∃ v q,
+                  ContDiffOn ℝ (↑⊤) v Navier.Construction.ProblemStatement.preSingularDomain ∧
+                    ContDiffOn ℝ (↑⊤) q Navier.Construction.ProblemStatement.preSingularDomain ∧
+                      ContinuousOn v (Set.Icc 0 1 ×ˢ K) ∧
+                        (∀ T ∈ Set.Ico 0 1,
+                            Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) ∧
+                          (∀ t ∈ Set.Ioo 0 1,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) ∧
+                            (∀ t ∈ Set.Ioo 0 1,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) ∧
+                              ∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce :
+  Navier.Analysis.ConstructedForceExtension.WholeSpaceBreakdownWithGloballySmoothForce
+'Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials (ν : ℝ) (hν : 0 < ν) :
+  ∃ u₀,
+    Navier.DivergenceFreeInitial u₀ ∧
+      ∃ f,
+        Navier.ForcedDataRapidDecay f ∧
+          (∀ (n K : ℕ) (axes : Fin n → Option (Fin 3)) (component : Fin 3),
+              ∃ C,
+                0 ≤ C ∧
+                  ∀ (t : ℝ),
+                    0 ≤ t →
+                      ∀ (x : Navier.Space),
+                        (1 + Navier.Breakdown.OfficialCDEncoding.euclideanNorm x + t) ^ K *
+                            |Navier.Analysis.ForceRecursivePartials.successivePartialWithin (fun z => f z.1 z.2) n
+                                (fun j => Navier.Breakdown.OfficialCDEncoding.spacetimeCoordinateDirection (axes j))
+                                (t, x) component| ≤
+                          C) ∧
+            ¬∃ u p, Navier.IsClassicalSolution ν f u₀ u p
+'Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate :
+  ∃ u p f,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧ Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u
+'Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+  (N : Navier.Analysis.CriticalControlDecomposition.CriticalQuantity)
+  (hlocal : Navier.Analysis.CriticalControlDecomposition.LocalClassicalExistence)
+  (hcont : Navier.Analysis.CriticalControlDecomposition.NormalizedContinuationFromCriticalControl N)
+  (hapriori : Navier.Analysis.CriticalControlDecomposition.APrioriCriticalControl N) :
+  Navier.ProblemStatements.WholeSpaceGlobalRegularity
+'Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.CriticalMildRestartFixedPoint.existsUnique_criticalMildTerminalRestart_fixedPoint (ν : ℝ) (hν : 0 < ν)
+  {T R S R' : ℝ} (u : Navier.Analysis.CriticalMildPathFixedPoint.CriticalMildPathBall T R) (t : ↑(Set.Icc 0 T))
+  (hS : 0 ≤ S) (hR' : 0 ≤ R')
+  (hbudget :
+    ‖Navier.Analysis.CriticalMildRestartFixedPoint.criticalMildPathTerminalData u t‖ + 2 * √S / √ν * R' ^ 2 ≤ R')
+  (hcontr : 4 * √S / √ν * R' < 1) :
+  ∃! v,
+    Function.IsFixedPt
+      (Navier.Analysis.CriticalMildRestartFixedPoint.criticalMildTerminalRestartBallImage ν hν u t hS hR' hbudget) v
+'Navier.Analysis.CriticalMildRestartFixedPoint.existsUnique_criticalMildTerminalRestart_fixedPoint' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.CriticalMildBoundedContinuation.bounded_global_mild_of_terminalNormBound (ν : ℝ) (hν : 0 < ν)
+  (a : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (M : ℝ) (hM : 0 ≤ M) (ha : ‖a‖ ≤ M)
+  (hbound : Navier.Analysis.CriticalMildBoundedContinuation.CriticalMildTerminalNormBound ν hν a M) (t : ℝ)
+  (ht : 0 ≤ t) :
+  (Navier.Analysis.CriticalMildBoundedContinuation.boundedCoherentChain ν hν a M hM ha ⋯).totalExtension t =
+    Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν a
+      (Navier.Analysis.CriticalMildBoundedContinuation.boundedCoherentChain ν hν a M hM ha ⋯).totalExtension ⋯ t ht
+'Navier.Analysis.CriticalMildBoundedContinuation.bounded_global_mild_of_terminalNormBound' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed (ν : ℝ) (hν : 0 < ν)
+  (a : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (K : ℝ) (_hK : 0 ≤ K)
+  (hmixed : Navier.Analysis.LeiLinCoerciveTerminal.CriticalMildMixedTerminalBound ν hν a K) :
+  Navier.Analysis.CriticalMildBoundedContinuation.CriticalMildTerminalNormBound ν hν a
+    (Navier.Analysis.LeiLinCoerciveTerminal.coerciveConstant ν * K)
+'Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_X2Mass (ν : ℝ) (hν : 0 < ν)
+  (u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (huc : Continuous u)
+  (hu : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u s)) {R T δ A C : ℝ} (hR : 0 ≤ R)
+  (hT : 0 ≤ T) (hδ : 0 < δ) (hδT : δ ≤ T) (huR : ∀ s ∈ Set.Ioc 0 T, ‖u s‖ ≤ R)
+  (hmild :
+    ∀ (s : ℝ) (hs : s ∈ Set.Icc 0 T), u s = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀ u hu s ⋯)
+  (hhalf :
+    ∀ s ∈ Set.Icc (T - δ) T,
+      Summable fun m =>
+        ‖Navier.Analysis.ComplexLerayNorm.complexFrequency (Navier.Analysis.CriticalMildSeries.latticeFrequency m)‖ *
+          ‖↑(u s) m‖)
+  (hintX1 :
+    IntervalIntegrable
+      (fun s =>
+        Navier.Analysis.LeiLinSpace.normX1 Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize
+          (Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude (u s)))
+      MeasureTheory.volume (T - δ) T)
+  (hintX2 :
+    IntervalIntegrable
+      (fun s =>
+        Navier.Analysis.LeiLinTimeMixed.normX2 Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize
+          (Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude (u s)))
+      MeasureTheory.volume (T - δ) T)
+  (hmassX1 :
+    ∫ (s : ℝ) in T - δ..T,
+        Navier.Analysis.LeiLinSpace.normX1 Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize
+          (Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude (u s)) ≤
+      A)
+  (hmassX2 :
+    ∫ (s : ℝ) in T - δ..T,
+        Navier.Analysis.LeiLinTimeMixed.normX2 Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize
+          (Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude (u s)) ≤
+      C) :
+  Navier.Analysis.LeiLinSpace.normX1 Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize
+      (Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude (u T)) ≤
+    (A + √ν * (A + C) * √δ) / δ + 2 * R ^ 2 / √ν * √δ
+'Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_X2Mass' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.LerayWeak.exists_galerkinLimit_energy_le (ν : ℝ) (u₀ : Navier.SchwartzVelocity)
+  (G : Navier.Analysis.LerayWeak.GalerkinApproximation ν u₀) :
+  ∃ u σ,
+    StrictMono σ ∧
+      (Measurable fun z => u z.1 z.2) ∧
+        (∀ (t : ℝ), 0 ≤ t → MeasureTheory.Integrable (fun x => ‖u t x‖ ^ 2) MeasureTheory.volume) ∧
+          (∀ (t : ℝ), 0 ≤ t → Navier.kineticEnergy u t ≤ ∫ (x : Navier.Space), ∑ i, u₀ x i ^ 2) ∧
+            Navier.Analysis.LerayWeak.StrongL2LocLimit (fun k => G.approx (σ k)) u
+'Navier.Analysis.LerayWeak.exists_galerkinLimit_energy_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+Navier.Analysis.LerayWeak.exists_lerayLimitData_of_weakClauses (ν : ℝ) (u₀ : Navier.SchwartzVelocity)
+  (G : Navier.Analysis.LerayWeak.GalerkinApproximation ν u₀)
+  (hweak :
+    ∀ (u : Navier.VelocityEvolution) (σ : ℕ → ℕ),
+      StrictMono σ →
+        (Measurable fun z => u z.1 z.2) →
+          (∀ (t : ℝ), 0 ≤ t → MeasureTheory.Integrable (fun x => ‖u t x‖ ^ 2) MeasureTheory.volume) →
+            Navier.Analysis.LerayWeak.StrongL2LocLimit (fun k => G.approx (σ k)) u →
+              ∀ (φ : Navier.Analysis.LerayWeak.DivergenceFreeTestFunction),
+                ∫ (t : ℝ) in Set.Ici 0, ∫ (x : Navier.Space), Navier.Analysis.LerayWeak.weakPairingDensity ν u φ t x =
+                  -∫ (x : Navier.Space), Navier.Analysis.Enstrophy.officialInner (u₀ x) ((φ.field 0) x)) :
+  Nonempty (Navier.Analysis.LerayWeak.LerayLimitData ν u₀)
+'Navier.Analysis.LerayWeak.exists_lerayLimitData_of_weakClauses' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.HeatSemigroupSmoothing.heatKernel_convolution_smoothing_le {ν : ℝ} (hν : 0 < ν) {r : ℝ} (hr : 1 < r)
+  {f : Navier.Space → ℝ} (hfr : MeasureTheory.Integrable (fun y => |f y| ^ r) MeasureTheory.volume)
+  (hfm : Measurable f) :
+  ∃ C,
+    0 < C ∧
+      ∀ (t : ℝ),
+        0 < t →
+          ∀ (x : Navier.Space),
+            |∫ (y : Navier.Space), Navier.Analysis.HeatSemigroupSmoothing.heatKernel ν t (x - y) * f y| ≤
+              C * t ^ (-3 / (2 * r)) * (∫ (y : Navier.Space), |f y| ^ r) ^ (1 / r)
+'Navier.Analysis.HeatSemigroupSmoothing.heatKernel_convolution_smoothing_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.BealeKatoMajda.exists_fderivSupBound_of_sobolevH3 :
+  ∃ A,
+    0 < A ∧
+      ∀ (u : Navier.SchwartzVelocity) (x : Navier.Space),
+        ‖fderiv ℝ (⇑u) x‖ ≤ A * √(Navier.Analysis.BealeKatoMajda.sobolevH3NormSq u)
+'Navier.Analysis.BealeKatoMajda.exists_fderivSupBound_of_sobolevH3' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne :
+  Navier.ProblemStatements.WholeSpaceBreakdown ↔ Navier.Analysis.ViscosityEndpoints.WholeSpaceBreakdownAtViscosityOne
+'Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown {ν : ℝ} {f : Navier.ForceField}
+  {u₀ : Navier.SchwartzVelocity} {T : ℝ} (w : Navier.Breakdown.WholeSpacePointEvaluationBreakdownWitness ν f u₀ T) :
+  ¬∃ u p, Navier.IsClassicalSolution ν f u₀ u p
+'Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile {T A E : ℝ} {f : Navier.ForceField}
+  {u₀ : Navier.SchwartzVelocity} (hforce_smooth : ContDiff ℝ ↑⊤ fun z => f z.1 z.2)
+  (hforce_compact : HasCompactSupport fun z => f z.1 z.2) (hdiv : Navier.DivergenceFreeInitial u₀)
+  (localSolution : Navier.Breakdown.PartialClassicalSolution 1 f (fun x => u₀ x) T) (region : Set Navier.Space)
+  (region_compact : IsCompact region) (path : ℝ → Navier.Space) (path_mem : ∀ (t : ℝ), 0 ≤ t → t < T → path t ∈ region)
+  (agrees_with_global :
+    ∀ (u : Navier.VelocityEvolution) (p : Navier.PressureEvolution),
+      Navier.IsClassicalSolution 1 f u₀ u p → Navier.Breakdown.VelocityAgreesBefore T localSolution.velocity u)
+  (error : ℝ → ℝ) (hA : 0 < A) (hE : 0 < E) (herror : Filter.Tendsto error (nhdsWithin T (Set.Iio T)) (nhds 0))
+  (hlower :
+    ∀ᶠ (t : ℝ) in nhdsWithin T (Set.Iio T), (T - t) ^ (-A) * (E + error t) ≤ ‖localSolution.velocity t (path t)‖) :
+  Navier.ProblemStatements.WholeSpaceBreakdown
+'Navier.Breakdown.wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution {ν T : ℝ} {f : Navier.ForceField}
+  {u₀ : Navier.VelocityField} (sol : Navier.Breakdown.PartialClassicalSolution ν f u₀ T) (t : ℝ) (ht : 0 < t)
+  (htT : t < T) (x : Navier.Space) :
+  (fderivWithin ℝ (fun s => Navier.kineticEnergyDensity (sol.velocity s) x) (Set.Ici 0) t) 1 +
+      ν * Navier.Analysis.EnergyViscousDissipation.derivativeEnergyDensity (sol.velocity t) x =
+    ν * Navier.staticDivergence (Navier.Analysis.EnergyViscousDissipation.viscousEnergyFlux (sol.velocity t)) x -
+          Navier.staticDivergence (fun y => sol.pressure t y • sol.velocity t y) x -
+        Navier.staticDivergence (Navier.kineticEnergyFlux (sol.velocity t)) x +
+      ∑ i, f t x i * sol.velocity t x i
+'Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

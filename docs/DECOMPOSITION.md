@@ -1,9 +1,17 @@
 # Mathematical dependencies
 
-The target is `Navier.ProblemStatements.WholeSpaceGlobalRegularity` in
+This document tracks the **unforced, all-data** target
+`Navier.ProblemStatements.WholeSpaceGlobalRegularity` in
 [`Problem.lean`](../Navier/Problem.lean). Its quantifiers and solution
 requirements determine what a proof must establish. No prescribed route,
 planning category, or status label determines its truth.
+
+The separate forced endpoint
+`Navier.ProblemStatements.WholeSpaceBreakdown` is already inhabited by
+`Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown`. That result chooses
+one datum and one smooth rapidly decaying force for each positive viscosity and
+excludes a global classical competitor. It supplies none of the universal,
+zero-force inputs below.
 
 [`CriticalControlDecomposition.lean`](../Navier/Analysis/CriticalControlDecomposition.lean)
 contains a proved construction of the exact target from three mathematical
@@ -23,6 +31,16 @@ and removes the arbitrary time-dependent gauge.
 These premises are explicit theorem inputs. The construction proves their
 implication, and using it to prove the target requires proving all three for
 a common quantity. A different proof route may establish the target directly.
+
+| Dependency | Quantifier that matters | Current mathematical burden |
+| --- | --- | --- |
+| `LocalClassicalExistence` | every positive viscosity and every admissible datum | construct a finite-energy local classical solution with the stated energy inequality |
+| `NormalizedContinuationFromCriticalControl N` | every bounded local solution in the normalized pressure gauge | prove one horizon-independent positive restart step from control of the same `N` |
+| `APrioriCriticalControl N` | every horizon and every admissible local solution | prove one finite bound for arbitrary large initial data |
+
+The third row is the global nonlinear bottleneck. A local theorem, a
+small-data bound, or a bound whose constant depends on the terminal horizon
+does not satisfy its quantifiers.
 
 [`PressureGaugeObstruction.lean`](../Navier/Analysis/PressureGaugeObstruction.lean)
 refutes the former arbitrary-pressure continuation statement.

@@ -24,18 +24,52 @@ Comparison before the singular time does not assert uniqueness of a weak
 continuation after it. The numerical experiments concern ordinary periodic
 flows and are separate from the continuum proof.
 
+The logical shape is easiest to see as two different paths:
+
+```text
+FORCED CONSTRUCTION (proved)
+selected compact (u, p, f)
+  -> smooth, rapidly decaying force
+  -> classical solution on 0 <= t < 1 with uniformly bounded energy
+  -> uniqueness among smooth finite-energy competitors on every closed slab before t = 1
+  -> unbounded speed as t approaches 1
+  -> no same-force continuation that is smooth before t = 1, continuous through it,
+     and finite-energy on every closed pre-singular slab
+
+UNFORCED REGULARITY (open)
+every admissible u0, with f = 0
+  -> local classical solution
+  -> a continuation theorem controlled by one critical quantity
+  -> a uniform bound for that quantity, for arbitrary large data    [missing]
+  -> global smooth bounded-energy solution
+```
+
+“Globally smooth” in the completed result applies to the **force**. The
+constructed velocity is smooth on every pre-singular time interval and is
+proved not to possess a global classical continuation satisfying the official
+energy contract. This distinction is part of the theorem types, not a prose
+caveat.
+
+The terminal obstruction is stronger than the global endpoint needs: the
+excluded competitor may choose a different finite energy bound on each closed
+pre-singular slab. No single energy constant uniform as the slabs approach the
+deadline is assumed.
+
 ## Mathematics
 
 | Entry point | Content |
 | --- | --- |
 | [Problem.lean](Navier/Problem.lean), [OfficialProblem.lean](Navier/OfficialProblem.lean) | Exact PDE, data, smoothness, energy, and alternative statements |
 | [ConstructedBreakdown.lean](Navier/Breakdown/ConstructedBreakdown.lean) | Constructed C endpoint and bounds for successive coordinate partials |
+| [ConstructedFiniteTimeObstruction.lean](Navier/Analysis/ConstructedFiniteTimeObstruction.lean) | One selected witness carrying finite energy, slab uniqueness, compact support, and terminal nonextension |
 | [EuclideanPDETransport.lean](Navier/Analysis/EuclideanPDETransport.lean) | Coordinate isometry, derivatives, energy, and force transport |
 | [R3FiniteEnergyComparison.lean](Navier/Construction/R3FiniteEnergyComparison.lean) | Comparison on every pre-singular time interval |
 | [ForceRecursivePartials.lean](Navier/Analysis/ForceRecursivePartials.lean) | Actual successive differentiation versus multilinear jets, including the initial boundary |
+| [ForceCoordinateEquivalence.lean](Navier/Analysis/ForceCoordinateEquivalence.lean) | Exact equivalence between the force predicate and decay of every genuine ordered coordinate partial |
 | [ConstructedForceExtension.lean](Navier/Analysis/ConstructedForceExtension.lean) | The selected force is globally smooth across time zero at every positive viscosity |
 | [ConditionalAudit.lean](Navier/ConditionalAudit.lean) | Selected theorem types and raw transitive axioms |
 | [Native mathematics and solver guide](docs/NATIVE_BREAKDOWN_AND_SOLVER.md) | Useful conditional results, exact premises, and numerical validation |
+| [Claim and frontier map](docs/RESULT_MAP.md) | Claim-to-declaration map, trust evidence, and the sharp open inputs for A |
 
 [Formalization conventions](docs/FORMALIZATION.md), the
 [construction carrier review](docs/CONSTRUCTION_REVIEW.md), the

@@ -1,8 +1,8 @@
 import Navier.Breakdown.NativeConstructionEndpoint
 import Navier.Construction.R3ActualCandidate
-import Navier.Analysis.ForceRecursivePartials
+import Navier.Analysis.ForceCoordinateEquivalence
 import Navier.Analysis.ConstructedForceExtension
-import Navier.Analysis.SelectedCandidateEnergy
+import Navier.Analysis.ConstructedFiniteTimeObstruction
 
 /-!
 # Constructed whole-space breakdown
@@ -22,6 +22,8 @@ open scoped ContDiff
 
 namespace Navier.Breakdown.ConstructedBreakdown
 
+open Navier.Analysis.ForceCoordinateEquivalence
+
 theorem wholeSpaceBreakdown : Navier.ProblemStatements.WholeSpaceBreakdown := by
   exact Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdown
 
@@ -33,7 +35,9 @@ theorem selectedFiniteEnergyCandidate :
       ∃ f : Navier.Construction.ProblemStatement.VelocityField,
       Navier.Construction.R3CompactCandidate.Properties u p f ∧ ContDiff ℝ ∞ f ∧
         Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico (0 : ℝ) 1) u := by
-  exact Navier.Analysis.SelectedCandidateEnergy.selected_compact_candidate_with_energy
+  obtain ⟨u, p, f, _, h, hf, henergy, _⟩ :=
+    Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile
+  exact ⟨u, p, f, h, hf, henergy⟩
 
 /-- The same constructed counterexample also satisfies weighted bounds for
 successive coordinate differentiation as an actual recursive operation. Every
@@ -51,7 +55,7 @@ theorem wholeSpaceBreakdown_with_successivePartials (ν : ℝ) (hν : 0 < ν) :
         ¬ ∃ u p, Navier.IsClassicalSolution ν f u₀ u p := by
   obtain ⟨u₀, hu₀, f, hf, hbad⟩ := wholeSpaceBreakdown ν hν
   exact ⟨u₀, hu₀, f, hf,
-    Navier.Analysis.ForceRecursivePartials.forcedDataRapidDecay_bounds_successivePartials hf,
+    ((forcedDataRapidDecay_iff_successivePartials f).mp hf).2,
     hbad⟩
 
 end Navier.Breakdown.ConstructedBreakdown

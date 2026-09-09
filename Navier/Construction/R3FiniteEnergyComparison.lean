@@ -39,45 +39,65 @@ theorem GlobalSolutionRn.uniformFiniteEnergy {f v : VelocityField} {q : Pressure
     have hm := le_max_right 0 (E / 2)
     linarith
 
+/-- The compact candidate is the unique smooth finite-energy solution on every
+closed slab ending strictly before the singular time.  The competitor is
+required to be smooth and finite-energy only on that slab; no future-time
+extension, global energy bound, spatial support, or decay condition is used. -/
+theorem compact_candidate_unique_on_Icc
+    {u v f : VelocityField} {p q : PressureField}
+    (h : R3CompactCandidate.Properties u p f) {T : ℝ}
+    (hT1 : T < 1)
+    (hv : ContDiffOn ℝ ∞ v (Navier.ConstructionR3.Comparison.slab 0 T))
+    (hq : ContDiffOn ℝ ∞ q (Navier.ConstructionR3.Comparison.slab 0 T))
+    (hev : Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Icc 0 T) v)
+    (hdv : ∀ t ∈ Ioo (0 : ℝ) T, ∀ x, spatialDivergence v t x = 0)
+    (hNSv : ∀ t ∈ Ioo (0 : ℝ) T, ∀ x, navierStokesResidual v q t x = f (t, x))
+    (hvzero : ∀ x, v (0, x) = 0) :
+    ∀ t ∈ Icc (0 : ℝ) T, ∀ x, u (t, x) = v (t, x) := by
+  by_cases hTpos : 0 < T
+  · have hpre : Navier.ConstructionR3.Comparison.slab 0 T ⊆ preSingularDomain := by
+      intro z hz
+      exact ⟨⟨hz.1.1, hz.1.2.trans_lt hT1⟩, hz.2⟩
+    obtain ⟨K, hK, hs⟩ := h.velocity_support
+    have hsupport : ∀ r ∈ Icc (0 : ℝ) T, tsupport (fun y => u (r, y)) ⊆ K := by
+      intro r hr
+      apply closure_minimal _ hK.isClosed
+      intro y hy
+      by_contra hyK
+      exact hy (hs r ⟨hr.1, hr.2.trans_lt hT1⟩ y hyK)
+    exact Navier.ConstructionR3.WholeSpaceUniqueness.classical_uniqueness_on_Icc hTpos
+      (h.velocity_smooth.mono hpre) hv (h.pressure_smooth.mono hpre) hq
+      hK hsupport hev
+      (fun r hr => h.divergence_free r ⟨hr.1.le, hr.2.trans hT1⟩)
+      hdv
+      (fun r hr y => by
+        simpa only [Navier.ConstructionR3.ProblemStatement.navierStokesResidual,
+          navierStokesResidual, one_smul] using
+          (h.navier_stokes r ⟨hr.1, hr.2.trans hT1⟩ y).trans (hNSv r hr y).symm)
+      (fun y => (h.zero_initial_velocity y).trans (hvzero y).symm)
+  · intro t ht x
+    have htEq : t = 0 := le_antisymm (ht.2.trans (le_of_not_gt hTpos)) ht.1
+    rw [htEq, h.zero_initial_velocity, hvzero]
+
 /-- A compact candidate with unbounded speed excludes every global smooth
 solution having the comparator's finite-energy bound. -/
 theorem compact_candidate_excludes_global_solution
     {u v f : VelocityField} {p q : PressureField}
     (h : R3CompactCandidate.Properties u p f) (hv : GlobalSolutionRn f v q) : False := by
   apply h.not_global_agreement hv.velocity_smooth
-  obtain ⟨K, hK, hs⟩ := h.velocity_support
   intro t ht x
-  by_cases ht0 : t = 0
-  · subst t
-    rw [h.zero_initial_velocity, hv.initial_velocity]
-  have hpos : 0 < t := lt_of_le_of_ne ht.1 (Ne.symm ht0)
-  have hpre : Navier.ConstructionR3.Comparison.slab 0 t ⊆ preSingularDomain := by
-    intro z hz
-    exact ⟨⟨hz.1.1, hz.1.2.trans_lt ht.2⟩, hz.2⟩
   have hfuture : Navier.ConstructionR3.Comparison.slab 0 t ⊆ futureDomain := by
     intro z hz
     exact ⟨hz.1.1, hz.2⟩
-  have hsupport : ∀ r ∈ Icc (0 : ℝ) t, tsupport (fun y => u (r, y)) ⊆ K := by
-    intro r hr
-    apply closure_minimal _ hK.isClosed
-    intro y hy
-    by_contra hyK
-    exact hy (hs r ⟨hr.1, hr.2.trans_lt ht.2⟩ y hyK)
-  have heq := Navier.ConstructionR3.WholeSpaceUniqueness.classical_uniqueness_on_Icc hpos
-    (h.velocity_smooth.mono hpre) (hv.velocity_smooth.mono hfuture)
-    (h.pressure_smooth.mono hpre) (hv.pressure_smooth.mono hfuture)
-    hK hsupport (hv.uniformFiniteEnergy t)
-    (fun r hr => h.divergence_free r ⟨hr.1.le, hr.2.trans ht.2⟩)
+  exact compact_candidate_unique_on_Icc h ht.2
+    (hv.velocity_smooth.mono hfuture) (hv.pressure_smooth.mono hfuture)
+    (hv.uniformFiniteEnergy t)
     (fun r hr => hv.divergence_free r hr.1.le)
-    (fun r hr y => by
-      simpa only [Navier.ConstructionR3.ProblemStatement.navierStokesResidual,
-        navierStokesResidual, one_smul] using
-        (h.navier_stokes r ⟨hr.1, hr.2.trans ht.2⟩ y).trans
-          (hv.navier_stokes r hr.1 y).symm)
-    (fun y => (h.zero_initial_velocity y).trans (hv.initial_velocity y).symm)
-  exact heq t ⟨ht.1, le_rfl⟩ x
+    (fun r hr y => hv.navier_stokes r hr.1 y)
+    hv.initial_velocity t ⟨ht.1, le_rfl⟩ x
 
 end Navier.Construction.ComparatorBridge
 
 #print axioms Navier.ConstructionR3.WholeSpaceUniqueness.classical_uniqueness_on_Icc
+#print axioms Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc
 #print axioms Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution

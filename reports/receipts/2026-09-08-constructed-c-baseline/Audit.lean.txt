@@ -1,0 +1,28 @@
+import Navier.Breakdown.ConstructedBreakdown
+import Navier.Analysis.CriticalControlDecomposition
+
+/-!
+Frozen exact-consumer audit for repository revision
+`e7aba55ff119deb7de47819ca4b33e4d1c7b5d5c`.
+
+The examples below check the original endpoint carriers without weakening or
+rephrasing their types. The raw commands print transitive axiom dependencies.
+-/
+
+example : Navier.ProblemStatements.WholeSpaceBreakdown :=
+  Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown
+
+#check Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown
+#print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown
+
+#check Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce
+#print axioms Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce
+
+#check Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
+#print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
+
+#check Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate
+#print axioms Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate
+
+#check Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+#print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori

@@ -43,7 +43,11 @@ class VerifyConstructionTests(unittest.TestCase):
             order = verify.dependency_order(graph, "Fixture.Root")
             environment = verify.environment_fingerprint(root)
             before = verify.compute_fingerprints(root, graph, order, environment)
-            receipts = {module: {"fingerprint": before[module]["fingerprint"]} for module in order}
+            receipts = {module: {
+                "fingerprint": before[module]["fingerprint"],
+                "exit_code": 0,
+                "output_sha256": verify.sha256(b""),
+            } for module in order}
             olean_root = root / ".lake" / "build" / "lib" / "lean"
             for module in order:
                 output = olean_root / (module.replace(".", "/") + ".olean")
@@ -79,7 +83,26 @@ class VerifyConstructionTests(unittest.TestCase):
             graph = {"A": []}
             self.assertEqual(verify.fresh_modules(["A"], graph, fingerprint, receipts, root), set())
             receipts["A"]["fingerprint"] = "current"
+            # A legacy receipt without checked output bytes is not fresh.
+            self.assertEqual(verify.fresh_modules(["A"], graph, fingerprint, receipts, root), set())
+            receipts["A"].update(exit_code=0, output_sha256=verify.sha256(b""))
             self.assertEqual(verify.fresh_modules(["A"], graph, fingerprint, receipts, root), {"A"})
+            output.write_bytes(b"different compiled object")
+            self.assertEqual(verify.fresh_modules(["A"], graph, fingerprint, receipts, root), set())
+
+    def test_changed_compiled_dependency_invalidates_consumers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            graph = {"A": [], "B": ["A"]}
+            fingerprints = {name: {"fingerprint": name} for name in graph}
+            receipts = {}
+            for name in graph:
+                (root / f"{name}.olean").write_bytes(name.encode())
+                receipts[name] = {"fingerprint": name, "exit_code": 0,
+                                  "output_sha256": verify.sha256(name.encode())}
+            self.assertEqual(verify.fresh_modules(graph, graph, fingerprints, receipts, root), {"A", "B"})
+            (root / "A.olean").write_bytes(b"replacement")
+            self.assertEqual(verify.fresh_modules(graph, graph, fingerprints, receipts, root), set())
 
 
 if __name__ == "__main__":
