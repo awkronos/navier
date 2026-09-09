@@ -7,6 +7,9 @@ __pycache__/
 artifacts/runs/*
 !artifacts/runs/.gitkeep
 
+# Compiler receipts and generated reports stay local.
+/reports/
+
 
 # reconcile attic junk (never commit)
 .git-reconcile-attic-*/
