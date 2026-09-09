@@ -7,7 +7,7 @@ from unittest.mock import patch
 TOOLS = Path(__file__).resolve().parents[1] / "solver" / "tools"
 sys.path.insert(0, str(TOOLS))
 import provenance
-from verify_web_build import verify_manifest
+from verify_web_build import local_path_marker_count, verify_manifest
 
 
 class WebProvenanceTests(unittest.TestCase):
@@ -21,8 +21,14 @@ class WebProvenanceTests(unittest.TestCase):
             "schemaVersion": 1, "crate": "navier-web",
             "compiledSources": list(provenance.COMPILED_SOURCES),
             "sourceDigest": provenance.source_digest(),
+            "buildInputs": list(provenance.BUILD_INPUTS),
+            "buildPipelineDigest": provenance.build_pipeline_digest(),
             "cargoLockSha256": provenance.sha256(provenance.CRATE_DIR / "Cargo.lock"),
             "continuumCertificate": False, "adaptiveRecording": False,
+            "reproducibility": {
+                "rustPathRemapping": True,
+                "localAbsolutePathGuard": True,
+            },
             "artifacts": {name: provenance.sha256(self.output / name) for name in provenance.WEB_ARTIFACTS},
         }
 
@@ -36,6 +42,19 @@ class WebProvenanceTests(unittest.TestCase):
             with self.subTest(artifacts=artifacts):
                 self.manifest["artifacts"] = artifacts
                 self.assertTrue(verify_manifest(self.output, self.manifest))
+
+    def test_local_absolute_path_marker_cannot_pass_or_leak_path(self):
+        wasm = self.output / "navier_web_bg.wasm"
+        wasm.write_bytes(b"prefix:/Users/example/private/source.rs:suffix")
+        self.manifest["artifacts"][wasm.name] = provenance.sha256(wasm)
+        failures = verify_manifest(self.output, self.manifest)
+        self.assertEqual(local_path_marker_count(wasm.read_bytes()), 1)
+        self.assertTrue(any("local absolute path marker" in error for error in failures))
+        self.assertNotIn("example", " ".join(failures))
+
+    def test_missing_reproducibility_policy_cannot_pass(self):
+        self.manifest.pop("reproducibility")
+        self.assertTrue(verify_manifest(self.output, self.manifest))
 
     def test_incomplete_sources_and_false_certification_cannot_pass(self):
         self.manifest["compiledSources"] = []

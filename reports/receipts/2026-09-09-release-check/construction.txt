@@ -1,0 +1,779 @@
+root=Navier.Breakdown.ConstructedBreakdown
+local_closure=615 fresh=332 rebuild=283
+compiler=Lean (version 4.31.0, arm64-apple-darwin24.6.0, commit 68218e876d2a38b1985b8590fff244a83c321783, Release)
+CHECKED 333/615 Navier.Construction.CopyAngularInvariance
+CHECKED 334/615 Navier.Construction.MeanRankUpdate
+CHECKED 335/615 Navier.Construction.CorrectionState
+CHECKED 336/615 Navier.Construction.HarmonicResidual
+CHECKED 337/615 Navier.Construction.ParticularWaveBounds
+CHECKED 338/615 Navier.Construction.ErrorHarmonics
+CHECKED 339/615 Navier.Construction.HarmonicCovariance
+CHECKED 340/615 Navier.Construction.LabelSumBounds
+CHECKED 341/615 Navier.Construction.SignedWaveUpdate
+CHECKED 342/615 Navier.Construction.UniformPrimaryWeights
+CHECKED 343/615 Navier.Construction.ParticularWaveAssembly
+CHECKED 344/615 Navier.Construction.ScaledTangentTransport
+CHECKED 345/615 Navier.Construction.PrimaryCovarianceBounds
+CHECKED 346/615 Navier.Construction.PeriodizedWaveBounds
+CHECKED 347/615 Navier.Construction.SignedCopyBounds
+CHECKED 348/615 Navier.Construction.ParticularCopyBounds
+CHECKED 349/615 Navier.Construction.BasePhaseGeometry
+CHECKED 350/615 Navier.Construction.ModulatedStockBounds
+CHECKED 351/615 Navier.Construction.ActualParticularControl
+CHECKED 352/615 Navier.Construction.ModulatedHistories
+CHECKED 353/615 Navier.Construction.TransitionRamp
+CHECKED 354/615 Navier.Construction.ModulatedCone
+CHECKED 355/615 Navier.Construction.ActivationCone
+CHECKED 356/615 Navier.Construction.ShapedWaitBounds
+CHECKED 357/615 Navier.Construction.ActivationContinuation
+CHECKED 358/615 Navier.Construction.PulseCone
+CHECKED 359/615 Navier.Construction.NominalProfile
+CHECKED 360/615 Navier.Construction.MatchingDebtBounds
+CHECKED 361/615 Navier.Construction.TailCone
+CHECKED 362/615 Navier.Construction.HeatTailHistoryLimits
+CHECKED 363/615 Navier.Construction.OutgoingCone
+CHECKED 364/615 Navier.Construction.TerminalPressure
+CHECKED 365/615 Navier.Construction.HeatSwitchCone
+CHECKED 366/615 Navier.Construction.TerminalEdgeFactor
+CHECKED 367/615 Navier.Construction.HeatSwitchHistoryDerivatives
+CHECKED 368/615 Navier.Construction.TerminalCone
+CHECKED 369/615 Navier.Construction.TerminalHistoryBridge
+CHECKED 370/615 Navier.Construction.MatchingConeBounds
+CHECKED 371/615 Navier.Construction.ScheduledProfileChoice
+CHECKED 372/615 Navier.Construction.PreparedOutgoing
+CHECKED 373/615 Navier.Construction.RepairConeBounds
+CHECKED 374/615 Navier.Construction.NominalConeAssembly
+CHECKED 375/615 Navier.Construction.SlowResidualMatching
+CHECKED 376/615 Navier.Construction.ActualSlowAxis
+CHECKED 377/615 Navier.Construction.GlobalSlowProfiles
+CHECKED 378/615 Navier.Construction.NaturalCoefficientBridge
+CHECKED 379/615 Navier.Construction.ActiveAnnulusWeight
+CHECKED 380/615 Navier.Construction.AssembledSlowBase
+CHECKED 381/615 Navier.Construction.AxisTailRegularity
+CHECKED 382/615 Navier.Construction.ModulatedProfileAssembly
+CHECKED 383/615 Navier.Construction.GlobalStressSupport
+CHECKED 384/615 Navier.Construction.SlowFirstOrderEdge
+CHECKED 385/615 Navier.Construction.ZerothStressIdentity
+CHECKED 386/615 Navier.Construction.LeadingStressWeights
+CHECKED 387/615 Navier.Construction.BaseResidual
+CHECKED 388/615 Navier.Construction.PhysicalMeanDomain
+CHECKED 389/615 Navier.Construction.BasePrefixIdentity
+CHECKED 390/615 Navier.Construction.BaseExterior
+CHECKED 391/615 Navier.Construction.FirstOrderBaseEdge
+CHECKED 392/615 Navier.Construction.ConstructedSlowBase
+CHECKED 393/615 Navier.Construction.MeanChartCompatibility
+CHECKED 394/615 Navier.Construction.EntranceAlignedBase
+CHECKED 395/615 Navier.Construction.BaseChartJets
+CHECKED 396/615 Navier.Construction.ModulatedExterior
+CHECKED 397/615 Navier.Construction.ProfileSpectralCone
+CHECKED 398/615 Navier.Construction.HarmonicMeanInteraction
+CHECKED 399/615 Navier.Construction.AlignedProfileSpectralCone
+CHECKED 400/615 Navier.Construction.HarmonicWaveInteraction
+CHECKED 401/615 Navier.Construction.FinalSlowBase
+CHECKED 402/615 Navier.Construction.LocalSignedRequest
+CHECKED 403/615 Navier.Construction.PrimaryGeometryAssembly
+CHECKED 404/615 Navier.Construction.LiftedMeanResidual
+CHECKED 405/615 Navier.Construction.PrimaryTargetBounds
+CHECKED 406/615 Navier.Construction.PhysicalResidualBridge
+CHECKED 407/615 Navier.Construction.PrimaryCopyBounds
+CHECKED 408/615 Navier.Construction.PhysicalCurlCovariance
+CHECKED 409/615 Navier.Construction.PhysicalResidualTZ
+CHECKED 410/615 Navier.Construction.PrimaryFieldAssembly
+CHECKED 411/615 Navier.Construction.StateReindex
+CHECKED 412/615 Navier.Construction.HarmonicSourceSupport
+CHECKED 413/615 Navier.Construction.PhysicalParticularWave
+CHECKED 414/615 Navier.Construction.DefectIncrementBounds
+CHECKED 415/615 Navier.Construction.PeriodicPhaseAssembly
+CHECKED 416/615 Navier.Construction.PhysicalResidualNaturality
+CHECKED 417/615 Navier.Construction.PhysicalSignedWave
+CHECKED 418/615 Navier.Construction.VariableGaugeMean
+CHECKED 419/615 Navier.Construction.ActualSignedControl
+CHECKED 420/615 Navier.Construction.LocalRankDefect
+CHECKED 421/615 Navier.Construction.PrimaryResidualClass
+CHECKED 422/615 Navier.Construction.PrimaryMaterialDefect
+CHECKED 423/615 Navier.Construction.BaseRadialJets
+CHECKED 424/615 Navier.Construction.AllBandBaseJets
+CHECKED 425/615 Navier.Construction.LocalizedWaveBounds
+CHECKED 426/615 Navier.Construction.BaseContextAssembly
+CHECKED 427/615 Navier.Construction.LocalizedGaussianBounds
+CHECKED 428/615 Navier.Construction.BaseStressClasses
+CHECKED 429/615 Navier.Construction.HarmonicStructurePreservation
+CHECKED 430/615 Navier.Construction.CommonBaseContext
+CHECKED 431/615 Navier.Construction.AxisymmetricResidualGrouping
+CHECKED 432/615 Navier.Construction.LocalResidualGrouping
+CHECKED 433/615 Navier.Construction.ActualSignedGeometry
+CHECKED 434/615 Navier.Construction.UniformBlockBounds
+CHECKED 435/615 Navier.Construction.LocalizedMeanInteraction
+CHECKED 436/615 Navier.Construction.ScaledActualParticularControl
+CHECKED 437/615 Navier.Construction.UniformHarmonicInteraction
+CHECKED 438/615 Navier.Construction.ActualGaussianCoverage
+CHECKED 439/615 Navier.Construction.MeanBoundsReindex
+CHECKED 440/615 Navier.Construction.LabelSupportPreservation
+CHECKED 441/615 Navier.Construction.MovingMomentBounds
+CHECKED 442/615 Navier.Construction.LocalizedCurlRealization
+CHECKED 443/615 Navier.Construction.StateMomentBalances
+CHECKED 444/615 Navier.Construction.NativePrincipalEquations
+CHECKED 445/615 Navier.Construction.GaugeMomentBalances
+CHECKED 446/615 Navier.Construction.RankStateBounds
+CHECKED 447/615 Navier.Construction.GaugeAliasDecay
+CHECKED 448/615 Navier.Construction.SignedMeanGain
+CHECKED 449/615 Navier.Construction.GaugeMassPreservation
+CHECKED 450/615 Navier.Construction.GaugeDebtIncrement
+CHECKED 451/615 Navier.Construction.BandReindexedSignedMeanGain
+CHECKED 452/615 Navier.Construction.MeanStateRegularity
+CHECKED 453/615 Navier.Construction.WaveStateRegularity
+CHECKED 454/615 Navier.Construction.MeanStageRegularity
+CHECKED 455/615 Navier.Construction.BaseRankPatch
+CHECKED 456/615 Navier.Construction.PhysicalClassBounds
+CHECKED 457/615 Navier.Construction.WaveEdgeExtension
+CHECKED 458/615 Navier.Construction.NativeBandExtension
+CHECKED 459/615 Navier.Construction.GaugeStateCoherence
+CHECKED 460/615 Navier.Construction.CorrectionStep
+CHECKED 461/615 Navier.Construction.TemporalStateCoherence
+CHECKED 462/615 Navier.Construction.CorrectionInitialization
+CHECKED 463/615 Navier.Construction.ActualBaseResidual
+CHECKED 464/615 Navier.Construction.ActualPrimaryCoherence
+CHECKED 465/615 Navier.Construction.RankStateCoherence
+CHECKED 466/615 Navier.Construction.ActualPrimaryCovariance
+CHECKED 467/615 Navier.Construction.ActualInitialCoherence
+CHECKED 468/615 Navier.Construction.ActualInitialMeanEquation
+CHECKED 469/615 Navier.Construction.ActualPhaseDefect
+CHECKED 470/615 Navier.Construction.GaugeExcludedBounds
+CHECKED 471/615 Navier.Construction.GlobalBaseError
+CHECKED 472/615 Navier.Construction.ActualPrimaryDynamics
+CHECKED 473/615 Navier.Construction.SlowBaseEndpoint
+CHECKED 474/615 Navier.Construction.ActualPrimaryBounds
+CHECKED 475/615 Navier.Construction.GaugeRadialResidualBounds
+CHECKED 476/615 Navier.Construction.ActualInitialMean
+CHECKED 477/615 Navier.Construction.ActualPhaseJetBounds
+CHECKED 478/615 Navier.Construction.ScaledParticularFrameJets
+CHECKED 479/615 Navier.Construction.ActualInitialExcluded
+CHECKED 480/615 Navier.Construction.ActualParticularBackground
+CHECKED 481/615 Navier.Construction.ActualCarrierGeometry
+CHECKED 482/615 Navier.Construction.ActualInitialization
+CHECKED 483/615 Navier.Construction.ScalarParticularSupport
+CHECKED 484/615 Navier.Construction.ActualCarrierTransportBase
+CHECKED 485/615 Navier.Construction.NativeCutoffJets
+CHECKED 486/615 Navier.Construction.ParticularPaddedBackground
+CHECKED 487/615 Navier.Construction.ActualSignedDynamics
+CHECKED 488/615 Navier.Construction.ActualParticularStageControls
+CHECKED 489/615 Navier.Construction.ActualCycleExcluded
+CHECKED 490/615 Navier.Construction.ActualCycleGeometry
+CHECKED 491/615 Navier.Construction.ActualSignedStageControls
+CHECKED 492/615 Navier.Construction.PhysicalCopyBounds
+CHECKED 493/615 Navier.Construction.ActualCycleParameters
+CHECKED 494/615 Navier.Construction.TailGaugePotential
+CHECKED 495/615 Navier.Construction.CycleStateCoherence
+CHECKED 496/615 Navier.Construction.AnnularEndpoint
+CHECKED 497/615 Navier.Construction.LocalPhysicalCopyBounds
+CHECKED 498/615 Navier.Construction.OffplaneCorrectionExtensions
+CHECKED 499/615 Navier.Construction.PhysicalMeanJetBounds
+CHECKED 500/615 Navier.Construction.DirectAngularDiagonal
+CHECKED 501/615 Navier.Construction.PhysicalStageBounds
+CHECKED 502/615 Navier.Construction.MixedPeriodicAssembly
+CHECKED 503/615 Navier.Construction.ActualIterationLedger
+CHECKED 504/615 Navier.Construction.MixedDiagonalResidual
+CHECKED 505/615 Navier.Construction.MixedDiagonalExtensions
+CHECKED 506/615 Navier.Construction.CyclePhysicalPrefixes
+CHECKED 507/615 Navier.Construction.MixedAxisPreservation
+CHECKED 508/615 Navier.Construction.ActualMeanPotentialRealization
+CHECKED 509/615 Navier.Construction.LocalAngularDiagonal
+CHECKED 510/615 Navier.Construction.ActualPeriodizedSignedRealization
+CHECKED 511/615 Navier.Construction.MixedCandidateAssembly
+CHECKED 512/615 Navier.Construction.PhysicalStageSupport
+CHECKED 513/615 Navier.Construction.CartesianCopySource
+CHECKED 514/615 Navier.Construction.LocalMeanPhysicalBounds
+CHECKED 515/615 Navier.Construction.ActualSignedPhysicalData
+CHECKED 516/615 Navier.Construction.InitialNativeRegularity
+CHECKED 517/615 Navier.Construction.ActualMeanPhysicalData
+CHECKED 518/615 Navier.Construction.ActualMeanStageData
+CHECKED 519/615 Navier.Construction.InitialPhysicalData
+CHECKED 520/615 Navier.Construction.ActualBaseVelocityBounds
+CHECKED 521/615 Navier.Construction.MixedFiniteBackground
+CHECKED 522/615 Navier.Construction.InitializedPhysicalBackground
+CHECKED 523/615 Navier.Construction.ActualCandidateConstruction
+CHECKED 524/615 Navier.Construction.ActualPhysicalStageBounds
+CHECKED 525/615 Navier.Construction.CandidateConsequences
+CHECKED 526/615 Navier.Construction.MixedCandidateWitness
+CHECKED 527/615 Navier.Construction.ValidDyadicBandCover
+CHECKED 528/615 Navier.Construction.GermCandidateAssembly
+CHECKED 529/615 Navier.Construction.ActualWaveRegularity
+CHECKED 530/615 Navier.Construction.ClosedNativeWaveIdentities
+CHECKED 531/615 Navier.Construction.ModeSolenoidalReindex
+CHECKED 532/615 Navier.Construction.ActualWaveRegularityData
+CHECKED 533/615 Navier.Construction.SubcoverPeriodicity
+CHECKED 534/615 Navier.Construction.ActualParticularDynamics
+CHECKED 535/615 Navier.Construction.ActualReferenceRebase
+CHECKED 536/615 Navier.Construction.ActualParticularRealization
+CHECKED 537/615 Navier.Construction.IntervalCopyTransport
+CHECKED 538/615 Navier.Construction.GaussianErrorNaturality
+CHECKED 539/615 Navier.Construction.ActualCarrierTransport
+CHECKED 540/615 Navier.Construction.ActualCoreSupport
+CHECKED 541/615 Navier.Construction.ActualParticularMeanGain
+CHECKED 542/615 Navier.Construction.ActualCopySliceRegularity
+CHECKED 543/615 Navier.Construction.ActualCycleAssembly
+CHECKED 544/615 Navier.Construction.ActualParticularCoherence
+CHECKED 545/615 Navier.Construction.CrossBasedMeanComposition
+CHECKED 546/615 Navier.Construction.SignedCrossDefectClass
+CHECKED 547/615 Navier.Construction.CycleMeanEquation
+CHECKED 548/615 Navier.Construction.ActualSignedCoherence
+CHECKED 549/615 Navier.Construction.ActualSignedGaussianCoherence
+CHECKED 550/615 Navier.Construction.CorrectionAnalyticStep
+CHECKED 551/615 Navier.Construction.ActualSeedPeriodicity
+CHECKED 552/615 Navier.Construction.ActualWaveCoefficientPeriodicity
+CHECKED 553/615 Navier.Construction.ActualCycleCoherence
+CHECKED 554/615 Navier.Construction.ActualCyclePeriodicity
+CHECKED 555/615 Navier.Construction.ActualSignedOutputBounds
+CHECKED 556/615 Navier.Construction.ActualParticularGaussian
+CHECKED 557/615 Navier.Construction.ActualSignedGaussian
+CHECKED 558/615 Navier.Construction.ActualSignedMeanBinding
+CHECKED 559/615 Navier.Construction.ActualParticularCycleData
+CHECKED 560/615 Navier.Construction.ActualSignedCommonDynamics
+CHECKED 561/615 Navier.Construction.ActualCurrentParticularPhysical
+CHECKED 562/615 Navier.Construction.ResidualPolarGraph
+CHECKED 563/615 Navier.Construction.ActualIntermediateDebtBounds
+CHECKED 564/615 Navier.Construction.PhysicalResidualJetBounds
+CHECKED 565/615 Navier.Construction.ActualCyclePreservation
+CHECKED 566/615 Navier.Construction.ActualPolarCoverage
+CHECKED 567/615 Navier.Construction.ActualParticularPotentialCoherence
+CHECKED 568/615 Navier.Construction.ActualCurrentWaveSupport
+CHECKED 569/615 Navier.Construction.CurrentParticularPhysicalCoherence
+CHECKED 570/615 Navier.Construction.ActualMeanExterior
+CHECKED 571/615 Navier.Construction.ActualValidBandWaves
+CHECKED 572/615 Navier.Construction.TorusMeanRequestRebase
+CHECKED 573/615 Navier.Construction.ActualCycleResidualBounds
+CHECKED 574/615 Navier.Construction.ActualExteriorPrefix
+CHECKED 575/615 Navier.Construction.ActualPhysicalPrefixFields
+CHECKED 576/615 Navier.Construction.ActualStageEstimates
+CHECKED 577/615 Navier.Construction.ActualSignedPhysicalBinding
+CHECKED 578/615 Navier.Construction.DependentSignedPhysicalFamily
+CHECKED 579/615 Navier.Construction.ActualCurrentParticularAssembly
+CHECKED 580/615 Navier.Construction.ActualSignedExterior
+CHECKED 581/615 Navier.Construction.CurrentParticularLabelBounds
+CHECKED 582/615 Navier.Construction.ActualCurrentCarrierJets
+CHECKED 583/615 Navier.Construction.CurrentPhysicalChartJets
+CHECKED 584/615 Navier.Construction.ActualSignedNativeProfiles
+CHECKED 585/615 Navier.Construction.CurrentPhysicalModeGerms
+CHECKED 586/615 Navier.Construction.PositiveTimeCopyFamily
+CHECKED 587/615 Navier.Construction.CurrentModeGeometry
+CHECKED 588/615 Navier.Construction.PositiveTimeSignedLocalization
+CHECKED 589/615 Navier.Construction.ActualCurrentParticularBounds
+CHECKED 590/615 Navier.Construction.PositiveTimeSignedData
+CHECKED 591/615 Navier.Construction.ActualSignedReferenceGeometry
+CHECKED 592/615 Navier.Construction.GluedStageEstimates
+CHECKED 593/615 Navier.Construction.ActualSignedFamilySupport
+CHECKED 594/615 Navier.Construction.FlatDyadicExtension
+CHECKED 595/615 Navier.Construction.ActualSignedUnmaskedBounds
+CHECKED 596/615 Navier.Construction.ActualSignedPotentialCoherence
+CHECKED 597/615 Navier.Construction.ActualSignedUnmaskedBinding
+CHECKED 598/615 Navier.Construction.ActualSignedNativeBounds
+CHECKED 599/615 Navier.Construction.ActualSignedNativeRegularity
+CHECKED 600/615 Navier.Construction.CurrentSignedCurl
+CHECKED 601/615 Navier.Construction.ActualSignedWaveData
+CHECKED 602/615 Navier.Construction.ActualSignedPhysicalGeometry
+CHECKED 603/615 Navier.Construction.ActualSignedCurrentSupport
+CHECKED 604/615 Navier.Construction.ActualSignedPhysicalZeros
+CHECKED 605/615 Navier.Construction.SignedPhysicalSumCalculus
+CHECKED 606/615 Navier.Construction.OffplaneJetExtensions
+CHECKED 607/615 Navier.Construction.ActualEndpointInputs
+CHECKED 608/615 Navier.Construction.ActualSignedPhysicalCoherence
+CHECKED 609/615 Navier.Construction.GermEndpointInputs
+CHECKED 610/615 Navier.Construction.ActualCandidateAssembly
+CHECKED 611/615 Navier.Construction.R3ActualCandidate
+CHECKED 612/615 Navier.Analysis.ConstructedForceExtension
+CHECKED 613/615 Navier.Analysis.SelectedCandidateEnergy
+CHECKED 614/615 Navier.Analysis.ConstructedFiniteTimeObstruction
+CHECKED 615/615 Navier.Breakdown.ConstructedBreakdown
+Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown : Navier.ProblemStatements.WholeSpaceBreakdown
+theorem Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown : Navier.ProblemStatements.WholeSpaceBreakdown :=
+Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdown
+'Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown' depends on axioms: [propext, Classical.choice, Quot.sound]
+Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce :
+  Navier.Analysis.ConstructedForceExtension.WholeSpaceBreakdownWithGloballySmoothForce
+theorem Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce : Navier.Analysis.ConstructedForceExtension.WholeSpaceBreakdownWithGloballySmoothForce :=
+Exists.casesOn Navier.Analysis.ConstructedForceExtension.selected_compact_candidate_contDiff fun eu h =>
+  Exists.casesOn h fun ep h =>
+    Exists.casesOn h fun ef h =>
+      And.casesOn h fun hcandidate hef =>
+        have hnative := Navier.Analysis.ConstructedForceExtension.nativeForce_contDiff hef;
+        have hadmissible :=
+          Navier.Analysis.EuclideanPDETransport.R3CompactCandidate.nativeForce_forcedDataRapidDecay hcandidate;
+        fun nu hnu =>
+        Exists.intro (Navier.Analysis.ViscosityTransport.viscosityScaledSchwartzDatum nu 0)
+          ⟨Navier.Analysis.ViscosityTransport.divergenceFreeInitial_viscosityScaledSchwartzDatum nu 0
+              Navier.ProblemStatements.divergenceFreeInitial_zero,
+            Exists.intro
+              (Navier.Analysis.ViscosityTransport.viscosityScaledForce nu
+                (Navier.Analysis.EuclideanPDETransport.nativeForce ef))
+              ⟨Navier.Analysis.ViscosityForceDecay.forcedDataRapidDecay_viscosityScaled nu hnu
+                  (Navier.Analysis.EuclideanPDETransport.nativeForce ef) hadmissible,
+                ⟨Navier.Analysis.ConstructedForceExtension.viscosityScaledForce_contDiff nu hnative,
+                  ⟨Navier.Analysis.ConstructedForceExtension.globalExtension_of_contDiff
+                      (Navier.Analysis.ConstructedForceExtension.viscosityScaledForce_contDiff nu hnative),
+                    fun a =>
+                    Exists.casesOn a fun u h =>
+                      Exists.casesOn h fun p hsolution =>
+                        have hback :=
+                          Navier.Analysis.ViscosityAdmissibility.isClassicalSolution_viscosity_to_one nu hnu
+                            (Navier.Analysis.ViscosityTransport.viscosityScaledForce nu
+                              (Navier.Analysis.EuclideanPDETransport.nativeForce ef))
+                            (Navier.Analysis.ViscosityTransport.viscosityScaledSchwartzDatum nu 0) u p hsolution;
+                        Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution hcandidate
+                          (Navier.Analysis.EuclideanPDETransport.IsClassicalSolution.toGlobalSolutionRn
+                            (Eq.mp
+                              (congrArg
+                                (fun _a =>
+                                  Navier.IsClassicalSolution 1 (Navier.Analysis.EuclideanPDETransport.nativeForce ef) _a
+                                    (Navier.Analysis.ViscosityTransport.viscosityScaledVelocity nu⁻¹ u)
+                                    (Navier.Analysis.ViscosityTransport.viscosityScaledPressure nu⁻¹ p))
+                                (Navier.Analysis.ViscosityTransport.viscosityScaledSchwartzDatum_inv nu (LT.lt.ne' hnu)
+                                  0))
+                              (Eq.mp
+                                (congrArg
+                                  (fun _a =>
+                                    Navier.IsClassicalSolution 1 _a
+                                      (Navier.Analysis.ViscosityTransport.viscosityScaledSchwartzDatum nu⁻¹
+                                        (Navier.Analysis.ViscosityTransport.viscosityScaledSchwartzDatum nu 0))
+                                      (Navier.Analysis.ViscosityTransport.viscosityScaledVelocity nu⁻¹ u)
+                                      (Navier.Analysis.ViscosityTransport.viscosityScaledPressure nu⁻¹ p))
+                                  (Navier.Analysis.ViscosityTransport.viscosityScaledForce_inv nu (LT.lt.ne' hnu)
+                                    (Navier.Analysis.EuclideanPDETransport.nativeForce ef)))
+                                hback)))⟩⟩⟩⟩
+'Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ForceRecursivePartials.forcedDataRapidDecay_bounds_successivePartials {f : Navier.ForceField}
+  (hf : Navier.ForcedDataRapidDecay f) (n K : ℕ) (axes : Fin n → Option (Fin 3)) (component : Fin 3) :
+  ∃ C,
+    0 ≤ C ∧
+      ∀ (t : ℝ),
+        0 ≤ t →
+          ∀ (x : Navier.Space),
+            (1 + Navier.Breakdown.OfficialCDEncoding.euclideanNorm x + t) ^ K *
+                |Navier.Analysis.ForceRecursivePartials.successivePartialWithin (fun z => f z.1 z.2) n
+                    (fun j => Navier.Breakdown.OfficialCDEncoding.spacetimeCoordinateDirection (axes j)) (t, x)
+                    component| ≤
+              C
+theorem Navier.Analysis.ForceRecursivePartials.forcedDataRapidDecay_bounds_successivePartials : ∀
+  {f : Navier.ForceField},
+  Navier.ForcedDataRapidDecay f →
+    ∀ (n K : ℕ) (axes : Fin n → Option (Fin 3)) (component : Fin 3),
+      ∃ C,
+        0 ≤ C ∧
+          ∀ (t : ℝ),
+            0 ≤ t →
+              ∀ (x : Navier.Space),
+                (1 + Navier.Breakdown.OfficialCDEncoding.euclideanNorm x + t) ^ K *
+                    |Navier.Analysis.ForceRecursivePartials.successivePartialWithin (fun z => f z.1 z.2) n
+                        (fun j => Navier.Breakdown.OfficialCDEncoding.spacetimeCoordinateDirection (axes j)) (t, x)
+                        component| ≤
+                  C :=
+fun {f} hf n K axes component =>
+  Exists.casesOn (Navier.Breakdown.OfficialCDEncoding.forcedDataRapidDecay_implies_coordinatewise hf n K axes component)
+    fun C h =>
+    And.casesOn h fun hC hb =>
+      Exists.intro C
+        ⟨hC, fun t ht x =>
+          Eq.mpr
+            (id
+              (congrArg
+                (fun _a => (1 + Navier.Breakdown.OfficialCDEncoding.euclideanNorm x + t) ^ K * |_a component| ≤ C)
+                (Navier.Analysis.ForceRecursivePartials.successivePartialWithin_eq_iteratedFDerivWithin hf.left n
+                  (fun j => Navier.Breakdown.OfficialCDEncoding.spacetimeCoordinateDirection (axes j))
+                  ⟨ht, Set.mem_univ x⟩)))
+            (hb t ht x)⟩
+'Navier.Analysis.ForceRecursivePartials.forcedDataRapidDecay_bounds_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials (ν : ℝ) (hν : 0 < ν) :
+  ∃ u₀,
+    Navier.DivergenceFreeInitial u₀ ∧
+      ∃ f,
+        Navier.ForcedDataRapidDecay f ∧
+          (∀ (n K : ℕ) (axes : Fin n → Option (Fin 3)) (component : Fin 3),
+              ∃ C,
+                0 ≤ C ∧
+                  ∀ (t : ℝ),
+                    0 ≤ t →
+                      ∀ (x : Navier.Space),
+                        (1 + Navier.Breakdown.OfficialCDEncoding.euclideanNorm x + t) ^ K *
+                            |Navier.Analysis.ForceRecursivePartials.successivePartialWithin (fun z => f z.1 z.2) n
+                                (fun j => Navier.Breakdown.OfficialCDEncoding.spacetimeCoordinateDirection (axes j))
+                                (t, x) component| ≤
+                          C) ∧
+            ¬∃ u p, Navier.IsClassicalSolution ν f u₀ u p
+theorem Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials : ∀ (ν : ℝ),
+  0 < ν →
+    ∃ u₀,
+      Navier.DivergenceFreeInitial u₀ ∧
+        ∃ f,
+          Navier.ForcedDataRapidDecay f ∧
+            (∀ (n K : ℕ) (axes : Fin n → Option (Fin 3)) (component : Fin 3),
+                ∃ C,
+                  0 ≤ C ∧
+                    ∀ (t : ℝ),
+                      0 ≤ t →
+                        ∀ (x : Navier.Space),
+                          (1 + Navier.Breakdown.OfficialCDEncoding.euclideanNorm x + t) ^ K *
+                              |Navier.Analysis.ForceRecursivePartials.successivePartialWithin (fun z => f z.1 z.2) n
+                                  (fun j => Navier.Breakdown.OfficialCDEncoding.spacetimeCoordinateDirection (axes j))
+                                  (t, x) component| ≤
+                            C) ∧
+              ¬∃ u p, Navier.IsClassicalSolution ν f u₀ u p :=
+fun ν hν =>
+  Exists.casesOn (Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown ν hν) fun u₀ h =>
+    And.casesOn h fun hu₀ right =>
+      Exists.casesOn right fun f h =>
+        And.casesOn h fun hf hbad =>
+          Exists.intro u₀
+            ⟨hu₀,
+              Exists.intro f
+                ⟨hf,
+                  ⟨((Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials f).mp
+                        hf).right,
+                    hbad⟩⟩⟩
+'Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate :
+  ∃ u p f,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧ Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u
+theorem Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate : ∃ u p f,
+  Navier.Construction.R3CompactCandidate.Properties u p f ∧
+    ContDiff ℝ (↑⊤) f ∧ Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u :=
+Exists.casesOn Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile fun u h =>
+  Exists.casesOn h fun p h =>
+    Exists.casesOn h fun f h =>
+      Exists.casesOn h fun w h =>
+        And.casesOn h fun h right =>
+          And.casesOn right fun hf right =>
+            And.casesOn right fun henergy right => Exists.intro u (Exists.intro p (Exists.intro f ⟨h, ⟨hf, henergy⟩⟩))
+'Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials (f : Navier.ForceField) :
+  Navier.ForcedDataRapidDecay f ↔
+    Navier.SmoothForceOnNonnegativeTime f ∧
+      Navier.Analysis.ForceCoordinateEquivalence.WholeSpaceSuccessivePartialDecay f
+theorem Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials : ∀
+  (f : Navier.ForceField),
+  Navier.ForcedDataRapidDecay f ↔
+    Navier.SmoothForceOnNonnegativeTime f ∧
+      Navier.Analysis.ForceCoordinateEquivalence.WholeSpaceSuccessivePartialDecay f :=
+fun f =>
+  {
+    mp := fun hf =>
+      ⟨hf.left,
+        (Navier.Analysis.ForceCoordinateEquivalence.wholeSpaceSuccessivePartialDecay_iff_coordinatewise hf.left).mpr
+          ((Navier.Analysis.ForceCoordinateDecayBridge.forcedDataRapidDecay_iff_typedCoordinatewise f).mp hf).right⟩,
+    mpr := fun a =>
+      And.casesOn a fun hsmooth hpartials =>
+        (Navier.Analysis.ForceCoordinateDecayBridge.forcedDataRapidDecay_iff_typedCoordinatewise f).mpr
+          ⟨hsmooth,
+            (Navier.Analysis.ForceCoordinateEquivalence.wholeSpaceSuccessivePartialDecay_iff_coordinatewise hsmooth).mp
+              hpartials⟩ }
+'Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ForceCoordinateEquivalence.periodicForcedDataRapidDecay_iff_successivePartials (f : Navier.ForceField) :
+  Navier.PeriodicForcedDataRapidDecay f ↔
+    Navier.SpatiallyPeriodicForce f ∧
+      Navier.SmoothForceOnNonnegativeTime f ∧
+        Navier.Analysis.ForceCoordinateEquivalence.PeriodicSuccessivePartialDecay f
+theorem Navier.Analysis.ForceCoordinateEquivalence.periodicForcedDataRapidDecay_iff_successivePartials : ∀
+  (f : Navier.ForceField),
+  Navier.PeriodicForcedDataRapidDecay f ↔
+    Navier.SpatiallyPeriodicForce f ∧
+      Navier.SmoothForceOnNonnegativeTime f ∧
+        Navier.Analysis.ForceCoordinateEquivalence.PeriodicSuccessivePartialDecay f :=
+fun f =>
+  {
+    mp := fun hf =>
+      have htyped :=
+        (Navier.Analysis.ForceCoordinateDecayBridge.periodicForcedDataRapidDecay_iff_typedCoordinatewise f).mp hf;
+      ⟨htyped.left,
+        ⟨htyped.right.left,
+          (Navier.Analysis.ForceCoordinateEquivalence.periodicSuccessivePartialDecay_iff_coordinatewise
+                htyped.right.left).mpr
+            htyped.right.right⟩⟩,
+    mpr := fun a =>
+      And.casesOn a fun hperiodic right =>
+        And.casesOn right fun hsmooth hpartials =>
+          (Navier.Analysis.ForceCoordinateDecayBridge.periodicForcedDataRapidDecay_iff_typedCoordinatewise f).mpr
+            ⟨hperiodic,
+              ⟨hsmooth,
+                (Navier.Analysis.ForceCoordinateEquivalence.periodicSuccessivePartialDecay_iff_coordinatewise
+                      hsmooth).mp
+                  hpartials⟩⟩ }
+'Navier.Analysis.ForceCoordinateEquivalence.periodicForcedDataRapidDecay_iff_successivePartials' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc
+  {u v f : Navier.Construction.ProblemStatement.VelocityField}
+  {p q : Navier.Construction.ProblemStatement.PressureField}
+  (h : Navier.Construction.R3CompactCandidate.Properties u p f) {T : ℝ} (hT1 : T < 1)
+  (hv : ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T))
+  (hq : ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T))
+  (hev : Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v)
+  (hdv :
+    ∀ t ∈ Set.Ioo 0 T,
+      ∀ (x : Navier.Construction.ProblemStatement.Space),
+        Navier.Construction.ProblemStatement.spatialDivergence v t x = 0)
+  (hNSv :
+    ∀ t ∈ Set.Ioo 0 T,
+      ∀ (x : Navier.Construction.ProblemStatement.Space),
+        Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x))
+  (hvzero : ∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) (t : ℝ) :
+  t ∈ Set.Icc 0 T → ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+theorem Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc : ∀
+  {u v f : Navier.Construction.ProblemStatement.VelocityField}
+  {p q : Navier.Construction.ProblemStatement.PressureField},
+  Navier.Construction.R3CompactCandidate.Properties u p f →
+    ∀ {T : ℝ},
+      T < 1 →
+        ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T) →
+          ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T) →
+            Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v →
+              (∀ t ∈ Set.Ioo 0 T,
+                  ∀ (x : Navier.Construction.ProblemStatement.Space),
+                    Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                (∀ t ∈ Set.Ioo 0 T,
+                    ∀ (x : Navier.Construction.ProblemStatement.Space),
+                      Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                  (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                    ∀ t ∈ Set.Icc 0 T, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x) :=
+fun {u v f} {p q} h {T} hT1 hv hq hev hdv hNSv hvzero =>
+  if hTpos : 0 < T then
+    have hpre := fun ⦃z⦄ hz => ⟨⟨hz.left.left, LE.le.trans_lt hz.left.right hT1⟩, hz.right⟩;
+    Exists.casesOn h.velocity_support fun K h_1 =>
+      And.casesOn h_1 fun hK hs =>
+        have hsupport := fun r hr =>
+          closure_minimal
+            (fun ⦃y⦄ hy => Classical.byContradiction fun hyK => hy (hs r ⟨hr.left, LE.le.trans_lt hr.right hT1⟩ y hyK))
+            (IsCompact.isClosed hK);
+        Navier.ConstructionR3.WholeSpaceUniqueness.classical_uniqueness_on_Icc hTpos
+          (ContDiffOn.mono h.velocity_smooth hpre) hv (ContDiffOn.mono h.pressure_smooth hpre) hq hK hsupport hev
+          (fun r hr => h.divergence_free r ⟨LT.lt.le hr.left, LT.lt.trans hr.right hT1⟩) hdv
+          (fun r hr y =>
+            Eq.mpr
+              (id
+                (congr
+                  (congrArg Eq
+                    (congrFun'
+                      (congrArg HAdd.hAdd
+                        (congrArg
+                          (HSub.hSub
+                            (Navier.Construction.ProblemStatement.temporalDerivative u r y +
+                              Navier.Construction.ProblemStatement.advection u r y))
+                          (one_smul ℝ (Navier.Construction.ProblemStatement.spatialLaplacian u r y))))
+                      (Navier.Construction.ProblemStatement.pressureGradient p r y)))
+                  (congrFun'
+                    (congrArg HAdd.hAdd
+                      (congrArg
+                        (HSub.hSub
+                          (Navier.Construction.ProblemStatement.temporalDerivative v r y +
+                            Navier.Construction.ProblemStatement.advection v r y))
+                        (one_smul ℝ (Navier.Construction.ProblemStatement.spatialLaplacian v r y))))
+                    (Navier.Construction.ProblemStatement.pressureGradient q r y))))
+              (Eq.trans (h.navier_stokes r ⟨hr.left, LT.lt.trans hr.right hT1⟩ y) (Eq.symm (hNSv r hr y))))
+          fun y => Eq.trans (h.zero_initial_velocity y) (Eq.symm (hvzero y))
+  else fun t ht x =>
+    have htEq := le_antisymm (LE.le.trans ht.right (le_of_not_gt hTpos)) ht.left;
+    Eq.mpr (id (congrArg (fun _a => u (_a, x) = v (_a, x)) htEq))
+      (Eq.mpr (id (congrArg (fun _a => _a = v (0, x)) (h.zero_initial_velocity x)))
+        (Eq.mpr (id (congrArg (fun _a => 0 = _a) (hvzero x))) (Eq.refl 0)))
+'Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              (∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝),
+                  ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                    ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)) ∧
+                ∀ T < 1,
+                  ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝)
+                    (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField✝),
+                    ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T) →
+                      ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T) →
+                        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v →
+                          (∀ t ∈ Set.Ioo 0 T,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                            (∀ t ∈ Set.Ioo 0 T,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                              (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                                ∀ t ∈ Set.Icc 0 T,
+                                  ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+theorem Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile : ∃ u p f K,
+  Navier.Construction.R3CompactCandidate.Properties u p f ∧
+    ContDiff ℝ (↑⊤) f ∧
+      Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+        IsCompact K ∧
+          (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+            (∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝),
+                ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                  ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)) ∧
+              ∀ T < 1,
+                ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝)
+                  (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField✝),
+                  ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T) →
+                    ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T) →
+                      Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v →
+                        (∀ t ∈ Set.Ioo 0 T,
+                            ∀ (x : Navier.Construction.ProblemStatement.Space),
+                              Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                          (∀ t ∈ Set.Ioo 0 T,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                            (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                              ∀ t ∈ Set.Icc 0 T,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x) :=
+Exists.casesOn Navier.Analysis.SelectedCandidateEnergy.selected_compact_candidate_with_energy fun u h =>
+  Exists.casesOn h fun p h =>
+    Exists.casesOn h fun f h =>
+      And.casesOn h fun h right =>
+        And.casesOn right fun hf henergy =>
+          Exists.casesOn h.velocity_support fun K h_1 =>
+            And.casesOn h_1 fun hK hsupport =>
+              Exists.intro u
+                (Exists.intro p
+                  (Exists.intro f
+                    (Exists.intro K
+                      ⟨h,
+                        ⟨hf,
+                          ⟨henergy,
+                            ⟨hK,
+                              ⟨hsupport,
+                                ⟨fun x hv =>
+                                  Navier.Analysis.ConstructedFiniteTimeObstruction.not_continuous_extension_on_support h
+                                    hK hsupport hv,
+                                  fun T hT v q hv hq hev hdv hNSv hvzero =>
+                                  Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc h hT hv hq hev
+                                    hdv hNSv hvzero⟩⟩⟩⟩⟩⟩)))
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝),
+                ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                  ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+theorem Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension : ∃ u p f K,
+  Navier.Construction.R3CompactCandidate.Properties u p f ∧
+    ContDiff ℝ (↑⊤) f ∧
+      Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+        IsCompact K ∧
+          (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+            ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField✝),
+              ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x) :=
+Exists.casesOn Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile fun u h =>
+  Exists.casesOn h fun p h =>
+    Exists.casesOn h fun f h =>
+      Exists.casesOn h fun K h =>
+        And.casesOn h fun h right =>
+          And.casesOn right fun hf right =>
+            And.casesOn right fun henergy right =>
+              And.casesOn right fun hK right =>
+                And.casesOn right fun hsupport right =>
+                  And.casesOn right fun hno right =>
+                    Exists.intro u
+                      (Exists.intro p (Exists.intro f (Exists.intro K ⟨h, ⟨hf, ⟨henergy, ⟨hK, ⟨hsupport, hno⟩⟩⟩⟩⟩)))
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              ¬∃ v q,
+                  ContDiffOn ℝ (↑⊤) v Navier.Construction.ProblemStatement.preSingularDomain ∧
+                    ContDiffOn ℝ (↑⊤) q Navier.Construction.ProblemStatement.preSingularDomain ∧
+                      ContinuousOn v (Set.Icc 0 1 ×ˢ K) ∧
+                        (∀ T ∈ Set.Ico 0 1,
+                            Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) ∧
+                          (∀ t ∈ Set.Ioo 0 1,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) ∧
+                            (∀ t ∈ Set.Ioo 0 1,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) ∧
+                              ∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0
+theorem Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation : ∃
+  u p f K,
+  Navier.Construction.R3CompactCandidate.Properties u p f ∧
+    ContDiff ℝ (↑⊤) f ∧
+      Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+        IsCompact K ∧
+          (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+            ¬∃ v q,
+                ContDiffOn ℝ (↑⊤) v Navier.Construction.ProblemStatement.preSingularDomain ∧
+                  ContDiffOn ℝ (↑⊤) q Navier.Construction.ProblemStatement.preSingularDomain ∧
+                    ContinuousOn v (Set.Icc 0 1 ×ˢ K) ∧
+                      (∀ T ∈ Set.Ico 0 1, Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) ∧
+                        (∀ t ∈ Set.Ioo 0 1,
+                            ∀ (x : Navier.Construction.ProblemStatement.Space),
+                              Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) ∧
+                          (∀ t ∈ Set.Ioo 0 1,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) ∧
+                            ∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0 :=
+Exists.casesOn Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile fun u h =>
+  Exists.casesOn h fun p h =>
+    Exists.casesOn h fun f h =>
+      Exists.casesOn h fun K h =>
+        And.casesOn h fun h right =>
+          And.casesOn right fun hf right =>
+            And.casesOn right fun henergy right =>
+              And.casesOn right fun hK right =>
+                And.casesOn right fun hsupport right =>
+                  And.casesOn right fun left right =>
+                    Exists.intro u
+                      (Exists.intro p
+                        (Exists.intro f
+                          (Exists.intro K
+                            ⟨h,
+                              ⟨hf,
+                                ⟨henergy,
+                                  ⟨hK,
+                                    ⟨hsupport, fun a =>
+                                      Exists.casesOn a fun v h_1 =>
+                                        Exists.casesOn h_1 fun q h_2 =>
+                                          And.casesOn h_2 fun hv right =>
+                                            And.casesOn right fun hq right =>
+                                              And.casesOn right fun hvterminal right =>
+                                                And.casesOn right fun hlocalEnergy right =>
+                                                  And.casesOn right fun hdv right =>
+                                                    And.casesOn right fun hNSv hvzero =>
+                                                      Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_excludes_locally_finite_energy_continuation
+                                                        h hK hsupport hv hq hvterminal hlocalEnergy hdv hNSv
+                                                        hvzero⟩⟩⟩⟩⟩)))
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+VERIFIED Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Analysis.ForceRecursivePartials.forcedDataRapidDecay_bounds_successivePartials axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Analysis.ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Analysis.ForceCoordinateEquivalence.periodicForcedDataRapidDecay_iff_successivePartials axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension axioms=Classical.choice,Quot.sound,propext
+VERIFIED Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation axioms=Classical.choice,Quot.sound,propext

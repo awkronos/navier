@@ -49,7 +49,7 @@ made.
 
 ## What “smooth” and “unique” mean here
 
-There are three separate statements that should not be collapsed:
+There are four separate statements that should not be collapsed:
 
 1. The selected **force** has a globally smooth spacetime extension.
 2. The selected **velocity and pressure** solve the classical equation on each
@@ -125,3 +125,11 @@ The [Madelung correspondence note](MADELUNG_CORRESPONDENCE.md) records the
 scalar and spinor relationships, a conditional reconstruction obstruction, and
 the exact additional inputs needed for a wavefunction lift. It is analytical
 discussion, not an added Lean theorem or a proved quantum consequence.
+
+[Breakdown, uniqueness, and concentration](DYNAMICS_AND_CONCENTRATION.md)
+explains the exact comparison class, the finite-energy volume bound for fast
+regions, and why concentration does not mean compression of fluid density.
+
+The [2026-09-09 release recheck](../reports/receipts/2026-09-09-release-check/README.md)
+binds all 615 current source/object hashes and repeats the eleven raw axiom
+audits after the final artifact cleanup.

@@ -1,0 +1,30 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (target/debug/deps/navier_web-991b6794b6d5ae43)
+
+running 8 tests
+test gpu::tests::gpu_cfl_reduction_benchmark ... ignored
+test gpu::tests::gpu_grid_benchmark ... ignored
+WebGPU adapter: Apple M5 Max (Metal)
+WebGPU adapter: Apple M5 Max (Metal)
+WebGPU adapter: Apple M5 Max (Metal)
+WebGPU adapter: Apple M5 Max (Metal)
+WebGPU adapter: Apple M5 Max (Metal)
+WebGPU adapter: Apple M5 Max (Metal)
+test gpu::tests::gpu_taylor_green_matches_cpu_at_initial_time ... ok
+test gpu::tests::gpu_max_speed_rejects_nonfinite_velocity ... ok
+WebGPU adapter: Apple M5 Max (Metal)
+test gpu::tests::gpu_tail_warning_matches_componentwise_cutoff_and_latches ... ok
+test gpu::tests::gpu_exact_shear_decays_at_viscous_rate ... ok
+test gpu::tests::gpu_fixed_input_is_repeatable ... ok
+test gpu::tests::gpu_step_tracks_cpu_reference_and_projection ... ok
+
+test result: ok. 6 passed; 0 failed; 2 ignored; 0 measured; 1 filtered out; finished in 0.12s
+
+     Running tests/reference.rs (target/debug/deps/reference-c9b9c2c3b6d57579)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
