@@ -171,6 +171,11 @@ impl NavierSolver {
         self.inner.velocity_f32_interleaved()
     }
 
+    #[wasm_bindgen(js_name = maxSpeed)]
+    pub fn max_speed(&self) -> Result<f64, JsError> {
+        self.inner.max_speed().map_err(|e| JsError::new(&e))
+    }
+
     pub fn diagnostics(&self) -> Result<JsValue, JsError> {
         serde_wasm_bindgen::to_value(&self.inner.diagnostics())
             .map_err(|e| JsError::new(&e.to_string()))

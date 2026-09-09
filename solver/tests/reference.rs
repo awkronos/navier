@@ -116,6 +116,43 @@ fn bounded_advance_enforces_cfl_and_preserves_tail_warning() {
 }
 
 #[test]
+fn bounded_advance_is_temporally_converged_at_the_interactive_step() {
+    let mut interactive = SpectralSolver::new(16, 0.05).unwrap();
+    let mut reference = SpectralSolver::new(16, 0.05).unwrap();
+
+    let interactive_report = interactive
+        .advance_bounded(0.1, 1.0 / 60.0, 0.42, 64)
+        .unwrap();
+    let reference_report = reference
+        .advance_bounded(0.1, 1.0 / 180.0, 0.42, 64)
+        .unwrap();
+
+    close(interactive_report.elapsed, 0.1, 2e-15);
+    close(reference_report.elapsed, 0.1, 2e-15);
+    assert!(interactive_report.max_cfl <= 0.42 * (1.0 + 1e-12));
+    assert!(reference_report.max_cfl <= 0.42 * (1.0 + 1e-12));
+
+    let interactive_velocity = interactive.velocity_f64();
+    let reference_velocity = reference.velocity_f64();
+    let error = interactive_velocity
+        .iter()
+        .zip(&reference_velocity)
+        .map(|(value, expected)| (value - expected).powi(2))
+        .sum::<f64>()
+        .sqrt();
+    let reference_norm = reference_velocity
+        .iter()
+        .map(|value| value.powi(2))
+        .sum::<f64>()
+        .sqrt();
+    let relative_l2 = error / reference_norm;
+    assert!(
+        relative_l2 < 1.0e-8,
+        "interactive timestep relative L2 error {relative_l2:e}"
+    );
+}
+
+#[test]
 fn native_grid_allocation_has_an_explicit_bound() {
     assert!(SpectralSolver::new(130, 0.05).is_err());
 }

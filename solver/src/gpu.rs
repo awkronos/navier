@@ -6,7 +6,7 @@
 //! viscous integrating factors, and RK4 combination. Readback happens only
 //! when a caller requests a render frame or diagnostics.
 
-use crate::convention::SpectralConventionMetadata;
+use crate::{convention::SpectralConventionMetadata, core::MAX_BROWSER_GRID};
 use bytemuck::{Pod, Zeroable};
 use serde::Serialize;
 use std::{
@@ -24,7 +24,16 @@ const COMPLEX_FLOATS: usize = 2;
 const WORKGROUP_SIZE: u32 = 64;
 const PARAMETER_STRIDE: u64 = 256;
 const PARAMETER_SLOTS: u64 = 64;
-const MAX_INTERACTIVE_GRID: usize = 36;
+const MAX_INTERACTIVE_GRID: usize = MAX_BROWSER_GRID;
+
+fn validate_grid(n: usize) -> Result<(), String> {
+    if n < 4 || !n.is_multiple_of(2) || n > MAX_INTERACTIVE_GRID {
+        return Err(format!(
+            "WebGPU grid must be an even integer from 4 through {MAX_INTERACTIVE_GRID}"
+        ));
+    }
+    Ok(())
+}
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -112,11 +121,7 @@ pub struct WebGpuSpectralSolver {
 
 impl WebGpuSpectralSolver {
     pub async fn new(n: usize, viscosity: f64) -> Result<Self, String> {
-        if n < 4 || !n.is_multiple_of(2) || n > MAX_INTERACTIVE_GRID {
-            return Err(format!(
-                "WebGPU grid must be an even integer from 4 through {MAX_INTERACTIVE_GRID}"
-            ));
-        }
+        validate_grid(n)?;
         if !viscosity.is_finite() || viscosity < 0.0 || viscosity > f32::MAX as f64 {
             return Err("viscosity must be finite, nonnegative, and representable as f32".into());
         }
@@ -1055,6 +1060,13 @@ mod tests {
     use super::*;
     use crate::SpectralSolver;
 
+    #[test]
+    fn interactive_grid_capacity_accepts_64_without_requesting_an_adapter() {
+        assert!(validate_grid(64).is_ok());
+        assert!(validate_grid(66).is_err());
+        assert!(validate_grid(63).is_err());
+    }
+
     const NO_ADAPTER: &str = "WebGPU has no high-performance adapter";
 
     fn gpu_with(n: usize, viscosity: f64) -> Option<WebGpuSpectralSolver> {
@@ -1227,7 +1239,7 @@ mod tests {
     #[ignore]
     fn gpu_grid_benchmark() {
         use std::time::Instant;
-        for n in [12, 24, 36] {
+        for n in [12, 24, 36, 48, 64] {
             let mut gpu = pollster::block_on(WebGpuSpectralSolver::new(n, 0.05))
                 .unwrap_or_else(|error| panic!("N={n} GPU initialization failed: {error}"));
             gpu.step(0.001).unwrap();
