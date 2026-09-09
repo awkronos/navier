@@ -116,6 +116,10 @@ DEFAULT_ENDPOINT_AUDIT_ITEMS = tuple(DEFAULT_ENDPOINT_AUDIT_ITEMS) + (
         "C", "witness", "Navier.Breakdown.ConstructedBreakdown",
         ENDPOINT,
     ),
+    EndpointAuditItem(
+        "D", "witness", "Navier.Analysis.PeriodicConstructedBreakdown",
+        "Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown",
+    ),
 )
 
 
@@ -553,8 +557,8 @@ def run(args: argparse.Namespace) -> int:
             **fingerprints[module],
             "exit_code": result.returncode,
             "command": command,
-            "log": str(log.relative_to(project_root)),
-            "output": str(output.relative_to(project_root)),
+            "log": os.path.relpath(log, project_root),
+            "output": os.path.relpath(output, project_root),
             "output_sha256": sha256(output.read_bytes()) if result.returncode == 0 else None,
         }
         return module, receipt, result.stdout
@@ -586,6 +590,11 @@ def run(args: argparse.Namespace) -> int:
             return 1
     if pending:
         raise VerificationError("dependency scheduler stalled: " + ", ".join(pending[:10]))
+
+    if args.materialize_only:
+        print(f"MATERIALIZED {args.root_module} current_dependency_receipts={len(order)}/{len(order)}")
+        print("No endpoint claim audited; use --audit-regularity-endpoints with the exact witness.")
+        return 0
 
     audit_source = args.receipts.parent / "ConstructedBreakdownAudit.lean"
     audit_source.parent.mkdir(parents=True, exist_ok=True)
@@ -636,6 +645,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--olean-root", type=Path)
     result.add_argument("--check-plan", "--dry-run", action="store_true", dest="check_plan")
     result.add_argument("--force", action="store_true")
+    result.add_argument(
+        "--materialize-only", action="store_true",
+        help="refresh the selected root's source dependencies without making an endpoint proof claim",
+    )
     result.add_argument(
         "--audit-regularity-endpoints",
         action="store_true",
