@@ -120,3 +120,8 @@ endpoint audit, see
 [`reports/receipts/2026-09-08-constructed-c-final/README.md`](../reports/receipts/2026-09-08-constructed-c-final/README.md).
 The earlier [baseline receipt](../reports/receipts/2026-09-08-constructed-c-baseline/README.md)
 preserves the pre-enhancement endpoint snapshot.
+
+The [Madelung correspondence note](MADELUNG_CORRESPONDENCE.md) records the
+scalar and spinor relationships, a conditional reconstruction obstruction, and
+the exact additional inputs needed for a wavefunction lift. It is analytical
+discussion, not an added Lean theorem or a proved quantum consequence.
