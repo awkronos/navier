@@ -106,6 +106,7 @@ construction, and falsification results.
 #print axioms Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce
 #print axioms Navier.Analysis.ForceRecursivePartials.successivePartialWithin_eq_iteratedFDerivWithin
 #print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
+#print axioms Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate
 #print axioms Navier.Analysis.GlobalRegularityEndpoint.not_wholeSpaceEnergyClause
 #print axioms Navier.Analysis.PressureGaugeObstruction.not_rejectedSameGaugeContinuation
 #print axioms Navier.Analysis.CriticalControlDecomposition.pressureGradient_normalize_eq

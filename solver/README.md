@@ -17,6 +17,7 @@ fraction and its resolution warning, simulated time, and finiteness.
 cargo test
 NAVIER_REQUIRE_GPU=1 cargo test gpu::tests -- --nocapture
 cargo test --release gpu_grid_benchmark -- --ignored --nocapture
+cargo test --release gpu_cfl_reduction_benchmark -- --ignored --nocapture
 cargo build --release --target wasm32-unknown-unknown
 WASM_BINDGEN=/path/to/wasm-bindgen ./build-web.sh ../site/solver
 ```
@@ -35,7 +36,9 @@ When `navigator.gpu` is available, `await WebGpuNavierSolver.create(grid,
 viscosity)` creates the independent GPU-resident implementation of those same
 spectral operators. Its `step` methods only submit compute work; `velocity()`
 and `diagnostics()` are asynchronous because they are the explicit readback
-points. Failure to create the GPU solver is reported to the caller so a CPU
+points. `maxSpeed()` performs the CFL maximum reduction on the GPU and reads
+back eight bytes: the nonnegative maximum-speed-squared bits and an explicit
+non-finite flag. Failure to create the GPU solver is reported to the caller so a CPU
 fallback cannot be mislabeled as GPU execution.
 
 The backend metadata identifies CPU-WASM and WebGPU runs separately. These are
