@@ -13,6 +13,29 @@ Both compile for native Rust and WebAssembly. The periodic solver also has an
 independent WebGPU backend. These are numerical instruments; the Lean theorem
 and its compiler receipts are the proof-bearing artifacts.
 
+## Fourier conventions shared with Lean
+
+The stored forward transform is `U(k) = N³ û_R(k)` on `[0, 2π)³`.
+To use period-one coordinates at the same time, set
+`u_P(y,t) = u_R(2πy,t)/(2π)` and `ν_P = ν_R/(2π)²`.
+The raw Lean evolution then uses `A(k) = -i U(k)/N³` and `μ = ν_R`:
+
+```text
+A' = -μ |k|² A + P_k B_raw(A,A)
+B_raw(A,A)(k) = sum_(p+q=k) (q·A(p)) A(q).
+```
+
+Real velocity corresponds to `A(-k) = -conj(A(k))`. Literal physical Fourier
+coefficients require this phase encoding before entering the raw evolution.
+The finite grid still truncates the continuum series and discretizes time.
+
+CPU, WebGPU, and their WASM exports share the typed metadata in
+[`src/convention.rs`](src/convention.rs). Derived viscosity values use the
+actual backend coefficient, including GPU rounding to `f32`. The browser reads
+that metadata from its running solver. `cargo test --test fourier_convention`
+checks viscous decay and a projected nonlinear triad on two grids; set
+`NAVIER_REQUIRE_GPU=1` to require the real GPU metadata check.
+
 ## Finite analytic-axis evaluator
 
 The default construction evaluator uses radial order 12, 257 equally spaced

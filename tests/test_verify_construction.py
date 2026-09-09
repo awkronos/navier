@@ -1,4 +1,5 @@
 import importlib.util
+import argparse
 from pathlib import Path
 import tempfile
 import unittest
@@ -103,6 +104,89 @@ class VerifyConstructionTests(unittest.TestCase):
             self.assertEqual(verify.fresh_modules(graph, graph, fingerprints, receipts, root), {"A", "B"})
             (root / "A.olean").write_bytes(b"replacement")
             self.assertEqual(verify.fresh_modules(graph, graph, fingerprints, receipts, root), set())
+
+    def test_endpoint_witness_parser_is_explicit_and_rejects_bad_labels(self):
+        item = verify.parse_endpoint_witness(
+            "B=Fixture.Provider:Fixture.Provider.periodicGlobal"
+        )
+        self.assertEqual(item.label, "B")
+        self.assertEqual(item.kind, "witness")
+        self.assertEqual(item.module, "Fixture.Provider")
+        self.assertEqual(item.declaration, "Fixture.Provider.periodicGlobal")
+        with self.assertRaises(argparse.ArgumentTypeError):
+            verify.parse_endpoint_witness("E=Fixture.Provider:Fixture.Provider.result")
+        with self.assertRaises(argparse.ArgumentTypeError):
+            verify.parse_endpoint_witness("B:Fixture.Provider.result")
+
+    def test_endpoint_prerequisite_is_never_classified_as_a_witness(self):
+        item = verify.parse_endpoint_prerequisite(
+            "B=Fixture.Provider:Fixture.Provider.rawComplexEstimate"
+        )
+        self.assertEqual(item.kind, "prerequisite")
+        audit = verify.endpoint_audit_source(
+            "import Navier.OfficialProblem\n", (item,)
+        )
+        self.assertIn("#check Fixture.Provider.rawComplexEstimate", audit)
+        self.assertNotIn("example :", audit)
+        self.assertEqual(
+            verify.endpoint_audit_status("B", set(), set()),
+            "NO-UNCONDITIONAL-WITNESS-IN-THIS-AUDIT",
+        )
+
+    def test_endpoint_audit_source_distinguishes_prop_conditional_and_witness(self):
+        target = verify.ENDPOINT_TARGETS["B"]
+        items = (
+            verify.EndpointAuditItem("B", "proposition", "Fixture.Root", target),
+            verify.EndpointAuditItem(
+                "B", "conditional", "Fixture.Root", "Fixture.Root.fromBound"
+            ),
+            verify.EndpointAuditItem(
+                "B", "witness", "Fixture.Root", "Fixture.Root.periodicGlobal"
+            ),
+        )
+        audit = verify.endpoint_audit_source("import Navier.OfficialProblem\n", items)
+        self.assertTrue(audit.startswith("import Navier.OfficialProblem\n"))
+        self.assertIn(f"#check ({target} : Prop)", audit)
+        self.assertNotIn(f"example : {target} := Fixture.Root.fromBound", audit)
+        self.assertIn(f"example : {target} := Fixture.Root.periodicGlobal", audit)
+
+        official = verify.endpoint_audit_source(
+            "def marker := 1\n",
+            (verify.DEFAULT_ENDPOINT_AUDIT_ITEMS[0],),
+        )
+        self.assertFalse(official.startswith("import Navier.OfficialProblem\n"))
+
+    def test_endpoint_audit_rejects_object_only_provider(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            olean_root = root / ".lake" / "build" / "lib" / "lean"
+            output = olean_root / "Fixture" / "Provider.olean"
+            output.parent.mkdir(parents=True)
+            output.write_bytes(b"stale compiled provider")
+            with self.assertRaisesRegex(verify.VerificationError, "object-only.*stale"):
+                verify.require_module_source(root, "Fixture.Provider", olean_root)
+
+    def test_endpoint_status_requires_fresh_dependency_receipts(self):
+        checked = {"B", "C"}
+        fresh = {"C"}
+        self.assertEqual(
+            verify.endpoint_audit_status("A", checked, fresh),
+            "NO-UNCONDITIONAL-WITNESS-IN-THIS-AUDIT",
+        )
+        self.assertEqual(
+            verify.endpoint_audit_status("B", checked, fresh),
+            "WITNESS-SOURCE-CHECKED-DEPENDENCY-FRESHNESS-NOT-ESTABLISHED",
+        )
+        self.assertEqual(
+            verify.endpoint_audit_status("C", checked, fresh),
+            "UNCONDITIONAL-WITNESS-VERIFIED",
+        )
+
+    def test_periodic_acceptance_limit_records_physical_normalization(self):
+        limit = verify.ENDPOINT_SCIENTIFIC_LIMITS["B"]
+        self.assertIn("real smooth period-one velocity and pressure", limit)
+        self.assertIn("A=-2*pi*I*u_hat", limit)
+        self.assertIn("mu=(2*pi)^2*nu", limit)
 
 
 if __name__ == "__main__":
