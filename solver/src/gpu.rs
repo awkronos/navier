@@ -35,6 +35,11 @@ fn validate_grid(n: usize) -> Result<(), String> {
     Ok(())
 }
 
+#[inline]
+fn parseval_mean(sum: f64, physical_grid_points: usize) -> f64 {
+    sum / (physical_grid_points as f64).powi(2)
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Params {
@@ -663,7 +668,7 @@ impl WebGpuSpectralSolver {
             enstrophy_spectral_sum += norm2(wx) + norm2(wy) + norm2(wz);
         }
         let divergence_rms = divergence_spectral_sum.sqrt() / self.len as f64;
-        let enstrophy = 0.5 * enstrophy_spectral_sum / (self.len * self.len) as f64;
+        let enstrophy = 0.5 * parseval_mean(enstrophy_spectral_sum, self.len);
         let tail = if spectral_energy_sum == 0.0 {
             0.0
         } else {
@@ -683,21 +688,40 @@ impl WebGpuSpectralSolver {
         }
         finite &= state.iter().all(|z| z[0].is_finite() && z[1].is_finite());
         let energy = energy_sum / self.len as f64;
+        let velocity_rms = (2.0 * energy).max(0.0).sqrt();
+        let vorticity_rms = (2.0 * enstrophy).max(0.0).sqrt();
+        let max_speed = max_speed2.sqrt();
+        let max_vorticity = max_vorticity2.sqrt();
+        let energy_dissipation_rate = 2.0 * self.viscosity as f64 * enstrophy;
+        finite &= [
+            self.time,
+            energy,
+            enstrophy,
+            velocity_rms,
+            vorticity_rms,
+            divergence_rms,
+            max_speed,
+            max_vorticity,
+            energy_dissipation_rate,
+            tail,
+        ]
+        .into_iter()
+        .all(f64::is_finite);
         Ok(GpuDiagnostics {
             time: self.time,
             energy,
             enstrophy,
-            velocity_rms: (2.0 * energy).max(0.0).sqrt(),
-            vorticity_rms: (2.0 * enstrophy).max(0.0).sqrt(),
+            velocity_rms,
+            vorticity_rms,
             divergence_rms,
-            max_speed: max_speed2.sqrt(),
-            max_vorticity: max_vorticity2.sqrt(),
-            energy_dissipation_rate: 2.0 * self.viscosity as f64 * enstrophy,
+            max_speed,
+            max_vorticity,
+            energy_dissipation_rate,
             high_frequency_energy_fraction: tail,
             tail_start_fraction_of_dealias_cutoff: 0.75,
             tail_tolerance: 1.0e-8,
             underresolved: self.underresolved.get(),
-            finite: finite && divergence_rms.is_finite(),
+            finite,
         })
     }
 
@@ -1067,6 +1091,14 @@ mod tests {
         assert!(validate_grid(63).is_err());
     }
 
+    #[test]
+    fn parseval_normalization_is_finite_at_the_wasm32_grid_ceiling() {
+        let len = MAX_INTERACTIVE_GRID.pow(3);
+        let unscaled_constant_mode_sum = (len as f64).powi(2);
+        assert_eq!(len, 262_144);
+        assert_eq!(parseval_mean(unscaled_constant_mode_sum, len), 1.0);
+    }
+
     const NO_ADAPTER: &str = "WebGPU has no high-performance adapter";
 
     fn gpu_with(n: usize, viscosity: f64) -> Option<WebGpuSpectralSolver> {
@@ -1110,6 +1142,18 @@ mod tests {
             max_error < 2.0e-5,
             "initial transform max error {max_error:e}"
         );
+    }
+
+    #[test]
+    fn gpu_maximum_grid_initial_diagnostics_are_finite() {
+        let Some(gpu) = gpu_with(MAX_INTERACTIVE_GRID, 0.05) else {
+            return;
+        };
+        let diagnostics = pollster::block_on(gpu.diagnostics()).unwrap();
+        assert!(diagnostics.finite);
+        assert!((diagnostics.energy - 0.125).abs() < 2.0e-5);
+        assert!((diagnostics.enstrophy - 0.375).abs() < 8.0e-5);
+        assert!(diagnostics.divergence_rms < 2.0e-5);
     }
 
     #[test]
