@@ -39,9 +39,12 @@ The checked [mean-drift algebra](../Navier/Analysis/CriticalMildMeanDriftRemoval
 constructs the raw encoding `A=-2*pi*i*u_hat`, proves literal convolution phase
 covariance, and identifies the constant-mean cross term and its cancellation
 with the translation derivative. It preserves the off-zero amplitude, squared
-energy and half-generator moment. The full time-integrated fixed-point
-transport is a further construction; these coefficient identities do not
-assume or establish arbitrary-data global control.
+energy and half-generator moment. The
+[Galilean Volterra transport](../Navier/Analysis/CriticalMildGalileanVolterra.lean)
+now proves that the mean-removed path satisfies the actual time-integrated
+fixed-point equation. Removing the conserved mean contracts the completed
+critical norm, so this transport retains the original chart radius. It does
+not supply arbitrary-data global control.
 
 The completed forced endpoints are whole-space C and periodic D in the official
 problem statement. The proof constructs the

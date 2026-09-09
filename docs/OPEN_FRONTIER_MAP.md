@@ -9,8 +9,9 @@ does not assign fixed outcomes or prescribe a proof route.
 | --- | --- | --- |
 | Forced whole-space alternative C | **THEOREM**: `ConstructedBreakdown.wholeSpaceBreakdown` | Further work may sharpen mechanism, force semantics and finite-time localization; C itself has no remaining premise |
 | Unforced whole-space alternative A | **OPEN**: `ProblemStatements.WholeSpaceGlobalRegularity` | Local existence, normalized continuation and arbitrary-large-data critical control must meet in one faithful whole-space consumer |
-| Fourier-lattice continuation | **CONDITIONAL THEOREM** | `CriticalMildMixedTerminalBound` is the sharp uniform nonlinear estimate; whole-space reconstruction is also required |
-| Periodic breakdown D | No closure claimed here | A forced whole-space theorem does not automatically transport to the periodic carrier |
+| Unforced periodic alternative B | **OPEN**: `ProblemStatements.PeriodicGlobalRegularity` | Constructed physical local evolution and all spatial moments must feed joint classical reconstruction and arbitrary-data, horizon-uniform continuation control |
+| Fourier-lattice continuation | **CONDITIONAL THEOREM** | `CriticalMildMixedTerminalBound` is a sufficient uniform nonlinear estimate to construct; its optimality is not established, and transport to the whole-space carrier requires a separate proof |
+| Periodic breakdown D | **THEOREM**: `PeriodicConstructedBreakdown.periodicBreakdown` | The native periodic forced endpoint has no remaining premise; it does not settle unforced periodic evolution |
 
 The globally smooth object in the completed strengthened C result is the
 force. The selected velocity is classical before its singular deadline and
