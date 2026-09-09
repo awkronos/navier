@@ -39,6 +39,7 @@ import Navier.Analysis.EnergyTimeDerivative
 import Navier.Analysis.EnergyViscousDissipation
 import Navier.Analysis.EnergyViscousIntegral
 import Navier.Analysis.EnergyPointwiseBalance
+import Navier.Analysis.ForcedEnergyBalance
 import Navier.Analysis.EnergyInstantaneousIntegralBalance
 import Navier.Analysis.EnergyDerivativeUnderIntegral
 import Navier.Analysis.Vorticity
@@ -104,6 +105,8 @@ import Navier.Analysis.CoordinatePDEBridge
 import Navier.Analysis.HalfSpaceSmoothnessBridge
 import Navier.Analysis.GramSchmidt
 import Navier.Breakdown.MaximalNonextension
+import Navier.Breakdown.CompactSmoothForce
+import Navier.Breakdown.CompactPathBreakdown
 import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Analysis.PressurePoisson
 import Navier.Analysis.PressureNormalization

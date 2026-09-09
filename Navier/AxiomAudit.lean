@@ -18,6 +18,7 @@ import Navier.Analysis.EnergyTimeDerivative
 import Navier.Analysis.EnergyViscousDissipation
 import Navier.Analysis.EnergyViscousIntegral
 import Navier.Analysis.EnergyPointwiseBalance
+import Navier.Analysis.ForcedEnergyBalance
 import Navier.Analysis.EnergyInstantaneousIntegralBalance
 import Navier.Analysis.EnergyDerivativeUnderIntegral
 import Navier.Routes.R7.GeneratedSupport
@@ -56,6 +57,8 @@ import Navier.Analysis.ViscosityEndpoints
 import Navier.EnergyObstruction
 import Navier.ConventionBridges
 import Navier.Breakdown.MaximalNonextension
+import Navier.Breakdown.CompactSmoothForce
+import Navier.Breakdown.CompactPathBreakdown
 import Navier.Breakdown.Restriction
 import Navier.Breakdown.ForceRecovery
 import Navier.Breakdown.OfficialCDEncoding
@@ -89,6 +92,9 @@ audit the named analytic, algebraic, and falsification results.
 -/
 
 #print axioms Navier.ProblemStatements.WholeSpaceGlobalRegularity
+#print axioms Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution
+#print axioms Navier.Breakdown.CompactSmoothForce.forcedDataRapidDecay_of_smooth_compactSupport
+#print axioms Navier.Breakdown.wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile
 #print axioms Navier.Analysis.GlobalRegularityEndpoint.not_wholeSpaceEnergyClause
 #print axioms Navier.Analysis.PressureGaugeObstruction.not_rejectedSameGaugeContinuation
 #print axioms Navier.Analysis.CriticalControlDecomposition.pressureGradient_normalize_eq

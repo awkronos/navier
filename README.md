@@ -22,6 +22,9 @@ nonuniqueness, or averaged-model blowup with C.
 
 ## What is here
 
+- [`docs/NATIVE_BREAKDOWN_AND_SOLVER.md`](docs/NATIVE_BREAKDOWN_AND_SOLVER.md):
+  native forcing, energy and breakdown inputs informed by the 2026 forced-blowup
+  construction, useful conditional results, and adaptive solver validation.
 - [`docs/ATTACK.md`](docs/ATTACK.md): 11 parallel positive, rigidity,
   computational, and breakdown routes, each with a lower residual, kill test,
   and pivot.

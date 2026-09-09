@@ -1,3 +1,11 @@
+/-
+The negative-power and remaining-time arguments below adapt
+NavierStokes/BlowupImplication.lean from OpenAI/NavierStokesAndEuler,
+revision 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538 (Apache-2.0).
+Adaptations: Lean 4.31, native carriers, compact-path and official consumers.
+See references/licenses/OpenAI-Apache-2.0.txt for the upstream license.
+The remaining original additions are covered by the repository LICENSE.
+-/
 import Navier.Breakdown.MaximalNonextension
 import Navier.Analysis.ViscosityEndpoints
 import Navier.Breakdown.CompactSmoothForce
@@ -295,3 +303,9 @@ theorem wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile
       error hA hE herror hlower)
 
 end Navier.Breakdown
+
+#print axioms Navier.Breakdown.bounded_compactEvaluation_of_smooth
+#print axioms Navier.Breakdown.noGlobal_of_compactPathBreakdown
+#print axioms Navier.Breakdown.negativePower_tendsto_atTop
+#print axioms Navier.Breakdown.pathNorm_unboundedBefore_of_negativePowerProfile
+#print axioms Navier.Breakdown.wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile
