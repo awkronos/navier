@@ -65,6 +65,48 @@ pub struct AxisConstructionDiagnostics {
     pub iterations: usize,
 }
 
+/// Physical coordinates and normalization used by the finite axis evaluator.
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AxisConstructionCoordinates {
+    pub physical_axes: [&'static str; 3],
+    pub radial_plane_axes: [usize; 2],
+    pub axial_axis: usize,
+    pub tau_definition: &'static str,
+    pub singular_time: f64,
+    pub normalized_viscosity: f64,
+    pub unit_convention: &'static str,
+}
+
+/// Browser-facing shape and memory layout of a sampled construction grid.
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AxisConstructionGridLayout {
+    pub topology: &'static str,
+    pub wasm_domain_extent_kind: &'static str,
+    pub native_evaluate_grid_extent_kind: &'static str,
+    pub bounds_from_wasm_domain_extent: &'static str,
+    pub includes_both_endpoints: bool,
+    pub point_axis_order: [&'static str; 3],
+    pub scalar_point_index: &'static str,
+    pub vector_component_order: [&'static str; 3],
+    pub vector_layout: &'static str,
+}
+
+/// Meaning of scalar diagnostics and fields exposed with a sampled grid.
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AxisConstructionScalarSemantics {
+    pub residual_symbol: &'static str,
+    pub residual_formula: &'static str,
+    pub residual_meaning: &'static str,
+    pub residual_is_selected_smooth_force: bool,
+    pub pressure_meaning: &'static str,
+    pub pressure_absolute_level_is_gauge_invariant: bool,
+    pub max_speed_meaning: &'static str,
+    pub max_speed_is_continuum_supremum: bool,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AxisConstructionMetadata {
@@ -78,6 +120,9 @@ pub struct AxisConstructionMetadata {
     pub included_terms: &'static [&'static str],
     pub omitted_terms: &'static [&'static str],
     pub interpretation: &'static str,
+    pub coordinates: AxisConstructionCoordinates,
+    pub grid_layout: AxisConstructionGridLayout,
+    pub scalar_semantics: AxisConstructionScalarSemantics,
 }
 
 pub type AxisConstructionGrid = (
@@ -642,6 +687,36 @@ impl AxisConstruction {
                 "final space-time localization",
             ],
             interpretation: "A finite numerical construction stage; it is not the completed solution and is not a blowup certificate.",
+            coordinates: AxisConstructionCoordinates {
+                physical_axes: ["x", "y", "z"],
+                radial_plane_axes: [0, 1],
+                axial_axis: 2,
+                tau_definition: "tau = 1 - t",
+                singular_time: 1.0,
+                normalized_viscosity: 1.0,
+                unit_convention: "manuscript-normalized physical coordinates; no SI unit conversion",
+            },
+            grid_layout: AxisConstructionGridLayout {
+                topology: "open",
+                wasm_domain_extent_kind: "full side lengths [Lx, Ly, Lz]",
+                native_evaluate_grid_extent_kind: "positive half extents [Lx/2, Ly/2, Lz/2]",
+                bounds_from_wasm_domain_extent: "coordinate[i] in [-domainExtent[i]/2, +domainExtent[i]/2]",
+                includes_both_endpoints: true,
+                point_axis_order: ["x", "y", "z"],
+                scalar_point_index: "(xIndex * N + yIndex) * N + zIndex",
+                vector_component_order: ["x", "y", "z"],
+                vector_layout: "interleaved xyz components at 3 * scalarPointIndex",
+            },
+            scalar_semantics: AxisConstructionScalarSemantics {
+                residual_symbol: "R",
+                residual_formula: "R = partial_t u + (u dot grad)u - Delta u + grad p",
+                residual_meaning: "force required by the finite reconstructed axis stage at normalized viscosity 1; not an error estimate",
+                residual_is_selected_smooth_force: false,
+                pressure_meaning: "selected representative fixed by pressureSeed; same-time pressure differences and spatial gradients are gauge-invariant",
+                pressure_absolute_level_is_gauge_invariant: false,
+                max_speed_meaning: "maximum Euclidean speed over the sampled grid; a grid-dependent lower observation of the chart supremum",
+                max_speed_is_continuum_supremum: false,
+            },
         }
     }
 
@@ -1087,6 +1162,45 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn serialized_metadata_declares_the_sampled_field_contract() {
+        let construction = AxisConstruction::new(AxisConstructionConfig::default()).unwrap();
+        let value = serde_json::to_value(construction.metadata()).unwrap();
+
+        let coordinates = &value["coordinates"];
+        assert_eq!(
+            coordinates["physicalAxes"],
+            serde_json::json!(["x", "y", "z"])
+        );
+        assert_eq!(coordinates["radialPlaneAxes"], serde_json::json!([0, 1]));
+        assert_eq!(coordinates["axialAxis"], 2);
+        assert_eq!(coordinates["tauDefinition"], "tau = 1 - t");
+        assert_eq!(coordinates["singularTime"], 1.0);
+        assert_eq!(coordinates["normalizedViscosity"], 1.0);
+
+        let layout = &value["gridLayout"];
+        assert_eq!(layout["topology"], "open");
+        assert_eq!(layout["includesBothEndpoints"], true);
+        assert_eq!(layout["pointAxisOrder"], serde_json::json!(["x", "y", "z"]));
+        assert_eq!(
+            layout["scalarPointIndex"],
+            "(xIndex * N + yIndex) * N + zIndex"
+        );
+        assert_eq!(
+            layout["vectorComponentOrder"],
+            serde_json::json!(["x", "y", "z"])
+        );
+
+        let scalars = &value["scalarSemantics"];
+        assert_eq!(scalars["residualSymbol"], "R");
+        assert_eq!(scalars["residualIsSelectedSmoothForce"], false);
+        assert_eq!(scalars["pressureAbsoluteLevelIsGaugeInvariant"], false);
+        assert_eq!(scalars["maxSpeedIsContinuumSupremum"], false);
+
+        assert!(value.get("grid_layout").is_none());
+        assert!(coordinates.get("normalized_viscosity").is_none());
     }
 
     #[test]
