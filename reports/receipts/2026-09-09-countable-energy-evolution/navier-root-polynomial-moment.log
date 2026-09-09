@@ -1,0 +1,26 @@
+Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_polynomialProjectedFiberTerm_eq (s : ℝ) (k : LatticeMode)
+  (u v : ↥WeightedLatticeBanach) :
+  ∑' (ij : ↑(latticeOutputMode ⁻¹' {k})), polynomialProjectedFiberTerm s k u v ij =
+    polynomialProjectedSpectralOutputFiber s k u v
+Navier.Analysis.CriticalMildPolynomialMomentConvolution.summable_projectedConvolutionPolynomialMoment (s : ℝ)
+  (hs : 1 ≤ s) (u v : ↥WeightedLatticeBanach) (hu : LatticePolynomialMoment s u) (hv : LatticePolynomialMoment s v) :
+  Summable fun k => latticeModeWeight k ^ (s - 1) * complexEuclideanNorm (projectedSpectralConvolutionCoefficient k u v)
+Navier.Analysis.CriticalMildPolynomialMomentConvolution.projectedConvolutionPolynomialMoment_sub_one_le (s : ℝ)
+  (hs : 1 ≤ s) (u v : ↥WeightedLatticeBanach) (hu : LatticePolynomialMoment s u) (hv : LatticePolynomialMoment s v) :
+  projectedConvolutionPolynomialMoment (s - 1) u v ≤ polynomialMoment s u * polynomialMoment s v
+Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_projectedModeForcing_polynomial_sub_one_le (s : ℝ)
+  (hs : 1 ≤ s) (A : ℝ → ↥WeightedLatticeBanach) (t : ℝ) (hA : LatticePolynomialMoment s (A t)) :
+  ∑' (k : LatticeMode), latticeModeWeight k ^ (s - 1) * complexEuclideanNorm (projectedModeForcing A k t) ≤
+    polynomialMoment s (A t) ^ 2
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_polynomialProjectedFiberTerm_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_norm_polynomialProjectedSpectralOutputFiber_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.projectedConvolutionPolynomialMoment_sub_one_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_projectedModeForcing_polynomial_sub_one_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

@@ -1,0 +1,10 @@
+{
+  "Navier/Analysis/CriticalMildEnergyEvolution.lean": "7a138847993534a2807d74d1ad5f242846a07ca84b44babf310cab0256289a3b",
+  "Navier/Analysis/CriticalMildLocalUniformBootstrap.lean": "6cf043c23a94785bdee4b7dc79d16871e11450301d88a5fa8e303b18121f4381",
+  "Navier/Analysis/CriticalMildPolynomialMomentConvolution.lean": "93304bcd874f217cd30e31890fa4d81538872761370d70e42ddb6101494234d2",
+  "Navier/Analysis/PeriodicNonlinearFourierReconstruction.lean": "06175d9f38eee89dd4a23d02835dc05041b653d3dff96c0023062ae41e5dafea",
+  "Navier/Analysis/PhysicalPeriodicHighTailFlux.lean": "f678ac353ebe42095819ad2e99520cf8e56d95d5206949249ae01dc7ffb81efd",
+  "Navier/Analysis/PhysicalPeriodicTailMomentControl.lean": "f47452b7dfe9a9ec4c8867285f7744c99de60c3110541f8f94ebfe36a74848fd",
+  "Navier/Analysis/RawHighEnergyConvolutionIdentity.lean": "67586b64f9b3ed5044126d46538d7c1dde29aa0a5443e81a788979c5af63e542",
+  "Navier/Analysis/RawHighEnergyDifferentiation.lean": "d0288ea396898cf73f77889267442b45493e90972ad6b05294d13393945f97c8"
+}

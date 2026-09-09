@@ -1,0 +1,122 @@
+'Navier.Analysis.RawHighEnergyDifferentiation.hasDerivAt_rawModeEnergy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.RawHighEnergyDifferentiation.rawEnergyRate_finite_sum_error_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.RawHighEnergyDifferentiation.tendstoUniformlyOn_rawEnergyRate_finite_sums' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.RawHighEnergyDifferentiation.hasDerivAt_rawHighSpectralEnergy_of_uniform_mass' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildEnergyEvolution.hasDerivAt_mild_rawHighSpectralEnergy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.CriticalMildEnergyEvolution.hasDerivAt_mild_rawHighSpectralEnergy (μ : ℝ) (hμ : 0 < μ)
+  (a : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (ha : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree a)
+  (A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (hAc : Continuous A)
+  (hdiv : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (A s)) {R T t N : ℝ} (hR : 0 ≤ R)
+  (hN : 0 ≤ N) (ht : t ∈ Set.Ioo 0 T) (hbound : ∀ s ∈ Set.Ioc 0 T, ‖A s‖ ≤ R)
+  (hmild :
+    ∀ (s : ℝ) (hs : s ∈ Set.Icc 0 T), A s = Navier.Analysis.CriticalMildSelfMap.criticalMildImage μ hμ a A hdiv s ⋯) :
+  HasDerivAt (fun s => Navier.Analysis.PhysicalPeriodicHighTailFlux.rawHighSpectralEnergy N (A s))
+    (∑' (k : Navier.Analysis.CriticalMildSeries.LatticeMode),
+      Navier.Analysis.RawHighEnergyDifferentiation.rawHighModeEnergyRate N (A t)
+        (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative μ A t) k)
+    t
+'Navier.Analysis.RawHighEnergyConvolutionIdentity.re_inner_projectedModeForcing_eq_fiber' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.RawHighEnergyConvolutionIdentity.tsum_re_inner_projectedModeForcing_high_eq_rawFlux' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicHighTailFlux.abs_rawHighFrequencyEnergyFlux_le_movingTail' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicHighTailFlux.highEnergyGenerator_le_damping_add_movingTail' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicTailMomentControl.carrierHighTail_le_inv_mul_halfGeneratorMoment' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicTailMomentControl.highEnergyGenerator_le_damping_add_halfGeneratorMoment' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicTailMomentControl.damped_affine_apriori_le_equilibrium' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicNonlinearFourierReconstruction.complexPointwiseConvection_eq_periodOneConvectionFourierSeries' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicNonlinearFourierReconstruction.unprojectedModeEquation_to_pointwiseFourierBalance' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicNonlinearFourierReconstruction.exists_physical_local_pointwise_fourier_balance' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicNonlinearFourierReconstruction.exists_physical_local_pointwise_fourier_balance (nu : ℝ)
+  (hnu : 0 < nu) (a : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (ha : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree a)
+  (hareal : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian a) :
+  ∃ T,
+    0 < T ∧
+      ∃ A,
+        A 0 = a ∧
+          Continuous A ∧
+            (∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (A s)) ∧
+              (∀ (s : ℝ), Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian (A s)) ∧
+                (∀ (s : ℝ), ‖A s‖ ≤ Navier.Analysis.CriticalMildQuantitativeRestart.criticalMildBoundedRadius ‖a‖) ∧
+                  ∀ t ∈ Set.Ioo 0 T,
+                    (Summable fun k =>
+                        Navier.Analysis.CriticalMildHigherMomentBootstrap.quarterFrequencyWeight k *
+                          (‖Navier.Analysis.OfficialABEncoding.officialEuclideanPoint
+                                  (Navier.Analysis.CriticalMildSeries.latticeFrequency k)‖ ^
+                              2 *
+                            Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+                              (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+                                (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) k))) ∧
+                      (∀ (k : Navier.Analysis.CriticalMildSeries.LatticeMode) (i : Fin 3),
+                          HasDerivAt
+                            (fun r => Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient (A r) k i)
+                            (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                              (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity nu) A t k i)
+                            t) ∧
+                        (Summable fun k =>
+                            Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+                              (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                                (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity nu) A t k)) ∧
+                          (∀ (k : Navier.Analysis.CriticalMildSeries.LatticeMode),
+                              Navier.Analysis.PeriodicMildClassicalRealization.rawToPhysicalAmplitude •
+                                        Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                                          (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity nu) A t k +
+                                      Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k
+                                        (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+                                        (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) +
+                                    Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k
+                                      (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+                                        (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) k) +
+                                  Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+                                    (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k
+                                      (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+                                      (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))) =
+                                0) ∧
+                            ∀ (x : Navier.Space) (i : Fin 3),
+                              Navier.Analysis.PeriodicNonlinearFourierReconstruction.PhysicalPointwiseFourierBalance nu
+                                A t x i
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_polynomialProjectedFiberTerm_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_norm_polynomialProjectedSpectralOutputFiber_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.projectedConvolutionPolynomialMoment_sub_one_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildPolynomialMomentConvolution.tsum_projectedModeForcing_polynomial_sub_one_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.exists_uniform_halfGenerator_on_compactPositiveInterval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

@@ -1,0 +1,21 @@
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.transported_admissible_terminalWindow' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.interiorQuarterWindowConstant_mono' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.latticeTwoWeightL1_of_halfGenerator' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.tsum_twoWeight_eq_norm_add_halfGeneratorMoment' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.tsum_weighted_projectedModeForcing_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.tsum_mildRawTimeDerivative_le_of_halfGenerator' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildLocalUniformBootstrap.exists_uniform_halfGenerator_on_compactPositiveInterval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
