@@ -71,6 +71,11 @@ struct Pipelines {
     accumulate: wgpu::ComputePipeline,
 }
 
+struct MaxSpeedPipeline {
+    layout: wgpu::BindGroupLayout,
+    pipeline: wgpu::ComputePipeline,
+}
+
 /// GPU-resident spectral solver. WebGPU guarantees f32 arithmetic; the CPU
 /// implementation remains the f64 reference and fallback.
 pub struct WebGpuSpectralSolver {
@@ -88,7 +93,9 @@ pub struct WebGpuSpectralSolver {
     queue: wgpu::Queue,
     layout: wgpu::BindGroupLayout,
     pipelines: Pipelines,
+    max_speed_pipeline: MaxSpeedPipeline,
     parameters: wgpu::Buffer,
+    max_speed_reduction: wgpu::Buffer,
     dummy: wgpu::Buffer,
     state: wgpu::Buffer,
     a: wgpu::Buffer,
@@ -200,6 +207,53 @@ impl WebGpuSpectralSolver {
             combine_initial_a: make_pipeline("combine_initial_a"),
             accumulate: make_pipeline("accumulate"),
         };
+        let max_speed_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Navier maximum-speed reduction"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/max_speed.wgsl").into()),
+        });
+        let max_speed_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Navier maximum-speed layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: NonZeroU64::new(std::mem::size_of::<Params>() as u64),
+                    },
+                    count: None,
+                },
+                storage_layout_entry(1, true),
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: NonZeroU64::new(8),
+                    },
+                    count: None,
+                },
+            ],
+        });
+        let max_speed_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Navier maximum-speed pipeline layout"),
+                bind_group_layouts: &[&max_speed_layout],
+                push_constant_ranges: &[],
+            });
+        let max_speed_pipeline = MaxSpeedPipeline {
+            layout: max_speed_layout,
+            pipeline: device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("reduce_max_speed"),
+                layout: Some(&max_speed_pipeline_layout),
+                module: &max_speed_shader,
+                entry_point: Some("reduce_max_speed"),
+                compilation_options: Default::default(),
+                cache: None,
+            }),
+        };
         if let Some(error) = device.pop_error_scope().await {
             return Err(format!("WebGPU rejected the spectral kernels: {error}"));
         }
@@ -223,6 +277,14 @@ impl WebGpuSpectralSolver {
             label: Some("Navier dispatch parameters"),
             size: PARAMETER_STRIDE * PARAMETER_SLOTS,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let max_speed_reduction = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Navier maximum-speed reduction result"),
+            size: 8,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let dummy = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -255,7 +317,9 @@ impl WebGpuSpectralSolver {
             queue,
             layout,
             pipelines,
+            max_speed_pipeline,
             parameters,
+            max_speed_reduction,
             dummy,
             state,
             a,
@@ -474,6 +538,79 @@ impl WebGpuSpectralSolver {
             ]);
         }
         Ok(result)
+    }
+
+    /// Maximum physical-space speed for the CFL guard. The velocity remains
+    /// GPU-resident and only the maximum plus a non-finite flag are read back.
+    pub async fn max_speed(&self) -> Result<f64, String> {
+        self.ensure_device()?;
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Navier CFL maximum-speed reduction"),
+            });
+        let mut slot = 0;
+        self.encode_dispatch(
+            &mut encoder,
+            &self.pipelines.copy_filtered,
+            &self.state,
+            &self.dummy,
+            &self.work0,
+            self.params(0.0, 0.0, 0, false),
+            &mut slot,
+        );
+        let physical =
+            self.encode_transform(&mut encoder, &self.work0, &self.work1, true, &mut slot);
+        encoder.clear_buffer(&self.max_speed_reduction, 0, Some(8));
+
+        assert!((slot as u64) < PARAMETER_SLOTS);
+        let offset = slot as u64 * PARAMETER_STRIDE;
+        self.queue.write_buffer(
+            &self.parameters,
+            offset,
+            bytemuck::bytes_of(&self.params(0.0, 0.0, 0, false)),
+        );
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Navier maximum-speed reduction bind group"),
+            layout: &self.max_speed_pipeline.layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: &self.parameters,
+                        offset: 0,
+                        size: NonZeroU64::new(std::mem::size_of::<Params>() as u64),
+                    }),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: physical.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: self.max_speed_reduction.as_entire_binding(),
+                },
+            ],
+        });
+        {
+            let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("Navier maximum-speed reduction pass"),
+                timestamp_writes: None,
+            });
+            pass.set_pipeline(&self.max_speed_pipeline.pipeline);
+            pass.set_bind_group(0, &bind_group, &[offset as u32]);
+            pass.dispatch_workgroups((self.len as u32).div_ceil(WORKGROUP_SIZE), 1, 1);
+        }
+        self.queue.submit(Some(encoder.finish()));
+        let reduction = self.read_u32_pair(&self.max_speed_reduction).await?;
+        if reduction[1] != 0 {
+            return Err("non-finite velocity encountered during WebGPU CFL reduction".into());
+        }
+        let maximum_squared = f32::from_bits(reduction[0]);
+        if !maximum_squared.is_finite() {
+            return Err("non-finite speed encountered during WebGPU CFL reduction".into());
+        }
+        Ok(maximum_squared.sqrt() as f64)
     }
 
     pub async fn diagnostics(&self) -> Result<GpuDiagnostics, String> {
@@ -815,6 +952,38 @@ impl WebGpuSpectralSolver {
         Ok(values)
     }
 
+    async fn read_u32_pair(&self, source: &wgpu::Buffer) -> Result<[u32; 2], String> {
+        let staging = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Navier scalar GPU readback"),
+            size: 8,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Navier scalar GPU readback copy"),
+            });
+        encoder.copy_buffer_to_buffer(source, 0, &staging, 0, 8);
+        self.queue.submit(Some(encoder.finish()));
+        let slice = staging.slice(..);
+        let (sender, receiver) = futures_channel::oneshot::channel();
+        slice.map_async(wgpu::MapMode::Read, move |result| {
+            let _ = sender.send(result);
+        });
+        #[cfg(not(target_arch = "wasm32"))]
+        self.device.poll(wgpu::Maintain::Wait);
+        receiver
+            .await
+            .map_err(|_| "GPU scalar readback callback was dropped".to_string())?
+            .map_err(|error| format!("GPU scalar readback map failed: {error}"))?;
+        let mapped = slice.get_mapped_range();
+        let values = *bytemuck::from_bytes::<[u32; 2]>(&mapped);
+        drop(mapped);
+        staging.unmap();
+        Ok(values)
+    }
+
     fn buffer_bytes(&self) -> u64 {
         (COMPONENTS * self.len * COMPLEX_FLOATS * std::mem::size_of::<f32>()) as u64
     }
@@ -945,9 +1114,11 @@ mod tests {
             .map(|(a, b)| (a - b).abs())
             .fold(0.0_f32, f32::max);
         assert!(max_error < 2.5e-4, "three-step max error {max_error:e}");
+        let reduced_max_speed = pollster::block_on(gpu.max_speed()).unwrap();
         let diagnostics = pollster::block_on(gpu.diagnostics()).unwrap();
         let reference = cpu.diagnostics();
         assert!(diagnostics.finite);
+        assert!((reduced_max_speed - diagnostics.max_speed).abs() < 2.0e-6);
         assert!((diagnostics.energy - reference.energy).abs() < 2.0e-5);
         assert!((diagnostics.enstrophy - reference.enstrophy).abs() < 8.0e-5);
         assert!((diagnostics.max_speed - reference.max_speed).abs() < 8.0e-5);
@@ -1006,6 +1177,43 @@ mod tests {
         let left_frame = pollster::block_on(left.velocity_f32_interleaved()).unwrap();
         let right_frame = pollster::block_on(right.velocity_f32_interleaved()).unwrap();
         assert_eq!(left_frame, right_frame);
+    }
+
+    #[test]
+    fn gpu_max_speed_rejects_nonfinite_velocity() {
+        let Some(gpu) = gpu() else {
+            return;
+        };
+        gpu.queue
+            .write_buffer(&gpu.state, 0, bytemuck::bytes_of(&[f32::INFINITY, 0.0]));
+        let error = pollster::block_on(gpu.max_speed()).unwrap_err();
+        assert!(
+            error.contains("non-finite velocity"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn gpu_cfl_reduction_benchmark() {
+        use std::time::Instant;
+        let mut gpu = gpu_with(24, 0.05).expect("benchmark requires a WebGPU adapter");
+        gpu.step(0.001).unwrap();
+        pollster::block_on(gpu.max_speed()).unwrap();
+        pollster::block_on(gpu.diagnostics()).unwrap();
+
+        let fast_start = Instant::now();
+        for _ in 0..8 {
+            pollster::block_on(gpu.max_speed()).unwrap();
+        }
+        let fast = fast_start.elapsed() / 8;
+        let full_start = Instant::now();
+        for _ in 0..8 {
+            pollster::block_on(gpu.diagnostics()).unwrap();
+        }
+        let full = full_start.elapsed() / 8;
+        eprintln!("N=24 CFL maxSpeed={fast:?} full diagnostics={full:?}");
+        assert!(fast < full, "CFL reduction did not beat full diagnostics");
     }
 
     /// Hardware timing probe, kept ignored so ordinary correctness tests stay

@@ -27,6 +27,7 @@ AUDITED_DECLARATIONS = (
     "Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce",
     "Navier.Analysis.ForceRecursivePartials.forcedDataRapidDecay_bounds_successivePartials",
     "Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials",
+    "Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate",
 )
 ALLOWED_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 

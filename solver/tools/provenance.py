@@ -5,13 +5,22 @@ from pathlib import Path
 
 
 CRATE_DIR = Path(__file__).resolve().parent.parent
-COMPILED_SOURCES = (
-    "Cargo.lock",
-    "Cargo.toml",
-    "src/core.rs",
-    "src/gpu.rs",
-    "src/lib.rs",
-    "src/shaders/spectral.wgsl",
+
+def compiled_sources() -> tuple[str, ...]:
+    """Bind every source/shader input, including future include_str! assets."""
+    inputs = ["Cargo.lock", "Cargo.toml"]
+    if (CRATE_DIR / "build.rs").is_file():
+        inputs.append("build.rs")
+    inputs.extend(
+        path.relative_to(CRATE_DIR).as_posix()
+        for path in (CRATE_DIR / "src").rglob("*") if path.is_file()
+    )
+    return tuple(sorted(inputs))
+
+
+COMPILED_SOURCES = compiled_sources()
+WEB_ARTIFACTS = (
+    "navier_web.d.ts", "navier_web.js", "navier_web_bg.wasm", "navier_web_bg.wasm.d.ts",
 )
 
 

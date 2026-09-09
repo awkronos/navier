@@ -73,8 +73,9 @@ New proof sources print their own axiom dependencies when compiled.
 | Result / family | What it supplies | Remaining input or scope |
 | --- | --- | --- |
 | `ConstructedBreakdown.wholeSpaceBreakdown` | Original forced whole-space alternative C for every positive viscosity | Closed; this says nothing about unforced A |
-| `R3CompactCandidate.selected_compact_candidate` | Constructed Euclidean velocity, pressure, compact force, PDE identities, finite energy, and singular growth | Consumed by the native endpoint |
-| `ComparatorBridge.compact_candidate_excludes_global_solution` | Finite-energy weak–strong comparison against every admissible global competitor | Consumed by the native endpoint; no agreement premise remains |
+| `R3CompactCandidate.selected_compact_candidate` | Constructed Euclidean velocity, pressure, compact force, PDE identities, and singular growth | Consumed by the native endpoint; its property bundle does not itself include a uniform energy bound |
+| `ConstructedBreakdown.selectedFiniteEnergyCandidate` | The constructed unit-viscosity Euclidean candidate with globally smooth force and uniform finite energy on `0 ≤ t < 1` | Connects the compact-support energy estimate to the actual selected witness; no global continuation is asserted |
+| `ComparatorBridge.compact_candidate_excludes_global_solution` | Finite-energy comparison between smooth classical fields against every admissible global competitor | Consumed by the native endpoint; no agreement premise remains |
 | `EuclideanPDETransport` | Exact coordinate transport for PDE derivatives, support, energy, and global competitors | Finite-dimensional carrier bridge only; it preserves the source statement |
 | `CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori` | Whole-space global solution from compatible finite-energy pieces | Local existence, normalized continuation, and a priori critical control for the same quantity; forced blowup supplies none of these unforced universal inputs |
 | `Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown` | Exclusion of a global competitor | An actual local solution, agreement with competitors, and unbounded evaluation; compact-path transport allows a moving location |
@@ -176,3 +177,22 @@ python3 -m unittest discover -s ../reality/solvers/navier -p 'test_*.py' -v
 The original A/C endpoints remain distinct: C is constructed here and A remains
 open. No external dependency or unverified analytic axiom is added by this
 integration.
+
+## Final private review, 2026-09-08
+
+`SelectedCandidateEnergy.lean` now derives a uniform Lebesgue finite-energy
+bound for the actual selected Euclidean candidate on `[0,1)`. The construction
+uses the energy identity, compact support and Gronwall; its public consumer is
+`ConstructedBreakdown.selectedFiniteEnergyCandidate`. This is a pre-singular,
+unit-viscosity candidate result, not a smooth continuation through breakdown.
+The incremental construction verifier checked the two changed modules in its
+613-module source closure and audited all five advertised declarations with
+only `propext`, `Classical.choice`, and `Quot.sound`.
+
+The Rust GPU solver exposes `maxSpeed()` through an eight-byte reduction
+readback, including a non-finite flag. The interactive worker can therefore
+check CFL bounds before and after every step without reading the full field.
+Six GPU correctness tests passed on Apple M5 Max Metal. The Python suite now
+passes 29 tests, including artifact tampering, complete ABI inventory and
+automatic shader provenance coverage. These numerical checks do not certify
+the infinite-dimensional PDE solution.

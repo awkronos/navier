@@ -32,6 +32,8 @@ they do not manufacture them. -/
 #print axioms Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce
 #check Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
 #print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
+#check Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate
+#print axioms Navier.Breakdown.ConstructedBreakdown.selectedFiniteEnergyCandidate
 
 #check Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
 #print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori

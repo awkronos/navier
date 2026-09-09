@@ -5,7 +5,7 @@ import argparse
 import json
 from pathlib import Path
 
-from provenance import COMPILED_SOURCES, CRATE_DIR, sha256, source_digest
+from provenance import COMPILED_SOURCES, CRATE_DIR, WEB_ARTIFACTS, sha256, source_digest
 
 
 def main() -> None:
@@ -23,12 +23,7 @@ def main() -> None:
         "cargoLockSha256": sha256(CRATE_DIR / "Cargo.lock"),
         "rustc": args.rustc,
         "wasmBindgen": args.wasm_bindgen,
-        "artifacts": {
-            "navier_web.d.ts": sha256(output / "navier_web.d.ts"),
-            "navier_web.js": sha256(output / "navier_web.js"),
-            "navier_web_bg.wasm": sha256(output / "navier_web_bg.wasm"),
-            "navier_web_bg.wasm.d.ts": sha256(output / "navier_web_bg.wasm.d.ts"),
-        },
+        "artifacts": {name: sha256(output / name) for name in WEB_ARTIFACTS},
         "method": {
             "equation": "3D periodic incompressible Navier-Stokes",
             "spatial": "dealiased rotational Fourier pseudo-spectral with Leray projection",

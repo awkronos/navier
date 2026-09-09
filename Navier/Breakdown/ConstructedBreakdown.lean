@@ -2,6 +2,7 @@ import Navier.Breakdown.NativeConstructionEndpoint
 import Navier.Construction.R3ActualCandidate
 import Navier.Analysis.ForceRecursivePartials
 import Navier.Analysis.ConstructedForceExtension
+import Navier.Analysis.SelectedCandidateEnergy
 
 /-!
 # Constructed whole-space breakdown
@@ -17,11 +18,22 @@ globally smooth continuation of the singular candidate.
 -/
 
 set_option autoImplicit false
+open scoped ContDiff
 
 namespace Navier.Breakdown.ConstructedBreakdown
 
 theorem wholeSpaceBreakdown : Navier.ProblemStatements.WholeSpaceBreakdown := by
   exact Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdown
+
+/-- The same unit-viscosity construction supplies a globally smooth force and
+uniform finite energy for its selected Euclidean velocity before breakdown. -/
+theorem selectedFiniteEnergyCandidate :
+    ∃ u : Navier.Construction.ProblemStatement.VelocityField,
+      ∃ p : Navier.Construction.ProblemStatement.PressureField,
+      ∃ f : Navier.Construction.ProblemStatement.VelocityField,
+      Navier.Construction.R3CompactCandidate.Properties u p f ∧ ContDiff ℝ ∞ f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico (0 : ℝ) 1) u := by
+  exact Navier.Analysis.SelectedCandidateEnergy.selected_compact_candidate_with_energy
 
 /-- The same constructed counterexample also satisfies weighted bounds for
 successive coordinate differentiation as an actual recursive operation. Every

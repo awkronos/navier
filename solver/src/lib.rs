@@ -168,6 +168,14 @@ impl WebGpuNavierSolver {
             .map_err(|error| JsError::new(&error))
     }
 
+    #[wasm_bindgen(js_name = maxSpeed)]
+    pub async fn max_speed(&self) -> Result<f64, JsError> {
+        self.inner
+            .max_speed()
+            .await
+            .map_err(|error| JsError::new(&error))
+    }
+
     pub async fn diagnostics(&self) -> Result<JsValue, JsError> {
         let diagnostics = self
             .inner
