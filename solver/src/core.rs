@@ -13,6 +13,17 @@ use serde::Serialize;
 use std::{f64::consts::TAU, sync::Arc};
 
 const COMPONENTS: usize = 3;
+pub(crate) const MAX_BROWSER_GRID: usize = 64;
+const MAX_NATIVE_GRID: usize = 128;
+
+fn validate_grid(n: usize, maximum: usize) -> Result<(), String> {
+    if n < 4 || !n.is_multiple_of(2) || n > maximum {
+        return Err(format!(
+            "grid must be an even integer from 4 through {maximum} on this target"
+        ));
+    }
+    Ok(())
+}
 
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Diagnostics {
@@ -64,15 +75,11 @@ pub struct SpectralSolver {
 impl SpectralSolver {
     pub fn new(n: usize, viscosity: f64) -> Result<Self, String> {
         let maximum = if cfg!(target_arch = "wasm32") {
-            36
+            MAX_BROWSER_GRID
         } else {
-            128
+            MAX_NATIVE_GRID
         };
-        if n < 4 || !n.is_multiple_of(2) || n > maximum {
-            return Err(format!(
-                "grid must be an even integer in 4..={maximum}; the browser UI uses bounded presets through 36"
-            ));
-        }
+        validate_grid(n, maximum)?;
         if !viscosity.is_finite() || viscosity < 0.0 {
             return Err("viscosity must be finite and nonnegative".into());
         }
@@ -289,11 +296,7 @@ impl SpectralSolver {
         if !cfl.is_finite() || cfl <= 0.0 {
             return Err("CFL limit must be finite and positive".into());
         }
-        let diagnostics = self.diagnostics();
-        if !diagnostics.finite {
-            return Err("cannot compute a stable timestep from non-finite diagnostics".into());
-        }
-        let speed = diagnostics.max_speed;
+        let speed = self.max_speed()?;
         Ok(if speed == 0.0 {
             f64::INFINITY
         } else {
@@ -346,6 +349,7 @@ impl SpectralSolver {
         let mut max_used: f64 = 0.0;
         let mut max_cfl: f64 = 0.0;
         let mut proposed = max_dt;
+        let mut start_speed = self.max_speed()?;
         while self.time < target {
             if accepted + rejected >= max_substeps {
                 return Err(format!(
@@ -353,7 +357,6 @@ impl SpectralSolver {
                 ));
             }
             let remaining = target - self.time;
-            let start_speed = self.diagnostics().max_speed;
             let start_bound = if start_speed == 0.0 {
                 f64::INFINITY
             } else {
@@ -371,7 +374,7 @@ impl SpectralSolver {
                 self.underresolved,
             );
             self.step(dt)?;
-            let end_speed = self.diagnostics().max_speed;
+            let end_speed = self.max_speed()?;
             let trial_cfl = start_speed.max(end_speed) * dt / dx;
             if trial_cfl > cfl * (1.0 + 32.0 * f64::EPSILON) {
                 self.state = snapshot.0;
@@ -388,6 +391,7 @@ impl SpectralSolver {
             max_used = max_used.max(dt);
             max_cfl = max_cfl.max(trial_cfl);
             proposed = max_dt;
+            start_speed = end_speed;
         }
         Ok(AdvanceReport {
             elapsed: self.time - start_time,
@@ -405,6 +409,30 @@ impl SpectralSolver {
         let mut physical = self.state.clone();
         self.transform_components(&mut physical, true);
         physical.into_iter().map(|z| z.re).collect()
+    }
+
+    /// Peak physical-space velocity magnitude. This is the narrow reduction
+    /// needed by the CFL guard and avoids computing vorticity, divergence, and
+    /// spectral-tail diagnostics at every trial substep.
+    pub fn max_speed(&self) -> Result<f64, String> {
+        let mut velocity = self.state.clone();
+        self.transform_components(&mut velocity, true);
+        let mut maximum_squared: f64 = 0.0;
+        let mut speed_squared_sum: f64 = 0.0;
+        for q in 0..self.len {
+            let speed_squared = velocity[q].re.powi(2)
+                + velocity[self.len + q].re.powi(2)
+                + velocity[2 * self.len + q].re.powi(2);
+            if !speed_squared.is_finite() {
+                return Err("cannot compute a stable timestep from non-finite velocity".into());
+            }
+            speed_squared_sum += speed_squared;
+            if !speed_squared_sum.is_finite() {
+                return Err("cannot compute a stable timestep from non-finite velocity".into());
+            }
+            maximum_squared = maximum_squared.max(speed_squared);
+        }
+        Ok(maximum_squared.sqrt())
     }
 
     /// Interleaved xyz values for rendering, one triplet per grid point.
@@ -746,6 +774,51 @@ mod tests {
 
     fn amplitude_dot(t: f64) -> f64 {
         (-0.3 * t).exp() * (-0.3 * (1.7 * t).cos() - 1.7 * (1.7 * t).sin())
+    }
+
+    #[test]
+    fn browser_grid_capacity_accepts_64_and_rejects_larger_or_odd_grids() {
+        assert!(validate_grid(64, MAX_BROWSER_GRID).is_ok());
+        assert!(validate_grid(66, MAX_BROWSER_GRID).is_err());
+        assert!(validate_grid(63, MAX_BROWSER_GRID).is_err());
+    }
+
+    #[test]
+    fn narrow_max_speed_matches_full_diagnostics() {
+        let solver = SpectralSolver::new(12, 0.05).unwrap();
+        let narrow = solver.max_speed().unwrap();
+        let full = solver.diagnostics().max_speed;
+        assert!((narrow - full).abs() <= 8.0 * f64::EPSILON);
+    }
+
+    /// Manual timing probe for the reduction used by every bounded CFL step.
+    /// Kept ignored so ordinary correctness tests remain timing-independent.
+    #[test]
+    #[ignore]
+    fn cpu_cfl_reduction_benchmark() {
+        use std::time::Instant;
+
+        let solver = SpectralSolver::new(24, 0.05).unwrap();
+        solver.max_speed().unwrap();
+        solver.diagnostics();
+
+        let narrow_start = Instant::now();
+        for _ in 0..8 {
+            solver.max_speed().unwrap();
+        }
+        let narrow = narrow_start.elapsed() / 8;
+
+        let full_start = Instant::now();
+        for _ in 0..8 {
+            solver.diagnostics();
+        }
+        let full = full_start.elapsed() / 8;
+
+        eprintln!("N=24 CFL max_speed={narrow:?} full diagnostics={full:?}");
+        assert!(
+            narrow < full,
+            "narrow CFL reduction did not beat diagnostics"
+        );
     }
 
     #[test]

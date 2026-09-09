@@ -104,7 +104,7 @@ const metadata = axis.metadata();
 
 The periodic browser experiment defaults to the Taylor–Green vortex. The
 returned velocity is an interleaved `Float32Array` of `(u, v, w)` values; the
-CPU-WASM calculation itself uses `f64`. Browser grids are bounded to `N ≤ 36`
+CPU-WASM calculation itself uses `f64`. Browser grids are bounded to `N ≤ 64`
 (`N ≤ 128` natively).
 Diagnostics report volume-mean energy and enstrophy,
 spectral divergence RMS, peak speed and vorticity, the retained-band tail-energy

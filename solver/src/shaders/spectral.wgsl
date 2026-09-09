@@ -62,7 +62,7 @@ fn copy_filtered(@builtin(global_invocation_id) gid: vec3<u32>) {
 // One output Fourier coefficient per invocation. This O(N) separable DFT is
 // deliberately used instead of a radix-specific kernel: it supports every
 // even grid exposed by the UI and exactly matches the three-axis transform
-// convention of the reference implementation. At the interactive N<=36
+// convention of the reference implementation. At the interactive N<=64
 // grids, thousands of independent coefficient sums keep the GPU occupied.
 @compute @workgroup_size(64)
 fn dft_axis(@builtin(global_invocation_id) gid: vec3<u32>) {
