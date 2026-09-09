@@ -56,11 +56,11 @@ labels are historical and are superseded by `RESULT_MAP.md` for current claims.
 
 Deterministic numerical artifacts have their own scope note in
 [`artifacts/README.md`](../artifacts/README.md). Raw compiler and axiom evidence
-lives under [`reports/receipts/`](../reports/receipts/); repeated receipt text is
-preserved intentionally because each directory binds a distinct verification
-snapshot.
+lives locally under `reports/receipts/`, which is excluded from Git and its
+published history. Each directory binds a distinct verification snapshot.
+The source modules and audit commands remain available for reproduction.
 
 The [periodic classical uniqueness module](../Navier/Analysis/PeriodicClassicalUniqueness.lean)
 proves velocity uniqueness for every positive viscosity under the native
 periodic velocity/pressure contract. Alternative B existence is still open;
-see its [current compiler receipt](../reports/receipts/2026-09-09-periodic-uniqueness/README.md).
+see its current compiler receipt (local report).

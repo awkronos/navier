@@ -5,16 +5,18 @@ authorized; a public visibility change and website activation await review.
 
 ## Scientific acceptance
 
-The current proof-bearing endpoint is forced whole-space alternative C,
-`ConstructedBreakdown.wholeSpaceBreakdown`. The checked construction has a
+The proof-bearing endpoints are forced whole-space alternative C,
+`ConstructedBreakdown.wholeSpaceBreakdown`, and periodic alternative D,
+`PeriodicConstructedBreakdown.periodicBreakdown`. The checked construction has a
 smooth force, a classical velocity before the deadline, uniformly bounded
 pre-singular energy, slab uniqueness, and a continuous-terminal-extension
-obstruction. It does not establish unforced global regularity, native periodic
-D, or uniqueness of post-singular weak solutions.
+obstruction. It does not establish unforced global regularity or uniqueness
+of post-singular weak solutions.
 
 The [result map](RESULT_MAP.md) gives exact hypotheses and links to the native
-compiler and raw transitive-axiom evidence, including the
-[release recheck](../reports/receipts/2026-09-09-release-check/README.md). Scientific acceptance follows those
+proof modules. Raw compiler and transitive-axiom receipts, including the
+release recheck, stay local under the Git-ignored `reports/` directory.
+Scientific acceptance follows those
 statements and their proof dependencies, not commit subjects or historical
 progress notes. Superseded development prose is retained as ordinary history.
 

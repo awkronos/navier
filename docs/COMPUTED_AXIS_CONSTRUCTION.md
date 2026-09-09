@@ -204,4 +204,4 @@ Numerical acceptance requires finite outputs, the expected array lengths, a
 positive domain extent, and explicit display of the measured defects. Formal
 acceptance of the theorem remains the single-file Lean compiler check, original
 consumer, and raw transitive-axiom audit recorded under
-[`reports/receipts/`](../reports/receipts/).
+`reports/receipts/` (local report).

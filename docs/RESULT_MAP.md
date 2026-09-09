@@ -57,7 +57,7 @@ bounds, by continuity on a compact time slab and fundamental spatial cell.
 Every hypothetical native competitor transports to the construction's exact
 same-force comparison class, including periodic pressure. The viscosity
 equivalence supplies every positive viscosity. See the
-[fresh D receipt](../reports/receipts/2026-09-09-periodic-constructed-breakdown/README.md).
+fresh D receipt (local report).
 
 ## Completed forced path
 
@@ -171,8 +171,8 @@ every complex raw datum may be too strong; its exact quantifiers are under
 counterexample audit. This does not affect the forced-C construction.
 
 Fresh source compilers and raw axiom audits are in
-[the periodic-evolution receipt](../reports/receipts/2026-09-09-periodic-evolution/README.md).
-The [LSP endpoint examination](../reports/receipts/2026-09-09-regularity-status/README.md)
+the periodic-evolution receipt (local report).
+The LSP endpoint examination (local report)
 separately records A/B/C/D, construction constraints, and the exact remaining
 terminal-bound quantifiers.
 
@@ -226,7 +226,7 @@ above. Bounds proved for the raw complex equation are not automatically
 bounds for the native physical initialization.
 Neither A nor B is counted as closed by these providers. The unrestricted raw
 complex target is false; its checked counterexample and the evolving-flow
-results are recorded in the [fresh verification receipt](../reports/receipts/2026-09-09-evolving-flow/README.md).
+results are recorded in the fresh verification receipt (local report).
 
 ## Numerical boundary
 
@@ -249,8 +249,8 @@ visual trajectory establishes a continuum regularity or breakdown theorem.
 
 For the final dependency-ordered rebuild, compiled-object hashes and raw eleven-
 endpoint audit, see
-[`reports/receipts/2026-09-08-constructed-c-final/README.md`](../reports/receipts/2026-09-08-constructed-c-final/README.md).
-The earlier [baseline receipt](../reports/receipts/2026-09-08-constructed-c-baseline/README.md)
+`reports/receipts/2026-09-08-constructed-c-final/README.md` (local report).
+The earlier baseline receipt (local report)
 preserves the pre-enhancement endpoint snapshot.
 
 The [Madelung correspondence note](MADELUNG_CORRESPONDENCE.md) records the
@@ -262,8 +262,8 @@ discussion, not an added Lean theorem or a proved quantum consequence.
 explains the exact comparison class, the finite-energy volume bound for fast
 regions, and why concentration does not mean compression of fluid density.
 
-The [2026-09-09 release recheck](../reports/receipts/2026-09-09-release-check/README.md)
+The 2026-09-09 release recheck (local report)
 binds all 615 current source/object hashes and repeats the eleven raw axiom
 audits after the final artifact cleanup.
 
-The [physical local evolution receipt](../reports/receipts/2026-09-09-physical-local-evolution/README.md) records the subsequent native verification and numerical phase/energy regressions.
+The physical local evolution receipt (local report) records the subsequent native verification and numerical phase/energy regressions.
