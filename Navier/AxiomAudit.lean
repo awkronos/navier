@@ -62,6 +62,7 @@ import Navier.Breakdown.CompactPathBreakdown
 import Navier.Breakdown.Restriction
 import Navier.Breakdown.ForceRecovery
 import Navier.Breakdown.OfficialCDEncoding
+import Navier.Breakdown.ConstructedBreakdown
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
 import Navier.Routes.R7.ScaledTriad
@@ -87,14 +88,24 @@ Each command below asks Lean for the transitive axioms of a named declaration.
 The audit of
 `ProblemStatements.WholeSpaceGlobalRegularity` concerns only the canonical proposition's
 definition and its imported foundations; it does not construct an inhabitant
-and is not evidence that the endpoint is proved. The remaining commands
-audit the named analytic, algebraic, and falsification results.
+and is not evidence that alternative A is proved. In contrast,
+`ConstructedBreakdown.wholeSpaceBreakdown` is a proof of the distinct forced
+alternative C. The remaining commands audit the named analytic, algebraic,
+construction, and falsification results.
 -/
 
 #print axioms Navier.ProblemStatements.WholeSpaceGlobalRegularity
 #print axioms Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution
 #print axioms Navier.Breakdown.CompactSmoothForce.forcedDataRapidDecay_of_smooth_compactSupport
 #print axioms Navier.Breakdown.wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile
+#print axioms Navier.Construction.R3CompactCandidate.selected_compact_candidate
+#print axioms Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution
+#print axioms Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_compactCandidate
+#print axioms Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_selectedCandidate
+#print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown
+#print axioms Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce
+#print axioms Navier.Analysis.ForceRecursivePartials.successivePartialWithin_eq_iteratedFDerivWithin
+#print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
 #print axioms Navier.Analysis.GlobalRegularityEndpoint.not_wholeSpaceEnergyClause
 #print axioms Navier.Analysis.PressureGaugeObstruction.not_rejectedSameGaugeContinuation
 #print axioms Navier.Analysis.CriticalControlDecomposition.pressureGradient_normalize_eq

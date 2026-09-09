@@ -1,68 +1,80 @@
 # Navier
 
-An evidence-gated, parallel mathematical research and formalization research_program
-for the three-dimensional incompressible Navier–Stokes problem.
+A native Lean reconstruction of OpenAI’s forced three-dimensional Navier–Stokes
+breakdown construction, with analytical continuation criteria and reproducible
+spectral fluid solvers.
 
-This repository develops proofs and counterexamples for the exact problem
-statements below. Current source, compiler output, and transitive axiom
-dependencies supply the verification evidence. Cached reports are navigation
-aids and cannot determine a mathematical outcome.
+The checked theorem
+[`Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown`](Navier/Breakdown/ConstructedBreakdown.lean)
+inhabits the repository’s original **whole-space alternative C**: for every
+positive viscosity, there are admissible initial data and a smooth rapidly
+decaying force for which no global smooth bounded-energy classical solution
+exists. The proof supplies the constructed candidate and derives comparison
+with every hypothetical global competitor. Its transitive axioms are exactly
+`propext`, `Classical.choice`, and `Quot.sound`.
 
-The repository separates kernel-checked infrastructure, conditional regularity
-routes, open analytic payloads, computational observations, and falsified
-approaches. Lean source and fresh compiler output determine formal status.
+The analytical construction is OpenAI’s. The [native source adaptation](docs/OPENAI_CONSTRUCTION_PROVENANCE.md)
+pins their released revision, preserves Apache-2.0 notices, and compiles with
+this repository’s Lean 4.31.0 toolchain. There is no OpenAI Lake dependency.
+Awkronos contributes the transport into the original native PDE carrier,
+additional force-derivative comparisons, solver work, and interactive explanation.
 
-The primary formal surface is Fefferman's whole-space
-existence-and-smoothness statement (A): for every positive viscosity and every
-rapidly decaying smooth divergence-free initial velocity on `ℝ³`, with zero
-forcing, there is a smooth global solution with uniformly bounded energy.
-The Lean source also states official breakdown alternative (C) as a distinct
-forced endpoint; it does not confuse zero-force singularity, weak-solution
-nonuniqueness, or averaged-model blowup with C.
+The separate **unforced global regularity statement A remains open here**.
+Comparison before the singular time does not assert uniqueness of a weak
+continuation after it. The numerical experiments concern ordinary periodic
+flows and are separate from the continuum proof.
 
-## What is here
+## Mathematics
 
-- [`docs/NATIVE_BREAKDOWN_AND_SOLVER.md`](docs/NATIVE_BREAKDOWN_AND_SOLVER.md):
-  native forcing, energy and breakdown inputs informed by the 2026 forced-blowup
-  construction, useful conditional results, and adaptive solver validation.
-- [`docs/ATTACK.md`](docs/ATTACK.md): 11 parallel positive, rigidity,
-  computational, and breakdown routes, each with a lower residual, kill test,
-  and pivot.
-- [`docs/OPEN_FRONTIER_MAP.md`](docs/OPEN_FRONTIER_MAP.md): mathematical
-  obligation navigation and the scope of the soundness cleanup.
-- [`Navier/Problem.lean`](Navier/Problem.lean): concrete derivatives,
-  equation, solution predicate, and the direct statement-A encoding.
-- [`Navier/Scaling.lean`](Navier/Scaling.lean): axiom-audited algebraic
-  critical-line facts, without pretending the analytic norm theory exists.
-- [`docs/BARRIERS.md`](docs/BARRIERS.md) and
-  [`docs/FALSIFICATION_LEDGER.md`](docs/FALSIFICATION_LEDGER.md): scaling,
-  energy-only, weak/smooth, model-drift, compactness, and numerical-proof
-  gates with preserved failures.
-- [`references/manifest.json`](references/manifest.json): checked primary and
-  official source locators.
+| Entry point | Content |
+| --- | --- |
+| [Problem.lean](Navier/Problem.lean), [OfficialProblem.lean](Navier/OfficialProblem.lean) | Exact PDE, data, smoothness, energy, and alternative statements |
+| [ConstructedBreakdown.lean](Navier/Breakdown/ConstructedBreakdown.lean) | Constructed C endpoint and bounds for successive coordinate partials |
+| [EuclideanPDETransport.lean](Navier/Analysis/EuclideanPDETransport.lean) | Coordinate isometry, derivatives, energy, and force transport |
+| [R3FiniteEnergyComparison.lean](Navier/Construction/R3FiniteEnergyComparison.lean) | Comparison on every pre-singular time interval |
+| [ForceRecursivePartials.lean](Navier/Analysis/ForceRecursivePartials.lean) | Actual successive differentiation versus multilinear jets, including the initial boundary |
+| [ConstructedForceExtension.lean](Navier/Analysis/ConstructedForceExtension.lean) | The selected force is globally smooth across time zero at every positive viscosity |
+| [ConditionalAudit.lean](Navier/ConditionalAudit.lean) | Selected theorem types and raw transitive axioms |
+| [Native mathematics and solver guide](docs/NATIVE_BREAKDOWN_AND_SOLVER.md) | Useful conditional results, exact premises, and numerical validation |
 
-The formal encoding has comparison theorems for Schwartz decay, half-space
-smoothness, coordinate derivatives, and the energy clause; see
-[`docs/FORMALIZATION.md`](docs/FORMALIZATION.md) for the exact declarations.
-They establish representation comparisons. The global regularity target
-requires a proof of the full existence proposition in `Navier/Problem.lean`.
+[Formalization conventions](docs/FORMALIZATION.md), the
+[construction carrier review](docs/CONSTRUCTION_REVIEW.md), the
+[frontier map](docs/OPEN_FRONTIER_MAP.md), and the
+[falsification ledger](docs/FALSIFICATION_LEDGER.md) preserve the distinction
+between completed endpoints, conditional estimates, and rejected approaches.
 
-## Verify
+## Reproduce the proof
 
-The focused check is serial by design:
+With the pinned Lean toolchain and Mathlib cache installed as described in
+[REPRODUCIBILITY.md](REPRODUCIBILITY.md):
 
 ```bash
-make check
+python3 scripts/verify_construction.py
 ```
 
-Individual commands and pinned versions are documented in
-[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md). Successful checks establish artifact
-integrity and the stated support lemmas; they do not prove the problem endpoint.
+The verifier compiles the endpoint’s local source dependencies in order and
+prints its exact type and raw axiom closure. Receipts include source and
+dependency fingerprints; source parsing determines build order, never proof
+status. Existing `.olean` files alone are not evidence of a current source check.
 
-## Lineage
+## Run the solver
 
-The research_program borrows proof-bearing status discipline from `~/reality`,
-frontier/bridge separation from `~/reimann`, and a single fail-closed parallel
-portfolio from `~/npnep`. It imports no mathematical conclusion from those
-projects. Exact snapshots, transplanted patterns, and rejected anti-patterns
-are recorded in the blueprint.
+[`solver/`](solver/README.md) contains the Rust crate and browser build. Its
+Fourier method uses the rotational nonlinearity, Leray projection, componentwise
+2/3 dealiasing, and integrating-factor RK4. CPU/WASM and WebGPU backends identify
+their precision and diagnostics explicitly.
+
+```bash
+cd solver
+cargo test
+cargo build --release --target wasm32-unknown-unknown
+```
+
+The Python adaptive solver remains canonical in the Reality development
+workspace. [`scripts/build_solver_release.py`](scripts/build_solver_release.py)
+exports a deterministic standalone bundle with provenance and tests, so a
+release does not require access to that private workspace. The Rust crate is
+self-contained and tested against independently generated Python fixtures.
+
+The pop-science companion is prepared for `navier.awkronos.com` in the Awkronos
+Hub. The repository and website remain private pending publication review.

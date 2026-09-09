@@ -113,6 +113,7 @@ import Navier.Analysis.PressureNormalization
 import Navier.Breakdown.Restriction
 import Navier.Breakdown.ForceRecovery
 import Navier.Breakdown.OfficialCDEncoding
+import Navier.Breakdown.ConstructedBreakdown
 import Navier.Routes.R7.ExactSymbol
 import Navier.Routes.R7.Triad
 import Navier.Routes.R7.ScaledTriad
@@ -175,6 +176,8 @@ point-breakdown consumers, vector-calculus and guarded energy-identity leaves,
 algebraic scaling facts, frequencywise heat--Leray infrastructure, the R7
 symmetrized and recursively generated finite Fourier tests, and raw public
 axiom audit.
-The global-regularity endpoint is the exact proposition in `Navier.Problem`.
+The native construction inhabits the forced whole-space breakdown alternative
+C. The unforced global-regularity alternative A remains a distinct open
+proposition in `Navier.Problem`.
 The mathematical conclusions of this module are the imported theorem types.
 -/

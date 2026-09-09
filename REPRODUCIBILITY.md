@@ -23,7 +23,11 @@ lake exe cache get
 
 These commands do not compile the project's own modules. Compile required
 project imports with the pinned single-file compiler in dependency order,
-refreshing their `.olean` artifacts. Once those artifacts are available,
+refreshing their `.olean` artifacts. For the constructed alternative-C endpoint,
+`python3 scripts/verify_construction.py` performs that traversal, source checking,
+fingerprinted receipt generation, and the exact endpoint's raw axiom audit.
+See `solver/README.md` for the independently tested Rust/WASM/WebGPU build.
+Once the required artifacts are available,
 run the focused checks:
 
 ```bash
@@ -45,7 +49,9 @@ with any proof claim. The imported-environment check is not a source rebuild.
 - The Python suite checks the retained mathematical experiments and solver
   equivalence logic.
 - Lean compilation checks that the definitions and proved infrastructure
-  elaborate in the pinned kernel environment.
+  elaborate in the pinned kernel environment. The constructed C endpoint has
+  an actual proof term; its named raw axiom audit checks the transitive trust
+  boundary of that term.
 - The named axiom audit reports raw theorem dependencies. The exhaustive
   imported-module audit fails on any transitive axiom outside `propext`,
   `Classical.choice`, and `Quot.sound`, including dependencies hidden behind

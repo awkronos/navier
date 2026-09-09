@@ -14,9 +14,9 @@
       "url": "https://cdn.openai.com/pdf/32d9f210-8b73-45e0-91bc-82a30aef8a9a/navier-stokes.pdf",
       "doi": null,
       "roles": [
-        "claimed smooth forced breakdown alternatives C and D",
-        "compact force admissibility and moving-path blowup inputs",
-        "concentration-aware numerical diagnostics; no imported proof dependency"
+        "native source adaptation proving smooth forced whole-space breakdown alternative C",
+        "compact force admissibility, singular candidate, and finite-energy comparison",
+        "concentration-aware numerical diagnostics; no Lake dependency"
       ],
       "primary": true,
       "checked_at": "2026-09-08"
