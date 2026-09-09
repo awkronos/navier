@@ -1,0 +1,223 @@
+⚠ [8620/8856] Replayed Navier.Construction.R3.ComparisonTimeAverages
+warning: Navier/Construction/R3/ComparisonTimeAverages.lean:240:13: This simp argument is unused:
+  Pi.pow_apply
+
+Hint: Omit it from the simp argument list.
+  simp only [P̵i̵.̵p̵o̵w̵_̵a̵p̵p̵l̵y̵,̵ ̵norm_pow, norm_norm, norm_smul, mul_pow, norm_mul]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+⚠ [8651/8856] Replayed Navier.Construction.TorusInverse
+warning: Navier/Construction/TorusInverse.lean:362:34: This simp argument is unused:
+  Circle.norm_coe
+
+Hint: Omit it from the simp argument list.
+  simp [torusMode, fourier_apply,̵ ̵C̵i̵r̵c̵l̵e̵.̵n̵o̵r̵m̵_̵c̵o̵e̵]
+
+Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
+⚠ [8966/9165] Replayed Navier.Construction.CorrectionInitialization
+warning: Navier/Construction/CorrectionInitialization.lean:1094:2: try 'simp' instead of 'simpa'
+
+Note: This linter can be disabled with `set_option linter.unnecessarySimpa false`
+⚠ [8974/9165] Replayed Navier.Construction.ActualInitialMeanEquation
+warning: Navier/Construction/ActualInitialMeanEquation.lean:509:2: try 'simp' instead of 'simpa'
+
+Note: This linter can be disabled with `set_option linter.unnecessarySimpa false`
+⚠ [9148/9165] Replayed Navier.Analysis.ViscosityAdmissibility
+warning: Navier/Analysis/ViscosityAdmissibility.lean:106:13: Variable name `ha` is not explicitly referenced.
+
+The binding can be removed (if unused) or named `_` (if used implicitly).
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ℹ [9151/9165] Replayed Navier.Breakdown.CompactSmoothForce
+info: Navier/Breakdown/CompactSmoothForce.lean:63:0: 'Navier.Breakdown.CompactSmoothForce.forcedDataRapidDecay_of_smooth_compactSupport' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Breakdown/CompactSmoothForce.lean:64:0: 'Navier.Breakdown.CompactSmoothForce.wholeSpaceBreakdown_of_compact_observable' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+ℹ [9152/9165] Replayed Navier.Breakdown.CompactFutureForce
+info: Navier/Breakdown/CompactFutureForce.lean:75:0: 'Navier.Breakdown.CompactFutureForce.forcedDataRapidDecay_of_compactFutureSupport' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+ℹ [9158/9165] Replayed Navier.Analysis.EuclideanPDETransport
+info: Navier/Analysis/EuclideanPDETransport.lean:684:0: 'Navier.Analysis.EuclideanPDETransport.spatialDerivative_nativeVelocity' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/EuclideanPDETransport.lean:685:0: 'Navier.Analysis.EuclideanPDETransport.laplacian_nativeVelocity' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/EuclideanPDETransport.lean:686:0: 'Navier.Analysis.EuclideanPDETransport.EuclideanPartialData.toNativePartial' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/EuclideanPDETransport.lean:687:0: 'Navier.Analysis.EuclideanPDETransport.IsClassicalSolution.toGlobalSolutionRn' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/EuclideanPDETransport.lean:688:0: 'Navier.Analysis.EuclideanPDETransport.nativeForce_forcedDataRapidDecay' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/EuclideanPDETransport.lean:689:0: 'Navier.Analysis.EuclideanPDETransport.EuclideanPartialData.ofR3CompactCandidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/EuclideanPDETransport.lean:690:0: 'Navier.Analysis.EuclideanPDETransport.R3CompactCandidate.nativeForce_forcedDataRapidDecay' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+ℹ [9159/9165] Replayed Navier.Construction.R3FiniteEnergyComparison
+info: Navier/Construction/R3FiniteEnergyComparison.lean:101:0: 'Navier.ConstructionR3.WholeSpaceUniqueness.classical_uniqueness_on_Icc' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Construction/R3FiniteEnergyComparison.lean:102:0: 'Navier.Construction.ComparatorBridge.compact_candidate_unique_on_Icc' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Construction/R3FiniteEnergyComparison.lean:103:0: 'Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+ℹ [9160/9165] Replayed Navier.Breakdown.NativeConstructionEndpoint
+info: Navier/Breakdown/NativeConstructionEndpoint.lean:49:0: 'Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_compactCandidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Breakdown/NativeConstructionEndpoint.lean:50:0: 'Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_selectedCandidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+ℹ [9163/9165] Replayed Navier.Analysis.ConstructedForceExtension
+info: Navier/Analysis/ConstructedForceExtension.lean:141:0: 'Navier.Analysis.ConstructedForceExtension.selected_compact_candidate_contDiff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedForceExtension.lean:142:0: 'Navier.Analysis.ConstructedForceExtension.selected_native_force_contDiff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedForceExtension.lean:143:0: 'Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedForceExtension.lean:144:0: 'Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdown' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+ℹ [9164/9165] Replayed Navier.Analysis.SelectedCandidateEnergy
+info: Navier/Analysis/SelectedCandidateEnergy.lean:126:0: 'Navier.Analysis.SelectedCandidateEnergy.exists_uniform_force_l2sq_bound' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/SelectedCandidateEnergy.lean:127:0: 'Navier.Analysis.SelectedCandidateEnergy.uniform_finite_energy_of_properties' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/SelectedCandidateEnergy.lean:128:0: 'Navier.Analysis.SelectedCandidateEnergy.selected_compact_candidate_with_energy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+⚠ [9165/9165] Built Navier.Analysis.ConstructedFiniteTimeObstruction (3.9s)
+warning: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:137:4: Try this: intro t ht x
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:329:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.not_bounded_extension_on_support' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:330:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.not_continuous_extension_on_support' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:331:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_agrees_with_locally_finite_energy_competitor' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:332:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_transfers_speed_unbounded' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:333:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_force_nonzero_before_one' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:334:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:335:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:336:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:337:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:338:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_unique_on_every_presingular_slab' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:339:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:340:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:341:0: 'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:343:0: Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              (∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField),
+                  ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                    ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)) ∧
+                ∀ T < 1,
+                  ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField)
+                    (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField),
+                    ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T) →
+                      ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T) →
+                        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v →
+                          (∀ t ∈ Set.Ioo 0 T,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                            (∀ t ∈ Set.Ioo 0 T,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                              (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                                ∀ t ∈ Set.Icc 0 T,
+                                  ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:344:0: Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support :
+  ∃ u p f K T,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            0 ≤ T ∧
+              Navier.Construction.CompactSpatialForceDecay.SupportedIn K f ∧
+                ∀ (t : ℝ), T ≤ t → ∀ (x : Navier.Analysis.ConstructedFiniteTimeObstruction.ESpace), f (t, x) = 0
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:345:0: Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor :
+  ∃ u p f,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField)
+            (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField),
+            ContDiffOn ℝ (↑⊤) v Navier.Construction.ProblemStatement.preSingularDomain →
+              ContDiffOn ℝ (↑⊤) q Navier.Construction.ProblemStatement.preSingularDomain →
+                (∀ T ∈ Set.Ico 0 1, Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) →
+                  (∀ t ∈ Set.Ioo 0 1,
+                      ∀ (x : Navier.Construction.ProblemStatement.Space),
+                        Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                    (∀ t ∈ Set.Ioo 0 1,
+                        ∀ (x : Navier.Construction.ProblemStatement.Space),
+                          Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                      (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                        Navier.Construction.ProblemStatement.SpeedUnboundedAtOne v
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:346:0: Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one :
+  ∃ u p f,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          ∃ t ∈ Set.Ioo 0 1, ∃ x, f (t, x) ≠ 0
+info: Navier/Analysis/ConstructedFiniteTimeObstruction.lean:347:0: Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              ¬∃ v q,
+                  ContDiffOn ℝ (↑⊤) v Navier.Construction.ProblemStatement.preSingularDomain ∧
+                    ContDiffOn ℝ (↑⊤) q Navier.Construction.ProblemStatement.preSingularDomain ∧
+                      ContinuousOn v (Set.Icc 0 1 ×ˢ K) ∧
+                        (∀ T ∈ Set.Ico 0 1,
+                            Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) ∧
+                          (∀ t ∈ Set.Ioo 0 1,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) ∧
+                            (∀ t ∈ Set.Ioo 0 1,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) ∧
+                              ∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0
+Build completed successfully (9165 jobs).

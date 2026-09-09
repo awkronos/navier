@@ -30,9 +30,12 @@ velocity.
 | The chosen force is smooth on all real spacetime and has an explicit half-space extension | `ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce` | None | `ConditionalAudit.lean`; raw axioms |
 | Every ordered successive coordinate derivative of the chosen force obeys the required weighted bound | `ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials` | `nu > 0` | `ConditionalAudit.lean`; raw axioms |
 | The formal Fréchet-bundle force condition is equivalent to smoothness plus decay of every genuine ordered coordinate partial | `ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials` | A concrete force `f`; smoothness is explicit on the coordinate-partial side | Direct single-file compile plus raw axioms |
+| The selected globally smooth force has compact support on physical spacetime and vanishes after a finite time | `ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support` | None; spatial support is asserted for `t ≥ 0`, with a finite future cutoff | Direct single-file source compile plus raw axioms |
+| The selected force is nonzero somewhere strictly before the unit-viscosity deadline | `ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one` | None; `∃ t ∈ (0,1), ∃ x, f(t,x) ≠ 0` | Direct single-file source compile plus raw axioms |
 | The selected unit-viscosity candidate has uniformly finite energy before its deadline | `ConstructedBreakdown.selectedFiniteEnergyCandidate` | None; interval is `Set.Ico 0 1` | `ConditionalAudit.lean`; raw axioms |
 | One selected witness simultaneously has a globally smooth force, pre-singular finite energy, compact spatial support, no continuous terminal extension on its support, and slab uniqueness | `ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile` | None | Dependency-ordered source rebuild plus raw axioms |
 | Every compact candidate is unique against a smooth finite-energy competitor on a closed pre-singular slab | `ComparatorBridge.compact_candidate_unique_on_Icc` | Candidate properties and the competitor's local smoothness, energy, divergence, PDE and zero initial data on that slab | Dependency-ordered source rebuild plus raw axioms |
+| Every same-force competitor smooth before time one and finite-energy on each closed earlier slab develops unbounded speed at that deadline | `ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor` | None for the selected witness; the competitor class is explicit and no terminal trace is assumed | Direct single-file source compile plus raw axioms |
 | The selected witness excludes a same-force continuation smooth before the deadline and continuous through it, even when energy is assumed only separately on each closed pre-singular slab | `ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation` | None | Direct single-file source compile plus raw axioms |
 
 All named completed declarations above currently report only `propext`,
@@ -61,6 +64,13 @@ There are four separate statements that should not be collapsed:
 4. The selected velocity admits no continuous extension through time one even
    on its own fixed compact spatial support. In particular, a hypothetical
    global classical competitor cannot agree with it on all pre-singular times.
+
+The positive speed-transfer theorem first forces every competitor in this class
+to have arbitrarily large speed arbitrarily close to time one, without assuming
+any terminal trace. The continuous-extension obstruction then excludes a regular
+terminal velocity on the compact occupied region. See
+[the exact force and regularity note](EXACT_FORCE_AND_REGULARITY.md) for the
+cutoff formula, viscosity scaling, future-time support, and full quantifiers.
 
 The strongest checked continuation obstruction does not assume one competitor
 energy bound uniform all the way to time one. It assumes only a finite bound on
