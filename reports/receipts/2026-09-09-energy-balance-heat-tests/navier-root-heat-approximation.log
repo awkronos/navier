@@ -1,0 +1,12 @@
+'Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.solenoidalCutoffField_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.exists_scaledCutoff_gradient_component_bound' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.solenoidalCutoffField_tendsto' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.solvesBefore_compactBackwardHeatCurlEvolution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

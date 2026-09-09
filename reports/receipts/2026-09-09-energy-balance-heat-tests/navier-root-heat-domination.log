@@ -1,0 +1,18 @@
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.thirdDirectional_scaled' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.abs_thirdDirectional_scaled_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.standardCutoff_coordinate_derivative_rates' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.exists_gaussianCutoffConvectionTail_abs_le_energy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.solvesBefore_gaussianCutoffConvectionTail_abs_le_initialEnergy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.solvesBefore_heatCurlEvolution_with_cutoffDerivativeRates' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

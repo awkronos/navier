@@ -1,0 +1,33 @@
+'Navier.Analysis.RawHighEnergyRateIdentity.rawModeEnergyRate_mildRawTimeDerivative' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.RawHighEnergyRateIdentity.summable_rawHighModeEnergyRate_mildRawTimeDerivative' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.RawHighEnergyRateIdentity.tsum_rawHighModeEnergyRate_mildRawTimeDerivative' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicEnergyBalance.hasDerivAt_mild_highEnergy_flux_dissipation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PhysicalPeriodicEnergyBalance.hasDerivAt_mild_highEnergy_flux_dissipation (μ : ℝ) (hμ : 0 < μ)
+  (a : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (ha : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree a)
+  (A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (hAc : Continuous A)
+  (hdiv : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (A s)) {R T t N : ℝ} (hR : 0 ≤ R)
+  (hN : 0 ≤ N) (ht : t ∈ Set.Ioo 0 T) (hbound : ∀ s ∈ Set.Ioc 0 T, ‖A s‖ ≤ R)
+  (hmild :
+    ∀ (s : ℝ) (hs : s ∈ Set.Icc 0 T), A s = Navier.Analysis.CriticalMildSelfMap.criticalMildImage μ hμ a A hdiv s ⋯) :
+  HasDerivAt (fun s => Navier.Analysis.PhysicalPeriodicHighTailFlux.rawHighSpectralEnergy N (A s))
+    (2 * Navier.Analysis.PhysicalPeriodicHighTailFlux.rawHighFrequencyEnergyFlux N (A t) -
+      2 * μ * Navier.Analysis.PhysicalPeriodicHighTailFlux.rawHighSpectralDissipation N (A t))
+    t
+'Navier.Analysis.PhysicalPeriodicWeightedFluxCommutator.abs_output_weight_gap_le_advecting_size' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicWeightedFluxCommutator.weightedProjectedTriadPair_eq_weightGap' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicWeightedFluxCommutator.abs_tsum_weightedTriadCommutator_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

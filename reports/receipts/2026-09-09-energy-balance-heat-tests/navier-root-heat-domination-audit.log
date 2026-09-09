@@ -1,0 +1,39 @@
+'Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.solenoidalCutoffField_tendsto' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.solvesBefore_compactBackwardHeatCurlEvolution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.standardCutoff_coordinate_derivative_rates' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.exists_gaussianCutoffConvectionTail_abs_le_energy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.solvesBefore_gaussianCutoffConvectionTail_abs_le_initialEnergy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WholeSpaceSolenoidalHeatDomination.solvesBefore_heatCurlEvolution_with_cutoffDerivativeRates' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WholeSpaceSolenoidalHeatDomination.solvesBefore_heatCurlEvolution_with_cutoffDerivativeRates {ν T : ℝ}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution} (hT : 0 < T)
+  (hsol : Navier.Analysis.CriticalControlDecomposition.SolvesBefore ν T u p) {R : ℝ} (hR : 0 < R) (κ τ : ℝ)
+  (x₀ a₀ : Navier.Space) {a b : ℝ} (ha0 : 0 < a) (hab : a ≤ b) (hbT : b < T) :
+  Navier.Analysis.WholeSpaceCriticalEvolution.testedMomentum
+          (Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.compactBackwardHeatCurlTest R hR κ τ x₀ a₀) u b -
+        Navier.Analysis.WholeSpaceCriticalEvolution.testedMomentum
+          (Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.compactBackwardHeatCurlTest R hR κ τ x₀ a₀) u a =
+      ∫ (t : ℝ) in a..b,
+        Navier.Analysis.WholeSpaceCriticalEvolution.lerayWeakRhs ν
+          (Navier.Analysis.WholeSpaceSolenoidalHeatApproximation.compactBackwardHeatCurlTest R hR κ τ x₀ a₀) u t ∧
+    ∀ (i j k : Fin 3),
+      ∃ M₃,
+        0 ≤ M₃ ∧
+          ∀ {S : ℝ},
+            0 < S →
+              ∀ (x : Navier.Space),
+                |Navier.Analysis.WholeSpaceSolenoidalHeatDomination.thirdDirectional
+                      (Navier.Analysis.ScaledCutoff.scaledCutoff S) (Navier.basisVector i) (Navier.basisVector j)
+                      (Navier.basisVector k) x| ≤
+                  S⁻¹ * S⁻¹ * S⁻¹ * M₃

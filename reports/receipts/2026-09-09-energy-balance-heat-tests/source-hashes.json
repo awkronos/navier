@@ -1,0 +1,7 @@
+{
+  "Navier/Analysis/RawHighEnergyRateIdentity.lean": "37c6ab00c4bd9d93d4049db30b6a40e0f89ca48ac0505df7bc29a216283affab",
+  "Navier/Analysis/PhysicalPeriodicEnergyBalance.lean": "08e739f815dc6a6d73f97e74666ea3f1c95e80e05d362d50383db0ca60c90b0e",
+  "Navier/Analysis/PhysicalPeriodicWeightedFluxCommutator.lean": "f8e8e2c768405fdce055cad2d002f2ae3c8a061f550a46cd4598aadf245e5358",
+  "Navier/Analysis/WholeSpaceSolenoidalHeatApproximation.lean": "756af03e8e4b1a8f5394fd4d0d775dba19a78f837d62e76fa6edcb17fca751e2",
+  "Navier/Analysis/WholeSpaceSolenoidalHeatDomination.lean": "b4dfdd24d7fa4d70687d669fe7141246f90a7ac221ee8ac0e44a00ff32a48616"
+}
