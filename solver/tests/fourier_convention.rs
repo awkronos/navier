@@ -188,3 +188,61 @@ fn webgpu_metadata_uses_the_shared_convention() {
         "A(k) = -i U(k) / N^3"
     );
 }
+
+fn interacting_real_state(n: usize) -> Vec<Complex64> {
+    let len = n.pow(3);
+    let mut state = vec![Complex64::default(); 3 * len];
+    set_real_cosine_pair(&mut state, n, [1, 0, 0], 0.25, [0.0, 1.0, 1.0]);
+    set_real_cosine_pair(&mut state, n, [0, 1, 0], 0.20, [1.0, 0.0, 1.0]);
+    // A sine phase makes the completed triad exchange energy at first order.
+    state[2 * len + mode_index(n, [1, 1, 0])] = Complex64::new(0.0, 0.15 * len as f64);
+    state[2 * len + mode_index(n, [-1, -1, 0])] = Complex64::new(0.0, -0.15 * len as f64);
+    state
+}
+
+#[test]
+fn nonlinear_physical_triad_exchanges_modal_energy_without_creating_total_energy() {
+    // Numerical counterpart of PhysicalPeriodicGlobalControl's paired triad
+    // cancellation, on a real, divergence-free, dealiased Fourier state.
+    for n in [8, 12] {
+        let mut solver = SpectralSolver::new(n, 0.0).unwrap();
+        solver.set_state_hat(interacting_real_state(n)).unwrap();
+        let energy = solver.diagnostics().energy;
+        let before = raw_coefficient(solver.state_hat(), n, [1, 1, 0])[2].norm_sqr();
+        solver.step(0.001).unwrap();
+        let after = raw_coefficient(solver.state_hat(), n, [1, 1, 0])[2].norm_sqr();
+        assert!(
+            (after - before).abs() > 1e-6,
+            "the triad must actually exchange energy"
+        );
+        assert!((solver.diagnostics().energy - energy).abs() < 1e-12);
+        assert!(solver.diagnostics().divergence_rms < 1e-12);
+    }
+}
+
+#[test]
+fn physical_mean_changes_modal_phase_without_exponential_amplitude_growth() {
+    let n = 8usize;
+    let len = n.pow(3);
+    let mean = [0.7, -0.3, 0.2];
+    let dt = 0.001;
+    let mut stationary = SpectralSolver::new(n, 0.07).unwrap();
+    let mut moving = SpectralSolver::new(n, 0.07).unwrap();
+    let mut state = interacting_real_state(n);
+    stationary.set_state_hat(state.clone()).unwrap();
+    for component in 0..3 {
+        state[component * len] = Complex64::new(mean[component] * len as f64, 0.0);
+    }
+    moving.set_state_hat(state).unwrap();
+    stationary.step(dt).unwrap();
+    moving.step(dt).unwrap();
+    for wave in [[1, 0, 0], [0, 1, 0], [1, 1, 0]] {
+        let frequency = (0..3).map(|i| wave[i] as f64 * mean[i]).sum::<f64>();
+        let phase = Complex64::from_polar(1.0, -dt * frequency);
+        let rest = raw_coefficient(stationary.state_hat(), n, wave);
+        let drift = raw_coefficient(moving.state_hat(), n, wave);
+        for component in 0..3 {
+            assert_complex_close(drift[component], phase * rest[component], 2e-12);
+        }
+    }
+}

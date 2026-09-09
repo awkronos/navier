@@ -187,6 +187,10 @@ terminal-bound quantifiers.
 | Higher positive-time moments | [CriticalMildHigherMomentBootstrap](../Navier/Analysis/CriticalMildHigherMomentBootstrap.lean) | The actual bounded mild trajectory has decoded spatial summability of order 2 + 1/4 at positive times. All integer moments and time jets remain to be constructed. |
 | Evolving coefficient equation | [CriticalMildModeDifferentiation](../Navier/Analysis/CriticalMildModeDifferentiation.lean) | Differentiates the actual Duhamel equation and proves the normalized physical unprojected Fourier coefficient equation with recovered pressure. Passing the series to the full pointwise PDE remains separate. |
 | Raw complex control obstruction | [PeriodicGlobalCriticalControl](../Navier/Analysis/PeriodicGlobalCriticalControl.lean) | An exact exponentially growing two-mode mild trajectory refutes unrestricted raw terminal bounds. Its nonzero real mean violates physical anti-Hermitian reality; physical periodic B remains open. |
+| Reality of the constructed trajectory | [CriticalMildTrajectoryReality](../Navier/Analysis/CriticalMildTrajectoryReality.lean) | Constructs the contraction fixed point in a closed anti-Hermitian subspace, consumes Bochner reality preservation, and proves exact real physical Fourier reconstruction. |
+| First joint evolving regularity | [CriticalMildSmoothBootstrap](../Navier/Analysis/CriticalMildSmoothBootstrap.lean) | The actual positive-time mild trajectory has decoded 2.25 spatial summability, summable mode time derivatives and pressure gradients, and the physical coefficient equation. Uniform all-order jets remain open. |
+| Physical local evolution | [PhysicalLocalEvolution](../Navier/Analysis/PhysicalLocalEvolution.lean) | For every physical divergence-free weighted datum, constructs a positive local interval and the same real trajectory carrying the initial value, evolving summability, coefficient derivatives and physical mode equation. No evolving trajectory premise is assumed. |
+| Physical energy cancellation | [PhysicalPeriodicGlobalControl](../Navier/Analysis/PhysicalPeriodicGlobalControl.lean), [PhysicalPeriodicEnergyEvolution](../Navier/Analysis/PhysicalPeriodicEnergyEvolution.lean) | Physical mean drift is skew; the absolutely summable countable projected triad energy series cancels exactly. This controls the energy-transfer algebra, not the global critical norm. |
 | Energy versus fine-scale control | [PeriodicEnergyCriticalObstruction](../Navier/Analysis/PeriodicEnergyCriticalObstruction.lean) | Fixed-energy transverse mode examples have unbounded mixed critical quantity. This refutes a universal energy-only estimate over arbitrary fields, not a bound restricted to actual trajectories. |
 
 The physical global-control target is:
@@ -245,3 +249,5 @@ regions, and why concentration does not mean compression of fluid density.
 The [2026-09-09 release recheck](../reports/receipts/2026-09-09-release-check/README.md)
 binds all 615 current source/object hashes and repeats the eleven raw axiom
 audits after the final artifact cleanup.
+
+The [physical local evolution receipt](../reports/receipts/2026-09-09-physical-local-evolution/README.md) records the subsequent native verification and numerical phase/energy regressions.

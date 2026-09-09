@@ -1,0 +1,3 @@
+'Navier.Analysis.PhysicalLocalEvolution.exists_physical_local_evolution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

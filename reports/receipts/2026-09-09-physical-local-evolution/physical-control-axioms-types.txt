@@ -1,0 +1,32 @@
+'Navier.Analysis.PhysicalPeriodicGlobalControl.zeroMode_realPart_eq_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicGlobalControl.meanTransportScalar_re_eq_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicGlobalControl.meanSpectralTransport_energy_re_eq_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicGlobalControl.norm_physicalMeanDriftMultiplier' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicGlobalControl.complexEuclideanNorm_physicalMeanViscousOrbit_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicGlobalControl.physicalTriadEnergy_pair_cancel' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicGlobalControl.inner_output_complexLeray_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicGlobalControl.projectedPhysicalTriadEnergy_pair_cancel' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PhysicalPeriodicGlobalControl.projectedPhysicalTriadEnergy_pair_cancel
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hphysical : Navier.Analysis.PhysicalPeriodicGlobalControl.PhysicalAntiHermitian u)
+  (hdiv : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u)
+  (i j l : Navier.Analysis.CriticalMildSeries.LatticeMode) (hijl : i + j + l = 0) :
+  Navier.Analysis.PhysicalPeriodicGlobalControl.projectedPhysicalTriadEnergy u i j +
+      Navier.Analysis.PhysicalPeriodicGlobalControl.projectedPhysicalTriadEnergy u i l =
+    0

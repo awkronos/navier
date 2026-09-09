@@ -1,0 +1,21 @@
+'Navier.Analysis.CriticalMildSmoothBootstrap.latticeTwoWeightL1_of_fiveEighthGenerator' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildSmoothBootstrap.globalWeightedSpectralOutputFiber_eq_actualConvolution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildSmoothBootstrap.summable_weighted_spectralOutputCoefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildSmoothBootstrap.summable_weighted_projectedModeForcing' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildSmoothBootstrap.summable_mildRawTimeDerivative_of_fiveEighth' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildSmoothBootstrap.summable_recoveredPressureGradient_of_twoWeight' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildSmoothBootstrap.mildFixedPoint_firstJointBootstrap_at' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

@@ -1,0 +1,15 @@
+   Compiling navier-web v0.1.0 (/Users/schizodactyl/navier/solver)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.95s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/fourier_convention.rs (solver/target/debug/deps/fourier_convention-1d70362a5dc521b6)
+
+running 5 tests
+test viscous_mode_matches_period_one_raw_carrier_scaling ... ok
+test physical_mean_changes_modal_phase_without_exponential_amplitude_growth ... ok
+test nonlinear_physical_triad_exchanges_modal_energy_without_creating_total_energy ... ok
+test rotational_triad_has_the_lean_raw_sign_phase_and_dft_normalization ... ok
+test webgpu_metadata_uses_the_shared_convention ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+

@@ -1,0 +1,28 @@
+'Navier.Analysis.PhysicalPeriodicEnergyEvolution.complexEuclideanNorm_weightedLatticeCoefficient_le_eval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicEnergyEvolution.frequency_mul_coefficient_le_eval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicEnergyEvolution.abs_projectedPhysicalTriadEnergy_le_majorant' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicEnergyEvolution.summable_projectedTriadEnergyMajorant' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicEnergyEvolution.summable_projectedPhysicalTriadEnergy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicEnergyEvolution.triadEnergySwap' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicEnergyEvolution.tsum_projectedPhysicalTriadEnergy_eq_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PhysicalPeriodicEnergyEvolution.tsum_projectedPhysicalTriadEnergy_eq_zero
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hphysical : Navier.Analysis.PhysicalPeriodicGlobalControl.PhysicalAntiHermitian u)
+  (hdiv : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u) :
+  ∑' (ij : Navier.Analysis.CriticalMildSeries.LatticeMode × Navier.Analysis.CriticalMildSeries.LatticeMode),
+      Navier.Analysis.PhysicalPeriodicGlobalControl.projectedPhysicalTriadEnergy u ij.1 ij.2 =
+    0
