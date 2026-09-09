@@ -13,6 +13,13 @@ exists. The proof supplies the constructed candidate and derives comparison
 with every hypothetical global competitor. Its transitive axioms are exactly
 `propext`, `Classical.choice`, and `Quot.sound`.
 
+The native **periodic alternative D** is also inhabited by
+[`PeriodicConstructedBreakdown.periodicBreakdown`](Navier/Analysis/PeriodicConstructedBreakdown.lean).
+For every positive viscosity, the selected periodic construction supplies
+admissible forcing excluding every global smooth periodic velocity-pressure
+pair. The exact consumer, transitive axioms and all 538 dependency receipts
+were independently checked; see the [D receipt](reports/receipts/2026-09-09-periodic-constructed-breakdown/README.md).
+
 The analytical construction is OpenAI’s. The [native source adaptation](docs/OPENAI_CONSTRUCTION_PROVENANCE.md)
 pins their released revision, preserves Apache-2.0 notices, and compiles with
 this repository’s Lean 4.31.0 toolchain. There is no OpenAI Lake dependency.

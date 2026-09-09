@@ -1,0 +1,12 @@
+[
+  {
+    "module": "WholeSpaceCriticalEvolution",
+    "source_sha256": "3e44f1f5e612f2682a4c3744ab1051580ac65967beb7acb21e4ab16de93b4bb7",
+    "source_compiler_exit_code": 0
+  },
+  {
+    "module": "PeriodicMildClassicalRealization",
+    "source_sha256": "972383394cc303832fcafe20d0d8d05499eb71be91db69d73949cab3c4f40197",
+    "source_compiler_exit_code": 0
+  }
+]

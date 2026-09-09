@@ -1,0 +1,6 @@
+root=Navier.Analysis.PeriodicConstructedBreakdown
+local_closure=538 fresh=537 rebuild=1
+compiler=Lean (version 4.31.0, arm64-apple-darwin24.6.0, commit 68218e876d2a38b1985b8590fff244a83c321783, Release)
+CHECKED 538/538 Navier.Analysis.PeriodicConstructedBreakdown
+MATERIALIZED Navier.Analysis.PeriodicConstructedBreakdown current_dependency_receipts=538/538
+No endpoint claim audited; use --audit-regularity-endpoints with the exact witness.

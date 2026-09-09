@@ -1,0 +1,126 @@
+'Navier.Analysis.PeriodicMildClassicalRealization.latticeAntiHermitian_rawInitialCarrier' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.latticeDivergenceFree_rawInitialCarrier' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.physicalMildVelocity_rawInitialCarrier_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.mildTrajectory_physicalCarrier_twoSpatialDerivatives' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.rawNonlinearity_to_periodOneConvection' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.rawProjectedModeEquation_to_physicalUnprojected' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.spatialPartial_physicalMildVelocity_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.contDiffWithinAt_complexPhysicalVelocityCoordinate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.incompressible_physicalMildVelocity' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.contDiffWithinAt_complexPhysicalPressure' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicMildClassicalRealization.smoothPressure_physicalMildPressure' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicMildClassicalRealization.latticeAntiHermitian_rawInitialCarrier (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian
+    (Navier.Analysis.PeriodicMildClassicalRealization.rawInitialCarrier u₀ hu₀)
+Navier.Analysis.PeriodicMildClassicalRealization.latticeDivergenceFree_rawInitialCarrier (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree
+    (Navier.Analysis.PeriodicMildClassicalRealization.rawInitialCarrier u₀ hu₀)
+Navier.Analysis.PeriodicMildClassicalRealization.physicalMildVelocity_rawInitialCarrier_eq (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  Navier.Analysis.PeriodicMildClassicalRealization.physicalMildVelocity
+      (fun x => Navier.Analysis.PeriodicMildClassicalRealization.rawInitialCarrier u₀ hu₀) 0 =
+    u₀
+Navier.Analysis.PeriodicMildClassicalRealization.mildTrajectory_physicalCarrier_twoSpatialDerivatives (ν : ℝ)
+  (hν : 0 < ν) (u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hu₀ : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u₀)
+  (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (huc : Continuous u)
+  (hu : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u s)) {R t : ℝ} (hR : 0 ≤ R)
+  (ht : 0 < t) (huR : ∀ s ∈ Set.Ioc 0 t, ‖u s‖ ≤ R)
+  (hmild :
+    ∀ (s : ℝ) (hs : s ∈ Set.Icc 0 t), u s = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀ u hu s ⋯) :
+  Summable fun k =>
+    ‖Navier.Analysis.OfficialABEncoding.officialEuclideanPoint
+            (Navier.Analysis.CriticalMildSeries.latticeFrequency k)‖ ^
+        2 *
+      Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+        (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (u t)) k)
+Navier.Analysis.PeriodicMildClassicalRealization.rawNonlinearity_to_periodOneConvection
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (A : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.PeriodicMildClassicalRealization.rawToPhysicalAmplitude •
+      -(Navier.Analysis.ComplexLerayProjection.complexLeray (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+          (Navier.Analysis.CriticalMildDuhamelBochner.spectralOutputCoefficient k A A) =
+    (Navier.Analysis.ComplexLerayProjection.complexLeray (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+      (Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k
+        (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier A)
+        (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier A))
+Navier.Analysis.PeriodicMildClassicalRealization.rawProjectedModeEquation_to_physicalUnprojected (ν : ℝ)
+  (A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (rawTimeDerivative :
+    ℝ → Navier.Analysis.CriticalMildSeries.LatticeMode → Navier.Analysis.ComplexLerayProjection.ComplexSpace)
+  (hraw : Navier.Analysis.PeriodicMildClassicalRealization.RawProjectedModeEquation ν A rawTimeDerivative) (t : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode) :
+  Navier.Analysis.PeriodicMildClassicalRealization.rawToPhysicalAmplitude • rawTimeDerivative t k +
+          Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k
+            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) +
+        Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient ν k
+          (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) k) +
+      Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+        (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k
+          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))) =
+    0
+Navier.Analysis.PeriodicMildClassicalRealization.spatialPartial_physicalMildVelocity_eq
+  (A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (t : ℝ) (x : Navier.Space) (i j : Fin 3) :
+  Navier.Analysis.CoordinatePDEBridge.spatialPartial j
+      (fun y => Navier.Analysis.PeriodicMildClassicalRealization.physicalMildVelocity A t y i) x =
+    (∑' (m : Navier.Analysis.CriticalMildSeries.LatticeMode),
+        Navier.Analysis.PeriodicPressureRecovery.periodOneDerivative *
+              ↑(Navier.Analysis.CriticalMildSeries.latticeFrequency m j) *
+            Navier.Analysis.PeriodicFourierReconstruction.latticeCharacter m x *
+          Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) m i).re
+Navier.Analysis.PeriodicMildClassicalRealization.contDiffWithinAt_complexPhysicalVelocityCoordinate
+  {A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hA : Navier.Analysis.PeriodicMildClassicalRealization.FourierSpacetimeRapid A) {z : ℝ × Navier.Space}
+  (hz : z ∈ Navier.Analysis.PeriodicMildClassicalRealization.nonnegativeSpacetime) (i : Fin 3) :
+  ContDiffWithinAt ℝ ∞
+    (fun y =>
+      ∑' (m : Navier.Analysis.CriticalMildSeries.LatticeMode),
+        Navier.Analysis.PeriodicMildClassicalRealization.physicalSpacetimeVelocityModeTerm A m i y)
+    Navier.Analysis.PeriodicMildClassicalRealization.nonnegativeSpacetime z
+Navier.Analysis.PeriodicMildClassicalRealization.incompressible_physicalMildVelocity
+  {A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hA : Navier.Analysis.PeriodicMildClassicalRealization.FourierSpacetimeRapid A)
+  (hdiv : ∀ (t : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (A t)) :
+  Navier.Incompressible (Navier.Analysis.PeriodicMildClassicalRealization.physicalMildVelocity A)
+Navier.Analysis.PeriodicMildClassicalRealization.contDiffWithinAt_complexPhysicalPressure
+  {A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hA : Navier.Analysis.PeriodicMildClassicalRealization.PressureFourierSpacetimeRapid A) {z : ℝ × Navier.Space}
+  (hz : z ∈ Navier.Analysis.PeriodicMildClassicalRealization.nonnegativeSpacetime) :
+  ContDiffWithinAt ℝ ∞
+    (fun y =>
+      ∑' (m : Navier.Analysis.CriticalMildSeries.LatticeMode),
+        Navier.Analysis.PeriodicMildClassicalRealization.physicalSpacetimePressureModeTerm A m y)
+    Navier.Analysis.PeriodicMildClassicalRealization.nonnegativeSpacetime z
+Navier.Analysis.PeriodicMildClassicalRealization.smoothPressure_physicalMildPressure
+  {A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hA : Navier.Analysis.PeriodicMildClassicalRealization.PressureFourierSpacetimeRapid A) :
+  Navier.SmoothPressureOnNonnegativeTime (Navier.Analysis.PeriodicMildClassicalRealization.physicalMildPressure A)

@@ -1,6 +1,6 @@
 # Periodic evolution providers — independent source audit
 
-All ten modules in `verification.json` passed the project single-file compiler
+The modules listed in `verification.json` passed the project single-file compiler
 on 2026-09-09. Each exact source copy appended the diagnostic commands retained
 in its `.audit.lean.txt` file; the production proof terms were unchanged. The
 verification JSON binds each result to its current source SHA-256. Two compiler

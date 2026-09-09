@@ -1,0 +1,16 @@
+{
+  "source_sha256": "e86bffe69b5bdb08ea21dfdf33a02ba1f21e7d4b9c0e9dfc70aaa146ecacf3c8",
+  "source_compiler_exit_code": 0,
+  "exact_consumer": "Navier.ProblemStatements.PeriodicBreakdown",
+  "witness": "Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown",
+  "dependency_receipts": {
+    "fresh": 538,
+    "total": 538
+  },
+  "outputs": {
+    "endpoint-audit.txt": "f08da2dd52e89579e5e14ef2993ada2c02abb6e2c91d059479b983e0d7bd65e0",
+    "lsp-diagnostics.txt": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "materialize.txt": "204010831d1bbc994815b27d7647e076eac8abbbd3ad203ea795c242e7974740",
+    "raw-endpoint.txt": "22a0e4b8714125d34c65bf355163f0f535ffee1bb1de4e0a6737d5b5160ecfcb"
+  }
+}

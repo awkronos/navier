@@ -7,16 +7,17 @@ counterexample into an unforced all-data regularity theorem.
 
 ## Existence and breakdown endpoints
 
-The active construction targets are the exact A, B, and D propositions.
+The active global-regularity construction targets are the exact A and B propositions.
 Current open statuses report evidence and do not constrain future proofs.
 The A route constructs native whole-space evolution; the B routes construct
 physical Fourier reconstruction, positive-time regularity and global control;
-the D route investigates periodizing the compact forced construction while
-preserving every clause of the periodic contract.
+The D construction now directly consumes the selected periodic candidate and
+preserves every clause of the native periodic contract.
 
 | Question | Exact Lean surface | Quantifiers and force | Status |
 | --- | --- | --- | --- |
 | Can one choose admissible data and forcing for which no global classical solution exists? | `Navier.ProblemStatements.WholeSpaceBreakdown` | For every `nu > 0`, there exist a divergence-free Schwartz datum and a rapidly decaying smooth force such that no global `IsClassicalSolution` exists | **THEOREM**, inhabited by `ConstructedBreakdown.wholeSpaceBreakdown` |
+| Can admissible periodic forcing prevent every global smooth periodic solution? | `Navier.ProblemStatements.PeriodicBreakdown` | For every `nu > 0`, there exist an admissible periodic datum and smooth periodic time-decaying force excluding every global `IsPeriodicClassicalSolution` | **THEOREM**, inhabited by `PeriodicConstructedBreakdown.periodicBreakdown` |
 | Does every admissible datum produce a global classical solution with no force? | `Navier.ProblemStatements.WholeSpaceGlobalRegularity` | For every `nu > 0` and every divergence-free Schwartz datum, there exist global velocity and pressure fields satisfying `IsClassicalSolution nu zeroForce` | **OPEN** in this repository |
 
 The periodic unforced existence proposition
@@ -36,12 +37,21 @@ energy and half-generator moment. The full time-integrated fixed-point
 transport is a further construction; these coefficient identities do not
 assume or establish arbitrary-data global control.
 
-The completed endpoint is the whole-space forced alternative C in the official
-problem statement. It is mathematically substantive: the proof constructs the
+The completed forced endpoints are whole-space C and periodic D in the official
+problem statement. The proof constructs the
 data and force, supplies a pre-singular classical candidate, and rules out every
 hypothetical global smooth bounded-energy competitor. It does not select one
 solution from several weak continuations, and it does not prove a global smooth
 velocity.
+
+The [native D proof](../Navier/Analysis/PeriodicConstructedBreakdown.lean)
+uses the selected unit-periodic candidate directly. Smooth forcing with a
+uniform future cutoff has all required polynomially time-weighted derivative
+bounds, by continuity on a compact time slab and fundamental spatial cell.
+Every hypothetical native competitor transports to the construction's exact
+same-force comparison class, including periodic pressure. The viscosity
+equivalence supplies every positive viscosity. See the
+[fresh D receipt](../reports/receipts/2026-09-09-periodic-constructed-breakdown/README.md).
 
 ## Completed forced path
 

@@ -1,0 +1,14 @@
+Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown : Navier.ProblemStatements.PeriodicBreakdown
+theorem Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown : Navier.ProblemStatements.PeriodicBreakdown :=
+Navier.Analysis.ViscosityEndpoints.periodicBreakdown_iff_atViscosityOne.mpr
+  (Exists.casesOn Navier.Construction.ActualCandidateAssembly.selected_witness fun a h =>
+    And.casesOn h fun left right =>
+      Exists.casesOn right fun ea h =>
+        Exists.casesOn h fun eb h =>
+          Exists.casesOn h fun ep h =>
+            Exists.casesOn h fun f h =>
+              And.casesOn h fun hcandidate right =>
+                Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdownAtViscosityOne_of_candidate hcandidate)
+'Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

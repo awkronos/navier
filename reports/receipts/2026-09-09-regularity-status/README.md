@@ -8,11 +8,24 @@ The A/B global-control research and visual redesign remain in progress.
 | A: `WholeSpaceGlobalRegularity` | Open | The native composition theorem consumes local classical existence, pressure-normalized continuation, and a horizon-independent a priori bound for the same quantity. Those remain explicit premises. |
 | B: `PeriodicGlobalRegularity` | Open | Native periodic velocity uniqueness; faithful Fourier initialization and exact reconstruction of the initial datum. Time-dependent classical realization and arbitrary-data global control remain required. |
 | C: `WholeSpaceBreakdown` | Proved | `ConstructedBreakdown.wholeSpaceBreakdown` has the exact original type and no analytic premise. |
-| D: `PeriodicBreakdown` | No accepted endpoint witness in this audit | The native definition exists; viscosity and convention transports are conditional and are not an inhabitant of D. The use of periodic intermediate fields in C does not itself close native D. |
+| D: `PeriodicBreakdown` | Proved in the subsequent exact-consumer audit | `PeriodicConstructedBreakdown.periodicBreakdown` directly transports the selected periodic candidate and discharges the native forcing and competitor clauses. [Independent receipt](../2026-09-09-periodic-constructed-breakdown/README.md). |
 
 A and B fix force to zero. C and D allow a selected force. Thus C does not
 refute A or B. The exact official alternatives are specified in `Navier/Problem.lean`
 and `Navier/OfficialProblem.lean`.
+
+The earlier raw logs retain their original no-witness D classification. The
+linked D audit supersedes that row with a source-checked inhabitant and 538/538
+fresh dependency receipts; historical logs are not rewritten.
+
+The new `evolution-verification.json` binds two further independent source
+audits. `WholeSpaceCriticalEvolution` proves pressure-free time-integrated
+evolution for native compact solenoidal tests and consumes the actual
+`SolvesBefore` carrier. `PeriodicMildClassicalRealization` proves faithful
+phase-encoded initialization, coefficient/PDE normalization, periodicity and
+incompressibility; its smoothness consumers retain point-local summable-jet
+extension hypotheses. Deriving those hypotheses and the differentiated mode
+equation from the actual mild path remains work for B.
 
 ## Evidence
 

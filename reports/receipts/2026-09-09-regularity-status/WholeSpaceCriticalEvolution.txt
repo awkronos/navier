@@ -1,0 +1,35 @@
+Navier.Analysis.WholeSpaceCriticalEvolution.CompactSolenoidalTest.ofNative (field : Navier.Space → Navier.Space)
+  (hsmooth : ContDiff ℝ ∞ field) (hcompact : HasCompactSupport field)
+  (hdiv : ∀ (x : Navier.Space), Navier.staticDivergence field x = 0) :
+  Navier.Analysis.WholeSpaceCriticalEvolution.CompactSolenoidalTest
+'Navier.Analysis.WholeSpaceCriticalEvolution.CompactSolenoidalTest.ofNative' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WholeSpaceCriticalEvolution.pressurePairing_sum_eq_zero
+  (φ : Navier.Analysis.WholeSpaceCriticalEvolution.CompactSolenoidalTest) (p : Navier.PressureField)
+  (hp : ContDiff ℝ ∞ p) :
+  ∑ j, ∫ (x : Navier.Space), (fderiv ℝ (fun y => φ.field y j) x) (Navier.basisVector j) * p x = 0
+'Navier.Analysis.WholeSpaceCriticalEvolution.pressurePairing_sum_eq_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WholeSpaceCriticalEvolution.partialSolution_lerayWeakEvolution_timeIntegrated {ν : ℝ}
+  {u₀ : Navier.VelocityField} {T : ℝ} (sol : Navier.Breakdown.PartialClassicalSolution ν Navier.zeroForce u₀ T)
+  (φ : Navier.Analysis.WholeSpaceCriticalEvolution.CompactSolenoidalTest) {a b : ℝ} (ha0 : 0 < a) (hab : a ≤ b)
+  (hbT : b < T) :
+  Navier.Analysis.WholeSpaceCriticalEvolution.testedMomentum φ sol.velocity b -
+      Navier.Analysis.WholeSpaceCriticalEvolution.testedMomentum φ sol.velocity a =
+    ∫ (t : ℝ) in a..b, Navier.Analysis.WholeSpaceCriticalEvolution.lerayWeakRhs ν φ sol.velocity t
+'Navier.Analysis.WholeSpaceCriticalEvolution.partialSolution_lerayWeakEvolution_timeIntegrated' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WholeSpaceCriticalEvolution.solvesBefore_lerayWeakEvolution_timeIntegrated {ν T : ℝ}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution} (hT : 0 < T)
+  (hsol : Navier.Analysis.CriticalControlDecomposition.SolvesBefore ν T u p)
+  (φ : Navier.Analysis.WholeSpaceCriticalEvolution.CompactSolenoidalTest) {a b : ℝ} (ha0 : 0 < a) (hab : a ≤ b)
+  (hbT : b < T) :
+  Navier.Analysis.WholeSpaceCriticalEvolution.testedMomentum φ u b -
+      Navier.Analysis.WholeSpaceCriticalEvolution.testedMomentum φ u a =
+    ∫ (t : ℝ) in a..b, Navier.Analysis.WholeSpaceCriticalEvolution.lerayWeakRhs ν φ u t
+'Navier.Analysis.WholeSpaceCriticalEvolution.solvesBefore_lerayWeakEvolution_timeIntegrated' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
