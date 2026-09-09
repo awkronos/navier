@@ -1,0 +1,71 @@
+Navier.Analysis.CriticalMildZeroMode.CriticalMildOffZeroTerminalBound (ν : ℝ) (hν : 0 < ν)
+  (a : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (K : ℝ) : Prop
+Navier.Analysis.CriticalMildZeroMode.exists_cofinal_global_mild_of_offZero (ν : ℝ) (hν : 0 < ν)
+  (a : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (K : ℝ) (hK : 0 ≤ K)
+  (hoff : Navier.Analysis.CriticalMildZeroMode.CriticalMildOffZeroTerminalBound ν hν a K) :
+  ∃ chain,
+    chain.CofinalLifespan ∧
+      ∀ (t : ℝ) (ht : 0 ≤ t),
+        chain.totalExtension t =
+          Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν a chain.totalExtension ⋯ t ht
+Navier.Analysis.PeriodicEnergyCriticalObstruction.low_add_high_X1_eq
+  (S : Finset Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.PeriodicEnergyCriticalObstruction.lowX1On S u +
+      Navier.Analysis.PeriodicEnergyCriticalObstruction.highX1Outside S u =
+    Navier.Analysis.LeiLinSpace.normX1 Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize
+      (Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude u)
+Navier.Analysis.PeriodicEnergyCriticalObstruction.normX1_le_frequencyCost_mul_energy_add_high
+  (S : Finset Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.LeiLinSpace.normX1 Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize
+      (Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude u) ≤
+    √(∑ m ∈ S, Navier.Analysis.LeiLinCoerciveTerminal.latticeModeSize m ^ 2) *
+        √(∑ m ∈ S, Navier.Analysis.LeiLinCoerciveTerminal.weightedAmplitude u m ^ 2) +
+      Navier.Analysis.PeriodicEnergyCriticalObstruction.highX1Outside S u
+Navier.Analysis.PeriodicEnergyCriticalObstruction.latticeHermitianReal_highFrequencyPair (n : ℕ) :
+  Navier.Analysis.PeriodicEnergyCriticalObstruction.LatticeHermitianReal
+    (Navier.Analysis.PeriodicEnergyCriticalObstruction.highFrequencyPair n)
+Navier.Analysis.PeriodicEnergyCriticalObstruction.latticeDivergenceFree_highFrequencyPair (n : ℕ) :
+  Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree
+    (Navier.Analysis.PeriodicEnergyCriticalObstruction.highFrequencyPair n)
+Navier.Analysis.PeriodicEnergyCriticalObstruction.spectralL2Energy_highFrequencyPair (n : ℕ) :
+  Navier.Analysis.PeriodicEnergyCriticalObstruction.spectralL2Energy
+      (Navier.Analysis.PeriodicEnergyCriticalObstruction.highFrequencyPair n) =
+    2
+Navier.Analysis.PeriodicEnergyCriticalObstruction.offZeroMixedCriticalQty_highFrequencyPair (ν : ℝ) (n : ℕ) :
+  Navier.Analysis.CriticalMildZeroMode.offZeroMixedCriticalQty ν
+      (Navier.Analysis.PeriodicEnergyCriticalObstruction.highFrequencyPair n) =
+    2 * (↑n + 1)⁻¹ + ν * (2 * (↑n + 1))
+Navier.Analysis.PeriodicEnergyCriticalObstruction.no_uniform_offZeroMixed_bound_from_energy (ν : ℝ) (hν : 0 < ν) :
+  ¬∃ C,
+      ∀ (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach),
+        Navier.Analysis.PeriodicEnergyCriticalObstruction.LatticeHermitianReal u →
+          Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u →
+            Navier.Analysis.PeriodicEnergyCriticalObstruction.spectralL2Energy u = 2 →
+              Navier.Analysis.CriticalMildZeroMode.offZeroMixedCriticalQty ν u ≤ C
+'Navier.Analysis.CriticalMildZeroMode.exists_cofinal_global_mild_of_offZero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicEnergyCriticalObstruction.low_add_high_X1_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicEnergyCriticalObstruction.normX1_le_frequencyCost_mul_energy_add_high' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicEnergyCriticalObstruction.latticeHermitianReal_highFrequencyPair' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicEnergyCriticalObstruction.latticeDivergenceFree_highFrequencyPair' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicEnergyCriticalObstruction.spectralL2Energy_highFrequencyPair' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicEnergyCriticalObstruction.offZeroMixedCriticalQty_highFrequencyPair' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicEnergyCriticalObstruction.no_uniform_offZeroMixed_bound_from_energy' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+exit_code=0

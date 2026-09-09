@@ -1,0 +1,26 @@
+command=lake env lean /tmp/NavierBGap.lean
+exit_code=0
+
+Navier.ProblemStatements.PeriodicGlobalRegularity : Prop
+
+Navier.Analysis.CriticalMildBoundedContinuation.CriticalMildTerminalNormBound
+    (ν : ℝ) (hν : 0 < ν)
+    (a : Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+    (M : ℝ) : Prop
+
+Navier.Analysis.PeriodicClassicalUniqueness.periodicGlobalRegularity_uniqueVelocity
+  (hB : Navier.ProblemStatements.PeriodicGlobalRegularity) (ν : ℝ) :
+  0 < ν →
+    ∀ (u₀ : Navier.VelocityField),
+      Navier.PeriodicInitialDatum u₀ →
+        ∃ u p,
+          Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p ∧
+            ∀ (v : Navier.VelocityEvolution) (q : Navier.PressureEvolution),
+              Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ v q →
+                ∀ (t : ℝ), 0 ≤ t → ∀ (x : Navier.Space), u t x = v t x
+
+'Navier.Analysis.PeriodicClassicalUniqueness.velocity_unique' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicClassicalUniqueness.periodicGlobalRegularity_uniqueVelocity'
+depends on axioms: [propext, Classical.choice, Quot.sound]

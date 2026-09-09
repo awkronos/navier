@@ -1,0 +1,42 @@
+Navier.Analysis.PeriodicNativeFourierInversion.fourierCoeff_circleDescendContinuous : ∀ (g : ℝ → ℂ)
+  (hg : Function.Periodic g 1) (hgc : Continuous g) (n : ℤ),
+  fourierCoeff (⇑(Navier.Analysis.PeriodicNativeFourierInversion.circleDescendContinuous g hg hgc)) n =
+    Navier.Construction.SmoothFourierData.unitCoeff g n
+@Navier.Analysis.PeriodicNativeFourierInversion.hasSum_firstMode_nativeCoefficient : ∀ {u₀ : Navier.VelocityField},
+  Navier.PeriodicInitialDatum u₀ →
+    ∀ (i : Fin 3) (k : Navier.Analysis.PeriodicNativeFourierInversion.PlaneMode) (z : ℝ),
+      HasSum (fun n => (fourier n) ↑z * Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀ (n, k) i)
+        (Navier.Construction.ParametricTorusInverse.coefficient
+          (Navier.Analysis.PeriodicDatumFourierBridge.nativeScalarSource u₀ i) z k)
+@Navier.Analysis.PeriodicNativeFourierInversion.tsum_latticeCharacter_nativeCoefficient : ∀ {u₀ : Navier.VelocityField},
+  Navier.PeriodicInitialDatum u₀ →
+    ∀ (x : Navier.Space) (i : Fin 3),
+      ∑' (m : Navier.Analysis.CriticalMildSeries.LatticeMode),
+          Navier.Analysis.PeriodicFourierReconstruction.latticeCharacter m x *
+            Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀ m i =
+        ↑(u₀ x i)
+Navier.Analysis.PeriodicNativeFourierInversion.complexFourierReconstruction_nativeInitialCarrier_eq : ∀
+  (u₀ : Navier.VelocityField) (hu₀ : Navier.PeriodicInitialDatum u₀) (x : Navier.Space),
+  Navier.Analysis.PeriodicFourierReconstruction.complexFourierReconstruction
+      (Navier.Analysis.PeriodicFourierReconstruction.nativeInitialCarrier u₀ hu₀) x =
+    Navier.Analysis.ComplexLerayNorm.complexEuclideanPoint (Navier.Analysis.ComplexLerayProjection.complexOfReal (u₀ x))
+Navier.Analysis.PeriodicNativeFourierInversion.nativeInitialReconstruction_eq : ∀ (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀),
+  Navier.Analysis.PeriodicFourierReconstruction.nativeInitialReconstruction u₀ hu₀ = u₀
+'Navier.Analysis.PeriodicNativeFourierInversion.fourierCoeff_circleDescendContinuous' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicNativeFourierInversion.hasSum_firstMode_nativeCoefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicNativeFourierInversion.tsum_latticeCharacter_nativeCoefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicNativeFourierInversion.complexFourierReconstruction_nativeInitialCarrier_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicNativeFourierInversion.nativeInitialReconstruction_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Construction.SmoothFourierData.native_coefficient_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.Construction.SmoothFourierData.series_coefficient' depends on axioms: [propext, Classical.choice, Quot.sound]

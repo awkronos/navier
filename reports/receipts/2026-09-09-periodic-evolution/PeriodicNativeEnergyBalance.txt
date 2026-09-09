@@ -1,0 +1,40 @@
+Navier.Analysis.PeriodicNativeEnergyBalance.unitCell_energy_dissipation_identity {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (h : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {T : ℝ} (hT : 0 ≤ T) :
+  Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u T +
+      ν * ∫ (t : ℝ) in 0..T, Navier.Analysis.PeriodicNativeEnergyBalance.unitCellDissipation u t =
+    Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u 0
+'Navier.Analysis.PeriodicNativeEnergyBalance.unitCell_energy_dissipation_identity' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicNativeEnergyBalance.unitCell_dissipation_integral_le {ν : ℝ} (hν : 0 < ν)
+  {u₀ : Navier.VelocityField} {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (h : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {T : ℝ} (hT : 0 ≤ T) :
+  ∫ (t : ℝ) in 0..T, Navier.Analysis.PeriodicNativeEnergyBalance.unitCellDissipation u t ≤
+    Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u 0 / ν
+'Navier.Analysis.PeriodicNativeEnergyBalance.unitCell_dissipation_integral_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy_le_initial {ν : ℝ} (hν : 0 ≤ ν)
+  {u₀ : Navier.VelocityField} {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (h : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {T : ℝ} (hT : 0 ≤ T) :
+  Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u T ≤
+    Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u 0
+'Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy_le_initial' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicNativeEnergyBalance.PeriodicGlobalRegularity.with_unitCell_energy_dissipation
+  (hreg : Navier.ProblemStatements.PeriodicGlobalRegularity) (ν : ℝ) (hν : 0 < ν) (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  ∃ u p,
+    Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p ∧
+      ∀ (T : ℝ),
+        0 ≤ T →
+          Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u T +
+                ν * ∫ (t : ℝ) in 0..T, Navier.Analysis.PeriodicNativeEnergyBalance.unitCellDissipation u t =
+              Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u 0 ∧
+            ∫ (t : ℝ) in 0..T, Navier.Analysis.PeriodicNativeEnergyBalance.unitCellDissipation u t ≤
+              Navier.Analysis.PeriodicNativeEnergyBalance.unitCellKineticEnergy u 0 / ν
+'Navier.Analysis.PeriodicNativeEnergyBalance.PeriodicGlobalRegularity.with_unitCell_energy_dissipation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

@@ -1,0 +1,19 @@
+Navier.Analysis.PeriodicClassicalUniqueness.velocity_unique {ν : ℝ} (hν : 0 < ν) {u₀ : Navier.VelocityField}
+  {u v : Navier.VelocityEvolution} {p q : Navier.PressureEvolution}
+  (hu : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p)
+  (hv : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ v q) (t : ℝ) :
+  0 ≤ t → ∀ (x : Navier.Space), u t x = v t x
+'Navier.Analysis.PeriodicClassicalUniqueness.velocity_unique' depends on axioms: [propext, Classical.choice, Quot.sound]
+Navier.Analysis.PeriodicClassicalUniqueness.periodicGlobalRegularity_uniqueVelocity
+  (hB : Navier.ProblemStatements.PeriodicGlobalRegularity) (ν : ℝ) :
+  0 < ν →
+    ∀ (u₀ : Navier.VelocityField),
+      Navier.PeriodicInitialDatum u₀ →
+        ∃ u p,
+          Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p ∧
+            ∀ (v : Navier.VelocityEvolution) (q : Navier.PressureEvolution),
+              Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ v q →
+                ∀ (t : ℝ), 0 ≤ t → ∀ (x : Navier.Space), u t x = v t x
+'Navier.Analysis.PeriodicClassicalUniqueness.periodicGlobalRegularity_uniqueVelocity' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

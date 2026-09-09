@@ -1,0 +1,8 @@
+source=Navier/Analysis/PeriodicDatumFourierConstraints.lean
+source_sha256=73a8ea4da36d5abfddf66ed607a29de978ac7e74ba632a13d34c62b0d35357e5
+command=lake env lean Navier/Analysis/PeriodicDatumFourierConstraints.lean
+exit_code=0
+stdout_bytes=0
+
+materialize_command=lake build Navier.Analysis.PeriodicDatumFourierConstraints
+materialize_exit_code=0

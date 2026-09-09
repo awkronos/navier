@@ -1,0 +1,10 @@
+import Navier.Analysis.PeriodicClassicalUniqueness
+import Navier.Analysis.CriticalMildBoundedContinuation
+
+#check Navier.ProblemStatements.PeriodicGlobalRegularity
+#check Navier.Analysis.CriticalMildBoundedContinuation.CriticalMildTerminalNormBound
+#check Navier.Analysis.CriticalMildBoundedContinuation.bounded_global_mild_of_terminalNormBound
+#check Navier.Analysis.PeriodicClassicalUniqueness.periodicGlobalRegularity_uniqueVelocity
+
+#print axioms Navier.Analysis.PeriodicClassicalUniqueness.velocity_unique
+#print axioms Navier.Analysis.PeriodicClassicalUniqueness.periodicGlobalRegularity_uniqueVelocity

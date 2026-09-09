@@ -13,6 +13,7 @@ native compiler receipts.
 | [Native breakdown mathematics and adaptive simulation](NATIVE_BREAKDOWN_AND_SOLVER.md) | Detailed guide to the constructed forced endpoint, useful conditional results, and solver validation |
 | [Breakdown, uniqueness, and concentration](DYNAMICS_AND_CONCENTRATION.md) | Focused account of the pre-singular flow, slab uniqueness, terminal obstruction, and concentration scales |
 | [Exact constructed force and the regularity obstruction](EXACT_FORCE_AND_REGULARITY.md) | The selected force formula, properties proved for that same force, and the exact competing classes excluded |
+| [Computed analytic-axis construction](COMPUTED_AXIS_CONSTRUCTION.md) | Equations, truncation, reconstruction, residuals, and the exact boundary between the executable axis stage and the completed Lean witness |
 | [Construction carrier review](CONSTRUCTION_REVIEW.md) | Clause-by-clause comparison with the official whole-space alternative-C carrier |
 | [OpenAI construction provenance](OPENAI_CONSTRUCTION_PROVENANCE.md) | Pinned upstream revision, adaptation boundary, licensing, and source verification |
 | [Reproducibility](../REPRODUCIBILITY.md) | Pinned toolchain, focused compiler commands, receipt semantics, and solver checks |
@@ -36,6 +37,12 @@ The [Madelung correspondence note](MADELUNG_CORRESPONDENCE.md) records the
 precise scalar and spinor hydrodynamic correspondences and the obstructions to
 turning the selected forced flow into a quantum-mechanical result.
 
+The Rust crate contains two numerical instruments with different domains and
+claims. The finite analytic-axis evaluator reconstructs one explicitly
+computable stage of the forced construction; the Fourier solver advances
+periodic benchmark flows. Neither is proof evidence. Their roles and measured
+quantities are separated in the [solver guide](../solver/README.md).
+
 ## Historical research records
 
 These files retain unique development evidence. Their dated status and route
@@ -52,3 +59,8 @@ Deterministic numerical artifacts have their own scope note in
 lives under [`reports/receipts/`](../reports/receipts/); repeated receipt text is
 preserved intentionally because each directory binds a distinct verification
 snapshot.
+
+The [periodic classical uniqueness module](../Navier/Analysis/PeriodicClassicalUniqueness.lean)
+proves velocity uniqueness for every positive viscosity under the native
+periodic velocity/pressure contract. Alternative B existence is still open;
+see its [current compiler receipt](../reports/receipts/2026-09-09-periodic-uniqueness/README.md).

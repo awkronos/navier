@@ -1,0 +1,23 @@
+Navier.Analysis.PeriodicDynamicCriticalTail.heatHalfGeneratorMoment_frozenOutputIntegral_le (ν T : ℝ) (hν : 0 < ν)
+  (hT : 0 ≤ T) (u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hu : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u) :
+  Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment
+      (Navier.Analysis.CriticalMildDuhamelBochner.positiveTimeHeatRegularizedSpectralOutputIntegral ν T hν hT u v hu) ≤
+    ν⁻¹ * ‖u‖ * ‖v‖
+'Navier.Analysis.PeriodicDynamicCriticalTail.heatHalfGeneratorMoment_frozenOutputIntegral_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicDynamicCriticalTail.criticalMildDuhamel_graph_and_moment_le_of_dini (ν : ℝ) (hν : 0 < ν)
+  (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (huc : Continuous u)
+  (hu : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u s)) {R T : ℝ} (hR : 0 ≤ R)
+  (hT : 0 ≤ T) (huR : ∀ s ∈ Ioc 0 T, ‖u s‖ ≤ R)
+  (hDini : IntervalIntegrable (fun s => 2 / (ν * (T - s)) * (‖u s‖ + ‖u T‖) * ‖u s - u T‖) volume 0 T) :
+  (Summable fun k =>
+      ‖Navier.Analysis.ComplexLerayNorm.complexFrequency (Navier.Analysis.CriticalMildSeries.latticeFrequency k)‖ *
+        ‖↑(Navier.Analysis.CriticalMildPathIntegrand.criticalMildDuhamel ν hν u hu T) k‖) ∧
+    Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment
+        (Navier.Analysis.CriticalMildPathIntegrand.criticalMildDuhamel ν hν u hu T) ≤
+      (∫ (s : ℝ) in Ioc 0 T, 2 / (ν * (T - s)) * (‖u s‖ + ‖u T‖) * ‖u s - u T‖) + ν⁻¹ * ‖u T‖ ^ 2
+'Navier.Analysis.PeriodicDynamicCriticalTail.criticalMildDuhamel_graph_and_moment_le_of_dini' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

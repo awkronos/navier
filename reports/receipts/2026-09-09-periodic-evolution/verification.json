@@ -1,0 +1,52 @@
+[
+  {
+    "module": "PeriodicPressureRecovery",
+    "source_sha256": "535b55ea818bb89ce64447397f6d4089f430756f1471d77af5ef1062211692a2",
+    "exit_code": 0
+  },
+  {
+    "module": "PeriodicFourierReconstruction",
+    "source_sha256": "cf7932034adae0230cf62e1ce655298f03e94cae31ff284d0ffc490bfb551a75",
+    "exit_code": 0
+  },
+  {
+    "module": "CriticalMildPositiveTimeSmoothing",
+    "source_sha256": "9b54317a1965ffdc6450cdd4139a18e8e7ce6b8721c3c07456c3d38f55493a21",
+    "exit_code": 0
+  },
+  {
+    "module": "CriticalMildInteriorTimeModulus",
+    "source_sha256": "a4b285e1327e5476cfc00cfbdad81a64cdebddb0cd9728a9f4e61c9e2dcf5d88",
+    "exit_code": 0
+  },
+  {
+    "module": "PeriodicNativeFourierInversion",
+    "source_sha256": "e651ad90467edd1cea43aadbca12467386b2af5faa30c14d5af2ea06f4e1cc08",
+    "exit_code": 0
+  },
+  {
+    "module": "PeriodicGalileanReduction",
+    "source_sha256": "487b5d3e3502afe1e5385d4868b38161d681726e8621888dcc497c95e4438798",
+    "exit_code": 0
+  },
+  {
+    "module": "PeriodicNativeEnergyBalance",
+    "source_sha256": "bf7b227338822158da7977b89e5826d38787127bc768a7a1b6b16131f4705525",
+    "exit_code": 0
+  },
+  {
+    "module": "PeriodicDynamicCriticalTail",
+    "source_sha256": "1ca405e31560884c396bfe6f130f7a60962b6c5f9f2bb4d7c8bc59be1071ff9b",
+    "exit_code": 0
+  },
+  {
+    "module": "PeriodicEnstrophyControl",
+    "source_sha256": "fbf108344308c11a8bb9db006ab116a5ed2adc2b15985541263b10644bfa9024",
+    "exit_code": 0
+  },
+  {
+    "module": "CriticalMildFullPositiveTimeRegularity",
+    "source_sha256": "0535c7a303ed7cd8fe0b22a9905e6d001835345fc66593adee0a279b44dbe040",
+    "exit_code": 0
+  }
+]

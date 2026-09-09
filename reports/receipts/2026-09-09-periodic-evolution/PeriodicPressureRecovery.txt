@@ -1,0 +1,24 @@
+Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected (nu : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (timeDerivative velocity : Navier.Analysis.ComplexLerayProjection.ComplexSpace)
+  (u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hprojected :
+    timeDerivative +
+          (Navier.Analysis.ComplexLerayProjection.complexLeray (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+            (Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v) +
+        Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity =
+      0) :
+  timeDerivative + Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v +
+        Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity +
+      Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+        (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k u v) =
+    0
+'Navier.Analysis.PeriodicPressureRecovery.periodOneGradient_pressureCoefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicPressureRecovery.pressureCoefficient_neg_conjugate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

@@ -1,0 +1,98 @@
+Navier.Analysis.PeriodicEnstrophyControl.periodic_vorticityTransportEquation {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (hsol : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {t : ℝ} (ht : 0 ≤ t) (x : Navier.Space) :
+  Navier.timeDerivative (fun s => Navier.Analysis.Vorticity.vorticity u s) t x +
+      (Navier.spatialDerivative (fun s => Navier.Analysis.Vorticity.vorticity u s) t x) (u t x) =
+    (Navier.spatialDerivative u t x) (Navier.Analysis.Vorticity.vorticity u t x) +
+      ν • Navier.laplacian (fun s => Navier.Analysis.Vorticity.vorticity u s) t x
+'Navier.Analysis.PeriodicEnstrophyControl.periodic_vorticityTransportEquation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicEnstrophyControl.vorticity_smoothOnNonnegativeTime {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (hsol : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) :
+  Navier.SmoothVelocityOnNonnegativeTime fun t => Navier.Analysis.Vorticity.vorticity u t
+'Navier.Analysis.PeriodicEnstrophyControl.vorticity_smoothOnNonnegativeTime' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicEnstrophyControl.euclidean_vorticity_transport {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (hsol : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {t : ℝ} (ht : 0 < t)
+  (x : Navier.Analysis.EuclideanPDETransport.ESpace) :
+  Navier.Construction.ProblemStatement.temporalDerivative
+        (Navier.Analysis.PeriodicEnstrophyControl.euclideanVorticity u) t x +
+      (Navier.Construction.ProblemStatement.spatialDerivative
+          (Navier.Analysis.PeriodicEnstrophyControl.euclideanVorticity u) t x)
+        (Navier.Analysis.EuclideanPDETransport.euclideanVelocity u (t, x)) =
+    (Navier.Construction.ProblemStatement.spatialDerivative (Navier.Analysis.EuclideanPDETransport.euclideanVelocity u)
+          t x)
+        (Navier.Analysis.PeriodicEnstrophyControl.euclideanVorticity u (t, x)) +
+      ν •
+        Navier.Construction.ProblemStatement.spatialLaplacian
+          (Navier.Analysis.PeriodicEnstrophyControl.euclideanVorticity u) t x
+'Navier.Analysis.PeriodicEnstrophyControl.euclidean_vorticity_transport' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicEnstrophyControl.euclidean_vorticity_energyRate {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (hsol : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {t : ℝ} (ht : 0 < t) :
+  Navier.Construction.PeriodicUniqueness.energyRate (Navier.Analysis.PeriodicEnstrophyControl.euclideanVorticity u) 0
+      t =
+    2 * Navier.Analysis.PeriodicEnstrophyControl.unitCellVortexStretching u t -
+      2 * ν * Navier.Analysis.PeriodicEnstrophyControl.unitCellVorticityDissipation u t
+'Navier.Analysis.PeriodicEnstrophyControl.euclidean_vorticity_energyRate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy_hasDerivAt {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (hsol : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {t : ℝ} (ht : 0 < t) :
+  HasDerivAt (Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy u)
+    (Navier.Analysis.PeriodicEnstrophyControl.unitCellVortexStretching u t -
+      ν * Navier.Analysis.PeriodicEnstrophyControl.unitCellVorticityDissipation u t)
+    t
+'Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy_hasDerivAt' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicEnstrophyControl.unitCellVortexStretching_le {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (hsol : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {t G : ℝ} (ht : 0 ≤ t)
+  (hgrad :
+    ∀ y ∈ Navier.Construction.PeriodicIntegration.cube,
+      ‖Navier.Construction.ProblemStatement.spatialDerivative
+            (Navier.Analysis.EuclideanPDETransport.euclideanVelocity u) t
+            (Navier.Construction.PeriodicIntegration.toSpace y)‖ ≤
+        G) :
+  Navier.Analysis.PeriodicEnstrophyControl.unitCellVortexStretching u t ≤
+    2 * G * Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy u t
+'Navier.Analysis.PeriodicEnstrophyControl.unitCellVortexStretching_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy_deriv_add_dissipation_le {ν : ℝ} {u₀ : Navier.VelocityField}
+  {u : Navier.VelocityEvolution} {p : Navier.PressureEvolution}
+  (hsol : Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p) {t G : ℝ} (ht : 0 < t)
+  (hgrad :
+    ∀ y ∈ Navier.Construction.PeriodicIntegration.cube,
+      ‖Navier.Construction.ProblemStatement.spatialDerivative
+            (Navier.Analysis.EuclideanPDETransport.euclideanVelocity u) t
+            (Navier.Construction.PeriodicIntegration.toSpace y)‖ ≤
+        G) :
+  deriv (Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy u) t +
+      ν * Navier.Analysis.PeriodicEnstrophyControl.unitCellVorticityDissipation u t ≤
+    2 * G * Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy u t
+'Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy_deriv_add_dissipation_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicEnstrophyControl.ProblemStatements.PeriodicGlobalRegularity.with_unitCellEnstrophyEvolution
+  (hreg : Navier.ProblemStatements.PeriodicGlobalRegularity) (ν : ℝ) (hν : 0 < ν) (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  ∃ u p,
+    Navier.IsPeriodicClassicalSolution ν Navier.zeroForce u₀ u p ∧
+      ∀ (t : ℝ),
+        0 < t →
+          HasDerivAt (Navier.Analysis.PeriodicEnstrophyControl.unitCellEnstrophy u)
+            (Navier.Analysis.PeriodicEnstrophyControl.unitCellVortexStretching u t -
+              ν * Navier.Analysis.PeriodicEnstrophyControl.unitCellVorticityDissipation u t)
+            t
+'Navier.Analysis.PeriodicEnstrophyControl.ProblemStatements.PeriodicGlobalRegularity.with_unitCellEnstrophyEvolution' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

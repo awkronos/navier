@@ -1,0 +1,10 @@
+Navier.Analysis.PeriodicDatumFourierConstraints.nativeInitialCarrier_divergenceFree (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree
+    (Navier.Analysis.PeriodicFourierReconstruction.nativeInitialCarrier u₀ hu₀)
+'Navier.Analysis.PeriodicDatumFourierConstraints.nativeInitialCarrier_divergenceFree' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicDatumFourierConstraints.nativeInitialCarrier_hermitianReal' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

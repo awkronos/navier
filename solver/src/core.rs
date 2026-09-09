@@ -189,7 +189,7 @@ impl SpectralSolver {
         Ok(())
     }
 
-    pub fn set_state_hat(&mut self, state: Vec<Complex64>) -> Result<(), String> {
+    pub fn set_state_hat(&mut self, mut state: Vec<Complex64>) -> Result<(), String> {
         if state.len() != COMPONENTS * self.len {
             return Err(format!(
                 "spectral state must have {} complex values",
@@ -199,8 +199,11 @@ impl SpectralSolver {
         if state.iter().any(|z| !z.re.is_finite() || !z.im.is_finite()) {
             return Err("spectral state must be finite".into());
         }
+        self.project(&mut state);
+        if state.iter().any(|z| !z.re.is_finite() || !z.im.is_finite()) {
+            return Err("Leray projection produced a non-finite spectral state".into());
+        }
         self.state = state;
-        self.project_state();
         self.time = 0.0;
         self.steps = 0;
         self.reset_resolution_warning();
@@ -225,6 +228,10 @@ impl SpectralSolver {
     ) -> Result<(), String> {
         if !dt.is_finite() || dt <= 0.0 {
             return Err("dt must be finite and positive".into());
+        }
+        let next_time = self.time + dt;
+        if !next_time.is_finite() || next_time == self.time {
+            return Err("dt cannot be represented at the current time".into());
         }
         let e_full: Vec<f64> = self
             .k2
@@ -258,7 +265,7 @@ impl SpectralSolver {
             return Err("non-finite spectral state produced".into());
         }
         self.state = next;
-        self.time += dt;
+        self.time = next_time;
         self.steps += 1;
         self.update_resolution_warning();
         Ok(())
@@ -278,7 +285,11 @@ impl SpectralSolver {
         if !cfl.is_finite() || cfl <= 0.0 {
             return Err("CFL limit must be finite and positive".into());
         }
-        let speed = self.diagnostics().max_speed;
+        let diagnostics = self.diagnostics();
+        if !diagnostics.finite {
+            return Err("cannot compute a stable timestep from non-finite diagnostics".into());
+        }
+        let speed = diagnostics.max_speed;
         Ok(if speed == 0.0 {
             f64::INFINITY
         } else {
@@ -441,21 +452,41 @@ impl SpectralSolver {
             (div_hat.iter().map(|z| z.re * z.re).sum::<f64>() / self.len as f64).sqrt();
         let energy = energy_sum / self.len as f64;
         let enstrophy = enstrophy_sum / self.len as f64;
+        let velocity_rms = (2.0 * energy).max(0.0).sqrt();
+        let vorticity_rms = (2.0 * enstrophy).max(0.0).sqrt();
+        let max_speed = max_speed2.sqrt();
+        let max_vorticity = max_vorticity2.sqrt();
+        let energy_dissipation_rate = 2.0 * self.viscosity * enstrophy;
+        let high_frequency_energy_fraction = self.high_frequency_energy_fraction(0.75);
+        finite &= [
+            self.time,
+            energy,
+            enstrophy,
+            velocity_rms,
+            vorticity_rms,
+            divergence_rms,
+            max_speed,
+            max_vorticity,
+            energy_dissipation_rate,
+            high_frequency_energy_fraction,
+        ]
+        .into_iter()
+        .all(f64::is_finite);
         Diagnostics {
             time: self.time,
             energy,
             enstrophy,
-            velocity_rms: (2.0 * energy).max(0.0).sqrt(),
-            vorticity_rms: (2.0 * enstrophy).max(0.0).sqrt(),
+            velocity_rms,
+            vorticity_rms,
             divergence_rms,
-            max_speed: max_speed2.sqrt(),
-            max_vorticity: max_vorticity2.sqrt(),
-            energy_dissipation_rate: 2.0 * self.viscosity * enstrophy,
-            high_frequency_energy_fraction: self.high_frequency_energy_fraction(0.75),
+            max_speed,
+            max_vorticity,
+            energy_dissipation_rate,
+            high_frequency_energy_fraction,
             tail_start_fraction_of_dealias_cutoff: 0.75,
             tail_tolerance: 1.0e-8,
             underresolved: self.underresolved,
-            finite: finite && divergence_rms.is_finite(),
+            finite,
         }
     }
 
@@ -751,5 +782,43 @@ mod tests {
         let relative_l2 = numerator / denominator;
         assert!((relative_l2 - 1.8953385027576588e-8).abs() < 2e-12);
         assert!((solver.diagnostics().energy - 0.09853534649002092).abs() < 3e-12);
+    }
+
+    #[test]
+    fn imported_state_rejects_projection_overflow_without_mutating_solver() {
+        let mut solver = SpectralSolver::new(4, 0.05).unwrap();
+        let original = solver.state.clone();
+        let mut state = vec![Complex64::default(); COMPONENTS * solver.len];
+        let q = solver.index(1, 1, 0);
+        state[q] = Complex64::new(f64::MAX, 0.0);
+        state[solver.len + q] = Complex64::new(f64::MAX, 0.0);
+
+        assert!(solver.set_state_hat(state).is_err());
+        assert_eq!(solver.state, original);
+    }
+
+    #[test]
+    fn overflowing_diagnostics_are_unhealthy_and_cannot_drive_cfl() {
+        let mut solver = SpectralSolver::new(4, 0.05).unwrap();
+        let mut state = vec![Complex64::default(); COMPONENTS * solver.len];
+        state[0] = Complex64::new(5.0e155, 0.0);
+        solver.set_state_hat(state).unwrap();
+
+        let diagnostics = solver.diagnostics();
+        assert!(diagnostics.energy.is_infinite());
+        assert!(!diagnostics.finite);
+        assert!(solver.stable_dt(0.4).is_err());
+    }
+
+    #[test]
+    fn step_rejects_an_unrepresentable_time_increment_before_mutation() {
+        let mut solver = SpectralSolver::new(4, 0.05).unwrap();
+        solver.time = f64::MAX;
+        let original = solver.state.clone();
+
+        assert!(solver.step(1.0).is_err());
+        assert_eq!(solver.time, f64::MAX);
+        assert_eq!(solver.state, original);
+        assert_eq!(solver.steps, 0);
     }
 }

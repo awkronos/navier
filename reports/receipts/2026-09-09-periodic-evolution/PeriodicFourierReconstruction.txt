@@ -1,0 +1,56 @@
+Navier.ProblemStatements.PeriodicGlobalRegularity : Prop
+def Navier.ProblemStatements.PeriodicGlobalRegularity : Prop :=
+∀ (nu : ℝ),
+  0 < nu →
+    ∀ (u₀ : Navier.VelocityField),
+      Navier.PeriodicInitialDatum u₀ → ∃ u p, Navier.IsPeriodicClassicalSolution nu Navier.zeroForce u₀ u p
+@Navier.Analysis.PeriodicDatumFourierBridge.periodicInitialDatum_latticeWeightedL1 : ∀ {u₀ : Navier.VelocityField},
+  Navier.PeriodicInitialDatum u₀ →
+    Navier.Analysis.CriticalMildWeightedSpace.LatticeWeightedL1
+      (Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀)
+Navier.Analysis.PeriodicFourierReconstruction.nativeInitialCarrier : (u₀ : Navier.VelocityField) →
+  Navier.PeriodicInitialDatum u₀ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach
+Navier.Analysis.PeriodicFourierReconstruction.nativeInitialReconstruction_eq_series : ∀ (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) (x : Navier.Space) (i : Fin 3),
+  Navier.Analysis.PeriodicFourierReconstruction.nativeInitialReconstruction u₀ hu₀ x i =
+    ((∑' (m : Navier.Analysis.CriticalMildSeries.LatticeMode),
+            Navier.Analysis.PeriodicFourierReconstruction.latticeCharacter m x •
+              Navier.Analysis.ComplexLerayNorm.complexEuclideanPoint
+                (Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀ m)).ofLp
+        i).re
+Navier.Analysis.PeriodicFourierReconstruction.nativeInitialReconstruction_exactly_real : ∀ (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀),
+  Navier.Analysis.PeriodicFourierReconstruction.NativeCoefficientHermitian u₀ →
+    ∀ (x : Navier.Space),
+      Navier.Analysis.ComplexLerayNorm.complexEuclideanPoint
+          (Navier.Analysis.ComplexLerayProjection.complexOfReal
+            (Navier.Analysis.PeriodicFourierReconstruction.nativeInitialReconstruction u₀ hu₀ x)) =
+        Navier.Analysis.PeriodicFourierReconstruction.complexFourierReconstruction
+          (Navier.Analysis.PeriodicFourierReconstruction.nativeInitialCarrier u₀ hu₀) x
+'Navier.Analysis.PeriodicFourierReconstruction.continuous_complexFourierReconstruction' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.norm_complexFourierReconstruction_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.complexFourierReconstruction_periodic' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.star_complexFourierReconstruction_apply' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.complexOfReal_physicalFourierReconstruction' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.weightedLatticeCoefficient_ofCoefficients' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.nativeInitialCarrier_coefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.nativeInitialReconstruction_eq_series' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicFourierReconstruction.nativeInitialReconstruction_exactly_real' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

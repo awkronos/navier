@@ -1,0 +1,8 @@
+source=Navier/Analysis/PeriodicClassicalUniqueness.lean
+source_sha256=9e93c3f525a781e95f0b2d3cb59ba5bda3dd7deedbc51e66ce0681b5bb7f227a
+command=lake env lean Navier/Analysis/PeriodicClassicalUniqueness.lean
+exit_code=0
+stdout_bytes=0
+
+materialize_command=lake build Navier.Analysis.PeriodicClassicalUniqueness
+materialize_exit_code=0

@@ -1,0 +1,8 @@
+source=Navier/Analysis/PeriodicDatumFourierBridge.lean
+source_sha256=568a8f0a05d3725a2fbb42e3ad7142ce84f46b294177f98b3d520c2fa516db84
+command=lake env lean Navier/Analysis/PeriodicDatumFourierBridge.lean
+exit_code=0
+stdout_bytes=0
+
+materialize_command=lake build Navier.Analysis.PeriodicDatumFourierBridge
+materialize_exit_code=0

@@ -1,0 +1,28 @@
+{
+  "sources": {
+    "Navier/Problem.lean": "746fa9f8e9d6cb93999418dd3491659600409403147e888bdd0661cf4681a8e2",
+    "Navier/OfficialProblem.lean": "857e475a35af5d90a9a1a91ea205a2fa3c66cc9483bb7e8e6c825c080ac48865",
+    "Navier/Breakdown/ConstructedBreakdown.lean": "523efc908f78916425f5b184f81c2ea7de2a6b151b7fc061229562906615a9d7",
+    "Navier/Analysis/ConstructedFiniteTimeObstruction.lean": "9f87a6ab36e9fe62a86af24c89d957aa86703ff31f4d894a99c89663b2e3e847",
+    "Navier/Analysis/CriticalControlDecomposition.lean": "2951287ab8f606a633e7e1e25ead76793607ff1af2cfe9a019895bbadee947ae",
+    "Navier/Analysis/PeriodicClassicalUniqueness.lean": "9e93c3f525a781e95f0b2d3cb59ba5bda3dd7deedbc51e66ce0681b5bb7f227a",
+    "Navier/Analysis/PeriodicDatumFourierConstraints.lean": "73a8ea4da36d5abfddf66ed607a29de978ac7e74ba632a13d34c62b0d35357e5",
+    "Navier/Analysis/CriticalMildZeroMode.lean": "aa512d259db8595988a0f1dc9a57829d0f7c70ed1ee15c082ff11d0afbd316f2"
+  },
+  "outputs": {
+    "a-lsp.txt": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "abcd-lsp.txt": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "b-lsp.txt": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "b-terminal-hover.txt": "f6f7bfb58e5153b2cc6b3f339bddc9647dce71ba6619d7bcb39827efbad800d4",
+    "c-compiler.txt": "11ff2bbf5a4ad9645a515e2927cf300587281995ca63d8da9a6a5289aa8144db",
+    "c-goal.txt": "413a3f1ff85d0404265c83dab26686320ad546d3acee37e9e129ef76d964e84a",
+    "c-lsp.txt": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "constraints-compiler.txt": "62532804e3ae9000d1be943ab38683f88873976d084d58e554108c5e9037e2f8",
+    "frontier-compiler.txt": "39b56a5893a5f350503b7c4b81718bec4fcd8c036ce00a5f2f3572ddfd8ac99e",
+    "inversion-compiler.txt": "5d71587883903489650d3aac9a579c578910f4a687601fd7e3bd3a2c9fe1f9ed",
+    "obstruction-compiler.txt": "3b41dd074e985be7848149dccafa3edb9144e07cd10d6c1fa66abe251cecda13",
+    "obstruction-lsp-retry.txt": "07135eb0608d4f5656ba892ed81792600b5aa1e915fb6b53dda267f7a9e124b6",
+    "obstruction-lsp.txt": "07135eb0608d4f5656ba892ed81792600b5aa1e915fb6b53dda267f7a9e124b6",
+    "uniqueness-compiler.txt": "c8da6817a64983bd58f65eb0e8d965e6bf0d48684e7b97edc55c7dff6275e82a"
+  }
+}

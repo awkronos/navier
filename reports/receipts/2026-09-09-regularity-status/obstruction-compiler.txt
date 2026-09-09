@@ -1,0 +1,118 @@
+Navier/Analysis/ConstructedFiniteTimeObstruction.lean:137:4: warning: Try this: intro t ht x
+'Navier.Analysis.ConstructedFiniteTimeObstruction.not_bounded_extension_on_support' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.not_continuous_extension_on_support' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_agrees_with_locally_finite_energy_competitor' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_transfers_speed_unbounded' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_force_nonzero_before_one' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_unique_on_every_presingular_slab' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              (∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField),
+                  ContinuousOn v (Set.Icc 0 1 ×ˢ K) →
+                    ¬∀ t ∈ Set.Ico 0 1, ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)) ∧
+                ∀ T < 1,
+                  ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField)
+                    (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField),
+                    ContDiffOn ℝ (↑⊤) v (Navier.ConstructionR3.Comparison.slab 0 T) →
+                      ContDiffOn ℝ (↑⊤) q (Navier.ConstructionR3.Comparison.slab 0 T) →
+                        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v →
+                          (∀ t ∈ Set.Ioo 0 T,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                            (∀ t ∈ Set.Ioo 0 T,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                              (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                                ∀ t ∈ Set.Icc 0 T,
+                                  ∀ (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support :
+  ∃ u p f K T,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            0 ≤ T ∧
+              Navier.Construction.CompactSpatialForceDecay.SupportedIn K f ∧
+                ∀ (t : ℝ), T ≤ t → ∀ (x : Navier.Analysis.ConstructedFiniteTimeObstruction.ESpace), f (t, x) = 0
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor :
+  ∃ u p f,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          ∀ (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField)
+            (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField),
+            ContDiffOn ℝ (↑⊤) v Navier.Construction.ProblemStatement.preSingularDomain →
+              ContDiffOn ℝ (↑⊤) q Navier.Construction.ProblemStatement.preSingularDomain →
+                (∀ T ∈ Set.Ico 0 1, Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) →
+                  (∀ t ∈ Set.Ioo 0 1,
+                      ∀ (x : Navier.Construction.ProblemStatement.Space),
+                        Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) →
+                    (∀ t ∈ Set.Ioo 0 1,
+                        ∀ (x : Navier.Construction.ProblemStatement.Space),
+                          Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) →
+                      (∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) →
+                        Navier.Construction.ProblemStatement.SpeedUnboundedAtOne v
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one :
+  ∃ u p f,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          ∃ t ∈ Set.Ioo 0 1, ∃ x, f (t, x) ≠ 0
+Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation :
+  ∃ u p f K,
+    Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ (↑⊤) f ∧
+        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u ∧
+          IsCompact K ∧
+            (∀ t ∈ Set.Ico 0 1, ∀ x ∉ K, u (t, x) = 0) ∧
+              ¬∃ v q,
+                  ContDiffOn ℝ (↑⊤) v Navier.Construction.ProblemStatement.preSingularDomain ∧
+                    ContDiffOn ℝ (↑⊤) q Navier.Construction.ProblemStatement.preSingularDomain ∧
+                      ContinuousOn v (Set.Icc 0 1 ×ˢ K) ∧
+                        (∀ T ∈ Set.Ico 0 1,
+                            Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) ∧
+                          (∀ t ∈ Set.Ioo 0 1,
+                              ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) ∧
+                            (∀ t ∈ Set.Ioo 0 1,
+                                ∀ (x : Navier.Construction.ProblemStatement.Space),
+                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) ∧
+                              ∀ (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0

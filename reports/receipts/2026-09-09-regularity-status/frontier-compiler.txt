@@ -1,0 +1,27 @@
+'Navier.Analysis.CriticalControlDecomposition.smoothPressureBefore_normalize' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalControlDecomposition.pressureGradient_normalize_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalControlDecomposition.SolvesBefore.normalizePressure' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalControlDecomposition.top_not_le_finiteCriticalBound' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalControlDecomposition.acceleratingVelocity_not_admissible' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+  (N : Navier.Analysis.CriticalControlDecomposition.CriticalQuantity)
+  (hlocal : Navier.Analysis.CriticalControlDecomposition.LocalClassicalExistence)
+  (hcont : Navier.Analysis.CriticalControlDecomposition.NormalizedContinuationFromCriticalControl N)
+  (hapriori : Navier.Analysis.CriticalControlDecomposition.APrioriCriticalControl N) :
+  Navier.ProblemStatements.WholeSpaceGlobalRegularity
+'Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

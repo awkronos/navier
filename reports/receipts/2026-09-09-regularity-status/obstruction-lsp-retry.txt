@@ -1,0 +1,485 @@
+[
+  {
+    "fullRange": {
+      "end": {
+        "character": 61,
+        "line": 139
+      },
+      "start": {
+        "character": 4,
+        "line": 136
+      }
+    },
+    "message": "Try this: intro t ht x",
+    "range": {
+      "end": {
+        "character": 0,
+        "line": 137
+      },
+      "start": {
+        "character": 4,
+        "line": 136
+      }
+    },
+    "severity": 2,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 328
+      },
+      "start": {
+        "character": 0,
+        "line": 328
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.not_bounded_extension_on_support' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 328
+      },
+      "start": {
+        "character": 0,
+        "line": 328
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 329
+      },
+      "start": {
+        "character": 0,
+        "line": 329
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.not_continuous_extension_on_support' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 329
+      },
+      "start": {
+        "character": 0,
+        "line": 329
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 330
+      },
+      "start": {
+        "character": 0,
+        "line": 330
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_agrees_with_locally_finite_energy_competitor' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 330
+      },
+      "start": {
+        "character": 0,
+        "line": 330
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 331
+      },
+      "start": {
+        "character": 0,
+        "line": 331
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_transfers_speed_unbounded' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 331
+      },
+      "start": {
+        "character": 0,
+        "line": 331
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 332
+      },
+      "start": {
+        "character": 0,
+        "line": 332
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_force_nonzero_before_one' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 332
+      },
+      "start": {
+        "character": 0,
+        "line": 332
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 333
+      },
+      "start": {
+        "character": 0,
+        "line": 333
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 333
+      },
+      "start": {
+        "character": 0,
+        "line": 333
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 334
+      },
+      "start": {
+        "character": 0,
+        "line": 334
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 334
+      },
+      "start": {
+        "character": 0,
+        "line": 334
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 335
+      },
+      "start": {
+        "character": 0,
+        "line": 335
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 335
+      },
+      "start": {
+        "character": 0,
+        "line": 335
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 336
+      },
+      "start": {
+        "character": 0,
+        "line": 336
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 336
+      },
+      "start": {
+        "character": 0,
+        "line": 336
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 337
+      },
+      "start": {
+        "character": 0,
+        "line": 337
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_unique_on_every_presingular_slab' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 337
+      },
+      "start": {
+        "character": 0,
+        "line": 337
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 338
+      },
+      "start": {
+        "character": 0,
+        "line": 338
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 338
+      },
+      "start": {
+        "character": 0,
+        "line": 338
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 339
+      },
+      "start": {
+        "character": 0,
+        "line": 339
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 339
+      },
+      "start": {
+        "character": 0,
+        "line": 339
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 340
+      },
+      "start": {
+        "character": 0,
+        "line": 340
+      }
+    },
+    "message": "'Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation' depends on axioms: [propext,\n Classical.choice,\n Quot.sound]",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 340
+      },
+      "start": {
+        "character": 0,
+        "line": 340
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 342
+      },
+      "start": {
+        "character": 0,
+        "line": 342
+      }
+    },
+    "message": "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile :\n  \u2203 u p f K,\n    Navier.Construction.R3CompactCandidate.Properties u p f \u2227\n      ContDiff \u211d (\u2191\u22a4) f \u2227\n        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u \u2227\n          IsCompact K \u2227\n            (\u2200 t \u2208 Set.Ico 0 1, \u2200 x \u2209 K, u (t, x) = 0) \u2227\n              (\u2200 (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField),\n                  ContinuousOn v (Set.Icc 0 1 \u00d7\u02e2 K) \u2192\n                    \u00ac\u2200 t \u2208 Set.Ico 0 1, \u2200 (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)) \u2227\n                \u2200 T < 1,\n                  \u2200 (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField)\n                    (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField),\n                    ContDiffOn \u211d (\u2191\u22a4) v (Navier.ConstructionR3.Comparison.slab 0 T) \u2192\n                      ContDiffOn \u211d (\u2191\u22a4) q (Navier.ConstructionR3.Comparison.slab 0 T) \u2192\n                        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v \u2192\n                          (\u2200 t \u2208 Set.Ioo 0 T,\n                              \u2200 (x : Navier.Construction.ProblemStatement.Space),\n                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) \u2192\n                            (\u2200 t \u2208 Set.Ioo 0 T,\n                                \u2200 (x : Navier.Construction.ProblemStatement.Space),\n                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) \u2192\n                              (\u2200 (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) \u2192\n                                \u2200 t \u2208 Set.Icc 0 T,\n                                  \u2200 (x : Navier.Construction.ProblemStatement.Space), u (t, x) = v (t, x)",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 342
+      },
+      "start": {
+        "character": 0,
+        "line": 342
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 343
+      },
+      "start": {
+        "character": 0,
+        "line": 343
+      }
+    },
+    "message": "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support :\n  \u2203 u p f K T,\n    Navier.Construction.R3CompactCandidate.Properties u p f \u2227\n      ContDiff \u211d (\u2191\u22a4) f \u2227\n        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u \u2227\n          IsCompact K \u2227\n            0 \u2264 T \u2227\n              Navier.Construction.CompactSpatialForceDecay.SupportedIn K f \u2227\n                \u2200 (t : \u211d), T \u2264 t \u2192 \u2200 (x : Navier.Analysis.ConstructedFiniteTimeObstruction.ESpace), f (t, x) = 0",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 343
+      },
+      "start": {
+        "character": 0,
+        "line": 343
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 344
+      },
+      "start": {
+        "character": 0,
+        "line": 344
+      }
+    },
+    "message": "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor :\n  \u2203 u p f,\n    Navier.Construction.R3CompactCandidate.Properties u p f \u2227\n      ContDiff \u211d (\u2191\u22a4) f \u2227\n        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u \u2227\n          \u2200 (v : Navier.Analysis.ConstructedFiniteTimeObstruction.EVelocityField)\n            (q : Navier.Analysis.ConstructedFiniteTimeObstruction.EPressureField),\n            ContDiffOn \u211d (\u2191\u22a4) v Navier.Construction.ProblemStatement.preSingularDomain \u2192\n              ContDiffOn \u211d (\u2191\u22a4) q Navier.Construction.ProblemStatement.preSingularDomain \u2192\n                (\u2200 T \u2208 Set.Ico 0 1, Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) \u2192\n                  (\u2200 t \u2208 Set.Ioo 0 1,\n                      \u2200 (x : Navier.Construction.ProblemStatement.Space),\n                        Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) \u2192\n                    (\u2200 t \u2208 Set.Ioo 0 1,\n                        \u2200 (x : Navier.Construction.ProblemStatement.Space),\n                          Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) \u2192\n                      (\u2200 (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0) \u2192\n                        Navier.Construction.ProblemStatement.SpeedUnboundedAtOne v",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 344
+      },
+      "start": {
+        "character": 0,
+        "line": 344
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 345
+      },
+      "start": {
+        "character": 0,
+        "line": 345
+      }
+    },
+    "message": "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one :\n  \u2203 u p f,\n    Navier.Construction.R3CompactCandidate.Properties u p f \u2227\n      ContDiff \u211d (\u2191\u22a4) f \u2227\n        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u \u2227\n          \u2203 t \u2208 Set.Ioo 0 1, \u2203 x, f (t, x) \u2260 0",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 345
+      },
+      "start": {
+        "character": 0,
+        "line": 345
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  },
+  {
+    "fullRange": {
+      "end": {
+        "character": 6,
+        "line": 346
+      },
+      "start": {
+        "character": 0,
+        "line": 346
+      }
+    },
+    "message": "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation :\n  \u2203 u p f K,\n    Navier.Construction.R3CompactCandidate.Properties u p f \u2227\n      ContDiff \u211d (\u2191\u22a4) f \u2227\n        Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Ico 0 1) u \u2227\n          IsCompact K \u2227\n            (\u2200 t \u2208 Set.Ico 0 1, \u2200 x \u2209 K, u (t, x) = 0) \u2227\n              \u00ac\u2203 v q,\n                  ContDiffOn \u211d (\u2191\u22a4) v Navier.Construction.ProblemStatement.preSingularDomain \u2227\n                    ContDiffOn \u211d (\u2191\u22a4) q Navier.Construction.ProblemStatement.preSingularDomain \u2227\n                      ContinuousOn v (Set.Icc 0 1 \u00d7\u02e2 K) \u2227\n                        (\u2200 T \u2208 Set.Ico 0 1,\n                            Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Set.Icc 0 T) v) \u2227\n                          (\u2200 t \u2208 Set.Ioo 0 1,\n                              \u2200 (x : Navier.Construction.ProblemStatement.Space),\n                                Navier.Construction.ProblemStatement.spatialDivergence v t x = 0) \u2227\n                            (\u2200 t \u2208 Set.Ioo 0 1,\n                                \u2200 (x : Navier.Construction.ProblemStatement.Space),\n                                  Navier.Construction.ProblemStatement.navierStokesResidual v q t x = f (t, x)) \u2227\n                              \u2200 (x : Navier.Construction.ProblemStatement.Space), v (0, x) = 0",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 346
+      },
+      "start": {
+        "character": 0,
+        "line": 346
+      }
+    },
+    "severity": 3,
+    "source": "Lean 4"
+  }
+]Future exception was never retrieved
+future: <Future finished exception=EOFError('Language server process exited unexpectedly.')>
+Traceback (most recent call last):
+  File "<home>/.cache/uv/archive-v0/m8BfweVei2yCFaGO9kD8z/lib/python3.13/site-packages/leanclient/base_client.py", line 354, in _read_stdout_loop
+    msg = self._read_stdout_message()
+  File "<home>/.cache/uv/archive-v0/m8BfweVei2yCFaGO9kD8z/lib/python3.13/site-packages/leanclient/base_client.py", line 293, in _read_stdout_message
+    raise EOFError("Language server process exited unexpectedly.")
+EOFError: Language server process exited unexpectedly.
+

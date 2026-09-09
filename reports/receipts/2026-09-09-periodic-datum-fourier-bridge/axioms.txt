@@ -1,0 +1,34 @@
+command=lake env lean /tmp/PeriodicDatumFourierBridgeAudit.lean
+exit_code=0
+
+Navier.ProblemStatements.PeriodicGlobalRegularity : Prop
+
+Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient
+  (u₀ : Navier.VelocityField)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode) :
+  Navier.Analysis.ComplexLerayProjection.ComplexSpace
+
+Navier.Analysis.PeriodicDatumFourierBridge.periodicInitialDatum_latticeWeightedL1
+  {u₀ : Navier.VelocityField} (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  Navier.Analysis.CriticalMildWeightedSpace.LatticeWeightedL1
+    (Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀)
+
+Navier.Analysis.CriticalMildWeightedSpace.summable_latticeSpectralMajorant_of_weightedL1
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (v w : Navier.Analysis.CriticalMildSeries.LatticeMode →
+    Navier.Analysis.ComplexLerayProjection.ComplexSpace)
+  (hv : Navier.Analysis.CriticalMildWeightedSpace.LatticeWeightedL1 v)
+  (hw : Navier.Analysis.CriticalMildWeightedSpace.LatticeWeightedL1 w) :
+  Summable (Navier.Analysis.CriticalMildSeries.latticeSpectralMajorant k v w)
+
+'Navier.Analysis.PeriodicDatumFourierBridge.scalarCoefficient_eq_tripleIntegral'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicDatumFourierBridge.exists_scalarCoefficient_mixedBound'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicDatumFourierBridge.summable_weighted_scalarCoefficient'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicDatumFourierBridge.periodicInitialDatum_latticeWeightedL1'
+depends on axioms: [propext, Classical.choice, Quot.sound]

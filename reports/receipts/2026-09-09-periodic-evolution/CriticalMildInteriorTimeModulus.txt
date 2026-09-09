@@ -1,0 +1,18 @@
+'Navier.Analysis.CriticalMildInteriorTimeModulus.truncatedDuhamel_halfGenerator_log' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildInteriorTimeModulus.norm_weightedHeatFlow_mildImage_sub_le_cutoff_log' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildInteriorTimeModulus.norm_mildTrajectory_increment_le_quarter' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildInteriorTimeModulus.norm_mildTrajectory_sub_le_quarter_on_terminalWindow' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildInteriorTimeModulus.intervalIntegrable_dini_and_cancellingGraphMoment_of_actualMild' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildInteriorTimeModulus.exists_terminalWindow_dini_and_cancellingGraphMoment' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

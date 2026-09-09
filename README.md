@@ -19,10 +19,12 @@ this repository’s Lean 4.31.0 toolchain. There is no OpenAI Lake dependency.
 Awkronos contributes the transport into the original native PDE carrier,
 additional force-derivative comparisons, solver work, and interactive explanation.
 
-The separate **unforced global regularity statement A remains open here**.
+The separate **unforced global regularity statements A and B remain open here**.
 Comparison before the singular time does not assert uniqueness of a weak
-continuation after it. The numerical experiments concern ordinary periodic
-flows and are separate from the continuum proof.
+continuation after it. The numerical tools include a finite analytic-axis stage
+of the construction and a separate periodic spectral solver. Their computed
+fields and residuals are numerical evidence, not the continuum proof. See the
+[computed construction method](docs/COMPUTED_AXIS_CONSTRUCTION.md).
 
 The logical shape is easiest to see as two different paths:
 
@@ -38,8 +40,8 @@ selected compact (u, p, f)
 
 UNFORCED REGULARITY (open)
 every admissible u0, with f = 0
-  -> local classical solution
-  -> a continuation theorem controlled by one critical quantity
+  -> local classical solution                                  [native input required]
+  -> continuation controlled by one critical quantity           [native input required]
   -> a uniform bound for that quantity, for arbitrary large data    [missing]
   -> global smooth bounded-energy solution
 ```
@@ -54,6 +56,14 @@ The terminal obstruction is stronger than the global endpoint needs: the
 excluded competitor may choose a different finite energy bound on each closed
 pre-singular slab. No single energy constant uniform as the slabs approach the
 deadline is assumed.
+
+The periodic research now has checked native Fourier initialization and exact
+initial reconstruction, classical velocity uniqueness, energy and enstrophy
+identities, and local smoothing estimates for the raw complex mild equation.
+Its physical evolution bridge is under repair: raw convolution must be related
+to the physical Fourier equation through an explicit phase, amplitude and
+viscosity normalization. The [result map](docs/RESULT_MAP.md) records this
+boundary and the still-unproved arbitrary-data global estimate.
 
 ## Mathematics
 

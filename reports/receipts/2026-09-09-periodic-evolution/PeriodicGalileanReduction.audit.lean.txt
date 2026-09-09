@@ -1,0 +1,5 @@
+import Navier.Analysis.PeriodicGalileanReduction
+#check Navier.Analysis.PeriodicGalileanReduction.isPeriodicClassicalSolution_moving
+#print axioms Navier.Analysis.PeriodicGalileanReduction.isPeriodicClassicalSolution_moving
+#check Navier.Analysis.PeriodicGalileanReduction.exists_periodic_solution_movingDatum_iff
+#print axioms Navier.Analysis.PeriodicGalileanReduction.exists_periodic_solution_movingDatum_iff

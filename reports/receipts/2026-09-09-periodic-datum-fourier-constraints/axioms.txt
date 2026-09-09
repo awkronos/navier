@@ -1,0 +1,42 @@
+command=lake env lean /tmp/PeriodicDatumFourierConstraintsAudit.lean
+exit_code=0
+
+Navier.Analysis.PeriodicDatumFourierConstraints.nativeCoefficient_neg
+  (u₀ : Navier.VelocityField)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode) (i : Fin 3) :
+  Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀ (-k) i =
+    star (Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀ k i)
+
+Navier.Analysis.PeriodicDatumFourierConstraints.nativeCoefficient_divergenceFree
+  {u₀ : Navier.VelocityField} (hu₀ : Navier.PeriodicInitialDatum u₀)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode) :
+  inner ℂ
+      (Navier.Analysis.ComplexLerayNorm.complexFrequency
+        (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+      (Navier.Analysis.ComplexLerayNorm.complexEuclideanPoint
+        (Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀ k)) = 0
+
+Navier.Analysis.PeriodicDatumFourierConstraints.nativeInitialCarrier_divergenceFree
+  (u₀ : Navier.VelocityField) (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree
+    (Navier.Analysis.PeriodicFourierReconstruction.nativeInitialCarrier u₀ hu₀)
+
+Navier.Analysis.PeriodicDatumFourierConstraints.nativeInitialCarrier_hermitianReal
+  (u₀ : Navier.VelocityField) (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  Navier.Analysis.PeriodicEnergyCriticalObstruction.LatticeHermitianReal
+    (Navier.Analysis.PeriodicFourierReconstruction.nativeInitialCarrier u₀ hu₀)
+
+'Navier.Analysis.PeriodicDatumFourierConstraints.nativeCoefficient_neg'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicDatumFourierConstraints.nativeCoefficient_divergenceFree'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicDatumFourierConstraints.nativeCoefficient_hermitian'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicDatumFourierConstraints.nativeInitialCarrier_divergenceFree'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+
+'Navier.Analysis.PeriodicDatumFourierConstraints.nativeInitialCarrier_hermitianReal'
+depends on axioms: [propext, Classical.choice, Quot.sound]

@@ -1,0 +1,16 @@
+{
+  "contents": {
+    "kind": "markdown",
+    "value": "```lean\nNavier.Analysis.CriticalMildZeroMode.CriticalMildOffZeroTerminalBound (\u03bd : \u211d) (h\u03bd : 0 < \u03bd) (a : \u21a5WeightedLatticeBanach)\n  (K : \u211d) : Prop\n```\n***\nThe sharp remaining terminal hypothesis after exact zero-mode\nconservation: a horizon-independent bound only on nonzero modes. "
+  },
+  "range": {
+    "end": {
+      "character": 36,
+      "line": 240
+    },
+    "start": {
+      "character": 4,
+      "line": 240
+    }
+  }
+}
