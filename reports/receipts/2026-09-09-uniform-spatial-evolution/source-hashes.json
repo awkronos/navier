@@ -1,0 +1,7 @@
+{
+  "Navier/Analysis/CriticalMildHigherUniformMoments.lean": "ed036f8840b835ca9f6e579afe834b631312c206fe3e05e340225220a7f16b61",
+  "Navier/Analysis/PeriodicInitialPhysicalEvolution.lean": "77c8684b1ddaab3a1764e9adc69d6d719c6a0fe3ca9ae97404f92cc65818f8cf",
+  "Navier/Analysis/PhysicalPeriodicHighEnergyWindow.lean": "e3037cf8008c9720dea5ae0ee54439606f6a7306631c6fabe3fff19985431115",
+  "Navier/Analysis/PhysicalPeriodicHighEnergyContinuity.lean": "83e0cd0258e4ad93555ceeaf21828a6febcae91ecc09ef5688b225b56975ccf8",
+  "Navier/Analysis/PhysicalPeriodicHighEnergyBootstrap.lean": "3c63de654b92f2563bc33082a40b2d1d26e2d5624933d923e8ba9613e303942b"
+}

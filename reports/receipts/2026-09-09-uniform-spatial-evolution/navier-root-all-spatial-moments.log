@@ -1,0 +1,41 @@
+Navier/Analysis/CriticalMildHigherUniformMoments.lean:195:55: warning: Variable name `ha` is not explicitly referenced.
+
+The binding can be removed (if unused) or named `_` (if used implicitly).
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+Try this:
+  [apply] ring_nf
+  
+  The `ring` tactic failed to close the goal. Use `ring_nf` to obtain a normal form.
+    
+  Note that `ring` works primarily in *commutative* rings. If you have a noncommutative ring, abelian group or module, consider using `noncomm_ring`, `abel` or `module` instead.
+Try this:
+  [apply] ring_nf
+  
+  The `ring` tactic failed to close the goal. Use `ring_nf` to obtain a normal form.
+    
+  Note that `ring` works primarily in *commutative* rings. If you have a noncommutative ring, abelian group or module, consider using `noncomm_ring`, `abel` or `module` instead.
+Navier/Analysis/CriticalMildHigherUniformMoments.lean:897:12: warning: Used `tac1 <;> tac2` where `(tac1; tac2)` would suffice
+
+Note: This linter can be disabled with `set_option linter.unnecessarySeqFocus false`
+'Navier.Analysis.CriticalMildHigherUniformMoments.polynomialMoment_weightedHeatFlow_add_threeHalves_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.polynomialMoment_integral_le_integral' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.polynomialMoment_criticalMildPathIntegrand_add_half_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.criticalMildDuhamelTail_polynomialMoment_add_half' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.exists_uniform_polynomialMoment_add_half_on_compactPositiveInterval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.uniform_iteratedHalfOrder_on_nestedPositiveIntervals' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.exists_uniform_all_iteratedHalfOrder_on_compactPositiveInterval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

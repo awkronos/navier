@@ -1,0 +1,65 @@
+'Navier.Analysis.CriticalMildHigherUniformMoments.criticalMildDuhamelTail_polynomialMoment_add_half' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.exists_uniform_polynomialMoment_add_half_on_compactPositiveInterval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherUniformMoments.exists_uniform_all_iteratedHalfOrder_on_compactPositiveInterval' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.CriticalMildHigherUniformMoments.exists_uniform_all_iteratedHalfOrder_on_compactPositiveInterval (ν : ℝ)
+  (hν : 0 < ν) (u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hu₀ : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u₀)
+  (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (huc : Continuous u)
+  (hu : ∀ (x : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u x)) {R a T : ℝ} (hR : 0 ≤ R)
+  (ha : 0 < a) (haT : a ≤ T) (huR : ∀ x ∈ Set.Ioc 0 T, ‖u x‖ ≤ R)
+  (hmild :
+    ∀ (x : ℝ) (hx : x ∈ Set.Icc 0 T), u x = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀ u hu x ⋯) :
+  ∃ B,
+    (∀ (n : ℕ), 0 ≤ B n) ∧
+      ∀ (n : ℕ),
+        ∀ t ∈ Set.Icc a T,
+          Navier.Analysis.CriticalMildPolynomialMomentConvolution.LatticePolynomialMoment
+              (Navier.Analysis.CriticalMildHigherUniformMoments.iteratedHalfOrder 2 n) (u t) ∧
+            Navier.Analysis.CriticalMildPolynomialMomentConvolution.polynomialMoment
+                (Navier.Analysis.CriticalMildHigherUniformMoments.iteratedHalfOrder 2 n) (u t) ≤
+              B n
+'Navier.Analysis.PeriodicInitialPhysicalEvolution.periodicInitialDatum_all_rawCarrier_moments' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicInitialPhysicalEvolution.exists_physical_local_evolution_of_periodicInitialDatum' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicHighEnergyWindow.mild_highEnergy_le_decay_add_equilibrium' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicHighEnergyContinuity.abs_rawHighSpectralEnergy_sub_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicHighEnergyContinuity.mild_highEnergy_le_decay_add_equilibrium_of_continuousPath' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PhysicalPeriodicHighEnergyBootstrap.exists_mild_highEnergy_decay_add_explicitBootstrap' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PhysicalPeriodicHighEnergyBootstrap.exists_mild_highEnergy_decay_add_explicitBootstrap (mu : ℝ)
+  (hmu : 0 < mu) (a0 : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (ha0 : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree a0)
+  (A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (hAc : Continuous A)
+  (hdiv : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (A s)) {R delta T N : ℝ}
+  (hR : 0 ≤ R) (hdelta : 0 < delta) (hdeltaT : delta ≤ T) (hN : 0 < N) (hbound : ∀ s ∈ Set.Ioc 0 T, ‖A s‖ ≤ R)
+  (hmild :
+    ∀ (s : ℝ) (hs : s ∈ Set.Icc 0 T),
+      A s = Navier.Analysis.CriticalMildSelfMap.criticalMildImage mu hmu a0 A hdiv s ⋯) :
+  ∃ b0,
+    0 < b0 ∧
+      b0 < delta ∧
+        delta - b0 ≤ 1 ∧
+          √(delta - b0) < b0 ∧
+            ∀ t ∈ Set.Icc delta T,
+              Navier.Analysis.PhysicalPeriodicHighTailFlux.rawHighSpectralEnergy N (A t) ≤
+                Real.exp (-(2 * mu * N ^ 2) * (t - delta)) *
+                    Navier.Analysis.PhysicalPeriodicHighTailFlux.rawHighSpectralEnergy N (A delta) +
+                  4 * R ^ 2 *
+                      Navier.Analysis.CriticalMildLocalUniformBootstrap.compactHalfGeneratorBudget mu a0 R delta b0 T /
+                    (mu * N ^ 3)
