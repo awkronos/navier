@@ -7,14 +7,26 @@ competitor. This is forced Clay alternative C, with a periodic D consequence.
 It does not prove or refute this repository's unforced statement A.
 
 The [released source](https://github.com/openai/NavierStokesAndEuler/tree/8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538)
-was inspected at that revision. It is reference material, not a Lake dependency
-or proof oracle. Native modules retain Lean 4.31.0 and the original carriers.
-This review did not rebuild the full external certificate: an endpoint-only
-compiler attempt lacked the upstream dependency objects. That incomplete
-build neither verifies the certificate nor identifies a mathematical defect.
-The adapted elementary profile-limit arguments retain their upstream
-[Apache-2.0 license](../references/licenses/OpenAI-Apache-2.0.txt); the rest of
-the native integration uses this repository's existing license.
+was adapted at that exact revision into 577 native source modules. It is not a
+Lake dependency or proof oracle. The port retains the construction's Euclidean
+carriers, equations, compact-support claims, finite-energy comparison, and
+selected witness. A native coordinate isometry then transports the data into
+this repository's official `Fin 3 → ℝ` carrier.
+
+The checked public endpoint is
+`Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown`, whose type is the
+original `Navier.ProblemStatements.WholeSpaceBreakdown`. Its proof selects the
+constructed compact candidate, excludes every admissible global competitor by
+the full finite-energy comparison argument, transports the result to the native
+carrier, and uses viscosity covariance to cover every positive viscosity. It
+has no construction, agreement, or coordinate-equivalence premise.
+
+Every adapted construction file carries its upstream revision and license
+header. The adapted sources remain under the upstream
+[Apache-2.0 license](../references/licenses/OpenAI-Apache-2.0.txt); native bridge
+and endpoint files remain under this repository's license. The exact boundary
+and mechanical port details are recorded in
+[OpenAI construction provenance](OPENAI_CONSTRUCTION_PROVENANCE.md).
 
 ## Native mathematical inputs
 
@@ -31,13 +43,24 @@ the native integration uses this repository's existing license.
 - `Navier/Breakdown/CompactPathBreakdown.lean` handles blowup along spatial points in a compact
   region. Global smoothness supplies a uniform bound there; a fixed spatial
   blowup point need not be assumed.
-
-These results supply reusable inputs, not a native reconstruction of the
-entire singular solution. The outstanding payload is the actual concentrating
-PDE velocity/pressure, its smooth compact force through terminal time, and
-comparison with every admissible global competitor. An announcement, a
-definition, an assumption, and a numerical simulation cannot inhabit those
-premises in Lean.
+- `Navier/Construction/R3ActualCandidate.lean` extracts the actual velocity,
+  pressure, and compact force from the completed correction construction.
+- `Navier/Construction/R3FiniteEnergyComparison.lean` proves whole-space
+  uniqueness on each pre-singular time slab and uses it to exclude every
+  globally smooth finite-energy competitor.
+- `Navier/Analysis/EuclideanPDETransport.lean` proves the derivative,
+  equation, energy, support, and admissibility transport between the Euclidean
+  construction carrier and the official native carrier.
+- `Navier/Breakdown/ConstructedBreakdown.lean` consumes those results and
+  proves the original forced whole-space alternative C.
+- `Navier/Analysis/ConstructedForceExtension.lean` extracts global smoothness
+  of the actual selected force, preserves it through localization, coordinate
+  transport and viscosity scaling, and supplies its explicit smooth extension
+  across time zero. No general Seeley extension assumption is needed.
+- `Navier/Analysis/ForceRecursivePartials.lean` identifies actual successive
+  coordinate differentiation with the multilinear jet and derives weighted
+  estimates for every ordering. The constructed endpoint consumes these
+  estimates; no slot-permutation convention is required for their bounds.
 
 ## Useful conditional results
 
@@ -49,6 +72,10 @@ New proof sources print their own axiom dependencies when compiled.
 
 | Result / family | What it supplies | Remaining input or scope |
 | --- | --- | --- |
+| `ConstructedBreakdown.wholeSpaceBreakdown` | Original forced whole-space alternative C for every positive viscosity | Closed; this says nothing about unforced A |
+| `R3CompactCandidate.selected_compact_candidate` | Constructed Euclidean velocity, pressure, compact force, PDE identities, finite energy, and singular growth | Consumed by the native endpoint |
+| `ComparatorBridge.compact_candidate_excludes_global_solution` | Finite-energy weak–strong comparison against every admissible global competitor | Consumed by the native endpoint; no agreement premise remains |
+| `EuclideanPDETransport` | Exact coordinate transport for PDE derivatives, support, energy, and global competitors | Finite-dimensional carrier bridge only; it preserves the source statement |
 | `CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori` | Whole-space global solution from compatible finite-energy pieces | Local existence, normalized continuation, and a priori critical control for the same quantity; forced blowup supplies none of these unforced universal inputs |
 | `Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown` | Exclusion of a global competitor | An actual local solution, agreement with competitors, and unbounded evaluation; compact-path transport allows a moving location |
 | `ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne` | Admissible forcing/data and nonexistence at every positive viscosity | One genuine viscosity-one witness |
@@ -68,6 +95,21 @@ obstructions remain useful rejection tests. Removing an admitted theorem or
 proving its conditional replacement never supplies its missing analytic input.
 
 ## Solver use
+
+The self-contained [`solver/`](../solver/README.md) Rust crate implements the
+same periodic rotational Fourier method for CPU, WebAssembly, and WebGPU.
+CPU/WASM uses f64 arithmetic; WebGPU uses f32 storage-buffer kernels with
+separable Fourier transforms. Both apply componentwise 2/3 dealiasing, Leray
+projection, and the same integrating-factor RK4 stages. The browser worker
+keeps numerical stepping off the rendering thread and reports the actual
+backend. Live fixed-step/CFL runs and adaptive recorded runs are distinct.
+
+The Rust tests compare Taylor–Green trajectories, exact shear decay, Leray
+projection, and a manufactured solution with active nonlinearity against the
+canonical Python implementation. GPU tests compare velocity and diagnostics
+against Rust f64 and include repeatability and warning latching. Run with
+`NAVIER_REQUIRE_GPU=1` to require actual device execution. The browser build
+records source, toolchain, lockfile, and output hashes in `provenance.json`.
 
 The canonical solver remains `~/reality/solvers/navier`, re-exported by the
 existing `~/navier/scripts` entry points. The adaptive IFRK4 path combines
@@ -112,22 +154,25 @@ below this tail threshold alone does not establish spatial convergence.
 
 ## Verification
 
-Compile new sources with the pinned compiler and retain raw axiom output.
-Only `propext`, `Classical.choice`, and `Quot.sound` are allowed transitively.
-The integration check compiled all three new sources, `Navier.lean`,
-`Navier/AxiomAudit.lean`, and the selected conditional audit. All 539 printed
-axiom closures in the repository audit used only those axioms; this is an audit
-of its named declarations, not a fresh rebuild or census of the entire source
-tree. The solver core's 17 tests and this repository's 21 tests passed.
+The native port was checked with Lean 4.31.0 in dependency order: 511
+construction modules and the 66-module finite-energy comparison closure all
+compiled from current source. Raw transitive axiom output for the selected
+candidate, comparison theorem, transport endpoint, and final alternative-C
+consumer contains only `propext`, `Classical.choice`, and `Quot.sound`.
+The audit concerns these named declarations and does not convert the unresolved
+alternative A into a theorem. The solver core's 17 tests and this repository's
+21 tests passed.
 
 ```bash
 lake env lean Navier/Breakdown/CompactSmoothForce.lean
 lake env lean Navier/Breakdown/CompactPathBreakdown.lean
+lake env lean Navier/Breakdown/ConstructedBreakdown.lean
 lake env lean Navier/Analysis/ForcedEnergyBalance.lean
 lake env lean Navier/ConditionalAudit.lean
 python3 -m unittest discover -s tests -v
 python3 -m unittest discover -s ../reality/solvers/navier -p 'test_*.py' -v
 ```
 
-The original A/C endpoints remain distinct from the supporting lemmas. No
-external dependency or unverified analytic axiom is added by this integration.
+The original A/C endpoints remain distinct: C is constructed here and A remains
+open. No external dependency or unverified analytic axiom is added by this
+integration.

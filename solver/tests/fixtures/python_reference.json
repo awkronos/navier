@@ -1,0 +1,59 @@
+{
+  "grid": 8,
+  "mms": {
+    "dt": 0.05,
+    "exact_energy": 0.09853534825069239,
+    "final_energy": 0.09853534649002092,
+    "relative_l2": 1.8953385027576588e-08,
+    "steps": 4,
+    "viscosity": 0.05
+  },
+  "projection": {
+    "orthogonality_relative": 1.455007496552772e-17,
+    "projected_divergence_linf": 9.661032924465212e-33,
+    "projected_energy": 0.035,
+    "raw_divergence_linf": 1.4000000000000004,
+    "raw_energy": 0.32500000000000007
+  },
+  "provenance": "reality/solvers/navier/navier_spectral_core.py",
+  "shear": {
+    "dt": 0.05,
+    "expected_ratio": 0.7261490370736909,
+    "final_energy": 0.18153725926842268,
+    "initial_energy": 0.25,
+    "mode": 2,
+    "steps": 4,
+    "viscosity": 0.2
+  },
+  "tgv": {
+    "dt": 0.01,
+    "final": {
+      "divergence_rms": 6.655007373668065e-17,
+      "energy": 0.12425223521441459,
+      "enstrophy": 0.37277211316648506,
+      "velocity_linf": 0.9969920910810328
+    },
+    "initial": {
+      "divergence_rms": 8.902979531256228e-17,
+      "energy": 0.125,
+      "enstrophy": 0.375,
+      "velocity_linf": 1.0
+    },
+    "samples_xyz": [
+      -9.184139873994558e-17,
+      1.0035239316207457e-16,
+      -1.8575568406112502e-18,
+      -5.1856253474881274e-17,
+      0.4984960455405165,
+      0.002482540895237803,
+      0.4984960455405166,
+      -5.882955046478298e-17,
+      0.0024825408952377044,
+      -0.0024825408952377876,
+      -7.644273855613797e-17,
+      2.230735789090268e-17
+    ],
+    "steps": 2,
+    "viscosity": 0.05
+  }
+}

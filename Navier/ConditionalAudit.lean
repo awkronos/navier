@@ -8,11 +8,30 @@ import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.ViscosityEndpoints
 import Navier.Breakdown.MaximalNonextension
 import Navier.Breakdown.CompactPathBreakdown
+import Navier.Breakdown.ConstructedBreakdown
 import Navier.Analysis.ForcedEnergyBalance
 
-/-! Selected consumer-facing conditions; not a project-wide census.
+/-! Selected consumer-facing conditions and the constructed alternative-C
+endpoint; not a project-wide census.
 Checks inspect existing imported objects. Rebuild changed providers before
-using axiom output as current-source evidence. No endpoint is proved by this audit. -/
+using axiom output as current-source evidence. Audit commands inspect proofs;
+they do not manufacture them. -/
+
+#check Navier.Construction.R3CompactCandidate.selected_compact_candidate
+#print axioms Navier.Construction.R3CompactCandidate.selected_compact_candidate
+
+#check Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution
+#print axioms Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution
+
+#check Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_compactCandidate
+#print axioms Navier.Breakdown.NativeConstructionEndpoint.wholeSpaceBreakdown_of_compactCandidate
+
+#check Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown
+#print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown
+#check Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce
+#print axioms Navier.Analysis.ConstructedForceExtension.constructedWholeSpaceBreakdownWithGloballySmoothForce
+#check Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
+#print axioms Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown_with_successivePartials
 
 #check Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
 #print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
