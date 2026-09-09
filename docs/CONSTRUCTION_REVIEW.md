@@ -17,11 +17,12 @@ assessment of eligibility for a prize.
 | Smooth force, including time zero | `ConstructedForceExtension.selected_compact_candidate_contDiff` extracts global smoothness from the actual selected construction, then proves localization, coordinate transport, and viscosity scaling preserve it |
 | Smooth extension across the initial boundary | `constructedWholeSpaceBreakdownWithGloballySmoothForce` supplies the globally defined force itself as an explicit `HalfSpaceSmoothExtension`; it does not assume Seeley’s theorem |
 | All weighted derivative bounds | Compact spatial and future-time support imply `ForcedDataRapidDecay`; `OfficialCDEncoding` transports the bounds to Euclidean coordinate weights |
-| Successive mixed partials | `ForceRecursivePartials.successivePartialWithin_eq_iteratedFDerivWithin` proves that recursively differentiating the function agrees with multilinear-jet evaluation; the resulting estimates cover every ordered coordinate family |
+| Successive mixed partials | `ForceRecursivePartials.successivePartialWithin_eq_iteratedFDerivWithin` identifies genuine recursive differentiation with jet evaluation, while `ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials` proves the full force predicate is equivalent to smoothness plus decay for every ordered coordinate family |
 | Original differential equation | `EuclideanPDETransport` proves the time derivative, spatial derivative, divergence, convection, Laplacian, and pressure-gradient identities on the faithful native and Euclidean carriers |
 | Finite and uniformly bounded energy | Integrability is explicit, so Lean’s totalized integral cannot make this clause vacuous; the coordinate isometry and Euclidean energy comparison transport the original energy requirement |
-| Every hypothetical global competitor | `R3FiniteEnergyComparison` derives agreement before the singular time without assuming compact support or pressure decay of the competitor |
-| No globally smooth bounded-energy solution | Agreement contradicts the constructed unbounded velocity on a fixed compact region, where a global smooth competitor would be bounded |
+| Every hypothetical global competitor | `ComparatorBridge.compact_candidate_unique_on_Icc` proves agreement on each closed pre-singular slab from slab-local smoothness, finite energy, divergence, PDE and initial data, without assuming compact support or pressure decay of the competitor |
+| No globally smooth bounded-energy solution | `ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile` packages the same finite-energy witness with fixed compact support and proves that no continuous extension through time one can agree there |
+| Stronger terminal obstruction | `selected_candidate_excludes_locally_finite_energy_continuation` rules out a same-force competitor that is smooth before time one, continuous through it on the compact support, and finite-energy separately on every closed pre-singular slab; it does not assume one bound uniform as `T → 1` |
 
 ## Boundary conventions
 
@@ -35,6 +36,10 @@ directions. Consequently they bound any prescribed ordering of
 `∂x^α ∂t^m`; they do not need a theorem that arbitrary multilinear maps are
 symmetric. The earlier order-sensitive multilinear counterexample remains
 valid, but does not obstruct these actual-derivative estimates.
+
+The converse finite-dimensional estimate is explicit: uniform scalar control
+of the four time/spatial coordinate directions at order `n` bounds the complete
+Fréchet operator norm by the cardinality of the word space, `4^n`.
 
 For hypothetical solutions, an extension-based reading of smoothness on the
 closed half-space implies the within-smooth predicate that the endpoint

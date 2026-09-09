@@ -3,6 +3,20 @@
 Use current theorem types and compiler evidence to select work. This file
 does not assign fixed outcomes or prescribe a proof route.
 
+## Current boundary
+
+| Surface | Current status | Live edge |
+| --- | --- | --- |
+| Forced whole-space alternative C | **THEOREM**: `ConstructedBreakdown.wholeSpaceBreakdown` | Further work may sharpen mechanism, force semantics and finite-time localization; C itself has no remaining premise |
+| Unforced whole-space alternative A | **OPEN**: `ProblemStatements.WholeSpaceGlobalRegularity` | Local existence, normalized continuation and arbitrary-large-data critical control must meet in one faithful whole-space consumer |
+| Fourier-lattice continuation | **CONDITIONAL THEOREM** | `CriticalMildMixedTerminalBound` is the sharp uniform nonlinear estimate; whole-space reconstruction is also required |
+| Periodic breakdown D | No closure claimed here | A forced whole-space theorem does not automatically transport to the periodic carrier |
+
+The globally smooth object in the completed strengthened C result is the
+force. The selected velocity is classical before its singular deadline and
+cannot be continued as a global smooth bounded-energy solution. “Global smooth
+velocity” would describe A or B and must not be inferred from C.
+
 The exact original target and a conditional construction are described in
 [`DECOMPOSITION.md`](DECOMPOSITION.md). The encoding comparison theorems and
 checked energy/pressure counterexamples are listed in
@@ -25,8 +39,9 @@ The soundness cleanup removed admitted proof claims from:
 
 Removing an admission neither proves nor refutes its mathematical statement.
 The surviving source supplies the smaller proved inputs for further work.
-The general analytic estimates and the original global target still require
-proofs or exact counterexamples.
+The general analytic estimates and the original unforced global target still
+require proofs or exact counterexamples. The completed forced construction is
+documented separately in the [result map](RESULT_MAP.md).
 
 `scripts/AuditAllAxioms.lean` checks every declaration imported from a Navier
 module, including private helpers and declarations in other namespaces, for

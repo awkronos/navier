@@ -8,6 +8,12 @@ Research program baseline (initial contract commit):
 **81448ed3e488b8b7d357ce430d52df4434f0c9cd**
 Primary formal target: **Fefferman alternative (A), whole space, zero force**
 
+Current status supersedes the historical route labels below: whole-space
+forced alternative C is now proved by
+`Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown`; unforced A and
+periodic D are not proved here. See [`RESULT_MAP.md`](RESULT_MAP.md) for the
+current claim and evidence boundary.
+
 This document is an attack architecture, not a claimed solution. An established
 criterion is recorded as a conditional bridge; it is never counted as the
 unconditional estimate that the criterion requires. Every research route below
@@ -368,7 +374,8 @@ or logical kill test), and **observation-only** (computation).
   not form an invariant or self-sustaining network. Averaged blowup is an
   **obstruction** [TAO2016];
   weak nonuniqueness is a boundary result [BUCKMASTER_VICOL2019],
-  [ALBRITTON_BRUE_COLOMBO2022]; exact C/D remain **open-residual**.
+  [ALBRITTON_BRUE_COLOMBO2022]. The subsequently integrated construction now
+  closes exact whole-space C; periodic D remains **open** in this repository.
 
 ## 6. Using the blueprint
 

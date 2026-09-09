@@ -3,8 +3,9 @@
 The September 8, 2026 [OpenAI paper](https://cdn.openai.com/pdf/32d9f210-8b73-45e0-91bc-82a30aef8a9a/navier-stokes.pdf)
 claims smooth compact forcing, zero initial velocity, finite-time unbounded
 speed, and bounded energy. Section 10 excludes a global smooth bounded-energy
-competitor. This is forced Clay alternative C, with a periodic D consequence.
-It does not prove or refute this repository's unforced statement A.
+competitor. This is forced Clay alternative C. It does not prove or refute
+this repository's unforced statement A, and no periodic alternative-D
+consequence is claimed here.
 
 The [released source](https://github.com/openai/NavierStokesAndEuler/tree/8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538)
 was adapted at that exact revision into 577 native source modules. It is not a
@@ -20,6 +21,14 @@ constructed compact candidate, excludes every admissible global competitor by
 the full finite-energy comparison argument, transports the result to the native
 carrier, and uses viscosity covariance to cover every positive viscosity. It
 has no construction, agreement, or coordinate-equivalence premise.
+
+Here “globally smooth” applies to the constructed **force**. The velocity and
+pressure are classical on every slab before the singular deadline. Slab
+uniqueness forces any hypothetical global classical competitor to coincide
+with that candidate there; the candidate's unbounded speed at the deadline
+then contradicts global smoothness. The result neither supplies a smooth
+velocity through the deadline nor asserts uniqueness in a post-singular weak
+solution class.
 
 Every adapted construction file carries its upstream revision and license
 header. The adapted sources remain under the upstream
@@ -46,8 +55,16 @@ and mechanical port details are recorded in
 - `Navier/Construction/R3ActualCandidate.lean` extracts the actual velocity,
   pressure, and compact force from the completed correction construction.
 - `Navier/Construction/R3FiniteEnergyComparison.lean` proves whole-space
-  uniqueness on each pre-singular time slab and uses it to exclude every
-  globally smooth finite-energy competitor.
+  uniqueness on each pre-singular time slab. The comparison needs only the
+  competitor's smoothness, finite energy, divergence equation, forced PDE and
+  initial data on that slab; it then excludes every global classical
+  competitor as a consequence.
+- `Navier/Analysis/ConstructedFiniteTimeObstruction.lean` packages one selected
+  witness carrying the globally smooth force, uniform energy on `[0,1)`, fixed
+  compact support, slab uniqueness, and failure of every continuous extension
+  through time one on that support. Its strongest continuation corollary needs
+  competitor energy only separately on each closed pre-singular slab; the
+  energy constants may diverge as the slabs approach time one.
 - `Navier/Analysis/EuclideanPDETransport.lean` proves the derivative,
   equation, energy, support, and admissibility transport between the Euclidean
   construction carrier and the official native carrier.
@@ -61,6 +78,13 @@ and mechanical port details are recorded in
   coordinate differentiation with the multilinear jet and derives weighted
   estimates for every ordering. The constructed endpoint consumes these
   estimates; no slot-permutation convention is required for their bounds.
+- `Navier/Analysis/ForceCoordinateEquivalence.lean` proves the converse finite-
+  dimensional estimate and packages the exact equivalence: the official
+  Fréchet-bundle force predicate is the same as half-space smoothness plus
+  rapid decay of every genuine ordered time/spatial coordinate partial. The
+  reverse operator-norm loss is the explicit four-direction word count `4^n`.
+  Its periodic analogue clarifies the force semantics for D but does not prove
+  the existence of a periodic breakdown witness.
 
 ## Useful conditional results
 
@@ -75,6 +99,10 @@ New proof sources print their own axiom dependencies when compiled.
 | `ConstructedBreakdown.wholeSpaceBreakdown` | Original forced whole-space alternative C for every positive viscosity | Closed; this says nothing about unforced A |
 | `R3CompactCandidate.selected_compact_candidate` | Constructed Euclidean velocity, pressure, compact force, PDE identities, and singular growth | Consumed by the native endpoint; its property bundle does not itself include a uniform energy bound |
 | `ConstructedBreakdown.selectedFiniteEnergyCandidate` | The constructed unit-viscosity Euclidean candidate with globally smooth force and uniform finite energy on `0 ≤ t < 1` | Connects the compact-support energy estimate to the actual selected witness; no global continuation is asserted |
+| `ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile` | One witness jointly carrying smooth force, pre-singular energy, compact support, local slab uniqueness and terminal nonextension | Unit-viscosity Euclidean profile; the native all-viscosity C endpoint is obtained through the existing transport |
+| `ComparatorBridge.compact_candidate_unique_on_Icc` | Equality with any smooth finite-energy competitor on every closed slab `0 ≤ t ≤ T < 1` | Requires only slab-local competitor hypotheses; says nothing about weak solutions after the deadline |
+| `ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation` | No same-force competitor can be smooth before time one, continuous through it on the candidate's compact support, and finite-energy on every closed pre-singular slab | No energy constant uniform in `T` is assumed; discontinuous or weak post-singular objects are outside the conclusion |
+| `ForceCoordinateEquivalence.forcedDataRapidDecay_iff_successivePartials` | Exact equivalence between the C force carrier and decay of genuine ordered coordinate partials | Covers every ordered list; does not assert an unnecessary general permutation theorem for within-derivatives |
 | `ComparatorBridge.compact_candidate_excludes_global_solution` | Finite-energy comparison between smooth classical fields against every admissible global competitor | Consumed by the native endpoint; no agreement premise remains |
 | `EuclideanPDETransport` | Exact coordinate transport for PDE derivatives, support, energy, and global competitors | Finite-dimensional carrier bridge only; it preserves the source statement |
 | `CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori` | Whole-space global solution from compatible finite-energy pieces | Local existence, normalized continuation, and a priori critical control for the same quantity; forced blowup supplies none of these unforced universal inputs |
@@ -94,6 +122,27 @@ New proof sources print their own axiom dependencies when compiled.
 The energy-only, arbitrary-pressure, bare-integral and small-data-only
 obstructions remain useful rejection tests. Removing an admitted theorem or
 proving its conditional replacement never supplies its missing analytic input.
+
+## Local-to-global frontier for statement A
+
+The exact native composition theorem has four moving parts:
+
+| Role | Exact declaration or premise | What is proved | What remains |
+| --- | --- | --- | --- |
+| Local producer | `CriticalControlDecomposition.LocalClassicalExistence` | Its contract is precise and satisfiable | Existence for every admissible whole-space datum remains an input |
+| Restart | `NormalizedContinuationFromCriticalControl N` | The checked consumer normalizes pressure and glues compatible stages | A continuation theorem for one concrete physical quantity `N` remains an input |
+| Uniform control | `APrioriCriticalControl N` | The checked consumer uses a bound uniform in horizon and local solution | The arbitrary-large-data bound is the decisive missing estimate |
+| Global consumer | `wholeSpaceGlobalRegularity_of_local_continuation_apriori` | The three common-`N` premises imply the exact `WholeSpaceGlobalRegularity` carrier | Conditional until all three premises are constructed |
+
+The lattice mild path sharpens the third row. A proved coercive estimate turns
+`CriticalMildMixedTerminalBound` into `CriticalMildTerminalNormBound`, and the
+latter yields a cofinal global mild chain. The missing mixed bound is uniform
+over all finite original-data charts. Even after proving it, a faithful bridge
+must reconstruct the whole-space velocity, pressure, PDE, smoothness and energy
+clauses; the present lattice carrier does not silently provide that bridge.
+
+See the [claim and frontier map](RESULT_MAP.md) for the complete public
+claim-to-declaration table and a frozen compiler receipt.
 
 ## Solver use
 
@@ -161,8 +210,8 @@ compiled from current source. Raw transitive axiom output for the selected
 candidate, comparison theorem, transport endpoint, and final alternative-C
 consumer contains only `propext`, `Classical.choice`, and `Quot.sound`.
 The audit concerns these named declarations and does not convert the unresolved
-alternative A into a theorem. The solver core's 17 tests and this repository's
-21 tests passed.
+alternative A into a theorem. The solver core's 17 tests and the final Python
+verification suite's 29 tests passed in the private review cycle.
 
 ```bash
 lake env lean Navier/Breakdown/CompactSmoothForce.lean
