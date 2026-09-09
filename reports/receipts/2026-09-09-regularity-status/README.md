@@ -92,10 +92,16 @@ speed-transfer declarations are currently normalized to unit viscosity/time one.
 
 ## Exact global-control obligation
 
-For each admissible initialized lattice datum a and positive viscosity nu, prove
+For each physically phase-encoded initialized lattice datum a and positive raw
+viscosity mu, prove
 there is a finite K depending on a and nu but not the chart horizon T or radius R,
 such that every actual original-data mild chart obeys
 `offZeroMixedCriticalQty nu (u T) <= K`.
+Here the displayed declaration's viscosity argument `nu` denotes the raw
+coefficient `mu=(2*pi)^2*nu_physical`. The initializer is
+`A=-2*pi*I*u_hat`; its reality law is anti-Hermitian. The unrestricted complex
+version of this bound is under a separate counterexample audit. It cannot be
+silently identified with the physical-data obligation.
 The zero mode is conserved and is removed from this obligation. The bound feeds
 the existing terminal-norm and cofinal global-mild consumers. It is not, by
 itself, the native classical B theorem: smooth space-time reconstruction, the
@@ -107,3 +113,18 @@ local inputs. Constants depending on an assumed chart radius do not constitute
 this horizon-independent arbitrary-data bound.
 
 LSP shutdown trace paths are redacted to `<home>`; diagnostics and all theorem/axiom messages are unchanged.
+
+## Exact endpoint verifier refresh
+
+`endpoint-audit.txt` records a fresh source/type/axiom audit: C's dependency
+receipts are 615/615 and its exact endpoint consumer passes. A, B, and D have
+no unconditional witness in this audit. This is the audit's scope, not a
+prohibition on constructing those proofs. `rejected-pressure-as-B.txt` records
+the exact Lean type mismatch when a coefficient-level pressure prerequisite
+is deliberately offered as a B witness.
+
+Run `python3 scripts/verify_construction.py --audit-regularity-endpoints`.
+Register a proposed proof with `--endpoint-witness B=Module:Declaration`;
+the verifier compiles its current source, checks the exact original consumer,
+prints transitive axioms, and checks dependency freshness. Use
+`--endpoint-prerequisite B=Module:Declaration` for a supporting result.

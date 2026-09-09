@@ -1,0 +1,30 @@
+SOURCE-CHECKED Navier.OfficialProblem sha256=857e475a35af5d90a9a1a91ea205a2fa3c66cc9483bb7e8e6c825c080ac48865
+AUDITED A kind=proposition declaration=Navier.ProblemStatements.WholeSpaceGlobalRegularity axioms=Classical.choice,Quot.sound,propext
+AUDITED B kind=proposition declaration=Navier.ProblemStatements.PeriodicGlobalRegularity axioms=Classical.choice,Quot.sound,propext
+AUDITED C kind=proposition declaration=Navier.ProblemStatements.WholeSpaceBreakdown axioms=Classical.choice,Quot.sound,propext
+AUDITED D kind=proposition declaration=Navier.ProblemStatements.PeriodicBreakdown axioms=Classical.choice,Quot.sound,propext
+SOURCE-CHECKED Navier.OfficialSurfaceSignatures sha256=547df955f6bbeee458fe145a39ad714e9bfff412a8c2eb6969ffb005c7bd4739
+AUDITED A kind=signature declaration=Navier.OfficialSurfaceSignatures.wholeSpaceGlobalRegularity_signature axioms=Classical.choice,Quot.sound,propext
+AUDITED B kind=signature declaration=Navier.OfficialSurfaceSignatures.periodicGlobalRegularity_signature axioms=Classical.choice,Quot.sound,propext
+AUDITED C kind=signature declaration=Navier.OfficialSurfaceSignatures.wholeSpaceBreakdown_signature axioms=Classical.choice,Quot.sound,propext
+AUDITED D kind=signature declaration=Navier.OfficialSurfaceSignatures.periodicBreakdown_signature axioms=Classical.choice,Quot.sound,propext
+SOURCE-CHECKED Navier.Analysis.CriticalControlDecomposition sha256=2951287ab8f606a633e7e1e25ead76793607ff1af2cfe9a019895bbadee947ae
+AUDITED A kind=conditional declaration=Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori axioms=Classical.choice,Quot.sound,propext
+SOURCE-CHECKED Navier.Analysis.ViscosityEndpoints sha256=d3e455468de30e4b9e46831afc332a288fcf9038e95c34034304664d77c21ba1
+AUDITED B kind=reduction declaration=Navier.Analysis.ViscosityEndpoints.periodicGlobalRegularity_iff_atViscosityOne axioms=Classical.choice,Quot.sound,propext
+AUDITED C kind=reduction declaration=Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne axioms=Classical.choice,Quot.sound,propext
+AUDITED D kind=conditional declaration=Navier.Analysis.ViscosityEndpoints.periodicBreakdown_of_zeroForceAtViscosityOne axioms=Classical.choice,Quot.sound,propext
+SOURCE-CHECKED Navier.Breakdown.ConstructedBreakdown sha256=523efc908f78916425f5b184f81c2ea7de2a6b151b7fc061229562906615a9d7
+AUDITED C kind=witness declaration=Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown axioms=Classical.choice,Quot.sound,propext
+WITNESS-EVIDENCE C current_source=yes type_and_axioms=yes dependency_receipts=615/615 endpoint_witness=yes
+SOURCE-CHECKED Navier.Analysis.PeriodicPressureRecovery sha256=535b55ea818bb89ce64447397f6d4089f430756f1471d77af5ef1062211692a2
+AUDITED B kind=prerequisite declaration=Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected axioms=Classical.choice,Quot.sound,propext
+PREREQUISITE-EVIDENCE B current_source=yes type_and_axioms=yes dependency_receipts=8/18 endpoint_witness=no
+ENDPOINT A target=Navier.ProblemStatements.WholeSpaceGlobalRegularity status=NO-UNCONDITIONAL-WITNESS-IN-THIS-AUDIT
+SCIENTIFIC-LIMIT A consumer requires a smooth unforced whole-space velocity-pressure pair for every admissible Schwartz datum and every positive viscosity
+ENDPOINT B target=Navier.ProblemStatements.PeriodicGlobalRegularity status=NO-UNCONDITIONAL-WITNESS-IN-THIS-AUDIT
+SCIENTIFIC-LIMIT B consumer requires a real smooth period-one velocity and pressure; a raw complex lattice mild equation must supply conjugate symmetry, reconstruction, A=-2*pi*I*u_hat, and mu=(2*pi)^2*nu before it can discharge this endpoint
+ENDPOINT C target=Navier.ProblemStatements.WholeSpaceBreakdown status=UNCONDITIONAL-WITNESS-VERIFIED
+SCIENTIFIC-LIMIT C consumer requires, for every positive viscosity, admissible whole-space datum and rapidly decaying force excluding every global classical solution pair
+ENDPOINT D target=Navier.ProblemStatements.PeriodicBreakdown status=NO-UNCONDITIONAL-WITNESS-IN-THIS-AUDIT
+SCIENTIFIC-LIMIT D consumer requires, for every positive viscosity, admissible periodic datum and periodic rapidly decaying force excluding every global periodic pair

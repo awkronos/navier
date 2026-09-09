@@ -1,0 +1,75 @@
+Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected (nu : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (timeDerivative velocity : Navier.Analysis.ComplexLerayProjection.ComplexSpace)
+  (u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hprojected :
+    timeDerivative +
+          (Navier.Analysis.ComplexLerayProjection.complexLeray (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+            (Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v) +
+        Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity =
+      0) :
+  timeDerivative + Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v +
+        Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity +
+      Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+        (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k u v) =
+    0
+theorem Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected : ∀ (nu : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (timeDerivative velocity : Navier.Analysis.ComplexLerayProjection.ComplexSpace)
+  (u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach),
+  timeDerivative +
+          (Navier.Analysis.ComplexLerayProjection.complexLeray (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+            (Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v) +
+        Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity =
+      0 →
+    timeDerivative + Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v +
+          Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity +
+        Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+          (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k u v) =
+      0 :=
+fun nu k timeDerivative velocity u v hprojected =>
+  Eq.mpr
+    (id
+      (congrArg
+        (fun _a =>
+          timeDerivative + Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v +
+                Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity +
+              Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k _a =
+            0)
+        (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient.eq_1 k u v)))
+    (Eq.mpr
+      (id
+        (congrArg
+          (fun _a =>
+            timeDerivative + Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v +
+                  Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity +
+                _a =
+              0)
+          (Navier.Analysis.PeriodicPressureRecovery.periodOneGradient_pressureCoefficient k
+            (Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v))))
+      (Trans.trans
+        (Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected._abel_1_2 nu k timeDerivative
+          velocity u v)
+        hprojected))
+'Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+/var/folders/rl/nn37vxqx47db2_41rl1zl2ym0000gn/T/navier-endpoint-audit-5ngx84mh/Navier-Analysis-PeriodicPressureRecovery.lean:206:63: error: Type mismatch
+  Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected
+has type
+  ∀ (nu : ℝ) (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+    (timeDerivative velocity : Navier.Analysis.ComplexLerayProjection.ComplexSpace)
+    (u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach),
+    timeDerivative +
+            (Navier.Analysis.ComplexLerayProjection.complexLeray
+                (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+              (Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v) +
+          Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity =
+        0 →
+      timeDerivative + Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k u v +
+            Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient nu k velocity +
+          Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+            (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k u v) =
+        0
+but is expected to have type
+  Navier.ProblemStatements.PeriodicGlobalRegularity

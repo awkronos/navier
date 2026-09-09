@@ -1,6 +1,9 @@
 # Navier — critical-path proof contract
 
-The exact mathematical surface is `Navier/Problem.lean`. Determine its status
+The exact mathematical surfaces are `Navier/Problem.lean` (A) and
+`Navier/OfficialProblem.lean` (B, C, D). Construct inhabitants of the original
+A, B, and D propositions, pursuing independent mathematical routes when
+authorized. Determine their status
 from current proofs or counterexamples; no instruction or planning label
 predetermines the mathematical outcome. Local existence and conditional
 continuation establish their stated conclusions.
@@ -11,7 +14,10 @@ continuation establish their stated conclusions.
   to the whole-space endpoint. Retain an assumption in a conditional theorem's
   type until its proof is supplied.
 
-Prioritize statements feeding the original whole-space consumer. Do not add
+Prioritize statements feeding the original A, B, or D consumer. An open status
+records current evidence; it never forbids construction or fixes a future
+outcome. Checked obstructions constrain the particular route they refute,
+not every possible proof of the endpoint. Do not add
 redundant chain records, cofinality aliases, numerical surrogates, or
 result-as-hypothesis wrappers. A conditional theorem must have satisfiable
 hypotheses and supply an actual mathematical step to its named consumer.

@@ -7,6 +7,13 @@ counterexample into an unforced all-data regularity theorem.
 
 ## Existence and breakdown endpoints
 
+The active construction targets are the exact A, B, and D propositions.
+Current open statuses report evidence and do not constrain future proofs.
+The A route constructs native whole-space evolution; the B routes construct
+physical Fourier reconstruction, positive-time regularity and global control;
+the D route investigates periodizing the compact forced construction while
+preserving every clause of the periodic contract.
+
 | Question | Exact Lean surface | Quantifiers and force | Status |
 | --- | --- | --- | --- |
 | Can one choose admissible data and forcing for which no global classical solution exists? | `Navier.ProblemStatements.WholeSpaceBreakdown` | For every `nu > 0`, there exist a divergence-free Schwartz datum and a rapidly decaying smooth force such that no global `IsClassicalSolution` exists | **THEOREM**, inhabited by `ConstructedBreakdown.wholeSpaceBreakdown` |
@@ -20,6 +27,14 @@ classical contract, including **periodic velocity and periodic pressure**.
 It consumes an assumed B witness to attach this proved uniqueness conclusion;
 it does not discharge B's existence premise. No equality of pressures is
 claimed, since a spatially constant pressure gauge remains free.
+
+The checked [mean-drift algebra](../Navier/Analysis/CriticalMildMeanDriftRemoval.lean)
+constructs the raw encoding `A=-2*pi*i*u_hat`, proves literal convolution phase
+covariance, and identifies the constant-mean cross term and its cancellation
+with the translation derivative. It preserves the off-zero amplitude, squared
+energy and half-generator moment. The full time-integrated fixed-point
+transport is a further construction; these coefficient identities do not
+assume or establish arbitrary-data global control.
 
 The completed endpoint is the whole-space forced alternative C in the official
 problem statement. It is mathematically substantive: the proof constructs the

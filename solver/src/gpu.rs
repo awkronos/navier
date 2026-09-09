@@ -6,6 +6,7 @@
 //! viscous integrating factors, and RK4 combination. Readback happens only
 //! when a caller requests a render frame or diagnostics.
 
+use crate::convention::SpectralConventionMetadata;
 use bytemuck::{Pod, Zeroable};
 use serde::Serialize;
 use std::{
@@ -341,6 +342,9 @@ impl WebGpuSpectralSolver {
     }
     pub fn viscosity(&self) -> f64 {
         self.viscosity as f64
+    }
+    pub fn metadata(&self) -> SpectralConventionMetadata {
+        SpectralConventionMetadata::new(self.n, self.viscosity())
     }
     pub fn time(&self) -> f64 {
         self.time

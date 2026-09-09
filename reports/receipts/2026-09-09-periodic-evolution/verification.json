@@ -48,5 +48,10 @@
     "module": "CriticalMildFullPositiveTimeRegularity",
     "source_sha256": "0535c7a303ed7cd8fe0b22a9905e6d001835345fc66593adee0a279b44dbe040",
     "exit_code": 0
+  },
+  {
+    "module": "CriticalMildMeanDriftRemoval",
+    "source_sha256": "cbd082de5f1a75317361c55e8ac01f4d28df56a9635544ad59e79219f95e68ec",
+    "exit_code": 0
   }
 ]

@@ -6,6 +6,7 @@
 //! and after the physical-space product, and viscosity is integrated by the
 //! same integrating-factor RK4 formula.
 
+use crate::convention::SpectralConventionMetadata;
 use num_complex::Complex64;
 use rustfft::{Fft, FftPlanner};
 use serde::Serialize;
@@ -126,6 +127,9 @@ impl SpectralSolver {
     }
     pub fn viscosity(&self) -> f64 {
         self.viscosity
+    }
+    pub fn metadata(&self) -> SpectralConventionMetadata {
+        SpectralConventionMetadata::new(self.n, self.viscosity)
     }
     pub fn time(&self) -> f64 {
         self.time

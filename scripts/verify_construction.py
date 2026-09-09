@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild and audit the local source closure of the constructed C endpoint.
+"""Rebuild C or source-audit the exact A/B/C/D regularity endpoints.
 
 This deliberately compiles source files one at a time.  It does not call an
 umbrella Lake build and does not infer proof status from source text.
@@ -17,7 +17,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, NamedTuple
 
 
 DEFAULT_ROOT_MODULE = "Navier.Breakdown.ConstructedBreakdown"
@@ -36,6 +36,87 @@ AUDITED_DECLARATIONS = (
     "Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation",
 )
 ALLOWED_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
+
+ENDPOINT_TARGETS = {
+    "A": "Navier.ProblemStatements.WholeSpaceGlobalRegularity",
+    "B": "Navier.ProblemStatements.PeriodicGlobalRegularity",
+    "C": "Navier.ProblemStatements.WholeSpaceBreakdown",
+    "D": "Navier.ProblemStatements.PeriodicBreakdown",
+}
+
+# These are acceptance boundaries for interpreting compiler-clean declarations.
+# They do not replace the exact Lean type check performed for a witness below.
+ENDPOINT_SCIENTIFIC_LIMITS = {
+    "A": (
+        "consumer requires a smooth unforced whole-space velocity-pressure pair "
+        "for every admissible Schwartz datum and every positive viscosity"
+    ),
+    "B": (
+        "consumer requires a real smooth period-one velocity and pressure; a raw "
+        "complex lattice mild equation must supply conjugate symmetry, reconstruction, "
+        "A=-2*pi*I*u_hat, and mu=(2*pi)^2*nu before it can discharge this endpoint"
+    ),
+    "C": (
+        "consumer requires, for every positive viscosity, admissible whole-space datum "
+        "and rapidly decaying force excluding every global classical solution pair"
+    ),
+    "D": (
+        "consumer requires, for every positive viscosity, admissible periodic datum "
+        "and periodic rapidly decaying force excluding every global periodic pair"
+    ),
+}
+
+
+class EndpointAuditItem(NamedTuple):
+    label: str
+    kind: str
+    module: str
+    declaration: str
+
+
+DEFAULT_ENDPOINT_AUDIT_ITEMS = (
+    EndpointAuditItem(label, "proposition", "Navier.OfficialProblem", declaration)
+    for label, declaration in ENDPOINT_TARGETS.items()
+)
+DEFAULT_ENDPOINT_AUDIT_ITEMS = tuple(DEFAULT_ENDPOINT_AUDIT_ITEMS) + (
+    EndpointAuditItem(
+        "A", "signature", "Navier.OfficialSurfaceSignatures",
+        "Navier.OfficialSurfaceSignatures.wholeSpaceGlobalRegularity_signature",
+    ),
+    EndpointAuditItem(
+        "B", "signature", "Navier.OfficialSurfaceSignatures",
+        "Navier.OfficialSurfaceSignatures.periodicGlobalRegularity_signature",
+    ),
+    EndpointAuditItem(
+        "C", "signature", "Navier.OfficialSurfaceSignatures",
+        "Navier.OfficialSurfaceSignatures.wholeSpaceBreakdown_signature",
+    ),
+    EndpointAuditItem(
+        "D", "signature", "Navier.OfficialSurfaceSignatures",
+        "Navier.OfficialSurfaceSignatures.periodicBreakdown_signature",
+    ),
+    EndpointAuditItem(
+        "A", "conditional", "Navier.Analysis.CriticalControlDecomposition",
+        "Navier.Analysis.CriticalControlDecomposition."
+        "wholeSpaceGlobalRegularity_of_local_continuation_apriori",
+    ),
+    EndpointAuditItem(
+        "B", "reduction", "Navier.Analysis.ViscosityEndpoints",
+        "Navier.Analysis.ViscosityEndpoints.periodicGlobalRegularity_iff_atViscosityOne",
+    ),
+    EndpointAuditItem(
+        "C", "reduction", "Navier.Analysis.ViscosityEndpoints",
+        "Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne",
+    ),
+    EndpointAuditItem(
+        "D", "conditional", "Navier.Analysis.ViscosityEndpoints",
+        "Navier.Analysis.ViscosityEndpoints.periodicBreakdown_of_zeroForceAtViscosityOne",
+    ),
+    EndpointAuditItem(
+        "C", "witness", "Navier.Breakdown.ConstructedBreakdown",
+        ENDPOINT,
+    ),
+)
 
 
 class VerificationError(RuntimeError):
@@ -210,6 +291,190 @@ def parse_axioms(output: str, declaration: str) -> set[str]:
     raise VerificationError(f"could not parse raw #print axioms output for {declaration}")
 
 
+def parse_endpoint_witness(value: str) -> EndpointAuditItem:
+    """Parse ``LABEL=MODULE:DECLARATION`` without inferring endpoint status."""
+    match = re.fullmatch(r"([A-D])=([A-Za-z0-9_.]+):([A-Za-z0-9_.]+)", value)
+    if not match:
+        raise argparse.ArgumentTypeError(
+            "endpoint witness must be LABEL=MODULE:DECLARATION with LABEL in A..D"
+        )
+    label, module, declaration = match.groups()
+    return EndpointAuditItem(label, "witness", module, declaration)
+
+
+def parse_endpoint_prerequisite(value: str) -> EndpointAuditItem:
+    """Parse a checked analytic component without promoting it to an endpoint witness."""
+    match = re.fullmatch(r"([A-D])=([A-Za-z0-9_.]+):([A-Za-z0-9_.]+)", value)
+    if not match:
+        raise argparse.ArgumentTypeError(
+            "endpoint prerequisite must be LABEL=MODULE:DECLARATION with LABEL in A..D"
+        )
+    label, module, declaration = match.groups()
+    return EndpointAuditItem(label, "prerequisite", module, declaration)
+
+
+def require_module_source(project_root: Path, module: str, olean_root: Path) -> Path:
+    """Require current source; an object by itself is never endpoint evidence."""
+    source = module_path(project_root, module)
+    if source.is_file():
+        return source
+    output = olean_root / (module.replace(".", "/") + ".olean")
+    if output.is_file():
+        raise VerificationError(
+            f"object-only endpoint provider is stale evidence: {module} has {output} but no {source}"
+        )
+    raise VerificationError(f"endpoint provider has no local source: {module} ({source})")
+
+
+def endpoint_audit_source(source: str, items: Iterable[EndpointAuditItem]) -> str:
+    """Append checks to the provider source so its existing object cannot mask edits."""
+    audited_items = tuple(items)
+    # A provider need not import the official endpoint definitions.  Put the
+    # original consumer in scope before recompiling the provider so a witness
+    # check fails on its type rather than on an unavailable target name.
+    commands = [] if all(
+        item.module == "Navier.OfficialProblem" for item in audited_items
+    ) else ["import Navier.OfficialProblem"]
+    commands.extend((source, "", "/- generated focused endpoint audit -/"))
+    for index, item in enumerate(audited_items):
+        commands.extend((
+            f"#check {item.declaration}",
+            f"#print {item.declaration}",
+            f"#print axioms {item.declaration}",
+        ))
+        if item.kind == "proposition":
+            commands.append(f"#check ({item.declaration} : Prop)")
+        elif item.kind == "witness":
+            commands.append(
+                f"example : {ENDPOINT_TARGETS[item.label]} := {item.declaration}"
+            )
+        commands.append(f"-- endpoint-audit-item {index} {item.label} {item.kind}")
+    return "\n".join(commands) + "\n"
+
+
+def endpoint_audit_command(
+    source: Path, lock_wrapper: Path | None, lock_timeout: int
+) -> list[str]:
+    command = ["lake", "env", "lean", str(source)]
+    if lock_wrapper is None:
+        return command
+    return [str(lock_wrapper), str(lock_timeout), *command]
+
+
+def source_closure_freshness(
+    project_root: Path,
+    module: str,
+    receipts_path: Path,
+    olean_root: Path,
+) -> tuple[bool, str]:
+    """Check fingerprinted dependency receipts without rebuilding anything."""
+    graph = local_import_graph(project_root, module)
+    order = dependency_order(graph, module)
+    environment = environment_fingerprint(project_root)
+    fingerprints = compute_fingerprints(project_root, graph, order, environment)
+    receipts = load_receipts(receipts_path)
+    fresh = fresh_modules(order, graph, fingerprints, receipts, olean_root)
+    return module in fresh, f"{len(fresh)}/{len(order)}"
+
+
+def endpoint_audit_status(
+    label: str, source_checked_witnesses: set[str], fresh_witnesses: set[str]
+) -> str:
+    if label in fresh_witnesses:
+        return "UNCONDITIONAL-WITNESS-VERIFIED"
+    if label in source_checked_witnesses:
+        return "WITNESS-SOURCE-CHECKED-DEPENDENCY-FRESHNESS-NOT-ESTABLISHED"
+    return "NO-UNCONDITIONAL-WITNESS-IN-THIS-AUDIT"
+
+
+def run_regularity_endpoint_audit(args: argparse.Namespace) -> int:
+    """Compile exact provider sources and classify only explicit witnesses as closure."""
+    project_root = args.project_root.resolve()
+    verify_compiler(project_root)
+    if args.lock_wrapper is not None:
+        if not args.lock_wrapper.is_file() or not os.access(args.lock_wrapper, os.X_OK):
+            raise VerificationError(f"lock wrapper is not executable: {args.lock_wrapper}")
+
+    items = (
+        DEFAULT_ENDPOINT_AUDIT_ITEMS
+        + tuple(args.endpoint_prerequisite)
+        + tuple(args.endpoint_witness)
+    )
+    by_module: dict[str, list[EndpointAuditItem]] = {}
+    for item in items:
+        by_module.setdefault(item.module, []).append(item)
+
+    source_checked_witnesses: set[str] = set()
+    fresh_witnesses: set[str] = set()
+    args.log_dir.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="navier-endpoint-audit-") as directory:
+        audit_root = Path(directory)
+        for module, module_items in by_module.items():
+            source = require_module_source(project_root, module, args.olean_root)
+            source_bytes = source.read_bytes()
+            audit_source = audit_root / (module.replace(".", "-") + ".lean")
+            audit_source.write_text(
+                endpoint_audit_source(source_bytes.decode("utf-8"), module_items),
+                encoding="utf-8",
+            )
+            command = endpoint_audit_command(
+                audit_source, args.lock_wrapper, args.lock_timeout
+            )
+            result = subprocess.run(
+                command,
+                cwd=project_root,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=args.timeout,
+            )
+            log = args.log_dir / ("endpoint-" + module + ".log")
+            log.write_text(result.stdout, encoding="utf-8")
+            if source.read_bytes() != source_bytes:
+                raise VerificationError(f"source changed during endpoint audit: {module}")
+            if result.returncode:
+                raise VerificationError(
+                    f"current-source endpoint audit failed for {module}; see {log}"
+                )
+            print(f"SOURCE-CHECKED {module} sha256={sha256(source_bytes)}")
+            for item in module_items:
+                axioms = parse_axioms(result.stdout, item.declaration)
+                unexpected = axioms - ALLOWED_AXIOMS
+                if unexpected:
+                    raise VerificationError(
+                        item.declaration + " uses nonstandard axioms: "
+                        + ", ".join(sorted(unexpected))
+                    )
+                print(
+                    f"AUDITED {item.label} kind={item.kind} declaration={item.declaration} "
+                    f"axioms={','.join(sorted(axioms))}"
+                )
+                if item.kind in {"prerequisite", "witness"}:
+                    is_fresh, fraction = source_closure_freshness(
+                        project_root,
+                        item.module,
+                        args.receipts,
+                        args.olean_root,
+                    )
+                    print(
+                        f"{item.kind.upper()}-EVIDENCE {item.label} current_source=yes "
+                        f"type_and_axioms=yes dependency_receipts={fraction} "
+                        f"endpoint_witness={'yes' if item.kind == 'witness' else 'no'}"
+                    )
+                    if item.kind == "witness":
+                        source_checked_witnesses.add(item.label)
+                        if is_fresh:
+                            fresh_witnesses.add(item.label)
+
+    for label, target in ENDPOINT_TARGETS.items():
+        status = endpoint_audit_status(
+            label, source_checked_witnesses, fresh_witnesses
+        )
+        print(f"ENDPOINT {label} target={target} status={status}")
+        print(f"SCIENTIFIC-LIMIT {label} {ENDPOINT_SCIENTIFIC_LIMITS[label]}")
+    return 0
+
+
 def atomic_write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as stream:
@@ -371,6 +636,27 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--olean-root", type=Path)
     result.add_argument("--check-plan", "--dry-run", action="store_true", dest="check_plan")
     result.add_argument("--force", action="store_true")
+    result.add_argument(
+        "--audit-regularity-endpoints",
+        action="store_true",
+        help="source-compile and classify the exact A/B/C/D endpoint surfaces",
+    )
+    result.add_argument(
+        "--endpoint-prerequisite",
+        action="append",
+        default=[],
+        type=parse_endpoint_prerequisite,
+        metavar="LABEL=MODULE:DECLARATION",
+        help="source-audit an analytic component without claiming endpoint closure",
+    )
+    result.add_argument(
+        "--endpoint-witness",
+        action="append",
+        default=[],
+        type=parse_endpoint_witness,
+        metavar="LABEL=MODULE:DECLARATION",
+        help="add a claimed unconditional endpoint witness to the focused audit",
+    )
     return result
 
 
@@ -391,6 +677,8 @@ def main() -> int:
     if args.lock_wrapper is not None and not args.lock_wrapper.is_absolute():
         args.lock_wrapper = (Path.cwd() / args.lock_wrapper).resolve()
     try:
+        if args.audit_regularity_endpoints:
+            return run_regularity_endpoint_audit(args)
         return run(args)
     except (VerificationError, subprocess.TimeoutExpired) as error:
         print(f"verification error: {error}", file=sys.stderr)

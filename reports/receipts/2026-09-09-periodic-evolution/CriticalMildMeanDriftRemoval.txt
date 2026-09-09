@@ -1,0 +1,80 @@
+Navier.Analysis.CriticalMildMeanDriftRemoval.spectralOutputCoefficient_rawCarrierOfPhysical_eq
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.CriticalMildDuhamelBochner.spectralOutputCoefficient k
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.rawCarrierOfPhysical u)
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.rawCarrierOfPhysical v) =
+    -↑((2 * Real.pi) ^ 2) • Navier.Analysis.CriticalMildDuhamelBochner.spectralOutputCoefficient k u v
+Navier.Analysis.CriticalMildMeanDriftRemoval.amplitudeOffZero_meanRemovedCarrier (c : Navier.Space) (t : ℝ)
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.LeiLinCoerciveTerminal.amplitudeOffZero
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.meanRemovedCarrier c t u) =
+    Navier.Analysis.LeiLinCoerciveTerminal.amplitudeOffZero u
+Navier.Analysis.CriticalMildMeanDriftRemoval.offZeroSquareEnergy_meanRemovedCarrier (c : Navier.Space) (t : ℝ)
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  ∑' (k : Navier.Analysis.CriticalMildSeries.LatticeMode),
+      Navier.Analysis.LeiLinCoerciveTerminal.amplitudeOffZero
+          (Navier.Analysis.CriticalMildMeanDriftRemoval.meanRemovedCarrier c t u) k ^
+        2 =
+    ∑' (k : Navier.Analysis.CriticalMildSeries.LatticeMode),
+      Navier.Analysis.LeiLinCoerciveTerminal.amplitudeOffZero u k ^ 2
+Navier.Analysis.CriticalMildMeanDriftRemoval.heatHalfGeneratorMoment_meanRemovedCarrier (c : Navier.Space) (t : ℝ)
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.meanRemovedCarrier c t u) =
+    Navier.Analysis.CriticalMildHeatFlowLinear.heatHalfGeneratorMoment u
+Navier.Analysis.CriticalMildMeanDriftRemoval.weightedLatticeSpectralConvolution_meanRemoved (c : Navier.Space) (t : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeSpectralConvolution k
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.meanRemovedCarrier c t u)
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.meanRemovedCarrier c t u) =
+    Navier.Analysis.CriticalMildMeanDriftRemoval.physicalTranslationPhase c t k •
+        Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeSpectralConvolution k u u -
+      Navier.Analysis.ComplexLerayNorm.complexEuclideanPoint
+        ((Navier.Analysis.CriticalMildMeanDriftRemoval.rawFourierScale *
+            ↑(Navier.Analysis.CriticalMildMeanDriftRemoval.latticePairing c k)) •
+          Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+            (Navier.Analysis.CriticalMildMeanDriftRemoval.translationPhaseCarrier c t u) k)
+Navier.Analysis.CriticalMildMeanDriftRemoval.spectralOutputCoefficient_meanRemoved (c : Navier.Space) (t : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode)
+  (u : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) :
+  Navier.Analysis.CriticalMildDuhamelBochner.spectralOutputCoefficient k
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.meanRemovedCarrier c t u)
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.meanRemovedCarrier c t u) =
+    Navier.Analysis.CriticalMildMeanDriftRemoval.physicalTranslationPhase c t k •
+        Navier.Analysis.CriticalMildDuhamelBochner.spectralOutputCoefficient k u u -
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.rawFourierScale *
+          ↑(Navier.Analysis.CriticalMildMeanDriftRemoval.latticePairing c k)) •
+        Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+          (Navier.Analysis.CriticalMildMeanDriftRemoval.translationPhaseCarrier c t u) k
+Navier.Analysis.CriticalMildMeanDriftRemoval.translationRate_add_rawMeanDrift (c : Navier.Space) (t : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode) (z : Navier.Analysis.ComplexLerayProjection.ComplexSpace) :
+  (Navier.Analysis.CriticalMildMeanDriftRemoval.physicalTranslationPhase c t k *
+          Navier.Analysis.CriticalMildMeanDriftRemoval.physicalTranslationRate c k) •
+        z +
+      (Navier.Analysis.CriticalMildMeanDriftRemoval.rawFourierScale *
+          ↑(Navier.Analysis.CriticalMildMeanDriftRemoval.latticePairing c k)) •
+        Navier.Analysis.CriticalMildMeanDriftRemoval.physicalTranslationPhase c t k • z =
+    0
+'Navier.Analysis.CriticalMildMeanDriftRemoval.spectralOutputCoefficient_rawCarrierOfPhysical_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildMeanDriftRemoval.amplitudeOffZero_meanRemovedCarrier' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildMeanDriftRemoval.offZeroSquareEnergy_meanRemovedCarrier' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildMeanDriftRemoval.heatHalfGeneratorMoment_meanRemovedCarrier' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildMeanDriftRemoval.weightedLatticeSpectralConvolution_meanRemoved' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildMeanDriftRemoval.spectralOutputCoefficient_meanRemoved' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildMeanDriftRemoval.translationRate_add_rawMeanDrift' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
