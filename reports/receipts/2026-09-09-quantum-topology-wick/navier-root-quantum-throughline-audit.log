@@ -1,0 +1,63 @@
+'Navier.Analysis.QuantumVortexRegularity.velocity_smoothAt_of_nonzero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexRegularity.unitVortex_freeSchrodinger' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexRegularity.smooth_wavefunction_does_not_bound_decoded_velocity' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexWinding.realChargePhase_closes_iff_integer' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexWinding.vortex_phase_circulation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexWinding.unitVortex_velocity_circulation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexWinding.no_differentiable_periodic_phaseLift_of_nonzero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.QuantumVortexWinding.unitVortex_velocity_circulation :
+  ∫ (theta : ℝ) in 0..2 * Real.pi,
+      (star
+            (Navier.Analysis.QuantumVortexRegularity.velocity Navier.Analysis.QuantumVortexRegularity.unitVortex
+              (Navier.Analysis.QuantumVortexWinding.vortexPhase 1 theta)) *
+          Navier.Analysis.QuantumVortexWinding.vortexPhaseDerivative 1 theta).re =
+    2 * Real.pi
+Navier.Analysis.QuantumVortexWinding.realChargePhase_closes_iff_integer (kappa : ℝ) :
+  Navier.Analysis.QuantumVortexWinding.realChargePhase kappa (2 * Real.pi) =
+      Navier.Analysis.QuantumVortexWinding.realChargePhase kappa 0 ↔
+    ∃ n, kappa = ↑n
+'Navier.Analysis.QuantumVortexTopologyChange.foldWave_joint_contDiff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexTopologyChange.no_zero_of_negative_time' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexTopologyChange.zero_at_time_zero_iff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexTopologyChange.zero_of_positive_time_iff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexTopologyChange.hasFDerivAt_realFold' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.QuantumVortexTopologyChange.positive_time_roots_regular_opposite_orientation' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WickRotationModes.hasDerivAt_entireHeatMode_real' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WickRotationModes.hasDerivAt_wickRotatedMode' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WickRotationModes.norm_wickRotatedMode' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.Analysis.WickRotationModes.no_positive_exponential_damping_wick' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.WickRotationModes.nonzero_lattice_mode_strictly_damped_but_wick_mode_not' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

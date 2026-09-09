@@ -5,6 +5,12 @@ it. The theorem type fixes the scope. Compiler acceptance and the raw
 transitive axiom list establish formal closure; neither can turn a forced
 counterexample into an unforced all-data regularity theorem.
 
+The separate [quantization, regularity, and Wick-rotation note](QUANTIZATION_REGULARITY_WICK.md)
+maps four native comparison modules to explicit examples: smooth wavefunctions
+with singular decoded velocity, integer circulation and phase-lift obstruction,
+smooth zero-set fold events, and loss of heat damping under imaginary time.
+These comparisons do not inhabit A or B.
+
 ## Existence and breakdown endpoints
 
 The active global-regularity construction targets are the exact A and B propositions.

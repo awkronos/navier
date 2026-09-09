@@ -1,0 +1,6 @@
+{
+  "Navier/Analysis/QuantumVortexRegularity.lean": "a3cb8ddaa43d883a14d98f0d6120df36c6c01e4e299f8ee47a18c692f09948d3",
+  "Navier/Analysis/QuantumVortexWinding.lean": "3f40eb0b2c46e9cbf996b0f3c4e6da5fc3ee4ed41a7dedee3f27d58b89a1e2e7",
+  "Navier/Analysis/QuantumVortexTopologyChange.lean": "551735926040653026082063ea8f872c41f24db20821eb53ed629d1abddb1c78",
+  "Navier/Analysis/WickRotationModes.lean": "693e78dc8f123423a12dcd53952add75f9c1bcb363cfa3c31f1f48e858833cb1"
+}
