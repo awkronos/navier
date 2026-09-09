@@ -1,0 +1,27 @@
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.sqrt_mul_exp_neg_mul_sq_le_inv_fourthRoot' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.summable_threeQuarterGeneratorMoment_weightedHeatFlow' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.fourthRoot_mul_exp_neg_mul_sq_le_inv_eighthRoot' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.intervalIntegrable_fiveEighthMoment_path_sub_constant_of_actualMild' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.summable_fiveEighthMoment_frozenOutputIntegral' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.criticalMildDuhamel_fullPositiveTime_fiveEighthGenerator' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.mildTrajectory_fullPositiveTime_fiveEighthGenerator' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.summable_decoded_twoAndQuarterSpatialMoments_of_fiveEighth' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildHigherMomentBootstrap.mildTrajectory_decoded_twoAndQuarterSpatialMoments' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]

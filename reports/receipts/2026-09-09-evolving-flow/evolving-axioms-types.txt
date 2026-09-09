@@ -1,0 +1,105 @@
+'Navier.Analysis.CriticalMildModeDifferentiation.hasDerivAt_scalarModeDuhamel' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.continuous_projectedModeForcing' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.criticalMildDuhamel_coefficient_eq_scalarModeDuhamel' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.hasDerivAt_criticalMildDuhamel_coefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.mildPath_coefficient_eq_rawMildModeCoordinate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.hasDerivAt_mildPath_coefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.hasDerivWithinAt_zero_mildPath_coefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.hasDerivAt_mildPath_coefficient_eq_mildRawTimeDerivative' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative_projectedModeEquationAt' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.rawProjectedModeEquationAt_to_physicalUnprojected' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildModeDifferentiation.mildFixedPoint_physicalUnprojected_at' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+theorem Navier.Analysis.CriticalMildModeDifferentiation.mildFixedPoint_physicalUnprojected_at : ∀ (ν : ℝ) (hν : 0 < ν)
+  (u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (A : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach),
+  Continuous A →
+    ∀ (hdiv : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (A s)) {R T t : ℝ},
+      0 ≤ R →
+        t ∈ Set.Ioo 0 T →
+          (∀ s ∈ Set.Ioc 0 T, ‖A s‖ ≤ R) →
+            (∀ (s : ℝ) (hs : s ∈ Set.Icc 0 T),
+                A s =
+                  Navier.Analysis.CriticalMildSelfMap.criticalMildImage
+                    (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) ⋯ u₀ A hdiv s ⋯) →
+              (∀ (k : Navier.Analysis.CriticalMildSeries.LatticeMode) (i : Fin 3),
+                  HasDerivAt (fun r => Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient (A r) k i)
+                    (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                      (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) A t k i)
+                    t) ∧
+                ∀ (k : Navier.Analysis.CriticalMildSeries.LatticeMode),
+                  Navier.Analysis.PeriodicMildClassicalRealization.rawToPhysicalAmplitude •
+                            Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                              (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) A t k +
+                          Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k
+                            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+                            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) +
+                        Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient ν k
+                          (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+                            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) k) +
+                      Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+                        (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k
+                          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+                          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))) =
+                    0 :=
+fun ν hν u₀ A hAc hdiv {R T t} hR ht hbound hmild =>
+  have hμ :=
+    id
+      (mul_pos hν
+        (pow_pos
+          (mul_pos
+            (Mathlib.Meta.Positivity.pos_of_isNat (Mathlib.Meta.NormNum.isNat_ofNat ℝ (Eq.refl 2))
+              (Eq.refl (Nat.ble 1 2)))
+            Real.pi_pos)
+          2));
+  ⟨fun k i =>
+    Navier.Analysis.CriticalMildModeDifferentiation.hasDerivAt_mildPath_coefficient_eq_mildRawTimeDerivative
+      (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) hμ u₀ A hAc hdiv hR ht hbound hmild k i,
+    fun k =>
+    Navier.Analysis.CriticalMildModeDifferentiation.rawProjectedModeEquationAt_to_physicalUnprojected ν (A t)
+      (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+        (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) A t)
+      (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative_projectedModeEquationAt ν A t) k⟩
+theorem Navier.Analysis.CriticalMildHigherMomentBootstrap.mildTrajectory_decoded_twoAndQuarterSpatialMoments : ∀ (ν : ℝ)
+  (hν : 0 < ν) (u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach),
+  Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u₀ →
+    ∀ (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach),
+      Continuous u →
+        ∀ (hu : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u s)) {R t : ℝ},
+          0 ≤ R →
+            0 < t →
+              (∀ s ∈ Set.Ioc 0 t, ‖u s‖ ≤ R) →
+                (∀ (s : ℝ) (hs : s ∈ Set.Icc 0 t),
+                    u s = Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀ u hu s ⋯) →
+                  Summable fun k =>
+                    Navier.Analysis.CriticalMildHigherMomentBootstrap.quarterFrequencyWeight k *
+                      (‖Navier.Analysis.OfficialABEncoding.officialEuclideanPoint
+                              (Navier.Analysis.CriticalMildSeries.latticeFrequency k)‖ ^
+                          2 *
+                        Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+                          (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient (u t) k)) :=
+fun ν hν u₀ hu₀ u huc hu {R t} hR ht huR hmild =>
+  Navier.Analysis.CriticalMildHigherMomentBootstrap.summable_decoded_twoAndQuarterSpatialMoments_of_fiveEighth (u t)
+    (Navier.Analysis.CriticalMildHigherMomentBootstrap.mildTrajectory_fullPositiveTime_fiveEighthGenerator ν hν u₀ hu₀ u
+      huc hu hR ht huR hmild)

@@ -184,12 +184,15 @@ terminal-bound quantifiers.
 | Dynamic endpoint cancellation | [PeriodicDynamicCriticalTail](../Navier/Analysis/PeriodicDynamicCriticalTail.lean) | The actual frozen nonlinear integral has moment at most `ν⁻¹‖u(T)‖²`; the evolving term has graph membership and a quantitative bound under an explicit Dini integral. |
 | Interior time modulus | [CriticalMildInteriorTimeModulus](../Navier/Analysis/CriticalMildInteriorTimeModulus.lean) | The actual bounded mild equation derives a local quarter-Hölder modulus and terminal-window Dini integrability. Constants depend on observation time and chart radius. |
 | Full positive-time raw smoothing | [CriticalMildFullPositiveTimeRegularity](../Navier/Analysis/CriticalMildFullPositiveTimeRegularity.lean) | Consumes the Dini window and frozen-source estimate to derive full half-generator membership, an explicit local bound and two-spatial-derivative coefficient summability. Higher moments/time jets and the physical decoder remain separate inputs. |
+| Higher positive-time moments | [CriticalMildHigherMomentBootstrap](../Navier/Analysis/CriticalMildHigherMomentBootstrap.lean) | The actual bounded mild trajectory has decoded spatial summability of order 2 + 1/4 at positive times. All integer moments and time jets remain to be constructed. |
+| Evolving coefficient equation | [CriticalMildModeDifferentiation](../Navier/Analysis/CriticalMildModeDifferentiation.lean) | Differentiates the actual Duhamel equation and proves the normalized physical unprojected Fourier coefficient equation with recovered pressure. Passing the series to the full pointwise PDE remains separate. |
+| Raw complex control obstruction | [PeriodicGlobalCriticalControl](../Navier/Analysis/PeriodicGlobalCriticalControl.lean) | An exact exponentially growing two-mode mild trajectory refutes unrestricted raw terminal bounds. Its nonzero real mean violates physical anti-Hermitian reality; physical periodic B remains open. |
 | Energy versus fine-scale control | [PeriodicEnergyCriticalObstruction](../Navier/Analysis/PeriodicEnergyCriticalObstruction.lean) | Fixed-energy transverse mode examples have unbounded mixed critical quantity. This refutes a universal energy-only estimate over arbitrary fields, not a bound restricted to actual trajectories. |
 
-The existing raw global-control target is:
+The physical global-control target is:
 
 ```text
-for every viscosity ν > 0 and admissible initialized datum a,
+for every viscosity ν > 0 and physically initialized datum a,
 there exists a finite K(ν,a), independent of horizon T and chart radius R,
 such that every actual original-data mild chart satisfies
   offZeroMixedCriticalQty ν (u(T)) ≤ K(ν,a).
@@ -197,12 +200,13 @@ such that every actual original-data mild chart satisfies
 
 Local Hölder regularity and a finite Dini integral on each chart do not yield
 this uniform K: their constants may grow with the chart radius. The active
-proof lanes audit whether this raw target is satisfiable, then address the
-physically initialized class, nonlinear stretching, mean-drift removal,
+proof lanes address the physically initialized class, nonlinear stretching, mean-drift removal,
 and exact reconstruction of the evolving coefficients under the normalization
 above. Bounds proved for the raw complex equation are not automatically
 bounds for the native physical initialization.
-Neither A nor B is counted as closed by these providers.
+Neither A nor B is counted as closed by these providers. The unrestricted raw
+complex target is false; its checked counterexample and the evolving-flow
+results are recorded in the [fresh verification receipt](../reports/receipts/2026-09-09-evolving-flow/README.md).
 
 ## Numerical boundary
 
