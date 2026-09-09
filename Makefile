@@ -1,7 +1,7 @@
 PYTHON ?= python3
 
 .NOTPARALLEL:
-.PHONY: check proof test lean axioms
+.PHONY: check proof test lean axioms adaptive-bench conditional-audit
 
 check: test lean axioms
 
@@ -10,6 +10,12 @@ proof:
 
 test:
 	$(PYTHON) -m unittest discover -s tests -v
+
+adaptive-bench:
+	$(PYTHON) scripts/navier_adaptive_bench.py --case mms
+
+conditional-audit:
+	lake env lean Navier/ConditionalAudit.lean
 
 lean:
 	lake env lean Navier.lean

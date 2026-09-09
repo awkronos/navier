@@ -1,0 +1,54 @@
+import Navier.Analysis.CriticalControlDecomposition
+import Navier.Analysis.CriticalMildRestartFixedPoint
+import Navier.Analysis.CriticalMildBoundedContinuation
+import Navier.Analysis.LeiLinCoerciveTerminal
+import Navier.Analysis.LerayWeak
+import Navier.Analysis.HeatSemigroupSmoothing
+import Navier.Analysis.BKMLogBootstrap
+import Navier.Analysis.ViscosityEndpoints
+import Navier.Breakdown.MaximalNonextension
+import Navier.Breakdown.CompactPathBreakdown
+import Navier.Analysis.ForcedEnergyBalance
+
+/-! Selected consumer-facing conditions; not a project-wide census.
+Checks inspect existing imported objects. Rebuild changed providers before
+using axiom output as current-source evidence. No endpoint is proved by this audit. -/
+
+#check Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+#print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+
+#check Navier.Analysis.CriticalMildRestartFixedPoint.existsUnique_criticalMildTerminalRestart_fixedPoint
+#print axioms Navier.Analysis.CriticalMildRestartFixedPoint.existsUnique_criticalMildTerminalRestart_fixedPoint
+
+#check Navier.Analysis.CriticalMildBoundedContinuation.bounded_global_mild_of_terminalNormBound
+#print axioms Navier.Analysis.CriticalMildBoundedContinuation.bounded_global_mild_of_terminalNormBound
+
+#check Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.criticalMildTerminalNormBound_of_mixed
+
+#check Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_X2Mass
+#print axioms Navier.Analysis.LeiLinCoerciveTerminal.terminal_X1_le_of_trailingMass_and_X2Mass
+
+#check Navier.Analysis.LerayWeak.exists_galerkinLimit_energy_le
+#print axioms Navier.Analysis.LerayWeak.exists_galerkinLimit_energy_le
+
+#check Navier.Analysis.LerayWeak.exists_lerayLimitData_of_weakClauses
+#print axioms Navier.Analysis.LerayWeak.exists_lerayLimitData_of_weakClauses
+
+#check Navier.Analysis.HeatSemigroupSmoothing.heatKernel_convolution_smoothing_le
+#print axioms Navier.Analysis.HeatSemigroupSmoothing.heatKernel_convolution_smoothing_le
+
+#check Navier.Analysis.BealeKatoMajda.exists_fderivSupBound_of_sobolevH3
+#print axioms Navier.Analysis.BealeKatoMajda.exists_fderivSupBound_of_sobolevH3
+
+#check Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdown_iff_atViscosityOne
+
+#check Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown
+#print axioms Navier.Breakdown.noWholeSpaceGlobal_of_pointEvaluationBreakdown
+
+#check Navier.Breakdown.wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile
+#print axioms Navier.Breakdown.wholeSpaceBreakdown_of_compactSmooth_negativePowerProfile
+
+#check Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution
+#print axioms Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution
