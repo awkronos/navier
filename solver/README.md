@@ -22,6 +22,11 @@ cargo build --release --target wasm32-unknown-unknown
 WASM_BINDGEN=/path/to/wasm-bindgen ./build-web.sh ../site/solver
 ```
 
+`build-web.sh` uses the `wasm-bindgen` version selected by `WASM_BINDGEN`
+(which must match `Cargo.lock`), remaps machine-local Rust source roots to stable
+virtual paths, records the build pipeline digest, and rejects a browser module
+that still contains a user-home path marker.
+
 The strict GPU command requires a real adapter and fails on adapter absence,
 device or pipeline creation errors, shader validation failures, and numerical
 parity failures. Ordinary test runs may skip only when no WebGPU adapter exists;

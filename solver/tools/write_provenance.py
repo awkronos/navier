@@ -5,7 +5,15 @@ import argparse
 import json
 from pathlib import Path
 
-from provenance import COMPILED_SOURCES, CRATE_DIR, WEB_ARTIFACTS, sha256, source_digest
+from provenance import (
+    BUILD_INPUTS,
+    COMPILED_SOURCES,
+    CRATE_DIR,
+    WEB_ARTIFACTS,
+    build_pipeline_digest,
+    sha256,
+    source_digest,
+)
 
 
 def main() -> None:
@@ -20,6 +28,8 @@ def main() -> None:
         "crate": "navier-web",
         "compiledSources": list(COMPILED_SOURCES),
         "sourceDigest": source_digest(),
+        "buildInputs": list(BUILD_INPUTS),
+        "buildPipelineDigest": build_pipeline_digest(),
         "cargoLockSha256": sha256(CRATE_DIR / "Cargo.lock"),
         "rustc": args.rustc,
         "wasmBindgen": args.wasm_bindgen,
@@ -36,6 +46,10 @@ def main() -> None:
         },
         "continuumCertificate": False,
         "adaptiveRecording": False,
+        "reproducibility": {
+            "rustPathRemapping": True,
+            "localAbsolutePathGuard": True,
+        },
     }
     (output / "provenance.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
