@@ -9,6 +9,7 @@ pub use construction::{
 pub use convention::SpectralConventionMetadata;
 pub use core::{AdvanceReport, Diagnostics, SpectralSolver};
 pub use gpu::{GpuDiagnostics, WebGpuSpectralSolver};
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -179,7 +180,11 @@ impl NavierSolver {
             precision: "f64 compute / f32 render output",
             convention: self.inner.metadata(),
         };
-        serde_wasm_bindgen::to_value(&value).map_err(|e| JsError::new(&e.to_string()))
+        // Flattened serde records use the map serializer. Keep the public
+        // JavaScript ABI a plain object, as it was before sharing conventions.
+        value
+            .serialize(&serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true))
+            .map_err(|e| JsError::new(&e.to_string()))
     }
 }
 
@@ -253,6 +258,8 @@ impl WebGpuNavierSolver {
             adapter_backend: self.inner.adapter_backend().to_owned(),
             convention: self.inner.metadata(),
         };
-        serde_wasm_bindgen::to_value(&value).map_err(|error| JsError::new(&error.to_string()))
+        value
+            .serialize(&serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true))
+            .map_err(|error| JsError::new(&error.to_string()))
     }
 }
