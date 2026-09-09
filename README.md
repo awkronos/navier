@@ -68,12 +68,13 @@ deadline is assumed.
 | [ForceCoordinateEquivalence.lean](Navier/Analysis/ForceCoordinateEquivalence.lean) | Exact equivalence between the force predicate and decay of every genuine ordered coordinate partial |
 | [ConstructedForceExtension.lean](Navier/Analysis/ConstructedForceExtension.lean) | The selected force is globally smooth across time zero at every positive viscosity |
 | [ConditionalAudit.lean](Navier/ConditionalAudit.lean) | Selected theorem types and raw transitive axioms |
-| [Native mathematics and solver guide](docs/NATIVE_BREAKDOWN_AND_SOLVER.md) | Useful conditional results, exact premises, and numerical validation |
-| [Claim and frontier map](docs/RESULT_MAP.md) | Claim-to-declaration map, trust evidence, and the sharp open inputs for A |
+| [Result and frontier map](docs/RESULT_MAP.md) | Authoritative claim-to-declaration map, trust evidence, and current status |
+| [Native mathematics and solver guide](docs/NATIVE_BREAKDOWN_AND_SOLVER.md) | Detailed construction, useful conditional results, and numerical validation |
+| [Documentation index](docs/README.md) | Current evidence, open obligations, interpretation notes, and historical records |
 
 [Formalization conventions](docs/FORMALIZATION.md), the
 [construction carrier review](docs/CONSTRUCTION_REVIEW.md), the
-[frontier map](docs/OPEN_FRONTIER_MAP.md), and the
+[open-obligation map](docs/OPEN_FRONTIER_MAP.md), and the
 [falsification ledger](docs/FALSIFICATION_LEDGER.md) preserve the distinction
 between completed endpoints, conditional estimates, and rejected approaches.
 
