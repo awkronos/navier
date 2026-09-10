@@ -62,6 +62,28 @@ must lose at least one stated property: agreement with the velocity, a uniform
 positive lower bound on amplitude, or a uniform bound on its spatial gradient.
 This is a necessary-condition argument; it constructs no wavefunction.
 
+The strengthened theorem
+`selected_candidate_madelung_amplitude_or_derivative_degenerates` localizes
+this failure to every terminal window: for every `c > 0`, derivative threshold
+`M`, and `δ > 0`, an agreeing nonzero differentiable decoder has a point on
+the actual support with `1 - δ < t < 1` where `‖ψ‖ < c` or `M < ‖Dψ‖`.
+The original no-regular-lift consumer now uses this theorem.
+
+## Exact PDE frontier
+
+`PeriodicMildOfficialEquation.mildFixedPoint_officialMomentum_positiveTime`
+identifies the bounded periodic mild fixed point with the official Fréchet
+momentum equation on `0 < t < T`. This includes physical convection,
+viscosity, pressure, and the time derivative. Arbitrary-data continuation
+and joint smoothness through the initial time remain required for full B.
+
+`WholeSpaceSolenoidalHeatIntegratedRhsLimit` proves convergence of the actual
+compact-test weak RHS time integrals to the cutoff-free endpoint momentum
+difference. Its proof consumes the exact weak evolution and Gaussian endpoint
+limits. Identifying this with the time integral of the pointwise RHS limit
+still requires a uniform-integrability argument. These are direct analytic
+advances toward A/B; the quantum decoder bound does not supply continuation.
+
 More generally, a representation whose reconstruction yields a continuous
 velocity through `[0,1] × K` contradicts
 `ConstructedFiniteTimeObstruction.selected_candidate_no_continuous_extension`.

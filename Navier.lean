@@ -177,8 +177,10 @@ import Navier.Analysis.PhysicalPeriodicDissipationHeatRestart
 import Navier.Analysis.WholeSpaceSolenoidalHeatViscousCorrectionLimit
 import Navier.Analysis.WholeSpaceSolenoidalHeatConvectionLimit
 import Navier.Analysis.WholeSpaceSolenoidalHeatFullViscousLimit
+import Navier.Analysis.WholeSpaceSolenoidalHeatIntegratedRhsLimit
 import Navier.Analysis.PhysicalPeriodicEnergyDuhamelSmoothing
 import Navier.Analysis.PeriodicMildTimeDerivativeReconstruction
+import Navier.Analysis.PeriodicMildOfficialEquation
 import Navier.Analysis.PeriodicPressureEllipticGain
 
 /-!
