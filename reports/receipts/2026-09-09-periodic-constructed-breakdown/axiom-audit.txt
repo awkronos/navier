@@ -1,0 +1,30 @@
+Navier.Analysis.PeriodicConstructedBreakdown.periodicForcedDataRapidDecay_of_smooth_periodic_timeSupport
+  {f : Navier.ForceField} (hsmooth : Navier.SmoothForceOnNonnegativeTime f)
+  (hperiodic : Navier.SpatiallyPeriodicForce f) {T : ℝ} (htime : ∀ (t : ℝ), T ≤ t → ∀ (x : Navier.Space), f t x = 0) :
+  Navier.PeriodicForcedDataRapidDecay f
+Navier.Analysis.PeriodicConstructedBreakdown.toConstructionGlobalSolutionOne
+  {f : Navier.Analysis.EuclideanPDETransport.EVelocityField} {v : Navier.VelocityEvolution}
+  {p : Navier.PressureEvolution}
+  (sol : Navier.IsPeriodicClassicalSolution 1 (Navier.Analysis.EuclideanPDETransport.nativeForce f) 0 v p) :
+  Navier.Construction.ComparatorBridge.GlobalSolutionOne f (Navier.Analysis.EuclideanPDETransport.euclideanVelocity v)
+    (Navier.Analysis.EuclideanPDETransport.euclideanPressure p)
+Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdownAtViscosityOne_of_candidate
+  {u : Navier.Analysis.EuclideanPDETransport.EVelocityField} {p : Navier.Analysis.EuclideanPDETransport.EPressureField}
+  {f : Navier.Analysis.EuclideanPDETransport.EVelocityField}
+  (h : Navier.Construction.ProblemStatement.CandidateProperties u p f) :
+  Navier.Analysis.ViscosityEndpoints.PeriodicBreakdownAtViscosityOne
+Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown : Navier.ProblemStatements.PeriodicBreakdown
+'Navier.Analysis.PeriodicConstructedBreakdown.periodicForcedDataRapidDecay_of_smooth_periodic_timeSupport' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicConstructedBreakdown.toConstructionGlobalSolutionOne' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdownAtViscosityOne_of_candidate' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.ProblemStatements.PeriodicBreakdown' depends on axioms: [propext, Classical.choice, Quot.sound]
+exit_code=0
