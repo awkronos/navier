@@ -1,11 +1,15 @@
 import Navier.Analysis.WholeSpaceSolenoidalHeatViscousCorrectionLimit
+import Navier.Analysis.WholeSpaceSolenoidalHeatConvectionLimit
 
 /-!
-# Full spatial viscous limit for the compact solenoidal heat test
+# Full spatial limits for the compact solenoidal heat test
 
 This module combines the vanishing cutoff-gradient correction with the
 surviving cutoff-times-curl limit at the exact field
-`curl (χ_R G_τ a)` consumed by the compact weak evolution.
+`curl (χ_R G_τ a)` consumed by the compact weak evolution.  It then assembles
+the momentum, convection, and viscous limits at the exact fixed-time
+`lerayWeakRhs`; only the interval-time limit remains between this result and a
+cutoff-free weak evolution identity.
 -/
 
 set_option autoImplicit false
@@ -22,7 +26,9 @@ open Navier
 open Navier.Analysis.CriticalControlDecomposition
 open Navier.Analysis.ScaledCutoff
 open Navier.Analysis.WholeSpaceSolenoidalHeatApproximation
+open Navier.Analysis.WholeSpaceCriticalEvolution
 open Navier.Analysis.WholeSpaceSolenoidalHeatMixedDomination
+open Navier.Analysis.WholeSpaceSolenoidalHeatConvectionLimit
 open Navier.Analysis.WholeSpaceSolenoidalHeatViscousProductLimit
 open Navier.Analysis.WholeSpaceSolenoidalHeatViscousCorrectionLimit
 
@@ -58,7 +64,7 @@ private theorem secondDirectional_add
 
 /-- A smooth compactly supported scalar test remains integrable against a
 continuous multiplier after two fixed directional derivatives. -/
-private theorem integrable_secondDirectional_mul_of_smooth_compact
+theorem integrable_secondDirectional_mul_of_smooth_compact
     (F : Space → ℝ) (hF : ContDiff ℝ ∞ F) (hSupp : HasCompactSupport F)
     (g : Space → ℝ) (hg : Continuous g) (direction : Fin 3) :
     Integrable (fun y : Space =>
@@ -202,4 +208,185 @@ theorem SolvesBefore.tendsto_integral_secondDirectional_solenoidalCutoffField_mu
   have hfinal := hsum.congr' hEq.symm
   simpa using hfinal
 
+/-! ## Assembly of the exact fixed-time right-hand side -/
+
+/-- The cutoff-free viscous slot obtained from the diagonal spatial
+Laplacian in `lerayWeakRhs`. -/
+def backwardHeatCurlViscousRhs
+    (κ τ : ℝ) (x₀ a : Space) (u : VelocityEvolution) (s : ℝ) : ℝ :=
+  ∑ fieldComponent : Fin 3, ∑ direction : Fin 3, ∫ y : Space,
+    fderiv ℝ (fun z : Space => fderiv ℝ
+      (fun w : Space => backwardHeatCurlField κ τ x₀ a w fieldComponent)
+      z (basisVector direction)) y (basisVector direction) *
+        u s y fieldComponent
+
+/-- The full cutoff-free spatial right-hand side at a fixed time. -/
+def backwardHeatCurlRhs
+    (ν κ τ : ℝ) (x₀ a : Space) (u : VelocityEvolution) (s : ℝ) : ℝ :=
+  backwardHeatCurlConvectionRhs κ τ x₀ a u s +
+    ν * backwardHeatCurlViscousRhs κ τ x₀ a u s
+
+/-- The exact compact-test `lerayWeakRhs` is the sum of its convection slot
+and expanded viscous coordinate integrals. -/
+theorem lerayWeakRhs_compactBackwardHeatCurlTest_eq
+    {ν T : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
+    (hsol : SolvesBefore ν T u p) {s : ℝ} (hs0 : 0 ≤ s) (hsT : s < T)
+    (R κ τ : ℝ) (x₀ a : Space) :
+    lerayWeakRhs ν (atTopCompactBackwardHeatCurlTest R κ τ x₀ a) u s =
+      (∑ fieldComponent : Fin 3, ∫ y : Space,
+        fderiv ℝ
+          (fun z : Space =>
+            (atTopCompactBackwardHeatCurlTest R κ τ x₀ a).field z
+              fieldComponent)
+          y (u s y) * u s y fieldComponent) +
+      ν * (∑ fieldComponent : Fin 3, ∑ direction : Fin 3, ∫ y : Space,
+        fderiv ℝ (fun z : Space => fderiv ℝ
+          (fun w : Space =>
+            (atTopCompactBackwardHeatCurlTest R κ τ x₀ a).field w
+              fieldComponent)
+          z (basisVector direction)) y (basisVector direction) *
+            u s y fieldComponent) := by
+  let φ := atTopCompactBackwardHeatCurlTest R κ τ x₀ a
+  have hu : ContDiff ℝ ∞ (u s) :=
+    contDiff_iff_contDiffAt.mpr fun y =>
+      Navier.Analysis.ParabolicCaccioppoli.contDiffAt_spatial_slice_before
+        hsol.classical.1 hs0 hsT y
+  have hint : ∀ (fieldComponent direction : Fin 3), Integrable (fun y : Space =>
+      fderiv ℝ (fun z : Space => fderiv ℝ
+        (fun w : Space => φ.field w fieldComponent)
+        z (basisVector direction)) y (basisVector direction) *
+          u s y fieldComponent) := by
+    intro fieldComponent direction
+    exact integrable_secondDirectional_mul_of_smooth_compact
+      (fun w : Space => φ.field w fieldComponent)
+      (φ.smooth fieldComponent) (φ.compact fieldComponent)
+      (fun y : Space => u s y fieldComponent)
+      ((continuous_apply fieldComponent).comp hu.continuous) direction
+  have hinterchange : ∀ fieldComponent : Fin 3,
+      (∫ y : Space, (∑ direction : Fin 3,
+        fderiv ℝ (fun z : Space => fderiv ℝ
+          (fun w : Space => φ.field w fieldComponent)
+          z (basisVector direction)) y (basisVector direction)) *
+            u s y fieldComponent) =
+      ∑ direction : Fin 3, ∫ y : Space,
+        fderiv ℝ (fun z : Space => fderiv ℝ
+          (fun w : Space => φ.field w fieldComponent)
+          z (basisVector direction)) y (basisVector direction) *
+            u s y fieldComponent := by
+    intro fieldComponent
+    rw [show (fun y : Space =>
+        (∑ direction : Fin 3,
+          fderiv ℝ (fun z : Space => fderiv ℝ
+            (fun w : Space => φ.field w fieldComponent)
+            z (basisVector direction)) y (basisVector direction)) *
+              u s y fieldComponent) =
+        (fun y : Space => ∑ direction : Fin 3,
+          fderiv ℝ (fun z : Space => fderiv ℝ
+            (fun w : Space => φ.field w fieldComponent)
+            z (basisVector direction)) y (basisVector direction) *
+              u s y fieldComponent) by
+          funext y
+          rw [Finset.sum_mul]]
+    exact integral_finsetSum Finset.univ
+      (fun direction _ => hint fieldComponent direction)
+  change lerayWeakRhs ν φ u s = _
+  unfold lerayWeakRhs
+  rw [Finset.sum_add_distrib]
+  congr 1
+  rw [Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro fieldComponent _
+  rw [hinterchange fieldComponent]
+
+private theorem tendsto_max_one_atTop :
+    Tendsto (fun R : ℝ => max 1 R) atTop atTop := by
+  have hid : Tendsto (fun R : ℝ => R) atTop atTop := Filter.tendsto_id
+  apply Filter.tendsto_atTop_mono' atTop
+    (Filter.Eventually.of_forall fun R : ℝ => le_max_right 1 R)
+  exact hid
+
+/-- **Full fixed-time spatial cutoff limit.**  On every actual preterminal
+finite-energy solution slice, the exact compact-test right-hand side tends to
+the cutoff-free convection plus viscous expression.  No additional analytic
+hypothesis is introduced. -/
+theorem SolvesBefore.tendsto_compactBackwardHeatCurlTest_lerayWeakRhs
+    {ν T : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
+    (hsol : SolvesBefore ν T u p) {s : ℝ} (hs0 : 0 ≤ s) (hsT : s < T)
+    {κ τ : ℝ} (hκ : 0 < κ) (hτ : 0 < τ) (x₀ a : Space) :
+    Tendsto (fun R : ℝ =>
+      lerayWeakRhs ν (atTopCompactBackwardHeatCurlTest R κ τ x₀ a) u s)
+      atTop (nhds (backwardHeatCurlRhs ν κ τ x₀ a u s)) := by
+  have hconv := SolvesBefore.tendsto_compactBackwardHeatCurlTest_convection
+    hsol hs0 hsT hκ hτ x₀ a
+  have hvør : ∀ (fieldComponent direction : Fin 3),
+      Tendsto (fun R : ℝ => ∫ y : Space,
+        fderiv ℝ (fun z : Space => fderiv ℝ
+          (fun w : Space =>
+            (atTopCompactBackwardHeatCurlTest R κ τ x₀ a).field w
+              fieldComponent)
+          z (basisVector direction)) y (basisVector direction) *
+            u s y fieldComponent)
+        atTop
+        (nhds (∫ y : Space,
+          fderiv ℝ (fun z : Space => fderiv ℝ
+            (fun w : Space =>
+              backwardHeatCurlField κ τ x₀ a w fieldComponent)
+            z (basisVector direction)) y (basisVector direction) *
+              u s y fieldComponent)) := by
+    intro fieldComponent direction
+    have hbase :=
+      SolvesBefore.tendsto_integral_secondDirectional_solenoidalCutoffField_mul_velocity
+        hsol hs0 hsT hκ hτ x₀ a direction fieldComponent fieldComponent
+    change Tendsto (fun R : ℝ => ∫ y : Space,
+      fderiv ℝ (fun z : Space => fderiv ℝ
+        (fun w : Space => solenoidalCutoffField (max 1 R)
+          (backwardHeatPotential κ τ x₀ a) w fieldComponent)
+        z (basisVector direction)) y (basisVector direction) *
+          u s y fieldComponent) atTop _
+    convert hbase.comp tendsto_max_one_atTop using 1
+    all_goals rfl
+  have hvisc : Tendsto (fun R : ℝ =>
+      ∑ fieldComponent : Fin 3, ∑ direction : Fin 3, ∫ y : Space,
+        fderiv ℝ (fun z : Space => fderiv ℝ
+          (fun w : Space =>
+            (atTopCompactBackwardHeatCurlTest R κ τ x₀ a).field w
+              fieldComponent)
+          z (basisVector direction)) y (basisVector direction) *
+            u s y fieldComponent)
+      atTop (nhds (backwardHeatCurlViscousRhs κ τ x₀ a u s)) := by
+    unfold backwardHeatCurlViscousRhs
+    exact tendsto_finsetSum Finset.univ (fun fieldComponent _ =>
+      tendsto_finsetSum Finset.univ (fun direction _ => hvør fieldComponent direction))
+  unfold backwardHeatCurlRhs
+  have hsum := hconv.add (hvisc.const_mul ν)
+  apply hsum.congr'
+  filter_upwards with R
+  rw [lerayWeakRhs_compactBackwardHeatCurlTest_eq hsol hs0 hsT]
+
+/-- Both momentum endpoints of the exact compact weak evolution lose their
+spatial cutoff.  This is the left-hand-side companion to the fixed-time
+`lerayWeakRhs` limit. -/
+theorem SolvesBefore.tendsto_compactBackwardHeatCurlTest_testedMomentum_sub
+    {ν T : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
+    (hsol : SolvesBefore ν T u p)
+    {ta tb : ℝ} (hta0 : 0 ≤ ta) (htaT : ta < T)
+    (htb0 : 0 ≤ tb) (htbT : tb < T)
+    {κ τ : ℝ} (hκ : 0 < κ) (hτ : 0 < τ) (x₀ a : Space) :
+    Tendsto (fun R : ℝ =>
+      testedMomentum (atTopCompactBackwardHeatCurlTest R κ τ x₀ a) u tb -
+        testedMomentum (atTopCompactBackwardHeatCurlTest R κ τ x₀ a) u ta)
+      atTop (nhds (
+        backwardHeatCurlMomentum κ τ x₀ a u tb -
+          backwardHeatCurlMomentum κ τ x₀ a u ta)) := by
+  exact
+    (solvesBefore_compactBackwardHeatCurlTestedMomentum_tendsto
+      hsol htb0 htbT hκ hτ x₀ a).sub
+    (solvesBefore_compactBackwardHeatCurlTestedMomentum_tendsto
+      hsol hta0 htaT hκ hτ x₀ a)
+
 end Navier.Analysis.WholeSpaceSolenoidalHeatFullViscousLimit
+
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatFullViscousLimit.integrable_secondDirectional_mul_of_smooth_compact
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatFullViscousLimit.lerayWeakRhs_compactBackwardHeatCurlTest_eq
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatFullViscousLimit.SolvesBefore.tendsto_compactBackwardHeatCurlTest_lerayWeakRhs
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatFullViscousLimit.SolvesBefore.tendsto_compactBackwardHeatCurlTest_testedMomentum_sub
