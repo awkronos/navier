@@ -30,10 +30,11 @@ phase matter; a fluid formulation alone does not automatically reconstruct a
 single-valued wavefunction. See [Carles, Danchin and Saut (2012)](https://arxiv.org/html/1111.4670v1)
 and [Wallstrom (1994)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.49.1613).
 
-## A conditional obstruction from the selected construction
+## A checked obstruction from the selected construction
 
-The following is an analytic deduction, not a new Lean-verified endpoint.
-Suppose a representation of the selected velocity on `[0,1) × K` obeys
+`ConstructedFiniteTimeObstruction.selected_candidate_no_regular_madelung_lift`
+applies the quantitative decoder bound to the actual selected finite-energy
+candidate. Suppose a representation on `[0,1) × K` obeys
 
 \[
 u=\frac{\hbar}{m}\frac{\operatorname{Im}(\bar\psi\nabla\psi)}{|\psi|^2},
@@ -46,6 +47,14 @@ The pointwise Cauchy–Schwarz inequality gives
 |u|\le\frac{\hbar}{m}\frac{|\nabla\psi|}{|\psi|}
 \le\frac{\hbar M}{mc}.
 \]
+
+The Lean statement uses the equivalent directional pairing
+`inner u d = (hbar/m) * Im(D psi d / psi)` and the spatial Fréchet operator
+norm. It works in the construction's actual three-dimensional Euclidean
+space, requires spatial differentiability on the support, and quantifies over
+every fixed real ratio `hbar/m` (using its absolute value in the bound).
+The shared estimate lives in `QuantumVortexRegularity`; the planar decoder
+and the three-dimensional obstruction consume that same estimate.
 
 That bound contradicts the selected candidate's unbounded velocity on its
 fixed compact support as time approaches one. Thus any such representation
