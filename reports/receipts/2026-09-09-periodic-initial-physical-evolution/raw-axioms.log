@@ -1,0 +1,92 @@
+Navier.Analysis.PeriodicInitialPhysicalEvolution.exists_scalarCoefficient_productBound_at
+  {f : Navier.Analysis.PeriodicDatumFourierBridge.ScalarSource} (hf : ContDiff ℝ (↑⊤) f)
+  (hp : Navier.Analysis.PeriodicDatumFourierBridge.UnitPeriodic3 f) (r s : ℕ) :
+  ∃ C,
+    0 ≤ C ∧
+      ∀ (k : Navier.Analysis.CriticalMildSeries.LatticeMode),
+        (1 + |↑k.1|) ^ r * Navier.Construction.TorusInverse.weight k.2 ^ s *
+            ‖Navier.Analysis.PeriodicDatumFourierBridge.scalarCoefficient f k‖ ≤
+          C
+'Navier.Analysis.PeriodicInitialPhysicalEvolution.exists_scalarCoefficient_productBound_at' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicInitialPhysicalEvolution.summable_latticeModeWeight_pow_scalarCoefficient
+  {f : Navier.Analysis.PeriodicDatumFourierBridge.ScalarSource} (hf : ContDiff ℝ (↑⊤) f)
+  (hp : Navier.Analysis.PeriodicDatumFourierBridge.UnitPeriodic3 f) (n : ℕ) :
+  Summable fun k =>
+    Navier.Analysis.CriticalMildWeightedSpace.latticeModeWeight k ^ n *
+      ‖Navier.Analysis.PeriodicDatumFourierBridge.scalarCoefficient f k‖
+'Navier.Analysis.PeriodicInitialPhysicalEvolution.summable_latticeModeWeight_pow_scalarCoefficient' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicInitialPhysicalEvolution.periodicInitialDatum_all_nativeCoefficient_moments
+  {u₀ : Navier.VelocityField} (hu₀ : Navier.PeriodicInitialDatum u₀) (n : ℕ) :
+  Summable fun k =>
+    Navier.Analysis.CriticalMildWeightedSpace.latticeModeWeight k ^ n *
+      Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+        (Navier.Analysis.PeriodicDatumFourierBridge.nativeCoefficient u₀ k)
+'Navier.Analysis.PeriodicInitialPhysicalEvolution.periodicInitialDatum_all_nativeCoefficient_moments' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicInitialPhysicalEvolution.periodicInitialDatum_all_rawCarrier_moments (u₀ : Navier.VelocityField)
+  (hu₀ : Navier.PeriodicInitialDatum u₀) (n : ℕ) :
+  Navier.Analysis.CriticalMildPolynomialMomentConvolution.LatticePolynomialMoment (↑n)
+    (Navier.Analysis.PeriodicMildClassicalRealization.rawInitialCarrier u₀ hu₀)
+'Navier.Analysis.PeriodicInitialPhysicalEvolution.periodicInitialDatum_all_rawCarrier_moments' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.PeriodicInitialPhysicalEvolution.exists_physical_local_evolution_of_periodicInitialDatum (ν : ℝ)
+  (hν : 0 < ν) (u₀ : Navier.VelocityField) (hu₀ : Navier.PeriodicInitialDatum u₀) :
+  ∃ T,
+    0 < T ∧
+      ∃ A,
+        A 0 = Navier.Analysis.PeriodicMildClassicalRealization.rawInitialCarrier u₀ hu₀ ∧
+          Navier.Analysis.PeriodicMildClassicalRealization.physicalMildVelocity A 0 = u₀ ∧
+            Continuous A ∧
+              (∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (A s)) ∧
+                (∀ (s : ℝ), Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian (A s)) ∧
+                  (∀ (s : ℝ),
+                      ‖A s‖ ≤
+                        Navier.Analysis.CriticalMildQuantitativeRestart.criticalMildBoundedRadius
+                          ‖Navier.Analysis.PeriodicMildClassicalRealization.rawInitialCarrier u₀ hu₀‖) ∧
+                    (∀ t ∈ Set.Ioo 0 T,
+                        (Summable fun k =>
+                            Navier.Analysis.CriticalMildHigherMomentBootstrap.quarterFrequencyWeight k *
+                              (‖Navier.Analysis.OfficialABEncoding.officialEuclideanPoint
+                                      (Navier.Analysis.CriticalMildSeries.latticeFrequency k)‖ ^
+                                  2 *
+                                Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+                                  (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+                                    (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) k))) ∧
+                          (∀ (k : Navier.Analysis.CriticalMildSeries.LatticeMode) (i : Fin 3),
+                              HasDerivAt
+                                (fun r =>
+                                  Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient (A r) k i)
+                                (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                                  (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) A t k i)
+                                t) ∧
+                            (Summable fun k =>
+                                Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+                                  (Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                                    (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) A t k)) ∧
+                              ∀ (k : Navier.Analysis.CriticalMildSeries.LatticeMode),
+                                Navier.Analysis.PeriodicMildClassicalRealization.rawToPhysicalAmplitude •
+                                          Navier.Analysis.CriticalMildModeDifferentiation.mildRawTimeDerivative
+                                            (Navier.Analysis.PeriodicMildClassicalRealization.rawMildViscosity ν) A t
+                                            k +
+                                        Navier.Analysis.PeriodicPressureRecovery.periodOneConvectionCoefficient k
+                                          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+                                          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) +
+                                      Navier.Analysis.PeriodicPressureRecovery.periodOneViscousCoefficient ν k
+                                        (Navier.Analysis.CriticalMildWeightedBanach.weightedLatticeCoefficient
+                                          (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t)) k) +
+                                    Navier.Analysis.PeriodicPressureRecovery.periodOneGradientCoefficient k
+                                      (Navier.Analysis.PeriodicPressureRecovery.periodOnePressureCoefficient k
+                                        (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))
+                                        (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (A t))) =
+                                  0) ∧
+                      ∀ (n : ℕ),
+                        Navier.Analysis.CriticalMildPolynomialMomentConvolution.LatticePolynomialMoment (↑n) (A 0)
+'Navier.Analysis.PeriodicInitialPhysicalEvolution.exists_physical_local_evolution_of_periodicInitialDatum' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
