@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 
-from registry_core import validate_registry_file
+from registry_core import RegistryValidationError, compiler_owned_status_file
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,22 +20,22 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        data, result = validate_registry_file(args.registry)
+        data, status = compiler_owned_status_file(args.registry)
+    except RegistryValidationError as exc:
+        print(f"INVALID {args.registry} ({len(exc.errors)} error(s))", file=sys.stderr)
+        for error in exc.errors:
+            print(f"- {error}", file=sys.stderr)
+        return 1
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"INVALID {args.registry}: {exc}", file=sys.stderr)
-        return 1
-    if not result.valid:
-        print(f"INVALID {args.registry} ({len(result.errors)} error(s))", file=sys.stderr)
-        for error in result.errors:
-            print(f"- {error}", file=sys.stderr)
         return 1
     print(
         "VALID "
         f"registry={data['registry_id']}@{data['registry_version']} "
         f"approaches={len(data['approaches'])} "
         f"obligations={len(data['obligations'])} "
-        f"status={data['research_program']['global_disposition']}/"
-        f"{data['research_program']['scientific_status']}"
+        f"status={status['global_disposition']}/{status['scientific_status']} "
+        f"authority={status['status_authority']}"
     )
     return 0
 

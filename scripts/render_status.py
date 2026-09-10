@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render status derived exclusively from the canonical attack registry."""
+"""Render fail-closed status from exact native Lean endpoint evidence."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 
-from registry_core import derived_status, validate_registry_file
+from registry_core import RegistryValidationError, compiler_owned_status_file
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,7 +20,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _render_text(status: dict[str, object]) -> str:
     lines = [
-        "NAVIER ATTACK STATUS (derived; registry is the SSOT)",
+        "NAVIER ATTACK STATUS (compiler-owned; registry supplies routing metadata)",
+        f"authority: {status['status_authority']}",
         f"registry: {status['registry_id']}@{status['registry_version']}",
         f"base revision: {status['base_revision']}",
         f"global: {status['global_disposition']} / {status['scientific_status']}",
@@ -30,6 +31,16 @@ def _render_text(status: dict[str, object]) -> str:
         lines.append(
             f"  {endpoint['branch']}: {endpoint['disposition']} ({endpoint['id']})"
         )
+        lines.append(
+            f"    exact target: {endpoint['target_declaration']}; "
+            f"kernel-verdict={endpoint['kernel_verdict']}; "
+            f"compiler-verified-terminal={str(endpoint['compiler_verified_terminal']).lower()}"
+        )
+        if endpoint["realization_declaration"]:
+            axioms = ",".join(endpoint["axioms"]) or "none"
+            lines.append(
+                f"    realization: {endpoint['realization_declaration']}; axioms={axioms}"
+            )
         if endpoint["residual"]:
             lines.append(f"    residual: {endpoint['residual']}")
     lines.append("approaches:")
@@ -48,16 +59,15 @@ def _render_text(status: dict[str, object]) -> str:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        data, result = validate_registry_file(args.registry)
+        _data, status = compiler_owned_status_file(args.registry)
+    except RegistryValidationError as exc:
+        print(f"INVALID {args.registry} ({len(exc.errors)} error(s))", file=sys.stderr)
+        for error in exc.errors:
+            print(f"- {error}", file=sys.stderr)
+        return 1
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"INVALID {args.registry}: {exc}", file=sys.stderr)
         return 1
-    if not result.valid:
-        print(f"INVALID {args.registry} ({len(result.errors)} error(s))", file=sys.stderr)
-        for error in result.errors:
-            print(f"- {error}", file=sys.stderr)
-        return 1
-    status = derived_status(data)
     if args.json:
         print(json.dumps(status, indent=2, sort_keys=True))
     else:

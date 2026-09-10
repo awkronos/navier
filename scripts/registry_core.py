@@ -232,6 +232,16 @@ class NativeCheckResult:
     output: str
 
 
+FORMAL_REVISION_PATHS = (
+    "Navier",
+    "Navier.lean",
+    "Main.lean",
+    "lakefile.toml",
+    "lake-manifest.json",
+    "lean-toolchain",
+)
+
+
 def load_json(path: str | Path) -> Any:
     """Load JSON without accepting duplicate object keys."""
 
@@ -294,6 +304,8 @@ def _run_native_claim_check(
     repo_root: Path,
     declaration: str,
     target: str | None,
+    *,
+    negated_target: bool = False,
 ) -> NativeCheckResult:
     """Compile a generated type check and parse its raw axiom trace.
 
@@ -309,9 +321,57 @@ def _run_native_claim_check(
     if target is not None and not re.fullmatch(name_pattern, target):
         return NativeCheckResult(2, (), "", "invalid target declaration")
 
+    # A scratch import alone is not freshness evidence: Lean will happily load
+    # an old but well-formed .olean after its source changes.  Refresh the exact
+    # umbrella artifact first so Lake binds every imported object to the
+    # current dependency graph.  Local agents serialize this mutable build via
+    # the shared build lock; isolated CI checkouts may run the same exact target
+    # directly.
+    wrapper = Path.home() / ".claude" / "hooks" / "lean-build-lock.sh"
+    build_command = ["lake", "build", "+Navier:olean"]
+    if wrapper.is_file() and not wrapper.is_symlink():
+        build_command = ["bash", str(wrapper), "900", *build_command]
+    try:
+        built = subprocess.run(
+            build_command,
+            cwd=repo_root,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=1200,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        text = f"native artifact refresh failed to execute: {error}"
+        return NativeCheckResult(2, (), hashlib.sha256(text.encode()).hexdigest(), text)
+    build_output = built.stdout + "\n-- BUILD STDERR --\n" + built.stderr
+    if built.returncode != 0:
+        text = "native artifact refresh failed\n" + build_output
+        return NativeCheckResult(built.returncode or 2, (), hashlib.sha256(text.encode()).hexdigest(), text)
+
+    olean_path = repo_root / ".lake" / "build" / "lib" / "lean" / "Navier.olean"
+    if not olean_path.is_file() or olean_path.is_symlink():
+        text = "native artifact refresh produced no safe Navier.olean\n" + build_output
+        return NativeCheckResult(2, (), hashlib.sha256(text.encode()).hexdigest(), text)
+    try:
+        olean_sha256 = hashlib.sha256(olean_path.read_bytes()).hexdigest()
+    except OSError as error:
+        text = f"native artifact could not be hashed: {error}\n" + build_output
+        return NativeCheckResult(2, (), hashlib.sha256(text.encode()).hexdigest(), text)
+
+    formal_objects = _git_result(
+        repo_root,
+        "rev-parse",
+        *(f"HEAD:{path}" for path in FORMAL_REVISION_PATHS),
+    )
+    if formal_objects.returncode != 0:
+        text = "formal source identity could not be resolved\n" + formal_objects.stderr
+        return NativeCheckResult(2, (), hashlib.sha256(text.encode()).hexdigest(), text)
+    formal_identity = formal_objects.stdout.strip()
+
     lines = ["import Navier", "", f"#check {declaration}"]
     if target is not None:
-        lines.append(f"#check ({declaration} : {target})")
+        expected_type = f"Not {target}" if negated_target else target
+        lines.append(f"#check ({declaration} : {expected_type})")
     lines.append(f"#print axioms {declaration}")
     source = "\n".join(lines) + "\n"
     with tempfile.TemporaryDirectory(prefix="navier-native-check-") as directory:
@@ -319,7 +379,7 @@ def _run_native_claim_check(
         check_path.write_text(source, encoding="utf-8")
         try:
             completed = subprocess.run(
-                ["lake", "env", "lean", str(check_path)],
+                ["lake", "env", "lean", "-t", "0", str(check_path)],
                 cwd=repo_root,
                 text=True,
                 capture_output=True,
@@ -343,7 +403,13 @@ def _run_native_claim_check(
         if completed.returncode == 0:
             completed = subprocess.CompletedProcess(completed.args, 2, completed.stdout, completed.stderr)
             output += "\nmissing raw #print axioms trace"
-    digest = hashlib.sha256(output.encode("utf-8")).hexdigest()
+    artifact_identity = (
+        f"formal_objects:\n{formal_identity}\n"
+        f"navier_olean_sha256:{olean_sha256}\n"
+        f"target_polarity:{'NEGATED' if negated_target else 'POSITIVE'}\n"
+        f"native_output:\n{output}"
+    )
+    digest = hashlib.sha256(artifact_identity.encode("utf-8")).hexdigest()
     return NativeCheckResult(completed.returncode, axioms, digest, output)
 
 
@@ -1081,13 +1147,15 @@ def _validate_evidence(
                 if receipt.get("command") != verifier.get("command"):
                     errors.append(f"{path}.receipt.command: command does not match registered verifier")
                 generated = _timestamp(receipt.get("generated_at"), f"{path}.receipt.generated_at", errors)
-                max_age = verifier.get("receipt_max_age_seconds")
-                if generated is not None and isinstance(max_age, int):
+                # Receipts are durable historical provenance, not cached
+                # terminal-state authority.  CLOSED formal claims are freshly
+                # revalidated below; expiring every background theorem or
+                # experiment receipt makes the registry fail with the passage
+                # of time without improving closure soundness.
+                if generated is not None:
                     age = (now - generated).total_seconds()
                     if age < 0:
                         errors.append(f"{path}.receipt.generated_at: receipt is from the future")
-                    elif age > max_age:
-                        errors.append(f"{path}.receipt.generated_at: stale receipt ({int(age)}s > {max_age}s)")
                 if kind == "NATIVE_RECEIPT" and verifier.get("kind") not in NATIVE_VERIFIER_KINDS:
                     errors.append(f"{path}: native receipt uses a non-native verifier")
                 if kind == "EXPERIMENT_RECEIPT" and verifier.get("kind") != "EXPERIMENT_REPLAY":
@@ -1289,8 +1357,10 @@ def _validate_obligations_shape(
             errors.append(
                 f"{path}: only formal obligations with native realization evidence may use CLOSED"
             )
-        if disposition == "CLOSED" and kind in FORMAL_KINDS and not declaration:
-            errors.append(f"{path}.formal_declaration: closed formal obligations require a declaration")
+        if disposition in {"CLOSED", "FALSIFIED"} and kind in FORMAL_KINDS and not declaration:
+            errors.append(
+                f"{path}.formal_declaration: terminal formal obligations require a proof declaration"
+            )
         if kind == "ENDPOINT" and tier != "THEOREM":
             errors.append(f"{path}: endpoint must be a THEOREM-tier formal target")
     return _unique_ids(obligations, "$.obligations", errors)
@@ -1500,16 +1570,24 @@ def _validate_graph_and_epistemics(
         linked = [evidence.get(link.get("evidence_id"), {}) for link in links]
         if disposition == "CLOSED" and node.get("assumption_ids"):
             errors.append(f"$.obligations[{node_id}]: CLOSED obligation cannot be assumption-backed")
-        if disposition == "CLOSED" and node.get("kind") in FORMAL_KINDS:
+        if disposition == "FALSIFIED" and node.get("assumption_ids"):
+            errors.append(
+                f"$.obligations[{node_id}]: FALSIFIED obligation cannot be assumption-backed"
+            )
+        if disposition in {"CLOSED", "FALSIFIED"} and node.get("kind") in FORMAL_KINDS:
+            evidence_role = "REALIZATION" if disposition == "CLOSED" else "FALSIFICATION"
             native = [
                 item
                 for link, item in zip(links, linked, strict=False)
-                if link.get("role") == "REALIZATION" and item.get("kind") == "NATIVE_RECEIPT"
+                if link.get("role") == evidence_role and item.get("kind") == "NATIVE_RECEIPT"
             ]
             if not native:
-                errors.append(f"$.obligations[{node_id}]: false closure claim; fresh native receipt required")
+                claim = "closure" if disposition == "CLOSED" else "falsification"
+                errors.append(f"$.obligations[{node_id}]: false {claim} claim; fresh native receipt required")
             if len(native) > 1:
-                errors.append(f"$.obligations[{node_id}]: exactly one native realization receipt is required")
+                errors.append(
+                    f"$.obligations[{node_id}]: exactly one native terminal receipt is required"
+                )
             declaration = node.get("formal_declaration")
             target = None
             if node_id in branch_by_obligation:
@@ -1585,7 +1663,12 @@ def _validate_graph_and_epistemics(
                             f"$.obligations[{node_id}]: native verification requires a clean formal worktree"
                         )
                         continue
-                native_result = _run_native_claim_check(repo_root, declaration, target)
+                native_result = _run_native_claim_check(
+                    repo_root,
+                    declaration,
+                    target,
+                    negated_target=disposition == "FALSIFIED",
+                )
                 if native_result.exit_code != 0:
                     errors.append(f"$.obligations[{node_id}]: native receipt revalidation failed")
                     continue
@@ -1596,12 +1679,20 @@ def _validate_graph_and_epistemics(
                     errors.append(f"$.obligations[{node_id}]: freshly checked declaration uses forbidden axioms")
                 if native_result.artifact_sha256 != receipt.get("artifact_sha256"):
                     errors.append(f"$.obligations[{node_id}]: native receipt artifact digest mismatch")
-            mode = node.get("dependency_mode")
-            dependency_statuses = [nodes.get(dep, {}).get("disposition") for dep in node.get("dependencies", [])]
-            if mode == "ALL" and any(status != "CLOSED" for status in dependency_statuses):
-                errors.append(f"$.obligations[{node_id}]: ALL-dependency closure requires every dependency CLOSED")
-            if mode == "ANY" and not any(status == "CLOSED" for status in dependency_statuses):
-                errors.append(f"$.obligations[{node_id}]: ANY-dependency closure requires one CLOSED branch")
+            if disposition == "CLOSED":
+                mode = node.get("dependency_mode")
+                dependency_statuses = [
+                    nodes.get(dep, {}).get("disposition")
+                    for dep in node.get("dependencies", [])
+                ]
+                if mode == "ALL" and any(status != "CLOSED" for status in dependency_statuses):
+                    errors.append(
+                        f"$.obligations[{node_id}]: ALL-dependency closure requires every dependency CLOSED"
+                    )
+                if mode == "ANY" and not any(status == "CLOSED" for status in dependency_statuses):
+                    errors.append(
+                        f"$.obligations[{node_id}]: ANY-dependency closure requires one CLOSED branch"
+                    )
         if disposition in {"RED", "FALSIFIED", "REVERTED"}:
             witnesses = [
                 item
@@ -1612,17 +1703,33 @@ def _validate_graph_and_epistemics(
                 errors.append(
                     f"$.obligations[{node_id}]: RED disposition requires a linked falsification witness"
                 )
-            if disposition in {"FALSIFIED", "REVERTED"} and not witnesses:
+            if (
+                disposition == "FALSIFIED"
+                and node.get("kind") not in FORMAL_KINDS
+                and not witnesses
+            ):
+                errors.append(
+                    f"$.obligations[{node_id}]: falsified disposition requires a checked witness"
+                )
+            if disposition == "REVERTED" and not witnesses:
                 errors.append(f"$.obligations[{node_id}]: falsified/reverted disposition requires a checked witness")
 
-    closed_endpoints = [node_id for node_id in resolution_ids if nodes.get(node_id, {}).get("disposition") == "CLOSED"]
+    terminal_endpoints = [
+        node_id
+        for node_id in resolution_ids
+        if nodes.get(node_id, {}).get("disposition") in {"CLOSED", "FALSIFIED"}
+    ]
     global_closed = research_program.get("global_disposition") == "CLOSED"
     formally_resolved = research_program.get("scientific_status") == "FORMALLY_RESOLVED"
-    if closed_endpoints and not (global_closed and formally_resolved):
-        errors.append("$.research_program: a closed public endpoint requires CLOSED / FORMALLY_RESOLVED global status")
-    if (global_closed or formally_resolved) and not closed_endpoints:
-        errors.append("$.research_program: false global closure claim; no public endpoint is natively closed")
-    if not closed_endpoints and (
+    if terminal_endpoints and not (global_closed and formally_resolved):
+        errors.append(
+            "$.research_program: a kernel-resolved public endpoint requires CLOSED / FORMALLY_RESOLVED global status"
+        )
+    if (global_closed or formally_resolved) and not terminal_endpoints:
+        errors.append(
+            "$.research_program: false global closure claim; no public endpoint is natively proved or refuted"
+        )
+    if not terminal_endpoints and (
         research_program.get("global_disposition") != "SCAFFOLDED"
         or research_program.get("scientific_status") != "SCIENTIFIC_FRONTIER"
     ):
@@ -1820,23 +1927,53 @@ def assert_valid_registry(
         raise RegistryValidationError(result.errors)
 
 
-def derived_status(data: dict[str, Any]) -> dict[str, Any]:
-    """Derive a deterministic status view from an already validated registry."""
+def _derived_status_from_validated(data: dict[str, Any]) -> dict[str, Any]:
+    """Render status after the caller has completed native validation."""
 
     obligations = data["obligations"]
     approaches = data["approaches"]
+    evidence = {item["id"]: item for item in data["evidence"]}
+    branches = {
+        item["obligation_id"]: item
+        for item in data["research_program"]["problem_surface"]["resolution_branches"]
+    }
     dispositions = Counter(node["disposition"] for node in obligations)
     tiers = Counter(node["claim_tier"] for node in obligations)
-    endpoints = [
-        {
+    endpoints = []
+    for node in obligations:
+        if node["id"] not in data["research_program"]["resolution_obligation_ids"]:
+            continue
+        branch = branches[node["id"]]
+        terminal_role = (
+            "FALSIFICATION" if node["disposition"] == "FALSIFIED" else "REALIZATION"
+        )
+        native_receipts = [
+            evidence[link["evidence_id"]]["receipt"]
+            for link in node["evidence_links"]
+            if link["role"] == terminal_role
+            and evidence[link["evidence_id"]]["kind"] == "NATIVE_RECEIPT"
+        ]
+        receipt = native_receipts[0] if native_receipts else None
+        endpoints.append(
+            {
             "id": node["id"],
             "branch": node["domain"]["endpoint_branch"],
             "disposition": node["disposition"],
             "residual": node["residual"]["statement"] if node["residual"] else None,
-        }
-        for node in obligations
-        if node["id"] in data["research_program"]["resolution_obligation_ids"]
-    ]
+                "closure_authority": "LEAN_NATIVE_EXACT_ENDPOINT",
+                "compiler_verified_terminal": node["disposition"] in {"CLOSED", "FALSIFIED"},
+                "kernel_verdict": (
+                    "PROVED"
+                    if node["disposition"] == "CLOSED"
+                    else "REFUTED"
+                    if node["disposition"] == "FALSIFIED"
+                    else "OPEN"
+                ),
+                "target_declaration": branch["public_declaration"],
+                "realization_declaration": node["formal_declaration"],
+                "axioms": receipt["axioms"] if receipt else [],
+            }
+        )
     approach_rows = []
     for approach in approaches:
         nodes = [node for node in obligations if node["approach_id"] == approach["id"]]
@@ -1855,6 +1992,7 @@ def derived_status(data: dict[str, Any]) -> dict[str, Any]:
             }
         )
     return {
+        "status_authority": "LEAN_NATIVE_EXACT_ENDPOINT",
         "registry_id": data["registry_id"],
         "registry_version": data["registry_version"],
         "base_revision": data["base_revision"],
@@ -1865,6 +2003,51 @@ def derived_status(data: dict[str, Any]) -> dict[str, Any]:
         "endpoints": endpoints,
         "approaches": approach_rows,
     }
+
+
+def derived_status(
+    data: dict[str, Any],
+    *,
+    repo_root: str | Path,
+    now: datetime | None = None,
+    check_git_revision: bool = True,
+) -> dict[str, Any]:
+    """Derive status only after fresh compiler-owned closure validation.
+
+    The registry supplies routing metadata and requested dispositions.  It is
+    not authority for ``CLOSED``: exact endpoint type-ascription, a refreshed
+    current-source ``Navier.olean``, and raw ``#print axioms`` output are all
+    rechecked before this function returns any status view.
+    """
+
+    result = validate_registry(
+        data,
+        now=now,
+        repo_root=repo_root,
+        check_git_revision=check_git_revision,
+        check_native_receipts=True,
+    )
+    if not result.valid:
+        raise RegistryValidationError(result.errors)
+    return _derived_status_from_validated(data)
+
+
+def compiler_owned_status_file(
+    registry_path: str | Path,
+    *,
+    now: datetime | None = None,
+    check_git_revision: bool = True,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Load, schema-check, natively validate, and derive one status view."""
+
+    data, result = validate_registry_file(
+        registry_path,
+        now=now,
+        check_git_revision=check_git_revision,
+    )
+    if not result.valid:
+        raise RegistryValidationError(result.errors)
+    return data, _derived_status_from_validated(data)
 
 
 def clone_registry(data: dict[str, Any]) -> dict[str, Any]:

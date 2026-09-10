@@ -16,6 +16,7 @@ import tempfile
 import unittest
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,8 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from registry_core import (  # noqa: E402
+    RegistryValidationError,
+    _run_native_claim_check,
     derived_status,
     load_json,
     validate_registry,
@@ -283,6 +286,11 @@ class PositiveAndClosedWorldTests(RegistryTestCase):
         self.assertEqual(data["registry_id"], "navier.attack_registry")
         self.assertTrue(result.valid, "\n".join(result.errors))
 
+    def test_historical_native_receipts_do_not_expire_open_registry(self) -> None:
+        data, result = validate_registry_file(REGISTRY_PATH)
+        self.assertEqual(data["research_program"]["scientific_status"], "SCIENTIFIC_FRONTIER")
+        self.assertTrue(result.valid, "\n".join(result.errors))
+
     def test_duplicate_json_keys_are_rejected_at_load(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "duplicate.json"
@@ -484,6 +492,22 @@ class EvidenceAndClosureTests(RegistryTestCase):
         _close_a(self.registry)
         self.assertInvalid("false closure claim; fresh native receipt required")
 
+    def test_handwritten_falsification_witness_cannot_refute_public_endpoint(self) -> None:
+        witness = _falsification_witness(self.registry)
+        endpoint = _find(self.registry["obligations"], A_ID)
+        endpoint["disposition"] = "FALSIFIED"
+        endpoint["formal_declaration"] = (
+            "Navier.ProblemStatements.WholeSpaceGlobalRegularityNegationProof"
+        )
+        endpoint["residual"] = None
+        self.registry["evidence"].append(witness)
+        endpoint["evidence_links"].append(
+            {"evidence_id": witness["id"], "role": "FALSIFICATION"}
+        )
+        self.registry["research_program"]["global_disposition"] = "CLOSED"
+        self.registry["research_program"]["scientific_status"] = "FORMALLY_RESOLVED"
+        self.assertInvalid("false falsification claim; fresh native receipt required")
+
     def test_generated_surface_snapshot_cannot_close_a_theorem(self) -> None:
         snapshot = _surface_snapshot(self.registry)
         _close_a(self.registry, snapshot)
@@ -512,10 +536,10 @@ class EvidenceAndClosureTests(RegistryTestCase):
         _close_a(self.registry, evidence)
         self.assertInvalid("command does not match registered verifier")
 
-    def test_stale_receipt_is_rejected_with_fixed_utc_clock(self) -> None:
+    def test_old_native_receipt_still_requires_fresh_compiler_revalidation(self) -> None:
         evidence = _native_evidence(self.registry, generated_at=NOW - timedelta(days=2))
         _close_a(self.registry, evidence)
-        self.assertInvalid("stale receipt")
+        self.assertInvalid("native receipt was not freshly revalidated")
 
     def test_receipt_one_second_in_future_is_rejected(self) -> None:
         evidence = _native_evidence(self.registry)
@@ -554,11 +578,11 @@ class EvidenceAndClosureTests(RegistryTestCase):
         _close_a(self.registry, evidence)
         self.assertInvalid("receipt/provenance artifact digests differ")
 
-    def test_falsification_without_checked_witness_is_rejected(self) -> None:
+    def test_falsification_without_native_refutation_is_rejected(self) -> None:
         a = _find(self.registry["obligations"], A_ID)
         a["disposition"] = "FALSIFIED"
         a["residual"] = None
-        self.assertInvalid("falsified/reverted disposition requires a checked witness")
+        self.assertInvalid("false falsification claim; fresh native receipt required")
 
     def test_red_disposition_without_linked_falsification_witness_is_rejected(self) -> None:
         node = _find(self.registry["obligations"], "critical.unconditional_bound")
@@ -577,14 +601,14 @@ class EvidenceAndClosureTests(RegistryTestCase):
         )
         self.assertInvalid("RED disposition requires a linked falsification witness")
 
-    def test_checked_falsification_witness_is_accepted(self) -> None:
+    def test_checked_artifact_witness_cannot_refute_formal_endpoint(self) -> None:
         witness = _falsification_witness(self.registry)
         self.registry["evidence"].append(witness)
         a = _find(self.registry["obligations"], A_ID)
         a["disposition"] = "FALSIFIED"
         a["residual"] = None
         a["evidence_links"].append({"evidence_id": witness["id"], "role": "FALSIFICATION"})
-        self.assertValid()
+        self.assertInvalid("false falsification claim; fresh native receipt required")
 
     def test_falsification_witness_requires_pinned_artifact(self) -> None:
         witness = _falsification_witness(self.registry)
@@ -599,7 +623,9 @@ class EvidenceAndClosureTests(RegistryTestCase):
     def test_renamed_global_closure_evasion_is_rejected(self) -> None:
         self.registry["research_program"]["global_disposition"] = "CLOSED"
         self.registry["research_program"]["scientific_status"] = "CONDITIONAL_FRONTIER"
-        self.assertInvalid("false global closure claim; no public endpoint is natively closed")
+        self.assertInvalid(
+            "false global closure claim; no public endpoint is natively proved or refuted"
+        )
 
     def test_cost_or_stall_verifier_age_must_be_nonnegative(self) -> None:
         _verifier(self.registry, "verifier.lean.native")["receipt_max_age_seconds"] = -1
@@ -776,7 +802,10 @@ class ProvenanceTests(RegistryTestCase):
 
 class DerivedStatusAndRendererTests(RegistryTestCase):
     def test_derived_status_counts_obligations_from_registry(self) -> None:
-        status = derived_status(self.registry)
+        status = derived_status(
+            self.registry, repo_root=ROOT, now=NOW, check_git_revision=False
+        )
+        self.assertEqual(status["status_authority"], "LEAN_NATIVE_EXACT_ENDPOINT")
         self.assertEqual(
             status["dispositions"],
             {"DECOMPOSED": 10, "RED": 1, "SCAFFOLDED": 19},
@@ -793,20 +822,25 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         )
         self.assertEqual([row["branch"] for row in status["endpoints"]], ["FEFFERMAN_A", "FEFFERMAN_C"])
 
-    def test_derived_status_reflects_mutated_disposition_without_cached_view(self) -> None:
+    def test_derived_status_rejects_unvalidated_disposition_mutation(self) -> None:
         _find(self.registry["obligations"], A_ID)["disposition"] = "RED"
-        status = derived_status(self.registry)
-        self.assertEqual(
-            status["dispositions"],
-            {"DECOMPOSED": 10, "RED": 2, "SCAFFOLDED": 18},
-        )
-        self.assertEqual(status["endpoints"][0]["disposition"], "RED")
+        with self.assertRaises(RegistryValidationError):
+            derived_status(
+                self.registry, repo_root=ROOT, now=NOW, check_git_revision=False
+            )
 
     def test_text_renderer_names_ssot_global_status_and_residuals(self) -> None:
-        rendered = _render_text(derived_status(self.registry))
-        self.assertIn("derived; registry is the SSOT", rendered)
+        rendered = _render_text(
+            derived_status(
+                self.registry, repo_root=ROOT, now=NOW, check_git_revision=False
+            )
+        )
+        self.assertIn("compiler-owned; registry supplies routing metadata", rendered)
+        self.assertIn("authority: LEAN_NATIVE_EXACT_ENDPOINT", rendered)
         self.assertIn("global: SCAFFOLDED / SCIENTIFIC_FRONTIER", rendered)
         self.assertIn("FEFFERMAN_A: SCAFFOLDED", rendered)
+        self.assertIn("kernel-verdict=OPEN", rendered)
+        self.assertIn("compiler-verified-terminal=false", rendered)
         self.assertIn(
             "residual: Construct a native theorem term inhabiting "
             "Navier.ProblemStatements.WholeSpaceGlobalRegularity",
@@ -814,9 +848,101 @@ class DerivedStatusAndRendererTests(RegistryTestCase):
         )
 
     def test_text_renderer_reports_blocked_barriers_deterministically(self) -> None:
-        rendered = _render_text(derived_status(self.registry))
+        rendered = _render_text(
+            derived_status(
+                self.registry, repo_root=ROOT, now=NOW, check_git_revision=False
+            )
+        )
         self.assertIn("approach.energy: DECOMPOSED", rendered)
         self.assertIn("blocked=barrier.scaling_criticality,barrier.supercritical_energy_gap,barrier.weak_strong_gap", rendered)
+
+
+class NativeCompilerOwnershipTests(unittest.TestCase):
+    def test_failed_refresh_cannot_fall_through_to_stale_olean(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stale = root / ".lake" / "build" / "lib" / "lean" / "Navier.olean"
+            stale.parent.mkdir(parents=True)
+            stale.write_bytes(b"stale but loadable object")
+            failed_build = subprocess.CompletedProcess(
+                ["lake", "build", "+Navier:olean"], 1, "", "source does not compile"
+            )
+            with patch("registry_core.subprocess.run", return_value=failed_build) as run:
+                result = _run_native_claim_check(
+                    root,
+                    "Navier.Analysis.GlobalRegularityEndpoint."
+                    "wholeSpaceGlobalRegularity_of_halfLineExistence_and_energyClause",
+                    "Navier.ProblemStatements.WholeSpaceGlobalRegularity",
+                )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("native artifact refresh failed", result.output)
+        self.assertEqual(run.call_count, 1, "stale scratch import must never run after refresh failure")
+
+    def test_native_digest_is_bound_to_refreshed_olean_identity(self) -> None:
+        declaration = "Navier.Scaling.mixedNormExponent_eq_zero_iff"
+        axiom_output = (
+            f"{declaration} : True\n"
+            f"'{declaration}' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+        )
+
+        def run_check(root: Path, payload: bytes) -> str:
+            olean = root / ".lake" / "build" / "lib" / "lean" / "Navier.olean"
+            olean.parent.mkdir(parents=True, exist_ok=True)
+            olean.write_bytes(payload)
+
+            def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+                if "build" in command:
+                    return subprocess.CompletedProcess(command, 0, "", "")
+                if command[0] == "git":
+                    return subprocess.CompletedProcess(command, 0, ("a" * 40 + "\n") * 6, "")
+                return subprocess.CompletedProcess(command, 0, axiom_output, "")
+
+            with patch("registry_core.subprocess.run", side_effect=fake_run):
+                result = _run_native_claim_check(root, declaration, None)
+            self.assertEqual(result.exit_code, 0, result.output)
+            return result.artifact_sha256
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = run_check(root, b"fresh object one")
+            second = run_check(root, b"fresh object two")
+        self.assertNotEqual(first, second)
+
+    def test_refutation_probe_typechecks_exact_negated_crown(self) -> None:
+        declaration = "Navier.Tests.claimedRefutation"
+        target = "Navier.ProblemStatements.WholeSpaceGlobalRegularity"
+        axiom_output = (
+            f"'{declaration}' depends on axioms: "
+            "[propext, Classical.choice, Quot.sound]\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            olean = root / ".lake" / "build" / "lib" / "lean" / "Navier.olean"
+            olean.parent.mkdir(parents=True)
+            olean.write_bytes(b"current object")
+
+            def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+                if "build" in command:
+                    return subprocess.CompletedProcess(command, 0, "", "")
+                if command[0] == "git":
+                    return subprocess.CompletedProcess(command, 0, ("a" * 40 + "\n") * 6, "")
+                source = Path(command[-1]).read_text(encoding="utf-8")
+                self.assertIn(f"#check ({declaration} : Not {target})", source)
+                self.assertNotIn(f"#check ({declaration} : {target})", source)
+                return subprocess.CompletedProcess(command, 0, axiom_output, "")
+
+            with patch("registry_core.subprocess.run", side_effect=fake_run):
+                result = _run_native_claim_check(
+                    root,
+                    declaration,
+                    target,
+                    negated_target=True,
+                )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertEqual(
+            set(result.axioms),
+            {"propext", "Classical.choice", "Quot.sound"},
+        )
 
 
 class SchemaDossierAndManifestTests(unittest.TestCase):
