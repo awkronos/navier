@@ -1,0 +1,3 @@
+
+SessionEnd hook [$HOME/.claude/hooks/session-end.sh] failed: Hook cancelled
+SessionEnd hook [$HOME/.claude/hooks/session-end-rsi.sh] failed: Hook cancelled
