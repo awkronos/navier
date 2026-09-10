@@ -129,10 +129,9 @@ exports a deterministic standalone bundle with provenance and tests, so a
 release does not require access to that private workspace. The Rust crate is
 self-contained and tested against independently generated Python fixtures.
 
-The interactive companion is [navier.awkronos.com](https://navier.awkronos.com/),
-prepared in the Awkronos Hub. The host is not public yet: the repository and
-website remain private pending publication review. The companion explains the
-construction and runs the Rust solver; this repository supplies the exact
+The interactive companion is
+[navier.awkronos.com](https://navier.awkronos.com/). It explains the construction
+and runs the Rust solver; this repository supplies the exact
 [results and open obligations](docs/RESULT_MAP.md),
 [triad analysis](docs/TRIADS_AND_SYMMETRY.md), and
 [reproducible experiments](solver/README.md).
