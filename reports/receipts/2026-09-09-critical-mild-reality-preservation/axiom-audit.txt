@@ -1,0 +1,41 @@
+Navier.Analysis.CriticalMildRealityPreservation.spectralTransport_neg_antiHermitian (q : Navier.Space)
+  (a b : Navier.Analysis.ComplexLerayProjection.ComplexSpace) :
+  Navier.Analysis.CriticalMildDuhamel.spectralTransport (-q)
+      (-Navier.Analysis.ComplexLerayProjection.complexConjugate a)
+      (-Navier.Analysis.ComplexLerayProjection.complexConjugate b) =
+    -Navier.Analysis.ComplexLerayProjection.complexConjugate
+        (Navier.Analysis.CriticalMildDuhamel.spectralTransport q a b)
+Navier.Analysis.CriticalMildRealityPreservation.spectralOutputCoefficient_neg_antiHermitian
+  {u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hu : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian u)
+  (hv : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian v)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode) :
+  Navier.Analysis.CriticalMildDuhamelBochner.spectralOutputCoefficient (-k) u v =
+    -Navier.Analysis.ComplexLerayProjection.complexConjugate
+        (Navier.Analysis.CriticalMildDuhamelBochner.spectralOutputCoefficient k u v)
+Navier.Analysis.CriticalMildRealityPreservation.heatRegularizedSpectralOutput_antiHermitian (ν τ : ℝ) (hν : 0 < ν)
+  (hτ : 0 < τ) {u v : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hu : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian u)
+  (hv : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian v)
+  (hdiv : Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree u) :
+  Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian
+    (Navier.Analysis.CriticalMildDuhamelBochner.heatRegularizedSpectralOutput ν τ hν hτ u v hdiv)
+Navier.Analysis.CriticalMildRealityPreservation.criticalMildPathIntegrand_antiHermitian (ν : ℝ) (hν : 0 < ν)
+  (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hdiv : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u s))
+  (hreal : ∀ (s : ℝ), Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian (u s)) (t s : ℝ) :
+  Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian
+    (Navier.Analysis.CriticalMildPathIntegrand.criticalMildPathIntegrand ν hν u hdiv t s)
+'Navier.Analysis.CriticalMildRealityPreservation.spectralTransport_neg_antiHermitian' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildRealityPreservation.spectralOutputCoefficient_neg_antiHermitian' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildRealityPreservation.heatRegularizedSpectralOutput_antiHermitian' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildRealityPreservation.criticalMildPathIntegrand_antiHermitian' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+exit_code=0
