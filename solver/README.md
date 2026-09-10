@@ -134,6 +134,73 @@ For the periodic solver, JavaScript constructs
 `advanceBounded(duration, maxDt, cfl, maxSubsteps)`,
 then reads `velocity()`, `diagnostics()`, and `metadata()`.
 
+## Energy budget
+
+CPU, WASM, and WebGPU diagnostics expose the same camelCase energy-budget
+fields. Existing native and CPU-WASM fields retain their snake_case names;
+WebGPU and the browser worker normalize them to camelCase. The scoring script
+accepts either documented form and rejects conflicting aliases. With
+volume-mean kinetic energy on `[0, 2π)³`, the diagnostics measure
+
+```text
+energyBalanceDefect(t) = energy(t) + cumulativeEnergyDissipation(t) - initialEnergy
+cumulativeEnergyDissipation(t) ≈ ∫ 2 ν enstrophy(s) ds.
+```
+
+The zero-defect target is the physical normalization of Lean's
+[`mild_totalEnergy_add_integratedDissipation_eq_initial`](../Navier/Analysis/PhysicalPeriodicDissipationBudget.lean):
+because `A = -i û_R`, divide its raw Fourier identity by `2` for the Rust-box
+volume mean. Equivalently, divide by `2(2π)²` after the documented period-one
+velocity rescaling. The dimensionless relative defect is unchanged.
+`energyBalanceRelativeError` divides the signed defect by `initialEnergy`. The exact
+zero trajectory reports zero relative error. A nonzero defect with zero initial
+energy is nonfinite and fails the diagnostic.
+
+`cumulativeEnergyDissipation` uses the trapezoidal rule at calls to
+`diagnostics()`. It is seeded when the state is initialized or reset. Repeated
+calls at the same solver time add neither area nor a sample.
+`energyBudgetSamples` counts distinct-time diagnostic observations, including
+the reset seed; the number of positive-width trapezoids is one less. It counts
+neither solver substeps nor repeated same-time calls. `energyBudgetStartTime` and
+`energyBudgetEndTime` state the covered interval, and
+`energyBudgetMaxInterval` reports its largest positive observation gap.
+`meanEnergyDissipationRate` is the integral divided by that interval; on a
+zero-width interval it is the current instantaneous rate.
+
+The remaining observables are `energyDissipationRate`,
+`minimumSampledEnergyDissipationRate`, and
+`minimumSampledDissipationTime`. `energyBalanceApplicable` is true only while
+the trajectory remains unforced; applying native `stepWithForcing` invalidates
+the unforced budget. The sampled minimum is a finite observation
+analogue of the good-time estimate in
+[`exists_goodDissipationTime`](../Navier/Analysis/PhysicalPeriodicGoodTimeSelection.lean),
+not an inhabitant of its continuum hypotheses.
+
+Score a captured diagnostic with tolerances established for its backend and
+observation cadence:
+
+```bash
+python3 scripts/navier_diagnostic_score.py diagnostic.json \
+  --viscosity 0.05 \
+  --energy-balance-relative-tolerance 1e-5 \
+  --divergence-rms-tolerance 1e-10 \
+  --identity-relative-tolerance 1e-12
+```
+
+The scorer deliberately has no default acceptance tolerances. Observation
+cadence controls trapezoidal error independently of accepted solver timestep;
+establish the energy tolerance by cadence refinement or an analytic quadrature
+bound. Counts and mean cadence alone cannot establish convergence order for a
+nonuniform observation mesh; retain the full mesh or use a bound involving
+`energyBudgetMaxInterval`. Its acceptance covers the finite-grid diagnostic, spatial-resolution
+flag, discrete identities, and declared tolerances. It does not verify the
+continuum mild-solution assumptions or global regularity.
+
+In the browser console, the normalized object is
+`window.NavierVisuals.getStats().compute.diagnostics`; the backend's actual
+viscosity is `window.NavierVisuals.getStats().compute.viscosity`. Use that
+metadata value when scoring, because WebGPU stores its coefficient in `f32`.
+
 When `navigator.gpu` is available, `await WebGpuNavierSolver.create(grid,
 viscosity)` creates the independent GPU-resident implementation of those same
 spectral operators. Its `step` methods only submit compute work; `velocity()`

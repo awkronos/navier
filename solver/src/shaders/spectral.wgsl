@@ -1,8 +1,6 @@
 // Direct, portable WebGPU implementation of the solver's Fourier operations.
 // Complex vectors are component-major: [ux_hat, uy_hat, uz_hat].
 
-const PI: f32 = 3.14159265358979323846;
-
 struct Params {
     n: u32,
     len: u32,
@@ -75,14 +73,17 @@ fn dft_axis(@builtin(global_invocation_id) gid: vec3<u32>) {
     var output_axis = output_coordinates.x;
     if (params.axis == 1u) { output_axis = output_coordinates.y; }
     if (params.axis == 2u) { output_axis = output_coordinates.z; }
-    let direction = select(-1.0, 1.0, params.inverse != 0u);
     var sum = vec2<f32>(0.0);
     for (var sample = 0u; sample < params.n; sample += 1u) {
         if (params.axis == 0u) { input_coordinates.x = sample; }
         if (params.axis == 1u) { input_coordinates.y = sample; }
         if (params.axis == 2u) { input_coordinates.z = sample; }
-        let angle = direction * 2.0 * PI * f32(output_axis * sample) / f32(params.n);
-        let twiddle = vec2<f32>(cos(angle), sin(angle));
+        let forward_twiddle = auxiliary[output_axis * params.n + sample];
+        let twiddle = select(
+            forward_twiddle,
+            vec2<f32>(forward_twiddle.x, -forward_twiddle.y),
+            params.inverse != 0u,
+        );
         let input_index = component * params.len + point_index(input_coordinates);
         sum += complex_mul(source[input_index], twiddle);
     }

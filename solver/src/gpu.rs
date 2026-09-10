@@ -6,11 +6,15 @@
 //! viscous integrating factors, and RK4 combination. Readback happens only
 //! when a caller requests a render frame or diagnostics.
 
-use crate::{convention::SpectralConventionMetadata, core::MAX_BROWSER_GRID};
+use crate::{
+    convention::SpectralConventionMetadata,
+    core::{ENERGY_BUDGET_QUADRATURE, EnergyBudgetTracker, MAX_BROWSER_GRID},
+};
 use bytemuck::{Pod, Zeroable};
 use serde::Serialize;
 use std::{
     cell::Cell,
+    f64::consts::TAU,
     num::NonZeroU64,
     sync::{
         Arc,
@@ -65,6 +69,19 @@ pub struct GpuDiagnostics {
     pub max_speed: f64,
     pub max_vorticity: f64,
     pub energy_dissipation_rate: f64,
+    pub initial_energy: f64,
+    pub cumulative_energy_dissipation: f64,
+    pub energy_balance_defect: f64,
+    pub energy_balance_relative_error: f64,
+    pub mean_energy_dissipation_rate: f64,
+    pub minimum_sampled_energy_dissipation_rate: f64,
+    pub minimum_sampled_dissipation_time: f64,
+    pub energy_budget_start_time: f64,
+    pub energy_budget_end_time: f64,
+    pub energy_budget_max_interval: f64,
+    pub energy_budget_samples: u32,
+    pub energy_budget_quadrature: &'static str,
+    pub energy_balance_applicable: bool,
     pub high_frequency_energy_fraction: f64,
     pub tail_start_fraction_of_dealias_cutoff: f64,
     pub tail_tolerance: f64,
@@ -101,6 +118,7 @@ pub struct WebGpuSpectralSolver {
     steps: u64,
     max_tail_energy_fraction: Cell<f64>,
     underresolved: Cell<bool>,
+    energy_budget: EnergyBudgetTracker,
     device_lost: Arc<AtomicBool>,
     adapter_name: String,
     adapter_backend: String,
@@ -111,6 +129,7 @@ pub struct WebGpuSpectralSolver {
     max_speed_pipeline: MaxSpeedPipeline,
     parameters: wgpu::Buffer,
     max_speed_reduction: wgpu::Buffer,
+    twiddle: wgpu::Buffer,
     dummy: wgpu::Buffer,
     state: wgpu::Buffer,
     a: wgpu::Buffer,
@@ -298,6 +317,19 @@ impl WebGpuSpectralSolver {
                 | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let twiddle_values: Vec<[f32; 2]> = (0..n)
+            .flat_map(|output| {
+                (0..n).map(move |sample| {
+                    let angle = -TAU * (output * sample) as f64 / n as f64;
+                    [angle.cos() as f32, angle.sin() as f32]
+                })
+            })
+            .collect();
+        let twiddle = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Navier precomputed Fourier twiddles"),
+            contents: bytemuck::cast_slice(&twiddle_values),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
         let dummy = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Navier unused storage binding"),
             contents: &[0; 8],
@@ -321,6 +353,7 @@ impl WebGpuSpectralSolver {
             steps: 0,
             max_tail_energy_fraction: Cell::new(0.0),
             underresolved: Cell::new(false),
+            energy_budget: EnergyBudgetTracker::new(0.0, 0.0),
             device_lost,
             adapter_name: info.name,
             adapter_backend: format!("{:?}", info.backend),
@@ -331,6 +364,7 @@ impl WebGpuSpectralSolver {
             max_speed_pipeline,
             parameters,
             max_speed_reduction,
+            twiddle,
             dummy,
             state,
             a,
@@ -384,6 +418,8 @@ impl WebGpuSpectralSolver {
             }
         }
         self.upload_physical(&physical);
+        self.energy_budget
+            .reset(0.0, 0.125, 0.75 * self.viscosity as f64);
     }
 
     pub fn reset_zero(&mut self) {
@@ -394,6 +430,7 @@ impl WebGpuSpectralSolver {
         self.steps = 0;
         self.max_tail_energy_fraction.set(0.0);
         self.underresolved.set(false);
+        self.energy_budget.reset(0.0, 0.0, 0.0);
     }
 
     pub fn reset_shear(&mut self, mode: usize) -> Result<(), String> {
@@ -414,6 +451,11 @@ impl WebGpuSpectralSolver {
         self.max_tail_energy_fraction
             .set(if is_tail { 1.0 } else { 0.0 });
         self.underresolved.set(is_tail);
+        self.energy_budget.reset(
+            0.0,
+            0.25,
+            0.5 * self.viscosity as f64 * (mode as f64).powi(2),
+        );
         Ok(())
     }
 
@@ -631,12 +673,10 @@ impl WebGpuSpectralSolver {
         self.ensure_device()?;
         let velocity = self.velocity_f32_interleaved().await?;
         let state = self.read_complex_buffer(&self.state).await?;
-        let mut energy_sum = 0.0_f64;
         let mut max_speed2 = 0.0_f64;
         let mut finite = true;
         for value in velocity.chunks_exact(COMPONENTS) {
             let speed2 = value.iter().map(|x| (*x as f64).powi(2)).sum::<f64>();
-            energy_sum += 0.5 * speed2;
             max_speed2 = max_speed2.max(speed2);
             finite &= speed2.is_finite();
         }
@@ -687,12 +727,15 @@ impl WebGpuSpectralSolver {
             finite &= magnitude2.is_finite();
         }
         finite &= state.iter().all(|z| z[0].is_finite() && z[1].is_finite());
-        let energy = energy_sum / self.len as f64;
+        let energy = 0.5 * parseval_mean(spectral_energy_sum, self.len);
         let velocity_rms = (2.0 * energy).max(0.0).sqrt();
         let vorticity_rms = (2.0 * enstrophy).max(0.0).sqrt();
         let max_speed = max_speed2.sqrt();
         let max_vorticity = max_vorticity2.sqrt();
         let energy_dissipation_rate = 2.0 * self.viscosity as f64 * enstrophy;
+        let energy_budget = self
+            .energy_budget
+            .observe(self.time, energy, energy_dissipation_rate);
         finite &= [
             self.time,
             energy,
@@ -703,6 +746,16 @@ impl WebGpuSpectralSolver {
             max_speed,
             max_vorticity,
             energy_dissipation_rate,
+            energy_budget.initial_energy,
+            energy_budget.cumulative_energy_dissipation,
+            energy_budget.energy_balance_defect,
+            energy_budget.energy_balance_relative_error,
+            energy_budget.mean_energy_dissipation_rate,
+            energy_budget.minimum_sampled_energy_dissipation_rate,
+            energy_budget.minimum_sampled_dissipation_time,
+            energy_budget.start_time,
+            energy_budget.end_time,
+            energy_budget.max_interval,
             tail,
         ]
         .into_iter()
@@ -717,11 +770,25 @@ impl WebGpuSpectralSolver {
             max_speed,
             max_vorticity,
             energy_dissipation_rate,
+            initial_energy: energy_budget.initial_energy,
+            cumulative_energy_dissipation: energy_budget.cumulative_energy_dissipation,
+            energy_balance_defect: energy_budget.energy_balance_defect,
+            energy_balance_relative_error: energy_budget.energy_balance_relative_error,
+            mean_energy_dissipation_rate: energy_budget.mean_energy_dissipation_rate,
+            minimum_sampled_energy_dissipation_rate: energy_budget
+                .minimum_sampled_energy_dissipation_rate,
+            minimum_sampled_dissipation_time: energy_budget.minimum_sampled_dissipation_time,
+            energy_budget_start_time: energy_budget.start_time,
+            energy_budget_end_time: energy_budget.end_time,
+            energy_budget_max_interval: energy_budget.max_interval,
+            energy_budget_samples: energy_budget.samples,
+            energy_budget_quadrature: ENERGY_BUDGET_QUADRATURE,
+            energy_balance_applicable: energy_budget.applicable,
             high_frequency_energy_fraction: tail,
             tail_start_fraction_of_dealias_cutoff: 0.75,
             tail_tolerance: 1.0e-8,
             underresolved: self.underresolved.get(),
-            finite,
+            finite: finite && energy_budget.finite(),
         })
     }
 
@@ -869,7 +936,7 @@ impl WebGpuSpectralSolver {
                 encoder,
                 &self.pipelines.dft_axis,
                 source,
-                &self.dummy,
+                &self.twiddle,
                 destination,
                 self.params(0.0, 0.0, axis, inverse),
                 slot,
@@ -1209,6 +1276,68 @@ mod tests {
             "energy {} expected {expected}",
             diagnostics.energy
         );
+    }
+
+    #[test]
+    fn gpu_sampled_shear_energy_budget_converges_and_resets() {
+        fn run(dt: f64, steps: usize) -> Option<f64> {
+            let mut gpu = gpu_with(8, 0.2)?;
+            gpu.reset_shear(2).unwrap();
+            let initial = pollster::block_on(gpu.diagnostics()).unwrap();
+            assert_eq!(initial.energy_budget_samples, 1);
+            assert_eq!(initial.energy_budget_max_interval, 0.0);
+            assert!((initial.initial_energy - 0.25).abs() < 2.0e-5);
+            assert_eq!(initial.cumulative_energy_dissipation, 0.0);
+            let repeated = pollster::block_on(gpu.diagnostics()).unwrap();
+            assert_eq!(repeated.energy_budget_samples, 1);
+
+            let mut expected_quadrature = 0.0;
+            let mut previous_rate = initial.energy_dissipation_rate;
+            for _ in 0..steps {
+                gpu.step(dt).unwrap();
+                let observed = pollster::block_on(gpu.diagnostics()).unwrap();
+                expected_quadrature +=
+                    0.5 * (dt as f32 as f64) * (previous_rate + observed.energy_dissipation_rate);
+                previous_rate = observed.energy_dissipation_rate;
+            }
+            let diagnostics = pollster::block_on(gpu.diagnostics()).unwrap();
+            assert!(
+                (diagnostics.cumulative_energy_dissipation - expected_quadrature).abs() < 2.0e-7
+            );
+            assert_eq!(diagnostics.energy_budget_samples, steps as u32 + 1);
+            assert_eq!(diagnostics.energy_budget_start_time, 0.0);
+            assert_eq!(diagnostics.energy_budget_end_time, diagnostics.time);
+            assert!((diagnostics.energy_budget_max_interval - dt as f32 as f64).abs() < 2.0e-8);
+            assert_eq!(
+                diagnostics.minimum_sampled_dissipation_time,
+                diagnostics.time
+            );
+            assert!(
+                diagnostics.minimum_sampled_energy_dissipation_rate
+                    <= diagnostics.mean_energy_dissipation_rate
+            );
+            assert!(diagnostics.energy_balance_applicable);
+            assert!(diagnostics.finite);
+
+            gpu.reset_zero();
+            let reset = pollster::block_on(gpu.diagnostics()).unwrap();
+            assert_eq!(reset.initial_energy, 0.0);
+            assert_eq!(reset.cumulative_energy_dissipation, 0.0);
+            assert_eq!(reset.energy_balance_defect, 0.0);
+            assert_eq!(reset.energy_balance_relative_error, 0.0);
+            assert_eq!(reset.energy_budget_samples, 1);
+            assert_eq!(reset.energy_budget_max_interval, 0.0);
+            assert!(reset.finite);
+            Some(diagnostics.energy_balance_relative_error.abs())
+        }
+
+        let Some(coarse_error) = run(0.04, 5) else {
+            return;
+        };
+        let fine_error = run(0.02, 10)
+            .expect("the second WebGPU adapter request failed after the first succeeded");
+        assert!(fine_error < 0.27 * coarse_error);
+        assert!(fine_error < 4.0e-5);
     }
 
     #[test]

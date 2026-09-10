@@ -91,6 +91,82 @@ fn zero_and_viscous_fourier_mode_have_known_evolution() {
 }
 
 #[test]
+fn sampled_shear_energy_budget_converges_and_resets() {
+    fn run(dt: f64, steps: usize) -> f64 {
+        let mut solver = SpectralSolver::new(8, 0.2).unwrap();
+        solver.reset_shear(2).unwrap();
+        let initial = solver.diagnostics();
+        close(initial.initial_energy, 0.25, 2e-14);
+        assert_eq!(initial.energy_budget_samples, 1);
+        assert_eq!(initial.energy_budget_max_interval, 0.0);
+        assert_eq!(initial.cumulative_energy_dissipation, 0.0);
+        assert_eq!(initial.energy_balance_relative_error, 0.0);
+        assert_eq!(
+            initial.energy_budget_quadrature,
+            "trapezoidal-diagnostics-observations"
+        );
+
+        let repeated = solver.diagnostics();
+        assert_eq!(repeated.energy_budget_samples, 1);
+        let mut expected_quadrature = 0.0;
+        let mut previous_rate = initial.energy_dissipation_rate;
+        for _ in 0..steps {
+            solver.step(dt).unwrap();
+            let observed = solver.diagnostics();
+            expected_quadrature += 0.5 * dt * (previous_rate + observed.energy_dissipation_rate);
+            previous_rate = observed.energy_dissipation_rate;
+        }
+        let diagnostics = solver.diagnostics();
+        close(
+            diagnostics.cumulative_energy_dissipation,
+            expected_quadrature,
+            2e-14,
+        );
+        assert_eq!(diagnostics.energy_budget_samples, steps as u32 + 1);
+        assert_eq!(diagnostics.energy_budget_start_time, 0.0);
+        close(diagnostics.energy_budget_end_time, steps as f64 * dt, 2e-15);
+        close(diagnostics.energy_budget_max_interval, dt, 2e-15);
+        assert_eq!(
+            diagnostics.minimum_sampled_dissipation_time,
+            diagnostics.time
+        );
+        assert!(
+            diagnostics.minimum_sampled_energy_dissipation_rate
+                <= diagnostics.mean_energy_dissipation_rate
+        );
+        assert!(diagnostics.energy_balance_applicable);
+        assert!(diagnostics.finite);
+
+        solver.reset_zero();
+        let reset = solver.diagnostics();
+        assert_eq!(reset.initial_energy, 0.0);
+        assert_eq!(reset.cumulative_energy_dissipation, 0.0);
+        assert_eq!(reset.energy_balance_defect, 0.0);
+        assert_eq!(reset.energy_balance_relative_error, 0.0);
+        assert_eq!(reset.energy_budget_samples, 1);
+        assert_eq!(reset.energy_budget_max_interval, 0.0);
+        assert!(reset.finite);
+        diagnostics.energy_balance_relative_error.abs()
+    }
+
+    let coarse_error = run(0.02, 10);
+    let fine_error = run(0.01, 20);
+    assert!(fine_error < 0.26 * coarse_error);
+    assert!(fine_error < 1.0e-5);
+}
+
+#[test]
+fn cpu_budget_fields_use_the_cross_backend_camel_case_schema() {
+    let diagnostics = SpectralSolver::new(8, 0.05).unwrap().diagnostics();
+    let value = serde_json::to_value(diagnostics).unwrap();
+    close(value["initialEnergy"].as_f64().unwrap(), 0.125, 2e-14);
+    assert_eq!(value["energyBudgetSamples"], 1);
+    assert_eq!(value["energyBalanceApplicable"], true);
+    assert!(value.get("energy_balance_relative_error").is_none());
+    assert!(value.get("energy_dissipation_rate").is_some());
+}
+
+#[test]
 fn fixed_input_is_bitwise_repeatable_and_finite() {
     let mut left = SpectralSolver::new(8, 0.03).unwrap();
     let mut right = SpectralSolver::new(8, 0.03).unwrap();
