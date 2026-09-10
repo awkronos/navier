@@ -144,6 +144,7 @@ import Navier.Analysis.CriticalMildLocalSelection
 import Navier.Analysis.CriticalMildReachableTimes
 import Navier.Analysis.CriticalMildSecondStrongDerivative
 import Navier.Analysis.WholeSpaceHeatThirdDerivative
+import Navier.Analysis.WholeSpaceSolenoidalHeatViscousIntegrability
 import Navier.Analysis.GlobalRegularityCrownCore
 import Navier.Analysis.LeiLinCriticalMechanism
 import Navier.Analysis.WienerAlgebraConvolution
