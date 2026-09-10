@@ -4,7 +4,9 @@ mod core;
 mod gpu;
 
 pub use construction::{
-    AxisConstruction, AxisConstructionConfig, AxisConstructionDiagnostics, AxisConstructionMetadata,
+    AxisConstruction, AxisConstructionConfig, AxisConstructionCoordinates,
+    AxisConstructionDiagnostics, AxisConstructionGridLayout, AxisConstructionMetadata,
+    AxisConstructionScalarSemantics,
 };
 pub use convention::SpectralConventionMetadata;
 pub use core::{AdvanceReport, Diagnostics, SpectralSolver};
