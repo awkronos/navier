@@ -66,12 +66,11 @@ pre-singular slab. No single energy constant uniform as the slabs approach the
 deadline is assumed.
 
 The periodic research now has checked native Fourier initialization and exact
-initial reconstruction, classical velocity uniqueness, energy and enstrophy
-identities, and local smoothing estimates for the raw complex mild equation.
-Its physical evolution bridge is under repair: raw convolution must be related
-to the physical Fourier equation through an explicit phase, amplitude and
-viscosity normalization. The [result map](docs/RESULT_MAP.md) records this
-boundary and the still-unproved arbitrary-data global estimate.
+initial reconstruction, a correctly normalized local physical trajectory with
+pointwise Fourier balance, classical velocity uniqueness, energy and enstrophy
+identities, and local smoothing estimates. It still lacks the arbitrary-data,
+horizon-independent critical bound and all-order joint spacetime reconstruction
+needed for B. The [result map](docs/RESULT_MAP.md) records that boundary.
 
 ## Mathematics
 
@@ -129,10 +128,14 @@ exports a deterministic standalone bundle with provenance and tests, so a
 release does not require access to that private workspace. The Rust crate is
 self-contained and tested against independently generated Python fixtures.
 
-The interactive companion is [navier.awkronos.com](https://navier.awkronos.com/),
-prepared in the Awkronos Hub. The host is not public yet: the repository and
-website remain private pending publication review. The companion explains the
-construction and runs the Rust solver; this repository supplies the exact
+The interactive companion is
+[navier.awkronos.com](https://navier.awkronos.com/). It explains the construction
+and runs the Rust solver; this repository supplies the exact
 [results and open obligations](docs/RESULT_MAP.md),
 [triad analysis](docs/TRIADS_AND_SYMMETRY.md), and
 [reproducible experiments](solver/README.md).
+
+The [Blender optical pipeline](tools/blender/README.md) imports the live
+laboratory’s computed particle paths into an editable Cycles scene. The browser
+traces refracted light through local cylindrical approximations of those same
+paths; the glass geometry is a visualization of the velocity field.

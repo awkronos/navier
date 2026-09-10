@@ -1,5 +1,6 @@
 import Navier.Analysis.SelectedCandidateEnergy
 import Navier.Construction.R3FiniteEnergyComparison
+import Navier.Analysis.QuantumVortexRegularity
 
 /-!
 # Sharp finite-time consequences of the selected compact candidate
@@ -11,7 +12,9 @@ a continuous extension through time one: continuity on the compact support
 cylinder would force a uniform bound there.
 
 These are consequences of the constructed fields.  No extension, uniqueness,
-or breakdown statement is included as a hypothesis.
+or breakdown statement is included as a hypothesis. The Madelung obstruction
+uses actual spatial Frechet derivatives and uniform nonvanishing; it asserts
+no wavefunction lift and no quantum evolution equation.
 -/
 
 noncomputable section
@@ -27,9 +30,26 @@ private abbrev ESpace := Navier.Construction.ProblemStatement.Space
 private abbrev EVelocityField := Navier.Construction.ProblemStatement.VelocityField
 private abbrev EPressureField := Navier.Construction.ProblemStatement.PressureField
 
-/-- An extension agreeing with an unbounded compactly supported candidate
-cannot be uniformly bounded on the candidate's closed support cylinder through
-time one.  This is the quantitative core of terminal nonextension. -/
+/-- Speed blowup excludes a bound even on the half-open support cylinder.
+Both terminal nonextension and regular-decoder obstructions consume this lemma. -/
+theorem not_bounded_on_presingular_support
+    {u f : EVelocityField} {p : EPressureField}
+    (h : Navier.Construction.R3CompactCandidate.Properties u p f)
+    {K : Set ESpace}
+    (hsupport : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x, x ∉ K → u (t, x) = 0)
+    : ¬ (∃ M : ℝ, ∀ z ∈ Ico (0 : ℝ) 1 ×ˢ K, ‖u z‖ ≤ M) := by
+  intro hvbound
+  obtain ⟨M, hM⟩ := hvbound
+  have hpos : 0 < max M 1 := lt_of_lt_of_le zero_lt_one (le_max_right _ _)
+  obtain ⟨t, x, ht, _, hlarge⟩ := h.speed_unbounded (max M 1) hpos 1 zero_lt_one
+  have hx : x ∈ K := by
+    by_contra hxK
+    rw [hsupport t ⟨ht.1.le, ht.2⟩ x hxK, norm_zero] at hlarge
+    exact (not_lt_of_ge hpos.le) hlarge
+  have hb := hM (t, x) ⟨⟨ht.1.le, ht.2⟩, hx⟩
+  exact (not_lt_of_ge (hb.trans (le_max_left M 1))) hlarge
+
+/-- The extension consequence reuses the presingular boundedness obstruction. -/
 theorem not_bounded_extension_on_support
     {u f : EVelocityField} {p : EPressureField}
     (h : Navier.Construction.R3CompactCandidate.Properties u p f)
@@ -40,15 +60,83 @@ theorem not_bounded_extension_on_support
     ¬ (∀ t ∈ Ico (0 : ℝ) 1, ∀ x, u (t, x) = v (t, x)) := by
   intro heq
   obtain ⟨M, hM⟩ := hvbound
-  have hpos : 0 < max M 1 := lt_of_lt_of_le zero_lt_one (le_max_right _ _)
-  obtain ⟨t, x, ht, _, hlarge⟩ := h.speed_unbounded (max M 1) hpos 1 zero_lt_one
+  apply not_bounded_on_presingular_support h hsupport
+  refine ⟨M, ?_⟩
+  rintro ⟨t, x⟩ ⟨ht, hx⟩
+  rw [heq t ht x]
+  exact hM (t, x) ⟨⟨ht.1, ht.2.le⟩, hx⟩
+
+/-- Along a scalar Madelung decoder of the compact candidate, any proposed
+positive amplitude floor and spatial-derivative cap fail together at an actual
+point of the candidate's support in every terminal time window.  Thus the
+blowup forces amplitude collapse or derivative growth arbitrarily near the
+singular time in every everywhere-nonzero differentiable lift.
+
+The pairing is the coordinate-free current formula, with `κ = hbar / mass`.
+Spatial differentiability is explicit so totalized `fderiv` is not used as a
+substitute for a derivative. No Schrödinger equation is assumed. -/
+theorem compact_candidate_madelung_amplitude_or_derivative_degenerates
+    {u f : EVelocityField} {p : EPressureField}
+    (h : Navier.Construction.R3CompactCandidate.Properties u p f)
+    {K : Set ESpace}
+    (hsupport : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x, x ∉ K → u (t, x) = 0)
+    (ψ : ℝ → ESpace → ℂ) (κ c M δ : ℝ) (hc : 0 < c) (hδ : 0 < δ)
+    (_hψ : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, DifferentiableAt ℝ (ψ t) x)
+    (hnonzero : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ψ t x ≠ 0)
+    (hdecode : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ∀ d : ESpace,
+      inner ℝ (u (t, x)) d = κ * (fderiv ℝ (ψ t) x d / ψ t x).im) :
+    ∃ t ∈ Ico (0 : ℝ) 1, ∃ x ∈ K, 1 - δ < t ∧
+      (‖ψ t x‖ < c ∨ M < ‖fderiv ℝ (ψ t) x‖) := by
+  let B : ℝ := |κ| * max M 0 / c + 1
+  have hB : 0 < B := by
+    dsimp [B]
+    positivity
+  obtain ⟨t, x, ht, hnear, hlarge⟩ := h.speed_unbounded B hB δ hδ
+  have ht' : t ∈ Ico (0 : ℝ) 1 := ⟨ht.1.le, ht.2⟩
   have hx : x ∈ K := by
     by_contra hxK
-    rw [hsupport t ⟨ht.1.le, ht.2⟩ x hxK, norm_zero] at hlarge
-    exact (not_lt_of_ge hpos.le) hlarge
-  have hb := hM (t, x) ⟨⟨ht.1.le, ht.2.le⟩, hx⟩
-  rw [← heq t ⟨ht.1.le, ht.2⟩ x] at hb
-  exact (not_lt_of_ge (hb.trans (le_max_left M 1))) hlarge
+    rw [hsupport t ht' x hxK, norm_zero] at hlarge
+    exact (not_lt_of_ge hB.le) hlarge
+  refine ⟨t, ht', x, hx, hnear, ?_⟩
+  by_contra hdeg
+  have hamp : c ≤ ‖ψ t x‖ := by
+    exact le_of_not_gt (fun hlt => hdeg (Or.inl hlt))
+  have hderiv : ‖fderiv ℝ (ψ t) x‖ ≤ M := by
+    exact le_of_not_gt (fun hlt => hdeg (Or.inr hlt))
+  have hderivMax : ‖fderiv ℝ (ψ t) x‖ ≤ max M 0 :=
+    hderiv.trans (le_max_left M 0)
+  have hbound := Navier.Analysis.QuantumVortexRegularity.norm_le_of_madelung_pairing
+    (u := u (t, x)) (ψ := ψ t x) (D := fderiv ℝ (ψ t) x) (κ := κ)
+    (hnonzero t ht' x hx) (hdecode t ht' x hx)
+  have hupper : ‖u (t, x)‖ ≤ |κ| * max M 0 / c :=
+    hbound.trans (div_le_div₀
+      (mul_nonneg (abs_nonneg κ) (le_max_right M 0))
+      (mul_le_mul_of_nonneg_left hderivMax (abs_nonneg κ))
+      hc hamp)
+  dsimp [B] at hlarge
+  linarith
+
+/-- A scalar Madelung representation on the support cannot have both a
+uniform positive amplitude floor and uniformly bounded spatial derivative.
+This is the uniform consequence of the pointwise degeneration theorem. -/
+theorem compact_candidate_no_regular_madelung_lift
+    {u f : EVelocityField} {p : EPressureField}
+    (h : Navier.Construction.R3CompactCandidate.Properties u p f)
+    {K : Set ESpace}
+    (hsupport : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x, x ∉ K → u (t, x) = 0)
+    (ψ : ℝ → ESpace → ℂ) (κ c M : ℝ) (hc : 0 < c)
+    (_hψ : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, DifferentiableAt ℝ (ψ t) x)
+    (hfloor : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, c ≤ ‖ψ t x‖)
+    (hderiv : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ‖fderiv ℝ (ψ t) x‖ ≤ M) :
+    ¬ (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ∀ d : ESpace,
+      inner ℝ (u (t, x)) d = κ * (fderiv ℝ (ψ t) x d / ψ t x).im) := by
+  intro hdecode
+  obtain ⟨t, ht, x, hx, _, hsmall | hlarge⟩ :=
+    compact_candidate_madelung_amplitude_or_derivative_degenerates
+      h hsupport ψ κ c M 1 hc zero_lt_one _hψ
+      (fun t ht x hx => norm_pos_iff.mp (hc.trans_le (hfloor t ht x hx))) hdecode
+  · exact (not_lt_of_ge (hfloor t ht x hx)) hsmall
+  · exact (not_lt_of_ge (hderiv t ht x hx)) hlarge
 
 /-- Even continuity only on the compact region occupied by the candidate is
 incompatible with an extension through the singular time that agrees at all
@@ -240,6 +328,54 @@ theorem selected_candidate_no_continuous_extension :
     selected_candidate_finite_time_profile
   exact ⟨u, p, f, K, h, hf, henergy, hK, hsupport, hno⟩
 
+/-- Every everywhere-nonzero differentiable scalar Madelung decoder of the
+selected forced finite-energy profile develops amplitude collapse or
+unbounded spatial derivative on the profile's actual compact support.  The
+thresholds are arbitrary, so the conclusion is quantitative rather than only
+the negation of a uniformly regular lift. -/
+theorem selected_candidate_madelung_amplitude_or_derivative_degenerates :
+    ∃ u : EVelocityField, ∃ p : EPressureField, ∃ f : EVelocityField, ∃ K : Set ESpace,
+      Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ ∞ f ∧
+      Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Ico (0 : ℝ) 1) u ∧
+      IsCompact K ∧
+      (∀ t ∈ Ico (0 : ℝ) 1, ∀ x, x ∉ K → u (t, x) = 0) ∧
+      ∀ (ψ : ℝ → ESpace → ℂ) (κ c M δ : ℝ), 0 < c → 0 < δ →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, DifferentiableAt ℝ (ψ t) x) →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ψ t x ≠ 0) →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ∀ d : ESpace,
+          inner ℝ (u (t, x)) d = κ * (fderiv ℝ (ψ t) x d / ψ t x).im) →
+        ∃ t ∈ Ico (0 : ℝ) 1, ∃ x ∈ K, 1 - δ < t ∧
+          (‖ψ t x‖ < c ∨ M < ‖fderiv ℝ (ψ t) x‖) := by
+  obtain ⟨u, p, f, K, h, hf, henergy, hK, hsupport, _⟩ :=
+    selected_candidate_no_continuous_extension
+  exact ⟨u, p, f, K, h, hf, henergy, hK, hsupport,
+    fun ψ κ c M δ hc hδ hψ hnonzero hdecode =>
+      compact_candidate_madelung_amplitude_or_derivative_degenerates
+        h hsupport ψ κ c M δ hc hδ hψ hnonzero hdecode⟩
+
+/-- The selected forced finite-energy profile itself excludes a uniformly
+regular scalar Madelung lift. This instantiates the obstruction with the
+constructed witness, rather than assuming a blowup candidate exists. -/
+theorem selected_candidate_no_regular_madelung_lift :
+    ∃ u : EVelocityField, ∃ p : EPressureField, ∃ f : EVelocityField, ∃ K : Set ESpace,
+      Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ ∞ f ∧
+      Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Ico (0 : ℝ) 1) u ∧
+      IsCompact K ∧
+      (∀ t ∈ Ico (0 : ℝ) 1, ∀ x, x ∉ K → u (t, x) = 0) ∧
+      ∀ (ψ : ℝ → ESpace → ℂ) (κ c M : ℝ), 0 < c →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, DifferentiableAt ℝ (ψ t) x) →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, c ≤ ‖ψ t x‖) →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ‖fderiv ℝ (ψ t) x‖ ≤ M) →
+        ¬ (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ∀ d : ESpace,
+          inner ℝ (u (t, x)) d = κ * (fderiv ℝ (ψ t) x d / ψ t x).im) := by
+  obtain ⟨u, p, f, K, h, hf, henergy, hK, hsupport, _⟩ :=
+    selected_candidate_no_continuous_extension
+  exact ⟨u, p, f, K, h, hf, henergy, hK, hsupport,
+    fun ψ κ c M hc hψ hfloor hderiv =>
+      compact_candidate_no_regular_madelung_lift h hsupport ψ κ c M hc hψ hfloor hderiv⟩
+
 /-- On every finite presingular slab, the selected velocity is the unique
 smooth finite-energy flow with the selected force and zero initial data. -/
 theorem selected_candidate_unique_on_every_presingular_slab :
@@ -327,6 +463,11 @@ theorem selected_candidate_excludes_locally_finite_energy_continuation :
 end Navier.Analysis.ConstructedFiniteTimeObstruction
 
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.not_bounded_extension_on_support
+#print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.not_bounded_on_presingular_support
+#print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_madelung_amplitude_or_derivative_degenerates
+#print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_no_regular_madelung_lift
+#print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_madelung_amplitude_or_derivative_degenerates
+#print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_regular_madelung_lift
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.not_continuous_extension_on_support
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_agrees_with_locally_finite_energy_competitor
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_transfers_speed_unbounded
@@ -341,6 +482,8 @@ end Navier.Analysis.ConstructedFiniteTimeObstruction
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation
 
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile
+#check Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_madelung_amplitude_or_derivative_degenerates
+#check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_madelung_amplitude_or_derivative_degenerates
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one

@@ -1,7 +1,9 @@
-# Prepublication review — 2026-09-09
+# Prepublication review — 2026-09-09 (historical snapshot)
 
-The research repository remains private. Source commits and pushes are
-authorized; a public visibility change and website activation await review.
+This document records the repository and website at the audit cutoff. Its
+private and pending-release statements are historical. Final publication was
+subsequently authorized; current release status belongs to the repository
+README and the live deployment.
 
 ## Scientific acceptance
 
@@ -34,27 +36,30 @@ All 577 adapted construction modules carry the pinned upstream revision,
 source path, change notice, and Apache-2.0 attribution. The full upstream
 license is retained. The repository's original material uses its MIT license.
 
-No credential-driven or scientific reason to rewrite main was found.
+No credential-driven or scientific reason to rewrite main was found at the
+audit cutoff.
 A historical `.lake` path exists only through a development side branch;
 ordinary author email metadata also exists in history. No branch deletion,
-force push, history rewrite, or metadata replacement was performed. Before a
-visibility change, review the intended public branch set and author-metadata
-preferences. Historical development branches are not certified by the main
-endpoint's receipt.
+force push, history rewrite, or metadata replacement was performed during this
+audit. The review required the intended public branch set and author-metadata
+preferences to be checked before release. Historical development branches are
+not certified by the main endpoint's receipt.
 
 ## Companion website
 
-A separate bounded scan examined 246 reachable Navier-scoped website blobs.
+A separate bounded scan examined 246 reachable Navier-scoped website blobs at
+the audit cutoff.
 It found no credential-signature candidates or blobs at least 1 MiB. The
-website repository remains private; its Navier switch and asset gates remain
-off while source is integrated.
+website repository and Navier release gates were private at that snapshot.
 
 The audit identified build-machine paths in the browser WASM, two local paths
-in the Navier manifest, incomplete font artifact/source inventory, and a stale artwork
-provenance reference. These are current-release artifact/configuration issues;
-they do not require erasing private website development history. The website's
-`docs/NAVIER_RELEASE_REVIEW.md` records their final remediation and checks.
+in the Navier manifest, an incomplete font artifact/source inventory, and a
+stale artwork provenance reference. These were release artifact/configuration
+issues; they did not require erasing private website development history. The
+website's `docs/NAVIER_RELEASE_REVIEW.md` records their final remediation and
+checks.
 
-Release approval must identify the reviewed research source, compiler evidence,
-website source, solver artifact provenance, and intended public ref set. The
-existing private pushes do not grant that approval.
+The release approval was required to identify the reviewed research source,
+compiler evidence, website source, solver artifact provenance, and intended
+public ref set. The private pushes that existed at this snapshot did not grant
+that approval.

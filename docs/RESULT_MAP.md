@@ -47,11 +47,12 @@ critical norm, so this transport retains the original chart radius. It does
 not supply arbitrary-data global control.
 
 The completed forced endpoints are whole-space C and periodic D in the official
-problem statement. The proof constructs the
-data and force, supplies a pre-singular classical candidate, and rules out every
-hypothetical global smooth bounded-energy competitor. It does not select one
-solution from several weak continuations, and it does not prove a global smooth
-velocity.
+problem statement. Their proofs construct the data, forces, and pre-singular
+classical candidates, then rule out every hypothetical global competitor in
+the matching contract: a smooth bounded-energy whole-space velocity-pressure
+pair for C, and a smooth periodic velocity-pressure pair for D. The C result
+does not select one solution from several weak continuations, and neither
+theorem proves a global smooth velocity.
 
 The [native D proof](../Navier/Analysis/PeriodicConstructedBreakdown.lean)
 uses the selected unit-periodic candidate directly. Smooth forcing with a
@@ -162,16 +163,17 @@ solution.
 
 ## Periodic evolution: checked providers and the remaining consumer
 
-**Normalization repair in progress.** The raw lattice interaction is a complex
-bilinear dot-product convolution, and its mild equation adds that interaction.
-The physical period-one Fourier equation instead requires `-2πi` times the
-projected convolution and heat rate `ν(2π)²|k|²`. Consequently the unrotated
-Fourier datum is not yet a valid physical evolution initializer. The active
-repair is the explicit change `A=-2πi û`, `μ=(2π)²ν`, with inverse
-`û=iA/(2π)`. Raw A then requires anti-Hermitian symmetry. The algebra and
-time-dependent reconstruction are being proved, not assumed here. A bound for
-every complex raw datum may be too strong; its exact quantifiers are under
-counterexample audit. This does not affect the forced-C construction.
+**Normalization is checked; global control remains open.** The raw lattice
+interaction is a complex bilinear dot-product convolution, while the physical
+period-one Fourier equation requires `-2πi` times the projected convolution and
+heat rate `ν(2π)²|k|²`. The checked change of variables is `A=-2πi û`,
+`μ=(2π)²ν`, with inverse `û=iA/(2π)` and anti-Hermitian symmetry for physical
+reality. `PhysicalLocalEvolution` and `PeriodicInitialPhysicalEvolution`
+construct the normalized local trajectory from official periodic data;
+`PeriodicNonlinearFourierReconstruction` supplies its pointwise Fourier
+balance. The remaining work is horizon-independent control and all-order joint
+classical reconstruction. An unrestricted bound for arbitrary complex raw data
+is false, as recorded below. None of this affects the forced-C construction.
 
 Fresh source compilers and raw axiom audits are in
 the periodic-evolution receipt (local report).
@@ -185,6 +187,7 @@ terminal-bound quantifiers.
 | Exact initial reconstruction | [PeriodicNativeFourierInversion](../Navier/Analysis/PeriodicNativeFourierInversion.lean) | `nativeInitialReconstruction u₀ hu₀ = u₀`, with no inversion hypothesis. This closes the initial-data identity, not subsequent evolution. |
 | Physical Fourier reconstruction | [PeriodicFourierReconstruction](../Navier/Analysis/PeriodicFourierReconstruction.lean) | A weighted carrier gives a continuous periodic field; Hermitian coefficients give a real field. Higher derivatives require additional moment control. |
 | Pressure recovery | [PeriodicPressureRecovery](../Navier/Analysis/PeriodicPressureRecovery.lean) | Explicit pressure coefficients restore the unprojected mode equation from the projected one, with period-one `2π` factors. Time-dependent physical PDE realization remains to be consumed. |
+| Spatial pressure smoothness | [PeriodicPressureSpatialSmoothReconstruction](../Navier/Analysis/PeriodicPressureSpatialSmoothReconstruction.lean) | The literal unprojected convolution maps two order-s moments to order s−1. Order-(r+2) carrier moments give order-r pressure moments. The actual bounded mild trajectory therefore has spatially C∞ pressure at each positive time, without a pressure-rapidity premise. Joint time-space and initial-boundary smoothness remain separate obligations. |
 | Native energy dissipation | [PeriodicNativeEnergyBalance](../Navier/Analysis/PeriodicNativeEnergyBalance.lean) | Every assumed native unforced periodic classical solution satisfies `K(T)+ν∫₀ᵀD=K(0)` and `∫₀ᵀD≤K(0)/ν`. It does not assert existence. |
 | Native enstrophy evolution | [PeriodicEnstrophyControl](../Navier/Analysis/PeriodicEnstrophyControl.lean) | Derives `Z′=S−νDω` from the native physical PDE, with exact vortex stretching S. An actual cellwise gradient bound G gives `Z′+νDω≤2GZ`; control of G or depleted stretching remains required. |
 | Moving-frame transport | [PeriodicGalileanReduction](../Navier/Analysis/PeriodicGalileanReduction.lean) | The actual velocity `u(t,x+tc)-c` and translated pressure preserve the complete native periodic classical contract; subtracting a constant datum changes neither existence nor viscosity. |
@@ -210,6 +213,7 @@ terminal-bound quantifiers.
 | Datum-only physical energy control | [PhysicalPeriodicTotalEnergyControl](../Navier/Analysis/PhysicalPeriodicTotalEnergyControl.lean) | Consumes physical triad cancellation and the actual energy derivative to prove total energy is nonincreasing, including chart endpoints. Off-zero energy is bounded by the initial datum's total spectral energy, independently of chart radius and horizon. This does not bound the higher graph moment. |
 | Integrated physical dissipation | [PhysicalPeriodicDissipationBudget](../Navier/Analysis/PhysicalPeriodicDissipationBudget.lean) | Proves the exact trajectory identity `E₀(A t) + 2μ∫₀ᵗD₀(A s)ds = E₀(a)` and the datum-only high-frequency bound `2μN²∫_δᵗE_N(A s)ds ≤ E₀(a)`. These estimates are independent of chart radius and horizon. Time-averaged control does not exclude narrow frequency-time concentration or supply the pointwise critical bound required for arbitrary-data global continuation. |
 | Simultaneous good-time control | [PhysicalPeriodicGoodTimeSelection](../Navier/Analysis/PhysicalPeriodicGoodTimeSelection.lean) | Every existing physical mild chart and `0 ≤ δ < t ≤ T` admits one `c ∈ [δ,t]` with `2μ(t−δ)D₀(A c) ≤ E₀(a)` and, simultaneously for all `N ≥ 0`, `2μ(t−δ)N²E_N(A c) ≤ E₀(a)`. The same time controls all cutoffs. Turning this quadratic control into future-horizon-uniform critical weighted `ℓ¹` control remains required for B. |
+| Direct inverse-frequency good-time control | [PhysicalPeriodicCriticalGoodTime](../Navier/Analysis/PhysicalPeriodicCriticalGoodTime.lean), [LatticeCriticalDissipationKernel](../Navier/Analysis/LatticeCriticalDissipationKernel.lean) | On the actual three-dimensional lattice, `C₄ = Σ_{k≠0} |k|⁻⁴` is finite and `‖A‖_{X⁻¹,off-zero} ≤ √C₄ √D₀(A)`. Every existing nondegenerate physical mild window therefore contains a time with `‖A(c)‖_{X⁻¹,off-zero} ≤ √C₄ √(E₀(a)/(2μ(t−δ)))`. This is datum-only control without a heat lag. It neither bounds the higher X¹ moment nor proves survival to an arbitrarily long window. |
 | Actual finite-window high-energy estimate | [PhysicalPeriodicHighEnergyWindow](../Navier/Analysis/PhysicalPeriodicHighEnergyWindow.lean), [PhysicalPeriodicHighEnergyContinuity](../Navier/Analysis/PhysicalPeriodicHighEnergyContinuity.lean), [PhysicalPeriodicHighEnergyBootstrap](../Navier/Analysis/PhysicalPeriodicHighEnergyBootstrap.lean) | Derives the evolving energy continuity and moment budget internally, then proves exponential decay plus an explicit `4 R² H/(μ N³)` bound on positive time windows. The chart radius and budget are not controlled uniformly over all future horizons. |
 | Weighted nonlinear cancellation | [PhysicalPeriodicWeightedFluxCommutator](../Navier/Analysis/PhysicalPeriodicWeightedFluxCommutator.lean) | Exact paired triad cancellation leaves an output-weight difference, bounded by the advecting frequency. The countable commutator is bounded by two carrier factors and a higher moment, without a proved coercive sign. |
 | Whole-space heat test approximation | [WholeSpaceSolenoidalHeatApproximation](../Navier/Analysis/WholeSpaceSolenoidalHeatApproximation.lean), [WholeSpaceSolenoidalHeatDomination](../Navier/Analysis/WholeSpaceSolenoidalHeatDomination.lean), [WholeSpaceSolenoidalHeatMixedDomination](../Navier/Analysis/WholeSpaceSolenoidalHeatMixedDomination.lean) | Constructs compact divergence-free heat tests and a uniform Gaussian envelope, then proves their momentum pairing converges on each actual finite-energy solution slice. Derivative envelopes in the evolution's right-hand side, passage through time integrals, and the time-dependent adjoint test for Leray/Oseen representation remain open. |
@@ -254,6 +258,13 @@ integrand and the time-dependent adjoint argument remain separate obligations.
 
 Further analytic inputs sharpen these routes:
 
+- [PeriodicSpatialSmoothReconstruction](../Navier/Analysis/PeriodicSpatialSmoothReconstruction.lean)
+  converts all polynomial Fourier moments into spatial `C∞` regularity using
+  the exact period-one characters. Applied to the bounded mild trajectory,
+  it proves spatial smoothness at every positive time. All-order time jets,
+  joint boundary smoothness, pressure reconstruction, and global critical
+  control remain separate requirements for B.
+
 - [WholeSpaceSolenoidalHeatConvectionIntegrability](../Navier/Analysis/WholeSpaceSolenoidalHeatConvectionIntegrability.lean)
   proves integrability of the actual cutoff-free convection term
   `D(curl(Gτ a))(u) · u_j` on each finite-energy preterminal slice.
@@ -264,9 +275,12 @@ Further analytic inputs sharpen these routes:
 - [WholeSpaceSolenoidalHeatViscousCutoffLimit](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousCutoffLimit.lean)
   proves the second-derivative cutoff product rule and almost-everywhere
   convergence of the surviving viscous term against the actual velocity.
-  Its limit is integrable. Uniform domination of the derivative errors and
-  the separate solenoidal cutoff correction remain necessary before taking
-  the full weak-evolution limit.
+  Its limit is integrable.
+- [WholeSpaceSolenoidalHeatViscousProductLimit](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousProductLimit.lean)
+  supplies the integrable envelope and proves the integrated limit of
+  `D_i²(χ_R curl(Gτ a)) u_j` on the actual finite-energy `SolvesBefore` slice.
+  The separate `∇χ_R × (Gτ a)` correction and time-limit interchange remain
+  necessary before taking the full weak-evolution limit; A is still open.
 - [PhysicalPeriodicDissipationHeatRestart](../Navier/Analysis/PhysicalPeriodicDissipationHeatRestart.lean)
   bounds the complete off-zero mixed critical quantity of the positive-lag
   free heat restart at a good time, using only datum energy, viscosity,

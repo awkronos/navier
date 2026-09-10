@@ -4,8 +4,9 @@ The September 8, 2026 [OpenAI paper](https://cdn.openai.com/pdf/32d9f210-8b73-45
 claims smooth compact forcing, zero initial velocity, finite-time unbounded
 speed, and bounded energy. Section 10 excludes a global smooth bounded-energy
 competitor. This is forced Clay alternative C. It does not prove or refute
-this repository's unforced statement A, and no periodic alternative-D
-consequence is claimed here.
+this repository's unforced statement A. The paper itself does not claim
+periodic alternative D; this repository separately proves D by transporting
+the selected periodic candidate through the native periodic carrier.
 
 The [released source](https://github.com/openai/NavierStokesAndEuler/tree/8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538)
 was adapted at that exact revision into 577 native source modules. It is not a

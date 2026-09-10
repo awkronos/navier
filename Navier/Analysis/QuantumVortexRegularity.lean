@@ -30,6 +30,58 @@ def current (ψ : ℂ → ℂ) (z : ℂ) : ℂ :=
 does not supply a physical value at a node. -/
 def velocity (ψ : ℂ → ℂ) (z : ℂ) : ℂ := current ψ z / (density ψ z : ℂ)
 
+/-- A pointwise Madelung pairing controls velocity by the wavefunction's
+logarithmic derivative. This applies in any real inner-product-space dimension. -/
+theorem norm_le_of_madelung_pairing
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (u : E) (ψ : ℂ) (D : E →L[ℝ] ℂ) (κ : ℝ)
+    (hψ : ψ ≠ 0)
+    (hdecode : ∀ d : E, inner ℝ u d = κ * (D d / ψ).im) :
+    ‖u‖ ≤ |κ| * ‖D‖ / ‖ψ‖ := by
+  by_cases hu : u = 0
+  · subst u
+    simpa using div_nonneg (mul_nonneg (abs_nonneg κ) (norm_nonneg D)) (norm_nonneg ψ)
+  have hu_norm : 0 < ‖u‖ := norm_pos_iff.mpr hu
+  have hψ_norm : 0 < ‖ψ‖ := norm_pos_iff.mpr hψ
+  have hinner := hdecode u
+  rw [real_inner_self_eq_norm_sq] at hinner
+  have hquad :
+      ‖u‖ * ‖u‖ ≤ (|κ| * ‖D‖ / ‖ψ‖) * ‖u‖ := by
+    calc
+      ‖u‖ * ‖u‖ = |‖u‖ ^ 2| := by
+        rw [pow_two, abs_of_nonneg (mul_nonneg (norm_nonneg _) (norm_nonneg _))]
+      _ = |κ * (D u / ψ).im| := congrArg abs hinner
+      _ = |κ| * |(D u / ψ).im| := abs_mul _ _
+      _ ≤ |κ| * ‖D u / ψ‖ :=
+        mul_le_mul_of_nonneg_left (Complex.abs_im_le_norm _) (abs_nonneg κ)
+      _ = |κ| * (‖D u‖ / ‖ψ‖) := by rw [norm_div]
+      _ ≤ |κ| * ((‖D‖ * ‖u‖) / ‖ψ‖) := by
+        exact mul_le_mul_of_nonneg_left
+          (div_le_div_of_nonneg_right (D.le_opNorm u) hψ_norm.le) (abs_nonneg κ)
+      _ = (|κ| * ‖D‖ / ‖ψ‖) * ‖u‖ := by
+        field_simp
+  exact le_of_mul_le_mul_right hquad hu_norm
+
+/-- The planar decoder is exactly the imaginary logarithmic derivative paired
+with a direction; the derivative is the actual real Fréchet derivative. -/
+theorem inner_velocity_eq_im_fderiv_div
+    (ψ : ℂ → ℂ) (z d : ℂ) :
+    inner ℝ (velocity ψ z) d = (fderiv ℝ ψ z d / ψ z).im := by
+  have hd : d = d.re • (1 : ℂ) + d.im • Complex.I := by
+    apply Complex.ext <;> simp
+  rw [hd, map_add, map_smul, map_smul]
+  simp [velocity, current, density, Complex.inner, Complex.div_re, Complex.div_im,
+    Complex.normSq_apply, Complex.mul_re, Complex.mul_im]
+  field_simp
+  ring
+
+/-- Pointwise control of the planar decoder by the operator norm of the actual
+real Fréchet derivative. -/
+theorem velocity_norm_le_fderiv (ψ : ℂ → ℂ) (z : ℂ) (hz : ψ z ≠ 0) :
+    ‖velocity ψ z‖ ≤ ‖fderiv ℝ ψ z‖ / ‖ψ z‖ := by
+  simpa using norm_le_of_madelung_pairing (velocity ψ z) (ψ z) (fderiv ℝ ψ z) 1 hz
+    (fun d => by simpa using inner_velocity_eq_im_fderiv_div ψ z d)
+
 theorem density_smooth {ψ : ℂ → ℂ} (hψ : ContDiff ℝ ∞ ψ) :
     ContDiff ℝ ∞ (density ψ) := by
   have h : density ψ = fun z => (ψ z).re ^ 2 + (ψ z).im ^ 2 := by
@@ -71,6 +123,10 @@ theorem unitVortex_smooth : ContDiff ℝ ∞ unitVortex := contDiff_id
 
 theorem unitVortex_zero_iff (z : ℂ) : unitVortex z = 0 ↔ z = 0 := Iff.rfl
 
+private theorem unitVortex_fderiv (z : ℂ) :
+    fderiv ℝ unitVortex z = ContinuousLinearMap.id ℝ ℂ :=
+  fderiv_fun_id
+
 /-- The ordinary two-dimensional spatial Laplacian, expressed with actual
 real Frechet derivatives in the orthonormal directions 1 and i. -/
 def planeLaplacian (ψ : ℂ → ℂ) (z : ℂ) : ℂ :=
@@ -78,9 +134,7 @@ def planeLaplacian (ψ : ℂ → ℂ) (z : ℂ) : ℂ :=
     fderiv ℝ (fun w => fderiv ℝ ψ w Complex.I) z Complex.I
 
 theorem unitVortex_harmonic (z : ℂ) : planeLaplacian unitVortex z = 0 := by
-  have hd : ∀ w, fderiv ℝ unitVortex w = ContinuousLinearMap.id ℝ ℂ :=
-    fun _ => fderiv_fun_id
-  simp [planeLaplacian, hd]
+  simp [planeLaplacian, unitVortex_fderiv]
 
 /-- The smooth unit-vortex field is an exact stationary free Schrodinger
 solution, i*d_t psi = -(1/2)*Delta psi. No finite-energy assertion is made. -/
@@ -93,19 +147,8 @@ theorem unitVortex_density (z : ℂ) : density unitVortex z = z.re ^ 2 + z.im ^ 
   simp [density, unitVortex, Complex.normSq_apply, pow_two]
 
 theorem unitVortex_current (z : ℂ) : current unitVortex z = Complex.I * z := by
-  have hd : fderiv ℝ unitVortex z = ContinuousLinearMap.id ℝ ℂ := fderiv_fun_id
-  apply Complex.ext <;> simp [current, hd, unitVortex, Complex.mul_re, Complex.mul_im]
-
-theorem unitVortex_density_smooth : ContDiff ℝ ∞ (density unitVortex) := by
-  have h : density unitVortex = fun z : ℂ => z.re ^ 2 + z.im ^ 2 :=
-    funext unitVortex_density
-  rw [h]
-  exact (Complex.reCLM.contDiff.pow 2).add (Complex.imCLM.contDiff.pow 2)
-
-theorem unitVortex_current_smooth : ContDiff ℝ ∞ (current unitVortex) := by
-  have h : current unitVortex = fun z : ℂ => Complex.I * z := funext unitVortex_current
-  rw [h]
-  exact contDiff_const.mul contDiff_id
+  apply Complex.ext <;>
+    simp [current, unitVortex_fderiv, unitVortex, Complex.mul_re, Complex.mul_im]
 
 theorem unitVortex_velocity_real (r : ℝ) (hr : r ≠ 0) :
     velocity unitVortex (r : ℂ) = Complex.I / (r : ℂ) := by
@@ -150,8 +193,8 @@ theorem smooth_wavefunction_does_not_bound_decoded_velocity :
       ∀ ε : ℝ, 0 < ε → ∀ M : ℝ, 0 ≤ M →
         ∃ z : ℂ, 0 < ‖z‖ ∧ ‖z‖ < ε ∧ 0 < density ψ z ∧
           M < ‖velocity ψ z‖ := by
-  exact ⟨unitVortex, unitVortex_smooth, unitVortex_density_smooth,
-    unitVortex_current_smooth, rfl, fun _ hε _ hM =>
+  exact ⟨unitVortex, unitVortex_smooth, density_smooth unitVortex_smooth,
+    current_smooth unitVortex_smooth, rfl, fun _ hε _ hM =>
       unitVortex_velocity_unbounded_at_core hε hM⟩
 
 end Navier.Analysis.QuantumVortexRegularity
