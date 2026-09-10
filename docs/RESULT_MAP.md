@@ -117,6 +117,16 @@ This frontier is useful because it identifies the nonlinear estimate that must
 do new work. It is not a reformulation that assumes the desired global
 solution.
 
+For the periodic critical mild evolution, the local smoothing side now reaches
+a genuine second strong time derivative. The declaration
+`CriticalMildSecondStrongDerivative.exists_hasDerivAt_mildFirstDerivativePath`
+starts from an actual bounded mild fixed point, constructs all spatial moments
+needed on each compact positive-time interval, and proves that its first
+derivative path is differentiable in the completed weighted `ℓ¹` carrier. This
+is positive-time Banach `C²` regularity; it does not provide the still-open
+horizon-independent critical bound for arbitrary large initial data or the
+all-time-jet induction needed for a full smooth reconstruction.
+
 ## Numerical boundary
 
 The Rust CPU/WASM/WebGPU solver evolves ordinary periodic spectral flows. Its
