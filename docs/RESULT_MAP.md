@@ -252,6 +252,22 @@ of a preterminal finite-energy `SolvesBefore` slice. These are the cutoff-free
 viscous summands in `lerayWeakRhs`. Convergence of the finite-radius test to this
 integrand and the time-dependent adjoint argument remain separate obligations.
 
+Two further analytic inputs sharpen these routes:
+
+- [WholeSpaceSolenoidalHeatViscousCutoffLimit](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousCutoffLimit.lean)
+  proves the second-derivative cutoff product rule and almost-everywhere
+  convergence of the surviving viscous term against the actual velocity.
+  Its limit is integrable. Uniform domination of the derivative errors and
+  the separate solenoidal cutoff correction remain necessary before taking
+  the full weak-evolution limit.
+- [PhysicalPeriodicDissipationHeatRestart](../Navier/Analysis/PhysicalPeriodicDissipationHeatRestart.lean)
+  bounds the complete off-zero mixed critical quantity of the positive-lag
+  free heat restart at a good time, using only datum energy, viscosity,
+  window length, and a summable heat kernel. This removes chart-radius
+  dependence from the linear restart term. Controlling the nonlinear
+  restarted Duhamel term uniformly in the future horizon remains required
+  for B.
+
 ## Numerical boundary
 
 The Rust crate has two separate numerical surfaces. `AxisConstruction`
