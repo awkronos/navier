@@ -169,6 +169,7 @@ import Navier.Analysis.LeiLinPositiveRestartFourier
 import Navier.Analysis.LeiLinPositiveRestartMild
 import Navier.Analysis.LeiLinPositiveRestartCancellation
 import Navier.Analysis.PhysicalPeriodicDissipationBudget
+import Navier.Analysis.PhysicalPeriodicGoodTimeSelection
 
 /-!
 # Navier
