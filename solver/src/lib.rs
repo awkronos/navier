@@ -1,23 +1,96 @@
+mod construction;
+mod convention;
 mod core;
 mod gpu;
 
+pub use construction::{
+    AxisConstruction, AxisConstructionConfig, AxisConstructionDiagnostics, AxisConstructionMetadata,
+};
+pub use convention::SpectralConventionMetadata;
 pub use core::{AdvanceReport, Diagnostics, SpectralSolver};
 pub use gpu::{GpuDiagnostics, WebGpuSpectralSolver};
 use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+pub struct ConstructionAxis {
+    inner: AxisConstruction,
+    velocity: Vec<f32>,
+    pressure: Vec<f32>,
+    residual: Vec<f32>,
+    domain_extent: [f64; 3],
+    diagnostics: Option<AxisConstructionDiagnostics>,
+}
+
+#[wasm_bindgen]
+impl ConstructionAxis {
+    #[wasm_bindgen(constructor)]
+    pub fn new(order: usize, iterations: usize) -> Result<ConstructionAxis, JsError> {
+        let config = AxisConstructionConfig {
+            radial_order: order,
+            iterations,
+            ..AxisConstructionConfig::default()
+        };
+        Ok(Self {
+            inner: AxisConstruction::new(config).map_err(|error| JsError::new(&error))?,
+            velocity: Vec::new(),
+            pressure: Vec::new(),
+            residual: Vec::new(),
+            domain_extent: [0.0; 3],
+            diagnostics: None,
+        })
+    }
+
+    pub fn sample(&mut self, grid: usize, tau: f64) -> Result<(), JsError> {
+        let (velocity, pressure, residual, half_extent, diagnostics) = self
+            .inner
+            .evaluate_grid(grid, tau)
+            .map_err(|error| JsError::new(&error))?;
+        self.velocity = velocity;
+        self.pressure = pressure;
+        self.residual = residual;
+        self.domain_extent = half_extent.map(|value| 2.0 * value);
+        self.diagnostics = Some(diagnostics);
+        Ok(())
+    }
+
+    pub fn velocity(&self) -> Vec<f32> {
+        self.velocity.clone()
+    }
+
+    pub fn pressure(&self) -> Vec<f32> {
+        self.pressure.clone()
+    }
+
+    pub fn residual(&self) -> Vec<f32> {
+        self.residual.clone()
+    }
+
+    #[wasm_bindgen(js_name = domainExtent)]
+    pub fn domain_extent(&self) -> Vec<f64> {
+        self.domain_extent.to_vec()
+    }
+
+    pub fn diagnostics(&self) -> Result<JsValue, JsError> {
+        let diagnostics = self
+            .diagnostics
+            .as_ref()
+            .ok_or_else(|| JsError::new("sample must be called before diagnostics"))?;
+        serde_wasm_bindgen::to_value(diagnostics).map_err(|error| JsError::new(&error.to_string()))
+    }
+
+    pub fn metadata(&self) -> Result<JsValue, JsError> {
+        serde_wasm_bindgen::to_value(&self.inner.metadata())
+            .map_err(|error| JsError::new(&error.to_string()))
+    }
+}
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Metadata<'a> {
     backend: &'a str,
-    equation: &'a str,
-    spatial_method: &'a str,
-    time_integrator: &'a str,
     precision: &'a str,
-    grid: usize,
-    viscosity: f64,
-    dealiasing: bool,
-    continuum_certificate: bool,
-    adaptive_recording: bool,
+    #[serde(flatten)]
+    convention: SpectralConventionMetadata,
 }
 
 #[wasm_bindgen]
@@ -29,17 +102,11 @@ pub struct NavierSolver {
 #[serde(rename_all = "camelCase")]
 struct GpuMetadata {
     backend: &'static str,
-    equation: &'static str,
-    spatial_method: &'static str,
-    time_integrator: &'static str,
     precision: &'static str,
-    grid: usize,
-    viscosity: f64,
-    dealiasing: bool,
     adapter_name: String,
     adapter_backend: String,
-    continuum_certificate: bool,
-    adaptive_recording: bool,
+    #[serde(flatten)]
+    convention: SpectralConventionMetadata,
 }
 
 #[wasm_bindgen]
@@ -109,15 +176,8 @@ impl NavierSolver {
     pub fn metadata(&self) -> Result<JsValue, JsError> {
         let value = Metadata {
             backend: "cpu-wasm-spectral-ifrk4",
-            equation: "3D periodic incompressible Navier-Stokes",
-            spatial_method: "dealiased rotational Fourier pseudo-spectral with Leray projection",
-            time_integrator: "fixed-step integrating-factor RK4",
             precision: "f64 compute / f32 render output",
-            grid: self.inner.n(),
-            viscosity: self.inner.viscosity(),
-            dealiasing: true,
-            continuum_certificate: false,
-            adaptive_recording: false,
+            convention: self.inner.metadata(),
         };
         serde_wasm_bindgen::to_value(&value).map_err(|e| JsError::new(&e.to_string()))
     }
@@ -188,17 +248,10 @@ impl WebGpuNavierSolver {
     pub fn metadata(&self) -> Result<JsValue, JsError> {
         let value = GpuMetadata {
             backend: "webgpu-spectral-ifrk4",
-            equation: "3D periodic incompressible Navier-Stokes",
-            spatial_method: "dealiased rotational Fourier pseudo-spectral with Leray projection",
-            time_integrator: "fixed-step integrating-factor RK4",
             precision: "f32 WebGPU compute / f32 render output",
-            grid: self.inner.n(),
-            viscosity: self.inner.viscosity(),
-            dealiasing: true,
             adapter_name: self.inner.adapter_name().to_owned(),
             adapter_backend: self.inner.adapter_backend().to_owned(),
-            continuum_certificate: false,
-            adaptive_recording: false,
+            convention: self.inner.metadata(),
         };
         serde_wasm_bindgen::to_value(&value).map_err(|error| JsError::new(&error.to_string()))
     }
