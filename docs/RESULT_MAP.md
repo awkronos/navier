@@ -252,7 +252,14 @@ of a preterminal finite-energy `SolvesBefore` slice. These are the cutoff-free
 viscous summands in `lerayWeakRhs`. Convergence of the finite-radius test to this
 integrand and the time-dependent adjoint argument remain separate obligations.
 
-Two further analytic inputs sharpen these routes:
+Further analytic inputs sharpen these routes:
+
+- [WholeSpaceSolenoidalHeatConvectionIntegrability](../Navier/Analysis/WholeSpaceSolenoidalHeatConvectionIntegrability.lean)
+  proves integrability of the actual cutoff-free convection term
+  `D(curl(Gτ a))(u) · u_j` on each finite-energy preterminal slice.
+  A uniform bound for the heat kernel's mixed second derivatives supplies
+  the multiplier estimate. Spatial cutoff domination and the time-integral
+  limit remain to be proved.
 
 - [WholeSpaceSolenoidalHeatViscousCutoffLimit](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousCutoffLimit.lean)
   proves the second-derivative cutoff product rule and almost-everywhere

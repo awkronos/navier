@@ -145,6 +145,7 @@ import Navier.Analysis.CriticalMildReachableTimes
 import Navier.Analysis.CriticalMildSecondStrongDerivative
 import Navier.Analysis.WholeSpaceHeatThirdDerivative
 import Navier.Analysis.WholeSpaceSolenoidalHeatViscousIntegrability
+import Navier.Analysis.WholeSpaceSolenoidalHeatConvectionIntegrability
 import Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit
 import Navier.Analysis.GlobalRegularityCrownCore
 import Navier.Analysis.LeiLinCriticalMechanism
