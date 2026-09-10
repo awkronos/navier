@@ -134,3 +134,8 @@ and runs the Rust solver; this repository supplies the exact
 [results and open obligations](docs/RESULT_MAP.md),
 [triad analysis](docs/TRIADS_AND_SYMMETRY.md), and
 [reproducible experiments](solver/README.md).
+
+The [Blender optical pipeline](tools/blender/README.md) imports the live
+laboratory’s computed particle paths into an editable Cycles scene. The browser
+traces refracted light through local cylindrical approximations of those same
+paths; the glass geometry is a visualization of the velocity field.
