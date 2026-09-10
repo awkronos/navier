@@ -52,7 +52,6 @@ labels are historical and are superseded by `RESULT_MAP.md` for current claims.
 | --- | --- |
 | [Attack blueprint](ATTACK.md) | Original route architecture and proposed proof program |
 | [Polya strategy map](POLYA_MAP.md) | Match between an earlier Polya catalogue snapshot and Navier proof shapes |
-| [Navier residual ledger](../NAVIER-RESIDUALS-2026-08-17.md) | August 2026 compiler receipts, reconciliations, and residual history |
 
 Deterministic numerical artifacts have their own scope note in
 [`artifacts/README.md`](../artifacts/README.md). Raw compiler and axiom evidence
