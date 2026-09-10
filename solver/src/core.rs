@@ -10,7 +10,7 @@ use crate::convention::SpectralConventionMetadata;
 use num_complex::Complex64;
 use rustfft::{Fft, FftPlanner};
 use serde::Serialize;
-use std::{f64::consts::TAU, sync::Arc};
+use std::{cell::Cell, f64::consts::TAU, sync::Arc};
 
 const COMPONENTS: usize = 3;
 pub(crate) const MAX_BROWSER_GRID: usize = 64;
@@ -25,6 +25,174 @@ fn validate_grid(n: usize, maximum: usize) -> Result<(), String> {
     Ok(())
 }
 
+pub(crate) const ENERGY_BUDGET_QUADRATURE: &str = "trapezoidal-diagnostics-observations";
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct EnergyBudgetSnapshot {
+    pub initial_energy: f64,
+    pub cumulative_energy_dissipation: f64,
+    pub energy_balance_defect: f64,
+    pub energy_balance_relative_error: f64,
+    pub mean_energy_dissipation_rate: f64,
+    pub minimum_sampled_energy_dissipation_rate: f64,
+    pub minimum_sampled_dissipation_time: f64,
+    pub start_time: f64,
+    pub end_time: f64,
+    pub max_interval: f64,
+    pub samples: u32,
+    pub applicable: bool,
+}
+
+impl EnergyBudgetSnapshot {
+    pub(crate) fn finite(self) -> bool {
+        !self.applicable
+            || [
+                self.initial_energy,
+                self.cumulative_energy_dissipation,
+                self.energy_balance_defect,
+                self.energy_balance_relative_error,
+                self.mean_energy_dissipation_rate,
+                self.minimum_sampled_energy_dissipation_rate,
+                self.minimum_sampled_dissipation_time,
+                self.start_time,
+                self.end_time,
+                self.max_interval,
+            ]
+            .into_iter()
+            .all(f64::is_finite)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct EnergyBudgetTracker {
+    initial_energy: Cell<f64>,
+    cumulative_energy_dissipation: Cell<f64>,
+    last_time: Cell<f64>,
+    last_rate: Cell<f64>,
+    minimum_rate: Cell<f64>,
+    minimum_rate_time: Cell<f64>,
+    start_time: Cell<f64>,
+    max_interval: Cell<f64>,
+    samples: Cell<u32>,
+    applicable: Cell<bool>,
+}
+
+impl EnergyBudgetTracker {
+    pub(crate) fn new(initial_energy: f64, initial_rate: f64) -> Self {
+        Self {
+            initial_energy: Cell::new(initial_energy),
+            cumulative_energy_dissipation: Cell::new(0.0),
+            last_time: Cell::new(0.0),
+            last_rate: Cell::new(initial_rate),
+            minimum_rate: Cell::new(initial_rate),
+            minimum_rate_time: Cell::new(0.0),
+            start_time: Cell::new(0.0),
+            max_interval: Cell::new(0.0),
+            samples: Cell::new(1),
+            applicable: Cell::new(true),
+        }
+    }
+
+    pub(crate) fn reset(&self, time: f64, initial_energy: f64, initial_rate: f64) {
+        self.initial_energy.set(initial_energy);
+        self.cumulative_energy_dissipation.set(0.0);
+        self.last_time.set(time);
+        self.last_rate.set(initial_rate);
+        self.minimum_rate.set(initial_rate);
+        self.minimum_rate_time.set(time);
+        self.start_time.set(time);
+        self.max_interval.set(0.0);
+        self.samples.set(1);
+        self.applicable.set(true);
+    }
+
+    pub(crate) fn invalidate(&self) {
+        self.applicable.set(false);
+    }
+
+    pub(crate) fn observe(
+        &self,
+        time: f64,
+        energy: f64,
+        energy_dissipation_rate: f64,
+    ) -> EnergyBudgetSnapshot {
+        let last_time = self.last_time.get();
+        if self.applicable.get()
+            && self.samples.get() == 1
+            && time == self.start_time.get()
+            && last_time == time
+        {
+            self.initial_energy.set(energy);
+            self.last_rate.set(energy_dissipation_rate);
+            self.minimum_rate.set(energy_dissipation_rate);
+            self.minimum_rate_time.set(time);
+        }
+        if self.applicable.get() && time > last_time {
+            let width = time - last_time;
+            let increment = 0.5 * width * (self.last_rate.get() + energy_dissipation_rate);
+            self.max_interval.set(self.max_interval.get().max(width));
+            self.cumulative_energy_dissipation
+                .set(self.cumulative_energy_dissipation.get() + increment);
+            self.last_time.set(time);
+            self.last_rate.set(energy_dissipation_rate);
+            self.samples.set(self.samples.get().saturating_add(1));
+        }
+        if self.applicable.get() && energy_dissipation_rate < self.minimum_rate.get() {
+            self.minimum_rate.set(energy_dissipation_rate);
+            self.minimum_rate_time.set(time);
+        }
+
+        let applicable = self.applicable.get();
+        let initial_energy = self.initial_energy.get();
+        let cumulative = self.cumulative_energy_dissipation.get();
+        let end_time = self.last_time.get();
+        let width = end_time - self.start_time.get();
+        let defect = if applicable {
+            energy + cumulative - initial_energy
+        } else {
+            f64::NAN
+        };
+        let relative_error = if !applicable {
+            f64::NAN
+        } else if initial_energy != 0.0 {
+            defect / initial_energy
+        } else if defect == 0.0 {
+            0.0
+        } else {
+            f64::NAN
+        };
+        let mean_rate = if !applicable {
+            f64::NAN
+        } else if width > 0.0 {
+            cumulative / width
+        } else {
+            energy_dissipation_rate
+        };
+        EnergyBudgetSnapshot {
+            initial_energy,
+            cumulative_energy_dissipation: if applicable { cumulative } else { f64::NAN },
+            energy_balance_defect: defect,
+            energy_balance_relative_error: relative_error,
+            mean_energy_dissipation_rate: mean_rate,
+            minimum_sampled_energy_dissipation_rate: if applicable {
+                self.minimum_rate.get()
+            } else {
+                f64::NAN
+            },
+            minimum_sampled_dissipation_time: if applicable {
+                self.minimum_rate_time.get()
+            } else {
+                f64::NAN
+            },
+            start_time: self.start_time.get(),
+            end_time,
+            max_interval: self.max_interval.get(),
+            samples: self.samples.get(),
+            applicable,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Diagnostics {
     pub time: f64,
@@ -36,6 +204,32 @@ pub struct Diagnostics {
     pub max_speed: f64,
     pub max_vorticity: f64,
     pub energy_dissipation_rate: f64,
+    #[serde(rename = "initialEnergy")]
+    pub initial_energy: f64,
+    #[serde(rename = "cumulativeEnergyDissipation")]
+    pub cumulative_energy_dissipation: f64,
+    #[serde(rename = "energyBalanceDefect")]
+    pub energy_balance_defect: f64,
+    #[serde(rename = "energyBalanceRelativeError")]
+    pub energy_balance_relative_error: f64,
+    #[serde(rename = "meanEnergyDissipationRate")]
+    pub mean_energy_dissipation_rate: f64,
+    #[serde(rename = "minimumSampledEnergyDissipationRate")]
+    pub minimum_sampled_energy_dissipation_rate: f64,
+    #[serde(rename = "minimumSampledDissipationTime")]
+    pub minimum_sampled_dissipation_time: f64,
+    #[serde(rename = "energyBudgetStartTime")]
+    pub energy_budget_start_time: f64,
+    #[serde(rename = "energyBudgetEndTime")]
+    pub energy_budget_end_time: f64,
+    #[serde(rename = "energyBudgetMaxInterval")]
+    pub energy_budget_max_interval: f64,
+    #[serde(rename = "energyBudgetSamples")]
+    pub energy_budget_samples: u32,
+    #[serde(rename = "energyBudgetQuadrature")]
+    pub energy_budget_quadrature: &'static str,
+    #[serde(rename = "energyBalanceApplicable")]
+    pub energy_balance_applicable: bool,
     pub high_frequency_energy_fraction: f64,
     pub tail_start_fraction_of_dealias_cutoff: f64,
     pub tail_tolerance: f64,
@@ -64,6 +258,7 @@ pub struct SpectralSolver {
     steps: u64,
     max_tail_energy_fraction: f64,
     underresolved: bool,
+    energy_budget: EnergyBudgetTracker,
     state: Vec<Complex64>,
     wave: Vec<[f64; 3]>,
     k2: Vec<f64>,
@@ -118,6 +313,7 @@ impl SpectralSolver {
             steps: 0,
             max_tail_energy_fraction: 0.0,
             underresolved: false,
+            energy_budget: EnergyBudgetTracker::new(0.0, 0.0),
             state: vec![Complex64::default(); COMPONENTS * len],
             wave,
             k2,
@@ -168,6 +364,7 @@ impl SpectralSolver {
         self.time = 0.0;
         self.steps = 0;
         self.reset_resolution_warning();
+        self.energy_budget.reset(0.0, 0.125, 0.75 * self.viscosity);
     }
 
     pub fn reset_zero(&mut self) {
@@ -175,6 +372,7 @@ impl SpectralSolver {
         self.time = 0.0;
         self.steps = 0;
         self.reset_resolution_warning();
+        self.energy_budget.reset(0.0, 0.0, 0.0);
     }
 
     /// Divergence-free shear `u=(sin(mode*y),0,0)`, an exact viscous mode.
@@ -197,6 +395,8 @@ impl SpectralSolver {
         self.time = 0.0;
         self.steps = 0;
         self.reset_resolution_warning();
+        self.energy_budget
+            .reset(0.0, 0.25, 0.5 * self.viscosity * (mode as f64).powi(2));
         Ok(())
     }
 
@@ -218,6 +418,9 @@ impl SpectralSolver {
         self.time = 0.0;
         self.steps = 0;
         self.reset_resolution_warning();
+        let (energy, enstrophy) = self.spectral_energy_enstrophy();
+        self.energy_budget
+            .reset(0.0, energy, 2.0 * self.viscosity * enstrophy);
         Ok(())
     }
 
@@ -279,6 +482,9 @@ impl SpectralSolver {
         self.time = next_time;
         self.steps += 1;
         self.update_resolution_warning();
+        if forcing.is_some() {
+            self.energy_budget.invalidate();
+        }
         Ok(())
     }
 
@@ -489,6 +695,9 @@ impl SpectralSolver {
         let max_speed = max_speed2.sqrt();
         let max_vorticity = max_vorticity2.sqrt();
         let energy_dissipation_rate = 2.0 * self.viscosity * enstrophy;
+        let energy_budget = self
+            .energy_budget
+            .observe(self.time, energy, energy_dissipation_rate);
         let high_frequency_energy_fraction = self.high_frequency_energy_fraction(0.75);
         finite &= [
             self.time,
@@ -500,6 +709,16 @@ impl SpectralSolver {
             max_speed,
             max_vorticity,
             energy_dissipation_rate,
+            energy_budget.initial_energy,
+            energy_budget.cumulative_energy_dissipation,
+            energy_budget.energy_balance_defect,
+            energy_budget.energy_balance_relative_error,
+            energy_budget.mean_energy_dissipation_rate,
+            energy_budget.minimum_sampled_energy_dissipation_rate,
+            energy_budget.minimum_sampled_dissipation_time,
+            energy_budget.start_time,
+            energy_budget.end_time,
+            energy_budget.max_interval,
             high_frequency_energy_fraction,
         ]
         .into_iter()
@@ -514,12 +733,43 @@ impl SpectralSolver {
             max_speed,
             max_vorticity,
             energy_dissipation_rate,
+            initial_energy: energy_budget.initial_energy,
+            cumulative_energy_dissipation: energy_budget.cumulative_energy_dissipation,
+            energy_balance_defect: energy_budget.energy_balance_defect,
+            energy_balance_relative_error: energy_budget.energy_balance_relative_error,
+            mean_energy_dissipation_rate: energy_budget.mean_energy_dissipation_rate,
+            minimum_sampled_energy_dissipation_rate: energy_budget
+                .minimum_sampled_energy_dissipation_rate,
+            minimum_sampled_dissipation_time: energy_budget.minimum_sampled_dissipation_time,
+            energy_budget_start_time: energy_budget.start_time,
+            energy_budget_end_time: energy_budget.end_time,
+            energy_budget_max_interval: energy_budget.max_interval,
+            energy_budget_samples: energy_budget.samples,
+            energy_budget_quadrature: ENERGY_BUDGET_QUADRATURE,
+            energy_balance_applicable: energy_budget.applicable,
             high_frequency_energy_fraction,
             tail_start_fraction_of_dealias_cutoff: 0.75,
             tail_tolerance: 1.0e-8,
             underresolved: self.underresolved,
-            finite,
+            finite: finite && energy_budget.finite(),
         }
+    }
+
+    fn spectral_energy_enstrophy(&self) -> (f64, f64) {
+        let mut energy_sum = 0.0;
+        let mut enstrophy_sum = 0.0;
+        for q in 0..self.len {
+            let density = (0..COMPONENTS)
+                .map(|component| self.state[component * self.len + q].norm_sqr())
+                .sum::<f64>();
+            energy_sum += density;
+            enstrophy_sum += self.k2[q] * density;
+        }
+        let normalization = (self.len as f64).powi(2);
+        (
+            0.5 * energy_sum / normalization,
+            0.5 * enstrophy_sum / normalization,
+        )
     }
 
     pub fn high_frequency_energy_fraction(&self, tail_start: f64) -> f64 {
@@ -557,6 +807,9 @@ impl SpectralSolver {
         let mut state = std::mem::take(&mut self.state);
         self.project(&mut state);
         self.state = state;
+        let (energy, enstrophy) = self.spectral_energy_enstrophy();
+        self.energy_budget
+            .reset(self.time, energy, 2.0 * self.viscosity * enstrophy);
     }
 
     fn nonlinear_hat(&self, state: &[Complex64]) -> Vec<Complex64> {
@@ -897,5 +1150,28 @@ mod tests {
         assert_eq!(solver.time, f64::MAX);
         assert_eq!(solver.state, original);
         assert_eq!(solver.steps, 0);
+    }
+
+    #[test]
+    fn forced_evolution_invalidates_unforced_budget_until_reset() {
+        let mut solver = SpectralSolver::new(8, 0.05).unwrap();
+        let state_len = solver.state.len();
+        solver
+            .step_with_forcing(0.01, |_| vec![Complex64::default(); state_len])
+            .unwrap();
+        let forced = solver.diagnostics();
+        assert!(!forced.energy_balance_applicable);
+        assert!(forced.energy_balance_relative_error.is_nan());
+        assert!(!forced.finite);
+
+        solver.step(0.01).unwrap();
+        assert!(!solver.diagnostics().energy_balance_applicable);
+
+        solver.reset_taylor_green();
+        let reset = solver.diagnostics();
+        assert!(reset.energy_balance_applicable);
+        assert_eq!(reset.energy_budget_samples, 1);
+        assert!(reset.energy_balance_relative_error.abs() <= f64::EPSILON);
+        assert!(reset.finite);
     }
 }
