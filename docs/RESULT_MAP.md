@@ -256,6 +256,13 @@ integrand and the time-dependent adjoint argument remain separate obligations.
 
 Further analytic inputs sharpen these routes:
 
+- [PeriodicSpatialSmoothReconstruction](../Navier/Analysis/PeriodicSpatialSmoothReconstruction.lean)
+  converts all polynomial Fourier moments into spatial `C∞` regularity using
+  the exact period-one characters. Applied to the bounded mild trajectory,
+  it proves spatial smoothness at every positive time. All-order time jets,
+  joint boundary smoothness, pressure reconstruction, and global critical
+  control remain separate requirements for B.
+
 - [WholeSpaceSolenoidalHeatConvectionIntegrability](../Navier/Analysis/WholeSpaceSolenoidalHeatConvectionIntegrability.lean)
   proves integrability of the actual cutoff-free convection term
   `D(curl(Gτ a))(u) · u_j` on each finite-energy preterminal slice.
@@ -266,9 +273,12 @@ Further analytic inputs sharpen these routes:
 - [WholeSpaceSolenoidalHeatViscousCutoffLimit](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousCutoffLimit.lean)
   proves the second-derivative cutoff product rule and almost-everywhere
   convergence of the surviving viscous term against the actual velocity.
-  Its limit is integrable. Uniform domination of the derivative errors and
-  the separate solenoidal cutoff correction remain necessary before taking
-  the full weak-evolution limit.
+  Its limit is integrable.
+- [WholeSpaceSolenoidalHeatViscousProductLimit](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousProductLimit.lean)
+  supplies the integrable envelope and proves the integrated limit of
+  `D_i²(χ_R curl(Gτ a)) u_j` on the actual finite-energy `SolvesBefore` slice.
+  The separate `∇χ_R × (Gτ a)` correction and time-limit interchange remain
+  necessary before taking the full weak-evolution limit; A is still open.
 - [PhysicalPeriodicDissipationHeatRestart](../Navier/Analysis/PhysicalPeriodicDissipationHeatRestart.lean)
   bounds the complete off-zero mixed critical quantity of the positive-lag
   free heat restart at a good time, using only datum energy, viscosity,
