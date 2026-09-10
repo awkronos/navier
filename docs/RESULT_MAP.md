@@ -245,6 +245,13 @@ slice. The solenoidal test is identified exactly as `∇G × a`. The remaining
 cutoff product-rule expansion, spatial limit, interval-time domination, and
 time-dependent adjoint-test bridge are still required for the full mild formula.
 
+[WholeSpaceSolenoidalHeatViscousIntegrability](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousIntegrability.lean)
+uses those third derivatives to prove integrability of every actual diagonal
+second derivative of `backwardHeatCurlField`, paired with any velocity component
+of a preterminal finite-energy `SolvesBefore` slice. These are the cutoff-free
+viscous summands in `lerayWeakRhs`. Convergence of the finite-radius test to this
+integrand and the time-dependent adjoint argument remain separate obligations.
+
 ## Numerical boundary
 
 The Rust crate has two separate numerical surfaces. `AxisConstruction`
