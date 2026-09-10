@@ -66,11 +66,59 @@ theorem not_bounded_extension_on_support
   rw [heq t ht x]
   exact hM (t, x) ⟨⟨ht.1, ht.2.le⟩, hx⟩
 
+/-- Along a scalar Madelung decoder of the compact candidate, any proposed
+positive amplitude floor and spatial-derivative cap fail together at an actual
+point of the candidate's support in every terminal time window.  Thus the
+blowup forces amplitude collapse or derivative growth arbitrarily near the
+singular time in every everywhere-nonzero differentiable lift.
+
+The pairing is the coordinate-free current formula, with `κ = hbar / mass`.
+Spatial differentiability is explicit so totalized `fderiv` is not used as a
+substitute for a derivative. No Schrödinger equation is assumed. -/
+theorem compact_candidate_madelung_amplitude_or_derivative_degenerates
+    {u f : EVelocityField} {p : EPressureField}
+    (h : Navier.Construction.R3CompactCandidate.Properties u p f)
+    {K : Set ESpace}
+    (hsupport : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x, x ∉ K → u (t, x) = 0)
+    (ψ : ℝ → ESpace → ℂ) (κ c M δ : ℝ) (hc : 0 < c) (hδ : 0 < δ)
+    (_hψ : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, DifferentiableAt ℝ (ψ t) x)
+    (hnonzero : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ψ t x ≠ 0)
+    (hdecode : ∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ∀ d : ESpace,
+      inner ℝ (u (t, x)) d = κ * (fderiv ℝ (ψ t) x d / ψ t x).im) :
+    ∃ t ∈ Ico (0 : ℝ) 1, ∃ x ∈ K, 1 - δ < t ∧
+      (‖ψ t x‖ < c ∨ M < ‖fderiv ℝ (ψ t) x‖) := by
+  let B : ℝ := |κ| * max M 0 / c + 1
+  have hB : 0 < B := by
+    dsimp [B]
+    positivity
+  obtain ⟨t, x, ht, hnear, hlarge⟩ := h.speed_unbounded B hB δ hδ
+  have ht' : t ∈ Ico (0 : ℝ) 1 := ⟨ht.1.le, ht.2⟩
+  have hx : x ∈ K := by
+    by_contra hxK
+    rw [hsupport t ht' x hxK, norm_zero] at hlarge
+    exact (not_lt_of_ge hB.le) hlarge
+  refine ⟨t, ht', x, hx, hnear, ?_⟩
+  by_contra hdeg
+  have hamp : c ≤ ‖ψ t x‖ := by
+    exact le_of_not_gt (fun hlt => hdeg (Or.inl hlt))
+  have hderiv : ‖fderiv ℝ (ψ t) x‖ ≤ M := by
+    exact le_of_not_gt (fun hlt => hdeg (Or.inr hlt))
+  have hderivMax : ‖fderiv ℝ (ψ t) x‖ ≤ max M 0 :=
+    hderiv.trans (le_max_left M 0)
+  have hbound := Navier.Analysis.QuantumVortexRegularity.norm_le_of_madelung_pairing
+    (u := u (t, x)) (ψ := ψ t x) (D := fderiv ℝ (ψ t) x) (κ := κ)
+    (hnonzero t ht' x hx) (hdecode t ht' x hx)
+  have hupper : ‖u (t, x)‖ ≤ |κ| * max M 0 / c :=
+    hbound.trans (div_le_div₀
+      (mul_nonneg (abs_nonneg κ) (le_max_right M 0))
+      (mul_le_mul_of_nonneg_left hderivMax (abs_nonneg κ))
+      hc hamp)
+  dsimp [B] at hlarge
+  linarith
+
 /-- A scalar Madelung representation on the support cannot have both a
 uniform positive amplitude floor and uniformly bounded spatial derivative.
-The pairing is the coordinate-free current formula, with `κ = hbar / mass`.
-Spatial differentiability is explicit so totalized `fderiv` is not used as
-a substitute for a derivative. No Schrödinger equation is assumed. -/
+This is the uniform consequence of the pointwise degeneration theorem. -/
 theorem compact_candidate_no_regular_madelung_lift
     {u f : EVelocityField} {p : EPressureField}
     (h : Navier.Construction.R3CompactCandidate.Properties u p f)
@@ -83,18 +131,12 @@ theorem compact_candidate_no_regular_madelung_lift
     ¬ (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ∀ d : ESpace,
       inner ℝ (u (t, x)) d = κ * (fderiv ℝ (ψ t) x d / ψ t x).im) := by
   intro hdecode
-  apply not_bounded_on_presingular_support h hsupport
-  refine ⟨|κ| * M / c, ?_⟩
-  rintro ⟨t, x⟩ ⟨ht, hx⟩
-  have hnonzero : ψ t x ≠ 0 := norm_pos_iff.mp (hc.trans_le (hfloor t ht x hx))
-  have hM : 0 ≤ M := (norm_nonneg _).trans (hderiv t ht x hx)
-  have hbound := Navier.Analysis.QuantumVortexRegularity.norm_le_of_madelung_pairing
-    (u := u (t, x)) (ψ := ψ t x) (D := fderiv ℝ (ψ t) x) (κ := κ)
-    hnonzero (hdecode t ht x hx)
-  exact hbound.trans (div_le_div₀
-    (mul_nonneg (abs_nonneg κ) hM)
-    (mul_le_mul_of_nonneg_left (hderiv t ht x hx) (abs_nonneg κ))
-    hc (hfloor t ht x hx))
+  obtain ⟨t, ht, x, hx, _, hsmall | hlarge⟩ :=
+    compact_candidate_madelung_amplitude_or_derivative_degenerates
+      h hsupport ψ κ c M 1 hc zero_lt_one _hψ
+      (fun t ht x hx => norm_pos_iff.mp (hc.trans_le (hfloor t ht x hx))) hdecode
+  · exact (not_lt_of_ge (hfloor t ht x hx)) hsmall
+  · exact (not_lt_of_ge (hderiv t ht x hx)) hlarge
 
 /-- Even continuity only on the compact region occupied by the candidate is
 incompatible with an extension through the singular time that agrees at all
@@ -286,6 +328,32 @@ theorem selected_candidate_no_continuous_extension :
     selected_candidate_finite_time_profile
   exact ⟨u, p, f, K, h, hf, henergy, hK, hsupport, hno⟩
 
+/-- Every everywhere-nonzero differentiable scalar Madelung decoder of the
+selected forced finite-energy profile develops amplitude collapse or
+unbounded spatial derivative on the profile's actual compact support.  The
+thresholds are arbitrary, so the conclusion is quantitative rather than only
+the negation of a uniformly regular lift. -/
+theorem selected_candidate_madelung_amplitude_or_derivative_degenerates :
+    ∃ u : EVelocityField, ∃ p : EPressureField, ∃ f : EVelocityField, ∃ K : Set ESpace,
+      Navier.Construction.R3CompactCandidate.Properties u p f ∧
+      ContDiff ℝ ∞ f ∧
+      Navier.ConstructionR3.ProblemStatement.UniformFiniteEnergy (Ico (0 : ℝ) 1) u ∧
+      IsCompact K ∧
+      (∀ t ∈ Ico (0 : ℝ) 1, ∀ x, x ∉ K → u (t, x) = 0) ∧
+      ∀ (ψ : ℝ → ESpace → ℂ) (κ c M δ : ℝ), 0 < c → 0 < δ →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, DifferentiableAt ℝ (ψ t) x) →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ψ t x ≠ 0) →
+        (∀ t ∈ Ico (0 : ℝ) 1, ∀ x ∈ K, ∀ d : ESpace,
+          inner ℝ (u (t, x)) d = κ * (fderiv ℝ (ψ t) x d / ψ t x).im) →
+        ∃ t ∈ Ico (0 : ℝ) 1, ∃ x ∈ K, 1 - δ < t ∧
+          (‖ψ t x‖ < c ∨ M < ‖fderiv ℝ (ψ t) x‖) := by
+  obtain ⟨u, p, f, K, h, hf, henergy, hK, hsupport, _⟩ :=
+    selected_candidate_no_continuous_extension
+  exact ⟨u, p, f, K, h, hf, henergy, hK, hsupport,
+    fun ψ κ c M δ hc hδ hψ hnonzero hdecode =>
+      compact_candidate_madelung_amplitude_or_derivative_degenerates
+        h hsupport ψ κ c M δ hc hδ hψ hnonzero hdecode⟩
+
 /-- The selected forced finite-energy profile itself excludes a uniformly
 regular scalar Madelung lift. This instantiates the obstruction with the
 constructed witness, rather than assuming a blowup candidate exists. -/
@@ -396,7 +464,9 @@ end Navier.Analysis.ConstructedFiniteTimeObstruction
 
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.not_bounded_extension_on_support
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.not_bounded_on_presingular_support
+#print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_madelung_amplitude_or_derivative_degenerates
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_no_regular_madelung_lift
+#print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_madelung_amplitude_or_derivative_degenerates
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_no_regular_madelung_lift
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.not_continuous_extension_on_support
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_agrees_with_locally_finite_energy_competitor
@@ -412,6 +482,8 @@ end Navier.Analysis.ConstructedFiniteTimeObstruction
 #print axioms Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation
 
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_finite_time_profile
+#check Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_madelung_amplitude_or_derivative_degenerates
+#check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_madelung_amplitude_or_derivative_degenerates
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_has_compact_physical_support
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor
 #check Navier.Analysis.ConstructedFiniteTimeObstruction.selected_force_nonzero_before_one
