@@ -145,6 +145,7 @@ import Navier.Analysis.CriticalMildReachableTimes
 import Navier.Analysis.CriticalMildSecondStrongDerivative
 import Navier.Analysis.WholeSpaceHeatThirdDerivative
 import Navier.Analysis.WholeSpaceSolenoidalHeatViscousIntegrability
+import Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit
 import Navier.Analysis.GlobalRegularityCrownCore
 import Navier.Analysis.LeiLinCriticalMechanism
 import Navier.Analysis.WienerAlgebraConvolution
@@ -171,6 +172,7 @@ import Navier.Analysis.LeiLinPositiveRestartMild
 import Navier.Analysis.LeiLinPositiveRestartCancellation
 import Navier.Analysis.PhysicalPeriodicDissipationBudget
 import Navier.Analysis.PhysicalPeriodicGoodTimeSelection
+import Navier.Analysis.PhysicalPeriodicDissipationHeatRestart
 
 /-!
 # Navier
