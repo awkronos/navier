@@ -1,0 +1,5 @@
+worktree mode: base=c5891907153d cand=233cc089f609 suite=smoke
+  blocking_count_below_registry_floor: measured 0 < registry-declared 1
+REJECT G2 (blocking_count_below_registry_floor)
+  G2 is forbidden-class: no opt-out token, no env override.
+  A gaming attempt is a signal about the loop, not a proposal.
