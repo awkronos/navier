@@ -1,0 +1,77 @@
+Navier.Analysis.WickRotationModes.differentiable_entireHeatMode (a : ℝ) :
+  Differentiable ℂ (Navier.Analysis.WickRotationModes.entireHeatMode a)
+'Navier.Analysis.WickRotationModes.differentiable_entireHeatMode' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.entireHeatMode_real_eq_modeDecay (a t : ℝ) :
+  Navier.Analysis.WickRotationModes.entireHeatMode a ↑t = Navier.Analysis.CriticalMildModeDifferentiation.modeDecay a t
+'Navier.Analysis.WickRotationModes.entireHeatMode_real_eq_modeDecay' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.norm_entireHeatMode_real (a t : ℝ) :
+  ‖Navier.Analysis.WickRotationModes.entireHeatMode a ↑t‖ = Real.exp (-a * t)
+'Navier.Analysis.WickRotationModes.norm_entireHeatMode_real' depends on axioms: [propext, Classical.choice, Quot.sound]
+Navier.Analysis.WickRotationModes.hasDerivAt_entireHeatMode_real (a t : ℝ) :
+  HasDerivAt (fun s => Navier.Analysis.WickRotationModes.entireHeatMode a ↑s)
+    (-↑a * Navier.Analysis.WickRotationModes.entireHeatMode a ↑t) t
+'Navier.Analysis.WickRotationModes.hasDerivAt_entireHeatMode_real' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.hasDerivAt_wickRotatedMode (a s : ℝ) :
+  HasDerivAt (Navier.Analysis.WickRotationModes.wickRotatedMode a)
+    (-(Complex.I * ↑a) * Navier.Analysis.WickRotationModes.wickRotatedMode a s) s
+'Navier.Analysis.WickRotationModes.hasDerivAt_wickRotatedMode' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.norm_wickRotatedMode (a s : ℝ) :
+  ‖Navier.Analysis.WickRotationModes.wickRotatedMode a s‖ = 1
+'Navier.Analysis.WickRotationModes.norm_wickRotatedMode' depends on axioms: [propext, Classical.choice, Quot.sound]
+Navier.Analysis.WickRotationModes.norm_entireHeatMode_real_lt_one {a t : ℝ} (ha : 0 < a) (ht : 0 < t) :
+  ‖Navier.Analysis.WickRotationModes.entireHeatMode a ↑t‖ < 1
+'Navier.Analysis.WickRotationModes.norm_entireHeatMode_real_lt_one' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.not_norm_wickRotatedMode_lt_one (a s : ℝ) :
+  ¬‖Navier.Analysis.WickRotationModes.wickRotatedMode a s‖ < 1
+'Navier.Analysis.WickRotationModes.not_norm_wickRotatedMode_lt_one' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.no_positive_exponential_damping_wick (a : ℝ) {c s : ℝ} (hc : 0 < c) (hs : 0 < s) :
+  ¬‖Navier.Analysis.WickRotationModes.wickRotatedMode a s‖ ≤ Real.exp (-c * s)
+'Navier.Analysis.WickRotationModes.no_positive_exponential_damping_wick' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.entireHeatMode_rawModeDecayRate_eq_complexHeatDecay (ν t : ℝ)
+  (k : Navier.Analysis.CriticalMildSeries.LatticeMode) :
+  Navier.Analysis.WickRotationModes.entireHeatMode
+      (Navier.Analysis.CriticalMildModeDifferentiation.rawModeDecayRate ν k) ↑t =
+    ↑(Navier.Analysis.ComplexFrequencyHeatLeray.complexHeatDecay ν t
+        (Navier.Analysis.CriticalMildSeries.latticeFrequency k))
+'Navier.Analysis.WickRotationModes.entireHeatMode_rawModeDecayRate_eq_complexHeatDecay' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.rawModeDecayRate_pos_of_ne_zero {ν : ℝ} (hν : 0 < ν)
+  {k : Navier.Analysis.CriticalMildSeries.LatticeMode} (hk : k ≠ 0) :
+  0 < Navier.Analysis.CriticalMildModeDifferentiation.rawModeDecayRate ν k
+'Navier.Analysis.WickRotationModes.rawModeDecayRate_pos_of_ne_zero' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.real_mode_strictly_damped_but_wick_mode_not {ν t : ℝ}
+  {k : Navier.Analysis.CriticalMildSeries.LatticeMode}
+  (hrate : 0 < Navier.Analysis.CriticalMildModeDifferentiation.rawModeDecayRate ν k) (ht : 0 < t) :
+  ‖↑(Navier.Analysis.ComplexFrequencyHeatLeray.complexHeatDecay ν t
+          (Navier.Analysis.CriticalMildSeries.latticeFrequency k))‖ <
+    ‖Navier.Analysis.WickRotationModes.wickRotatedMode
+        (Navier.Analysis.CriticalMildModeDifferentiation.rawModeDecayRate ν k) t‖
+'Navier.Analysis.WickRotationModes.real_mode_strictly_damped_but_wick_mode_not' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+Navier.Analysis.WickRotationModes.nonzero_lattice_mode_strictly_damped_but_wick_mode_not {ν t : ℝ} (hν : 0 < ν)
+  (ht : 0 < t) {k : Navier.Analysis.CriticalMildSeries.LatticeMode} (hk : k ≠ 0) :
+  ‖↑(Navier.Analysis.ComplexFrequencyHeatLeray.complexHeatDecay ν t
+          (Navier.Analysis.CriticalMildSeries.latticeFrequency k))‖ <
+    ‖Navier.Analysis.WickRotationModes.wickRotatedMode
+        (Navier.Analysis.CriticalMildModeDifferentiation.rawModeDecayRate ν k) t‖
+'Navier.Analysis.WickRotationModes.nonzero_lattice_mode_strictly_damped_but_wick_mode_not' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
