@@ -66,12 +66,11 @@ pre-singular slab. No single energy constant uniform as the slabs approach the
 deadline is assumed.
 
 The periodic research now has checked native Fourier initialization and exact
-initial reconstruction, classical velocity uniqueness, energy and enstrophy
-identities, and local smoothing estimates for the raw complex mild equation.
-Its physical evolution bridge is under repair: raw convolution must be related
-to the physical Fourier equation through an explicit phase, amplitude and
-viscosity normalization. The [result map](docs/RESULT_MAP.md) records this
-boundary and the still-unproved arbitrary-data global estimate.
+initial reconstruction, a correctly normalized local physical trajectory with
+pointwise Fourier balance, classical velocity uniqueness, energy and enstrophy
+identities, and local smoothing estimates. It still lacks the arbitrary-data,
+horizon-independent critical bound and all-order joint spacetime reconstruction
+needed for B. The [result map](docs/RESULT_MAP.md) records that boundary.
 
 ## Mathematics
 

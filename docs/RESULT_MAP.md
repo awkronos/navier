@@ -47,11 +47,12 @@ critical norm, so this transport retains the original chart radius. It does
 not supply arbitrary-data global control.
 
 The completed forced endpoints are whole-space C and periodic D in the official
-problem statement. The proof constructs the
-data and force, supplies a pre-singular classical candidate, and rules out every
-hypothetical global smooth bounded-energy competitor. It does not select one
-solution from several weak continuations, and it does not prove a global smooth
-velocity.
+problem statement. Their proofs construct the data, forces, and pre-singular
+classical candidates, then rule out every hypothetical global competitor in
+the matching contract: a smooth bounded-energy whole-space velocity-pressure
+pair for C, and a smooth periodic velocity-pressure pair for D. The C result
+does not select one solution from several weak continuations, and neither
+theorem proves a global smooth velocity.
 
 The [native D proof](../Navier/Analysis/PeriodicConstructedBreakdown.lean)
 uses the selected unit-periodic candidate directly. Smooth forcing with a
@@ -162,16 +163,17 @@ solution.
 
 ## Periodic evolution: checked providers and the remaining consumer
 
-**Normalization repair in progress.** The raw lattice interaction is a complex
-bilinear dot-product convolution, and its mild equation adds that interaction.
-The physical period-one Fourier equation instead requires `-2πi` times the
-projected convolution and heat rate `ν(2π)²|k|²`. Consequently the unrotated
-Fourier datum is not yet a valid physical evolution initializer. The active
-repair is the explicit change `A=-2πi û`, `μ=(2π)²ν`, with inverse
-`û=iA/(2π)`. Raw A then requires anti-Hermitian symmetry. The algebra and
-time-dependent reconstruction are being proved, not assumed here. A bound for
-every complex raw datum may be too strong; its exact quantifiers are under
-counterexample audit. This does not affect the forced-C construction.
+**Normalization is checked; global control remains open.** The raw lattice
+interaction is a complex bilinear dot-product convolution, while the physical
+period-one Fourier equation requires `-2πi` times the projected convolution and
+heat rate `ν(2π)²|k|²`. The checked change of variables is `A=-2πi û`,
+`μ=(2π)²ν`, with inverse `û=iA/(2π)` and anti-Hermitian symmetry for physical
+reality. `PhysicalLocalEvolution` and `PeriodicInitialPhysicalEvolution`
+construct the normalized local trajectory from official periodic data;
+`PeriodicNonlinearFourierReconstruction` supplies its pointwise Fourier
+balance. The remaining work is horizon-independent control and all-order joint
+classical reconstruction. An unrestricted bound for arbitrary complex raw data
+is false, as recorded below. None of this affects the forced-C construction.
 
 Fresh source compilers and raw axiom audits are in
 the periodic-evolution receipt (local report).
