@@ -138,6 +138,7 @@ import Navier.Analysis.QuantumVortexRegularity
 import Navier.Analysis.QuantumVortexTopologyChange
 import Navier.Analysis.QuantumVortexWinding
 import Navier.Analysis.RieszKolmogorov
+import Navier.Analysis.ScaledConstructedBreakdown
 import Navier.Analysis.ScaledCutoff
 import Navier.Analysis.SchwartzComponentBound
 import Navier.Analysis.SchwartzConventionEquivalence
@@ -177,6 +178,7 @@ import Navier.AxiomAudit
 import Navier.Breakdown.CompactPathBreakdown
 import Navier.Breakdown.CompactSmoothForce
 import Navier.Breakdown.ConstructedBreakdown
+import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
 import Navier.Breakdown.ForceRecovery
 import Navier.Breakdown.MaximalNonextension
 import Navier.Breakdown.OfficialCDEncoding

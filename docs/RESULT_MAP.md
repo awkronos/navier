@@ -82,6 +82,16 @@ fresh D receipt (local report).
 | The selected witness excludes a same-force continuation smooth before the deadline and continuous through it, even when energy is assumed only separately on each closed pre-singular slab | `ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation` | None | Direct single-file source compile plus raw axioms |
 | The selected candidate admits no Beale–Kato–Majda control bundle on `[0,1)` | `BKMForcedBreakdownNecessity.selected_candidate_admits_no_BKM_control` | None; the refutation consumes the candidate's own `speed_unbounded` field | Direct single-file source compile plus raw axioms |
 | Every same-force competitor smooth before time one and finite-energy on each closed earlier slab admits no Beale–Kato–Majda control bundle on `[0,1)` | `BKMForcedBreakdownNecessity.selected_candidate_forces_no_BKM_control_in_every_smooth_competitor` | None for the selected witness; the competitor class is identical to the speed-blowup row's | Direct single-file source compile plus raw axioms |
+| For every viscosity and every prescribed deadline there is a parabolically rescaled candidate whose classical evolution has uniformly finite energy before the deadline and unbounded speed at it | `ScaledConstructedBreakdown.exists_deadlineT_profile` | None; the deadline enters through `λ = T^(−1/2)` with proved endpoint law `deadlineOf λ = T` | Direct single-file source compile plus raw axioms |
+| Alternative C holds at every prescribed positive deadline: for every `ν > 0` and `T > 0` there is a rapidly decaying smooth force, vanishing for `t ≥ T₀·T` and nonzero at some `t ∈ (0,T)`, admitting no global classical solution | `DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT` | None; `T₀` is the existential raw-candidate endpoint from `CompactFutureTimeSupport`, so the support endpoint is the proved law `T₀·T`, not the asserted bound `T` | Direct single-file source compile plus raw axioms |
+
+The two deadline rows share a transport boundary, not a shared function space:
+the rescaled blow-up velocity profile of `ScaledConstructedBreakdown` (the
+energy-carrier file) and the nonexistence force package of
+`DeadlineParameterizedWholeSpaceBreakdown` (the native carrier) are parallel
+carriers related by the `nativeForce` transport and the exact iterated-Fréchet
+formula `iteratedFDerivWithin_parabolicScaledForce`. No unforced-regularity or
+periodicity-preservation claim is made by either row.
 
 All named completed declarations above currently report only `propext`,
 `Classical.choice`, and `Quot.sound`. The source attribution and adaptation

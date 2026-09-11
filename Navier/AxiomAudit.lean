@@ -83,6 +83,8 @@ import Navier.Analysis.PressureGaugeObstruction
 import Navier.Analysis.BKMForcedBreakdownNecessity
 import Navier.Analysis.LatticeCriticalDissipationKernel
 import Navier.Analysis.PhysicalPeriodicCriticalGoodTime
+import Navier.Analysis.ScaledConstructedBreakdown
+import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -722,3 +724,14 @@ named Pattern-A domination hypotheses (audited below).
 #print axioms Navier.Analysis.LatticeCriticalDissipationKernel.summable_inverseFourthKernel
 #print axioms Navier.Analysis.PhysicalPeriodicCriticalGoodTime.normXm1_offZero_le_sqrt_dissipation
 #print axioms Navier.Analysis.PhysicalPeriodicCriticalGoodTime.exists_criticalGoodTime
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.residual_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.kineticEnergy_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.uniformFiniteEnergy_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.speedUnbounded_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.deadlinePackage
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.exists_deadlineT_profile
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.deadlineForce_vanishing_from
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.iteratedFDerivWithin_parabolicScaledForce
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.forcedDataRapidDecay_parabolicScaled
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.isClassicalSolution_parabolicScaled
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT
