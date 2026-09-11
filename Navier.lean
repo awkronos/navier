@@ -24,6 +24,7 @@ import Navier.Analysis.CriticalL3Integrable
 import Navier.Analysis.CriticalLp
 import Navier.Analysis.CriticalMildDuhamelBochner
 import Navier.Analysis.CriticalMildGalileanVolterra
+import Navier.Analysis.CriticalMildGlobalTrajectoryReality
 import Navier.Analysis.CriticalMildHeatCarrierAlgebra
 import Navier.Analysis.CriticalMildHeatFlowLinear
 import Navier.Analysis.CriticalMildLocalSelection
@@ -165,6 +166,8 @@ import Navier.Analysis.Vorticity
 import Navier.Analysis.VorticityTransport
 import Navier.Analysis.WeightIntegrability
 import Navier.Analysis.WeightedCommutator
+import Navier.Analysis.WholeSpaceHeatCurlClosedEvolution
+import Navier.Analysis.WholeSpaceHeatCurlTerminalTrace
 import Navier.Analysis.WholeSpaceHeatThirdDerivative
 import Navier.Analysis.WholeSpaceSolenoidalHeatConvectionIntegrability
 import Navier.Analysis.WholeSpaceSolenoidalHeatConvectionLimit
