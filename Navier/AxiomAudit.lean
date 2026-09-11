@@ -85,6 +85,7 @@ import Navier.Analysis.LatticeCriticalDissipationKernel
 import Navier.Analysis.PhysicalPeriodicCriticalGoodTime
 import Navier.Analysis.ScaledConstructedBreakdown
 import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
+import Navier.Analysis.CriticalMildSmallDataGlobal
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -735,3 +736,12 @@ named Pattern-A domination hypotheses (audited below).
 #print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.forcedDataRapidDecay_parabolicScaled
 #print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.isClassicalSolution_parabolicScaled
 #print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT
+
+-- 2026-09-11 fold: unconditional small-data global mild continuation on the
+-- periodic lattice carrier (Lane C). The module self-audits all 71 public
+-- declarations; crown and terminal properties are echoed here centrally.
+#print axioms Navier.Analysis.CriticalMildSmallDataGlobal.latticeFrequency_gap
+#print axioms Navier.Analysis.CriticalMildSmallDataGlobal.smallDataGlobalMild
+#print axioms Navier.Analysis.CriticalMildSmallDataGlobal.smallDataGlobalDriver_mild
+#print axioms Navier.Analysis.CriticalMildSmallDataGlobal.smallDataGlobal_uniformAllHalfOrderMoments
+#print axioms Navier.Analysis.CriticalMildSmallDataGlobal.smallDataGlobal_navierStokesBody_on_positiveTime
