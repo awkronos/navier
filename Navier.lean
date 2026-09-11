@@ -106,6 +106,7 @@ import Navier.Analysis.LeiLinTimeMixed
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.LerayWeak
 import Navier.Analysis.LocalEnstrophyBalance
+import Navier.Analysis.MadelungDegeneracySharpness
 import Navier.Analysis.MultiFrequencyMild
 import Navier.Analysis.OfficialABEncoding
 import Navier.Analysis.ParabolicCaccioppoli
