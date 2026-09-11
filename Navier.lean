@@ -1,3 +1,4 @@
+import Navier.Analysis.BKMForcedBreakdownNecessity
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BiotSavartKernel
@@ -85,6 +86,7 @@ import Navier.Analysis.HalfSpaceSmoothnessBridge
 import Navier.Analysis.HeatSemigroupSmoothing
 import Navier.Analysis.KatoPonceLeibniz
 import Navier.Analysis.Ladyzhenskaya
+import Navier.Analysis.LatticeCriticalDissipationKernel
 import Navier.Analysis.LeiLinBilinear
 import Navier.Analysis.LeiLinCoerciveTerminal
 import Navier.Analysis.LeiLinCriticalMechanism
@@ -120,6 +122,7 @@ import Navier.Analysis.PeriodicPressureEllipticGain
 import Navier.Analysis.PeriodicQuotientBridge
 import Navier.Analysis.PhysicalLocalEvolution
 import Navier.Analysis.PhysicalPeriodicCoerciveShellControl
+import Navier.Analysis.PhysicalPeriodicCriticalGoodTime
 import Navier.Analysis.PhysicalPeriodicDissipationBudget
 import Navier.Analysis.PhysicalPeriodicDissipationHeatRestart
 import Navier.Analysis.PhysicalPeriodicEnergyDuhamelSmoothing

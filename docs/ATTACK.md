@@ -64,10 +64,10 @@ The four admissible alternatives in Fefferman's official formulation are:
 This is a semantic restatement of clauses (1)–(11) and alternatives (A)–(D) in
 [FEFFERMAN2000]. It deliberately preserves three distinctions that are often
 lost: (A)/(B) are unforced, (C)/(D) permit forcing, and periodic smoothness does
-not by itself prove the whole-space statement.
+not prove the whole-space statement.
 
 Alternative (A) is the first Lean target. Alternatives (B)–(D) remain explicit
-siblings; a result for one is not silently transported to another.
+siblings; a result for one is not transported to another.
 
 ## 2. Provenance and synthesis boundary
 
@@ -230,7 +230,7 @@ or logical kill test), and **observation-only** (computation).
   critical scaling with pressure and nonlinear defect controlled; then state a
   rigidity property not equivalent to the desired endpoint bound.
 - **Kill criterion:** a defect measure survives, nontriviality is lost in the
-  limit, or the rigidity hypothesis simply assumes the ancient solution's
+  limit, or the rigidity hypothesis assumes the ancient solution's
   critical norm is bounded.
 - **Pivot:** quantify the defect and redirect its support/scale to R5 or R9.
 - **Evidence:** partial and epsilon regularity are **established** [CKN1982],

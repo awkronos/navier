@@ -26,8 +26,8 @@ Q=-\frac{\hbar^2}{2m}\frac{\Delta\sqrt\rho}{\sqrt\rho}.
 
 It does not supply the Navier–Stokes viscous term. For a smooth local phase,
 the resulting velocity has zero curl. Nonzero density and the topology of the
-phase matter; a fluid formulation alone does not automatically reconstruct a
-single-valued wavefunction. See [Carles, Danchin and Saut (2012)](https://arxiv.org/html/1111.4670v1)
+phase matter; a fluid formulation does not reconstruct a single-valued
+wavefunction. See [Carles, Danchin and Saut (2012)](https://arxiv.org/html/1111.4670v1)
 and [Wallstrom (1994)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.49.1613).
 
 ## A checked obstruction from the selected construction
@@ -82,7 +82,7 @@ compact-test weak RHS time integrals to the cutoff-free endpoint momentum
 difference. Its proof consumes the exact weak evolution and Gaussian endpoint
 limits. Identifying this with the time integral of the pointwise RHS limit
 still requires a uniform-integrability argument. These are direct analytic
-advances toward A/B; the quantum decoder bound does not supply continuation.
+advances toward A/B; the quantum decoder bound supplies no continuation.
 
 More generally, a representation whose reconstruction yields a continuous
 velocity through `[0,1] × K` contradicts
@@ -91,8 +91,7 @@ The sharper competitor theorem also applies if the reconstructed velocity solves
 the same forced equation with the same data and the required slab-local energy
 and smoothness properties; agreement then follows from comparison.
 
-A fluid singularity therefore does not by itself prove that a wavefunction
-is singular. The division by density can fail at a zero of an otherwise smooth
+A fluid singularity therefore does not prove that a wavefunction is singular. The division by density can fail at a zero of an otherwise smooth
 wavefunction. Conversely, one cannot use regularity of a wave equation to
 continue this fluid unless the reconstruction stays regular as well.
 

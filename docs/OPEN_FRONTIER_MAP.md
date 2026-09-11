@@ -7,7 +7,8 @@ does not assign fixed outcomes or prescribe a proof route.
 
 | Surface | Current status | Live edge |
 | --- | --- | --- |
-| Forced whole-space alternative C | **THEOREM**: `ConstructedBreakdown.wholeSpaceBreakdown` | Further work may sharpen mechanism, force semantics and finite-time localization; C itself has no remaining premise |
+| Forced whole-space alternative C | **THEOREM**: `ConstructedBreakdown.wholeSpaceBreakdown` | Optional follow-ups: sharper mechanism, force semantics, finite-time localization; C itself has no remaining premise |
+| BKM criterion at the constructed breakdown | **THEOREM**: `BKMForcedBreakdownNecessity.selected_candidate_forces_no_BKM_control_in_every_smooth_competitor` | The criterion's hypothesis is refuted for every admissible profile of the proved blow-up mechanism, so it cannot be weakened and remain consumable at this endpoint; the vorticity-integral divergence of the constructed field is a named OPEN residual |
 | Unforced whole-space alternative A | **OPEN**: `ProblemStatements.WholeSpaceGlobalRegularity` | Local existence, normalized continuation and arbitrary-large-data critical control must meet in one faithful whole-space consumer |
 | Unforced periodic alternative B | **OPEN**: `ProblemStatements.PeriodicGlobalRegularity` | Constructed physical local evolution and all spatial moments must feed joint classical reconstruction and arbitrary-data, horizon-uniform continuation control |
 | Fourier-lattice continuation | **CONDITIONAL THEOREM** | `CriticalMildMixedTerminalBound` is a sufficient uniform nonlinear estimate to construct; its optimality is not established, and transport to the whole-space carrier requires a separate proof |
@@ -40,7 +41,7 @@ The soundness cleanup removed admitted proof claims from:
 
 Removing an admission neither proves nor refutes its mathematical statement.
 The surviving source supplies the smaller proved inputs for further work.
-The general analytic estimates and the original unforced global target still
+The general analytic estimates and the original unforced global target
 require proofs or exact counterexamples. The completed forced construction is
 documented separately in the [result map](RESULT_MAP.md).
 

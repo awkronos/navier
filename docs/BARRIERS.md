@@ -32,10 +32,9 @@ The mixed norm scales as
 
 Thus \(3/p+2/q=1\) is critical. The energy-class quantities
 \(L_t^\infty L_x^2\) and \(L_t^2\dot H_x^1\) have exponent \(-1/2\).
-At a high-frequency/small-scale zoom they become smaller, so they cannot by
-themselves rule out concentration. Interpolation of the two energy quantities
-stays on the energy line and does not magically produce the critical Serrin
-line. Every claim of such a gain must display the additional equation-specific
+At a high-frequency/small-scale zoom they become smaller, so they cannot rule
+out concentration. Interpolation of the two energy quantities stays on the
+energy line and does not reach the critical Serrin line. Every claim of such a gain must display the additional equation-specific
 input.
 
 ## 3. Tao averaged-operator obstruction
@@ -85,7 +84,7 @@ breakdown statements.
 ## 5. Model and domain quarantine
 
 The following may be used for theorem testing, counterexamples to generic
-estimates, or formal infrastructure. They may not directly inhabit
+estimates, or formal infrastructure. None of them directly inhabits
 Fefferman-A:
 
 | Quarantined setting | Missing bridge to A |
