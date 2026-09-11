@@ -69,6 +69,17 @@ this failure to every terminal window: for every `c > 0`, derivative threshold
 the actual support with `1 - δ < t < 1` where `‖ψ‖ < c` or `M < ‖Dψ‖`.
 The original no-regular-lift consumer now uses this theorem.
 
+The disjunction is sharp: `MadelungDegeneracySharpness` exhibits, over any
+real inner-product space and against one fixed unbounded velocity, explicit
+everywhere-nonzero differentiable decoders satisfying the exact directional
+pairing in which each disjunct alone fails: one decoder has amplitude
+identically one, so its velocity blowup forces derivative degeneration;
+another has spatial derivative uniformly bounded on every closed ball while
+its amplitude collapses toward the terminal time. Neither alternative can
+be excluded from the pairing estimate alone; excluding degeneracy for the
+selected candidate requires additional structure of the lift, such as a
+transport or energy identity for the wavefunction.
+
 ## Exact PDE frontier
 
 `PeriodicMildOfficialEquation.mildFixedPoint_officialMomentum_positiveTime`
