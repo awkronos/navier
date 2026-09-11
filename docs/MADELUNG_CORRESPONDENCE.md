@@ -80,9 +80,15 @@ and joint smoothness through the initial time remain required for full B.
 `WholeSpaceSolenoidalHeatIntegratedRhsLimit` proves convergence of the actual
 compact-test weak RHS time integrals to the cutoff-free endpoint momentum
 difference. Its proof consumes the exact weak evolution and Gaussian endpoint
-limits. Identifying this with the time integral of the pointwise RHS limit
-still requires a uniform-integrability argument. These are direct analytic
-advances toward A/B; the quantum decoder bound does not supply continuation.
+limits. `WholeSpaceSolenoidalHeatRhsIntervalIdentification` now supplies the
+remaining identification: the radius-uniform Gaussian/energy majorant
+(`SolvesBefore.exists_uniformBound_lerayWeakRhs_atTopCompactBackwardHeatCurlTest`)
+gives dominated convergence in time, so the limit of the interval integrals
+equals the interval integral of the pointwise limit
+(`SolvesBefore.intervalIntegral_backwardHeatCurlRhs_eq_momentumDiff`), and by
+Hausdorff-uniqueness of limits this is the endpoint momentum difference.
+These are direct analytic advances toward A/B; the quantum decoder bound does
+not supply continuation.
 
 More generally, a representation whose reconstruction yields a continuous
 velocity through `[0,1] × K` contradicts
