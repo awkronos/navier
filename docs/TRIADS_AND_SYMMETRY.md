@@ -51,7 +51,7 @@ cancels. Weighting finer scales changes what the cancellation controls.
 
 [TriadUnitarySymmetry.lean](../Navier/Analysis/TriadUnitarySymmetry.lean) imports
 the same three wavevectors. SU(3) consists of complex unitary three-by-three
-matrices with determinant one. Merely having three modes is not a symmetry proof.
+matrices with determinant one. Having three modes is not a symmetry proof.
 
 Physical translation multiplies each mode by `exp(2πi k·x)`. Because the three
 wavevectors sum to zero, the three phases multiply to one. Lean proves that

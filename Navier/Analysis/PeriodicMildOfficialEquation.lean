@@ -534,8 +534,45 @@ theorem mildFixedPoint_officialMomentum_positiveTime
     ν hν u₀ hu₀ A hAc hdiv hreal hR
       ha (hat.trans ht.2) hbound hmild ⟨hat, ht.2⟩ x
 
+/-- Consumer-facing form of the identification: the pointwise unforced
+momentum identity on the positive-time chart, written exactly as the body of
+`Navier.SatisfiesNavierStokes` instantiated at `f = zeroForce`, i.e. with the
+same four `Navier.Problem` Fréchet operators and the same term order.  The
+initial trace of the chart is available separately
+(`PeriodicInitialPhysicalEvolution.exists_physical_local_evolution_of_periodicInitialDatum`).
+
+CLAIM TIER: theorem, strict axioms, for every chart time `t ∈ (0, T)`.  Named
+residual to the interval predicate
+`Navier.Breakdown.SatisfiesNavierStokesBefore ν zeroForce T`: the only missing
+value of that predicate is `t = 0`.  Discharging it requires the one-sided
+time-derivative reconstruction at the initial time together with the joint
+all-jet coefficient summability on the closed half-space — the
+`PeriodicMildClassicalRealization.FourierSpacetimeRapid` /
+`PressureFourierSpacetimeRapid` contract — which is exactly the initial-time
+joint smoothness this module's header disclaims. -/
+theorem mildFixedPoint_navierStokesBody_on_positiveTime
+    (ν : ℝ) (hν : 0 < ν)
+    (u₀ : WeightedLatticeBanach) (hu₀ : LatticeDivergenceFree u₀)
+    (A : ℝ → WeightedLatticeBanach) (hAc : Continuous A)
+    (hdiv : ∀ s, LatticeDivergenceFree (A s))
+    (hreal : ∀ s, LatticeAntiHermitian (A s))
+    {R T t : ℝ} (hR : 0 ≤ R)
+    (hbound : ∀ s ∈ Ioc (0 : ℝ) T, ‖A s‖ ≤ R)
+    (hmild : ∀ s (hs : s ∈ Icc (0 : ℝ) T),
+      A s = criticalMildImage (rawMildViscosity ν)
+        (by unfold rawMildViscosity; positivity) u₀ A hdiv s hs.1)
+    (ht : t ∈ Ioo (0 : ℝ) T) :
+    ∀ x : Space, timeDerivative (physicalMildVelocity A) t x +
+        convection (physicalMildVelocity A) t x =
+      ν • laplacian (physicalMildVelocity A) t x -
+        pressureGradient (physicalMildPressure A) t x + zeroForce t x :=
+  fun x => by
+    simpa [zeroForce] using mildFixedPoint_officialMomentum_positiveTime
+      ν hν u₀ hu₀ A hAc hdiv hreal hR hbound hmild ht x
+
 end Navier.Analysis.PeriodicMildOfficialEquation
 
+#print axioms Navier.Analysis.PeriodicMildOfficialEquation.mildFixedPoint_navierStokesBody_on_positiveTime
 #print axioms Navier.Analysis.PeriodicMildOfficialEquation.re_complexPointwiseConvection_eq_convection
 #print axioms Navier.Analysis.PeriodicMildOfficialEquation.spatialPartial_physicalMildPressure_eq
 #print axioms Navier.Analysis.PeriodicMildOfficialEquation.secondSpatialPartial_physicalMildVelocity_eq

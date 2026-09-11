@@ -1,9 +1,15 @@
 PYTHON ?= python3
 
 .NOTPARALLEL:
-.PHONY: check proof test lean axioms adaptive-bench conditional-audit
+.PHONY: check proof test lean axioms adaptive-bench conditional-audit closure
 
-check: test lean axioms
+check: closure test lean axioms
+
+# Every Navier module must sit inside the import closure of Navier.lean or be
+# an intentional standalone audit surface; otherwise whole-environment axiom
+# scans silently miss it.
+closure:
+	$(PYTHON) tools/module-closure-check.py
 
 proof:
 	@~/.claude/scripts/open-math.py verify --project navier --report /tmp/proof-report.json --sidecar /tmp/open_math.json

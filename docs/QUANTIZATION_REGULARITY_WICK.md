@@ -26,7 +26,7 @@ axis its magnitude is exactly `1/r`.
 
 This refutes the implication from smooth wavefunction to locally bounded
 decoded velocity at a node. It also shows why a singular phase description
-does not alone establish blowup of the underlying wavefunction. The module
+does not establish blowup of the underlying wavefunction. The module
 additionally proves that this field is harmonic and, held constant in time,
 solves the free Schrodinger equation `i*d_t psi = -(1/2)*Delta psi` with actual
 derivative operators. It has no claimed global finite-energy property and is

@@ -50,9 +50,8 @@ The completed forced endpoints are whole-space C and periodic D in the official
 problem statement. Their proofs construct the data, forces, and pre-singular
 classical candidates, then rule out every hypothetical global competitor in
 the matching contract: a smooth bounded-energy whole-space velocity-pressure
-pair for C, and a smooth periodic velocity-pressure pair for D. The C result
-does not select one solution from several weak continuations, and neither
-theorem proves a global smooth velocity.
+pair for C, and a smooth periodic velocity-pressure pair for D. Scope: see
+§"What “smooth” and “unique” mean here".
 
 The [native D proof](../Navier/Analysis/PeriodicConstructedBreakdown.lean)
 uses the selected unit-periodic candidate directly. Smooth forcing with a
@@ -81,11 +80,42 @@ fresh D receipt (local report).
 | Every compact candidate is unique against a smooth finite-energy competitor on a closed pre-singular slab | `ComparatorBridge.compact_candidate_unique_on_Icc` | Candidate properties and the competitor's local smoothness, energy, divergence, PDE and zero initial data on that slab | Dependency-ordered source rebuild plus raw axioms |
 | Every same-force competitor smooth before time one and finite-energy on each closed earlier slab develops unbounded speed at that deadline | `ConstructedFiniteTimeObstruction.selected_candidate_forces_speed_blowup_in_every_smooth_competitor` | None for the selected witness; the competitor class is explicit and no terminal trace is assumed | Direct single-file source compile plus raw axioms |
 | The selected witness excludes a same-force continuation smooth before the deadline and continuous through it, even when energy is assumed only separately on each closed pre-singular slab | `ConstructedFiniteTimeObstruction.selected_candidate_excludes_locally_finite_energy_continuation` | None | Direct single-file source compile plus raw axioms |
+| The selected candidate admits no Beale–Kato–Majda control bundle on `[0,1)` | `BKMForcedBreakdownNecessity.selected_candidate_admits_no_BKM_control` | None; the refutation consumes the candidate's own `speed_unbounded` field | Direct single-file source compile plus raw axioms |
+| Every same-force competitor smooth before time one and finite-energy on each closed earlier slab admits no Beale–Kato–Majda control bundle on `[0,1)` | `BKMForcedBreakdownNecessity.selected_candidate_forces_no_BKM_control_in_every_smooth_competitor` | None for the selected witness; the competitor class is identical to the speed-blowup row's | Direct single-file source compile plus raw axioms |
+| For every viscosity and every prescribed deadline there is a parabolically rescaled candidate whose classical evolution has uniformly finite energy before the deadline and unbounded speed at it | `ScaledConstructedBreakdown.exists_deadlineT_profile` | None; the deadline enters through `λ = T^(−1/2)` with proved endpoint law `deadlineOf λ = T` | Direct single-file source compile plus raw axioms |
+| Alternative C holds at every prescribed positive deadline: for every `ν > 0` and `T > 0` there is a rapidly decaying smooth force, vanishing for `t ≥ T₀·T` and nonzero at some `t ∈ (0,T)`, admitting no global classical solution | `DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT` | None; `T₀` is the existential raw-candidate endpoint from `CompactFutureTimeSupport`, so the support endpoint is the proved law `T₀·T`, not the asserted bound `T` | Direct single-file source compile plus raw axioms |
+
+The two deadline rows share a transport boundary, not a shared function space:
+the rescaled blow-up velocity profile of `ScaledConstructedBreakdown` (the
+energy-carrier file) and the nonexistence force package of
+`DeadlineParameterizedWholeSpaceBreakdown` (the native carrier) are parallel
+carriers related by the `nativeForce` transport and the exact iterated-Fréchet
+formula `iteratedFDerivWithin_parabolicScaledForce`. No unforced-regularity or
+periodicity-preservation claim is made by either row.
 
 All named completed declarations above currently report only `propext`,
 `Classical.choice`, and `Quot.sound`. The source attribution and adaptation
 boundary are recorded in
 [OpenAI construction provenance](OPENAI_CONSTRUCTION_PROVENANCE.md).
+
+The Beale–Kato–Majda criterion of
+[`Navier.Analysis.BealeKatoMajda`](../Navier/Analysis/BealeKatoMajda.lean) is a
+complete sharp pair at this repository's constructed breakdown. Sufficiency:
+`BKMControl.velocity_bounded` and
+`BKMControl.excludes_pointEvaluationBreakdown`. Non-vacuity of the control
+class: `BKMControl.controlZero` and
+`BKMForcedBreakdownNecessity.bkmControl_class_nonvacuous`. Necessity at the
+endpoint: [`BKMForcedBreakdownNecessity`](../Navier/Analysis/BKMForcedBreakdownNecessity.lean)
+proves `not_bkmControl_of_speedUnboundedBelow` (a field with unbounded speed
+below the horizon admits no `BKMControl`) and applies it through the carrier
+bridge `speedUnboundedBelow_of_speedUnboundedAtOne` to the selected candidate
+and every smooth same-force competitor from rest. The criterion's hypothesis is
+fully restrictive at this endpoint: no admissible profile of the proved
+blow-up mechanism satisfies it, so it cannot be weakened and remain consumable
+there. The vorticity-integral divergence `∫₀¹ ‖ω(t)‖∞ dt = ∞` of the
+constructed field is not claimed; that is the named OPEN residual in the file
+header (it needs Sobolev–Grönwall control inputs the repository does not
+construct for this profile).
 
 The reverse force estimate is quantitative: if every ordered coordinate word
 of length `n` is bounded by `C`, the full iterated Fréchet operator norm is
@@ -153,7 +183,7 @@ bound for every finite original-data mild chart. The sharper
 proved coercive estimate. What remains is to prove the mixed bound for arbitrary
 large data and then transport the lattice mild object to the exact whole-space
 velocity, pressure, smoothness, PDE and energy carrier. The existing scalar
-heat/Duhamel majorant cannot supply a fixed positive invariant radius by itself;
+heat/Duhamel majorant cannot supply a fixed positive invariant radius;
 `GlobalRegularityCrownCore.not_restart_scalar_budget_le_fixed_radius` proves
 that obstruction at its exact type.
 
@@ -205,10 +235,10 @@ terminal-bound quantifiers.
 | Physical local evolution | [PhysicalLocalEvolution](../Navier/Analysis/PhysicalLocalEvolution.lean) | For every physical divergence-free weighted datum, constructs a positive local interval and the same real trajectory carrying the initial value, evolving summability, coefficient derivatives and physical mode equation. No evolving trajectory premise is assumed. |
 | Official periodic initial data | [PeriodicInitialPhysicalEvolution](../Navier/Analysis/PeriodicInitialPhysicalEvolution.lean) | Every official smooth periodic datum has all polynomial Fourier moments and initializes the actual local physical trajectory through the exact raw encoding, with the original datum reconstructed at time zero. |
 | Pointwise Fourier balance | [PeriodicNonlinearFourierReconstruction](../Navier/Analysis/PeriodicNonlinearFourierReconstruction.lean) | Reindexes the actual absolutely convergent nonlinear product, reconstructs pressure-gradient coefficients, and supplies pointwise Fourier balance for the constructed local trajectory. Global continuation and the full classical smoothness bridge remain open. |
-| Uniform positive-interval estimates | [CriticalMildLocalUniformBootstrap](../Navier/Analysis/CriticalMildLocalUniformBootstrap.lean) | Derives one bound for second spatial moments and total coefficient time-derivative mass throughout each compact positive-time interval. Constants still depend on the local trajectory bound. |
+| Uniform positive-interval estimates | [CriticalMildLocalUniformBootstrap](../Navier/Analysis/CriticalMildLocalUniformBootstrap.lean) | Derives one bound for second spatial moments and total coefficient time-derivative mass throughout each compact positive-time interval. Constants depend on the local trajectory bound. |
 | Polynomial nonlinear moments | [CriticalMildPolynomialMomentConvolution](../Navier/Analysis/CriticalMildPolynomialMomentConvolution.lean) | The literal projected convolution maps two order-s moments to an order-(s−1) bound for every real s ≥ 1. Propagation of all orders is a separate evolving-flow argument. |
 | Countable energy differentiation | [RawHighEnergyDifferentiation](../Navier/Analysis/RawHighEnergyDifferentiation.lean), [CriticalMildEnergyEvolution](../Navier/Analysis/CriticalMildEnergyEvolution.lean) | Proves uniform convergence of finite energy-derivative sums using an inverse-frequency tail estimate, then differentiates the actual mild trajectory's countable high-frequency energy. No energy derivative is assumed. |
-| Frequency-local energy transfer | [PhysicalPeriodicHighTailFlux](../Navier/Analysis/PhysicalPeriodicHighTailFlux.lean), [RawHighEnergyConvolutionIdentity](../Navier/Analysis/RawHighEnergyConvolutionIdentity.lean), [PhysicalPeriodicTailMomentControl](../Navier/Analysis/PhysicalPeriodicTailMomentControl.lean) | Identifies the actual nonlinear pairing sum with triad flux and bounds the damped generator by the evolving high-frequency tail. The affine comparison still requires bounds on the evolving critical norm and moment; it supplies no arbitrary-data global estimate. |
+| Frequency-local energy transfer | [PhysicalPeriodicHighTailFlux](../Navier/Analysis/PhysicalPeriodicHighTailFlux.lean), [RawHighEnergyConvolutionIdentity](../Navier/Analysis/RawHighEnergyConvolutionIdentity.lean), [PhysicalPeriodicTailMomentControl](../Navier/Analysis/PhysicalPeriodicTailMomentControl.lean) | Identifies the actual nonlinear pairing sum with triad flux and bounds the damped generator by the evolving high-frequency tail. The affine comparison requires bounds on the evolving critical norm and moment; it supplies no arbitrary-data global estimate. |
 | Actual spectral energy balance | [RawHighEnergyRateIdentity](../Navier/Analysis/RawHighEnergyRateIdentity.lean), [PhysicalPeriodicEnergyBalance](../Navier/Analysis/PhysicalPeriodicEnergyBalance.lean) | Combines countable differentiation with the literal nonlinear identity to prove `dE_N/dt = 2 flux_N − 2μ D_N` along the actual mild trajectory on each positive local interval. |
 | Datum-only physical energy control | [PhysicalPeriodicTotalEnergyControl](../Navier/Analysis/PhysicalPeriodicTotalEnergyControl.lean) | Consumes physical triad cancellation and the actual energy derivative to prove total energy is nonincreasing, including chart endpoints. Off-zero energy is bounded by the initial datum's total spectral energy, independently of chart radius and horizon. This does not bound the higher graph moment. |
 | Integrated physical dissipation | [PhysicalPeriodicDissipationBudget](../Navier/Analysis/PhysicalPeriodicDissipationBudget.lean) | Proves the exact trajectory identity `E₀(A t) + 2μ∫₀ᵗD₀(A s)ds = E₀(a)` and the datum-only high-frequency bound `2μN²∫_δᵗE_N(A s)ds ≤ E₀(a)`. These estimates are independent of chart radius and horizon. Time-averaged control does not exclude narrow frequency-time concentration or supply the pointwise critical bound required for arbitrary-data global continuation. |
@@ -235,8 +265,8 @@ Local Hölder regularity and a finite Dini integral on each chart do not yield
 this uniform K: their constants may grow with the chart radius. The active
 proof lanes address the physically initialized class, nonlinear stretching, mean-drift removal,
 and exact reconstruction of the evolving coefficients under the normalization
-above. Bounds proved for the raw complex equation are not automatically
-bounds for the native physical initialization.
+above. Bounds proved for the raw complex equation are not bounds for the
+native physical initialization.
 Neither A nor B is counted as closed by these providers. The unrestricted raw
 complex target is false; its checked counterexample and the evolving-flow
 results are recorded in the fresh verification receipt (local report).
@@ -247,7 +277,7 @@ exact mixed third heat-kernel derivatives, a two-Gaussian envelope, and
 integrability of their pairing with every actual finite-energy `SolvesBefore`
 slice. The solenoidal test is identified exactly as `∇G × a`. The remaining
 cutoff product-rule expansion, spatial limit, interval-time domination, and
-time-dependent adjoint-test bridge are still required for the full mild formula.
+time-dependent adjoint-test bridge remain required for the full mild formula.
 
 [WholeSpaceSolenoidalHeatViscousIntegrability](../Navier/Analysis/WholeSpaceSolenoidalHeatViscousIntegrability.lean)
 uses those third derivatives to prove integrability of every actual diagonal
@@ -280,7 +310,7 @@ Further analytic inputs sharpen these routes:
   supplies the integrable envelope and proves the integrated limit of
   `D_i²(χ_R curl(Gτ a)) u_j` on the actual finite-energy `SolvesBefore` slice.
   The separate `∇χ_R × (Gτ a)` correction and time-limit interchange remain
-  necessary before taking the full weak-evolution limit; A is still open.
+  necessary before taking the full weak-evolution limit; A remains open.
 - [PhysicalPeriodicDissipationHeatRestart](../Navier/Analysis/PhysicalPeriodicDissipationHeatRestart.lean)
   bounds the complete off-zero mixed critical quantity of the positive-lag
   free heat restart at a good time, using only datum energy, viscosity,

@@ -87,7 +87,7 @@ scaling. Coordinate transport and positive viscosity scaling preserve the
 equation, smoothness, force decay, and the original nonexistence conclusion.
 The refined speed-transfer and force-nonzero declarations below are stated in
 the normalized unit-viscosity, deadline-one coordinates; this note does not
-silently promote them to new native theorems quantified over every viscosity.
+promote them to new native theorems quantified over every viscosity.
 
 ## Regularity and decay proved for the force
 

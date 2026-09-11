@@ -80,6 +80,11 @@ import Navier.Analysis.Enstrophy
 import Navier.Analysis.EnstrophyLimit
 import Navier.Analysis.LerayWeak
 import Navier.Analysis.PressureGaugeObstruction
+import Navier.Analysis.BKMForcedBreakdownNecessity
+import Navier.Analysis.LatticeCriticalDissipationKernel
+import Navier.Analysis.PhysicalPeriodicCriticalGoodTime
+import Navier.Analysis.ScaledConstructedBreakdown
+import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
 
 /-!
 # Raw axiom audit for the public formal infrastructure
@@ -707,3 +712,26 @@ named Pattern-A domination hypotheses (audited below).
 #print axioms Navier.Analysis.MultiFrequencyMild.multiMild_inner_frequency_eq_zero
 #print axioms Navier.Analysis.FrequencyCascadeObstruction.crossInteraction_survives_transversality
 #print axioms Navier.Analysis.LerayWeak.exists_nonzero_testFunction
+
+-- 2026-09-11 fold: BKM necessity at the constructed breakdown (Lane A), and
+-- the two lattice good-time providers previously outside the import closure.
+#print axioms Navier.Analysis.BKMForcedBreakdownNecessity.not_bkmControl_of_speedUnboundedBelow
+#print axioms Navier.Analysis.BKMForcedBreakdownNecessity.speedUnboundedBelow_of_speedUnboundedAtOne
+#print axioms Navier.Analysis.BKMForcedBreakdownNecessity.not_bkmControl_of_speedUnboundedAtOne
+#print axioms Navier.Analysis.BKMForcedBreakdownNecessity.selected_candidate_forces_no_BKM_control_in_every_smooth_competitor
+#print axioms Navier.Analysis.BKMForcedBreakdownNecessity.selected_candidate_admits_no_BKM_control
+#print axioms Navier.Analysis.BKMForcedBreakdownNecessity.bkmControl_class_nonvacuous
+#print axioms Navier.Analysis.LatticeCriticalDissipationKernel.summable_inverseFourthKernel
+#print axioms Navier.Analysis.PhysicalPeriodicCriticalGoodTime.normXm1_offZero_le_sqrt_dissipation
+#print axioms Navier.Analysis.PhysicalPeriodicCriticalGoodTime.exists_criticalGoodTime
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.residual_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.kineticEnergy_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.uniformFiniteEnergy_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.speedUnbounded_deadline
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.deadlinePackage
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.exists_deadlineT_profile
+#print axioms Navier.Analysis.ScaledConstructedBreakdown.deadlineForce_vanishing_from
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.iteratedFDerivWithin_parabolicScaledForce
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.forcedDataRapidDecay_parabolicScaled
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.isClassicalSolution_parabolicScaled
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT

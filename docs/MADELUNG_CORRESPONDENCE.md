@@ -26,8 +26,8 @@ Q=-\frac{\hbar^2}{2m}\frac{\Delta\sqrt\rho}{\sqrt\rho}.
 
 It does not supply the Navier–Stokes viscous term. For a smooth local phase,
 the resulting velocity has zero curl. Nonzero density and the topology of the
-phase matter; a fluid formulation alone does not automatically reconstruct a
-single-valued wavefunction. See [Carles, Danchin and Saut (2012)](https://arxiv.org/html/1111.4670v1)
+phase matter; a fluid formulation does not reconstruct a single-valued
+wavefunction. See [Carles, Danchin and Saut (2012)](https://arxiv.org/html/1111.4670v1)
 and [Wallstrom (1994)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.49.1613).
 
 ## A checked obstruction from the selected construction
@@ -69,6 +69,17 @@ this failure to every terminal window: for every `c > 0`, derivative threshold
 the actual support with `1 - δ < t < 1` where `‖ψ‖ < c` or `M < ‖Dψ‖`.
 The original no-regular-lift consumer now uses this theorem.
 
+The disjunction is sharp: `MadelungDegeneracySharpness` exhibits, over any
+real inner-product space and against one fixed unbounded velocity, explicit
+everywhere-nonzero differentiable decoders satisfying the exact directional
+pairing in which each disjunct alone fails: one decoder has amplitude
+identically one, so its velocity blowup forces derivative degeneration;
+another has spatial derivative uniformly bounded on every closed ball while
+its amplitude collapses toward the terminal time. Neither alternative can
+be excluded from the pairing estimate alone; excluding degeneracy for the
+selected candidate requires additional structure of the lift, such as a
+transport or energy identity for the wavefunction.
+
 ## Exact PDE frontier
 
 `PeriodicMildOfficialEquation.mildFixedPoint_officialMomentum_positiveTime`
@@ -87,8 +98,8 @@ gives dominated convergence in time, so the limit of the interval integrals
 equals the interval integral of the pointwise limit
 (`SolvesBefore.intervalIntegral_backwardHeatCurlRhs_eq_momentumDiff`), and by
 Hausdorff-uniqueness of limits this is the endpoint momentum difference.
-These are direct analytic advances toward A/B; the quantum decoder bound does
-not supply continuation.
+These are direct analytic advances toward A/B; the quantum decoder bound
+supplies no continuation.
 
 More generally, a representation whose reconstruction yields a continuous
 velocity through `[0,1] × K` contradicts
@@ -97,8 +108,7 @@ The sharper competitor theorem also applies if the reconstructed velocity solves
 the same forced equation with the same data and the required slab-local energy
 and smoothness properties; agreement then follows from comparison.
 
-A fluid singularity therefore does not by itself prove that a wavefunction
-is singular. The division by density can fail at a zero of an otherwise smooth
+A fluid singularity therefore does not prove that a wavefunction is singular. The division by density can fail at a zero of an otherwise smooth
 wavefunction. Conversely, one cannot use regularity of a wave equation to
 continue this fluid unless the reconstruction stays regular as well.
 

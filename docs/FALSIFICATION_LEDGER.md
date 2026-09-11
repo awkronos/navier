@@ -43,7 +43,7 @@ Statuses:
 | F-013 | RED | Weak convergence of approximate solutions passes the quadratic term automatically | The product \(u_n\otimes u_n\) needs strong convergence or explicit defect control; weak convergence alone is insufficient | R4/R9 compactness must expose pressure and nonlinear defects | Prove strong local compactness or carry and eliminate a defect measure |
 | F-014 | DECOMPOSED | A vorticity-direction criterion shows the direction condition is dynamically automatic | Constantin–Fefferman supplies a conditional geometric criterion, not a derivation of its hypothesis for every datum [CONSTANTIN_FEFFERMAN1993] | R3's first residual is the dynamical coherence estimate | Derive coherence on the high-vorticity set from the exact evolution |
 | F-015 | RED | Fefferman C/D are defined as zero-force blowup statements | The official C/D statements quantify an admissible smooth force and conclude absence of a global physically reasonable solution [FEFFERMAN2000] | Do not replace the official target by a narrower paraphrase | Treat zero-force breakdown as a stronger optional subroute; retain force in the exact target |
-| F-016 | RED | The official wording of C/D specifically requires a finite-time blowup profile | The official conclusion is nonexistence of a global solution satisfying the listed clauses; it does not prescribe a profile/mechanism [FEFFERMAN2000] | A local-theory equivalence may not be assumed silently | Prove any equivalence as a separate bridge, or use the exact nonexistence conclusion |
+| F-016 | RED | The official wording of C/D specifically requires a finite-time blowup profile | The official conclusion is nonexistence of a global solution satisfying the listed clauses; it does not prescribe a profile/mechanism [FEFFERMAN2000] | A local-theory equivalence is not assumed without proof | Prove any equivalence as a separate bridge, or use the exact nonexistence conclusion |
 | F-017 | QUARANTINED | Blowup for Tao's averaged equation is blowup for Navier–Stokes | The averaged bilinear operator is different from the exact Leray-projected nonlinearity [TAO2016] | Averaged blowup is an obstruction to generic positive arguments only | Prove an exact-symbol embedding before any C/D use |
 | F-018 | RED | A compiling endpoint wrapper establishes scientific closure when its payload is assumed or axiomatized | Dependency/axiom inspection distinguishes a checked implication from realization of its premise | Wrapper progress is wiring and keeps frontier status unchanged | Supply the lower payload and rerun raw axiom/dependency audits |
 | F-019 | QUARANTINED | A two-dimensional, axisymmetric, bounded-domain, hyperdissipative, or Euler theorem can be reported as A | At least one load-bearing dimension/domain/dissipation/nonlinearity field differs | Model results remain benchmarks | Prove a field-by-field transfer theorem to the exact whole-space equation |
@@ -84,6 +84,6 @@ Every new entry must record:
 6. links to superseding ledger IDs without erasing the original.
 
 A route is killed only at the granularity of the tested claim. A counterexample
-to a proposed sign estimate does not by itself kill all exact-structure
+to a proposed sign estimate kills that estimate, not all exact-structure
 approaches; it forces the next proposal to be narrower and to explain the
 witness.

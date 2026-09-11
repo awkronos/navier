@@ -140,7 +140,7 @@ The lattice mild path sharpens the third row. A proved coercive estimate turns
 latter yields a cofinal global mild chain. The missing mixed bound is uniform
 over all finite original-data charts. Even after proving it, a faithful bridge
 must reconstruct the whole-space velocity, pressure, PDE, smoothness and energy
-clauses; the present lattice carrier does not silently provide that bridge.
+clauses; the present lattice carrier does not provide that bridge.
 
 See the [claim and frontier map](RESULT_MAP.md) for the complete public
 claim-to-declaration table and a frozen compiler receipt.
@@ -214,8 +214,8 @@ construction modules and the 66-module finite-energy comparison closure all
 compiled from the reviewed source snapshot. Raw transitive axiom output for the selected
 candidate, comparison theorem, transport endpoint, and final alternative-C
 consumer contains only `propext`, `Classical.choice`, and `Quot.sound`.
-The audit concerns these named declarations and does not convert the unresolved
-alternative A into a theorem. Current incremental evidence is recorded in
+The audit concerns these named declarations (scope: see the introduction).
+Current incremental evidence is recorded in
 [the result map](RESULT_MAP.md) and dated receipts. The 2026-09-09 numerical
 review passed 32 Python tests and 11 Rust library tests; two device-specific
 Rust tests were ignored in that library invocation. The four construction
@@ -231,9 +231,8 @@ python3 -m unittest discover -s tests -v
 python3 -m unittest discover -s ../reality/solvers/navier -p 'test_*.py' -v
 ```
 
-The original A/C endpoints remain distinct: C is constructed here and A remains
-open. No external dependency or unverified analytic axiom is added by this
-integration.
+C is constructed here; unforced A remains open. No external dependency or
+unverified analytic axiom is added by this integration.
 
 ## Final private review, 2026-09-08
 
