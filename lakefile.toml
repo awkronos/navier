@@ -5,7 +5,7 @@ defaultTargets = ["Navier"]
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-version = "git#v4.31.0"
+version = "git#v4.34.0-rc2"
 
 [[lean_lib]]
 name = "Navier"
