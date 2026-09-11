@@ -34,6 +34,7 @@ import Navier.Analysis.CriticalMildRestart
 import Navier.Analysis.CriticalMildRestartFixedPoint
 import Navier.Analysis.CriticalMildSecondStrongDerivative
 import Navier.Analysis.CriticalMildSelfMap
+import Navier.Analysis.CriticalMildSmallDataGlobal
 import Navier.Analysis.CriticalMildTrajectoryReality
 import Navier.Analysis.CriticalProfileAction
 import Navier.Analysis.CurlDerivativeBridge
@@ -134,6 +135,7 @@ import Navier.Analysis.PressureGaugeObstruction
 import Navier.Analysis.PressureL2Riesz
 import Navier.Analysis.PressureNormalization
 import Navier.Analysis.PressurePoisson
+import Navier.Analysis.MadelungTransportIdentity
 import Navier.Analysis.QuantumVortexRegularity
 import Navier.Analysis.QuantumVortexTopologyChange
 import Navier.Analysis.QuantumVortexWinding
