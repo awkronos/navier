@@ -67,7 +67,7 @@ set_option autoImplicit false
 set_option linter.unusedSectionVars false
 noncomputable section
 
-open scoped Topology BigOperators
+open scoped Topology BigOperators ContDiff
 open Filter Set intervalIntegral MeasureTheory
 
 namespace Navier.Analysis.MadelungResidualPrimitives
@@ -197,7 +197,203 @@ theorem divergenceFree_evades_uniform_rigidity :
 
 /-! ## 2. (Residual (1)) The joint `(t, x)` regularity carrier -/
 
--- (filled by the Priority 2 slice)
+/-- The spatial partial of a joint-`HasFDerivAt` density: the joint derivative
+`L` restricts to the spatial derivative, `L (0, d) = Dρ(t,·)(x) d`.  This is
+the component that separate-slice differentiability cannot assemble. -/
+theorem joint_spatialPartial {ρ : ℝ → Space → ℝ} {L : SpaceTime →L[ℝ] ℝ} {p : SpaceTime}
+    (hjoint : HasFDerivAt (fun q : SpaceTime => ρ q.1 q.2) L p) (d : Space) :
+    L (0, d) = fderiv ℝ (ρ p.1) p.2 d := by
+  have h2 : HasFDerivAt (fun y : Space => (p.1, y))
+      (ContinuousLinearMap.inr ℝ ℝ Space) p.2 := by
+    have hlin : HasFDerivAt
+        (fun y : Space => (p.1, (0 : Space)) + ContinuousLinearMap.inr ℝ ℝ Space y)
+        (ContinuousLinearMap.inr ℝ ℝ Space) p.2 :=
+      (ContinuousLinearMap.hasFDerivAt (f := ContinuousLinearMap.inr ℝ ℝ Space)
+        (x := p.2)).const_add (p.1, (0 : Space))
+    have key : (fun y : Space => (p.1, y)) =
+        fun y : Space => (p.1, (0 : Space)) + ContinuousLinearMap.inr ℝ ℝ Space y := by
+      funext y
+      simp [ContinuousLinearMap.inr_apply]
+    rw [key]
+    exact hlin
+  have hc := HasFDerivAt.comp (f := fun y : Space => (p.1, y)) (x := p.2) hjoint h2
+  have hfun : (fun q : SpaceTime => ρ q.1 q.2) ∘ (fun y : Space => (p.1, y)) = ρ p.1 := by
+    funext y
+    rfl
+  have hfz : fderiv ℝ (ρ p.1) p.2 = L.comp (ContinuousLinearMap.inr ℝ ℝ Space) := by
+    rw [← hc.fderiv, hfun]
+  rw [hfz]
+  simp [ContinuousLinearMap.comp_apply, ContinuousLinearMap.inr_apply]
+
+/-- **Residual (1).**  Along-flow transport identity for a general density under
+the joint `(t, x)` regularity carrier: with the single `HasFDerivAt`
+hypothesis on the joint function `p ↦ ρ p.1 p.2` (the carrier the
+transport-identity module names as missing), the continuity equation implies
+`d/dt ρ(t, φ(t, x)) = -ρ · div u` along ANY time-dependent path `φ` whose
+velocity matches `u` at the evaluation point — no spatial uniformity of `ρ` is
+assumed anywhere in the proof. -/
+theorem joint_density_transport_along_flow
+    {ρ : ℝ → Space → ℝ} {u : VelocityField} {φ : ℝ → Space → Space}
+    {L : SpaceTime →L[ℝ] ℝ} {t : ℝ} {x : Space}
+    (hjoint : HasFDerivAt (fun p : SpaceTime => ρ p.1 p.2) L (t, φ t x))
+    (hcont : densityContinuityEquation ρ u)
+    (hflow : HasDerivAt (fun s : ℝ => φ s x) (u (t, φ t x)) t) :
+    HasDerivAt (fun s : ℝ => ρ s (φ s x))
+      (-(ρ t (φ t x) * spatialDivergence u t (φ t x))) t := by
+  set y : Space := φ t x
+  have hsp : ∀ d : Space, L (0, d) = fderiv ℝ (ρ t) y d := by
+    intro d
+    simpa using joint_spatialPartial hjoint d
+  have hc : HasDerivAt (fun s : ℝ => ρ s y)
+      (-(fderiv ℝ (ρ t) y (u (t, y)) + ρ t y * spatialDivergence u t y)) t :=
+    hcont t y
+  have htime : HasDerivAt (fun s : ℝ => ρ s y) (L (1, (0 : Space))) t := by
+    have h2 : HasDerivAt (fun s : ℝ => (s, y)) (1, (0 : Space)) t :=
+      (hasDerivAt_id (x := t)).prodMk (hasDerivAt_const t y)
+    have h3 := HasFDerivAt.comp (f := fun s : ℝ => (s, y)) (x := t) hjoint h2.hasFDerivAt
+    refine h3.hasDerivAt.congr_deriv ?_
+    simp [ContinuousLinearMap.comp_apply, ContinuousLinearMap.toSpanSingleton_apply]
+  have hw : L (1, (0 : Space)) =
+      -(fderiv ℝ (ρ t) y (u (t, y)) + ρ t y * spatialDivergence u t y) :=
+    HasDerivAt.unique htime hc
+  have hval : L (1, u (t, y)) = -(ρ t y * spatialDivergence u t y) := by
+    have hsplit : L (1, (0 : Space)) + L (0, u (t, y)) = L (1, u (t, y)) := by
+      rw [← map_add]
+      congr 1
+      ext <;> simp
+    rw [← hsplit, hw, hsp]
+    ring
+  have hfg : HasDerivAt (fun s : ℝ => ρ s (φ s x)) (L (1, u (t, y))) t := by
+    have h2 : HasDerivAt (fun s : ℝ => (s, φ s x)) (1, u (t, y)) t :=
+      (hasDerivAt_id (x := t)).prodMk hflow
+    have h3 :=
+      HasFDerivAt.comp (f := fun s : ℝ => (s, φ s x)) (x := t) hjoint h2.hasFDerivAt
+    refine h3.hasDerivAt.congr_deriv ?_
+    simp [ContinuousLinearMap.comp_apply, ContinuousLinearMap.toSpanSingleton_apply]
+  exact hfg.congr_deriv hval
+
+/-- The same identity with the `ContDiff` joint carrier (the other form named
+in residual (1)): joint infinite smoothness at the evaluation point replaces
+the explicit `HasFDerivAt`. -/
+theorem joint_density_transport_along_flow_of_contDiffAt
+    {ρ : ℝ → Space → ℝ} {u : VelocityField} {φ : ℝ → Space → Space} {t : ℝ} {x : Space}
+    (hcd : ContDiffAt ℝ ∞ (fun p : SpaceTime => ρ p.1 p.2) (t, φ t x))
+    (hcont : densityContinuityEquation ρ u)
+    (hflow : HasDerivAt (fun s : ℝ => φ s x) (u (t, φ t x)) t) :
+    HasDerivAt (fun s : ℝ => ρ s (φ s x))
+      (-(ρ t (φ t x) * spatialDivergence u t (φ t x))) t :=
+  joint_density_transport_along_flow (hcd.differentiableAt (by simp)).hasFDerivAt hcont hflow
+
+/-- Satisfiability of the joint-carrier hypotheses: the transport-compatible
+collapse decoder of the transport-identity module instantiates
+`joint_density_transport_along_flow` and recovers
+`MadelungTransportIdentity.cpsi_transport_along_flow` from the general form. -/
+theorem cpsi_density_joint_transport (x : Space) {t : ℝ} (ht : t ≠ 1) :
+    HasDerivAt (fun s : ℝ => ‖cpsi s (flowVel s x)‖ ^ 2)
+      (-(‖cpsi t (flowVel t x)‖ ^ 2 * spatialDivergence velV t (flowVel t x))) t := by
+  have h1 : HasFDerivAt (fun s : ℝ => (1 - s) ^ 6)
+      (ContinuousLinearMap.toSpanSingleton ℝ (-6 * (1 - t) ^ 5)) t := by
+    refine hasFDerivAt_iff_hasDerivAt.mpr ?_
+    have h := hasDerivAt_normSq_cpsi (x := (0 : Space)) t
+    have heqf : (fun s : ℝ => ‖cpsi s (0 : Space)‖ ^ 2) = fun s : ℝ => (1 - s) ^ 6 :=
+      funext (normSq_cpsi · (0 : Space))
+    rw [heqf] at h
+    exact h.congr_deriv (by simp [ContinuousLinearMap.toSpanSingleton_apply])
+  have h2 : HasFDerivAt (fun p : SpaceTime => p.1)
+      (ContinuousLinearMap.fst ℝ ℝ Space) (t, flowVel t x) := by
+    have key : (fun p : SpaceTime => p.1) = ⇑(ContinuousLinearMap.fst ℝ ℝ Space) := rfl
+    rw [key]
+    exact ContinuousLinearMap.hasFDerivAt
+      (f := ContinuousLinearMap.fst ℝ ℝ Space) (x := (t, flowVel t x))
+  have hjoint : HasFDerivAt (fun p : SpaceTime => ‖cpsi p.1 p.2‖ ^ 2)
+      ((ContinuousLinearMap.toSpanSingleton ℝ (-6 * (1 - t) ^ 5)).comp
+        (ContinuousLinearMap.fst ℝ ℝ Space)) (t, flowVel t x) := by
+    have h3 := HasFDerivAt.comp (f := fun p : SpaceTime => p.1) (x := (t, flowVel t x)) h1 h2
+    have hfun : (fun p : SpaceTime => ‖cpsi p.1 p.2‖ ^ 2) =
+        (fun s : ℝ => (1 - s) ^ 6) ∘ (fun p : SpaceTime => p.1) := by
+      funext p
+      simp [Function.comp_apply, normSq_cpsi]
+    rw [hfun]
+    exact h3
+  refine joint_density_transport_along_flow (φ := fun s z => flowVel s z) hjoint
+    cpsi_satisfies_densityContinuity (hasDerivAt_flowVel x ht)
+
+/-- The joint-carrier hypotheses also hold for a genuinely spatially
+NON-uniform density with a non-stationary spatial derivative, against the
+divergence-free zero field, and the along-flow conclusion is obtained
+through `joint_density_transport_along_flow`. -/
+theorem nonuniform_transport_witness :
+    ∃ (ρ : ℝ → Space → ℝ) (u : VelocityField) (φ : ℝ → Space → Space),
+      (∀ t : ℝ, ∀ x : Space,
+          HasFDerivAt (fun p : SpaceTime => ρ p.1 p.2)
+            (fderiv ℝ (fun p : SpaceTime => ρ p.1 p.2) (t, x)) (t, x)) ∧
+      densityContinuityEquation ρ u ∧
+      (∀ t : ℝ, ∀ x : Space, HasDerivAt (fun s : ℝ => φ s x) (u (t, φ t x)) t) ∧
+      (∃ x y : Space, ρ (0 : ℝ) x ≠ ρ (0 : ℝ) y) ∧
+      (∀ t : ℝ, ∀ x : Space, HasDerivAt (fun s : ℝ => ρ s (φ s x))
+          (-(ρ t (φ t x) * spatialDivergence u t (φ t x))) t) := by
+  have hj : ∀ t : ℝ, ∀ x : Space,
+      HasFDerivAt (fun p : SpaceTime => (fun _ (z : Space) => (1 : ℝ) + ‖z‖ ^ 2) p.1 p.2)
+        (fderiv ℝ (fun p : SpaceTime =>
+            (fun _ (z : Space) => (1 : ℝ) + ‖z‖ ^ 2) p.1 p.2) (t, x)) (t, x) := by
+    intro t x
+    have hsnd : DifferentiableAt ℝ (fun q : SpaceTime => ‖q.2‖ ^ 2) (t, x) :=
+      ((differentiableAt_snd (p := (t, x))).hasFDerivAt.norm_sq).differentiableAt
+    refine ((differentiableAt_const (c := (1 : ℝ)) (x := (t, x))).add hsnd).hasFDerivAt
+  have hc : densityContinuityEquation (fun _ (z : Space) => (1 : ℝ) + ‖z‖ ^ 2) 0 := by
+    intro t x
+    refine (hasDerivAt_const t ((1 : ℝ) + ‖x‖ ^ 2)).congr_deriv ?_
+    have hsl : (fun (s : ℝ) (z : Space) => (1 : ℝ) + ‖z‖ ^ 2) t =
+        fun z : Space => (1 : ℝ) + ‖z‖ ^ 2 := rfl
+    have hz : (0 : VelocityField) (t, x) = (0 : Space) := rfl
+    have hfz : fderiv ℝ (fun z : Space => (1 : ℝ) + ‖z‖ ^ 2) x (0 : Space) = 0 := by
+      simp
+    have hdiv : ∀ z : Space, spatialDivergence (0 : VelocityField) t z = 0 := by
+      intro z
+      simp [spatialDivergence, spatialDerivative]
+    rw [hsl, hz, hfz, hdiv]
+    simp
+  have hfl : ∀ t : ℝ, ∀ x : Space,
+      HasDerivAt (fun s : ℝ => (fun _ (z : Space) => z) s x)
+        ((0 : VelocityField) (t, (fun _ (z : Space) => z) t x)) t := by
+    intro t x
+    exact hasDerivAt_const t x
+  refine ⟨fun _ z => (1 : ℝ) + ‖z‖ ^ 2, 0, fun _ z => z, hj, hc, hfl,
+    ⟨coordinateVector 0, 0, ?_⟩, ?_⟩
+  · norm_num [coordinateVector]
+  · intro t x
+    refine joint_density_transport_along_flow (ρ := fun (s : ℝ) (z : Space) => (1 : ℝ) + ‖z‖ ^ 2)
+      (u := 0) (φ := fun (_ : ℝ) (z : Space) => z)
+      (L := fderiv ℝ (fun p : SpaceTime =>
+        (fun (s : ℝ) (z : Space) => (1 : ℝ) + ‖z‖ ^ 2) p.1 p.2) (t, x)) (t := t) (x := x) ?_ hc
+      (hfl t x)
+    exact hj t x
+
+/-- The hypotheses are not ambient: the genuinely joint-smooth density
+`(t, x) ↦ t + ‖x‖²` is `C^∞` on all of spacetime, yet it satisfies NO
+continuity equation against the zero field — its intrinsic time derivative is
+`1`, while the continuity equation against a vanishing velocity demands
+derivative `0`.  Dropping `densityContinuityEquation` from
+`joint_density_transport_along_flow` would therefore make its conclusion
+false, so the theorem consumes real structure. -/
+theorem conclusion_requires_continuity :
+    ¬ densityContinuityEquation (fun (s : ℝ) (z : Space) => s + ‖z‖ ^ 2) 0 := by
+  intro h
+  have hc := h 0 0
+  have hsl0 : (fun (s : ℝ) (z : Space) => s + ‖z‖ ^ 2) 0 =
+      fun z : Space => (0 : ℝ) + ‖z‖ ^ 2 := rfl
+  have hz0 : (0 : VelocityField) (0, (0 : Space)) = (0 : Space) := rfl
+  have hfz : fderiv ℝ (fun z : Space => (0 : ℝ) + ‖z‖ ^ 2) (0 : Space) (0 : Space) = 0 := by
+    simp
+  have hdiv : spatialDivergence (0 : VelocityField) (0 : ℝ) (0 : Space) = 0 := by
+    simp [spatialDivergence, spatialDerivative]
+  rw [hsl0, hz0, hfz, hdiv] at hc
+  have h1 : HasDerivAt (fun s : ℝ =>
+      (fun (s' : ℝ) (z : Space) => s' + ‖z‖ ^ 2) s (0 : Space)) 1 0 := by
+    refine ((hasDerivAt_id (x := (0 : ℝ))).add
+      (hasDerivAt_const 0 (‖(0 : Space)‖ ^ 2))).congr_deriv ?_
+    norm_num
+  exact absurd (HasDerivAt.unique h1 (hc.congr_deriv (by simp))) one_ne_zero
 
 end Navier.Analysis.MadelungResidualPrimitives
 
@@ -210,3 +406,10 @@ end Navier.Analysis.MadelungResidualPrimitives
 #print axioms Navier.Analysis.MadelungResidualPrimitives.uniform_density_transport_ode
 #print axioms
   Navier.Analysis.MadelungResidualPrimitives.divergenceFree_evades_uniform_rigidity
+#print axioms Navier.Analysis.MadelungResidualPrimitives.joint_spatialPartial
+#print axioms Navier.Analysis.MadelungResidualPrimitives.joint_density_transport_along_flow
+#print axioms
+  Navier.Analysis.MadelungResidualPrimitives.joint_density_transport_along_flow_of_contDiffAt
+#print axioms Navier.Analysis.MadelungResidualPrimitives.cpsi_density_joint_transport
+#print axioms Navier.Analysis.MadelungResidualPrimitives.nonuniform_transport_witness
+#print axioms Navier.Analysis.MadelungResidualPrimitives.conclusion_requires_continuity
