@@ -125,7 +125,7 @@ def zeroModeEvalCLM : WeightedLatticeBanach →L[ℂ] ComplexE3 :=
       map_add' := by intro u v; rfl
       map_smul' := by intro c u; rfl }
     1
-    (fun u => by simpa using norm_weightedLattice_eval_le u 0)
+    (fun u => by rw [one_mul]; exact norm_weightedLattice_eval_le u 0)
 
 @[simp] theorem zeroModeEvalCLM_apply (u : WeightedLatticeBanach) :
     zeroModeEvalCLM u = u 0 :=

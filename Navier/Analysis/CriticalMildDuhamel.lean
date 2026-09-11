@@ -117,7 +117,7 @@ theorem complexEuclideanNorm_spectralDuhamel_le
       intervalIntegral.norm_integral_le_integral_norm ht
     _ ≤ ∫ _s in (0 : ℝ)..t, ‖complexFrequency p‖ * V * W :=
       intervalIntegral.integral_mono_on ht hintegrable.norm
-        intervalIntegral.intervalIntegrable_const hpoint
+        intervalIntegrable_const hpoint
     _ = ‖complexFrequency p‖ * V * W * |t| := by
       rw [intervalIntegral.integral_const, smul_eq_mul]
       rw [sub_zero, abs_of_nonneg ht]

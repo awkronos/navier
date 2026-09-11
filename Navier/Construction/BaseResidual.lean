@@ -2050,6 +2050,8 @@ noncomputable def swapInner : Inner ≃ₗᵢ[ℝ] Inner where
   toLinearEquiv := LinearEquiv.prodComm ℝ ℝ ℝ
   norm_map' := by intro w; exact max_comm _ _
 
+@[simp] theorem swapInner_apply (y : Inner) : swapInner y = ⟨y.2, y.1⟩ := rfl
+
 noncomputable def activeWindow (a b : ℝ) : Set Inner :=
   Ioo (Real.exp a) (Real.exp b) ×ˢ Icc (-1) 1
 
@@ -2081,7 +2083,7 @@ theorem activeZeta_edgeJets {a b c : ℝ} (hab : a < b) (hc : 0 < c) :
   have he : activeZeta c a b =ᶠ[𝓝 w] (radialPullback (logWeightProfile c a b) ∘ swapInner) := by
     filter_upwards [continuousAt_fst.eventually (Ioi_mem_nhds hX)] with y hy
     simp [activeZeta, radialWeight, hy, radialPullback, logChart, logWeightProfile,
-      swapInner]
+      swapInner_apply]
   rw [(SolenoidalDiagonal.iteratedFDeriv_eventuallyEq he m).self_of_nhds,
     swapInner.norm_iteratedFDeriv_comp_right]
   have hbound := hb w.2 hw.2 w.1 hw.1

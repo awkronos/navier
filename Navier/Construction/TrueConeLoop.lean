@@ -471,7 +471,8 @@ theorem exists_family_choices {X : Type*} [TopologicalSpace X]
     Nonempty (FamilyChoices a m p₁ p₂ K B) := by
   obtain ⟨amin, hamin, haminle⟩ := UniformCone.positive_uniform_margin hK ha.continuousOn haK
   obtain ⟨ep, hep, heple⟩ := UniformCone.positive_uniform_margin hK
-    ((hp₁.fun_add (hp₂.fun_mul hm)).sub continuous_const).continuousOn
+    (show ContinuousOn (fun x : X => p₁ x + p₂ x * m x - 2) K from
+      ((hp₁.fun_add (hp₂.fun_mul hm)).sub continuous_const).continuousOn)
     (fun x hx => sub_pos.mpr (hPK x hx))
   let d := ep / 2
   have hd : 0 < d := by dsimp [d]; positivity
@@ -486,7 +487,8 @@ theorem exists_family_choices {X : Type*} [TopologicalSpace X]
   have hnom : Continuous (fun x => nominalSpeed (a x) (m x)) :=
     ha.mul (continuous_const.add (hm.pow 2))
   obtain ⟨eb, heb, heble⟩ := UniformCone.positive_uniform_margin hB
-    (hnom.sub continuous_const).continuousOn (fun x hx => sub_pos.mpr (htrueB x hx))
+    (show ContinuousOn (fun x : X => nominalSpeed (a x) (m x) - 2) B from
+      (hnom.sub continuous_const).continuousOn) (fun x hx => sub_pos.mpr (htrueB x hx))
   let δ := min 1 (min eu eb)
   have hδ : 0 < δ := lt_min (by norm_num) (lt_min heu heb)
   have hδu : δ ≤ eu := (min_le_right _ _).trans (min_le_left _ _)

@@ -286,9 +286,12 @@ theorem fourier_postcompCLM_apply {F G : Type*} [NormedAddCommGroup F] [NormedSp
     (𝓕 (SchwartzMap.postcompCLM (𝕜 := ℂ) L g)) ξ = L ((𝓕 g) ξ) := by
   have hint : Integrable (fun v : EuclSpace => 𝐞 (-inner ℝ v ξ) • (g v : F)) volume := by
     have c : Continuous fun v : EuclSpace => 𝐞 (-inner ℝ v ξ) := by fun_prop
-    simp_rw [← integrable_norm_iff (c.aestronglyMeasurable.smul g.integrable.aestronglyMeasurable),
-      Circle.norm_smul]
-    exact g.integrable.norm
+    refine (integrable_norm_iff (c.aestronglyMeasurable.smul
+      g.integrable.aestronglyMeasurable)).mp ?_
+    convert g.integrable.norm using 1
+    any_goals (try ext v)
+    any_goals (try simp [Circle.norm_smul])
+    any_goals (try exact inferInstance)
   rw [SchwartzMap.fourier_coe, SchwartzMap.fourier_coe, Real.fourier_eq, Real.fourier_eq]
   simp only [SchwartzMap.postcompCLM_apply]
   rw [← L.integral_comp_comm hint]

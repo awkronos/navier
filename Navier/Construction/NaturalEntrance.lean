@@ -401,8 +401,9 @@ theorem referenceRemainder_at_chi_zero {h j σ : ℝ} {P0 : ℝ → ℝ}
 theorem chi_continuous (h j : ℝ) {σ : ℝ} (hσ : 0 < σ) :
     Continuous (NaturalAxisData.chi h j σ) := by
   have hH := (NaturalAxisData.H_contDiff h j).continuous
-  apply (hH.pow 2).div ((hH.pow 2).fun_add continuous_const)
+  apply (hH.pow 2).div₀ ((hH.pow 2).fun_add continuous_const)
   intro η
+  simp only [Pi.pow_apply]
   positivity
 
 theorem reference_source_absorption {h j σ : ℝ} {P0 : ℝ → ℝ}

@@ -646,7 +646,7 @@ theorem integrableOn_scaled_bsGradKernel_euclideanAnnulus
       subst z
       have hzero : officialEuclideanNorm (0 : Space) = 0 := by
         simp [officialEuclideanNorm, officialEuclideanPoint]
-      dsimp only [s, Set.mem_setOf_eq] at hz
+      dsimp only [s, Set.mem_ofPred_eq] at hz
       rw [hzero] at hz
       linarith
     have hrpos : 0 < officialEuclideanNorm z := hε.trans hz.1

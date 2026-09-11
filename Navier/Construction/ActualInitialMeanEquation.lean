@@ -503,7 +503,7 @@ private theorem conjugatePair_zero (a : Point → ℂ) (x : Point) :
   classical
   change Finsupp.single (1 : ℤ) (fun y => a y / 2) 0 x +
     (starRingEnd ℂ) (Finsupp.single (1 : ℤ) (fun y => a y / 2) 0 x) = 0
-  have hm := congrFun (AddMonoidAlgebra.single_apply
+  have hm := congrFun (AddMonoidAlgebra.coeff_single_apply
     (a := (1 : ℤ)) (a' := (0 : ℤ)) (b := fun y => a y / 2)) x
   change Finsupp.single (1 : ℤ) (fun y => a y / 2) 0 x = _ at hm
   simpa only [hm, if_neg (by norm_num : (1 : ℤ) ≠ 0), Pi.zero_apply,

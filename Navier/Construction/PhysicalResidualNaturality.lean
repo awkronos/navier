@@ -68,7 +68,7 @@ omit [NormedAddCommGroup D] [NormedSpace ℝ D] in
 @[simp] theorem constantCoefficient_coeff (f : D → ℂ) (j : ℤ) :
     (constantCoefficient f).coeff j = if j = 0 then f else 0 := by
   funext x
-  have hs := congrFun (AddMonoidAlgebra.single_apply
+  have hs := congrFun (AddMonoidAlgebra.coeff_single_apply
     (a := (0 : ℤ)) (a' := j) (b := f)) x
   change (constantCoefficient f).coeff j x = _ at hs
   simpa only [ite_apply, Pi.zero_apply, eq_comm] using hs
@@ -78,7 +78,7 @@ omit [NormedAddCommGroup D] [NormedSpace ℝ D] in
     (constantCoefficient f * a) j x = f x * a j x := by
   unfold constantCoefficient AddMonoidAlgebra.coeff
   simpa only [neg_zero, zero_add, Pi.mul_apply] using
-    congrFun (AddMonoidAlgebra.single_mul_apply a f 0 j) x
+    congrFun (AddMonoidAlgebra.coeff_single_mul_apply a f 0 j) x
 
 namespace CoefficientsOn
 

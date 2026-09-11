@@ -74,7 +74,7 @@ theorem smoothCoefficients_constant {U : Set D} {f : D → ℂ}
   · subst j
     have he : (constantCoefficient f).coeff 0 = f := by
       ext x
-      have hs := congrFun (AddMonoidAlgebra.single_apply
+      have hs := congrFun (AddMonoidAlgebra.coeff_single_apply
         (a := (0 : ℤ)) (a' := (0 : ℤ)) (b := f)) x
       change (constantCoefficient f).coeff 0 x = _ at hs
       simpa [constantCoefficient] using hs
@@ -474,7 +474,7 @@ omit [NormedAddCommGroup D] [NormedSpace ℝ D] in
 @[simp] theorem realCoefficients_apply (c : Coefficients D) (j : ℤ) (x : D) :
     realCoefficients c j x = (2 : ℂ)⁻¹ * (c j x + conj (c (-j) x)) := by
   rw [realCoefficients, constantCoefficient]
-  have hmul := congrFun (AddMonoidAlgebra.single_mul_apply
+  have hmul := congrFun (AddMonoidAlgebra.coeff_single_mul_apply
     (c + conjugateReverse c) (fun _ : D => (2 : ℂ)⁻¹) 0 j) x
   change ((AddMonoidAlgebra.single 0 (fun _ : D => (2 : ℂ)⁻¹) *
     (c + conjugateReverse c)).coeff j) x = _ at hmul
@@ -536,12 +536,11 @@ theorem extract_field (c : Coefficients D) (k : ℝ) (Φ : D → ℝ)
   simp_rw [← HarmonicFields.field_mul]
   rw [angularMean_field _ k Φ hkp x]
   change (c * AddMonoidAlgebra.single (-j) (fun _ : D => (1 : ℂ))).coeff 0 x = c.coeff j x
-  have hmul := congrFun (AddMonoidAlgebra.mul_single_apply
+  have hmul := congrFun (AddMonoidAlgebra.coeff_mul_single_apply
     c (fun _ : D => (1 : ℂ)) (-j) 0) x
   change (c * AddMonoidAlgebra.single (-j) (fun _ : D => (1 : ℂ))).coeff 0 x = _ at hmul
   rw [hmul]
   simp only [neg_neg, zero_add, Pi.mul_apply, mul_one]
-  rfl
 
 omit [NormedAddCommGroup D] [NormedSpace ℝ D] in
 /-- For a nonzero angular frequency the coefficients are uniquely determined by the field. -/

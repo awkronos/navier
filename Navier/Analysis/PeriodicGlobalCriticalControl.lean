@@ -446,7 +446,15 @@ theorem tsum_highOutputPairMass_le_highInputTails
     _ = carrierHighTail (N / 2) u * ‖v‖ +
         ‖u‖ * carrierHighTail (N / 2) v := by
       dsimp [carrierHighTail, au, av, bu, bv]
-      simp [lp.norm_eq_tsum_rpow]
+      have hnu : ∑' k : LatticeMode, ‖u k‖ = ‖u‖ := by
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one]
+      have hnv : ∑' k : LatticeMode, ‖v k‖ = ‖v‖ := by
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one]
+      rw [← hnu, ← hnv,
+        mul_comm (∑' k : LatticeMode, ‖u k‖)
+          (∑' k : LatticeMode, if (N / 2 : ℝ) ≤ latticeModeSize k then ‖v k‖ else 0)]
 
 /-! ## Raw-complex mean drift mechanism -/
 
@@ -578,18 +586,74 @@ def rawMeanDriftCarrier (c : ℝ) (z : ℂ) : WeightedLatticeBanach :=
 
 theorem rawMeanDriftCarrier_apply_zero (c : ℝ) (z : ℂ) :
     rawMeanDriftCarrier c z 0 = WithLp.toLp 2 (rawMeanCoefficient c) := by
-  simp [rawMeanDriftCarrier, lp.single_apply, rawDriftMode_ne_zero]
+  set a : ComplexE3 := WithLp.toLp 2 (rawMeanCoefficient c)
+  set b : ComplexE3 := WithLp.toLp 2 (rawTransverseCoefficient z)
+  set w : ℂ := (latticeModeWeight rawDriftMode : ℂ)
+  set E : LatticeMode → Type := fun _ : LatticeMode => ComplexE3
+  calc rawMeanDriftCarrier c z 0
+      = (lp.single (E := E) 1 (0 : LatticeMode) a) 0 +
+          (lp.single (E := E) 1 rawDriftMode (w • b)) 0 :=
+        ((congrArg (fun h : LatticeMode → ComplexE3 => h 0)
+          (lp.coeFn_add (E := E)
+            (f := lp.single (E := E) 1 (0 : LatticeMode) a)
+            (g := lp.single (E := E) 1 rawDriftMode (w • b))))).trans
+          (Pi.add_apply _ _ _)
+    _ = a + (lp.single (E := E) 1 rawDriftMode (w • b)) 0 :=
+        congrArg (fun x : ComplexE3 => x + (lp.single (E := E) 1 rawDriftMode (w • b)) 0)
+          (lp.single_apply_self (E := E) 1 (0 : LatticeMode) a)
+    _ = a + 0 :=
+        congrArg (fun x : ComplexE3 => a + x)
+          (lp.single_apply_ne (E := E) 1 rawDriftMode (w • b)
+            (Ne.symm rawDriftMode_ne_zero))
+    _ = a := add_zero a
 
 theorem rawMeanDriftCarrier_apply_mode (c : ℝ) (z : ℂ) :
     rawMeanDriftCarrier c z rawDriftMode =
       (latticeModeWeight rawDriftMode : ℂ) •
         WithLp.toLp 2 (rawTransverseCoefficient z) := by
-  simp [rawMeanDriftCarrier, lp.single_apply, rawDriftMode_ne_zero]
+  set a : ComplexE3 := WithLp.toLp 2 (rawMeanCoefficient c)
+  set b : ComplexE3 := WithLp.toLp 2 (rawTransverseCoefficient z)
+  set w : ℂ := (latticeModeWeight rawDriftMode : ℂ)
+  set E : LatticeMode → Type := fun _ : LatticeMode => ComplexE3
+  calc rawMeanDriftCarrier c z rawDriftMode
+      = (lp.single (E := E) 1 (0 : LatticeMode) a) rawDriftMode +
+          (lp.single (E := E) 1 rawDriftMode (w • b)) rawDriftMode :=
+        ((congrArg (fun h : LatticeMode → ComplexE3 => h rawDriftMode)
+          (lp.coeFn_add (E := E)
+            (f := lp.single (E := E) 1 (0 : LatticeMode) a)
+            (g := lp.single (E := E) 1 rawDriftMode (w • b))))).trans
+          (Pi.add_apply _ _ _)
+    _ = 0 + (lp.single (E := E) 1 rawDriftMode (w • b)) rawDriftMode :=
+        congrArg (fun x : ComplexE3 => x +
+            (lp.single (E := E) 1 rawDriftMode (w • b)) rawDriftMode)
+          (lp.single_apply_ne (E := E) 1 (0 : LatticeMode) a rawDriftMode_ne_zero)
+    _ = 0 + w • b :=
+        congrArg (fun x : ComplexE3 => 0 + x)
+          (lp.single_apply_self (E := E) 1 rawDriftMode (w • b))
+    _ = w • b := zero_add _
 
 theorem rawMeanDriftCarrier_apply_other (c : ℝ) (z : ℂ) (m : LatticeMode)
     (hm0 : m ≠ 0) (hmk : m ≠ rawDriftMode) :
     rawMeanDriftCarrier c z m = 0 := by
-  simp [rawMeanDriftCarrier, lp.single_apply, hm0, hmk]
+  set a : ComplexE3 := WithLp.toLp 2 (rawMeanCoefficient c)
+  set b : ComplexE3 := WithLp.toLp 2 (rawTransverseCoefficient z)
+  set w : ℂ := (latticeModeWeight rawDriftMode : ℂ)
+  set E : LatticeMode → Type := fun _ : LatticeMode => ComplexE3
+  calc rawMeanDriftCarrier c z m
+      = (lp.single (E := E) 1 (0 : LatticeMode) a) m +
+          (lp.single (E := E) 1 rawDriftMode (w • b)) m :=
+        ((congrArg (fun h : LatticeMode → ComplexE3 => h m)
+          (lp.coeFn_add (E := E)
+            (f := lp.single (E := E) 1 (0 : LatticeMode) a)
+            (g := lp.single (E := E) 1 rawDriftMode (w • b))))).trans
+          (Pi.add_apply _ _ _)
+    _ = 0 + (lp.single (E := E) 1 rawDriftMode (w • b)) m :=
+        congrArg (fun x : ComplexE3 => x + (lp.single (E := E) 1 rawDriftMode (w • b)) m)
+          (lp.single_apply_ne (E := E) 1 (0 : LatticeMode) a hm0)
+    _ = 0 + 0 :=
+        congrArg (fun x : ComplexE3 => 0 + x)
+          (lp.single_apply_ne (E := E) 1 rawDriftMode (w • b) hmk)
+    _ = 0 := add_zero 0
 
 theorem weightedLatticeCoefficient_rawMeanDriftCarrier_zero
     (c : ℝ) (z : ℂ) :
@@ -597,8 +661,8 @@ theorem weightedLatticeCoefficient_rawMeanDriftCarrier_zero
       rawMeanCoefficient c := by
   unfold weightedLatticeCoefficient
   rw [show rawMeanDriftCarrier c z 0 =
-      WithLp.toLp 2 (rawMeanCoefficient c) by
-    simp [rawMeanDriftCarrier, lp.single_apply, rawDriftMode_ne_zero]]
+      WithLp.toLp 2 (rawMeanCoefficient c)
+        from rawMeanDriftCarrier_apply_zero c z]
   have hfreq : complexFrequency (latticeFrequency (0 : LatticeMode)) = 0 := by
     ext i
     fin_cases i <;>
@@ -617,8 +681,8 @@ theorem weightedLatticeCoefficient_rawMeanDriftCarrier_mode
   unfold weightedLatticeCoefficient
   rw [show rawMeanDriftCarrier c z rawDriftMode =
       (latticeModeWeight rawDriftMode : ℂ) •
-        WithLp.toLp 2 (rawTransverseCoefficient z) by
-    simp [rawMeanDriftCarrier, lp.single_apply, rawDriftMode_ne_zero]]
+        WithLp.toLp 2 (rawTransverseCoefficient z)
+        from rawMeanDriftCarrier_apply_mode c z]
   rw [WithLp.ofLp_smul, WithLp.ofLp_smul, WithLp.ofLp_toLp]
   have hw : latticeModeWeight rawDriftMode ≠ 0 :=
     ne_of_gt (lt_of_lt_of_le zero_lt_one
@@ -632,8 +696,8 @@ theorem weightedLatticeCoefficient_rawMeanDriftCarrier_other
     (hm0 : m ≠ 0) (hmk : m ≠ rawDriftMode) :
     weightedLatticeCoefficient (rawMeanDriftCarrier c z) m = 0 := by
   unfold weightedLatticeCoefficient
-  rw [show rawMeanDriftCarrier c z m = 0 by
-    simp [rawMeanDriftCarrier, lp.single_apply, hm0, hmk]]
+  rw [show rawMeanDriftCarrier c z m = 0
+        from rawMeanDriftCarrier_apply_other c z m hm0 hmk]
   simp
 
 theorem rawMeanDriftCarrier_divergenceFree (c : ℝ) (z : ℂ) :
@@ -840,8 +904,9 @@ theorem heatRegularizedSpectralOutput_rawMeanDriftCarrier
         (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z) rawDriftMode =
         (latticeModeWeight rawDriftMode : ℂ) • WithLp.toLp 2
           (rawTransverseCoefficient
-            (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z)) by
-      simp [rawMeanDriftCarrier, lp.single_apply, rawDriftMode_ne_zero]]
+            (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z))
+      from rawMeanDriftCarrier_apply_mode
+        0 (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z)]
     ext i
     fin_cases i <;>
       simp [complexEuclideanPoint, rawTransverseCoefficient, Complex.real_smul]
@@ -858,16 +923,18 @@ theorem heatRegularizedSpectralOutput_rawMeanDriftCarrier
     · subst q
       rw [show rawMeanDriftCarrier 0
           (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z) 0 =
-          WithLp.toLp 2 (rawMeanCoefficient 0) by
-        simp [rawMeanDriftCarrier, lp.single_apply, rawDriftMode_ne_zero]]
+          WithLp.toLp 2 (rawMeanCoefficient 0)
+          from rawMeanDriftCarrier_apply_zero
+            0 (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z)]
       have hm : rawMeanCoefficient 0 = 0 := by
         ext i
         fin_cases i <;> simp [rawMeanCoefficient]
       rw [hm]
       rfl
     · rw [show rawMeanDriftCarrier 0
-          (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z) q = 0 by
-        simp [rawMeanDriftCarrier, lp.single_apply, hq0, hq]]
+          (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z) q = 0
+          from rawMeanDriftCarrier_apply_other
+            0 (((Real.exp (-ν * τ) * c : ℝ) : ℂ) * z) q hq0 hq]
 
 theorem weightedHeatFlow_rawMeanDriftCarrier
     (μ t c : ℝ) (hμ : 0 ≤ μ) (ht : 0 ≤ t) (z : ℂ) :
@@ -983,10 +1050,16 @@ theorem criticalMildPathIntegrand_rawMeanDriftPath
         (rawMeanDriftPath_divergenceFree μ c z) t s =
       (((Real.exp (-μ * (t - s)) * c *
           Real.exp ((c - μ) * s) : ℝ) : ℂ) • rawMeanDriftCarrier 0 z) := by
-  unfold criticalMildPathIntegrand rawMeanDriftPath
-  rw [positiveTimeHeatRegularizedSpectralOutput_of_pos μ hμ _ _ _
-      (sub_pos.mpr hst),
-    heatRegularizedSpectralOutput_rawMeanDriftCarrier]
+  unfold criticalMildPathIntegrand
+  rw [positiveTimeHeatRegularizedSpectralOutput_of_pos μ hμ
+      (rawMeanDriftPath μ c z s) (rawMeanDriftPath μ c z s)
+      (rawMeanDriftPath_divergenceFree μ c z s) (sub_pos.mpr hst)]
+  unfold rawMeanDriftPath
+  rw [show rawMeanDriftPath_divergenceFree μ c z s =
+      rawMeanDriftCarrier_divergenceFree c (↑(Real.exp ((c - μ) * s)) * z)
+      from rfl]
+  rw [heatRegularizedSpectralOutput_rawMeanDriftCarrier μ (t - s) c hμ
+      (sub_pos.mpr hst) (↑(Real.exp ((c - μ) * s)) * z)]
   rw [rawMeanDriftCarrier_zero_mul, rawMeanDriftCarrier_zero_mul, smul_smul]
   congr 1
   push_cast
@@ -1050,6 +1123,7 @@ theorem criticalMildImage_rawMeanDriftPath
     norm_cast
   rw [← hcast] at hcomplex
   unfold criticalMildImage
+  set_option maxHeartbeats 4000000 in
   rw [weightedHeatFlow_rawMeanDriftCarrier μ t c hμ.le ht z,
     criticalMildDuhamel_rawMeanDriftPath μ c t hμ ht z,
     ← rawMeanDriftCarrier_zero_mul,

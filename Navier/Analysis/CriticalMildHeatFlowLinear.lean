@@ -409,8 +409,10 @@ theorem heatHalfGeneratorMoment_weightedHeatFlow_le
       (summable_halfGeneratorMoment_weightedHeatFlow ν τ hν hτ u hu).tsum_le_tsum
         hpoint hdom
     _ = (Real.sqrt (ν * τ))⁻¹ * ‖u‖ := by
-      rw [tsum_mul_left]
-      simp [lp.norm_eq_tsum_rpow]
+      have hun : ∑' m : LatticeMode, ‖u m‖ = ‖u‖ := by
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one]
+      rw [tsum_mul_left, hun]
 
 /-- Applying an additional heat interval to the completed nonlinear output
 only adds that interval to its existing output-frequency heat lag. -/
@@ -695,7 +697,13 @@ theorem heatHalfGeneratorMoment_heatRegularizedSpectralOutput_le_split
         hleft hright,
         (huM.tsum_mul_tsum hv0 hleft).symm,
         (hu0.tsum_mul_tsum hvM hright).symm]
-      simp [lp.norm_eq_tsum_rpow]
+      have hun : ∑' x : LatticeMode, ‖u x‖ = ‖u‖ := by
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one]
+      have hvn : ∑' y : LatticeMode, ‖v y‖ = ‖v‖ := by
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one]
+      rw [hun, hvn]
 
 /-- The evolving-path Duhamel integrand inherits the integrable split-input
 kernel.  For a self-interaction the two allocations coincide, giving the

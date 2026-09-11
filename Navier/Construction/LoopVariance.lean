@@ -125,9 +125,17 @@ theorem weightedSquare_expansion (s c : ℝ) :
         (2 * c) * (Real.cos θ * Real.exp (s * Real.cos θ))) +
         c ^ 2 * Real.exp (s * Real.cos θ)) := by funext θ; ring
   unfold weightedSquare
-  rw [heq, angularMean_add _ _ (h₂.sub (continuous_const.fun_mul h₁)) (continuous_const.fun_mul he),
-    angularMean_sub _ _ h₂ (continuous_const.fun_mul h₁), angularMean_const_mul,
-    angularMean_const_mul, moment_eq_angularMean, moment_eq_angularMean, moment_eq_angularMean]
+  rw [heq,
+    angularMean_add (fun θ => Real.cos θ ^ 2 * Real.exp (s * Real.cos θ) -
+        2 * c * (Real.cos θ * Real.exp (s * Real.cos θ)))
+      (fun θ => c ^ 2 * Real.exp (s * Real.cos θ))
+      (h₂.sub (continuous_const.fun_mul h₁)) (continuous_const.fun_mul he),
+    angularMean_sub (fun θ => Real.cos θ ^ 2 * Real.exp (s * Real.cos θ))
+      (fun θ => 2 * c * (Real.cos θ * Real.exp (s * Real.cos θ))) h₂
+      (continuous_const.fun_mul h₁),
+    angularMean_const_mul (2 * c) (fun θ => Real.cos θ * Real.exp (s * Real.cos θ)),
+    angularMean_const_mul (c ^ 2) (fun θ => Real.exp (s * Real.cos θ)),
+    moment_eq_angularMean, moment_eq_angularMean, moment_eq_angularMean]
   simp only [pow_one, pow_zero, one_mul]
 
 def logSlope (s : ℝ) : ℝ := moment 1 s / moment 0 s

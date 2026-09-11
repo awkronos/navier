@@ -300,7 +300,7 @@ theorem integrable_heatKernel_mul_of_integrable_rpow {ν t : ℝ}
       heatKernel ν t (x - y) * |f y|) := by
     apply hsum_int.mono' (hGm.mul (hfm.abs)).aestronglyMeasurable
     refine Filter.Eventually.of_forall (fun y => ?_)
-    rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (hG y), abs_abs]
+    rw [Pi.mul_apply, Real.norm_eq_abs, abs_mul, abs_of_nonneg (hG y), abs_abs]
     have hfr_le : |f y| ≤ 1 + |f y| ^ r := by
       rcases le_total |f y| 1 with h | h
       · have := Real.rpow_nonneg (abs_nonneg (f y)) r
@@ -375,7 +375,7 @@ theorem heatKernel_convolution_abs_le {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t)
   have hprod_int : Integrable (fun y : Space => heatKernel ν t (x - y) * |f y|) := by
     apply hsum_int.mono' (hGm.mul (hfm.abs)).aestronglyMeasurable
     refine Filter.Eventually.of_forall (fun y => ?_)
-    rw [Real.norm_eq_abs, abs_of_nonneg (hprod_nn y)]
+    rw [Pi.mul_apply, Real.norm_eq_abs, abs_of_nonneg (hprod_nn y)]
     have hfr_le : |f y| ≤ 1 + |f y| ^ r := by
       rcases le_total |f y| 1 with h | h
       · have := Real.rpow_nonneg (abs_nonneg (f y)) r

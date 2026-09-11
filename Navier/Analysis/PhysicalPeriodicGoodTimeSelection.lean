@@ -50,7 +50,7 @@ theorem exists_goodDissipationTime
   have hcontD : Continuous D :=
     (continuous_rawHighSpectralDissipation 0).comp hAc
   have hconst : IntervalIntegrable (fun _ : ℝ => (1 : ℝ)) volume δ t :=
-    intervalIntegral.intervalIntegrable_const
+    intervalIntegrable_const
   have hone : ∀ s ∈ Ι δ t, 0 ≤ (1 : ℝ) := by
     intro s hs
     positivity

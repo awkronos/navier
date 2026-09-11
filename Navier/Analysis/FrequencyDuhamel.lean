@@ -424,7 +424,8 @@ theorem isMildSolutionOn_restrict_isFixedPt
   · rw [Metric.mem_closedBall, ContinuousMap.dist_le]
     · intro x
       have := hub x x.2
-      simpa [dist_zero_right] using this
+      simp (config := {failIfUnchanged := false}) [dist_zero_right]
+      exact this
     · rcases (Set.nonempty_Icc.2 hT) with ⟨t0, ht0⟩
       have := hub t0 ht0
       exact le_trans (norm_nonneg _) this

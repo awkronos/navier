@@ -32,7 +32,8 @@ theorem linearLag_neg (r b : ℝ → ℝ) (q₀ y : ℝ) :
 theorem linearLag_le_constant {r b : ℝ → ℝ} (hr : Continuous r) (hb : Continuous b)
     {q₀ B y : ℝ} (hy : 0 ≤ y) (hq : q₀ ≤ B)
     (hs : ∀ t ∈ Icc (0 : ℝ) y, b t ≤ r t * B) : linearLag r b q₀ y ≤ B := by
-  have h := linearLag_lower_barrier hr hb.neg (q₀ := -q₀) (β := -B) (κ := 0) hy
+  have h := linearLag_lower_barrier hr
+    (show Continuous (fun t => -b t) from hb.neg) (q₀ := -q₀) (β := -B) (κ := 0) hy
     (by linarith) (fun t ht => by have := hs t ht; nlinarith)
   rw [linearLag_neg] at h
   linarith

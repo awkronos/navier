@@ -108,7 +108,7 @@ theorem pulseConstant_upper : pulseConstant ≤ 1 / 4 := by
   norm_num [weightedSquarePrimitive] at hi
   dsimp [pulseConstant]
   have he := (Real.exp_pos (-26 : ℝ)).le
-  simp only [id_eq, neg_mul] at *
+  simp only [Pi.pow_apply, Pi.sub_apply, id_eq, neg_mul] at *
   linarith
 
 private theorem exp_neg_ten_le : Real.exp (-10 : ℝ) ≤ 1 / 1024 := by
@@ -141,7 +141,7 @@ theorem pulseConstant_lower : 1 / 5 < pulseConstant := by
     linarith [Real.add_one_le_exp (-1 / 25 : ℝ)]
   have hten := exp_neg_ten_le
   change (∫ z in (1 / 50 : ℝ)..5, Real.exp (-2 * z) * mainPulse z ^ 2) ≤ pulseConstant at hsub
-  simp only [id_eq, neg_mul] at *
+  simp only [Pi.pow_apply, Pi.sub_apply, id_eq, neg_mul] at *
   linarith
 
 theorem pulseConstant_bounds : 1 / 5 < pulseConstant ∧ pulseConstant ≤ 1 / 4 :=
@@ -535,6 +535,8 @@ theorem energyIntegrand_integral_prefix (d : OutgoingTail.TailData) (A eta : ℝ
         exact energyIntegrand_prefix d A eta ((uIcc_of_le d.core.pulseStart_pos.le ▸ hy).2)
       _ = _ := by
         rw [intervalIntegral.integral_sub
+          (f := fun y : ℝ => eta ^ 2 * (Real.exp y * dropCoefficient d.core.m y ^ 2))
+          (g := fun y : ℝ => shape eta ^ 2 * (coreEnergyWeight d.core y / 2))
           ((continuous_const.fun_mul (Real.continuous_exp.fun_mul
             ((dropCoefficient_contDiff d.core.m_pos).continuous.pow 2))).intervalIntegrable _ _)
           ((continuous_const.fun_mul ((coreEnergyWeight_contDiff d.core).continuous.div_const 2)).intervalIntegrable _ _),

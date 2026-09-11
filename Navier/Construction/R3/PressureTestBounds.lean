@@ -32,7 +32,6 @@ theorem integrable_inverse_weight_sq :
   convert! h using 1
   ext ξ
   norm_num
-  rfl
 
 /-- A finite numerical constant depending only on three-dimensional Lebesgue measure. -/
 def fourierMomentConstant : ℝ :=

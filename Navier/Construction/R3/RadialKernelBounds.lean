@@ -55,7 +55,6 @@ private theorem kernel_one_le_square (z : Space) :
     radialCommutatorKernel 1 z ≤ ‖z‖ ^ (-2 : ℝ) := by
   by_cases hz : z = 0
   · simp [hz]
-    positivity
   have hn : 0 < ‖z‖ := norm_pos_iff.mpr hz
   calc
     radialCommutatorKernel 1 z ≤ ‖z‖ ^ (-3 : ℝ) * ‖z‖ := by

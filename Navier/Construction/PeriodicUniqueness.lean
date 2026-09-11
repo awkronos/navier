@@ -534,8 +534,26 @@ theorem energy_balance {u v : VelocityField} {p q : PressureField} {t : ℝ}
     ⟪(u - v) (t, x), fderiv ℝ (fun y => u (t, y)) x ((u - v) (t, x))⟫_ℝ -
     ⟪(u - v) (t, x), fderiv ℝ (fun y => (u - v) (t, y)) x (v (t, x))⟫_ℝ -
     ⟪(u - v) (t, x), pressureGradient (p - q) t x⟫_ℝ) = _
-  rw [cubeIntegral_sub ((hL.sub hN).sub hT) hP, cubeIntegral_sub (hL.sub hN) hT,
-    cubeIntegral_sub hL hN, cubeIntegral_laplacian_energy hw hpw,
+  rw [cubeIntegral_sub
+      (f := fun x =>
+        ⟪(u - v) (t, x), spatialLaplacian (u - v) t x⟫_ℝ -
+        ⟪(u - v) (t, x), fderiv ℝ (fun y => u (t, y)) x ((u - v) (t, x))⟫_ℝ -
+        ⟪(u - v) (t, x), fderiv ℝ (fun y => (u - v) (t, y)) x (v (t, x))⟫_ℝ)
+      (g := fun x => ⟪(u - v) (t, x), pressureGradient (p - q) t x⟫_ℝ)
+      ((hL.sub hN).sub hT) hP,
+    cubeIntegral_sub
+      (f := fun x =>
+        ⟪(u - v) (t, x), spatialLaplacian (u - v) t x⟫_ℝ -
+        ⟪(u - v) (t, x), fderiv ℝ (fun y => u (t, y)) x ((u - v) (t, x))⟫_ℝ)
+      (g := fun x =>
+        ⟪(u - v) (t, x), fderiv ℝ (fun y => (u - v) (t, y)) x (v (t, x))⟫_ℝ)
+      (hL.sub hN) hT,
+    cubeIntegral_sub
+      (f := fun x => ⟪(u - v) (t, x), spatialLaplacian (u - v) t x⟫_ℝ)
+      (g := fun x =>
+        ⟪(u - v) (t, x), fderiv ℝ (fun y => u (t, y)) x ((u - v) (t, x))⟫_ℝ)
+      hL hN,
+    cubeIntegral_laplacian_energy hw hpw,
     cubeIntegral_transport_energy_zero hw hv hpw hpv hdv,
     cubeIntegral_pressure_energy_zero hw (hp.sub hq) hpw (unitPeriods_sub hpp hpq) hdw]
   simp only [sub_zero, dissipation, coupling, spatialDerivative]

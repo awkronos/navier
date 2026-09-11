@@ -306,7 +306,7 @@ theorem primitive_div_pow_tendsto_zero {c : ℝ} (hc : 0 < c) (j : ℕ)
   | succ n =>
     have hn : (n + 1 : ℝ) ≠ 0 := by positivity
     have hG : Tendsto (fun x : ℝ => x ^ (n + 1)) (𝓝[>] 0) (𝓝 0) := by
-      simpa using ((continuous_id.pow (n + 1)).tendsto (0 : ℝ)).mono_left nhdsWithin_le_nhds
+      simpa using ((continuous_pow (n + 1)).tendsto (0 : ℝ)).mono_left nhdsWithin_le_nhds
     have hE : Tendsto (fun x => edge c x / x ^ (j + n)) (𝓝[>] 0) (𝓝 0) :=
       (weighted_iteratedDeriv_tendsto_zero hc 0 (j + n)).mono_left nhdsWithin_le_nhds
     have hB : Tendsto (fun x => b x / (n + 1 : ℝ)) (𝓝[>] 0)

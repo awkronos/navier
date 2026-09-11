@@ -136,7 +136,7 @@ theorem block_divergence_zero {s : WeightedClasses.StripData D} {c : Context D}
         HarmonicResidual.field_zero]
       exact hsingle j θ
     have he := coefficient_eq_of_field_eq_at _ 0 (b.frequency n) (b.phase n) (hk n) j x.1 hfield
-    have hs := congrFun (AddMonoidAlgebra.single_apply
+    have hs := congrFun (AddMonoidAlgebra.coeff_single_apply
       (a := j) (a' := j)
       (b := divergenceCoefficients g (b.frequency n) (b.phase n)
         (b.angularFrequency n) (blockAmplitude b n) j)) x.1

@@ -609,10 +609,13 @@ theorem compact_target_choice {K : Set Slow} (hK : IsCompact K)
       ⟪T q, normalDirection (g q)⟫_ℝ ≤ -η ∧
       targetRatio (F q) (g q) (T q) + η ≤ slopeRatio u := by
   have hn := normalDirection_continuousOn hg (fun q hq => (hc q hq).shear_ne_zero)
-  obtain ⟨d, hd, hdb⟩ := UniformCone.positive_uniform_margin hK (hT.inner hn).neg
+  obtain ⟨d, hd, hdb⟩ := UniformCone.positive_uniform_margin hK
+    (show ContinuousOn (fun q : Slow => -⟪T q, normalDirection (g q)⟫_ℝ) K from
+      (hT.inner hn).neg)
     (fun q hq => neg_pos.mpr (ht q hq).inward)
   obtain ⟨e, he, heb⟩ := UniformCone.positive_uniform_margin hK
-    (continuousOn_const.sub (targetRatio_continuousOn hF hg hT hc ht))
+    (show ContinuousOn (fun q : Slow => 1 - targetRatio (F q) (g q) (T q)) K from
+      (continuousOn_const.sub (targetRatio_continuousOn hF hg hT hc ht)))
     (fun q hq => sub_pos.mpr (ht q hq).ratio_lt_one)
   let r := 1 - min e (1 / 2)
   have hr : 0 ≤ r := by dsimp [r]; linarith [min_le_right e (1 / 2 : ℝ)]
@@ -731,7 +734,9 @@ theorem compact_mixed_target_margin {K : Set Slow} (hK : IsCompact K)
   have hr₀ : 0 ≤ slopeRatio u₀ := div_nonneg hu₀.le (Real.sqrt_nonneg _)
   obtain ⟨u, hu, hgap⟩ := exists_slopeRatio_gt hr₀ (slopeRatio_lt_one u₀)
   have hn₀ := normalDirection_continuousOn hg (fun q hq => (hc q hq).shear_ne_zero)
-  obtain ⟨m, hm, hmb⟩ := UniformCone.positive_uniform_margin hK (hT.inner hn₀).neg
+  obtain ⟨m, hm, hmb⟩ := UniformCone.positive_uniform_margin hK
+    (show ContinuousOn (fun q : Slow => -⟪T q, normalDirection (g q)⟫_ℝ) K from
+      (hT.inner hn₀).neg)
     (fun q hq => neg_pos.mpr (ht q hq).inward)
   have hn : ContinuousOn (fun z : Slow × Slow => normalDirection (g z.1)) (K ×ˢ K) :=
     hn₀.comp continuous_fst.continuousOn (fun _ hq => hq.1)

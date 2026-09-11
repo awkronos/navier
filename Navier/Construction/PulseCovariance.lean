@@ -680,7 +680,8 @@ theorem signedModel_continuousOn {X : Type*} [TopologicalSpace X] {K : Set X}
   fin_cases i <;> fin_cases j
   · simpa [signedModel, modelDirection, signedSlopes, radiusProfile] using hn
   · simpa [signedModel, modelDirection, signedSlopes, radiusProfile] using hn
-  · simpa [signedModel, modelDirection, signedSlopes] using hu.neg
+  · refine ContinuousOn.congr hu.neg (fun _ _ => ?_)
+    simp [signedModel, modelDirection, signedSlopes]
   · simpa [signedModel, modelDirection, signedSlopes] using hu
 
 abbrev SignedPulsePair (r a A b B c₀ u E : ℝ) :=
@@ -825,7 +826,8 @@ theorem compact_actual_positive_inverse_of_scalar_cone
   have htarget : ∀ i, ContinuousOn (fun p => Covariance.target (m p) (t p) i) K := by
     intro i
     fin_cases i
-    · simpa [Covariance.target] using hm.neg
+    · refine ContinuousOn.congr hm.neg (fun _ _ => ?_)
+      simp [Covariance.target]
     · simpa [Covariance.target] using ht
   apply compact_actual_positive_inverse hK (signedModel_continuousOn hc₀ hu) htarget
     (fun p hp => signedModel_strictCone (hc₀neg p hp) (hupos p hp) (hcone p hp)) hE

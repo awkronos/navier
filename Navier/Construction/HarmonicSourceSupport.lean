@@ -77,7 +77,7 @@ theorem mul (hc : NonzeroSupported K c) (hd : NonzeroSupported K d) :
 omit [NormedAddCommGroup D] [NormedSpace ℝ D] in
 theorem constant (f : D → ℂ) : NonzeroSupported K (constantCoefficient f) := by
   intro j hj x hx
-  simp only [constantCoefficient, AddMonoidAlgebra.coeff, Finsupp.single_apply,
+  simp only [constantCoefficient, AddMonoidAlgebra.coeff_single_apply,
     if_neg (Ne.symm hj), Pi.zero_apply]
 
 omit [NormedSpace ℝ D] in
@@ -947,7 +947,7 @@ theorem realCoefficient_eq_zero_of_field_constant
     funext θ
     rw [field_realCoefficients, hf θ, field_constant]
   · rw [extract_field _ _ _ hkp]
-    simp only [constantCoefficient, AddMonoidAlgebra.coeff, Finsupp.single_apply,
+    simp only [constantCoefficient, AddMonoidAlgebra.coeff_single_apply,
       if_neg (Ne.symm hj), Pi.zero_apply]
 
 omit [NormedAddCommGroup D] [NormedSpace ℝ D] in
@@ -978,10 +978,10 @@ theorem zero_wave_unlocalized_error
   ext i
   have h_one :
       (AddMonoidAlgebra.single (1 : ℤ) (fun _ : D => (1 : ℂ))).coeff 1 x = 1 := by
-    simp only [AddMonoidAlgebra.coeff, Finsupp.single_apply, ite_true]
+    simp only [AddMonoidAlgebra.coeff_single_apply, ite_true]
   have h_neg_one :
       (AddMonoidAlgebra.single (1 : ℤ) (fun _ : D => (1 : ℂ))).coeff (-1) x = 0 := by
-    simp only [AddMonoidAlgebra.coeff, Finsupp.single_apply,
+    simp only [AddMonoidAlgebra.coeff_single_apply,
       if_neg (by norm_num : (1 : ℤ) ≠ -1), Pi.zero_apply]
   simp only [excludedSource, HarmonicResidual.nonconstant, AddMonoidAlgebra.coeff_erase,
     Finsupp.erase_ne (by norm_num : (1 : ℤ) ≠ 0), realCoefficients_apply,

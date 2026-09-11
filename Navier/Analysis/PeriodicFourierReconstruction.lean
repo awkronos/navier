@@ -67,7 +67,7 @@ theorem star_latticeCharacter (m : LatticeMode) (x : Space) :
 
 theorem norm_latticeCharacter (m : LatticeMode) (x : Space) :
     ‖latticeCharacter m x‖ = 1 := by
-  simp [latticeCharacter, UnitAddTorus.mFourier]
+  simp [latticeCharacter, UnitAddTorus.mFourier, Circle.norm_coe]
 
 theorem unitTorusPoint_add_basisVector (x : Space) (i : Fin 3) :
     unitTorusPoint (x + basisVector i) = unitTorusPoint x := by

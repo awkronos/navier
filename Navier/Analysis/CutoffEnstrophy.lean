@@ -261,7 +261,7 @@ theorem continuous_timeDerivative_vorticity
   have h3 : Continuous
       (fun x => spatialDerivative (fun s => vorticity u s) t x (u t x)) :=
     (hωC.continuous_fderiv (by norm_num)).clm_apply huAll.continuous
-  exact (h1.add (continuous_const.smul h2)).sub h3
+  exact (h1.add (h2.const_smul ν)).sub h3
 
 /-!
 ## The cutoff enstrophy and the Pattern-A domination hypothesis

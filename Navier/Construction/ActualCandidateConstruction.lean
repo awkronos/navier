@@ -961,10 +961,12 @@ theorem initialPotentialStage_field (B N0 : ℕ)
     (wave : MixedAxisPreservation.CopyPotential.{u} h) :
     (initialPotentialStage B N0 wave).field = wave.field + streamMeanStages B N0 0 := by
   funext w
-  change (∑ _ : Fin 1, wave.field w) +
+  show (∑ _ : Fin 1, wave.field w) +
     (∑ _ : Fin 1, (ActualMeanStageData.initialStreamSupport B N0 (firstBand B N0)
-      (qbig B N0) le_rfl).field w) = _
+      (qbig B N0) _).field w) = _
   simp [streamMeanStages_zero]
+  exact congrFun (ActualMeanStageData.initialStreamSupport_field B N0 (firstBand B N0)
+    (qbig B N0) le_rfl) w
 
 theorem positivePotentialStage_field {B N0 : ℕ} (H : MeanCycleInput B N0)
     (j : ℕ) (particular signed : MixedAxisPreservation.CopyPotential.{u} h) :
