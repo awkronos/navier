@@ -1265,19 +1265,415 @@ theorem continuousMildImage_sub_coordinateXm1Mass_le
       (fun ξ : ES => continuousDuhamel ν v (u - v) t ξ i) (hDwu i) (hDvw i)
   · rw [Finset.sum_add_distrib]
 
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.normXm1_add_le
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.normX1_add_le
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateXm1Mass_add_le
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateX1Mass_add_le
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_coord_apply
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateXm1Mass_continuousDuhamel_self_le_integral_product
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_coordinateXm1Mass_le
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.integral_normX1_continuousDuhamel_self_le_source
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.integral_coordinateX1Mass_continuousMildImage_le
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_self_map_ball
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_self_map_ball_twoR
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousNavierSource_self_sub_self
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousDuhamel_self_sub_self
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateXm1Mass_continuousDuhamel_le_integral_X0_product
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_sub_coordinateXm1Mass_le
+/-!
+## Chunk H: the square-root (Cauchy--Schwarz) ball modulus
+
+The difference feed `∫ X⁰(w) X⁰(u)` closes by real Cauchy--Schwarz in the
+square-root form `sqrt(∫ X⁰(w)²) sqrt(∫ X⁰(u)²)`; the fixed-time CS bridge
+`X⁰² ≤ X⁻¹ · X¹` then promotes both factors to `sqrt(∫ Xm1 · X1)`, and the
+ball budgets at `R ≤ ν/16` give `sqrt(∫ Xm1(u) X1(u)) ≤ 2 sqrt(ν⁻¹) R`.
+The mild image difference therefore obeys a modulus that vanishes with the
+distance quantity — the attained form of the contraction obligation, which is
+quadratic (Hölder one-half), not linear.
+-/
+
+/-- Real Cauchy--Schwarz in square-root form for pointwise products of
+nonnegative functions: from `0 <= (sqrt(B) f - sqrt(A) g)^2` at the optimal
+scale; the zero-mass cases use `integral_eq_zero_of_ae`. -/
+private theorem integral_mul_le_sqrt_mul_sqrt (μ : Measure ℝ) (f g : ℝ → ℝ)
+    (hf0 : ∀ x, 0 ≤ f x) (hg0 : ∀ x, 0 ≤ g x)
+    (hf2 : Integrable (fun x => f x ^ 2) μ)
+    (hg2 : Integrable (fun x => g x ^ 2) μ) :
+    ∫ x, f x * g x ∂μ ≤
+      Real.sqrt (∫ x, f x ^ 2 ∂μ) * Real.sqrt (∫ x, g x ^ 2 ∂μ) := by
+  set A := ∫ x, f x ^ 2 ∂μ with hAd
+  set B := ∫ x, g x ^ 2 ∂μ with hBd
+  have hA : 0 ≤ A := integral_nonneg (fun x => sq_nonneg _)
+  have hB : 0 ≤ B := integral_nonneg (fun x => sq_nonneg _)
+  by_cases hA0 : A = 0
+  · have hsqae : (fun x : ℝ => f x ^ 2) =ᵐ[μ] fun _ => (0 : ℝ) :=
+      (integral_eq_zero_iff_of_nonneg_ae
+        (ae_of_all μ fun x => sq_nonneg _) hf2).mp hA0
+    have hL : ∫ x, f x * g x ∂μ = 0 :=
+      integral_eq_zero_of_ae (μ := μ) (by
+        filter_upwards [hsqae] with x hx
+        have hx' : f x = 0 := by nlinarith
+        rw [hx']
+        simp)
+    rw [hL]
+    positivity
+  by_cases hB0 : B = 0
+  · have hsqae : (fun x : ℝ => g x ^ 2) =ᵐ[μ] fun _ => (0 : ℝ) :=
+      (integral_eq_zero_iff_of_nonneg_ae
+        (ae_of_all μ fun x => sq_nonneg _) hg2).mp hB0
+    have hL : ∫ x, f x * g x ∂μ = 0 :=
+      integral_eq_zero_of_ae (μ := μ) (by
+        filter_upwards [hsqae] with x hx
+        have hx' : g x = 0 := by nlinarith
+        rw [hx']
+        simp)
+    rw [hL]
+    positivity
+  · have hApos : 0 < A := lt_of_le_of_ne hA (Ne.symm hA0)
+    have hBpos : 0 < B := lt_of_le_of_ne hB (Ne.symm hB0)
+    set s := Real.sqrt (Real.sqrt (B / A)) with hs
+    have hs0 : 0 < s :=
+      Real.sqrt_pos.mpr (Real.sqrt_pos.mpr (div_pos hBpos hApos))
+    have hI : Integrable (fun x : ℝ =>
+        (s ^ 2 / 2) • f x ^ 2 + (1 / (2 * s ^ 2)) • g x ^ 2) μ :=
+      (Integrable.smul (s ^ 2 / 2) hf2).add (Integrable.smul (1 / (2 * s ^ 2)) hg2)
+    have hpoint (x : ℝ) : f x * g x ≤ (s ^ 2 / 2) • f x ^ 2 + (1 / (2 * s ^ 2)) • g x ^ 2 := by
+      have hs2 : s ≠ 0 := hs0.ne'
+      have key : (s * f x - g x / s) ^ 2 =
+          s ^ 2 * f x ^ 2 - 2 * (f x * g x) + g x ^ 2 / s ^ 2 := by
+        field_simp [hs2]
+        ring
+      have hsq : 0 ≤ s ^ 2 * f x ^ 2 - 2 * (f x * g x) + g x ^ 2 / s ^ 2 := by
+        rw [← key]; exact sq_nonneg _
+      have hlt : f x * g x ≤ (s ^ 2 / 2) * f x ^ 2 + (1 / (2 * s ^ 2)) * g x ^ 2 := by
+        have hdiv : g x ^ 2 / s ^ 2 = (1 / s ^ 2) * g x ^ 2 := by
+          field_simp [hs2]
+        have h2 : 2 * (f x * g x) ≤ s ^ 2 * f x ^ 2 + (1 / s ^ 2) * g x ^ 2 := by
+          linarith
+        have hhalf : f x * g x ≤ (s ^ 2 / 2) * f x ^ 2 +
+            (1 / s ^ 2) * g x ^ 2 / 2 := by linarith
+        have hfinv : (1 / s ^ 2) * g x ^ 2 / 2 = (1 / (2 * s ^ 2)) * g x ^ 2 := by
+          field_simp [hs2]
+        linarith
+      simp only [smul_eq_mul]
+      exact hlt
+    have hstep : ∫ x, f x * g x ∂μ ≤
+        (s ^ 2 / 2) • ∫ x, f x ^ 2 ∂μ + (1 / (2 * s ^ 2)) • ∫ x, g x ^ 2 ∂μ := by
+      refine le_trans (integral_mono_of_nonneg ?_ hI ?_) ?_
+      · filter_upwards with x
+        exact mul_nonneg (hf0 x) (hg0 x)
+      · filter_upwards with x
+        exact hpoint x
+      · refine le_of_eq ((integral_add (Integrable.smul (s ^ 2 / 2) hf2)
+              (Integrable.smul (1 / (2 * s ^ 2)) hg2)).trans ?_)
+        exact congrArg₂ HAdd.hAdd
+          (integral_smul (μ := μ) (c := s ^ 2 / 2) (f := fun x : ℝ => f x ^ 2))
+          (integral_smul (μ := μ) (c := 1 / (2 * s ^ 2)) (f := fun x : ℝ => g x ^ 2))
+    have hs2e : s ^ 2 = Real.sqrt (B / A) := by
+      rw [hs, Real.sq_sqrt (le_of_lt (Real.sqrt_pos.mpr (div_pos hBpos hApos)))]
+    have halg : (s ^ 2 / 2) • A + (1 / (2 * s ^ 2)) • B =
+        Real.sqrt A * Real.sqrt B := by
+      simp only [smul_eq_mul]
+      rw [hs2e]
+      have hne : 2 * Real.sqrt A * Real.sqrt B ≠ 0 := by
+        refine mul_ne_zero (mul_ne_zero two_ne_zero (Real.sqrt_pos.mpr hApos).ne')
+          (Real.sqrt_pos.mpr hBpos).ne'
+      rw [Real.sqrt_div hBpos.le A]
+      refine ((mul_left_inj' hne).mp ?_)
+      ring_nf
+      field_simp [hApos.ne', hBpos.ne', (Real.sqrt_pos.mpr hApos).ne',
+        (Real.sqrt_pos.mpr hBpos).ne']
+      rw [Real.sq_sqrt hA, Real.sq_sqrt hB]
+      ring
+    exact le_trans hstep (le_of_eq halg)
+
+/-- The `X⁰` mass is pointwise nonnegative. -/
+private theorem coordinateX0Mass_nonneg (u : ES -> ComplexSpace) :
+    0 <= coordinateX0Mass u :=
+  Finset.sum_nonneg fun i _ => integral_nonneg fun ξ => norm_nonneg _
+
+/-- The `X⁻¹` mass is pointwise nonnegative. -/
+private theorem coordinateXm1Mass_nonneg (u : ES -> ComplexSpace) :
+    0 <= coordinateXm1Mass u :=
+  Finset.sum_nonneg fun i _ =>
+    integral_nonneg fun ξ =>
+      mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _)
+
+/-- The `X¹` mass is pointwise nonnegative. -/
+private theorem coordinateX1Mass_nonneg (u : ES -> ComplexSpace) :
+    0 <= coordinateX1Mass u :=
+  Finset.sum_nonneg fun i _ =>
+    integral_nonneg fun ξ => mul_nonneg (norm_nonneg _) (norm_nonneg _)
+
+/-- Chunk H, step 2: the mixed-slot `X⁻¹` budget transported through true
+square-integrability of the `X⁰` feeds.  Chaining the proved `L¹` feed bound
+with the Cauchy--Schwarz ball modulus `integral_mul_le_sqrt_mul_sqrt` at
+`μ = volume.restrict (Icc 0 t)` replaces the product of `X⁰` masses by the
+product of their `L²` norms, with the factor `3` preserved. -/
+theorem coordinateXm1Mass_continuousDuhamel_le_sqrt_product_X0_sq
+    (a b : ℝ -> ES -> ComplexSpace) (ν t : ℝ) (hν : 0 < ν)
+    (hb : ∀ i : Fin 3, Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) •
+          heatMode ν (t - p.2) (fun ζ : ES => continuousNavierSource a b p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hf : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s) (fun ζ : ES => continuousNavierSource a b s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hg : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ζ : ES => continuousNavierSource a b s ζ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0 : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖continuousNavierSource a b s ξ i‖))
+    (hs1 : ∀ s ∈ Icc (0 : ℝ) t,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+          complexEuclideanNorm (continuousNavierSource a b s ξ)))
+    (hi : Integrable (fun s : ℝ =>
+        ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierSource a b s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (ha : ∀ r j, AEStronglyMeasurable (fun η : ES => a r η j))
+    (hbs : ∀ r i, AEStronglyMeasurable (fun η : ES => b r η i))
+    (ha0 : ∀ r j, Integrable (fun η : ES => ‖a r η j‖))
+    (hb00 : ∀ r i, Integrable (fun η : ES => ‖b r η i‖))
+    (hprod : IntegrableOn (fun r =>
+        coordinateX0Mass (a r) * coordinateX0Mass (b r)) (Icc (0 : ℝ) t))
+    (ha2 : Integrable (fun s : ℝ => coordinateX0Mass (a s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb2 : Integrable (fun s : ℝ => coordinateX0Mass (b s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t))) :
+    coordinateXm1Mass (continuousDuhamel ν a b t) <=
+      3 * (Real.sqrt (∫ s in Icc (0 : ℝ) t, coordinateX0Mass (a s) ^ 2) *
+        Real.sqrt (∫ s in Icc (0 : ℝ) t, coordinateX0Mass (b s) ^ 2)) := by
+  refine le_trans
+      (coordinateXm1Mass_continuousDuhamel_le_integral_X0_product a b ν t hν
+        hb hf hg hb0 hs1 hi ha hbs ha0 hb00 hprod) ?_
+  refine mul_le_mul_of_nonneg_left
+      (integral_mul_le_sqrt_mul_sqrt (volume.restrict (Icc (0 : ℝ) t))
+        (fun s => coordinateX0Mass (a s)) (fun s => coordinateX0Mass (b s))
+        (fun s => coordinateX0Mass_nonneg (a s)) (fun s => coordinateX0Mass_nonneg (b s))
+        ha2 hb2) (by norm_num : (0 : ℝ) <= 3)
+
+/-- Chunk H, step 3: the per-slot weighted interpolation inside the time
+square root: `sqrt (∫ X⁰(u)²) <= sqrt (∫ X⁻¹(u) * X¹(u))`, from the pointwise
+`X⁰` interpolation inequality of `ContinuousLeiLinTimeDuhamel` fed through
+`integral_mono_of_nonneg`. -/
+theorem sqrt_X0_sq_le_sqrt_Xm1_mul_X1
+    (u : ℝ -> ES -> ComplexSpace) (T : ℝ)
+    (hum1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (hu1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (hmixed : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (u s) * coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) T))) :
+    Real.sqrt (∫ s in Icc (0 : ℝ) T, coordinateX0Mass (u s) ^ 2) <=
+      Real.sqrt (∫ s in Icc (0 : ℝ) T,
+        coordinateXm1Mass (u s) * coordinateX1Mass (u s)) := by
+  refine Real.sqrt_le_sqrt
+      (integral_mono_of_nonneg (μ := volume.restrict (Icc (0 : ℝ) T))
+        ?_ hmixed ?_)
+  · filter_upwards with s
+    exact pow_two_nonneg _
+  · filter_upwards with s
+    exact coordinateX0Mass_sq_le_coordinateXm1Mass_mul_coordinateX1Mass (u s)
+      (fun i => hum1 s i) (fun i => hu1 s i)
+
+/-- Chunk H, step 3b: a slot whose pointwise `X⁻¹` mass is at most `2 R` on
+the interval and whose total `X¹` mass is at most `2 ν⁻¹ R` has time
+`L²`-`X⁰` square root at most `2 R sqrt ν⁻¹`.  This is the square-root form
+of the ball budget used by the lift. -/
+private theorem sqrt_integral_X0_sq_le_two_R_mul_sqrt_invNu
+    (u : ℝ -> ES -> ComplexSpace) (ν t R : ℝ) (hν : 0 < ν) (hR : 0 <= R)
+    (hum1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (hu1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (hmixed : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (u s) * coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hXm1 : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass (u s) <= 2 * R)
+    (hX1int : Integrable (fun s : ℝ => coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (u s) <= 2 * ν⁻¹ * R) :
+    Real.sqrt (∫ s in Icc (0 : ℝ) t, coordinateX0Mass (u s) ^ 2) <=
+      2 * R * Real.sqrt ν⁻¹ := by
+  refine (sqrt_X0_sq_le_sqrt_Xm1_mul_X1 u t hum1 hu1 hmixed).trans ?_
+  refine ((Real.sqrt_le_sqrt ?_).trans_eq
+    (Real.sqrt_sq (mul_nonneg (mul_nonneg (by norm_num : (0 : ℝ) <= 2) hR)
+      (Real.sqrt_nonneg _))))
+  calc ∫ s in Icc (0 : ℝ) t, coordinateXm1Mass (u s) * coordinateX1Mass (u s)
+      <= ∫ s in Icc (0 : ℝ) t, (2 * R) * coordinateX1Mass (u s) := by
+        refine integral_mono_of_nonneg (μ := volume.restrict (Icc (0 : ℝ) t))
+          ?_ (Integrable.smul (2 * R) hX1int) ?_
+        · filter_upwards with s
+          exact mul_nonneg (coordinateXm1Mass_nonneg (u s))
+            (coordinateX1Mass_nonneg (u s))
+        · filter_upwards [ae_restrict_mem measurableSet_Icc] with s hs
+          exact mul_le_mul_of_nonneg_right (hXm1 s hs)
+            (coordinateX1Mass_nonneg (u s))
+    _ = (2 * R) * ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (u s) := by
+        exact integral_smul (μ := volume.restrict (Icc (0 : ℝ) t))
+          (c := 2 * R) (f := fun s => coordinateX1Mass (u s))
+    _ <= (2 * R) * (2 * ν⁻¹ * R) :=
+        mul_le_mul_of_nonneg_left hX1
+          (mul_nonneg (by norm_num : (0 : ℝ) <= 2) hR)
+    _ = 4 * ν⁻¹ * R ^ 2 := by ring
+    _ = (2 * R * Real.sqrt ν⁻¹) ^ 2 := by
+        rw [mul_pow, mul_pow, Real.sq_sqrt (inv_nonneg.mpr hν.le)]
+        ring
+
+/-- Chunk H, step 4: the square-root (Hölder-½) modulus of continuity of the
+mild image on the whole-space ball.  Combining the difference decomposition
+`continuousMildImage_sub_coordinateXm1Mass_le`, the transported Cauchy--Schwarz
+slot budget `coordinateXm1Mass_continuousDuhamel_le_sqrt_product_X0_sq`, and
+the ball budgets `<= 2 R` (pointwise `X⁻¹`) and `<= 2 ν⁻¹ R` (total `X¹`), the
+`X⁻¹` distance of two mild images is bounded by
+
+`12 * sqrt ν⁻¹ * R * sqrt (∫₀ᵗ X⁻¹(u − v) · X¹(u − v))`.
+
+Honest status: this is a quadratic/Hölder-½ modulus with a ball-radius factor,
+NOT a linear Banach contraction constant; the linear-constant residual of the
+module header remains OPEN, as does completeness of the ball subtype.  The
+attained constant is `12 sqrt ν⁻¹ R` against the mixed `X⁻¹·X¹` feed of the
+difference slot. -/
+theorem continuousMildImage_sub_coordinateXm1Mass_le_ball_modulus
+    (ν : ℝ) (hν : 0 < ν) (a : ES -> ComplexSpace)
+    (u v : ℝ -> ES -> ComplexSpace) (R t : ℝ) (hR : 0 <= R)
+    (hpol : ∀ i : Fin 3, ∀ ξ : ES, ∀ s ∈ Icc (0 : ℝ) t,
+        continuousNavierSource u u s ξ i - continuousNavierSource v v s ξ i =
+          continuousNavierSource (u - v) u s ξ i +
+            continuousNavierSource v (u - v) s ξ i)
+    (huv : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u u s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvv : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource v v s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hwu : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES =>
+          continuousNavierSource (u - v) u s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvw : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES =>
+          continuousNavierSource v (u - v) s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hDwu : ∀ i : Fin 3, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousDuhamel ν (u - v) u t ξ i‖))
+    (hDvw : ∀ i : Fin 3, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousDuhamel ν v (u - v) t ξ i‖))
+    (hmw : ∀ r j, AEStronglyMeasurable (fun η : ES => (u - v) r η j))
+    (hmw0 : ∀ r j, Integrable (fun η : ES => ‖(u - v) r η j‖))
+    (hmu : ∀ r j, AEStronglyMeasurable (fun η : ES => u r η j))
+    (hmu0 : ∀ r j, Integrable (fun η : ES => ‖u r η j‖))
+    (hmv : ∀ r j, AEStronglyMeasurable (fun η : ES => v r η j))
+    (hmv0 : ∀ r j, Integrable (fun η : ES => ‖v r η j‖))
+    (hw2 : Integrable (fun s : ℝ => coordinateX0Mass ((u - v) s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hu2 : Integrable (fun s : ℝ => coordinateX0Mass (u s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hv2 : Integrable (fun s : ℝ => coordinateX0Mass (v s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hbWU : ∀ i : Fin 3, Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+          (fun ζ : ES => continuousNavierSource (u - v) u p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hfWU : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s)
+          (fun ζ : ES => continuousNavierSource (u - v) u s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hgWU : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ζ : ES => continuousNavierSource (u - v) u s ζ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0WU : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3,
+        Integrable (fun ξ : ES =>
+          ‖ξ‖⁻¹ * ‖continuousNavierSource (u - v) u s ξ i‖))
+    (hs1WU : ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource (u - v) u s ξ)))
+    (hiWU : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource (u - v) u s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hprodWU : IntegrableOn (fun r =>
+        coordinateX0Mass ((u - v) r) * coordinateX0Mass (u r)) (Icc (0 : ℝ) t))
+    (hbVW : ∀ i : Fin 3, Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+          (fun ζ : ES => continuousNavierSource v (u - v) p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hfVW : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s)
+          (fun ζ : ES => continuousNavierSource v (u - v) s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hgVW : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ζ : ES => continuousNavierSource v (u - v) s ζ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0VW : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3,
+        Integrable (fun ξ : ES =>
+          ‖ξ‖⁻¹ * ‖continuousNavierSource v (u - v) s ξ i‖))
+    (hs1VW : ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource v (u - v) s ξ)))
+    (hiVW : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource v (u - v) s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hprodVW : IntegrableOn (fun r =>
+        coordinateX0Mass (v r) * coordinateX0Mass ((u - v) r)) (Icc (0 : ℝ) t))
+    (wXm1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖(u - v) r η j‖))
+    (wX1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖(u - v) r η j‖))
+    (hmixedW : Integrable (fun s : ℝ =>
+        coordinateXm1Mass ((u - v) s) * coordinateX1Mass ((u - v) s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (uXm1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (uX1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (hmixedU : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (u s) * coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (vXm1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖v r η j‖))
+    (vX1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖v r η j‖))
+    (hmixedV : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (v s) * coordinateX1Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (huXm1 : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass (u s) <= 2 * R)
+    (huX1int : Integrable (fun s : ℝ => coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (huX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (u s) <= 2 * ν⁻¹ * R)
+    (hvXm1 : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass (v s) <= 2 * R)
+    (hvX1int : Integrable (fun s : ℝ => coordinateX1Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (v s) <= 2 * ν⁻¹ * R) :
+    coordinateXm1Mass (fun ξ : ES =>
+        continuousMildImage ν hν a u t ξ - continuousMildImage ν hν a v t ξ) <=
+      12 * Real.sqrt ν⁻¹ * R *
+        Real.sqrt (∫ s in Icc (0 : ℝ) t,
+          coordinateXm1Mass ((u - v) s) * coordinateX1Mass ((u - v) s)) := by
+  have hG4 := continuousMildImage_sub_coordinateXm1Mass_le ν hν a u v t
+    hpol huv hvv hwu hvw hDwu hDvw
+  set A := Real.sqrt (∫ s in Icc (0 : ℝ) t,
+      coordinateXm1Mass ((u - v) s) * coordinateX1Mass ((u - v) s)) with hAd
+  set C := 2 * R * Real.sqrt ν⁻¹ with hCd
+  have hw_sqrt :
+      Real.sqrt (∫ s in Icc (0 : ℝ) t, coordinateX0Mass ((u - v) s) ^ 2) <= A := by
+    rw [hAd]
+    exact sqrt_X0_sq_le_sqrt_Xm1_mul_X1 (u - v) t wXm1 wX1 hmixedW
+  have hu_sqrt : Real.sqrt (∫ s in Icc (0 : ℝ) t, coordinateX0Mass (u s) ^ 2) <= C := by
+    rw [hCd]
+    exact sqrt_integral_X0_sq_le_two_R_mul_sqrt_invNu u ν t R hν hR uXm1 uX1
+      hmixedU huXm1 huX1int huX1
+  have hv_sqrt : Real.sqrt (∫ s in Icc (0 : ℝ) t, coordinateX0Mass (v s) ^ 2) <= C := by
+    rw [hCd]
+    exact sqrt_integral_X0_sq_le_two_R_mul_sqrt_invNu v ν t R hν hR vXm1 vX1
+      hmixedV hvXm1 hvX1int hvX1
+  have hDwu := coordinateXm1Mass_continuousDuhamel_le_sqrt_product_X0_sq
+    (u - v) u ν t hν hbWU hfWU hgWU hb0WU hs1WU hiWU hmw hmu hmw0 hmu0 hprodWU hw2 hu2
+  have hDvw := coordinateXm1Mass_continuousDuhamel_le_sqrt_product_X0_sq
+    v (u - v) ν t hν hbVW hfVW hgVW hb0VW hs1VW hiVW hmv hmw hmv0 hmw0 hprodVW hv2 hw2
+  have b1 : coordinateXm1Mass (continuousDuhamel ν (u - v) u t) <= 3 * (A * C) := by
+    refine hDwu.trans (mul_le_mul_of_nonneg_left ?_
+      (by norm_num : (0 : ℝ) <= 3))
+    gcongr
+  have b2 : coordinateXm1Mass (continuousDuhamel ν v (u - v) t) <= 3 * (C * A) := by
+    refine hDvw.trans (mul_le_mul_of_nonneg_left ?_
+      (by norm_num : (0 : ℝ) <= 3))
+    gcongr
+  have hsum : (3 : ℝ) * (A * C) + 3 * (C * A) = 12 * Real.sqrt ν⁻¹ * R * A := by
+    rw [hAd, hCd]
+    ring
+  refine (hG4.trans (add_le_add b1 b2)).trans hsum.le
+
+-- Axiom audit for the public API of this module.
+#print axioms normXm1_add_le
+#print axioms normX1_add_le
+#print axioms coordinateXm1Mass_add_le
+#print axioms coordinateX1Mass_add_le
+#print axioms continuousMildImage_coord_apply
+#print axioms coordinateXm1Mass_continuousDuhamel_self_le_integral_product
+#print axioms continuousMildImage_coordinateXm1Mass_le
+#print axioms integral_normX1_continuousDuhamel_self_le_source
+#print axioms integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
+#print axioms integral_coordinateX1Mass_continuousMildImage_le
+#print axioms continuousMildImage_self_map_ball
+#print axioms continuousMildImage_self_map_ball_twoR
+#print axioms continuousNavierSource_self_sub_self
+#print axioms continuousDuhamel_self_sub_self
+#print axioms coordinateXm1Mass_continuousDuhamel_le_integral_X0_product
+#print axioms continuousMildImage_sub_coordinateXm1Mass_le
+#print axioms coordinateXm1Mass_continuousDuhamel_le_sqrt_product_X0_sq
+#print axioms sqrt_X0_sq_le_sqrt_Xm1_mul_X1
+#print axioms continuousMildImage_sub_coordinateXm1Mass_le_ball_modulus
