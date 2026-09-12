@@ -14,9 +14,16 @@ modulus is
   `X⁻¹(mild u t - mild v t) ≤ (3/2) * sqrt (R * d)`.
 
 Honest status (recorded per `research-mathematics.md` §2): this is a
-quadratic/Hölder-½ modulus, NOT a linear Banach contraction constant, and
-the module header's linear-constant obligation CANNOT be closed at this
-abstraction layer.  The fixed-time symbol carrier
+quadratic/Hölder-½ modulus, NOT a linear Banach contraction constant, and no
+linear constant is available FOR THIS METRIC — the plain sup-`X⁻¹` ball
+metric.  The boundary is metric-specific, not a property of the lift: in
+`ContinuousLeiLinAdmissibleContraction` the SAME Chunk-H modulus is shown to
+be linear in the admissible norm `A + ν·B` (sup-`X⁻¹` bound `A` plus `ν`
+times the spacetime `X¹` bound `B`), with the strict contraction factor
+`3/8` at the same threshold `R ≤ ν/16`
+(`continuousMildImage_sub_coordinateXm1Mass_le_linear_admissible`).  The
+reason the sup-`X⁻¹` metric alone cannot carry a linear constant is below.
+The fixed-time symbol carrier
 (`ContinuousLeiLinSpace.inv_mul_derivative_le`) cancels the output `X⁻¹`
 weight against the output-frequency derivative exactly, leaving the
 UNWEIGHTED convolution mass of both inputs: every bilinear feed here ends
@@ -27,10 +34,12 @@ quantity `X⁰(w)` is not linearly bounded by `sup X⁻¹(w)` on this carrier
 like `Λ⁻¹`), and negative weights do not split across convolution
 (`‖η + ζ‖⁻¹ ≤ ‖η‖⁻¹ + ‖ζ‖⁻¹` fails).  A linear contraction therefore needs
 the difference measured in a spacetime admissible norm carrying its own
-dissipation feed (the Kato / Furioli--Lemarié-Rieusset scheme); on the
-plain sup-`X⁻¹` metric the `(3/2)·sqrt(R·d)` bound obtained here is the
-attained contraction obligation for the lift, matching the BUILD THE LIFT
-directive's instruction to report the attained constant honestly.
+dissipation feed (the Kato / Furioli--Lemarié-Rieusset scheme) — that is
+exactly what `ContinuousLeiLinAdmissibleContraction` now supplies for the
+`X⁻¹` output slot.  On the plain sup-`X⁻¹` metric the `(3/2)·sqrt(R·d)`
+bound obtained here is the attained contraction obligation for the lift,
+matching the BUILD THE LIFT directive's instruction to report the attained
+constant honestly.
 -/
 
 set_option autoImplicit false
@@ -210,9 +219,11 @@ the pointwise `X⁻¹` distance bound `d` on `[0, t]`, and whose `X¹` dissipati
 budgets are the ball budgets `2 ν⁻¹ R`, the mild image difference at time `t`
 is bounded by `(3/2) * sqrt (R * d)` at `R ≤ ν/16`.  As recorded in the module
 header, this Hölder-½ form is the ATTAINED contraction constant of the whole-
-space lift on the sup-`X⁻¹` ball metric; the linear Banach form is impossible
-on this symbol carrier and remains a named obligation only for an extended
-spacetime metric. -/
+space lift on the sup-`X⁻¹` ball metric.  The linear Banach form is
+unavailable on THAT metric; it is available on the admissible spacetime norm
+and is proved in
+`ContinuousLeiLinAdmissibleContraction.continuousMildImage_sub_coordinateXm1Mass_le_linear_admissible`
+with factor `3/8`. -/
 theorem continuousMildImage_sub_coordinateXm1Mass_le_ball_modulus_sqrt_ball_distance
 
     (ν : ℝ) (hν : 0 < ν) (a : ES -> ComplexSpace)
