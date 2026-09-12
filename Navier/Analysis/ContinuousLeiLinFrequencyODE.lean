@@ -44,8 +44,11 @@ Method (all identities junk-safe, all regularity carried):
   (`physicalCoord`) is the remaining reconstruction obligation, and the Laplacian
   interpretation of the multiplier needs the moment/regularity facts listed as
   obligation 2 in the handoff notes.
-* No `t₀ = 0`: the FTC is two-sided and the interval is `[0, t₀]`; at `t₀ = 0` the
-  consumer needs the one-sided derivative lattice used by the physical carrier.
+* The two-sided derivative statement genuinely needs `t₀ > 0`; at `t₀ = 0` the file
+  supplies the RIGHT derivative (`HasDerivWithinAt` for `Ici 0`) via the endpoint
+  FTC `intervalIntegral.integral_hasDerivWithinAt_right` and the `FTCFilter`
+  one-sided lattice — the value there is `-(ν‖ξ‖²) • a ξ + source`, since
+  `mild(0) = a` and the Duhamel term vanishes.
 * The three carried hypotheses on the weighted source `weightedSource ν u u ξ i`
   (interval-integrable on `[0, t₀]`, strongly measurable and continuous at `t₀`)
   are NOT verified here: the supplier is the admissible-ball trajectory
@@ -194,6 +197,90 @@ theorem hasDerivAt_continuousMildImage (ν : ℝ) (hν : 0 < ν) (a : ES → Com
   ext i
   simp only [Pi.smul_apply, Pi.add_apply]
 
+/-- A function is always interval-integrable on a zero-length interval
+(`Ι 0 0 = ∅`, integrable on the empty set). -/
+theorem intervalIntegrable_zero {E : Type _} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (f : ℝ → E) : IntervalIntegrable f volume (0 : ℝ) 0 := by
+  rw [intervalIntegrable_iff]
+  simp
+
+/-- **Per-frequency Duhamel right derivative at `0`** (`HasDerivWithinAt` on `Ici 0`).
+The endpoint FTC is consumed through the `FTCFilter` lattice: the interval-
+integrability hypothesis is vacuous at `0` (zero-length interval,
+`intervalIntegrable_zero`), so only the measurability and (two-sided, hence
+right-)continuity hypotheses on the weighted source are carried. The boundary
+value `E 0 * G 0` is the raw source because both carried exponentials vanish. -/
+theorem hasDerivWithinAt_zero_continuousDuhamel_coord (ν : ℝ)
+    (u v : ℝ → ES → ComplexSpace) (ξ : ES) (i : Fin 3)
+    (hG_meas : StronglyMeasurableAtFilter (weightedSource ν u v ξ i) (𝓝 0))
+    (hG_cont : ContinuousAt (weightedSource ν u v ξ i) 0) :
+    HasDerivWithinAt (fun t : ℝ => continuousDuhamel ν u v t ξ i)
+      (continuousNavierSource u v 0 ξ i) (Ici 0) 0 := by
+  set E : ℝ → ℂ := fun t => ((Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) with hE
+  set G : ℝ → ℂ := weightedSource ν u v ξ i with hG
+  have key (t : ℝ) (ht : t ∈ Ici (0 : ℝ)) :
+      continuousDuhamel ν u v t ξ i = E t * ∫ s in (0 : ℝ)..t, G s := by
+    rw [hE, hG]
+    exact continuousDuhamel_coord_eq ν u v t (mem_Ici.mp ht) ξ i
+  have hf0 : IntervalIntegrable G volume (0 : ℝ) 0 := intervalIntegrable_zero _
+  have hmeas : StronglyMeasurableAtFilter G (𝓝[>] (0 : ℝ)) :=
+    hG_meas.filter_mono nhdsWithin_le_nhds
+  have hcont : ContinuousWithinAt G (Ioi 0) 0 := hG_cont.continuousWithinAt
+  have hJ : HasDerivWithinAt (fun u : ℝ => ∫ s in (0 : ℝ)..u, G s) (G 0) (Ici 0) 0 :=
+    intervalIntegral.integral_hasDerivWithinAt_right hf0 hmeas hcont
+  have hE0 : HasDerivWithinAt E (-(((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ)) • E 0) (Ici 0) 0 :=
+    (hasDerivAt_coe_exp_neg (ν * ‖ξ‖ ^ 2) 0).hasDerivWithinAt
+  have hg0 : E 0 * G 0 = continuousNavierSource u v 0 ξ i := by
+    show ((Real.exp (-(ν * ‖ξ‖ ^ 2 * 0)) : ℝ) : ℂ) *
+        (((Real.exp (ν * ‖ξ‖ ^ 2 * 0) : ℝ) : ℂ) • continuousNavierSource u v 0 ξ i)
+        = continuousNavierSource u v 0 ξ i
+    have hexp : Real.exp (-(ν * ‖ξ‖ ^ 2 * 0)) * Real.exp (ν * ‖ξ‖ ^ 2 * 0) = 1 := by
+      have hz : -(ν * ‖ξ‖ ^ 2 * 0) + ν * ‖ξ‖ ^ 2 * 0 = 0 := by ring
+      rw [← Real.exp_add, hz, Real.exp_zero]
+    rw [smul_eq_mul, ← mul_assoc, ← Complex.ofReal_mul, hexp, Complex.ofReal_one, one_mul]
+  have hmul :=
+    (hE0.mul hJ).congr_of_eventuallyEq_of_mem (Filter.Eventually.of_forall (fun _ => rfl))
+      (mem_Ici.mpr (le_refl (0 : ℝ)))
+  have hevt : (fun t : ℝ => E t * ∫ s in (0 : ℝ)..t, G s)
+      =ᶠ[𝓝[Ici (0 : ℝ)] (0 : ℝ)] (fun t : ℝ => continuousDuhamel ν u v t ξ i) := by
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    exact (key t ht).symm
+  have hfinal :=
+    hmul.congr_of_eventuallyEq_of_mem hevt.symm (mem_Ici.mpr (le_refl (0 : ℝ)))
+  exact hfinal.congr_deriv
+    (by rw [intervalIntegral.integral_same, mul_zero, zero_add]; exact hg0)
+
+/-- **Frequency ODE at `t₀ = 0`, right derivative**:
+`∂ₜ⁺ mild(0) = -(ν‖ξ‖²) • mild(0) + source(0)` with `mild(0) = a ξ` — the same
+value form as `hasDerivAt_continuousMildImage_coord`, covering the initial time. -/
+theorem hasDerivWithinAt_zero_continuousMildImage_coord (ν : ℝ) (hν : 0 < ν)
+    (a : ES → ComplexSpace) (u : ℝ → ES → ComplexSpace) (ξ : ES) (i : Fin 3)
+    (hG_meas : StronglyMeasurableAtFilter (weightedSource ν u u ξ i) (𝓝 0))
+    (hG_cont : ContinuousAt (weightedSource ν u u ξ i) 0) :
+    HasDerivWithinAt (fun t : ℝ => continuousMildImage ν hν a u t ξ i)
+      (-(((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ)) • continuousMildImage ν hν a u 0 ξ i
+        + continuousNavierSource u u 0 ξ i) (Ici 0) 0 := by
+  have hD0 : continuousDuhamel ν u u 0 ξ i = 0 := by
+    rw [continuousDuhamel_coord_eq ν u u 0 (le_refl 0) ξ i, intervalIntegral.integral_same,
+      mul_zero]
+  have h := (hasDerivAt_heatVec_coord ν a ξ i 0).hasDerivWithinAt.add
+    (hasDerivWithinAt_zero_continuousDuhamel_coord ν u u ξ i hG_meas hG_cont)
+  exact h.congr_deriv (by rw [continuousMildImage_coord_apply, hD0, add_zero])
+
+/-- Profile-valued right-derivative form of the frequency ODE at `t₀ = 0`. -/
+theorem hasDerivWithinAt_zero_continuousMildImage (ν : ℝ) (hν : 0 < ν)
+    (a : ES → ComplexSpace) (u : ℝ → ES → ComplexSpace) (ξ : ES)
+    (hG_meas : ∀ i : Fin 3, StronglyMeasurableAtFilter (weightedSource ν u u ξ i) (𝓝 0))
+    (hG_cont : ∀ i : Fin 3, ContinuousAt (weightedSource ν u u ξ i) 0) :
+    HasDerivWithinAt (fun t : ℝ => continuousMildImage ν hν a u t ξ)
+      (-(((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ)) • continuousMildImage ν hν a u 0 ξ
+        + continuousNavierSource u u 0 ξ) (Ici 0) 0 := by
+  have h := hasDerivWithinAt_pi.mpr fun i =>
+    hasDerivWithinAt_zero_continuousMildImage_coord ν hν a u ξ i (hG_meas i) (hG_cont i)
+  refine' h.congr_deriv _
+  ext i
+  simp only [Pi.smul_apply, Pi.add_apply]
+
 end Navier.Analysis.ContinuousLeiLinFrequencyODE
 
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivAt_coe_exp_neg
@@ -203,3 +290,7 @@ end Navier.Analysis.ContinuousLeiLinFrequencyODE
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivAt_heatVec_coord
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivAt_continuousMildImage_coord
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivAt_continuousMildImage
+#print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.intervalIntegrable_zero
+#print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivWithinAt_zero_continuousDuhamel_coord
+#print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivWithinAt_zero_continuousMildImage_coord
+#print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivWithinAt_zero_continuousMildImage
