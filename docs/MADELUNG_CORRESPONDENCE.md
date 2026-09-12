@@ -80,6 +80,57 @@ be excluded from the pairing estimate alone; excluding degeneracy for the
 selected candidate requires additional structure of the lift, such as a
 transport or energy identity for the wavefunction.
 
+## Kernelized decoder obstruction: phase topology and zeros
+
+`Navier/Analysis/MadelungDecoderCurlObstruction.lean` (2026-09-11)
+turns the correspondence's qualitative "the scalar route kills
+vorticity" remark into a checked negative transport proposition on the
+crown's own `SchwartzVelocity` carrier. The decoder is stated in
+component form, `MadelungInitialDecoder κ ψ u₀ : u₀ x i = κ *
+(Dψ x eᵢ / ψ x).im`, because `Inner ℝ Space` does not synthesize in
+this toolchain pin.
+
+The datum family is `rotationalDatum lam`:
+`u = (−λ x₁ ρ, λ x₀ ρ, 0)` with `ρ(x) = θ(x₀² + x₁²) · θ(x₂)` for a
+`C^∞` bump `θ` equal to `1` at `0`, valued in `[0,1]`, with support in
+the unit ball. Each datum is compactly supported (hence Schwartz via
+`HasCompactSupport.toSchwartzMap`), divergence-free (the cross terms
+`−λx₁·2x₀θ′θ` and `λx₀·2x₁θθ′` cancel because `ρ` is radial in
+`(x₀,x₁)` — `divergenceFreeInitial_rotationalDatum`), obeys the raw
+sup-norm bound `|u x i| ≤ |λ|` (`rotationalDatum_le`), and has
+non-commuting mixed partials at the origin: `∂₀u₁(0) = λ ≠ −λ =
+∂₁u₀(0)`. For any `ν₀ > 0` and `0 < λ < ν₀/16` the datum is therefore
+strictly below the lattice small-data threshold while carrying genuine
+local rotation.
+
+The obstruction theorem
+`no_scalar_madelung_initial_lift_of_rotational_data` states that for
+every `λ > 0` there are no `κ` and no `C^∞` scalar `ψ` with `ψ 0 ≠ 0`
+that decodes `rotationalDatum λ`. The mechanism is
+`madelung_decoder_mixed_partial_comm`: any decoded field has commuting
+mixed partials at every point where `ψ` is nonzero — rotate `ψ` by a
+constant phase making `ψ 0` positive real, invoke the smooth arctangent
+phase `Θ = arctan((c₀ψ)ᵢ/(c₀ψ)ᵣ)` on a neighbourhood, and apply
+symmetry of second derivatives to `Θ`.
+
+The scope is honest: this is a decoder-level obstruction at the
+rotational core of the datum, not a claim about the full spacetime
+Madelung PDE system, and it excludes preimages nonzero at the
+evaluation point (field division makes the decoder vanish at zeros of
+`ψ`, so a zero of `ψ` forces a zero of the decoded velocity). What it
+discharges is exactly the `{phase topology, zeros}` obligation among
+the five lift obligations: the scalar route transports irrotational
+data only, so it cannot carry the `ε = ν₀/16` small-data driver, whose
+rotational datum above is the kernel counterexample. The remaining
+transport obligations `{PDE, forcing, energy class}` live in the
+whole-space ScaledCutoff family
+(`WholeSpaceSolenoidalHeatApproximation/ConvectionLimit/FullViscousLimit`).
+
+All three public results are strict: raw `#print axioms` gives
+`[propext, Classical.choice, Quot.sound]` with no `sorryAx`;
+`Classical.choice` enters only through the chosen bump from the
+standard Mathlib smooth Urysohn existence theorem.
+
 ## Exact PDE frontier
 
 `PeriodicMildOfficialEquation.mildFixedPoint_officialMomentum_positiveTime`

@@ -347,8 +347,16 @@ preserves the pre-enhancement endpoint snapshot.
 
 The [Madelung correspondence note](MADELUNG_CORRESPONDENCE.md) records the
 scalar and spinor relationships, a conditional reconstruction obstruction, and
-the exact additional inputs needed for a wavefunction lift. It is analytical
-discussion, not an added Lean theorem or a proved quantum consequence.
+the exact additional inputs needed for a wavefunction lift. The note's
+"phase topology / zeros" input is now kernelized:
+`Navier/Analysis/MadelungDecoderCurlObstruction.lean` proves, on the crown
+`SchwartzVelocity` carrier and under strict axioms, that no `C^∞` scalar
+wavefunction nonzero at the origin decodes any rotational datum
+`λ > 0` — the compactly supported, divergence-free `rotationalDatum λ` with
+`|u| ≤ λ < ν₀/16` is the counterexample — so the scalar route cannot carry
+the small-data lift. The remaining transport obligations
+`{PDE, forcing, energy class}` are located in the whole-space ScaledCutoff
+family.
 
 [Breakdown, uniqueness, and concentration](DYNAMICS_AND_CONCENTRATION.md)
 explains the exact comparison class, the finite-energy volume bound for fast
