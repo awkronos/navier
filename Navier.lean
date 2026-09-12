@@ -17,6 +17,8 @@ import Navier.Analysis.ContinuousLeiLinDissipation
 import Navier.Analysis.ContinuousLeiLinSelfMap
 import Navier.Analysis.ContinuousLeiLinContraction
 import Navier.Analysis.ContinuousLeiLinAdmissibleContraction
+import Navier.Analysis.ContinuousLeiLinMixedX1
+import Navier.Analysis.ContinuousLeiLinBanachContraction
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear

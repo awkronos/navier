@@ -31,16 +31,22 @@ slot of the admissible norm, at the same `ν/16` threshold carried by the
 self-map (`continuousMildImage_self_map_ball`).  It closes the module
 header's "linear constant" obligation for that slot.
 
-Remaining obligation, named exactly (`research-mathematics.md` §2): the
-matching LINEAR estimate for the second slot of the admissible norm, i.e.
-`ν · ∫₀ᵗ X¹(mild u s − mild v s) ds ≤ κ · (A + ν · B)` with `κ < 1`.  The
-whole-space `X¹` spacetime budget is currently proved only for the DIAGONAL
-Duhamel feed (`integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product`,
-whose Tonelli kernel `kernelFun` is hard-wired to `continuousNavierSource u u`);
-the missing primitive is the mixed-slot generalization of that kernel to
-`continuousNavierSource a b`.  Once it lands, the two slots together give the
-complete Banach contraction of the whole-space mild map on the admissible
-ball, which is the fixed-point input of the NS4 whole-space carrier.
+The second slot of the admissible norm is now closed too:
+`ContinuousLeiLinMixedX1` supplies the mixed-slot generalization of the
+Tonelli kernel (`integral_coordinateX1Mass_continuousDuhamel_le_integral_X0_product`),
+and `ContinuousLeiLinBanachContraction.X1_slot_admissible_reduction` gives
+`ν · ∫₀ᵗ X¹(mild u s − mild v s) ds ≤ (3/8)·(A + ν·B)` at the same threshold.
+Both slots together give the LINEAR Banach factor `3/4 < 1`
+(`admissibleNorm_slot_sum`).
+
+Remaining obligations toward the NS4 whole-space carrier, named exactly
+(`research-mathematics.md` §2): (i) completeness of the admissible ball as a
+metric space and the Banach fixed-point construction from the self-map
+(`continuousMildImage_self_map_ball`) plus this contraction; (ii) Fourier
+inversion of the resulting fixed point to a physical `VelocityEvolution` and
+`PressureEvolution` with Schwartz initial agreement and Plancherel finite
+energy.  Neither is an estimate any more; both are construction work on the
+already-closed budgets.
 -/
 
 set_option autoImplicit false
