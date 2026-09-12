@@ -60,6 +60,27 @@ a period-one field attains a Schwartz datum only if the datum is zero, so no
 that realization as its velocity. The remaining transport primitive is a
 non-periodic whole-space carrier.
 
+That carrier is being built directly on `ℝ³` in the continuous Lei–Lin
+modules. Its fixed-point estimates are now closed: the mild map maps the
+`R ≤ ν/16` ball into itself
+([`ContinuousLeiLinSelfMap.lean`](../Navier/Analysis/ContinuousLeiLinSelfMap.lean),
+`continuousMildImage_self_map_ball`) and contracts the admissible Kato /
+Lei–Lin norm `A + ν·B` with the strict linear factor `3/4`, closing both
+slots
+([`ContinuousLeiLinAdmissibleContraction.lean`](../Navier/Analysis/ContinuousLeiLinAdmissibleContraction.lean)
+for the `X⁻¹` slot at `3/8`,
+[`ContinuousLeiLinMixedX1.lean`](../Navier/Analysis/ContinuousLeiLinMixedX1.lean)
+and
+[`ContinuousLeiLinBanachContraction.lean`](../Navier/Analysis/ContinuousLeiLinBanachContraction.lean)
+for the `X¹` slot at `3/8`). The plain sup-`X⁻¹` metric admits only the
+Hölder-½ modulus `(3/2)·sqrt(R·d)`
+([`ContinuousLeiLinContraction.lean`](../Navier/Analysis/ContinuousLeiLinContraction.lean));
+that is a fact about the metric, not about the lift. What remains for the
+whole-space carrier is construction, not estimation: completeness of the
+admissible ball and the Banach fixed point, then Fourier inversion of the
+fixed point to a `VelocityEvolution`/`PressureEvolution` pair with Schwartz
+initial agreement and Plancherel finite energy.
+
 Verification commands and their scope are in
 [`FORMALIZATION.md`](FORMALIZATION.md) and
 [`REPRODUCIBILITY.md`](../REPRODUCIBILITY.md). Mathematical progress is a

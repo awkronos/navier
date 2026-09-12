@@ -422,6 +422,65 @@ theorem admissibleNorm_slot_sum (ν A B X Y : ℝ)
 /-- The composed Banach factor is strictly less than one. -/
 theorem banach_factor_lt_one : (3 / 4 : ℝ) < 1 := by norm_num
 
+/-! ## The uniqueness mechanism bought by the contraction
+
+A contraction factor `< 1` gives uniqueness without any completeness
+argument: if the difference of two fixed points has ATTAINED admissible
+bounds `A`, `B`, then each slot bound reproduces itself with the factor
+`3/8`, and the two together force `A = B = 0`.  The arithmetic core is
+isolated below; the analytic input is exactly that the two slot bounds are
+attained by the difference (the `X⁻¹` bound as a supremum over `[0, t]`, the
+`X¹` bound as the actual spacetime integral). -/
+
+/-- **The admissible self-improvement collapse.**  Nonnegative admissible
+bounds that reproduce themselves under the two `3/8` slot contractions are
+both zero.  This is the uniqueness engine of the whole-space mild map: the
+sum of the two slot inequalities gives `A + ν·B ≤ (3/4)(A + ν·B)`, and
+`3/4 < 1` with nonnegativity forces the pair to vanish. -/
+theorem admissible_bounds_eq_zero_of_self_contraction (ν A B : ℝ) (hν : 0 < ν)
+    (hA : 0 ≤ A) (hB : 0 ≤ B)
+    (hslotXm1 : A ≤ (3 / 8 : ℝ) * admissibleNorm ν A B)
+    (hslotX1 : ν * B ≤ (3 / 8 : ℝ) * admissibleNorm ν A B) :
+    A = 0 ∧ B = 0 := by
+  have hNn : 0 ≤ admissibleNorm ν A B := by rw [admissibleNorm]; positivity
+  have hsum : admissibleNorm ν A B ≤ (3 / 4 : ℝ) * admissibleNorm ν A B := by
+    have h := admissibleNorm_slot_sum ν A B A (ν * B) hslotXm1 hslotX1
+    rw [admissibleNorm] at h ⊢
+    linarith
+  have hzero : admissibleNorm ν A B = 0 := by
+    rw [admissibleNorm] at hNn hsum ⊢
+    linarith
+  rw [admissibleNorm] at hzero
+  have hνB : 0 ≤ ν * B := mul_nonneg hν.le hB
+  have hA0 : A = 0 := by linarith
+  have hB0 : B = 0 := by
+    have : ν * B = 0 := by linarith
+    exact (mul_eq_zero.mp this).resolve_left hν.ne'
+  exact ⟨hA0, hB0⟩
+
+/-! ### Satisfiability guards for the collapse premise
+
+Both poles of `admissible_bounds_eq_zero_of_self_contraction` are closed at
+real points: the premise is satisfiable (the zero pair), and it is NOT an
+ambient fact (a nonzero pair violates it).  So the theorem is neither
+vacuous nor content-free. -/
+
+/-- The premise is satisfiable: the zero admissible pair obeys both slot
+contractions, so the theorem is not vacuously true. -/
+theorem collapse_premise_satisfiable (ν : ℝ) :
+    (0 : ℝ) ≤ (3 / 8 : ℝ) * admissibleNorm ν 0 0 ∧
+      ν * 0 ≤ (3 / 8 : ℝ) * admissibleNorm ν 0 0 := by
+  rw [admissibleNorm]
+  norm_num
+
+/-- The premise is not an ambient fact: the pair `A = 1`, `B = 0` violates the
+`X⁻¹` slot contraction at every viscosity, so the hypothesis carries real
+information. -/
+theorem collapse_premise_not_ambient (ν : ℝ) :
+    ¬ ((1 : ℝ) ≤ (3 / 8 : ℝ) * admissibleNorm ν 1 0) := by
+  rw [admissibleNorm]
+  norm_num
+
 end Navier.Analysis.ContinuousLeiLinBanachContraction
 
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.sqrt_integral_X0_sq_le_admissible
@@ -429,3 +488,6 @@ end Navier.Analysis.ContinuousLeiLinBanachContraction
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.X1_slot_admissible_reduction
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.coordinateX1Mass_continuousMildImage_sub_le
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissibleNorm_slot_sum
+#print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissible_bounds_eq_zero_of_self_contraction
+#print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.collapse_premise_satisfiable
+#print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.collapse_premise_not_ambient
