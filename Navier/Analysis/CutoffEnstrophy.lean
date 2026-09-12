@@ -39,10 +39,12 @@ Supporting layer built here and reusable downstream:
   classical solution, obtained through the established transport equation
   `∂ₜω = (ω·∇)u + νΔω − (u·∇)ω`.
 
-Residual (ladder rung 6, integral layer): the `R → ∞` interchange — the
-`∇χ_R`/`Δχ_R` remainders vanish and `E_{χ_R} → E` under the same domination
-hypothesis — feeding `enstrophyDifferentialInequality`.  The integration by
-parts converting the transport and viscous terms into `∇χ`/`Δχ` remainders is
+Consumer (ladder rung 6, integral layer, closed): the `R → ∞` interchange —
+the `∇χ_R`/`Δχ_R` remainders vanish and `E_{χ_R} → E` under the same
+domination hypothesis — is carried out in `Navier.Analysis.EnstrophyLimit`,
+which delivers `enstrophyDifferentialInequality` and
+`enstrophy_apriori_bound`.  The integration by parts converting the transport
+and viscous terms into `∇χ`/`Δχ` remainders is
 `Navier.Analysis.CutoffIntegrationByParts`.
 
 Reference: Majda–Bertozzi, *Vorticity and Incompressible Flow*, §3.3.

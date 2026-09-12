@@ -10,8 +10,15 @@ is the difference of its two endpoint momentum pairings.  The already proved
 Gaussian endpoint domination therefore gives the limit of the actual
 interval integrals.
 
-Identifying this endpoint difference with the interval integral of
-`backwardHeatCurlRhs` remains the precise time-uniformity obligation.
+The identification of this endpoint difference with the interval integral of
+`backwardHeatCurlRhs` — formerly the time-uniformity obligation recorded here —
+is closed in `WholeSpaceSolenoidalHeatRhsIntervalIdentification`
+(`SolvesBefore.intervalIntegral_backwardHeatCurlRhs_eq_momentumDiff`, via the
+constant-majorant dominated convergence
+`SolvesBefore.tendsto_intervalIntegral_atTopCompactBackwardHeatCurlTest_lerayWeakRhs`
+and Hausdorff uniqueness against the limit below).  No time-uniform
+continuity of the solution is required; the `energy_le_initial` field supplies
+the constant majorant.
 -/
 
 set_option autoImplicit false

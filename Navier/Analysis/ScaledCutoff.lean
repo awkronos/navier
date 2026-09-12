@@ -26,13 +26,13 @@ estimate, with the derivative decay that makes the remainders of
   `scaledCutoff_nonneg`, `scaledCutoff_le_one`,
   `scaledCutoff_eventually_one`.
 
-Residual (ladder rung 6, part (c), strictly lower): assemble these decay
-rates with `cutoffEnstrophy_hasDerivAt_ibp` — the remainder integrals are
-`O(R⁻¹)` against an `L¹` majorant of `‖u‖|ω|²` and `O(R⁻²)` against the
+Consumer (ladder rung 6, part (c), closed): `EnstrophyLimit` assembles these
+decay rates with `cutoffEnstrophy_hasDerivAt_ibp` — the remainder integrals
+are `O(R⁻¹)` against an `L¹` majorant of `‖u‖|ω|²` and `O(R⁻²)` against the
 `LocallyDominatedEnstrophy` majorant, and the surviving terms converge by
-dominated convergence — to deliver `E' ≤ 2G·E`
-(`enstrophyDifferentialInequality` after its Pattern-A hypothesis
-strengthening).
+dominated convergence — delivering `E' ≤ 2G·E`
+(`EnstrophyLimit.enstrophyDifferentialInequality`) and the Grönwall bound
+(`EnstrophyLimit.enstrophy_apriori_bound`).
 
 Reference: Majda–Bertozzi, *Vorticity and Incompressible Flow*, §3.3.
 -/

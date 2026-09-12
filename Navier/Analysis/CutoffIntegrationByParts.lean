@@ -28,13 +28,13 @@ capstone of the integral layer:
 stretching production, the two cutoff remainders, and the sign-definite
 dissipation.
 
-Residual (ladder rung 6, integral layer, part (c) — strictly lower): for the
-scaled family `χ_R = χ(·/R)` the remainders `∫(u·∇χ_R)|ω|²` and
-`∫(Δχ_R)|ω|²` vanish as `R → ∞` and `E_{χ_R} → E` under the
-`LocallyDominatedEnstrophy` hypothesis plus a locally uniform velocity bound
-on the support annuli; the limit of the capstone identity then delivers
-`enstrophyDifferentialInequality` (`E' ≤ 2G·E` after
-`stretching_pointwise_bound` and dropping the dissipation).
+Consumer (ladder rung 6, integral layer, part (c), closed): for the scaled
+family `χ_R = χ(·/R)` the remainders `∫(u·∇χ_R)|ω|²` and `∫(Δχ_R)|ω|²`
+vanish as `R → ∞` and `E_{χ_R} → E` under the `LocallyDominatedEnstrophy`
+and `TransportDominatedEnstrophy` hypotheses; the limit of the capstone
+identity delivers `EnstrophyLimit.enstrophyDifferentialInequality`
+(`E' ≤ 2G·E` after `stretching_pointwise_bound` and dropping the
+dissipation) and `EnstrophyLimit.enstrophy_apriori_bound`.
 
 Reference: Majda–Bertozzi, *Vorticity and Incompressible Flow*, §3.3.
 -/

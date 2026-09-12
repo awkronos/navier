@@ -159,8 +159,14 @@ These are reusable infrastructure, not route-specific discoveries.
 | P7 | Compactness interfaces | Approximation, pressure bounds, strong/weak convergence, defect accounting | Required by routes R4/R9/R10 |
 | P8 | Exact-structure test | A predicate distinguishing the true bilinear form from Tao-admissible averages | Both convolution orderings are now explicit. The old growing term cancels with its exchanged ordering; a second polarization survives symmetrization with coefficient `s`, has a conjugate-symmetric divergence-free six-mode table, modal rates `(0,-s,s)`, and squared-frequency-weighted rate `s^3`. An exhaustive `6 x 6` ordered-pair classification proves that the complete coefficient at one off-support output is exactly `s`, not merely that one pair is nonzero. An invariant generated network, exact PDE shell balance, and summability remain open |
 
-P0–P8 may be developed in parallel, but no route reaches (A) without P0, P3,
-P4, and a checked bridge from its route certificate to global continuation.
+P0–P8 may be developed in parallel. In this decomposition no route reaches (A)
+without P0, P3, P4, and a checked bridge from its route certificate to global
+continuation; the proved composition of exactly that bridge is
+`wholeSpaceGlobalRegularity_of_local_continuation_apriori`
+(`Navier/Analysis/CriticalControlDecomposition.lean:237`), whose three explicit
+inputs are `LocalClassicalExistence`, `NormalizedContinuationFromCriticalControl N`,
+and `APrioriCriticalControl N`. A different proof route may establish (A)
+directly.
 
 ## 5. Parallel research routes
 
