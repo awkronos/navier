@@ -543,4 +543,89 @@ theorem backwardHeatCurlField_eq_gradient_cross
       κ τ x₀).differentiable (by norm_num)).differentiableAt
   · fun_prop
 
+/-- Two successive one-coordinate Gaussian moment estimates absorb a quadratic
+monomial into the heat kernel at four times the original heat time. -/
+private theorem exists_abs_two_coordinates_mul_heatKernel_le_fourfold
+    {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t) :
+    ∃ C : ℝ, 0 < C ∧ ∀ (x : Space) (i j : Fin 3),
+      |x i * x j| * heatKernel ν t x ≤ C * heatKernel ν (4 * t) x := by
+  obtain ⟨C₁, hC₁, h₁⟩ :=
+    exists_abs_coordinate_mul_heatKernel_le_doubled hν ht
+  obtain ⟨C₂, hC₂, h₂⟩ :=
+    exists_abs_coordinate_mul_heatKernel_le_doubled hν (by positivity : 0 < 2 * t)
+  refine ⟨C₁ * C₂, by positivity, ?_⟩
+  intro x i j
+  have hG : 0 ≤ heatKernel ν t x := heatKernel_nonneg hν ht x
+  calc |x i * x j| * heatKernel ν t x
+      = |x i| * (|x j| * heatKernel ν t x) := by rw [abs_mul]; ring
+    _ ≤ |x i| * (C₁ * heatKernel ν (2 * t) x) :=
+        mul_le_mul_of_nonneg_left (h₁ x j) (abs_nonneg _)
+    _ = C₁ * (|x i| * heatKernel ν (2 * t) x) := by ring
+    _ ≤ C₁ * (C₂ * heatKernel ν (2 * (2 * t)) x) :=
+        mul_le_mul_of_nonneg_left
+          (by simpa only [show 2 * (2 * t) = 4 * t by ring] using h₂ x i) hC₁.le
+    _ = (C₁ * C₂) * heatKernel ν (4 * t) x := by ring
+
+/-- **Mixed second-derivative Gaussian envelope.**  Every mixed second
+derivative of the space heat kernel is bounded by a quadratic-moment
+contribution at heat time `4t` plus the plain Gaussian itself.  This is the
+order-two companion of `exists_abs_third_heatKernel_le_gaussians`. -/
+theorem exists_abs_second_heatKernel_space_le_gaussians
+    {ν t : ℝ} (hν : 0 < ν) (ht : 0 < t) :
+    ∃ E F : ℝ, 0 < E ∧ 0 < F ∧ ∀ (x : Space) (i j : Fin 3),
+      |fderiv ℝ
+          (fun y : Space =>
+            fderiv ℝ (fun z : Space => heatKernel ν t z) y (basisVector i))
+          x (basisVector j)| ≤
+        E * heatKernel ν (4 * t) x + F * heatKernel ν t x := by
+  obtain ⟨C₂, hC₂, h₂⟩ := exists_abs_two_coordinates_mul_heatKernel_le_fourfold hν ht
+  let c : ℝ := heatSpatialCoefficient ν t
+  have hc : c ≠ 0 := by
+    simp only [c, heatSpatialCoefficient]
+    exact mul_ne_zero
+      (neg_ne_zero.mpr
+        (inv_ne_zero
+          (mul_ne_zero (mul_ne_zero (by norm_num : (4 : ℝ) ≠ 0) (hν.ne'))
+            (ht.ne'))))
+      two_ne_zero
+  refine ⟨|c| ^ 2 * C₂, |c|, mul_pos (pow_pos (abs_pos.mpr hc) 2) hC₂,
+    abs_pos.mpr hc, ?_⟩
+  intro x i j
+  have hG : 0 ≤ heatKernel ν t x := heatKernel_nonneg hν ht x
+  have hb : |basisVector j i| ≤ 1 := by
+    simp only [basisVector, Pi.single_apply]
+    split <;> simp
+  have hquad : heatKernel ν t x * (|c| ^ 2 * |x i * x j|) ≤
+      (|c| ^ 2 * C₂) * heatKernel ν (4 * t) x := by
+    calc heatKernel ν t x * (|c| ^ 2 * |x i * x j|)
+        = |c| ^ 2 * (|x i * x j| * heatKernel ν t x) := by ring
+      _ ≤ |c| ^ 2 * (C₂ * heatKernel ν (4 * t) x) :=
+          mul_le_mul_of_nonneg_left (h₂ x i j) (pow_nonneg (abs_nonneg _) 2)
+      _ = (|c| ^ 2 * C₂) * heatKernel ν (4 * t) x := by ring
+  rw [fderiv_fderiv_heatKernel_space_apply_mixed]
+  have h1 : |c * x j * (c * x i)| = |c| ^ 2 * |x i * x j| := by
+    calc |c * x j * (c * x i)| = |c * x j| * |c * x i| := abs_mul _ _
+      _ = (|c| * |x j|) * (|c| * |x i|) := by rw [abs_mul, abs_mul]
+      _ = |c| ^ 2 * (|x j| * |x i|) := by ring
+      _ = |c| ^ 2 * |x i * x j| := by
+          rw [← abs_mul, mul_comm (x j) (x i)]
+  have h2 : |c * basisVector j i| ≤ |c| := by
+    calc |c * basisVector j i| = |c| * |basisVector j i| := abs_mul _ _
+      _ ≤ |c| * 1 := by gcongr
+      _ = |c| := mul_one _
+  have habs : |c * x j * (c * x i) + c * basisVector j i| ≤
+      |c| ^ 2 * |x i * x j| + |c| := by
+    calc |c * x j * (c * x i) + c * basisVector j i|
+        ≤ |c * x j * (c * x i)| + |c * basisVector j i| := abs_add_le _ _
+      _ ≤ |c| ^ 2 * |x i * x j| + |c| := add_le_add h1.le h2
+  calc |heatKernel ν t x * (c * x j * (c * x i) + c * basisVector j i)|
+      = heatKernel ν t x * |c * x j * (c * x i) + c * basisVector j i| := by
+          rw [abs_mul, abs_of_nonneg hG]
+    _ ≤ heatKernel ν t x * (|c| ^ 2 * |x i * x j| + |c|) :=
+        mul_le_mul_of_nonneg_left habs hG
+    _ = heatKernel ν t x * (|c| ^ 2 * |x i * x j|) +
+        |c| * heatKernel ν t x := by ring
+    _ ≤ (|c| ^ 2 * C₂) * heatKernel ν (4 * t) x + |c| * heatKernel ν t x :=
+        add_le_add hquad (le_refl _)
+
 end Navier.Analysis.WholeSpaceHeatThirdDerivative
