@@ -1,3 +1,4 @@
+import Navier.Analysis.AprioriCriticalControlQuantifiers
 import Navier.Analysis.BKMForcedBreakdownNecessity
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.BealeKatoMajda
