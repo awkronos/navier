@@ -859,6 +859,49 @@ theorem collapse_premise_not_ambient (ν : ℝ) :
   rw [admissibleNorm]
   norm_num
 
+/-! ## Geometric convergence of the Picard scheme
+
+The contraction factor `3/4` is exactly what makes the Picard iteration
+`a_{n+1} = mild a_n` a Cauchy scheme: if `D n` denotes the admissible norm of
+the `n`-th successive difference, the contraction gives `D (n+1) ≤ (3/4)·D n`
+at every step, hence geometric decay and `D n → 0`.  This is the quantitative
+Cauchy input a completeness argument consumes; what remains for the fixed
+point itself is a complete carrier in which to take the limit, plus
+attainment of the two admissible bounds at every step. -/
+
+/-- Geometric decay of any nonnegative sequence that contracts by `3/4`. -/
+theorem admissible_iterate_le_geometric (D : ℕ → ℝ) (C : ℝ)
+    (_hD0 : ∀ n, 0 ≤ D n) (hC : D 0 ≤ C)
+    (hstep : ∀ n, D (n + 1) ≤ (3 / 4 : ℝ) * D n) :
+    ∀ n, D n ≤ (3 / 4 : ℝ) ^ n * C := by
+  intro n
+  induction n with
+  | zero => simpa using hC
+  | succ k ih =>
+      calc D (k + 1) ≤ (3 / 4 : ℝ) * D k := hstep k
+        _ ≤ (3 / 4 : ℝ) * ((3 / 4 : ℝ) ^ k * C) :=
+            mul_le_mul_of_nonneg_left ih (by norm_num)
+        _ = (3 / 4 : ℝ) ^ (k + 1) * C := by ring
+
+/-- **The Picard scheme is Cauchy.**  A nonnegative sequence of admissible
+norms that contracts by the Banach factor `3/4` tends to zero.  With
+`D n = admissibleNorm ν (A n) (B n)` and `hstep` supplied by
+`admissibleNorm_continuousMildImage_sub_le_banach`, the successive differences
+of the Picard iterates vanish in the admissible norm. -/
+theorem admissible_iterate_tendsto_zero (D : ℕ → ℝ) (C : ℝ)
+    (hD0 : ∀ n, 0 ≤ D n) (hC : D 0 ≤ C)
+    (hstep : ∀ n, D (n + 1) ≤ (3 / 4 : ℝ) * D n) :
+    Filter.Tendsto D Filter.atTop (nhds 0) := by
+  have hC0 : 0 ≤ C := le_trans (hD0 0) hC
+  have hgeo : Filter.Tendsto (fun n : ℕ => (3 / 4 : ℝ) ^ n * C)
+      Filter.atTop (nhds 0) := by
+    have h := tendsto_pow_atTop_nhds_zero_of_lt_one
+      (by norm_num : (0 : ℝ) ≤ 3 / 4) (by norm_num : (3 / 4 : ℝ) < 1)
+    simpa using h.mul_const C
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le
+    tendsto_const_nhds hgeo (fun n => hD0 n) ?_
+  exact fun n => admissible_iterate_le_geometric D C hD0 hC hstep n
+
 end Navier.Analysis.ContinuousLeiLinBanachContraction
 
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.sqrt_integral_X0_sq_le_admissible
@@ -871,3 +914,5 @@ end Navier.Analysis.ContinuousLeiLinBanachContraction
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissible_bounds_eq_zero_of_self_contraction
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.collapse_premise_satisfiable
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.collapse_premise_not_ambient
+#print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissible_iterate_le_geometric
+#print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissible_iterate_tendsto_zero
