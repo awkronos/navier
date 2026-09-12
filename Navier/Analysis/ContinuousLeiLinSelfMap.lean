@@ -968,15 +968,316 @@ theorem continuousMildImage_self_map_ball_twoR
   exact ⟨fun t ht => le_trans (h1 t ht) (by nlinarith : (7 / 4 : ℝ) * R ≤ (2 : ℝ) * R),
     le_trans h2 (by nlinarith : (7 / 4 : ℝ) * ν⁻¹ * R ≤ (2 : ℝ) * ν⁻¹ * R)⟩
 
+/-!
+## Chunk G: polarization and the difference Duhamel budget
+
+The fixed-point difference `mild u − mild v` cancels the shared free heat term
+and reduces to the Duhamel difference.  The Navier source polarizes bilinearly,
+`src u u − src v v = src (u−v) u + src v (u−v)`, under explicit pointwise
+convolution integrability, the Duhamel integral is linear in the source, and
+the mixed-slot `X⁻¹` budget then applies to each polarization half with the
+general `X⁰`-product feed.
+-/
+
+open scoped Convolution in
+/-- Bilinear polarization of the scalar volume convolution against the
+complex product: `u ⋆ v − u' ⋆ v' = (u − u') ⋆ v + u' ⋆ (v − v')`, valid
+pointwise at every frequency where the four convolution integrals are
+integrable (the stated hypotheses). -/
+private theorem convolution_pol (u u' v v' : ES → ℂ)
+    (huu : ∀ ξ : ES, Integrable (fun η => u η * v (ξ - η)))
+    (hu'v' : ∀ ξ : ES, Integrable (fun η => u' η * v' (ξ - η)))
+    (hdv : ∀ ξ : ES, Integrable (fun η => (u - u') η * v (ξ - η)))
+    (hu'd : ∀ ξ : ES, Integrable (fun η => u' η * (v - v') (ξ - η))) :
+    u ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] v -
+        u' ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] v' =
+      (u - u') ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] v +
+        u' ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] (v - v') := by
+  refine funext (fun ξ => ?_)
+  have h1 : (u ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] v) ξ =
+      ∫ η, u η * v (ξ - η) := rfl
+  have h2 : (u' ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] v') ξ =
+      ∫ η, u' η * v' (ξ - η) := rfl
+  have h3 : ((u - u') ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] v) ξ =
+      ∫ η, (u - u') η * v (ξ - η) := rfl
+  have h4 : (u' ⋆[ContinuousLinearMap.mul ℂ ℂ, volume] (v - v')) ξ =
+      ∫ η, u' η * (v - v') (ξ - η) := rfl
+  rw [Pi.sub_apply, Pi.add_apply, h1, h2, h3, h4]
+  rw [← integral_sub (huu ξ) (hu'v' ξ),
+      ← integral_add (hdv ξ) (hu'd ξ)]
+  refine integral_congr_ae (ae_of_all volume (fun η => ?_))
+  simp only [Pi.sub_apply]
+  ring
+
+/-- Bilinear polarization of the Navier source: the difference of diagonal
+sources splits as `src (u−v) u + src v (u−v)`.  The Leray projector is a
+complex-linear map and the raw convection is coordinatewise a frequency
+convolution against `Complex.I •`, so the scalar convolution polarization
+`convolution_pol` transports through both layers. -/
+theorem continuousNavierSource_self_sub_self
+    (u v : ℝ -> ES -> ComplexSpace) (t : ℝ)
+    (h1 : ∀ j i : Fin 3, ∀ ξ : ES,
+        Integrable (fun η : ES => u t η j * u t (ξ - η) i))
+    (h2 : ∀ j i : Fin 3, ∀ ξ : ES,
+        Integrable (fun η : ES => v t η j * v t (ξ - η) i))
+    (h3 : ∀ j i : Fin 3, ∀ ξ : ES,
+        Integrable (fun η : ES => (u - v) t η j * u t (ξ - η) i))
+    (h4 : ∀ j i : Fin 3, ∀ ξ : ES,
+        Integrable (fun η : ES => v t η j * (u - v) t (ξ - η) i)) :
+    continuousNavierSource u u t - continuousNavierSource v v t =
+      continuousNavierSource (u - v) u t + continuousNavierSource v (u - v) t := by
+  refine funext (fun ξ => ?_)
+  have h1' : (continuousNavierSource u u t) ξ =
+      continuousLeray ξ (Complex.I • rawNavierConvection (u t) (u t) ξ) := rfl
+  have h2' : (continuousNavierSource v v t) ξ =
+      continuousLeray ξ (Complex.I • rawNavierConvection (v t) (v t) ξ) := rfl
+  have h3' : (continuousNavierSource (u - v) u t) ξ =
+      continuousLeray ξ (Complex.I • rawNavierConvection ((u - v) t) (u t) ξ) := rfl
+  have h4' : (continuousNavierSource v (u - v) t) ξ =
+      continuousLeray ξ (Complex.I • rawNavierConvection (v t) ((u - v) t) ξ) := rfl
+  rw [Pi.sub_apply, Pi.add_apply, h1', h2', h3', h4']
+  have rawpol : rawNavierConvection (u t) (u t) ξ -
+      rawNavierConvection (v t) (v t) ξ =
+      rawNavierConvection ((u - v) t) (u t) ξ +
+        rawNavierConvection (v t) ((u - v) t) ξ := by
+    refine funext (fun i => ?_)
+    rw [Pi.sub_apply, Pi.add_apply]
+    rw [rawNavierConvection, rawNavierConvection, rawNavierConvection,
+      rawNavierConvection]
+    rw [← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    rw [← mul_sub, ← mul_add]
+    refine congrArg (fun w : ℂ => (ξ j : ℂ) * w) ?_
+    have eqf := congrFun (convolution_pol (fun η : ES => u t η j)
+        (fun η : ES => v t η j) (fun η : ES => u t η i) (fun η : ES => v t η i)
+        (h1 j i) (h2 j i) (h3 j i) (h4 j i)) ξ
+    exact eqf
+  calc continuousLeray ξ (Complex.I • rawNavierConvection (u t) (u t) ξ) -
+        continuousLeray ξ (Complex.I • rawNavierConvection (v t) (v t) ξ)
+      = continuousLeray ξ (Complex.I • rawNavierConvection (u t) (u t) ξ -
+          Complex.I • rawNavierConvection (v t) (v t) ξ) :=
+        ((Navier.Analysis.ComplexLerayProjection.complexLeray (Navier.Analysis.FourierMajorant.spaceProj ξ)).map_sub _ _).symm
+    _ = continuousLeray ξ (Complex.I •
+          (rawNavierConvection (u t) (u t) ξ -
+            rawNavierConvection (v t) (v t) ξ)) :=
+        congrArg (continuousLeray ξ) (smul_sub _ _ _).symm
+    _ = continuousLeray ξ (Complex.I •
+          (rawNavierConvection ((u - v) t) (u t) ξ +
+            rawNavierConvection (v t) ((u - v) t) ξ)) :=
+        congrArg (fun z : ComplexSpace => continuousLeray ξ (Complex.I • z)) rawpol
+    _ = continuousLeray ξ (Complex.I • rawNavierConvection ((u - v) t) (u t) ξ) +
+        continuousLeray ξ (Complex.I • rawNavierConvection (v t) ((u - v) t) ξ) := by
+      show Navier.Analysis.ComplexLerayProjection.complexLeray
+          (Navier.Analysis.FourierMajorant.spaceProj ξ)
+          (Complex.I • (rawNavierConvection ((u - v) t) (u t) ξ +
+            rawNavierConvection (v t) ((u - v) t) ξ)) =
+        Navier.Analysis.ComplexLerayProjection.complexLeray
+            (Navier.Analysis.FourierMajorant.spaceProj ξ)
+            (Complex.I • rawNavierConvection ((u - v) t) (u t) ξ) +
+          Navier.Analysis.ComplexLerayProjection.complexLeray
+            (Navier.Analysis.FourierMajorant.spaceProj ξ)
+            (Complex.I • rawNavierConvection (v t) ((u - v) t) ξ)
+      rw [smul_add]
+      exact (Navier.Analysis.ComplexLerayProjection.complexLeray
+        (Navier.Analysis.FourierMajorant.spaceProj ξ)).map_add _ _
+
+/-- The Duhamel difference splits into the two polarization halves: the
+`[0,t]` integral is linear in the source, and the heat multiplier distributes. -/
+theorem continuousDuhamel_self_sub_self
+    (ν : ℝ) (u v : ℝ -> ES -> ComplexSpace) (t : ℝ) (ξ : ES) (i : Fin 3)
+    (hpol : ∀ s ∈ Icc (0 : ℝ) t,
+        continuousNavierSource u u s ξ i - continuousNavierSource v v s ξ i =
+          continuousNavierSource (u - v) u s ξ i +
+            continuousNavierSource v (u - v) s ξ i)
+    (huv : Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u u s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvv : Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource v v s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hwu : Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource (u - v) u s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvw : Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource v (u - v) s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t))) :
+    continuousDuhamel ν u u t ξ i - continuousDuhamel ν v v t ξ i =
+      continuousDuhamel ν (u - v) u t ξ i +
+        continuousDuhamel ν v (u - v) t ξ i := by
+  have hmT : MeasurableSet (Icc (0 : ℝ) t) := isClosed_Icc.measurableSet
+  show (∫ s in Icc (0 : ℝ) t,
+          heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u u s ζ i) ξ) -
+      (∫ s in Icc (0 : ℝ) t,
+          heatMode ν (t - s) (fun ζ : ES => continuousNavierSource v v s ζ i) ξ) =
+      (∫ s in Icc (0 : ℝ) t,
+          heatMode ν (t - s) (fun ζ : ES => continuousNavierSource (u - v) u s ζ i) ξ) +
+      (∫ s in Icc (0 : ℝ) t,
+          heatMode ν (t - s) (fun ζ : ES => continuousNavierSource v (u - v) s ζ i) ξ)
+  rw [← integral_sub huv hvv, ← integral_add hwu hvw]
+  refine integral_congr_ae (by
+      filter_upwards [ae_restrict_mem hmT] with s hs
+      simp only [heatMode]
+      rw [← mul_sub, ← mul_add, hpol s hs])
+
+/-- Mixed-slot Duhamel `X⁻¹` budget: for two (not necessarily equal) feed
+slots `a`, `b`, the coordinate `X⁻¹` mass of the Duhamel integral is bounded
+by `3` times the time-integrated product of the two coordinate `X⁰` masses.
+This is the polarization-side companion of
+`coordinateXm1Mass_continuousDuhamel_self_le_integral_product`: the heat-Fubini
+stage `normXm1_continuousDuhamel_le` feeds the coordinate/Euclidean comparison,
+and the genuine mixed bilinear feed
+`integral_normXm1_continuousNavierSource_le` closes with the `X⁰ × X⁰` product. -/
+theorem coordinateXm1Mass_continuousDuhamel_le_integral_X0_product
+    (a b : ℝ → ES → ComplexSpace) (ν t : ℝ) (hν : 0 < ν)
+    (hb : ∀ i : Fin 3, Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) •
+          heatMode ν (t - p.2) (fun ζ : ES => continuousNavierSource a b p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hf : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s) (fun ζ : ES => continuousNavierSource a b s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hg : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ζ : ES => continuousNavierSource a b s ζ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0 : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖continuousNavierSource a b s ξ i‖))
+    (hs1 : ∀ s ∈ Icc (0 : ℝ) t,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+          complexEuclideanNorm (continuousNavierSource a b s ξ)))
+    (hi : Integrable (fun s : ℝ =>
+        ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierSource a b s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (ha : ∀ r j, AEStronglyMeasurable (fun η : ES => a r η j))
+    (hbs : ∀ r i, AEStronglyMeasurable (fun η : ES => b r η i))
+    (ha0 : ∀ r j, Integrable (fun η : ES => ‖a r η j‖))
+    (hb00 : ∀ r i, Integrable (fun η : ES => ‖b r η i‖))
+    (hprod : IntegrableOn (fun r =>
+        coordinateX0Mass (a r) * coordinateX0Mass (b r)) (Icc (0 : ℝ) t)) :
+    coordinateXm1Mass (continuousDuhamel ν a b t) ≤
+      3 * ∫ s in Icc (0 : ℝ) t,
+        coordinateX0Mass (a s) * coordinateX0Mass (b s) := by
+  have hmT : MeasurableSet (Icc (0 : ℝ) t) := isClosed_Icc.measurableSet
+  unfold coordinateXm1Mass
+  refine (Finset.sum_le_sum
+    (f := fun i : Fin 3 => normXm1 (fun ξ : ES => continuousDuhamel ν a b t ξ i))
+    (g := fun _ : Fin 3 =>
+      ∫ s in Icc (0 : ℝ) t, coordinateX0Mass (a s) * coordinateX0Mass (b s)) ?_).trans_eq ?_
+  · intro i _
+    refine le_trans (normXm1_continuousDuhamel_le a b ν t i hν (hb i) (hf i) (hg i)
+      (fun s hs => hb0 s hs i)) ?_
+    refine le_trans (integral_mono_ae (hg i) hi ?_) ?_
+    · filter_upwards [ae_restrict_mem hmT] with s hs
+      refine le_of_eq (rfl : normXm1 (fun ξ : ES =>
+          continuousNavierSource a b s ξ i) =
+          ∫ ξ : ES, ‖ξ‖⁻¹ * ‖continuousNavierSource a b s ξ i‖) |>.trans ?_
+      refine integral_mono (hb0 s hs i) (hs1 s hs) (fun ξ =>
+        mul_le_mul_of_nonneg_left
+          (norm_coord_le_complexEuclideanNorm (continuousNavierSource a b s ξ) i)
+          (inv_nonneg.mpr (norm_nonneg ξ)))
+    · exact integral_normXm1_continuousNavierSource_le a b (Icc (0 : ℝ) t)
+        ha hbs ha0 hb00 hmT hi hprod
+  · rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul,
+      show (↑(3 : ℕ) : ℝ) = 3 from rfl]
+
+/-- `normXm1` is subadditive for pointwise sums, using explicit weighted
+integrability of both summands. -/
+private theorem normXm1_scalar_add_le (a b : ES → ℂ)
+    (ha : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ‖))
+    (hb : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖b ξ‖)) :
+    normXm1 (fun ξ : ES => a ξ + b ξ) ≤ normXm1 a + normXm1 b := by
+  have hnonneg : 0 ≤ᵐ[volume] fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ + b ξ‖ :=
+    ae_of_all volume (fun ξ =>
+      mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _))
+  have hkey : (fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ + b ξ‖) ≤ᵐ[volume]
+      fun ξ : ES => ‖ξ‖⁻¹ * (‖a ξ‖ + ‖b ξ‖) :=
+    ae_of_all volume (fun ξ =>
+      mul_le_mul_of_nonneg_left (norm_add_le (a ξ) (b ξ))
+        (inv_nonneg.mpr (norm_nonneg ξ)))
+  have hg : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * (‖a ξ‖ + ‖b ξ‖)) :=
+    Integrable.congr (ha.add hb)
+      (ae_of_all volume (fun ξ : ES => (mul_add _ _ _).symm))
+  have h1 : (∫ ξ : ES, ‖ξ‖⁻¹ * ‖a ξ + b ξ‖) ≤
+      ∫ ξ : ES, ‖ξ‖⁻¹ * (‖a ξ‖ + ‖b ξ‖) :=
+    integral_mono_of_nonneg (μ := volume) hnonneg hg hkey
+  have h2 : ∫ ξ : ES, ‖ξ‖⁻¹ * (‖a ξ‖ + ‖b ξ‖) ≤ normXm1 a + normXm1 b := by
+    refine le_of_eq ?_
+    show (∫ ξ : ES, ‖ξ‖⁻¹ * (‖a ξ‖ + ‖b ξ‖)) =
+      (∫ ξ : ES, ‖ξ‖⁻¹ * ‖a ξ‖) + ∫ ξ : ES, ‖ξ‖⁻¹ * ‖b ξ‖
+    rw [integral_congr_ae (μ := volume)
+      (ae_of_all volume (fun ξ : ES => mul_add _ _ _))]
+    exact integral_add ha hb
+  exact le_trans (le_of_eq (rfl : normXm1 (fun ξ : ES => a ξ + b ξ) =
+      ∫ ξ : ES, ‖ξ‖⁻¹ * ‖a ξ + b ξ‖) |>.trans h1) h2
+
+/-- The mild-image difference budget: the shared free heat evolution cancels,
+and the Duhamel difference splits by polarization into the two mixed slots.
+`coordinateXm1Mass (mild u t − mild v t)` is bounded by the sum of the two
+mixed Duhamel `X⁻¹` masses; the numerical budget
+`coordinateXm1Mass_continuousDuhamel_le_integral_X0_product` closes each side
+with the `X⁰ × X⁰` product feed. -/
+theorem continuousMildImage_sub_coordinateXm1Mass_le
+    (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace)
+    (u v : ℝ → ES → ComplexSpace) (t : ℝ)
+    (hpol : ∀ i : Fin 3, ∀ ξ : ES, ∀ s ∈ Icc (0 : ℝ) t,
+        continuousNavierSource u u s ξ i - continuousNavierSource v v s ξ i =
+          continuousNavierSource (u - v) u s ξ i +
+            continuousNavierSource v (u - v) s ξ i)
+    (huv : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u u s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvv : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource v v s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hwu : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource (u - v) u s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvw : ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun s : ℝ =>
+        heatMode ν (t - s) (fun ζ : ES => continuousNavierSource v (u - v) s ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hDwu : ∀ i : Fin 3, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousDuhamel ν (u - v) u t ξ i‖))
+    (hDvw : ∀ i : Fin 3, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousDuhamel ν v (u - v) t ξ i‖)) :
+    coordinateXm1Mass (fun ξ : ES =>
+        continuousMildImage ν hν a u t ξ - continuousMildImage ν hν a v t ξ) ≤
+      coordinateXm1Mass (continuousDuhamel ν (u - v) u t) +
+        coordinateXm1Mass (continuousDuhamel ν v (u - v) t) := by
+  have hfe (i : Fin 3) (ξ : ES) :
+      (fun ξ : ES => continuousMildImage ν hν a u t ξ i -
+        continuousMildImage ν hν a v t ξ i) ξ =
+      (fun ξ : ES => continuousDuhamel ν (u - v) u t ξ i +
+        continuousDuhamel ν v (u - v) t ξ i) ξ := by
+    show continuousMildImage ν hν a u t ξ i - continuousMildImage ν hν a v t ξ i = _
+    rw [continuousMildImage_coord_apply, continuousMildImage_coord_apply]
+    rw [add_sub_add_left_eq_sub]
+    exact continuousDuhamel_self_sub_self ν u v t ξ i (fun s hs => hpol i ξ s hs)
+      (huv i ξ) (hvv i ξ) (hwu i ξ) (hvw i ξ)
+  unfold coordinateXm1Mass
+  refine (Finset.sum_le_sum
+    (f := fun i : Fin 3 => normXm1 (fun ξ : ES =>
+        continuousMildImage ν hν a u t ξ i - continuousMildImage ν hν a v t ξ i))
+    (g := fun i : Fin 3 => normXm1 (fun ξ : ES =>
+        continuousDuhamel ν (u - v) u t ξ i) + normXm1 (fun ξ : ES =>
+        continuousDuhamel ν v (u - v) t ξ i)) ?_).trans ?_
+  · intro i _
+    refine (le_of_eq (congrArg normXm1 (funext (hfe i)))).trans ?_
+    exact normXm1_scalar_add_le (fun ξ : ES => continuousDuhamel ν (u - v) u t ξ i)
+      (fun ξ : ES => continuousDuhamel ν v (u - v) t ξ i) (hDwu i) (hDvw i)
+  · rw [Finset.sum_add_distrib]
+
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.normXm1_add_le
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.normX1_add_le
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateXm1Mass_add_le
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateX1Mass_add_le
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_coord_apply
-#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_coordinateXm1Mass_le
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateXm1Mass_continuousDuhamel_self_le_integral_product
+#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_coordinateXm1Mass_le
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.integral_normX1_continuousDuhamel_self_le_source
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.integral_coordinateX1Mass_continuousMildImage_le
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_self_map_ball
 #print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_self_map_ball_twoR
+#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousNavierSource_self_sub_self
+#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousDuhamel_self_sub_self
+#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.coordinateXm1Mass_continuousDuhamel_le_integral_X0_product
+#print axioms Navier.Analysis.ContinuousLeiLinSelfMap.continuousMildImage_sub_coordinateXm1Mass_le
