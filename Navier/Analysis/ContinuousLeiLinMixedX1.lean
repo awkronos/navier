@@ -127,7 +127,7 @@ private theorem norm_coord_le_complexEuclideanNorm (z : ComplexSpace) (i : Fin 3
 /-- The MIXED Tonelli kernel of the Duhamel `X¹` budget: the mixed source
 `X⁻¹` weight as a `t`-constant factor, the heat weight killed off the causal
 half-space by the `ite`. -/
-private def mixedKernelFun (a b : ℝ -> ES -> ComplexSpace) (i : Fin 3) (ν : ℝ)
+def mixedKernelFun (a b : ℝ -> ES -> ComplexSpace) (i : Fin 3) (ν : ℝ)
     (ξ : ES) (t s : ℝ) : ℝ≥0∞ :=
   ENNReal.ofReal ‖continuousNavierSource a b s ξ i‖ *
     (if s ≤ t then

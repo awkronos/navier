@@ -422,6 +422,384 @@ theorem admissibleNorm_slot_sum (ν A B X Y : ℝ)
 /-- The composed Banach factor is strictly less than one. -/
 theorem banach_factor_lt_one : (3 / 4 : ℝ) < 1 := by norm_num
 
+/-- **The `X¹` slot of the admissible contraction, fully instantiated.**  The
+single-theorem form of `X1_slot_admissible_reduction`: no `M`, no supplied
+modulus.  The split `coordinateX1Mass_continuousMildImage_sub_le` is applied
+at every horizon `s ∈ [0, t]`, the mixed-slot spacetime budget
+`ContinuousLeiLinMixedX1.integral_coordinateX1Mass_continuousDuhamel_le_integral_X0_product`
+is applied to each polarization slot, and the bilinear feed
+`integral_X0_product_le_ball_admissible` closes both at `R ≤ ν/16`:
+
+  `ν · ∫₀ᵗ X¹(mild u s − mild v s) ds ≤ (3/8) · (A + ν·B)`.
+
+Together with
+`ContinuousLeiLinAdmissibleContraction.continuousMildImage_sub_coordinateXm1Mass_le_linear_admissible`
+this is the complete linear Banach contraction of the whole-space mild map on
+the admissible norm, with factor `3/4` (`admissibleNorm_slot_sum`). -/
+theorem integral_coordinateX1Mass_continuousMildImage_sub_le_admissible
+    (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace)
+    (u v : ℝ → ES → ComplexSpace) (R t A B : ℝ) (hR : 0 ≤ R)
+    (hA : 0 ≤ A) (hB : 0 ≤ B) (hRν : R ≤ ν / 16)
+    -- polarization of the source, at the outer horizon (restricts to every `s ≤ t`)
+    (hpol : ∀ i : Fin 3, ∀ ξ : ES, ∀ r ∈ Icc (0 : ℝ) t,
+        continuousNavierSource u u r ξ i - continuousNavierSource v v r ξ i =
+          continuousNavierSource (u - v) u r ξ i +
+            continuousNavierSource v (u - v) r ξ i)
+    -- Bochner integrability of the four heat-transported sources at every horizon
+    (hSuv : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource u u r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    (hSvv : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource v v r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    (hSwu : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource (u - v) u r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    (hSvw : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource v (u - v) r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    -- `X¹` integrability of the two Duhamel slots and of the image difference
+    (hDWU : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν (u - v) u s ξ i‖))
+    (hDVW : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν v (u - v) s ξ i‖))
+    (hD0WU : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normX1 (fun ξ : ES => continuousDuhamel ν (u - v) u s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hD0VW : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normX1 (fun ξ : ES => continuousDuhamel ν v (u - v) s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hMild : Integrable (fun s : ℝ => coordinateX1Mass (fun ξ : ES =>
+        continuousMildImage ν hν a u s ξ - continuousMildImage ν hν a v s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    -- Tonelli measurability of the two mixed kernels
+    (hW1WU : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, AEMeasurable
+        (fun p : ES × ℝ => mixedKernelFun (u - v) u i ν p.1 s p.2)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hWWU : ∀ i : Fin 3, AEMeasurable
+        (fun z : ℝ × (ES × ℝ) => mixedKernelFun (u - v) u i ν z.2.1 z.1 z.2.2)
+        ((volume.restrict (Icc (0 : ℝ) t)).prod
+          (volume.prod (volume.restrict (Icc (0 : ℝ) t)))))
+    (hW1VW : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, AEMeasurable
+        (fun p : ES × ℝ => mixedKernelFun v (u - v) i ν p.1 s p.2)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hWVW : ∀ i : Fin 3, AEMeasurable
+        (fun z : ℝ × (ES × ℝ) => mixedKernelFun v (u - v) i ν z.2.1 z.1 z.2.2)
+        ((volume.restrict (Icc (0 : ℝ) t)).prod
+          (volume.prod (volume.restrict (Icc (0 : ℝ) t)))))
+    -- source `X⁻¹` integrability bundles of the two mixed slots
+    (hb0WU : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousNavierSource (u - v) u s ξ i‖))
+    (hgWU : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ξ : ES => continuousNavierSource (u - v) u s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hJWU : ∀ i : Fin 3, AEMeasurable (fun p : ES × ℝ =>
+        ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource (u - v) u p.2 p.1 i‖))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hs1WU : ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource (u - v) u s ξ)))
+    (hiWU : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource (u - v) u s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0VW : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousNavierSource v (u - v) s ξ i‖))
+    (hgVW : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ξ : ES => continuousNavierSource v (u - v) s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hJVW : ∀ i : Fin 3, AEMeasurable (fun p : ES × ℝ =>
+        ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource v (u - v) p.2 p.1 i‖))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hs1VW : ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource v (u - v) s ξ)))
+    (hiVW : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource v (u - v) s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    -- slot measurability / first-moment integrability
+    (hmw : ∀ r j, AEStronglyMeasurable (fun η : ES => (u - v) r η j))
+    (hmw0 : ∀ r j, Integrable (fun η : ES => ‖(u - v) r η j‖))
+    (hmu : ∀ r j, AEStronglyMeasurable (fun η : ES => u r η j))
+    (hmu0 : ∀ r j, Integrable (fun η : ES => ‖u r η j‖))
+    (hmv : ∀ r j, AEStronglyMeasurable (fun η : ES => v r η j))
+    (hmv0 : ∀ r j, Integrable (fun η : ES => ‖v r η j‖))
+    (hprodWU : IntegrableOn (fun r =>
+        coordinateX0Mass ((u - v) r) * coordinateX0Mass (u r)) (Icc (0 : ℝ) t))
+    (hprodVW : IntegrableOn (fun r =>
+        coordinateX0Mass (v r) * coordinateX0Mass ((u - v) r)) (Icc (0 : ℝ) t))
+    -- admissible data of the difference slot and ball data of the two trials
+    (hwm1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖(u - v) r η j‖))
+    (hw1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖(u - v) r η j‖))
+    (hmixedW : Integrable (fun s : ℝ =>
+        coordinateXm1Mass ((u - v) s) * coordinateX1Mass ((u - v) s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hdist : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass ((u - v) s) ≤ A)
+    (hwX1int : Integrable (fun s : ℝ => coordinateX1Mass ((u - v) s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hwX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass ((u - v) s) ≤ B)
+    (hum1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (hu1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (hmixedU : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (u s) * coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (huXm1 : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass (u s) ≤ 2 * R)
+    (huX1int : Integrable (fun s : ℝ => coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (huX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (u s) ≤ 2 * ν⁻¹ * R)
+    (hvm1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖v r η j‖))
+    (hv1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖v r η j‖))
+    (hmixedV : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (v s) * coordinateX1Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvXm1 : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass (v s) ≤ 2 * R)
+    (hvX1int : Integrable (fun s : ℝ => coordinateX1Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (v s) ≤ 2 * ν⁻¹ * R)
+    (hw2 : Integrable (fun s : ℝ => coordinateX0Mass ((u - v) s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hu2 : Integrable (fun s : ℝ => coordinateX0Mass (u s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hv2 : Integrable (fun s : ℝ => coordinateX0Mass (v s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t))) :
+    ν * (∫ s in Icc (0 : ℝ) t, coordinateX1Mass (fun ξ : ES =>
+        continuousMildImage ν hν a u s ξ - continuousMildImage ν hν a v s ξ)) ≤
+      (3 / 8 : ℝ) * admissibleNorm ν A B := by
+  have hmT : MeasurableSet (Icc (0 : ℝ) t) := isClosed_Icc.measurableSet
+  have hsumint : Integrable (fun s : ℝ =>
+      coordinateX1Mass (continuousDuhamel ν (u - v) u s) +
+        coordinateX1Mass (continuousDuhamel ν v (u - v) s))
+      (volume.restrict (Icc (0 : ℝ) t)) := by
+    refine Integrable.add ?_ ?_
+    · exact integrable_finsetSum
+        (f := fun i (s : ℝ) => normX1 (fun ξ : ES =>
+          continuousDuhamel ν (u - v) u s ξ i)) Finset.univ (fun i _ => hD0WU i)
+    · exact integrable_finsetSum
+        (f := fun i (s : ℝ) => normX1 (fun ξ : ES =>
+          continuousDuhamel ν v (u - v) s ξ i)) Finset.univ (fun i _ => hD0VW i)
+  -- Step 1: the pointwise split at every horizon `s ∈ [0, t]`
+  have hstep1 : (∫ s in Icc (0 : ℝ) t, coordinateX1Mass (fun ξ : ES =>
+      continuousMildImage ν hν a u s ξ - continuousMildImage ν hν a v s ξ)) ≤
+      ∫ s in Icc (0 : ℝ) t,
+        (coordinateX1Mass (continuousDuhamel ν (u - v) u s) +
+          coordinateX1Mass (continuousDuhamel ν v (u - v) s)) := by
+    refine integral_mono_ae hMild hsumint ?_
+    filter_upwards [ae_restrict_mem hmT] with s hs
+    refine coordinateX1Mass_continuousMildImage_sub_le ν hν a u v s ?_
+      (fun i ξ => hSuv s hs i ξ) (fun i ξ => hSvv s hs i ξ)
+      (fun i ξ => hSwu s hs i ξ) (fun i ξ => hSvw s hs i ξ)
+      (fun i => hDWU i s hs) (fun i => hDVW i s hs)
+    intro i ξ r hr
+    exact hpol i ξ r ⟨hr.1, le_trans hr.2 hs.2⟩
+  -- Step 2: the two mixed spacetime budgets
+  have hbudWU := integral_coordinateX1Mass_continuousDuhamel_le_integral_X0_product
+    (u - v) u ν t hν hD0WU (fun i s hs => hDWU i s hs) hW1WU hWWU hb0WU hgWU hJWU
+    hs1WU hiWU hmw hmu hmw0 hmu0 hprodWU
+  have hbudVW := integral_coordinateX1Mass_continuousDuhamel_le_integral_X0_product
+    v (u - v) ν t hν hD0VW (fun i s hs => hDVW i s hs) hW1VW hWVW hb0VW hgVW hJVW
+    hs1VW hiVW hmv hmw hmv0 hmw0 hprodVW
+  have hsplitint : (∫ s in Icc (0 : ℝ) t,
+      (coordinateX1Mass (continuousDuhamel ν (u - v) u s) +
+        coordinateX1Mass (continuousDuhamel ν v (u - v) s))) =
+      (∫ s in Icc (0 : ℝ) t, coordinateX1Mass (continuousDuhamel ν (u - v) u s)) +
+        ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (continuousDuhamel ν v (u - v) s) := by
+    refine integral_add ?_ ?_
+    · exact integrable_finsetSum
+        (f := fun i (s : ℝ) => normX1 (fun ξ : ES =>
+          continuousDuhamel ν (u - v) u s ξ i)) Finset.univ (fun i _ => hD0WU i)
+    · exact integrable_finsetSum
+        (f := fun i (s : ℝ) => normX1 (fun ξ : ES =>
+          continuousDuhamel ν v (u - v) s ξ i)) Finset.univ (fun i _ => hD0VW i)
+  have hM : (∫ s in Icc (0 : ℝ) t, coordinateX1Mass (fun ξ : ES =>
+      continuousMildImage ν hν a u s ξ - continuousMildImage ν hν a v s ξ)) ≤
+      3 * ν⁻¹ * (∫ s in Icc (0 : ℝ) t,
+          coordinateX0Mass ((u - v) s) * coordinateX0Mass (u s)) +
+        3 * ν⁻¹ * (∫ s in Icc (0 : ℝ) t,
+          coordinateX0Mass (v s) * coordinateX0Mass ((u - v) s)) := by
+    refine hstep1.trans ?_
+    rw [hsplitint]
+    exact add_le_add hbudWU hbudVW
+  exact X1_slot_admissible_reduction (u - v) u v ν t R A B hν hR hA hB hRν
+    hwm1 hw1 hmixedW hdist hwX1int hwX1 hum1 hu1 hmixedU huXm1 huX1int huX1
+    hvm1 hv1 hmixedV hvXm1 hvX1int hvX1 hw2 hu2 hv2 _ hM
+
+set_option maxHeartbeats 4000000 in
+/-- **THE WHOLE-SPACE MILD MAP IS A LINEAR BANACH CONTRACTION.**  Single
+statement, both admissible slots, no supplied modulus:
+
+  `X⁻¹(mild u t − mild v t) + ν·∫₀ᵗ X¹(mild u s − mild v s) ds
+      ≤ (3/4) · (A + ν·B)`
+
+for two trial trajectories in the `R ≤ ν/16` ball whose difference obeys the
+admissible bounds `A` (pointwise `X⁻¹` on `[0,t]`) and `B` (spacetime `X¹`).
+The factor `3/4 < 1` (`banach_factor_lt_one`) is a strict LINEAR contraction
+constant of the admissible norm at the SAME threshold the self-map uses
+(`ContinuousLeiLinSelfMap.continuousMildImage_self_map_ball`), so the pair
+(self-map, contraction) is the complete fixed-point input of the whole-space
+carrier.
+
+The `X⁻¹` half is
+`ContinuousLeiLinAdmissibleContraction.continuousMildImage_sub_coordinateXm1Mass_le_linear_admissible`;
+the `X¹` half is `integral_coordinateX1Mass_continuousMildImage_sub_le_admissible`.
+Six hypothesis families beyond the `X¹` bundle are needed for the `X⁻¹` half:
+the `X⁻¹`-weighted Duhamel integrability at the terminal time and the two
+heat-Fubini bundles of the polarization slots. -/
+theorem admissibleNorm_continuousMildImage_sub_le_banach
+    (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace)
+    (u v : ℝ → ES → ComplexSpace) (R t A B : ℝ) (hR : 0 ≤ R) (ht : 0 ≤ t)
+    (hA : 0 ≤ A) (hB : 0 ≤ B) (hRν : R ≤ ν / 16)
+    (hpol : ∀ i : Fin 3, ∀ ξ : ES, ∀ r ∈ Icc (0 : ℝ) t,
+        continuousNavierSource u u r ξ i - continuousNavierSource v v r ξ i =
+          continuousNavierSource (u - v) u r ξ i +
+            continuousNavierSource v (u - v) r ξ i)
+    (hSuv : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource u u r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    (hSvv : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource v v r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    (hSwu : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource (u - v) u r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    (hSvw : ∀ s ∈ Icc (0 : ℝ) t, ∀ i : Fin 3, ∀ ξ : ES, Integrable (fun r : ℝ =>
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource v (u - v) r ζ i) ξ)
+        (volume.restrict (Icc (0 : ℝ) s)))
+    (hDWU : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν (u - v) u s ξ i‖))
+    (hDVW : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν v (u - v) s ξ i‖))
+    (hDwuXm1 : ∀ i : Fin 3, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousDuhamel ν (u - v) u t ξ i‖))
+    (hDvwXm1 : ∀ i : Fin 3, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousDuhamel ν v (u - v) t ξ i‖))
+    (hD0WU : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normX1 (fun ξ : ES => continuousDuhamel ν (u - v) u s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hD0VW : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normX1 (fun ξ : ES => continuousDuhamel ν v (u - v) s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hMild : Integrable (fun s : ℝ => coordinateX1Mass (fun ξ : ES =>
+        continuousMildImage ν hν a u s ξ - continuousMildImage ν hν a v s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hW1WU : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, AEMeasurable
+        (fun p : ES × ℝ => mixedKernelFun (u - v) u i ν p.1 s p.2)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hWWU : ∀ i : Fin 3, AEMeasurable
+        (fun z : ℝ × (ES × ℝ) => mixedKernelFun (u - v) u i ν z.2.1 z.1 z.2.2)
+        ((volume.restrict (Icc (0 : ℝ) t)).prod
+          (volume.prod (volume.restrict (Icc (0 : ℝ) t)))))
+    (hW1VW : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, AEMeasurable
+        (fun p : ES × ℝ => mixedKernelFun v (u - v) i ν p.1 s p.2)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hWVW : ∀ i : Fin 3, AEMeasurable
+        (fun z : ℝ × (ES × ℝ) => mixedKernelFun v (u - v) i ν z.2.1 z.1 z.2.2)
+        ((volume.restrict (Icc (0 : ℝ) t)).prod
+          (volume.prod (volume.restrict (Icc (0 : ℝ) t)))))
+    (hbWU : ∀ i : Fin 3, Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+          (fun ζ : ES => continuousNavierSource (u - v) u p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hfWU : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s)
+          (fun ζ : ES => continuousNavierSource (u - v) u s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hbVW : ∀ i : Fin 3, Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+          (fun ζ : ES => continuousNavierSource v (u - v) p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hfVW : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s)
+          (fun ζ : ES => continuousNavierSource v (u - v) s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0WU : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousNavierSource (u - v) u s ξ i‖))
+    (hgWU : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ξ : ES => continuousNavierSource (u - v) u s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hJWU : ∀ i : Fin 3, AEMeasurable (fun p : ES × ℝ =>
+        ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource (u - v) u p.2 p.1 i‖))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hs1WU : ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource (u - v) u s ξ)))
+    (hiWU : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource (u - v) u s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0VW : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousNavierSource v (u - v) s ξ i‖))
+    (hgVW : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ξ : ES => continuousNavierSource v (u - v) s ξ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hJVW : ∀ i : Fin 3, AEMeasurable (fun p : ES × ℝ =>
+        ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource v (u - v) p.2 p.1 i‖))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hs1VW : ∀ s ∈ Icc (0 : ℝ) t, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource v (u - v) s ξ)))
+    (hiVW : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource v (u - v) s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hmw : ∀ r j, AEStronglyMeasurable (fun η : ES => (u - v) r η j))
+    (hmw0 : ∀ r j, Integrable (fun η : ES => ‖(u - v) r η j‖))
+    (hmu : ∀ r j, AEStronglyMeasurable (fun η : ES => u r η j))
+    (hmu0 : ∀ r j, Integrable (fun η : ES => ‖u r η j‖))
+    (hmv : ∀ r j, AEStronglyMeasurable (fun η : ES => v r η j))
+    (hmv0 : ∀ r j, Integrable (fun η : ES => ‖v r η j‖))
+    (hprodWU : IntegrableOn (fun r =>
+        coordinateX0Mass ((u - v) r) * coordinateX0Mass (u r)) (Icc (0 : ℝ) t))
+    (hprodVW : IntegrableOn (fun r =>
+        coordinateX0Mass (v r) * coordinateX0Mass ((u - v) r)) (Icc (0 : ℝ) t))
+    (hwm1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖(u - v) r η j‖))
+    (hw1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖(u - v) r η j‖))
+    (hmixedW : Integrable (fun s : ℝ =>
+        coordinateXm1Mass ((u - v) s) * coordinateX1Mass ((u - v) s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hdist : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass ((u - v) s) ≤ A)
+    (hwX1int : Integrable (fun s : ℝ => coordinateX1Mass ((u - v) s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hwX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass ((u - v) s) ≤ B)
+    (hum1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (hu1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (hmixedU : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (u s) * coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (huXm1 : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass (u s) ≤ 2 * R)
+    (huX1int : Integrable (fun s : ℝ => coordinateX1Mass (u s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (huX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (u s) ≤ 2 * ν⁻¹ * R)
+    (hvm1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖v r η j‖))
+    (hv1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖v r η j‖))
+    (hmixedV : Integrable (fun s : ℝ =>
+        coordinateXm1Mass (v s) * coordinateX1Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvXm1 : ∀ s ∈ Icc (0 : ℝ) t, coordinateXm1Mass (v s) ≤ 2 * R)
+    (hvX1int : Integrable (fun s : ℝ => coordinateX1Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hvX1 : ∫ s in Icc (0 : ℝ) t, coordinateX1Mass (v s) ≤ 2 * ν⁻¹ * R)
+    (hw2 : Integrable (fun s : ℝ => coordinateX0Mass ((u - v) s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hu2 : Integrable (fun s : ℝ => coordinateX0Mass (u s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hv2 : Integrable (fun s : ℝ => coordinateX0Mass (v s) ^ 2)
+        (volume.restrict (Icc (0 : ℝ) t))) :
+    coordinateXm1Mass (fun ξ : ES =>
+        continuousMildImage ν hν a u t ξ - continuousMildImage ν hν a v t ξ) +
+      ν * (∫ s in Icc (0 : ℝ) t, coordinateX1Mass (fun ξ : ES =>
+        continuousMildImage ν hν a u s ξ - continuousMildImage ν hν a v s ξ)) ≤
+      (3 / 4 : ℝ) * admissibleNorm ν A B := by
+  have httm : t ∈ Icc (0 : ℝ) t := ⟨ht, le_rfl⟩
+  have hXm1 := continuousMildImage_sub_coordinateXm1Mass_le_linear_admissible
+    ν hν a u v R t hR hpol (fun i ξ => hSuv t httm i ξ) (fun i ξ => hSvv t httm i ξ)
+    (fun i ξ => hSwu t httm i ξ) (fun i ξ => hSvw t httm i ξ) hDwuXm1 hDvwXm1
+    hmw hmw0 hmu hmu0 hmv hmv0 hw2 hu2 hv2
+    hbWU hfWU hgWU (fun s hs i => hb0WU i s hs) hs1WU hiWU hprodWU
+    hbVW hfVW hgVW (fun s hs i => hb0VW i s hs) hs1VW hiVW hprodVW
+    hwm1 hw1 hmixedW hum1 hu1 hmixedU hvm1 hv1 hmixedV
+    huXm1 huX1int huX1 hvXm1 hvX1int hvX1 hRν A B hA hB hdist hwX1int hwX1
+  have hX1 := integral_coordinateX1Mass_continuousMildImage_sub_le_admissible
+    ν hν a u v R t A B hR hA hB hRν hpol hSuv hSvv hSwu hSvw hDWU hDVW
+    hD0WU hD0VW hMild hW1WU hWWU hW1VW hWVW
+    hb0WU hgWU hJWU hs1WU hiWU hb0VW hgVW hJVW hs1VW hiVW
+    hmw hmw0 hmu hmu0 hmv hmv0 hprodWU hprodVW
+    hwm1 hw1 hmixedW hdist hwX1int hwX1 hum1 hu1 hmixedU huXm1 huX1int huX1
+    hvm1 hv1 hmixedV hvXm1 hvX1int hvX1 hw2 hu2 hv2
+  exact admissibleNorm_slot_sum ν A B _ _ hXm1 hX1
+
 /-! ## The uniqueness mechanism bought by the contraction
 
 A contraction factor `< 1` gives uniqueness without any completeness
@@ -487,6 +865,8 @@ end Navier.Analysis.ContinuousLeiLinBanachContraction
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.integral_X0_product_le_ball_admissible
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.X1_slot_admissible_reduction
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.coordinateX1Mass_continuousMildImage_sub_le
+#print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.integral_coordinateX1Mass_continuousMildImage_sub_le_admissible
+#print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissibleNorm_continuousMildImage_sub_le_banach
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissibleNorm_slot_sum
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.admissible_bounds_eq_zero_of_self_contraction
 #print axioms Navier.Analysis.ContinuousLeiLinBanachContraction.collapse_premise_satisfiable
