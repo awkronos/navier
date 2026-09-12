@@ -41,6 +41,11 @@ Contents:
   integrals plus Fubini), and its corollary
   `normXm1_continuousDuhamel_le` — the Duhamel term has finite `X⁻¹` mass
   bounded by the time integral of the source masses.
+* Mild self-map feed: `normXm1_continuousDuhamel_self_le_source` and
+  `normXm1_continuousDuhamel_self_le_coordinateXm1X1` — a diagonal Duhamel
+  coordinate is bounded by the time integral of the interpolated coordinate
+  masses, the exact continuous form of the lattice `(3 * ν⁻¹) * (2 * ‖a‖)²`
+  fixed-point input.
 
 All budgets are unconditional measure-theoretic facts on the continuous
 carrier; no lattice, no Dirac comb, and no sampling step is used (the
@@ -67,6 +72,7 @@ open MeasureTheory Set Filter
 open scoped Topology BigOperators
 open Navier.Analysis.ContinuousLeiLinSpace
 open Navier.Analysis.ContinuousLeiLinTimeDuhamel
+open Navier.Analysis.ComplexLerayNorm
 
 /-!
 ## Scalar interval identities for the heat multiplier
@@ -539,6 +545,86 @@ theorem normXm1_continuousDuhamel_le (u v : ℝ → ES → ComplexSpace) (ν t :
   exact normXm1_heatMode_le (fun ζ : ES => continuousNavierSource u v s ζ i) (hb0 s hs)
     ν (t - s) hν (sub_nonneg.mpr hs.2)
 
+
+/-!
+## Mild self-map feed: Duhamel mass bounded by source masses
+-/
+
+/-- One diagonal Duhamel coordinate: its `X⁻¹` mass is bounded by the time
+integral of the vector source `X⁻¹` mass. This is the Fubini bridge
+`normXm1_setIntegral_le` plus heat contraction plus the pointwise
+coordinate/Euclidean-norm comparison `‖z i‖ ≤ ‖z‖`. -/
+theorem normXm1_continuousDuhamel_self_le_source (u : ℝ → ES → ComplexSpace) (ν t : ℝ)
+    (i : Fin 3) (hν : 0 < ν)
+    (hb : Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) •
+          heatMode ν (t - p.2) (fun ζ : ES => continuousNavierSource u u p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hf : Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u u s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hg : Integrable (fun s : ℝ =>
+        normXm1 (fun ζ : ES => continuousNavierSource u u s ζ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0 : ∀ s ∈ Icc (0 : ℝ) t,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖continuousNavierSource u u s ξ i‖))
+    (hs1 : ∀ s ∈ Icc (0 : ℝ) t,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+          complexEuclideanNorm (continuousNavierSource u u s ξ)))
+    (hi : Integrable (fun s : ℝ =>
+        ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierSource u u s ξ))
+        (volume.restrict (Icc (0 : ℝ) t))) :
+    normXm1 (fun ξ : ES => continuousDuhamel ν u u t ξ i) ≤
+      ∫ s in Icc (0 : ℝ) t, ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource u u s ξ) := by
+  have hm1 : MeasurableSet (Icc (0 : ℝ) t) := isClosed_Icc.measurableSet
+  refine le_trans (normXm1_continuousDuhamel_le u u ν t i hν hb hf hg hb0) ?_
+  refine integral_mono_ae hg hi ?_
+  filter_upwards [ae_restrict_mem hm1] with s hs
+  show (∫ ζ : ES, ‖ζ‖⁻¹ * ‖continuousNavierSource u u s ζ i‖) ≤
+      ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierSource u u s ξ)
+  refine integral_mono (hb0 s hs) (hs1 s hs) (fun ξ => ?_)
+  refine mul_le_mul_of_nonneg_left ?_ (weight_nonneg ξ)
+  exact PiLp.norm_apply_le (complexEuclideanPoint (continuousNavierSource u u s ξ)) i
+
+/-- The per-coordinate Duhamel mass is bounded by the time integral of the
+interpolated product of coordinate masses — the exact feed of the lattice
+fixed point `(3 ν⁻¹)(2‖a‖)²` transported to the continuous carrier, composed
+from `normXm1_continuousDuhamel_self_le_source` and the diagonal estimate
+`integral_normXm1_continuousNavierSource_self_le_coordinateXm1X1`. -/
+theorem normXm1_continuousDuhamel_self_le_coordinateXm1X1
+    (u : ℝ → ES → ComplexSpace) (ν t : ℝ) (i : Fin 3) (hν : 0 < ν)
+    (hb : Integrable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) •
+          heatMode ν (t - p.2) (fun ζ : ES => continuousNavierSource u u p.2 ζ i) p.1)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hf : Integrable (fun s : ℝ =>
+        normXm1 (heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u u s ζ i)))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hg : Integrable (fun s : ℝ =>
+        normXm1 (fun ζ : ES => continuousNavierSource u u s ζ i))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hb0 : ∀ s ∈ Icc (0 : ℝ) t,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖continuousNavierSource u u s ξ i‖))
+    (hs1 : ∀ s ∈ Icc (0 : ℝ) t,
+        Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+          complexEuclideanNorm (continuousNavierSource u u s ξ)))
+    (hi : Integrable (fun s : ℝ =>
+        ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierSource u u s ξ))
+        (volume.restrict (Icc (0 : ℝ) t)))
+    (hu : ∀ r j, AEStronglyMeasurable (fun η : ES => u r η j))
+    (hu0 : ∀ r j, Integrable (fun η : ES => ‖u r η j‖))
+    (hum1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (hu1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (h0sq : IntegrableOn (fun r => coordinateX0Mass (u r) ^ 2) (Icc (0 : ℝ) t))
+    (hmixed : IntegrableOn (fun r =>
+        coordinateXm1Mass (u r) * coordinateX1Mass (u r)) (Icc (0 : ℝ) t)) :
+    normXm1 (fun ξ : ES => continuousDuhamel ν u u t ξ i) ≤
+      ∫ s in Icc (0 : ℝ) t, coordinateXm1Mass (u s) * coordinateX1Mass (u s) := by
+  refine le_trans (normXm1_continuousDuhamel_self_le_source u ν t i hν hb hf hg hb0 hs1 hi) ?_
+  exact integral_normXm1_continuousNavierSource_self_le_coordinateXm1X1
+      u (Icc (0 : ℝ) t) hu hu0 hum1 hu1 isClosed_Icc.measurableSet hi h0sq hmixed
+
 end Navier.Analysis.ContinuousLeiLinDissipation
 
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.heatVec
@@ -549,3 +635,5 @@ end Navier.Analysis.ContinuousLeiLinDissipation
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.integral_coordinateX1Mass_heatVec_le
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_setIntegral_le
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_le
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_self_le_source
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_self_le_coordinateXm1X1
