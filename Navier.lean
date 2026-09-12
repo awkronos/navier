@@ -21,6 +21,7 @@ import Navier.Analysis.ContinuousLeiLinMixedX1
 import Navier.Analysis.ContinuousLeiLinBanachContraction
 import Navier.Analysis.ContinuousLeiLinPhysicalCarrier
 import Navier.Analysis.ContinuousLeiLinReality
+import Navier.Analysis.ContinuousLeiLinFrequencyODE
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
