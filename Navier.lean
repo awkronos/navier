@@ -153,6 +153,7 @@ import Navier.Analysis.QuantumVortexRegularity
 import Navier.Analysis.QuantumVortexTopologyChange
 import Navier.Analysis.QuantumVortexWinding
 import Navier.Analysis.RieszKolmogorov
+import Navier.Analysis.RestartPaste
 import Navier.Analysis.ScaledConstructedBreakdown
 import Navier.Analysis.ScaledCutoff
 import Navier.Analysis.SchwartzComponentBound
