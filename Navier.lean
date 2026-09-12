@@ -14,6 +14,7 @@ import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.ContinuousLeiLinSpace
 import Navier.Analysis.ContinuousLeiLinTimeDuhamel
 import Navier.Analysis.ContinuousLeiLinDissipation
+import Navier.Analysis.ContinuousLeiLinSelfMap
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
