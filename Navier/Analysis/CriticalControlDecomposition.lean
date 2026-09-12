@@ -461,6 +461,73 @@ theorem divergenceFreeInitial_inhabited :
     ∃ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ :=
   ⟨0, ProblemStatements.divergenceFreeInitial_zero⟩
 
+/-! ## The decomposition is a FAMILY, and its degenerate member is content-free
+
+`wholeSpaceGlobalRegularity_of_local_continuation_apriori` is quantified over
+the critical quantity `N`.  Nothing in its statement forces `N` to measure
+anything, and the three declarations below make the consequence mechanical
+instead of leaving it as a prose caveat.
+
+At `N ≡ 0` the a priori leaf `APrioriCriticalControl` is provable outright
+(`aPrioriCriticalControl_zero`), and the hypothesis `N T u ≤ M` inside the
+continuation leaf is discharged for every `M`, so that leaf collapses to
+`UnconditionalNormalizedContinuation` — the assertion that *every* admissible
+local solution extends by a fixed step, with no control assumption at all
+(`normalizedContinuation_zero_iff_unconditional`).  The composition then reads
+`local existence + unconditional continuation → crown`
+(`wholeSpaceGlobalRegularity_of_local_unconditional_continuation`), whose second
+input is as hard as the crown itself.
+
+So the theorem is a true implication for every `N`, but it carries mathematical
+content only for an `N` that is separately shown to control the equation.
+Consumers must name their `N` and prove both analytic leaves for that same `N`;
+citing the composition without an `N` is citing the degenerate member. -/
+
+/-- **Degeneracy, pole 1.**  The a priori leaf is unconditionally provable at the
+zero quantity, so `APrioriCriticalControl` carries no content on its own. -/
+theorem aPrioriCriticalControl_zero :
+    APrioriCriticalControl (fun _ _ => 0) := by
+  intro ν _ u₀ _
+  exact ⟨0, fun _ _ _ _ _ _ => le_of_eq (by simp)⟩
+
+/-- Continuation with no control hypothesis whatsoever. -/
+def UnconditionalNormalizedContinuation : Prop :=
+  ∀ ν : ℝ, 0 < ν → ∃ δ : ℝ, 0 < δ ∧
+    ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
+      ∀ T : ℝ, 0 < T → ∀ u : VelocityEvolution, ∀ p : PressureEvolution,
+        (∀ x : Space, u 0 x = u₀ x) → SolvesBefore ν T u p →
+        PressureNormalizedBefore T p →
+        ∃ u' : VelocityEvolution, ∃ p' : PressureEvolution,
+          SolvesBefore ν (T + δ) u' p' ∧
+            PressureNormalizedBefore (T + δ) p' ∧
+            VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p'
+
+/-- **Degeneracy, pole 2.**  At the zero quantity the continuation leaf *is* the
+unconditional continuation statement: the control hypothesis is vacuous. -/
+theorem normalizedContinuation_zero_iff_unconditional :
+    NormalizedContinuationFromCriticalControl (fun _ _ => 0) ↔
+      UnconditionalNormalizedContinuation := by
+  constructor
+  · intro h ν hν
+    obtain ⟨δ, hδ, hstep⟩ := h ν hν 0
+    exact ⟨δ, hδ, fun u₀ hdiv T hT u p hinit hsolve hnorm =>
+      hstep u₀ hdiv T hT u p hinit hsolve hnorm (by simp)⟩
+  · intro h ν hν M
+    obtain ⟨δ, hδ, hstep⟩ := h ν hν
+    exact ⟨δ, hδ, fun u₀ hdiv T hT u p hinit hsolve hnorm _ =>
+      hstep u₀ hdiv T hT u p hinit hsolve hnorm⟩
+
+/-- The degenerate member of the family, spelled out: with no critical quantity
+at all, the composition is `local existence + unconditional continuation`.  This
+is the exact statement a consumer gets if it does not exhibit a controlling
+`N`. -/
+theorem wholeSpaceGlobalRegularity_of_local_unconditional_continuation
+    (hlocal : LocalClassicalExistence)
+    (hcont : UnconditionalNormalizedContinuation) :
+    ProblemStatements.WholeSpaceGlobalRegularity :=
+  wholeSpaceGlobalRegularity_of_local_continuation_apriori (fun _ _ => 0) hlocal
+    (normalizedContinuation_zero_iff_unconditional.2 hcont) aPrioriCriticalControl_zero
+
 end Navier.Analysis.CriticalControlDecomposition
 
 #print axioms Navier.Analysis.CriticalControlDecomposition.smoothPressureBefore_normalize
@@ -469,3 +536,6 @@ end Navier.Analysis.CriticalControlDecomposition
 #print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
 #print axioms Navier.Analysis.CriticalControlDecomposition.top_not_le_finiteCriticalBound
 #print axioms Navier.Analysis.CriticalControlDecomposition.acceleratingVelocity_not_admissible
+#print axioms Navier.Analysis.CriticalControlDecomposition.aPrioriCriticalControl_zero
+#print axioms Navier.Analysis.CriticalControlDecomposition.normalizedContinuation_zero_iff_unconditional
+#print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_unconditional_continuation

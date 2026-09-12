@@ -183,6 +183,44 @@ structure IsClassicalSolution (ν : ℝ) (f : ForceField)
   uniformly_bounded_energy :
     ∃ E : ℝ, 0 < E ∧ ∀ t : ℝ, 0 ≤ t → kineticEnergy u t < E
 
+/-! ### The one-sided time derivative is the right derivative, and only at `t = 0`
+
+`timeDerivative` is `fderivWithin ℝ · (Set.Ici 0)`.  Two faithfulness facts are
+needed and both are proved here rather than asserted in prose.
+
+* `uniqueDiffOn_ici_zero`: `Set.Ici 0` has the unique-differentiability property
+  at every one of its points, including the endpoint `0`.  So the within
+  derivative is *determined* by the values of `u` on `[0,∞)` alone — there is no
+  gauge freedom and no dependence on a negative-time extension.
+* `timeDerivative_eq_fderiv_of_pos`: for `t > 0` the set `Set.Ici 0` is a
+  neighbourhood of `t`, so the one-sided operator coincides *identically* with
+  the ordinary two-sided Fréchet derivative — including the junk-value
+  convention, since both return `0` exactly when the map is not differentiable.
+  The restriction to `Set.Ici 0` therefore weakens nothing at interior times and
+  at `t = 0` is exactly Fefferman's right derivative. -/
+
+/-- `Set.Ici 0` is a neighbourhood of every positive time. -/
+theorem ici_mem_nhds_of_pos {t : ℝ} (ht : 0 < t) : Set.Ici (0 : ℝ) ∈ nhds t :=
+  Filter.mem_of_superset ((isOpen_Ioi (a := (0 : ℝ))).mem_nhds ht) Set.Ioi_subset_Ici_self
+
+/-- Unique differentiability on the closed half-line, at the endpoint too.  This
+is what makes `timeDerivative` a well-defined functional of the nonnegative-time
+data. -/
+theorem uniqueDiffOn_ici_zero : UniqueDiffOn ℝ (Set.Ici (0 : ℝ)) :=
+  uniqueDiffOn_Ici 0
+
+/-- At every positive time the within-`[0,∞)` time derivative *is* the ordinary
+two-sided Fréchet derivative. -/
+theorem timeDerivative_eq_fderiv_of_pos (u : VelocityEvolution) {t : ℝ} (ht : 0 < t)
+    (x : Space) :
+    timeDerivative u t x = fderiv ℝ (fun s : ℝ => u s x) t 1 := by
+  rw [timeDerivative, fderivWithin_of_mem_nhds (ici_mem_nhds_of_pos ht)]
+
+/-- At `t = 0` the time derivative is by definition the right derivative within
+`[0,∞)`. -/
+theorem timeDerivative_zero_eq_right_deriv (u : VelocityEvolution) (x : Space) :
+    timeDerivative u 0 x = fderivWithin ℝ (fun s : ℝ => u s x) (Set.Ici 0) 0 1 := rfl
+
 namespace ProblemStatements
 
 /-- The canonical formal encoding of Fefferman whole-space statement A.
