@@ -34,9 +34,15 @@ Scope and honesty notes:
 * The `lam = 0` datum is zero, already covered by `isClassicalSolution_zero`.
   A full Liouville classification of the decodable (irrotational) data sector
   is not claimed here.
-* What this does NOT touch: the analytic lattice → ℝ³ transport route, whose
-  missing primitive remains a weight-compatible extension
-  `WeightedLatticeBanach` → whole-space carrier preserving the
+* What this does NOT touch: the analytic lattice → ℝ³ transport route.  Its
+  periodic realization `physicalMildVelocity` is separately kernel-falsified
+  at the same initial-time surface in
+  `PeriodicRealizationSchwartzObstruction` (a period-one field attains a
+  Schwartz datum only if the datum is zero), using the same
+  `rotationalDatum lam` witness.  The remaining transport primitive is a
+  non-periodic whole-space carrier: reconstruction of the continuous
+  Fourier fixed point (`ContinuousLeiLinSpace`) to a `VelocityEvolution`
+  with Schwartz initial agreement and finite energy, preserving the
   `rawMildViscosity ν₀ / 16` threshold.  That residual stays OPEN.
 -/
 
@@ -461,48 +467,66 @@ theorem madelung_decoder_mixed_partial_comm
     rw [(heq 0).fderiv_eq, hpull 0, ContinuousLinearMap.smul_apply]
   rw [hL, hR, hsymm]
 
+/-- `∂₀ u₁ (0) = lam` for the rotational datum. -/
+theorem fderiv_rotationalDatum_one_zero (lam : ℝ) :
+    fderiv ℝ (fun y : Space => ⇑(rotationalDatum lam) y 1) 0 (basisVector 0) = lam := by
+  have hf : (fun y : Space => ⇑(rotationalDatum lam) y 1) =
+      (fun y : Space => lam * y 0 * rho y) := rfl
+  rw [hf]
+  have h1 : HasFDerivAt (fun y : Space => lam * y 0)
+      (lam • ((ContinuousLinearMap.proj (i := (0 : Fin 3))) : Space →L[ℝ] ℝ)) 0 :=
+    (((ContinuousLinearMap.proj (i := (0 : Fin 3))) : Space →L[ℝ] ℝ).hasFDerivAt
+      (x := (0 : Space))).const_mul lam
+  have h2 : HasFDerivAt rho (fderiv ℝ rho 0) 0 :=
+    ((rho_contDiff.differentiable (by norm_num)).differentiableAt
+      (x := (0 : Space))).hasFDerivAt
+  have h : HasFDerivAt (fun y : Space => lam * y 0 * rho y) _ 0 := h1.mul h2
+  rw [h.fderiv]
+  simp [rho_zero, basisVector]
+  try ring
+
+/-- `∂₁ u₀ (0) = -lam` for the rotational datum. -/
+theorem fderiv_rotationalDatum_zero_one (lam : ℝ) :
+    fderiv ℝ (fun y : Space => ⇑(rotationalDatum lam) y 0) 0 (basisVector 1) = -lam := by
+  have hf : (fun y : Space => ⇑(rotationalDatum lam) y 0) =
+      (fun y : Space => -lam * y 1 * rho y) := rfl
+  rw [hf]
+  have h1 : HasFDerivAt (fun y : Space => -lam * y 1)
+      ((-lam) • ((ContinuousLinearMap.proj (i := (1 : Fin 3))) : Space →L[ℝ] ℝ)) 0 :=
+    (((ContinuousLinearMap.proj (i := (1 : Fin 3))) : Space →L[ℝ] ℝ).hasFDerivAt
+      (x := (0 : Space))).const_mul (-lam)
+  have h2 : HasFDerivAt rho (fderiv ℝ rho 0) 0 :=
+    ((rho_contDiff.differentiable (by norm_num)).differentiableAt
+      (x := (0 : Space))).hasFDerivAt
+  have h : HasFDerivAt (fun y : Space => -lam * y 1 * rho y) _ 0 := h1.mul h2
+  rw [h.fderiv]
+  simp [rho_zero, basisVector]
+  try ring
+
+/-- The rotational datum is a nonzero Schwartz velocity for every `lam ≠ 0`:
+its mixed partial `∂₀ u₁ (0) = lam` does not vanish. -/
+theorem rotationalDatum_ne_zero (lam : ℝ) (hlam : lam ≠ 0) :
+    rotationalDatum lam ≠ 0 := by
+  intro hzero
+  have h := fderiv_rotationalDatum_one_zero lam
+  rw [hzero] at h
+  simp at h
+  exact hlam h.symm
+
 theorem no_scalar_madelung_initial_lift_of_rotational_data (lam : ℝ) (hlam : 0 < lam) :
     ¬ ∃ (κ : ℝ) (ψ : Space → ℂ), ContDiff ℝ ∞ ψ ∧ ψ 0 ≠ 0 ∧
       MadelungInitialDecoder κ ψ ⇑(rotationalDatum lam) := by
   intro hex
   obtain ⟨κ, ψ, hψ, h0, hdec⟩ := hex
   have h := madelung_decoder_mixed_partial_comm κ ψ hψ h0 (⇑(rotationalDatum lam)) hdec
-  have hL : fderiv ℝ (fun y : Space => ⇑(rotationalDatum lam) y 1) 0 (basisVector 0) = lam := by
-    have hf : (fun y : Space => ⇑(rotationalDatum lam) y 1) =
-        (fun y : Space => lam * y 0 * rho y) := rfl
-    rw [hf]
-    have h1 : HasFDerivAt (fun y : Space => lam * y 0)
-        (lam • ((ContinuousLinearMap.proj (i := (0 : Fin 3))) : Space →L[ℝ] ℝ)) 0 :=
-      (((ContinuousLinearMap.proj (i := (0 : Fin 3))) : Space →L[ℝ] ℝ).hasFDerivAt
-        (x := (0 : Space))).const_mul lam
-    have h2 : HasFDerivAt rho (fderiv ℝ rho 0) 0 :=
-      ((rho_contDiff.differentiable (by norm_num)).differentiableAt
-        (x := (0 : Space))).hasFDerivAt
-    have h : HasFDerivAt (fun y : Space => lam * y 0 * rho y) _ 0 := h1.mul h2
-    rw [h.fderiv]
-    simp [fderiv_rho_apply, rho_zero, basisVector]
-    try ring
-  have hR : fderiv ℝ (fun y : Space => ⇑(rotationalDatum lam) y 0) 0 (basisVector 1) = -lam := by
-    have hf : (fun y : Space => ⇑(rotationalDatum lam) y 0) =
-        (fun y : Space => -lam * y 1 * rho y) := rfl
-    rw [hf]
-    have h1 : HasFDerivAt (fun y : Space => -lam * y 1)
-        ((-lam) • ((ContinuousLinearMap.proj (i := (1 : Fin 3))) : Space →L[ℝ] ℝ)) 0 :=
-      (((ContinuousLinearMap.proj (i := (1 : Fin 3))) : Space →L[ℝ] ℝ).hasFDerivAt
-        (x := (0 : Space))).const_mul (-lam)
-    have h2 : HasFDerivAt rho (fderiv ℝ rho 0) 0 :=
-      ((rho_contDiff.differentiable (by norm_num)).differentiableAt
-        (x := (0 : Space))).hasFDerivAt
-    have h : HasFDerivAt (fun y : Space => -lam * y 1 * rho y) _ 0 := h1.mul h2
-    rw [h.fderiv]
-    simp [fderiv_rho_apply, rho_zero, basisVector]
-    try ring
-  rw [hL, hR] at h
+  rw [fderiv_rotationalDatum_one_zero, fderiv_rotationalDatum_zero_one] at h
   linarith
 
 end Navier.Analysis.MadelungDecoderCurlObstruction
 
 #print axioms Navier.Analysis.MadelungDecoderCurlObstruction.rotationalDatum_le
+#print axioms Navier.Analysis.MadelungDecoderCurlObstruction.fderiv_rotationalDatum_one_zero
+#print axioms Navier.Analysis.MadelungDecoderCurlObstruction.rotationalDatum_ne_zero
 #print axioms
   Navier.Analysis.MadelungDecoderCurlObstruction.divergenceFreeInitial_rotationalDatum
 #print axioms Navier.Analysis.MadelungDecoderCurlObstruction.no_scalar_madelung_initial_lift_of_rotational_data

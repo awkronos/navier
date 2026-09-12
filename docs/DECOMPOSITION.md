@@ -52,7 +52,13 @@ checked. Neither refutes the original existential target.
 The lattice mild-solution modules use summable Fourier coefficients on
 `ℤ³`. Applying their results to this whole-space target requires an actual
 reconstruction and transport of the PDE, smoothness, initial data and energy
-conditions to `ℝ³`.
+conditions to `ℝ³`. The direct transport through the periodic realization
+`physicalMildVelocity` is kernel-falsified at the initial time in
+[`PeriodicRealizationSchwartzObstruction.lean`](../Navier/Analysis/PeriodicRealizationSchwartzObstruction.lean):
+a period-one field attains a Schwartz datum only if the datum is zero, so no
+`IsClassicalSolution` on the crown carrier from a nonzero Schwartz datum has
+that realization as its velocity. The remaining transport primitive is a
+non-periodic whole-space carrier.
 
 Verification commands and their scope are in
 [`FORMALIZATION.md`](FORMALIZATION.md) and
