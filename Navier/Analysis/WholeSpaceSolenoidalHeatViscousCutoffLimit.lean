@@ -157,9 +157,11 @@ theorem tendsto_secondDirectional_scaledCutoff_backwardHeatCurlField
 /-- **The two cutoff-free DCT inputs on the actual solution carrier.**  The
 surviving viscous product has the required a.e. pointwise cutoff limit, and
 its limit is integrable against every preterminal finite-energy velocity
-slice.  What remains for spatial dominated convergence is one uniform
-integrable envelope for the two cutoff-derivative errors; the separate
-`∇χ_R × A` solenoidal correction is not folded into this statement. -/
+slice.  The uniform integrable envelope for the two cutoff-derivative
+errors was supplied in `WholeSpaceSolenoidalHeatViscousDomination`, which
+also proves the resulting spatial dominated-convergence limit; the
+separate `∇χ_R × A` solenoidal correction is not folded into this
+statement. -/
 theorem SolvesBefore.integrable_and_ae_tendsto_scaledCutoff_secondDirectional_mul_velocity
     {μ T : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
     (hsol : SolvesBefore μ T u p) {s : ℝ} (hs0 : 0 ≤ s) (hsT : s < T)
