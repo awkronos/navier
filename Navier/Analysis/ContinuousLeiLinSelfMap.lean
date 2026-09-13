@@ -464,13 +464,14 @@ the source-time integral of the coordinate `X⁻¹` mass — the exact continuou
 analogue of the lattice budget `(ν⁻¹) * (3 * (2 * ‖a‖))` half, with no
 spectral gap.  The `AEMeasurable` bundles are carried explicitly, matching the
 convention of `normXm1_continuousDuhamel_self_le_coordinateXm1X1`. -/
-theorem integral_normX1_continuousDuhamel_self_le_source
+theorem integral_normX1_continuousDuhamel_self_le_source_ae
     (u : ℝ → ES → ComplexSpace) (ν T : ℝ) (i : Fin 3) (hν : 0 < ν)
     (hD0 : Integrable (fun t : ℝ =>
         normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i))
         (volume.restrict (Icc (0 : ℝ) T)))
-    (hDξ : ∀ t ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES =>
-        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖))
+    (hDξ : ∀ᵐ t ∂(volume.restrict (Icc (0 : ℝ) T)),
+        Integrable (fun ξ : ES =>
+          ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖))
     (hW1 : ∀ t ∈ Icc (0 : ℝ) T, AEMeasurable
         (fun p : ES × ℝ => kernelFun u i ν p.1 t p.2)
         (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
@@ -551,12 +552,14 @@ theorem integral_normX1_continuousDuhamel_self_le_source
       (le_trans hcalc
         (ENNReal.ofReal_le_ofReal (kernel_budget ξ s T ν hν))) (by positivity)
   -- pointwise (t): the Duhamel X¹ mass passes through the kernel
-  have h1t (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) :
+  have h1t (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T)
+      (hDξt : Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖)) :
       ENNReal.ofReal (normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i)) ≤
         ∫⁻ p : ES × ℝ, kernelFun u i ν p.1 t p.2 ∂(volume.prod μ) := by
     have hbx : ENNReal.ofReal (normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i)) =
         ∫⁻ ξ, ENNReal.ofReal (‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖) :=
-      MeasureTheory.ofReal_integral_eq_lintegral_ofReal (hDξ t ht)
+      MeasureTheory.ofReal_integral_eq_lintegral_ofReal hDξt
         (ae_of_all volume fun ξ => mul_nonneg (hw0 ξ) (norm_nonneg _))
     have hp (ξ : ES) : ENNReal.ofReal (‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖) ≤
         ∫⁻ s, kernelFun u i ν ξ t s ∂μ := by
@@ -604,8 +607,8 @@ theorem integral_normX1_continuousDuhamel_self_le_source
     calc ∫⁻ t, ENNReal.ofReal (normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i)) ∂μ
         ≤ ∫⁻ t, ∫⁻ p : ES × ℝ, kernelFun u i ν p.1 t p.2 ∂(volume.prod μ) ∂μ :=
             (lintegral_mono_ae (by
-              filter_upwards [ae_restrict_mem hmT] with t ht
-              exact h1t t ht))
+              filter_upwards [ae_restrict_mem hmT, hDξ] with t ht hDξt
+              exact h1t t ht hDξt))
       _ = ∫⁻ z : ℝ × (ES × ℝ),
             kernelFun u i ν z.2.1 z.1 z.2.2 ∂(μ.prod (volume.prod μ)) := by
             rw [← MeasureTheory.lintegral_lintegral
@@ -659,6 +662,44 @@ theorem integral_normX1_continuousDuhamel_self_le_source
     (ae_of_all μ fun _ => integral_nonneg fun ξ =>
       mul_nonneg (hw0 ξ) (norm_nonneg _)))).le.trans hkey
 
+/-- The all-time section-integrability form of
+`integral_normX1_continuousDuhamel_self_le_source_ae`.  This preserves the
+original API while the estimate itself only uses section integrability for
+almost every output time. -/
+theorem integral_normX1_continuousDuhamel_self_le_source
+    (u : ℝ → ES → ComplexSpace) (ν T : ℝ) (i : Fin 3) (hν : 0 < ν)
+    (hD0 : Integrable (fun t : ℝ =>
+        normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hDξ : ∀ t ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖))
+    (hW1 : ∀ t ∈ Icc (0 : ℝ) T, AEMeasurable
+        (fun p : ES × ℝ => kernelFun u i ν p.1 t p.2)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (hW : AEMeasurable
+        (fun z : ℝ × (ES × ℝ) => kernelFun u i ν z.2.1 z.1 z.2.2)
+        ((volume.restrict (Icc (0 : ℝ) T)).prod
+          (volume.prod (volume.restrict (Icc (0 : ℝ) T)))))
+    (hb0 : ∀ s ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousNavierSource u u s ξ i‖))
+    (hg : Integrable (fun s : ℝ =>
+        normXm1 (fun ξ : ES => continuousNavierSource u u s ξ i))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hJ : AEMeasurable (fun p : ES × ℝ =>
+        ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource u u p.2 p.1 i‖))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T)))) :
+    ∫ t in Icc (0 : ℝ) T, normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i) ≤
+      ν⁻¹ * ∫ s in Icc (0 : ℝ) T,
+        normXm1 (fun ξ : ES => continuousNavierSource u u s ξ i) := by
+  have hmT : MeasurableSet (Icc (0 : ℝ) T) := isClosed_Icc.measurableSet
+  have hDξae : ∀ᵐ t ∂(volume.restrict (Icc (0 : ℝ) T)),
+      Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖) := by
+    filter_upwards [ae_restrict_mem hmT] with t ht
+    exact hDξ t ht
+  exact integral_normX1_continuousDuhamel_self_le_source_ae
+    u ν T i hν hD0 hDξae hW1 hW hb0 hg hJ
+
 /-- A single complex coordinate is bounded by the Hermitian Euclidean norm. -/
 private theorem norm_coord_le_complexEuclideanNorm (z : ComplexSpace) (i : Fin 3) :
     ‖z i‖ ≤ complexEuclideanNorm z := by
@@ -673,13 +714,14 @@ product — the exact continuous analogue of the lattice spacetime half of the
 fixed-point budget.  The scalar `ν⁻¹` is the gap substitute
 `integral_normX1_heatMode_le`; the factor `3` and the interpolation come from
 summing the coordinate budgets and the diagonal estimate. -/
-theorem integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
+theorem integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product_ae
     (u : ℝ → ES → ComplexSpace) (ν T : ℝ) (hν : 0 < ν)
     (hD0 : ∀ i : Fin 3, Integrable (fun t : ℝ =>
         normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i))
         (volume.restrict (Icc (0 : ℝ) T)))
-    (hDξ : ∀ i : Fin 3, ∀ t ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES =>
-        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖))
+    (hDξ : ∀ i : Fin 3, ∀ᵐ t ∂(volume.restrict (Icc (0 : ℝ) T)),
+        Integrable (fun ξ : ES =>
+          ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖))
     (hW1 : ∀ i : Fin 3, ∀ t ∈ Icc (0 : ℝ) T, AEMeasurable
         (fun p : ES × ℝ => kernelFun u i ν p.1 t p.2)
         (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
@@ -738,7 +780,7 @@ theorem integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
     (g := fun i : Fin 3 => ν⁻¹ * ∫ s in Icc (0 : ℝ) T,
         normXm1 (fun ξ : ES => continuousNavierSource u u s ξ i)) ?_).trans ?_
   · intro i _
-    exact integral_normX1_continuousDuhamel_self_le_source u ν T i hν (hD0 i) (hDξ i)
+    exact integral_normX1_continuousDuhamel_self_le_source_ae u ν T i hν (hD0 i) (hDξ i)
       (hW1 i) (hW i) (hb0 i) (hg i) (hJ i)
   · rw [← Finset.mul_sum]
     have hstep : (∑ i : Fin 3, ∫ s in Icc (0 : ℝ) T, normXm1 (fun ξ : ES =>
@@ -763,6 +805,55 @@ theorem integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
         (by norm_num : (0 : ℝ) ≤ (3 : ℝ))
     refine le_trans (mul_le_mul_of_nonneg_left hstep (inv_nonneg.mpr hν.le)) ?_
     exact le_of_eq (by ring)
+
+/-- The original all-time section-integrability API, obtained from the
+almost-everywhere estimate. -/
+theorem integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
+    (u : ℝ → ES → ComplexSpace) (ν T : ℝ) (hν : 0 < ν)
+    (hD0 : ∀ i : Fin 3, Integrable (fun t : ℝ =>
+        normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hDξ : ∀ i : Fin 3, ∀ t ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖))
+    (hW1 : ∀ i : Fin 3, ∀ t ∈ Icc (0 : ℝ) T, AEMeasurable
+        (fun p : ES × ℝ => kernelFun u i ν p.1 t p.2)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (hW : ∀ i : Fin 3, AEMeasurable
+        (fun z : ℝ × (ES × ℝ) => kernelFun u i ν z.2.1 z.1 z.2.2)
+        ((volume.restrict (Icc (0 : ℝ) T)).prod
+          (volume.prod (volume.restrict (Icc (0 : ℝ) T)))))
+    (hb0 : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousNavierSource u u s ξ i‖))
+    (hg : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ξ : ES => continuousNavierSource u u s ξ i))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hJ : ∀ i : Fin 3, AEMeasurable (fun p : ES × ℝ =>
+        ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource u u p.2 p.1 i‖))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (hs1 : ∀ s ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource u u s ξ)))
+    (hi : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource u u s ξ))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hu : ∀ r j, AEStronglyMeasurable (fun η : ES => u r η j))
+    (hu0 : ∀ r j, Integrable (fun η : ES => ‖u r η j‖))
+    (hum1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (hu1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (h0sq : IntegrableOn (fun r => coordinateX0Mass (u r) ^ 2) (Icc (0 : ℝ) T))
+    (hmixed : IntegrableOn (fun r =>
+        coordinateXm1Mass (u r) * coordinateX1Mass (u r)) (Icc (0 : ℝ) T)) :
+    ∫ t in Icc (0 : ℝ) T, coordinateX1Mass (continuousDuhamel ν u u t) ≤
+      (3 : ℝ) * ν⁻¹ * ∫ s in Icc (0 : ℝ) T,
+        coordinateXm1Mass (u s) * coordinateX1Mass (u s) := by
+  have hmT : MeasurableSet (Icc (0 : ℝ) T) := isClosed_Icc.measurableSet
+  have hDξae : ∀ i : Fin 3, ∀ᵐ t ∂(volume.restrict (Icc (0 : ℝ) T)),
+      Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖) := by
+    intro i
+    filter_upwards [ae_restrict_mem hmT] with t ht
+    exact hDξ i t ht
+  exact integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product_ae
+    u ν T hν hD0 hDξae hW1 hW hb0 hg hJ hs1 hi hu hu0 hum1 hu1 h0sq hmixed
 
 /-- Monotonicity of the nonnegative `Icc` set integral in the horizon:
 `∫₀ᵗ f ≤ ∫₀ᵀ f` whenever `t ≤ T` and `f ≥ 0` pointwise, both integrable. -/
@@ -793,6 +884,73 @@ private theorem setIntegral_Icc_mono {t T : ℝ} (htT : t ≤ T) (f : ℝ → �
 /-- The spacetime `X¹` budget of the mild image: the heat half costs
 `ν⁻¹ * coordinateXm1Mass a` (dissipation gap substitute), the Duhamel half
 costs `3 * ν⁻¹` times the interpolated mass-product integral. -/
+theorem integral_coordinateX1Mass_continuousMildImage_le_ae
+    (ν : ℝ) (hν : 0 < ν) (a : ES -> ComplexSpace)
+    (ha : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ i‖))
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (u : ℝ → ES → ComplexSpace) (T : ℝ) (hT : 0 ≤ T)
+    (hIt : Integrable (fun t : ℝ =>
+        coordinateX1Mass (continuousMildImage ν hν a u t))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hHt : Integrable (fun t : ℝ => coordinateX1Mass (heatVec ν t a))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hD0 : ∀ i : Fin 3, Integrable (fun t : ℝ =>
+        normX1 (fun ξ : ES => continuousDuhamel ν u u t ξ i))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hDξ : ∀ i : Fin 3, ∀ᵐ t ∂(volume.restrict (Icc (0 : ℝ) T)),
+        Integrable (fun ξ : ES =>
+          ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖))
+    (hW1 : ∀ i : Fin 3, ∀ t ∈ Icc (0 : ℝ) T, AEMeasurable
+        (fun p : ES × ℝ => kernelFun u i ν p.1 t p.2)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (hW : ∀ i : Fin 3, AEMeasurable
+        (fun z : ℝ × (ES × ℝ) => kernelFun u i ν z.2.1 z.1 z.2.2)
+        ((volume.restrict (Icc (0 : ℝ) T)).prod
+          (volume.prod (volume.restrict (Icc (0 : ℝ) T)))))
+    (hb0 : ∀ i : Fin 3, ∀ s ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES =>
+        ‖ξ‖⁻¹ * ‖continuousNavierSource u u s ξ i‖))
+    (hg : ∀ i : Fin 3, Integrable (fun s : ℝ =>
+        normXm1 (fun ξ : ES => continuousNavierSource u u s ξ i))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hJ : ∀ i : Fin 3, AEMeasurable (fun p : ES × ℝ =>
+        ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource u u p.2 p.1 i‖))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (hs1 : ∀ s ∈ Icc (0 : ℝ) T, Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource u u s ξ)))
+    (hi : Integrable (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource u u s ξ))
+        (volume.restrict (Icc (0 : ℝ) T)))
+    (hu : ∀ r j, AEStronglyMeasurable (fun η : ES => u r η j))
+    (hu0 : ∀ r j, Integrable (fun η : ES => ‖u r η j‖))
+    (hum1 : ∀ r j, Integrable (fun η : ES => ‖η‖⁻¹ * ‖u r η j‖))
+    (hu1 : ∀ r j, Integrable (fun η : ES => ‖η‖ * ‖u r η j‖))
+    (h0sq : IntegrableOn (fun r => coordinateX0Mass (u r) ^ 2) (Icc (0 : ℝ) T))
+    (hmixed : IntegrableOn (fun r =>
+        coordinateXm1Mass (u r) * coordinateX1Mass (u r)) (Icc (0 : ℝ) T)) :
+    ∫ t in Icc (0 : ℝ) T, coordinateX1Mass (continuousMildImage ν hν a u t) ≤
+      ν⁻¹ * coordinateXm1Mass a +
+        (3 : ℝ) * ν⁻¹ * ∫ s in Icc (0 : ℝ) T,
+          coordinateXm1Mass (u s) * coordinateX1Mass (u s) := by
+  have hmT : MeasurableSet (Icc (0 : ℝ) T) := isClosed_Icc.measurableSet
+  have hDt : Integrable (fun t : ℝ => coordinateX1Mass (continuousDuhamel ν u u t))
+      (volume.restrict (Icc (0 : ℝ) T)) :=
+    integrable_finsetSum (f := fun i (t : ℝ) => normX1 (fun ξ : ES =>
+      continuousDuhamel ν u u t ξ i)) Finset.univ (fun i _ => hD0 i)
+  have hDξall : ∀ᵐ t ∂(volume.restrict (Icc (0 : ℝ) T)), ∀ i : Fin 3,
+      Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖) :=
+    Filter.eventually_all.mpr hDξ
+  refine le_trans (integral_mono_ae hIt (hHt.add hDt) (by
+      filter_upwards [ae_restrict_mem hmT, hDξall] with t ht hDξt
+      exact coordinateX1Mass_add_le (heatVec ν t a) (continuousDuhamel ν u u t)
+        (fun i => heatVecX1Integrable a ha1 ν t hν ht.1 i) hDξt)) ?_
+  refine (le_of_eq (integral_add hHt hDt)).trans ?_
+  exact add_le_add (integral_coordinateX1Mass_heatVec_le a ha ν T hν hT)
+    (integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product_ae
+      u ν T hν hD0 hDξ hW1 hW hb0 hg hJ hs1 hi hu hu0 hum1 hu1 h0sq hmixed)
+
+/-- The original all-time section-integrability API, retained as a
+corollary of `integral_coordinateX1Mass_continuousMildImage_le_ae`. -/
 theorem integral_coordinateX1Mass_continuousMildImage_le
     (ν : ℝ) (hν : 0 < ν) (a : ES -> ComplexSpace)
     (ha : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ i‖))
@@ -840,18 +998,15 @@ theorem integral_coordinateX1Mass_continuousMildImage_le
         (3 : ℝ) * ν⁻¹ * ∫ s in Icc (0 : ℝ) T,
           coordinateXm1Mass (u s) * coordinateX1Mass (u s) := by
   have hmT : MeasurableSet (Icc (0 : ℝ) T) := isClosed_Icc.measurableSet
-  have hDt : Integrable (fun t : ℝ => coordinateX1Mass (continuousDuhamel ν u u t))
-      (volume.restrict (Icc (0 : ℝ) T)) :=
-    integrable_finsetSum (f := fun i (t : ℝ) => normX1 (fun ξ : ES =>
-      continuousDuhamel ν u u t ξ i)) Finset.univ (fun i _ => hD0 i)
-  refine le_trans (integral_mono_ae hIt (hHt.add hDt) (by
-      filter_upwards [ae_restrict_mem hmT] with t ht
-      exact coordinateX1Mass_add_le (heatVec ν t a) (continuousDuhamel ν u u t)
-        (fun i => heatVecX1Integrable a ha1 ν t hν ht.1 i) (fun i => hDξ i t ht))) ?_
-  refine (le_of_eq (integral_add hHt hDt)).trans ?_
-  exact add_le_add (integral_coordinateX1Mass_heatVec_le a ha ν T hν hT)
-    (integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
-      u ν T hν hD0 hDξ hW1 hW hb0 hg hJ hs1 hi hu hu0 hum1 hu1 h0sq hmixed)
+  have hDξae : ∀ i : Fin 3, ∀ᵐ t ∂(volume.restrict (Icc (0 : ℝ) T)),
+      Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel ν u u t ξ i‖) := by
+    intro i
+    filter_upwards [ae_restrict_mem hmT] with t ht
+    exact hDξ i t ht
+  exact integral_coordinateX1Mass_continuousMildImage_le_ae
+    ν hν a ha ha1 u T hT hIt hHt hD0 hDξae hW1 hW hb0 hg hJ hs1 hi
+      hu hu0 hum1 hu1 h0sq hmixed
 
 /-- Ball-closure arithmetic at `R ≤ ν/16`: given the per-time `Xm1` budget
 (`B2`) and the spacetime `X¹` budget (`D3`) for the mild image, and ball
@@ -1665,8 +1820,11 @@ theorem continuousMildImage_sub_coordinateXm1Mass_le_ball_modulus
 #print axioms continuousMildImage_coord_apply
 #print axioms coordinateXm1Mass_continuousDuhamel_self_le_integral_product
 #print axioms continuousMildImage_coordinateXm1Mass_le
+#print axioms integral_normX1_continuousDuhamel_self_le_source_ae
 #print axioms integral_normX1_continuousDuhamel_self_le_source
+#print axioms integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product_ae
 #print axioms integral_coordinateX1Mass_continuousDuhamel_self_le_integral_product
+#print axioms integral_coordinateX1Mass_continuousMildImage_le_ae
 #print axioms integral_coordinateX1Mass_continuousMildImage_le
 #print axioms continuousMildImage_self_map_ball
 #print axioms continuousMildImage_self_map_ball_twoR

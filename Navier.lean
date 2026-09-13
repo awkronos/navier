@@ -45,6 +45,8 @@ import Navier.Analysis.ContinuousLeiLinBoxD3Joint
 import Navier.Analysis.ContinuousLeiLinBoxD3Output
 import Navier.Analysis.ContinuousLeiLinBoxD3Measurability
 import Navier.Analysis.ContinuousLeiLinBoxD3Maximal
+import Navier.Analysis.ContinuousLeiLinBoxD3AE
+import Navier.Analysis.ContinuousLeiLinBoxSelfMap
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
