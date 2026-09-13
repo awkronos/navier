@@ -15,6 +15,7 @@ import Navier.Analysis.PeriodicConstructedBreakdown
 import Navier.Analysis.ContinuousLeiLinMildFixedPoint
 import Navier.Analysis.ContinuousLeiLinPressureReconstruction
 import Navier.Analysis.ContinuousLeiLinPressurePhysical
+import Navier.Analysis.BKMVorticityIntegralDivergence
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -136,3 +137,15 @@ remains named where the L¹ product→convolution bridge is missing. -/
 #print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.norm_continuousPressurePhysical_le
 #check Navier.Analysis.ContinuousLeiLinPressurePhysical.integral_fourierInv_pairing
 #print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.integral_fourierInv_pairing
+
+/-! BKM vorticity-divergence receipts (landed 2026-09-13, DECOMPOSED): the
+vorticity rate V, its continuity, the conditional divergence chain and the
+top-valued vorticity control. The named residual — the positive Grönwall pair
+Y, Y' with Y' ≤ V·Y and ‖u‖ ≤ Y for the selected profile — is constructed
+nowhere; these receipts prove everything downstream of such a pair. -/
+#check Navier.Analysis.BKMVorticityIntegralDivergence.V_continuousOn
+#print axioms Navier.Analysis.BKMVorticityIntegralDivergence.V_continuousOn
+#check Navier.Analysis.BKMVorticityIntegralDivergence.lintegral_vorticity_integral_divergence
+#print axioms Navier.Analysis.BKMVorticityIntegralDivergence.lintegral_vorticity_integral_divergence
+#check Navier.Analysis.BKMVorticityIntegralDivergence.bkmVorticityControl_eq_top
+#print axioms Navier.Analysis.BKMVorticityIntegralDivergence.bkmVorticityControl_eq_top
