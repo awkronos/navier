@@ -154,6 +154,7 @@ import Navier.Analysis.PressureNormalization
 import Navier.Analysis.PressurePoisson
 import Navier.Analysis.MadelungTransportIdentity
 import Navier.Analysis.MadelungDecoderCurlObstruction
+import Navier.Analysis.MadelungResidualPrimitives
 import Navier.Analysis.QuantumVortexRegularity
 import Navier.Analysis.QuantumVortexTopologyChange
 import Navier.Analysis.QuantumVortexWinding
