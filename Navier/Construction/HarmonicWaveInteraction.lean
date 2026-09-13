@@ -947,7 +947,7 @@ omit [NormedAddCommGroup D] [NormedSpace ℝ D] in
 @[simp] theorem single_coeff (j m : ℤ) (f : D → ℂ) :
     (AddMonoidAlgebra.single j f : Coefficients D).coeff m =
       if j = m then f else 0 := by
-  exact AddMonoidAlgebra.single_apply
+  exact AddMonoidAlgebra.coeff_single_apply
 
 @[simp] theorem differentiate_single_apply (V : D → D) (k : ℝ) (Φ : D → ℝ)
     (j m : ℤ) (f : D → ℂ) (x : D) :

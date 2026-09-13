@@ -50,7 +50,7 @@ theorem integral_heatTimeMajorant_zero (ν T : ℝ) (hT : 0 ≤ T) :
     (∫ τ in (0 : ℝ)..T, heatTimeMajorant ν τ) =
       T + 2 * Real.sqrt T / Real.sqrt ν := by
   simp_rw [heatTimeMajorant]
-  rw [intervalIntegral.integral_add intervalIntegral.intervalIntegrable_const
+  rw [intervalIntegral.integral_add intervalIntegrable_const
       ((inverseSqrtTime_intervalIntegrable T).const_mul _),
     intervalIntegral.integral_const,
     intervalIntegral.integral_const_mul,

@@ -73,6 +73,11 @@ theorem continuous_complexEuclideanPoint :
 theorem continuous_heatLiftCoordinate_time (ν : ℝ) (u : WeightedLatticeBanach)
     (m : LatticeMode) : Continuous fun τ : ℝ => heatLiftCoordinate ν τ u m := by
   unfold heatLiftCoordinate heatLiftCoefficient
+  show Continuous
+      (CriticalMildWeightedSpace.latticeModeWeight m ^ 2 •
+        fun τ : ℝ => complexEuclideanPoint
+          ((complexFrequencyHeatLeray ν τ (latticeFrequency m))
+            (weightedLatticeCoefficient u m)))
   apply Continuous.const_smul
   apply continuous_complexEuclideanPoint.comp
   rw [show (fun τ : ℝ => complexFrequencyHeatLeray ν τ (latticeFrequency m)
@@ -218,7 +223,7 @@ theorem integrableOn_positiveTimeHeatLift (ν T : ℝ) (hν : 0 < ν) (hT : 0 �
     IntegrableOn (positiveTimeHeatLift ν hν u) (Ioc 0 T) volume := by
   have hmajorant : IntervalIntegrable (heatTimeMajorant ν) volume 0 T := by
     unfold heatTimeMajorant
-    exact intervalIntegral.intervalIntegrable_const.add
+    exact intervalIntegrable_const.add
       ((inverseSqrtTime_intervalIntegrable T).const_mul _)
   have hmajorantU : IntervalIntegrable (fun τ => heatTimeMajorant ν τ * ‖u‖) volume 0 T :=
     hmajorant.mul_const _
@@ -243,7 +248,7 @@ theorem norm_positiveTimeHeatLiftIntegral_le (ν T : ℝ) (hν : 0 < ν) (hT : 0
       (T + 2 * Real.sqrt T / Real.sqrt ν) * ‖u‖ := by
   have hmajorant : IntervalIntegrable (fun τ => heatTimeMajorant ν τ * ‖u‖) volume 0 T := by
     unfold heatTimeMajorant
-    exact (intervalIntegral.intervalIntegrable_const.add
+    exact (intervalIntegrable_const.add
       ((inverseSqrtTime_intervalIntegrable T).const_mul _)).mul_const _
   have hheat := integrableOn_positiveTimeHeatLift ν T hν hT u
   have hscalar := (intervalIntegrable_iff_integrableOn_Ioc_of_le hT).mp hmajorant
@@ -267,7 +272,7 @@ theorem norm_positiveTimeHeatLiftIntegral_le (ν T : ℝ) (hν : 0 < ν) (hT : 0
 theorem intervalIntegrable_heatTimeMajorant (ν T : ℝ) :
     IntervalIntegrable (heatTimeMajorant ν) volume 0 T := by
   unfold heatTimeMajorant
-  exact intervalIntegral.intervalIntegrable_const.add
+  exact intervalIntegrable_const.add
     ((inverseSqrtTime_intervalIntegrable T).const_mul _)
 
 /-- The scalar budget governing the positive-time carrier has the exact

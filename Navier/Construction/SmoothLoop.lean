@@ -183,8 +183,11 @@ theorem angular_variance_identity (t : ℝ → ℝ) (m : ℝ)
       (fun θ => (t θ ^ 2 - (2 * m) * t θ) + m ^ 2) := by
     funext θ
     ring
-  rw [heq, angularMean_add _ _ ((ht.pow 2).sub (continuous_const.fun_mul ht)) continuous_const,
-    angularMean_sub _ _ (ht.pow 2) (continuous_const.fun_mul ht), angularMean_const_mul,
+  rw [heq,
+    angularMean_add (fun θ => t θ ^ 2 - (2 * m) * t θ) (fun _ => m ^ 2)
+      ((ht.pow 2).sub (continuous_const.fun_mul ht)) continuous_const,
+    angularMean_sub (fun θ => t θ ^ 2) (fun θ => (2 * m) * t θ) (ht.pow 2)
+      (continuous_const.fun_mul ht), angularMean_const_mul (2 * m) t,
     angularMean_const, hmean]
   ring
 
@@ -194,7 +197,8 @@ theorem angular_energy_moment (t : ℝ → ℝ) (a m ρ : ℝ) (ha : a ≠ 0)
     a * angularMean (fun θ => 1 + t θ ^ 2) = a * (1 + m ^ 2) + ρ := by
   have hv := angular_variance_identity t m ht hmean
   have hsecond : angularMean (fun θ => t θ ^ 2) = m ^ 2 + ρ / a := by linarith
-  rw [angularMean_add _ _ continuous_const (ht.pow 2), angularMean_const, hsecond]
+  rw [angularMean_add (fun _ => (1 : ℝ)) (fun θ => t θ ^ 2) continuous_const (ht.pow 2),
+    angularMean_const, hsecond]
   field_simp; ring
 
 open LoopMoments in
@@ -298,10 +302,12 @@ theorem expTilt_periodic (m d μ p : ℝ) :
 
 theorem expTilt_mean (m d μ p : ℝ) : angularMean (expTilt m d μ p) = m := by
   unfold expTilt
-  rw [angularMean_add _ _ continuous_const
+  rw [angularMean_add (fun _ => m) (fun θ => (d / p) * (normalizedExp (μ * p) θ - 1))
+      continuous_const
       (continuous_const.fun_mul ((normalizedExp_contDiff _).continuous.sub continuous_const)),
-    angularMean_const, angularMean_const_mul,
-    angularMean_sub _ _ (normalizedExp_contDiff _).continuous continuous_const,
+    angularMean_const, angularMean_const_mul (d / p) (fun θ => normalizedExp (μ * p) θ - 1),
+    angularMean_sub (fun θ => normalizedExp (μ * p) θ) (fun _ => (1 : ℝ))
+      (normalizedExp_contDiff _).continuous continuous_const,
     normalizedExp_mean, angularMean_const]
   ring
 

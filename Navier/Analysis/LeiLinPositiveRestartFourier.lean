@@ -68,13 +68,15 @@ theorem fourierTruncation_apply (n : ℕ) (u : WeightedLatticeBanach)
   · rw [if_pos hm]
     have hmem : latticeModeEquivNat m ∈ Finset.range n := Finset.mem_range.mpr hm
     rw [Finset.sum_eq_single (latticeModeEquivNat m)]
-    · simp [lp.single_apply]
+    · rw [Equiv.symm_apply_apply latticeModeEquivNat m]
+      exact lp.single_apply_self (E := fun _ => ComplexE3) 1 m (u m)
     · intro b hb hne
       have hsymm : latticeModeEquivNat.symm b ≠ m := by
         intro h
         apply hne
         simpa using congrArg latticeModeEquivNat h
-      simp [lp.single_apply, hsymm]
+      exact lp.single_apply_ne (E := fun _ => ComplexE3) 1 (latticeModeEquivNat.symm b) (u (latticeModeEquivNat.symm b))
+        (Ne.symm hsymm)
     · exact fun h => (h hmem).elim
   · rw [if_neg hm]
     apply Finset.sum_eq_zero
@@ -87,7 +89,8 @@ theorem fourierTruncation_apply (n : ℕ) (u : WeightedLatticeBanach)
       intro h
       apply hne
       simpa using congrArg latticeModeEquivNat h
-    simp [lp.single_apply, hsymm]
+    exact lp.single_apply_ne (E := fun _ => ComplexE3) 1 (latticeModeEquivNat.symm j) (u (latticeModeEquivNat.symm j))
+      (Ne.symm hsymm)
 
 /-- Every finite Fourier truncation belongs to the half-generator graph
 domain. -/
@@ -135,9 +138,11 @@ theorem norm_fourierTruncation_le (n : ℕ) (u : WeightedLatticeBanach) :
     simpa using u.2.summable
   rw [show ‖fourierTruncation n u‖ =
       ∑' m : LatticeMode, ‖fourierTruncation n u m‖ by
-        simp [lp.norm_eq_tsum_rpow],
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one],
     show ‖u‖ = ∑' m : LatticeMode, ‖u m‖ by
-      simp [lp.norm_eq_tsum_rpow]]
+      rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+      simp [ENNReal.toReal_one]]
   apply htrunc.tsum_le_tsum _ hu
   intro m
   rw [fourierTruncation_apply]

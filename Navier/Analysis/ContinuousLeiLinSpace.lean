@@ -712,7 +712,7 @@ theorem continuousNavierBilinear_aestronglyMeasurable (u v : ES → ComplexSpace
     (PiLp.continuous_toLp 2 _).aestronglyMeasurable.comp_aemeasurable hraw.aemeasurable
   have hphase : AEStronglyMeasurable (fun ξ : ES =>
       Complex.I • complexEuclideanPoint (rawNavierConvection u v ξ)) :=
-    aestronglyMeasurable_const.smul hrawE
+    hrawE.const_smul (Complex.I : ℂ)
   have hrewrite : (fun ξ : ES =>
       complexEuclideanPoint (continuousNavierBilinear u v ξ)) =
       fun ξ => continuousLerayE ξ

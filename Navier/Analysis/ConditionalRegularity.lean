@@ -1310,7 +1310,8 @@ theorem heatKernel_smul_integrable_of_integrable_rpow
     (by simpa only [abs_norm] using hgr) hgm.norm x
   apply hint.mono' (hK.aestronglyMeasurable.smul hgm.aestronglyMeasurable)
   filter_upwards [] with y
-  rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (heatKernel_nonneg hν ht _)]
+  rw [Pi.smul_apply', norm_smul, Real.norm_eq_abs,
+    abs_of_nonneg (heatKernel_nonneg hν ht _)]
 
 /-- Both integrals defining the Duhamel convolution exist under a uniform
 source `L^r` bound, for `r > 3/2`. Joint source continuity supplies parameter

@@ -79,7 +79,7 @@ theorem constant {f : D → ℂ} (hf : TranslationOn U v f) :
   intro j x hx
   have hc (y : D) : (constantCoefficient f).coeff j y =
       if (0 : ℤ) = j then f y else 0 := by
-    have he := congrFun (AddMonoidAlgebra.single_apply
+    have he := congrFun (AddMonoidAlgebra.coeff_single_apply
       (a := (0 : ℤ)) (a' := j) (b := f)) y
     change (constantCoefficient f).coeff j y = _ at he
     simpa only [ite_apply, Pi.zero_apply] using he

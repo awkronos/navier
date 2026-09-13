@@ -370,8 +370,15 @@ theorem projectedForcing_continuousOn {X : Type*} [TopologicalSpace X]
     (hne : ∀ z ∈ S, n z ≠ 0) :
     ContinuousOn (fun z => -TangentProjection.tangentProj (n z) (f z)) S := by
   unfold TangentProjection.tangentProj
-  exact (hf.sub (((hn.inner hf).div (hn.inner hn)
-    (fun z hz => inner_self_ne_zero.mpr (hne z hz))).smul hn)).neg
+  have hdiv : ContinuousOn (fun z : X => ⟪n z, f z⟫_ℝ / ⟪n z, n z⟫_ℝ) S :=
+    ContinuousOn.div (f := fun z => ⟪n z, f z⟫_ℝ) (g := fun z => ⟪n z, n z⟫_ℝ)
+      (hn.inner hf) (hn.inner hn)
+      (fun z hz => inner_self_ne_zero.mpr (hne z hz))
+  have hsmul : ContinuousOn (fun z : X => (⟪n z, f z⟫_ℝ / ⟪n z, n z⟫_ℝ) • n z) S :=
+    hdiv.smul hn
+  have hsub : ContinuousOn (fun z : X => f z - (⟪n z, f z⟫_ℝ / ⟪n z, n z⟫_ℝ) • n z) S :=
+    hf.sub hsmul
+  exact hsub.neg
 
 section SmoothFrame
 

@@ -142,7 +142,19 @@ theorem phased_symmetrized_coefficient_unbounded_across_positive_scale
 /-- The six nonzero modes of the finite real Fourier witness. -/
 inductive SymWitnessMode where
   | posK | posL | posM | negK | negL | negM
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+/-- Explicit enumeration of the six witness modes. -/
+def SymWitnessMode.enumList : List SymWitnessMode :=
+  [.posK, .posL, .posM, .negK, .negL, .negM]
+
+theorem SymWitnessMode.enumList_nodup : SymWitnessMode.enumList.Nodup := by
+  decide
+
+instance : Fintype SymWitnessMode :=
+  ⟨SymWitnessMode.enumList.toFinset, by
+    intro x
+    cases x <;> decide⟩
 
 def SymWitnessMode.opposite : SymWitnessMode → SymWitnessMode
   | .posK => .negK

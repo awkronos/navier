@@ -84,7 +84,7 @@ theorem truncatedDuhamel_halfGenerator_log
       (continuousOn_const.sub continuousOn_id).inv₀ (fun s hs hzero => by
         have hs' : s ∈ Icc (0 : ℝ) a := by
           simpa [uIcc_of_le ha0] using hs
-        simp only [id_eq] at hzero
+        simp only [Pi.sub_apply, id_eq, sub_eq_zero] at hzero
         linarith [hs'.2])
     exact hcontinuous.intervalIntegrable
   have hg : IntegrableOn g (Ioc 0 a) volume := by

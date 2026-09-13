@@ -277,7 +277,7 @@ theorem not_exists_terminal_bound_of_nonnegative_integral_budget :
     filter_upwards [(volume.restrict (Set.uIoc (0 : ℝ) 1)).ae_ne (1 : ℝ)] with t ht
     simp [f, ht]
   have hfint : IntervalIntegrable f volume 0 1 :=
-    intervalIntegral.intervalIntegrable_const.congr_ae hae.symm
+    intervalIntegrable_const.congr_ae hae.symm
   have hfintegral : (∫ t in (0 : ℝ)..1, f t) = 0 := by
     rw [intervalIntegral.integral_congr_ae_restrict hae]
     simp
@@ -733,8 +733,9 @@ theorem terminal_le_average_add_of_backward_sqrt_modulus
   have havg : δ * (f T - L * Real.sqrt δ) ≤
       ∫ s in (T - δ)..T, f s := by
     have hmono := intervalIntegral.integral_mono_on hδle
-      intervalIntegral.intervalIntegrable_const hf hpoint
-    simpa [intervalIntegral.integral_const, smul_eq_mul] using hmono
+      intervalIntegrable_const hf hpoint
+    rw [intervalIntegral.integral_const, sub_sub_self, smul_eq_mul] at hmono
+    exact hmono
   have hmul : δ * f T ≤ A + δ * (L * Real.sqrt δ) := by
     linarith
   have hdiv : f T ≤ (A + δ * (L * Real.sqrt δ)) / δ :=
@@ -797,8 +798,9 @@ theorem terminal_le_average_add_of_integrated_backward_sqrt_modulus
   have havg : δ * (f T - L * Real.sqrt δ) ≤
       ∫ s in (T - δ)..T, (f s + M s * Real.sqrt δ) := by
     have hmono := intervalIntegral.integral_mono_on hδle
-      intervalIntegral.intervalIntegrable_const hsum hpoint
-    simpa [intervalIntegral.integral_const, smul_eq_mul] using hmono
+      intervalIntegrable_const hsum hpoint
+    rw [intervalIntegral.integral_const, sub_sub_self, smul_eq_mul] at hmono
+    exact hmono
   have hsplit : (∫ s in (T - δ)..T, (f s + M s * Real.sqrt δ)) =
       (∫ s in (T - δ)..T, f s) +
         (∫ s in (T - δ)..T, M s) * Real.sqrt δ := by

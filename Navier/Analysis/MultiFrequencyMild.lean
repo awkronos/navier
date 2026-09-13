@@ -489,7 +489,8 @@ theorem isMultiMildSolutionOn_unique
     apply continuousOn_finsetSum; intro i _
     apply continuousOn_finsetSum; intro j _
     by_cases h : q i + q j = q k
-    · simp only [if_pos h]; exact (continuousOn_const.inner (hwc i)).smul (hwc j)
+    · simp only [if_pos h]
+      exact (continuousOn_const.inner (𝕜 := ℝ) (hwc i)).smul (hwc j)
     · simp only [if_neg h]; exact continuousOn_const
   -- continuity of the Duhamel integrand
   have contHD : ∀ (w : ℝ → Fin n → E3),
@@ -709,7 +710,7 @@ theorem continuousOn_truncatedSymbol {n : ℕ} {q : Fin n → E3} {u : ℝ → F
   refine continuousOn_finsetSum _ fun i _ => continuousOn_finsetSum _ fun j _ => ?_
   by_cases h : q i + q j = q k
   · simp only [if_pos h]
-    exact (continuousOn_const.inner (hu i)).smul (hu j)
+    exact (continuousOn_const.inner (𝕜 := ℝ) (hu i)).smul (hu j)
   · simp only [if_neg h]
     exact continuousOn_const
 
@@ -849,7 +850,8 @@ theorem multiMild_extends_of_apriori_bound
           = fun t : ℝ => heatDecay ν t (q k) • euclideanLeray (q k) (u₀ k) := by
         funext t; exact frequencyHeatLeray_apply ν t (q k) (u₀ k)
       rw [hrw]
-      refine ContinuousOn.smul ?_ continuousOn_const
+      refine ContinuousOn.smul (f := fun t : ℝ => heatDecay ν t (q k))
+        ?_ continuousOn_const
       unfold heatDecay; fun_prop
     have h2 : ContinuousOn (fun t : ℝ => heatDecay ν t (q k)) (Set.Icc 0 T) := by
       unfold heatDecay; fun_prop
@@ -940,7 +942,7 @@ theorem continuousOn_multiDuhamelImage {ν T : ℝ} (hν : 0 ≤ ν) (hT : (0:�
         = fun t : ℝ => heatDecay ν t (q k) • euclideanLeray (q k) (u₀ k) := by
       funext t; exact frequencyHeatLeray_apply ν t (q k) (u₀ k)
     rw [hrw]
-    refine ContinuousOn.smul ?_ continuousOn_const
+    refine ContinuousOn.smul (f := fun t : ℝ => heatDecay ν t (q k)) ?_ continuousOn_const
     unfold heatDecay; fun_prop
   have h2 : ContinuousOn (fun t : ℝ => heatDecay ν t (q k)) (Set.Icc 0 T) := by
     unfold heatDecay; fun_prop
@@ -1011,7 +1013,7 @@ theorem continuousOn_freeFlow (ν : ℝ) (q₀ v : E3) (T : ℝ) :
       = fun t : ℝ => heatDecay ν t q₀ • euclideanLeray q₀ v := by
     funext t; exact frequencyHeatLeray_apply ν t q₀ v
   rw [hrw]
-  refine ContinuousOn.smul ?_ continuousOn_const
+  refine ContinuousOn.smul (f := fun t : ℝ => heatDecay ν t q₀) ?_ continuousOn_const
   unfold heatDecay; fun_prop
 
 /-- **The Duhamel integrand is continuous on the closed horizon.**  Continuity — rather
@@ -1031,7 +1033,7 @@ theorem continuousOn_duhamelIntegrand {T : ℝ} (ν : ℝ) {n : ℕ} {q : Fin n 
           euclideanLeray (q k) (truncatedConvectionSymbol q (f s) (f s) k) := by
     funext s; exact frequencyHeatLeray_apply _ _ _ _
   rw [hrw]
-  refine ContinuousOn.smul ?_ ?_
+  refine ContinuousOn.smul (f := fun s : ℝ => heatDecay ν (t - s) (q k)) ?_ ?_
   · unfold heatDecay; fun_prop
   · exact (euclideanLeray (q k)).continuous.comp_continuousOn hsym
 

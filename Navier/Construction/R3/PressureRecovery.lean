@@ -168,10 +168,31 @@ theorem noncanonical_average_identity {T : ℝ} {u v : VelocityField} {p q : Pre
       velocityAverage_pairing H (continuous_deriv_of_smooth ha).continuousOn hψ hcψ k, hsum]
     exact (PressureTemporalIdentity.pressure_time_identity H.positive H.smooth_u H.smooth_v
       H.smooth_p H.smooth_q H.div_u H.div_v H.equation ha hsupp hψ hcψ k).symm
+  have hsum3 : (∑ i : Fin 3, ↑(∫ x, tensorAverage T a u v k i x * spatialPartial i ψ x)) =
+      ∑ i : Fin 3, ∫ x, (tensorAverage T a u v k i x : ℂ) *
+        (realTest (spatialPartial i ψ) (spatial_partial_contDiff hψ i)
+          (CompactEnergy.compact_partial hcψ i)) x := by
+    refine Finset.sum_congr rfl fun i _ => ?_
+    have h1 : (fun x : Space => (tensorAverage T a u v k i x : ℂ) *
+        (realTest (spatialPartial i ψ) (spatial_partial_contDiff hψ i)
+          (CompactEnergy.compact_partial hcψ i)) x)
+      = fun x : Space => (↑(tensorAverage T a u v k i x) : ℂ) * ↑(spatialPartial i ψ x) := by
+      funext x
+      rw [show (realTest (spatialPartial i ψ) (spatial_partial_contDiff hψ i)
+            (CompactEnergy.compact_partial hcψ i)) x
+          = (spatialPartial (E := ℝ) i ψ x : ℂ) from rfl]
+    have h2 : (fun x : Space =>
+        (↑(tensorAverage T a u v k i x) : ℂ) * ↑(spatialPartial i ψ x))
+      = fun x : Space => (↑(tensorAverage T a u v k i x * spatialPartial i ψ x) : ℂ) := by
+      funext x
+      exact (Complex.ofReal_mul _ _).symm
+    rw [h1, h2, integral_complex_ofReal]
   simp only [laplacianCLM_realTest, partialCLM_realTest, realTest_apply,
     ← Complex.ofReal_mul, integral_complex_ofReal]
-  simpa only [Complex.ofReal_add, Complex.ofReal_sum] using
-    congrArg Complex.ofReal hreal
+  have hbig := congrArg Complex.ofReal hreal
+  simp only [Complex.ofReal_add, Complex.ofReal_sum] at hbig
+  rw [hsum3] at hbig
+  exact hbig
 
 theorem averaged_value_realTest {T : ℝ} {u v : VelocityField} {p q : PressureField}
     (H : Hypotheses T u v p q) {a : ℝ → ℝ}

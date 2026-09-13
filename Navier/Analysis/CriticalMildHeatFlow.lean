@@ -115,7 +115,8 @@ theorem norm_weightedHeatFlow_le
       Summable.tsum_le_tsum
         (norm_weightedHeatFlowCoordinate_le ν τ hν hτ u) hflow hu
     _ = ‖u‖ := by
-      simpa [lp.norm_eq_tsum_rpow]
+      rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+      simp [ENNReal.toReal_one]
 
 /-- Heat--Leray evolution lands in the divergence-free carrier at every
 nonnegative time, independently of the input. -/
@@ -143,6 +144,10 @@ theorem continuous_weightedHeatFlow_nnreal
   have hcoordinate (m : LatticeMode) :
       Continuous fun τ : NNReal => weightedHeatFlowCoordinate ν τ u m := by
     unfold weightedHeatFlowCoordinate
+    show Continuous (latticeModeWeight m •
+      fun τ : NNReal => complexEuclideanPoint
+        ((complexFrequencyHeatLeray ν τ (latticeFrequency m))
+          (weightedLatticeCoefficient u m)))
     apply Continuous.const_smul
     apply CriticalMildHeatBochner.continuous_complexEuclideanPoint.comp
     rw [show (fun τ : NNReal =>

@@ -813,6 +813,11 @@ theorem continuous_heatRegularizedSpectralOutputFiber_apply (ν : ℝ)
     (k : LatticeMode) (u v : WeightedLatticeBanach) :
     Continuous fun τ : ℝ => heatRegularizedSpectralOutputFiber ν τ k u v := by
   unfold heatRegularizedSpectralOutputFiber
+  show Continuous
+      (latticeModeWeight k •
+        fun τ : ℝ => complexEuclideanPoint
+          ((complexFrequencyHeatLeray ν τ (latticeFrequency k))
+            (spectralOutputCoefficient k u v)))
   apply Continuous.const_smul
   apply CriticalMildHeatBochner.continuous_complexEuclideanPoint.comp
   rw [show (fun τ : ℝ => complexFrequencyHeatLeray ν τ (latticeFrequency k)

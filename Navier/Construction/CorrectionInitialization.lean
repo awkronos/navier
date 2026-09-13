@@ -1088,7 +1088,7 @@ theorem excluded_mean_zero (p : PrimaryPiece (D × ℝ))
     p.coefficients.amplitude 0 n (y, 0) i / 2
   change ((Finsupp.single (1 : ℤ) a 0 x) +
     star (Finsupp.single (1 : ℤ) a (-0) x)).re = 0
-  have hm := congrFun (AddMonoidAlgebra.single_apply
+  have hm := congrFun (AddMonoidAlgebra.coeff_single_apply
     (a := (1 : ℤ)) (a' := (0 : ℤ)) (b := a)) x
   change Finsupp.single (1 : ℤ) a 0 x = _ at hm
   simpa only [hm, if_neg (by norm_num : (1 : ℤ) ≠ 0), Pi.zero_apply,
@@ -1672,7 +1672,7 @@ theorem conjugatePair_class {s : StripData D} {P : ℕ → D → ℝ} {α : ℝ}
     have heval (n : ℕ) (x : D) :
         (AddMonoidAlgebra.single j (fun x => a n x / 2) : Coefficients D) k x =
           if j = k then a n x / 2 else 0 := by
-      have he := congrFun (AddMonoidAlgebra.single_apply
+      have he := congrFun (AddMonoidAlgebra.coeff_single_apply
         (a := j) (a' := k) (b := fun x => a n x / 2)) x
       change (AddMonoidAlgebra.single j (fun x => a n x / 2) :
         Coefficients D).coeff k x = _ at he

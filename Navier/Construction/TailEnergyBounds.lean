@@ -488,8 +488,9 @@ theorem integral_energyDensity_hasDerivAt (d : TailData) (eta a b : ℝ) :
     unfold etaCoefficient
     have hs : Continuous (fun p : ℝ × ℝ => sigma ((p.2 - d.core.endpoint) / flattenLength)) :=
       sigma_contDiff.continuous.comp ((continuous_snd.sub continuous_const).div_const _)
-    exact (((continuous_const.mul (continuous_const.sub hs)).mul continuous_fst).div
-      (continuous_const.fun_add (continuous_fst.pow 2)) (fun p => by positivity)).neg
+    exact ((((continuous_const.mul (continuous_const.sub hs)).mul continuous_fst).div₀
+      ((continuous_const (y := (1 : ℝ))).fun_add (continuous_fst.pow 2))
+        (fun p => by simp only [Pi.pow_apply]; positivity))).neg
   obtain ⟨C, hC⟩ := ((isCompact_closedBall eta 1).prod
     (isCompact_uIcc : IsCompact (uIcc a b))).exists_bound_of_continuousOn hc.continuousOn
   exact (intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le

@@ -241,7 +241,14 @@ theorem tsum_frozenOutputFiberMass_eq (u v : WeightedLatticeBanach) :
           ‖u ij.1‖ * ‖v ij.2‖ :=
         hu.mul_of_nonneg hv (fun _ => norm_nonneg _) (fun _ => norm_nonneg _)
       rw [← hu.tsum_mul_tsum hv hp']
-      simp [lp.norm_eq_tsum_rpow]
+      have hnu : ∑' x : LatticeMode, ‖u x‖ = ‖u‖ := by
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one]
+      have hnv : ∑' y : LatticeMode, ‖v y‖ = ‖v‖ := by
+        rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+        simp [ENNReal.toReal_one]
+      exact (congrArg (fun x : ℝ => x * ∑' y : LatticeMode, ‖v y‖) hnu).trans
+        (congrArg (‖u‖ * ·) hnv)
 
 set_option maxHeartbeats 800000 in
 /-- Exact-decay bound on one completed output fiber. -/

@@ -37,7 +37,9 @@ theorem negativeProjection_continuousOn {X : Type*} [TopologicalSpace X]
     (hne : ∀ x ∈ U, N x ≠ 0) :
     ContinuousOn (fun x => negativeTangentProjection (N x)) U := by
   have hv : ContinuousOn (fun x => (⟪N x, N x⟫_ℝ)⁻¹ • N x) U :=
-    ((hN.inner hN).inv₀ (fun x hx => inner_self_ne_zero.mpr (hne x hx))).smul hN
+    ContinuousOn.smul
+      (ContinuousOn.inv₀ (hN.inner hN : ContinuousOn (fun x => ⟪N x, N x⟫_ℝ) U)
+        (fun x hx => inner_self_ne_zero.mpr (hne x hx))) hN
   have hi := (innerSL ℝ).continuous.comp_continuousOn hN
   exact (continuousOn_const.sub
     (isBoundedBilinearMap_smulRight.continuous.comp_continuousOn (hi.prodMk hv))).neg
@@ -110,7 +112,7 @@ theorem transported_slices (t : TangentData P Space) (φ : Q → P)
   constructor
   · apply ((hA.comp hc).const_smul rate).congr
     intro s
-    simpa only [Function.comp_apply, clock, CopySolveCompatibility.nativeTimeMap, zero_add] using
+    simpa only [Function.comp_apply, Pi.smul_apply, clock, CopySolveCompatibility.nativeTimeMap, zero_add] using
       (transported_coefficient t φ gap rate amplitude normal hn q (xi, s)).symm
   · apply (hB.comp hc).congr
     intro s

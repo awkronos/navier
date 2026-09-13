@@ -303,9 +303,11 @@ theorem localized_eventuallyEq (a A R : ℝ) (F : Plane → E) :
   have hp : (fun q : Plane => EvenSmoothDescent.evenCutoff A (q.1 - a))
       =ᶠ[𝓝 (a, 0)] (fun _ => 1) :=
     (EvenSmoothDescent.evenCutoff_eventually_one A).comp_tendsto
-      (by simpa only [sub_self] using
-        ((continuous_fst.sub (continuous_const : Continuous (fun _ : Plane => a))).tendsto
-          (a, (0 : ℝ))))
+      (by
+        have h : Continuous (fun q : Plane => q.1 - a) :=
+          continuous_fst.sub continuous_const
+        convert h.tendsto (a, (0 : ℝ)) using 1
+        any_goals simp [sub_self])
   have hr : (fun q : Plane => EvenSmoothDescent.evenCutoff R q.2)
       =ᶠ[𝓝 (a, 0)] (fun _ => 1) :=
     (EvenSmoothDescent.evenCutoff_eventually_one R).comp_tendsto

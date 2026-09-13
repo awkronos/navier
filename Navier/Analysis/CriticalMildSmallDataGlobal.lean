@@ -980,8 +980,10 @@ theorem norm_weightedHeatFlow_le_gap_exp
     _ = Real.exp (-ν * τ) * ∑' m : LatticeMode, ‖a m‖ :=
       tsum_mul_left
     _ = Real.exp (-ν * τ) * ‖a‖ := by
-      rw [show (∑' m : LatticeMode, ‖a m‖) = ‖a‖ from
-        by simp [lp.norm_eq_tsum_rpow]]
+      rw [show (∑' m : LatticeMode, ‖a m‖) = ‖a‖ from by
+        rw [lp.norm_eq_tsum_rpow (p := 1) (f := a)
+          (by rw [ENNReal.toReal_one]; norm_num)]
+        simp [Real.rpow_one]]
 
 /-! ### 8. Horizon-free estimates for the assembled mild image -/
 
@@ -1434,8 +1436,8 @@ theorem continuous_globalGapPath
       _ = (localGapPath ν hν a ha ha16 N₀).1 (incl τ) := rfl
   have hcon : ContinuousOn (globalGapPath ν hν a ha ha16)
       (Iio (N₀ : NNReal)) := by
-    refine continuousOn_iff_continuous_restrict.mpr ?_
-    have hfun : (Iio (N₀ : NNReal)).restrict (globalGapPath ν hν a ha ha16) =
+    refine continuousOn_iff_continuous_domRestrict.mpr ?_
+    have hfun : (Iio (N₀ : NNReal)).domRestrict (globalGapPath ν hν a ha ha16) =
         (localGapPath ν hν a ha ha16 N₀).1.comp incl := by
       refine funext (fun τ => ?_)
       exact heq τ

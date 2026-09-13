@@ -366,7 +366,7 @@ theorem BandLimited.add {α : Type*} {c d : Coefficients α} {N : ℕ}
 theorem BandLimited.mul {α : Type*} {c d : Coefficients α} {M N : ℕ}
     (hc : BandLimited c M) (hd : BandLimited d N) : BandLimited (c * d) (M + N) := by
   have hs : (c * d).support ⊆ c.support + d.support :=
-    AddMonoidAlgebra.support_mul c d
+    AddMonoidAlgebra.support_coeff_mul_subset c d
   intro j hj
   obtain ⟨i, hi, l, hl, rfl⟩ := Finset.mem_add.mp (hs hj)
   exact (Int.natAbs_add_le i l).trans (Nat.add_le_add (hc i hi) (hd l hl))

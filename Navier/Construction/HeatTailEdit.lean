@@ -265,7 +265,9 @@ theorem powerTail_weighted_change {h ν K e M q : ℝ} (hh : 0 < h) (hν : 0 < �
   have hres := weighted_integral_bound (p := -exponent h) (q := q)
     (B := heatConstant h ν * e * M) hK (by linarith) hg ?_
   · unfold change
-    simpa only [neg_neg] using hres
+    refine ⟨hres.1, ?_⟩
+    convert hres.2 using 1
+    any_goals simp
   · intro X hX
     calc
       _ ≤ heatConstant h ν * |powerTail h e K f X| / X :=
@@ -290,7 +292,9 @@ theorem powerTail_weighted_squareChange {h ν K e M q : ℝ} (hh : 0 < h) (hν :
   have hres := weighted_integral_bound (p := -2 * exponent h) (q := q)
     (B := 2 * heatConstant h ν * e ^ 2 * M ^ 2) hK (by linarith) hg ?_
   · unfold squareChange
-    simpa only [neg_mul, neg_neg] using hres
+    refine ⟨hres.1, ?_⟩
+    convert hres.2 using 1
+    any_goals simp
   · intro X hX
     calc
       _ ≤ 2 * heatConstant h ν * powerTail h e K f X ^ 2 / X :=

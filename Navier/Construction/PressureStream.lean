@@ -615,8 +615,9 @@ theorem torusAverage_physicalAlias {d a b M : ℝ}
       (RadialPullback.normalizeSource_supported ha hab hd hs),
       RadialPullback.normalized_radial_integral ha hd hab.le hf M U ((0 : S), v) (p.2, Y)]
     simp [Prod.add_def, Prod.smul_def]
-  rw [heq, torusMean_shifted_integral hab.le hf.continuous hp
-    (continuous_const.fun_mul ((Real.continuous_rpow_const hd.le).sub continuous_const)) v p.2,
+  have hφc : Continuous (fun r : ℝ => M * (r ^ d - U)) :=
+    continuous_const.fun_mul ((Real.continuous_rpow_const hd.le).sub continuous_const)
+  rw [heq, torusMean_shifted_integral hab.le hf.continuous hp hφc v p.2,
     ← pressureMass_eq_interval hf hs p.2]
   rfl
 
@@ -658,7 +659,10 @@ theorem torusAverage_physicalCompact {d a b M : ℝ}
         (p.1, (p.2, Y)) hr
   change FourierAlias.torusMean (fun Y => RadialPullback.physicalCompact d a b M ((0 : S), v) f
     (p.1, (p.2, Y))) = _
-  rw [heq, FourierAlias.torusMean_sub hA (continuous_const.smul hB), FourierAlias.torusMean_smul]
+  rw [heq, FourierAlias.torusMean_sub hA
+    (show Continuous (fun Y : Plane => C • B Y) from
+      Continuous.smul (f := fun _ : Plane => C) continuous_const hB),
+    FourierAlias.torusMean_smul]
   change FourierAlias.torusMean A - C * FourierAlias.torusMean B = _
   rw [torusMean_shifted_integral hr hf.continuous hp hφ v p.2,
     torusMean_shifted_integral hab.le hf.continuous hp hφ v p.2,

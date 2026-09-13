@@ -472,7 +472,7 @@ theorem conjugatePair_apply (a : D → ℂ) (j : ℤ) (x : D) :
   change c.coeff j x + (HarmonicFields.conjugateReverse c).coeff j x = _
   rw [HarmonicFields.conjugateReverse_apply]
   have hc (l : ℤ) : c.coeff l x = if (1 : ℤ) = l then a x / 2 else 0 := by
-    have hs := congrFun (AddMonoidAlgebra.single_apply
+    have hs := congrFun (AddMonoidAlgebra.coeff_single_apply
       (a := (1 : ℤ)) (a' := l) (b := fun x => a x / 2)) x
     change c.coeff l x = _ at hs
     simpa only [ite_apply, Pi.zero_apply] using hs

@@ -139,7 +139,13 @@ theorem continuous_heatRegularizedSpectralOutputFiber_path
       unfold complexHeatDecay heatDecay
       fun_prop
     exact hdecay.smul hleray
-  exact (CriticalMildHeatBochner.continuous_complexEuclideanPoint.comp hheat).const_smul _
+  show Continuous (latticeModeWeight k •
+      fun s : ℝ => complexEuclideanPoint
+        (complexFrequencyHeatLeray ν (t - s) (latticeFrequency k)
+          (WithLp.ofLp (weightedLatticeSpectralBilinear k (u s) (u s)))))
+  exact Continuous.const_smul
+      (CriticalMildHeatBochner.continuous_complexEuclideanPoint.comp hheat)
+      (latticeModeWeight k)
 
 /-- Each lattice coordinate of the zero-extended evolving-path integrand is
 strongly measurable for a continuous path. -/

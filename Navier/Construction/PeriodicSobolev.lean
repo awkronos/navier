@@ -142,6 +142,7 @@ private theorem curve_energy_bound {f f' : ℝ → Space}
     (fun s => (hd s).norm_sq) hcross hx
   rw [intervalIntegral.integral_add ((hf.norm.pow 2).intervalIntegrable _ _)
     ((hf'.norm.pow 2).intervalIntegrable _ _)] at hh
+  simp only [Pi.pow_apply] at hh
   have hn := intervalIntegral.integral_nonneg_of_forall (μ := volume) (zero_le_one : (0 : ℝ) ≤ 1)
     (fun s => sq_nonneg ‖f' s‖)
   linarith

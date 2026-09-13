@@ -231,16 +231,24 @@ variable {K : Set X} {H : X → Mat2} {T : X → Vec2}
 theorem continuousOn_determinant
     (hH : ∀ i j, ContinuousOn (fun x => H x i j) K) :
     ContinuousOn (fun x => (H x).det) K := by
-  simpa only [Pi.mul_apply, Pi.sub_apply, Matrix.det_fin_two] using
-    ((hH 0 0).fun_mul (hH 1 1)).sub ((hH 0 1).fun_mul (hH 1 0))
+  refine ContinuousOn.congr
+      (((hH 0 0).fun_mul (hH 1 1)).sub ((hH 0 1).fun_mul (hH 1 0))) ?_
+  intro x _
+  simp [Matrix.det_fin_two, Pi.mul_apply, Pi.sub_apply]
 
 theorem continuousOn_numerator
     (hH : ∀ i j, ContinuousOn (fun x => H x i j) K)
     (hT : ∀ i, ContinuousOn (fun x => T x i) K) (i : Fin 2) :
     ContinuousOn (fun x => cramerNumerator (H x) (T x) i) K := by
   fin_cases i
-  · simpa [Pi.mul_apply, Pi.sub_apply, cramerNumerator] using ((hT 0).fun_mul (hH 1 1)).sub ((hH 0 1).fun_mul (hT 1))
-  · simpa [Pi.mul_apply, Pi.sub_apply, cramerNumerator] using ((hH 0 0).fun_mul (hT 1)).sub ((hT 0).fun_mul (hH 1 0))
+  · refine ContinuousOn.congr
+        (((hT 0).fun_mul (hH 1 1)).sub ((hH 0 1).fun_mul (hT 1))) ?_
+    intro x _
+    simp [cramerNumerator, Pi.mul_apply, Pi.sub_apply]
+  · refine ContinuousOn.congr
+        (((hH 0 0).fun_mul (hT 1)).sub ((hT 0).fun_mul (hH 1 0))) ?_
+    intro x _
+    simp [cramerNumerator, Pi.mul_apply, Pi.sub_apply]
 
 theorem continuousOn_weights
     (hH : ∀ i j, ContinuousOn (fun x => H x i j) K)

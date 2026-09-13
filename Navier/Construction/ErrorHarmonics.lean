@@ -140,7 +140,7 @@ theorem zeroBlock_symmetric {D : Type} (k : ℕ → ℝ) (Φ : ℕ → D → ℝ
   have hcoeff (l : ℤ) :
       (constantCoefficient (fun x => (a n x i : ℂ))).coeff l x =
         if (0 : ℤ) = l then (a n x i : ℂ) else 0 := by
-    have hs := congrFun (AddMonoidAlgebra.single_apply
+    have hs := congrFun (AddMonoidAlgebra.coeff_single_apply
       (a := (0 : ℤ)) (a' := l) (b := fun x => (a n x i : ℂ))) x
     change (constantCoefficient (fun x => (a n x i : ℂ))).coeff l x = _ at hs
     simpa only [ite_apply, Pi.zero_apply] using hs

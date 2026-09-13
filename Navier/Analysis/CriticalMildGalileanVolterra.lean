@@ -378,7 +378,10 @@ theorem continuous_criticalMildForcingMode_path (k : LatticeMode)
   have hspectral : Continuous fun s =>
       WithLp.ofLp (weightedLatticeSpectralBilinear k (u s) (u s)) := by
     fun_prop
-  apply Continuous.const_smul
+  show Continuous (latticeModeWeight k •
+      fun s : ℝ => complexEuclideanPoint (complexLeray (latticeFrequency k)
+        (WithLp.ofLp (weightedLatticeSpectralBilinear k (u s) (u s)))))
+  refine Continuous.const_smul ?_ (latticeModeWeight k)
   apply CriticalMildHeatBochner.continuous_complexEuclideanPoint.comp
   apply (LinearMap.continuous_of_finiteDimensional
     (complexLeray (latticeFrequency k))).comp

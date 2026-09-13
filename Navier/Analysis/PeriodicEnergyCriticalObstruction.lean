@@ -162,20 +162,68 @@ theorem normX1_le_frequencyCost_mul_energy_add_high
 @[simp] theorem weightedLatticeCoefficient_highFrequencyPair_pos (n : ℕ) :
     weightedLatticeCoefficient (highFrequencyPair n) (axialMode n) =
       WithLp.ofLp transverseUnit := by
-  simp [highFrequencyPair, weightedLatticeCoefficient, storedUnitAt,
-    axialMode_ne_neg n]
+  set E : LatticeMode → Type := fun _ : LatticeMode => ComplexE3
+  have heval : highFrequencyPair n (axialMode n) =
+      storedUnitAt (axialMode n) := by
+    calc highFrequencyPair n (axialMode n)
+        = (lp.single (E := E) 1 (axialMode n) (storedUnitAt (axialMode n)))
+            (axialMode n) +
+            (lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))
+            (axialMode n) :=
+          ((congrArg (fun h : LatticeMode → ComplexE3 => h (axialMode n))
+            (lp.coeFn_add (E := E)
+              (f := lp.single (E := E) 1 (axialMode n) (storedUnitAt (axialMode n)))
+              (g := lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))))).trans
+            (Pi.add_apply _ _ _)
+      _ = storedUnitAt (axialMode n) +
+            (lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))
+            (axialMode n) :=
+          congrArg (fun x : ComplexE3 => x +
+              (lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))
+              (axialMode n))
+            (lp.single_apply_self (E := E) 1 (axialMode n) (storedUnitAt (axialMode n)))
+      _ = storedUnitAt (axialMode n) + 0 :=
+          congrArg (fun x : ComplexE3 => storedUnitAt (axialMode n) + x)
+            (lp.single_apply_ne (E := E) 1 (-axialMode n)
+              (storedUnitAt (-axialMode n)) (axialMode_ne_neg n))
+      _ = storedUnitAt (axialMode n) := add_zero _
   have hm : latticeModeWeight (axialMode n) ≠ 0 :=
     ne_of_gt (lt_of_lt_of_le zero_lt_one (one_le_latticeModeWeight _))
-  rw [← mul_smul, inv_mul_cancel₀ hm, one_smul]
+  unfold weightedLatticeCoefficient
+  rw [heval, storedUnitAt, ← mul_smul, inv_mul_cancel₀ hm, one_smul]
 
 @[simp] theorem weightedLatticeCoefficient_highFrequencyPair_neg (n : ℕ) :
     weightedLatticeCoefficient (highFrequencyPair n) (-axialMode n) =
       WithLp.ofLp transverseUnit := by
-  simp [highFrequencyPair, weightedLatticeCoefficient, storedUnitAt,
-    axialMode_ne_neg n]
+  set E : LatticeMode → Type := fun _ : LatticeMode => ComplexE3
+  have heval : highFrequencyPair n (-axialMode n) =
+      storedUnitAt (-axialMode n) := by
+    calc highFrequencyPair n (-axialMode n)
+        = (lp.single (E := E) 1 (axialMode n) (storedUnitAt (axialMode n)))
+            (-axialMode n) +
+            (lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))
+            (-axialMode n) :=
+          ((congrArg (fun h : LatticeMode → ComplexE3 => h (-axialMode n))
+            (lp.coeFn_add (E := E)
+              (f := lp.single (E := E) 1 (axialMode n) (storedUnitAt (axialMode n)))
+              (g := lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))))).trans
+            (Pi.add_apply _ _ _)
+      _ = 0 + (lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))
+            (-axialMode n) :=
+          congrArg (fun x : ComplexE3 => x +
+              (lp.single (E := E) 1 (-axialMode n) (storedUnitAt (-axialMode n)))
+              (-axialMode n))
+            (lp.single_apply_ne (E := E) 1 (axialMode n)
+              (storedUnitAt (axialMode n)) (Ne.symm (axialMode_ne_neg n)))
+      _ = 0 + storedUnitAt (-axialMode n) :=
+          congrArg (fun x : ComplexE3 => 0 + x)
+            (lp.single_apply_self (E := E) 1 (-axialMode n)
+              (storedUnitAt (-axialMode n)))
+      _ = storedUnitAt (-axialMode n) := zero_add _
   have hm : latticeModeWeight (-axialMode n) ≠ 0 :=
     ne_of_gt (lt_of_lt_of_le zero_lt_one (one_le_latticeModeWeight _))
-  rw [← mul_smul, inv_mul_cancel₀ hm, one_smul]
+  unfold weightedLatticeCoefficient
+  rw [heval, storedUnitAt, ← mul_smul, inv_mul_cancel₀ hm, one_smul]
 
 theorem weightedLatticeCoefficient_highFrequencyPair_of_ne (n : ℕ)
     (m : LatticeMode) (hpos : m ≠ axialMode n) (hneg : m ≠ -axialMode n) :

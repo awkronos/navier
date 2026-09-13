@@ -67,7 +67,8 @@ theorem tsum_latticeWeightedAmplitude_coefficient (u : WeightedLatticeBanach) :
   rw [show latticeWeightedAmplitude (weightedLatticeCoefficient u) = fun m => ‖u m‖ by
     funext m
     exact latticeWeightedAmplitude_coefficient u m]
-  simp [lp.norm_eq_tsum_rpow]
+  rw [lp.norm_eq_tsum_rpow (by norm_num : 0 < (1 : ENNReal).toReal)]
+  simp [ENNReal.toReal_one]
 
 /-- The actual countable lattice transport convolution evaluated on decoded
 complete-space coefficients. -/

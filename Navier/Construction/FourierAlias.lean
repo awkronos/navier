@@ -131,8 +131,11 @@ theorem torusMean_add {f g : Plane → F} (hf : Continuous f) (hg : Continuous g
 
 theorem torusMean_sub {f g : Plane → F} (hf : Continuous f) (hg : Continuous g) :
     torusMean (fun Y => f Y - g Y) = torusMean f - torusMean g := by
-  simp only [sub_eq_add_neg]
-  rw [torusMean_add hf hg.neg, torusMean_neg]
+  have heq : (fun Y => f Y - g Y) = fun Y => f Y + (fun z => -g z) Y := by
+    funext Y
+    exact sub_eq_add_neg (f Y) (g Y)
+  rw [heq, torusMean_add (g := fun z => -g z) hf hg.neg, torusMean_neg,
+    ← sub_eq_add_neg]
 
 /-- The torus and radial averages commute as actual iterated integrals. -/
 theorem torusMean_intervalIntegral {g : State → F} (hg : Continuous g)
