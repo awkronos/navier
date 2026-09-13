@@ -47,6 +47,9 @@ import Navier.Analysis.ContinuousLeiLinBoxD3Measurability
 import Navier.Analysis.ContinuousLeiLinBoxD3Maximal
 import Navier.Analysis.ContinuousLeiLinBoxD3AE
 import Navier.Analysis.ContinuousLeiLinBoxSelfMap
+import Navier.Analysis.ContinuousLeiLinRepresentativeDistance
+import Navier.Analysis.ContinuousLeiLinCommonContraction
+import Navier.Analysis.ContinuousLeiLinActualPolarization
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
