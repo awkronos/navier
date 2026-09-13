@@ -55,6 +55,7 @@ import Navier.Analysis.ContinuousLeiLinActualContraction
 import Navier.Analysis.ContinuousLeiLinActualMixedSource
 import Navier.Analysis.ContinuousLeiLinActualMixedJoint
 import Navier.Analysis.ContinuousLeiLinActualMixedB1
+import Navier.Analysis.ContinuousLeiLinActualMixedD3
 import Navier.Analysis.ContinuousLeiLinActualMixedRightJoint
 import Navier.Analysis.ContinuousLeiLinActualMixedRightB1
 import Navier.Analysis.ConvectionCurl
