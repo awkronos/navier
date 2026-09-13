@@ -32,6 +32,9 @@ import Navier.Analysis.ContinuousLeiLinRecentTailInputs
 import Navier.Analysis.ContinuousLeiLinLinkedComplete
 import Navier.Analysis.ContinuousLeiLinActualSlots
 import Navier.Analysis.ContinuousLeiLinTrajectoryLift
+import Navier.Analysis.ContinuousLeiLinTrajectoryMeasurability
+import Navier.Analysis.ContinuousLeiLinRepresentativeInvariant
+import Navier.Analysis.ContinuousLeiLinCommonRepresentative
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
