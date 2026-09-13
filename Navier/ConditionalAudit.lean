@@ -10,6 +10,8 @@ import Navier.Breakdown.MaximalNonextension
 import Navier.Breakdown.CompactPathBreakdown
 import Navier.Breakdown.ConstructedBreakdown
 import Navier.Analysis.ForcedEnergyBalance
+import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
+import Navier.Analysis.PeriodicConstructedBreakdown
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -85,3 +87,10 @@ they do not manufacture them. -/
 
 #check Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution
 #print axioms Navier.Analysis.ForcedEnergyBalance.forced_pointwise_energy_balance_of_partialSolution
+
+/-! Crown receipts: the deadline-parameterized and periodic crowns (the
+successive-partials strengthening is emitted above with the C chain). -/
+#check Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT
+#print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT
+#check Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown
+#print axioms Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown

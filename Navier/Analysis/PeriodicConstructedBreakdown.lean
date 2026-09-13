@@ -127,7 +127,7 @@ private theorem nativeForce_timeSupport {f : EVelocityField} {T : ℝ}
     ∀ t : ℝ, T ≤ t → ∀ x : Space, nativeForce f t x = 0 :=
   nativeForce_futureTimeSupport hf
 
-def toConstructionGlobalSolutionOne
+theorem toConstructionGlobalSolutionOne
     {f : EVelocityField} {v : VelocityEvolution} {p : PressureEvolution}
     (sol : IsPeriodicClassicalSolution 1 (nativeForce f) 0 v p) :
     Navier.Construction.ComparatorBridge.GlobalSolutionOne f
