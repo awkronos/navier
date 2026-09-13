@@ -23,6 +23,7 @@ import Navier.Analysis.ContinuousLeiLinBanachContraction
 import Navier.Analysis.ContinuousLeiLinPhysicalCarrier
 import Navier.Analysis.ContinuousLeiLinReality
 import Navier.Analysis.ContinuousLeiLinPhysicalReality
+import Navier.Analysis.ContinuousLeiLinPhysicalIntegrability
 import Navier.Analysis.ContinuousLeiLinFrequencyODE
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
