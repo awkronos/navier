@@ -19,7 +19,27 @@
         "concentration-aware numerical diagnostics; no Lake dependency"
       ],
       "primary": true,
-      "checked_at": "2026-09-08"
+      "checked_at": "2026-09-13"
+    },
+    {
+      "id": "OPENAI2026_EULER",
+      "registry_id": "ref.euler_breakdown.openai2026",
+      "title": "Finite time blowup for the Euler equation",
+      "authors": [
+        "OpenAI"
+      ],
+      "year": 2026,
+      "venue": "OpenAI research release",
+      "type": "preprint",
+      "url": "https://cdn.openai.com/pdf/315b36cd-ec98-4023-8342-93345194ece1/euler.pdf",
+      "doi": null,
+      "roles": [
+        "upstream unforced 3-D Euler finite-time breakdown with smooth compactly supported divergence-free data",
+        "formalized at openai/NavierStokesAndEuler@f9e8bc5 (Euler/ tree); not yet adapted in this repository",
+        "quarantined carrier for Fefferman A/B pending a transfer theorem; source of the packet-induction frozen-scale-record method"
+      ],
+      "primary": true,
+      "checked_at": "2026-09-13"
     },
     {
       "id": "FEFFERMAN2000",

@@ -22,8 +22,9 @@ Raw compiler receipts are retained locally under `reports/receipts/` and are
 excluded from Git history; the proof sources remain reproducible.
 
 The analytical construction is OpenAI’s. The [native source adaptation](docs/OPENAI_CONSTRUCTION_PROVENANCE.md)
-pins their released revision, preserves Apache-2.0 notices, and compiles with
-this repository’s Lean 4.31.0 toolchain. There is no OpenAI Lake dependency.
+pins their released revision, preserves Apache-2.0 notices, and compiles on
+this repository’s current `v4.34.0-rc2` toolchain (authored against 4.31.0
+APIs; migrated in `ad12c3d`). There is no OpenAI Lake dependency.
 Awkronos contributes the transport into the original native PDE carrier,
 additional force-derivative comparisons, solver work, and interactive explanation.
 

@@ -90,7 +90,7 @@ Fefferman-A:
 | Quarantined setting | Missing bridge to A |
 |---|---|
 | Two-dimensional Navier–Stokes | vortex stretching is absent; dimension is load-bearing |
-| Euler equation | viscosity is zero and the energy/regularity mechanisms differ |
+| Euler equation | viscosity is zero and the energy/regularity mechanisms differ. True (non-averaged) 3-D unforced Euler blowup is now proved upstream [OPENAI2026_EULER]; that settles the Euler model and says nothing about A — the transfer theorem remains absent and the quarantine stands |
 | Tao averaged equation | nonlinear operator is not the exact Leray-projected form |
 | Dyadic/shell model | interaction graph and symbol are simplified |
 | Hyperdissipative or hypodissipative equation | dissipation exponent differs |
