@@ -13,6 +13,7 @@ import Navier.Analysis.ForcedEnergyBalance
 import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
 import Navier.Analysis.PeriodicConstructedBreakdown
 import Navier.Analysis.ContinuousLeiLinMildFixedPoint
+import Navier.Analysis.ContinuousLeiLinPressureReconstruction
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -109,3 +110,16 @@ mixed spacetime supplier it consumes. -/
 #print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.actual_existsUnique_mildFixedPoint
 #check Navier.Analysis.ContinuousLeiLinMildFixedPointD3Right.integral_coordinateX1Mass_continuousDuhamel_right_sub_le_linked_distance_of_jointSource
 #print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointD3Right.integral_coordinateX1Mass_continuousDuhamel_right_sub_le_linked_distance_of_jointSource
+
+/-! Pressure receipts: the continuous-carrier pressure-reconstruction
+primitive (landed 2026-09-13) — Poisson pairing, the X¹ budget, the honest
+X⁻¹ gradient bound, and the Duhamel-shaped feed its pointwise-PDE consumer
+will use. -/
+#check Navier.Analysis.ContinuousLeiLinPressureReconstruction.continuousPressurePoisson_pairing
+#print axioms Navier.Analysis.ContinuousLeiLinPressureReconstruction.continuousPressurePoisson_pairing
+#check Navier.Analysis.ContinuousLeiLinPressureReconstruction.normX1_continuousPressureFourier_le
+#print axioms Navier.Analysis.ContinuousLeiLinPressureReconstruction.normX1_continuousPressureFourier_le
+#check Navier.Analysis.ContinuousLeiLinPressureReconstruction.normXm1_continuousPressureGrad_le
+#print axioms Navier.Analysis.ContinuousLeiLinPressureReconstruction.normXm1_continuousPressureGrad_le
+#check Navier.Analysis.ContinuousLeiLinPressureReconstruction.normXm1_continuousPressureDuhamel_grad_le
+#print axioms Navier.Analysis.ContinuousLeiLinPressureReconstruction.normXm1_continuousPressureDuhamel_grad_le
