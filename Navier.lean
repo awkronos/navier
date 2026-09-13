@@ -50,6 +50,8 @@ import Navier.Analysis.ContinuousLeiLinBoxSelfMap
 import Navier.Analysis.ContinuousLeiLinRepresentativeDistance
 import Navier.Analysis.ContinuousLeiLinCommonContraction
 import Navier.Analysis.ContinuousLeiLinActualPolarization
+import Navier.Analysis.ContinuousLeiLinLiftDistance
+import Navier.Analysis.ContinuousLeiLinActualContraction
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
