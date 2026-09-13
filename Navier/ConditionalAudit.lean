@@ -17,6 +17,7 @@ import Navier.Analysis.ContinuousLeiLinPressureReconstruction
 import Navier.Analysis.ContinuousLeiLinPressurePhysical
 import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
+import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -162,3 +163,20 @@ it is packaged — the restricted-domain repair is the named next construction. 
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildLeafHjointDiag
 #check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyLeaves_of_namedLeaves
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyLeaves_of_namedLeaves
+
+/-! Fixed-point pressure consumption receipts (landed 2026-09-13, lane P2):
+the assembly premise is WITNESSED INHABITED — `record_zeroBox` constructs a
+full `MildAssemblyLeaves` instance (a = 0, R = 0) and
+`existsUnique_mildFixedPoint_zeroBox` applies the conditional assembly to it,
+so `actual_existsUnique_mildFixedPoint` is not a vacuous conditional; the
+non-degenerate discharge and the restricted-domain time leaves remain named
+constructions. `fixedPoint_pressureEq` consumes the physical inversion AT a
+fixed point; the conditional feed bound carries its feeds visible. -/
+#check Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.record_zeroBox
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.record_zeroBox
+#check Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.existsUnique_mildFixedPoint_zeroBox
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.existsUnique_mildFixedPoint_zeroBox
+#check Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.fixedPoint_pressureEq
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.fixedPoint_pressureEq
+#check Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.pressureDuhamel_grad_normXm1_le_of_feed
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.pressureDuhamel_grad_normXm1_le_of_feed
