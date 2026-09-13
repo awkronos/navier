@@ -85,6 +85,10 @@ a Lake dependency):
 - Structural audit of the graph: 0 import cycles, max depth 96, no import
   path between the Euler and NavierStokes libraries, and the
   `formalization.yaml` main-results set unchanged since the pinned `8937a8f`.
+- Per-file compiler-derived census: every module recompiled individually via
+  `lake env lean` — zero `uses sorry` warnings across NavierStokes, Euler, and
+  ComparatorChallenges. A full no-op re-run of `lake build` at current source
+  completed successfully (11424 jobs).
 
 These receipts establish kernel-clean compilation of both repositories' crown
 endpoints on the current toolchain. They do not promote any upstream model

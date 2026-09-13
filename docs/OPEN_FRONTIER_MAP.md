@@ -22,6 +22,21 @@ force. The selected velocity is classical before its singular deadline and
 cannot be continued as a global smooth bounded-energy solution. “Global smooth
 velocity” would describe A or B and must not be inferred from C.
 
+## Structural certification (measured 2026-09-13)
+
+`scripts/proof_graph.py` over this tree at `3556f39`: 964 modules, 2,655 local
+import edges, **0 cycles**, longest path 65, crown import closures 616 (C) /
+538 (D) / 611 (deadline-C), umbrella coverage 962/964 (only `Main` sits
+outside, correctly). 619 modules are consumed by at least one crown; 343 are
+intermediate-unconsumed research infrastructure feeding future endpoints.
+`formalization.yaml` is the machine-readable mirror of the table above;
+`scripts/check_formalization.py --check` validates it fail-closed and
+`--probe` prints the raw-axiom command sequence without asserting results.
+Every `lake build` now emits raw `#print axioms` receipts for all four crowns
+from `Navier/ConditionalAudit.lean` (build log = receipt pipeline), and
+`scripts/check_construction_drift.py` pins the vendored slice to upstream
+`8937a8f` — the precondition for the pending appendix port.
+
 The exact original target and a conditional construction are described in
 [`DECOMPOSITION.md`](DECOMPOSITION.md). The encoding comparison theorems and
 checked energy/pressure counterexamples are listed in
