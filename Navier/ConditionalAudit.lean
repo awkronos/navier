@@ -16,6 +16,7 @@ import Navier.Analysis.ContinuousLeiLinMildFixedPoint
 import Navier.Analysis.ContinuousLeiLinPressureReconstruction
 import Navier.Analysis.ContinuousLeiLinPressurePhysical
 import Navier.Analysis.BKMVorticityIntegralDivergence
+import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -149,3 +150,15 @@ nowhere; these receipts prove everything downstream of such a pair. -/
 #print axioms Navier.Analysis.BKMVorticityIntegralDivergence.lintegral_vorticity_integral_divergence
 #check Navier.Analysis.BKMVorticityIntegralDivergence.bkmVorticityControl_eq_top
 #print axioms Navier.Analysis.BKMVorticityIntegralDivergence.bkmVorticityControl_eq_top
+
+/-! Mild-assembly leaves receipts (landed 2026-09-13, DECOMPOSED): the
+joint-source measurability primitive and its three consumer leaves are closed
+for general box elements; the remaining record content is the two named
+sub-records, and the ∀t heat-explosion obstruction (t < 0) is recorded where
+it is packaged — the restricted-domain repair is the named next construction. -/
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.continuousNavierSource_joint_aestronglyMeasurable_of_jointProxies
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.continuousNavierSource_joint_aestronglyMeasurable_of_jointProxies
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildLeafHjointDiag
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildLeafHjointDiag
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyLeaves_of_namedLeaves
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyLeaves_of_namedLeaves
