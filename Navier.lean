@@ -28,6 +28,10 @@ import Navier.Analysis.ContinuousLeiLinPhysicalRegularity
 import Navier.Analysis.ContinuousLeiLinPhysicalSmoothing
 import Navier.Analysis.ContinuousLeiLinDuhamelPhysicalSmoothing
 import Navier.Analysis.ContinuousLeiLinFrequencyODE
+import Navier.Analysis.ContinuousLeiLinRecentTailInputs
+import Navier.Analysis.ContinuousLeiLinLinkedComplete
+import Navier.Analysis.ContinuousLeiLinActualSlots
+import Navier.Analysis.ContinuousLeiLinTrajectoryLift
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
