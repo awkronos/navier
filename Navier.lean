@@ -35,6 +35,10 @@ import Navier.Analysis.ContinuousLeiLinTrajectoryLift
 import Navier.Analysis.ContinuousLeiLinTrajectoryMeasurability
 import Navier.Analysis.ContinuousLeiLinRepresentativeInvariant
 import Navier.Analysis.ContinuousLeiLinCommonRepresentative
+import Navier.Analysis.ContinuousLeiLinRepresentativeIntegrability
+import Navier.Analysis.ContinuousLeiLinEverywhereRepresentative
+import Navier.Analysis.ContinuousLeiLinBoxRepresentative
+import Navier.Analysis.ContinuousLeiLinBoxProduct
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
