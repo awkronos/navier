@@ -14,6 +14,7 @@ import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
 import Navier.Analysis.PeriodicConstructedBreakdown
 import Navier.Analysis.ContinuousLeiLinMildFixedPoint
 import Navier.Analysis.ContinuousLeiLinPressureReconstruction
+import Navier.Analysis.ContinuousLeiLinPressurePhysical
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -123,3 +124,15 @@ will use. -/
 #print axioms Navier.Analysis.ContinuousLeiLinPressureReconstruction.normXm1_continuousPressureGrad_le
 #check Navier.Analysis.ContinuousLeiLinPressureReconstruction.normXm1_continuousPressureDuhamel_grad_le
 #print axioms Navier.Analysis.ContinuousLeiLinPressureReconstruction.normXm1_continuousPressureDuhamel_grad_le
+
+/-! Physical-space pressure receipts (landed 2026-09-13): the inverted
+pressure p = 𝓕⁻ p̂ with its pointwise budget, and the ∫ p Δφ identity in
+transported-pairing form — the primitive's first named residual, now a
+theorem; the fully-physical stress-tensor rewrite of the frequency side
+remains named where the L¹ product→convolution bridge is missing. -/
+#check Navier.Analysis.ContinuousLeiLinPressurePhysical.continuousPressurePhysical_pairing_physicalLaplacian
+#print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.continuousPressurePhysical_pairing_physicalLaplacian
+#check Navier.Analysis.ContinuousLeiLinPressurePhysical.norm_continuousPressurePhysical_le
+#print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.norm_continuousPressurePhysical_le
+#check Navier.Analysis.ContinuousLeiLinPressurePhysical.integral_fourierInv_pairing
+#print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.integral_fourierInv_pairing
