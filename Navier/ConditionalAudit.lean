@@ -12,6 +12,7 @@ import Navier.Breakdown.ConstructedBreakdown
 import Navier.Analysis.ForcedEnergyBalance
 import Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown
 import Navier.Analysis.PeriodicConstructedBreakdown
+import Navier.Analysis.ContinuousLeiLinMildFixedPoint
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -94,3 +95,17 @@ successive-partials strengthening is emitted above with the C chain). -/
 #print axioms Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown.wholeSpaceBreakdown_deadlineT
 #check Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown
 #print axioms Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown
+
+/-! Assembly receipts: the conditional mild fixed point (landed 2026-09-13,
+strict under the MildAssemblyLeaves travelling premise) and the right-ordered
+mixed spacetime supplier it consumes. -/
+#check Navier.Analysis.ContinuousLeiLinMildFixedPoint.selfMapEstimate
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.selfMapEstimate
+#check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildLift_mem
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildLift_mem
+#check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildLift_contraction
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildLift_contraction
+#check Navier.Analysis.ContinuousLeiLinMildFixedPoint.actual_existsUnique_mildFixedPoint
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.actual_existsUnique_mildFixedPoint
+#check Navier.Analysis.ContinuousLeiLinMildFixedPointD3Right.integral_coordinateX1Mass_continuousDuhamel_right_sub_le_linked_distance_of_jointSource
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointD3Right.integral_coordinateX1Mass_continuousDuhamel_right_sub_le_linked_distance_of_jointSource
