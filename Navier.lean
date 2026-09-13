@@ -39,6 +39,9 @@ import Navier.Analysis.ContinuousLeiLinRepresentativeIntegrability
 import Navier.Analysis.ContinuousLeiLinEverywhereRepresentative
 import Navier.Analysis.ContinuousLeiLinBoxRepresentative
 import Navier.Analysis.ContinuousLeiLinBoxProduct
+import Navier.Analysis.ContinuousLeiLinBoxInterpolation
+import Navier.Analysis.ContinuousLeiLinBoxB1Joint
+import Navier.Analysis.ContinuousLeiLinBoxD3Joint
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
