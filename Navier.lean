@@ -43,6 +43,7 @@ import Navier.Analysis.ContinuousLeiLinBoxInterpolation
 import Navier.Analysis.ContinuousLeiLinBoxB1Joint
 import Navier.Analysis.ContinuousLeiLinBoxD3Joint
 import Navier.Analysis.ContinuousLeiLinBoxD3Output
+import Navier.Analysis.ContinuousLeiLinBoxD3Measurability
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
