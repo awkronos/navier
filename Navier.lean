@@ -52,6 +52,11 @@ import Navier.Analysis.ContinuousLeiLinCommonContraction
 import Navier.Analysis.ContinuousLeiLinActualPolarization
 import Navier.Analysis.ContinuousLeiLinLiftDistance
 import Navier.Analysis.ContinuousLeiLinActualContraction
+import Navier.Analysis.ContinuousLeiLinActualMixedSource
+import Navier.Analysis.ContinuousLeiLinActualMixedJoint
+import Navier.Analysis.ContinuousLeiLinActualMixedB1
+import Navier.Analysis.ContinuousLeiLinActualMixedRightJoint
+import Navier.Analysis.ContinuousLeiLinActualMixedRightB1
 import Navier.Analysis.ConvectionCurl
 import Navier.Analysis.ConvectionLadyzhenskaya
 import Navier.Analysis.ConvectionTrilinear
