@@ -1,5 +1,6 @@
 import Navier.Analysis.ContinuousLeiLinPhysicalSmoothing
 import Navier.Analysis.ContinuousLeiLinDuhamelPhysicalSmoothing
+import Navier.Analysis.ContinuousLeiLinRecentTailMoment
 import Navier.Analysis.ContinuousLeiLinSelfMap
 import Navier.Analysis.ContinuousLeiLinPhysicalVelocity
 import Mathlib.Analysis.Complex.RealDeriv
@@ -35,21 +36,34 @@ which the derivative and the envelope hold simultaneously for almost every
 * `exists_integrable_envelope_duhamelBefore_deriv`: the strict-past Duhamel
   part, uniform on `Ioi ((t₀+τ)/2)`, from the joint `X⁻¹` spacetime source
   moment over `[0, τ]` — fully closed here via heat-lag monotonicity.
+* `exists_integrable_envelope_duhamelRecent_deriv`: the recent-tail Duhamel
+  part, uniform on `Iio t₁`, from the joint degree-2 spacetime source moment
+  over `[τ, t₁]` — closed here via heat-contraction (`exp ≤ 1` as the lag
+  `s - r` degenerates to `0`).
+* `exists_integrable_envelope_duhamel_deriv`: the FULL Duhamel envelope,
+  uniform on a neighbourhood of `t₀`, assembled from the two window pieces by
+  the `[0, s] = [0, τ] ∪ [τ, s]` split; this DISCHARGES the `hd` premise of
+  `exists_integrable_envelope_mildImage_deriv` outright (see §8 wrapper
+  `exists_integrable_envelope_mildImage_deriv_of_windowMoments`).
 
-**Visible residual.**  The full obligation-1 envelope is the sum of three
-pieces: heat (closed), strict-past Duhamel (closed), and the RECENT TAIL
-`∫ s in Icc τ t` together with the source term `ξ ↦
-‖continuousNavierSource u u s ξ i‖`, each required uniformly for `s` in a
-whole neighbourhood of `t₀`.  Pointwise-in-`s` these are closed
-(`integrable_pow_norm_continuousDuhamelRecent_of_source`,
-`integrable_pow_norm_continuousNavierSource`); uniform-in-`s` they need the
-joint degree-2 spacetime source moment over every window `[τ, t₀+ε]`, which
-propagates to degree-3 profile moments (`continuousNavierBilinear` loses one
-degree) — the moment-ladder wall named in the swarm notes.
+**Visible residual.**  The obligation-1 Duhamel envelope is now closed from
+concrete joint spacetime source moments; the single remaining explicit
+`∃`-premise of this module is the SOURCE envelope `hsrc`: a function
+`g ∈ L¹(ξ)` dominating `ξ ↦ ‖continuousNavierSource u u s ξ i‖` uniformly for
+`s` in a neighbourhood of `t₀`.  This upgrade is not obtainable from the
+present API: every available hypothesis controls the `ξ`-integral of the
+source (pointwise-in-`s` moments, or time-integrated joint window moments),
+never an essential-supremum-in-`s` pointwise envelope.  A continuous family of
+singularities `f_s(ξ) = |ξ - s|^{-1/2} · 𝟙{|ξ - s| ≤ 1}` is L¹-continuous with
+uniformly bounded L¹ norms while `sup_{s} f_s = ∞` pointwise — the heat lag
+`∫_window` smoothing that closed the Duhamel pieces has no analogue for the
+single time-slice source term.  The missing input is therefore genuine
+pointwise-in-`ξ` time regularity (e.g. an `L¹`-majorized essential supremum
+hypothesis), not another moment estimate.
 `exists_integrable_envelope_mildImage_deriv` below instantiates the transport
-with the residual pieces as explicit premises so the remaining quantifier is
-visible, and `hasDerivAt_physicalVelocity_continuousMildImage` is the pointwise
-ODE in physical coordinates modulo exactly that envelope.
+with the remaining source piece as an explicit premise, and
+`hasDerivAt_physicalVelocity_continuousMildImage` is the pointwise ODE in
+physical coordinates modulo exactly that envelope.
 -/
 
 set_option autoImplicit false
@@ -67,6 +81,7 @@ open Navier.Analysis.ContinuousLeiLinDissipation
 open Navier.Analysis.ContinuousLeiLinTimeDuhamel
 open Navier.Analysis.ContinuousLeiLinPhysicalSmoothing
 open Navier.Analysis.ContinuousLeiLinDuhamelPhysicalSmoothing
+open Navier.Analysis.ContinuousLeiLinRecentTailMoment
 open Navier.Analysis.ContinuousLeiLinPhysicalVelocity
 open Navier.Analysis.ContinuousLeiLinSelfMap
 
@@ -370,12 +385,13 @@ theorem exists_integrable_envelope_duhamelBefore_deriv
 /-! ## 4. Combining the three envelope pieces -/
 
 /-- **The obligation-1 envelope for the full mild image.**  The heat piece is
-provided by `exists_integrable_envelope_heatVec_deriv`, and the strict-past
-Duhamel piece by `exists_integrable_envelope_duhamelBefore_deriv` after the
-`[0, t] = [0, τ] ∪ [τ, t]` split; the RECENT-TAIL Duhamel piece and the
-source piece remain as explicit premises — they are the visible residual of
-the module header.  The envelope for a sum is the sum of the envelopes
-restricted to a common neighbourhood set. -/
+provided by `exists_integrable_envelope_heatVec_deriv`, and the full Duhamel
+piece `hd` by `exists_integrable_envelope_duhamel_deriv` (strict-past and
+recent-tail window envelopes assembled at §7); the source premise `hsrc` is
+the visible residual named in the module header — it has no moment-side
+supplier (see the header's moving-singularity remark).  The envelope for a sum
+is the sum of the envelopes restricted to a common neighbourhood set.  §8
+provides the wrapper that removes `hd` outright. -/
 theorem exists_integrable_envelope_mildImage_deriv
     (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace)
     (i : Fin 3) (t₀ : ℝ) (ht₀ : 0 < t₀)
@@ -469,3 +485,270 @@ theorem hasDerivAt_physicalVelocity_continuousMildImage
   · exact hdv_meas
   · exact henv
   · exact hdv_diff
+
+/-! ## 6. The recent-tail Duhamel envelope, uniform below `t₁` -/
+
+/-- Junk-tolerant monotonicity for a set-restricted Bochner integral: on
+`μ.restrict s`, `∫ f ≤ ∫ g` holds whenever `f ≤ g` pointwise on `s`, `g` is
+integrable on the restriction, and `g` is pointwise nonnegative.  A
+non-integrable `f` contributes integral `0` (`integral_undef`), which
+`integral_nonneg` bounds — the conditional-bound companion of
+`integral_mono_ae₀'`. -/
+private theorem integral_mono_ae₀_set {α : Type*} [MeasurableSpace α]
+    {μ : Measure α} {s : Set α} (hs : MeasurableSet s) {f g : α → ℝ}
+    (hg : Integrable g (μ.restrict s)) (hfg : ∀ x ∈ s, f x ≤ g x)
+    (hgnn : ∀ x, 0 ≤ g x) :
+    ∫ x, f x ∂(μ.restrict s) ≤ ∫ x, g x ∂(μ.restrict s) := by
+  by_cases hf : Integrable f (μ.restrict s)
+  · refine integral_mono_ae hf hg ((ae_restrict_iff' hs).mpr
+      (MeasureTheory.ae_of_all μ hfg))
+  · rw [integral_undef hf]
+    exact integral_nonneg hgnn
+
+/-- **Recent-tail Duhamel part of the obligation-1 envelope.**  Fix `τ < t₀ <
+t₁` and assume the joint degree-2 spacetime source moment over `[τ, t₁]`.
+Then the integrand `ξ ↦ ‖-(ν‖ξ‖²)•continuousDuhamelRecent ν τ u v s ξ i‖` is
+dominated uniformly on `Iio t₁` by the `L¹` function
+
+```
+g ξ = ∫ r in Icc τ t₁, ν * ‖ξ‖² * ‖continuousNavierSource u v r ξ i‖ ∂r,
+```
+
+whose integrability is one `const_mul` of the joint moment followed by one
+Fubini section (`Integrable.integral_prod_left`).  Where §3 used heat-lag
+MONOTONICITY (`exp` decreasing in the growing lag), the recent window has no
+positive lag to exploit: it uses heat CONTRACTION instead — `s - r ≥ 0` on
+`[τ, s]` forces `exp(-(ν‖ξ‖²(s-r))) ≤ 1`, so the pointwise bound
+`‖-(ν‖ξ‖²)•heatMode‖ ≤ ν‖ξ‖²‖src‖` holds for every admissible `s`, and the
+single window integral over `[τ, t₁]` dominates all `s < t₁` by
+set-integral monotonicity (`setIntegral_mono_set`).  The junk case of each
+`s`-slice is absorbed by `integral_mono_ae₀_set`.  No measurability
+hypothesis is needed beyond the joint integrability itself. -/
+theorem exists_integrable_envelope_duhamelRecent_deriv
+    (u v : ℝ → ES → ComplexSpace) (i : Fin 3) (ν τ t₀ t₁ : ℝ)
+    (hν : 0 < ν) (_hτt : τ < t₀) (ht₀t₁ : t₀ < t₁)
+    (hsrc : Integrable (fun p : ES × ℝ =>
+      ‖p.1‖ ^ 2 * ‖continuousNavierSource u v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc τ t₁)))) :
+    ∃ U ∈ 𝓝 t₀, ∃ g : ES → ℝ, Integrable g ∧
+      ∀ᵐ ξ ∂volume, ∀ s ∈ U,
+        ‖-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+          continuousDuhamelRecent ν τ u v s ξ i‖ ≤ g ξ := by
+  set μ₁ : Measure ℝ := volume.restrict (Icc τ t₁)
+  set Q : ES → ℝ → ℝ := fun ξ r =>
+    ν * ‖ξ‖ ^ 2 * ‖continuousNavierSource u v r ξ i‖
+  have hQnn : ∀ ξ r, 0 ≤ Q ξ r := fun ξ r =>
+    mul_nonneg (mul_nonneg hν.le (pow_nonneg (norm_nonneg _) 2)) (norm_nonneg _)
+  have hQ : Integrable (fun p : ES × ℝ => Q p.1 p.2) (volume.prod μ₁) :=
+    (hsrc.const_mul ν).congr (MeasureTheory.ae_of_all _ (fun p => by
+      simp only [Q]; ring))
+  have hQsec : ∀ᵐ ξ ∂volume, Integrable (fun r : ℝ => Q ξ r) μ₁ :=
+    ((integrable_prod_iff hQ.aestronglyMeasurable).mp hQ).1
+  refine ⟨Iio t₁, Iio_mem_nhds ht₀t₁, fun ξ => ∫ r, Q ξ r ∂μ₁,
+    hQ.integral_prod_left, ?_⟩
+  filter_upwards [hQsec] with ξ hsec s hs
+  have hts : s ≤ t₁ := hs.le
+  set μs : Measure ℝ := volume.restrict (Icc τ s)
+  have hz : -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+      continuousDuhamelRecent ν τ u v s ξ i =
+      ∫ r : ℝ, -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+        heatMode ν (s - r) (fun ζ : ES => continuousNavierSource u v r ζ i) ξ ∂μs := by
+    show -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+        ∫ r in Icc τ s, heatMode ν (s - r)
+          (fun ζ : ES => continuousNavierSource u v r ζ i) ξ = _
+    rw [← integral_smul]
+  have hnorm : ∀ r ∈ Icc τ s,
+      ‖-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+          heatMode ν (s - r) (fun ζ : ES => continuousNavierSource u v r ζ i) ξ‖
+        ≤ Q ξ r := by
+    intro r hr
+    rw [norm_smul, norm_neg, Complex.norm_real,
+      Real.norm_of_nonneg (mul_nonneg hν.le (pow_nonneg (norm_nonneg _) 2)),
+      norm_heatMode]
+    dsimp only [Q]
+    have hz' : 0 ≤ ν * ‖ξ‖ ^ 2 :=
+      mul_nonneg hν.le (pow_nonneg (norm_nonneg _) 2)
+    have he : Real.exp (-(ν * ‖ξ‖ ^ 2 * (s - r))) ≤ 1 :=
+      Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+        (mul_nonneg hz' (sub_nonneg.mpr hr.2)))
+    have hx1 : Real.exp (-(ν * ‖ξ‖ ^ 2 * (s - r))) *
+        ‖continuousNavierSource u v r ξ i‖ ≤ ‖continuousNavierSource u v r ξ i‖ := by
+      have h2 : Real.exp (-(ν * ‖ξ‖ ^ 2 * (s - r))) *
+          ‖continuousNavierSource u v r ξ i‖ ≤
+          1 * ‖continuousNavierSource u v r ξ i‖ :=
+        mul_le_mul_of_nonneg_right he (norm_nonneg _)
+      rw [one_mul] at h2
+      exact h2
+    exact mul_le_mul_of_nonneg_left hx1 hz'
+  have hsec' : Integrable (fun r : ℝ => Q ξ r) μs :=
+    IntegrableOn.mono hsec (fun x hx => ⟨hx.1, hx.2.trans hts⟩) le_rfl
+  calc ‖-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousDuhamelRecent ν τ u v s ξ i‖
+      _ = ‖∫ r : ℝ, -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+            heatMode ν (s - r)
+              (fun ζ : ES => continuousNavierSource u v r ζ i) ξ ∂μs‖ := by
+        rw [hz]
+      _ ≤ ∫ r : ℝ, ‖-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+            heatMode ν (s - r)
+              (fun ζ : ES => continuousNavierSource u v r ζ i) ξ‖ ∂μs :=
+        norm_integral_le_integral_norm _
+      _ ≤ ∫ r : ℝ, Q ξ r ∂μs :=
+        integral_mono_ae₀_set (μ := volume) (s := Icc τ s)
+          isClosed_Icc.measurableSet hsec' hnorm (fun r => hQnn ξ r)
+      _ ≤ ∫ r in Icc τ t₁, Q ξ r ∂volume :=
+        setIntegral_mono_set (μ := volume) (s := Icc τ s) (t := Icc τ t₁)
+          (f := fun r => Q ξ r) hsec
+          (MeasureTheory.ae_of_all μ₁ (fun r => hQnn ξ r))
+          (MeasureTheory.ae_of_all volume fun x hx => ⟨hx.1, hx.2.trans hts⟩)
+      _ = ∫ r : ℝ, Q ξ r ∂μ₁ := rfl
+
+/-! ## 7. The full Duhamel envelope: the `hd` premise discharged -/
+
+/-- **The full Duhamel envelope of obligation 1.**  Fix `τ < t₀ < t₁`.  The
+joint `X⁻¹` source moment over `[0, τ]` (§3) together with the joint degree-2
+source moment over `[τ, t₁]` (§6) supply, uniformly on a neighbourhood of
+`t₀`, an `L¹(ξ)` envelope for
+`ξ ↦ ‖-(ν‖ξ‖²)•continuousDuhamel ν u v s ξ i‖` — the exact shape of the `hd`
+premise of `exists_integrable_envelope_mildImage_deriv`, which this theorem
+therefore DISCHARGES (see §8).  The proof is the window split
+`[0, s] = [0, τ] ∪ [τ, s]` at the level of the `s`-slice: if the slice is
+Bochner-integrable over `[0, s]`, the two set integrals differ from the full
+integral only by null singletons (`setIntegral_sdiff` against `{τ}`, `{s}`
+and `Real.volume_singleton`), and the §3/§6 envelopes bound them; otherwise
+the full integral is junk `0` (`integral_undef`) and the envelope bounds give
+the required nonnegativity. -/
+theorem exists_integrable_envelope_duhamel_deriv
+    (u v : ℝ → ES → ComplexSpace) (i : Fin 3) (ν τ t₀ t₁ : ℝ)
+    (hν : 0 < ν) (hτ : 0 ≤ τ) (hτt : τ < t₀) (ht₀t₁ : t₀ < t₁)
+    (hmeas : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource u v p.2 p.1 i)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) τ))))
+    (hsrc₀ : Integrable (fun p : ES × ℝ =>
+      ‖p.1‖⁻¹ * ‖continuousNavierSource u v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) τ))))
+    (hsrc₁ : Integrable (fun p : ES × ℝ =>
+      ‖p.1‖ ^ 2 * ‖continuousNavierSource u v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc τ t₁)))) :
+    ∃ U ∈ 𝓝 t₀, ∃ g : ES → ℝ, Integrable g ∧
+      ∀ᵐ ξ ∂volume, ∀ s ∈ U,
+        ‖-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousDuhamel ν u v s ξ i‖ ≤ g ξ := by
+  obtain ⟨u₂, hu₂, g₂, hg₂, hb₂⟩ :=
+    exists_integrable_envelope_duhamelBefore_deriv u v i ν τ t₀ hν hτ hτt hmeas
+      hsrc₀
+  obtain ⟨u₃, hu₃, g₃, hg₃, hb₃⟩ :=
+    exists_integrable_envelope_duhamelRecent_deriv u v i ν τ t₀ t₁ hν hτt ht₀t₁
+      hsrc₁
+  refine ⟨u₂ ∩ u₃ ∩ Ioi τ, inter_mem (inter_mem hu₂ hu₃) (Ioi_mem_nhds hτt),
+    fun ξ => g₂ ξ + g₃ ξ, hg₂.add hg₃, ?_⟩
+  filter_upwards [hb₂, hb₃] with ξ h2 h3
+  intro s hs
+  have hts : τ < s := hs.2
+  have hB : continuousDuhamelBefore ν τ u v s ξ i =
+      ∫ r in Icc (0 : ℝ) τ, heatMode ν (s - r)
+        (fun ζ : ES => continuousNavierSource u v r ζ i) ξ := rfl
+  have hR : continuousDuhamelRecent ν τ u v s ξ i =
+      ∫ r in Icc τ s, heatMode ν (s - r)
+        (fun ζ : ES => continuousNavierSource u v r ζ i) ξ := rfl
+  have hD : continuousDuhamel ν u v s ξ i =
+      ∫ r in Icc (0 : ℝ) s, heatMode ν (s - r)
+        (fun ζ : ES => continuousNavierSource u v r ζ i) ξ := rfl
+  have h2s : ‖∫ r in Icc (0 : ℝ) τ, -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+      heatMode ν (s - r) (fun ζ : ES => continuousNavierSource u v r ζ i) ξ ∂volume‖
+      ≤ g₂ ξ := by
+    have h := h2 s hs.1.1
+    rw [hB, ← integral_smul] at h
+    exact h
+  have h3s : ‖∫ r in Icc τ s, -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+      heatMode ν (s - r) (fun ζ : ES => continuousNavierSource u v r ζ i) ξ ∂volume‖
+      ≤ g₃ ξ := by
+    have h := h3 s hs.1.2
+    rw [hR, ← integral_smul] at h
+    exact h
+  by_cases hH : Integrable (fun r : ℝ => heatMode ν (s - r)
+      (fun ζ : ES => continuousNavierSource u v r ζ i) ξ)
+      (volume.restrict (Icc (0 : ℝ) s))
+  · set G : ℝ → ℂ := fun r => -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) •
+      heatMode ν (s - r) (fun ζ : ES => continuousNavierSource u v r ζ i) ξ
+    have hG : Integrable G (volume.restrict (Icc (0 : ℝ) s)) :=
+      hH.smul (-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ))
+    have hsub : Icc (0 : ℝ) τ ⊆ Icc (0 : ℝ) s :=
+      fun x hx => ⟨hx.1, hx.2.trans (le_of_lt hts)⟩
+    have hdiff : Icc (0 : ℝ) s \ Icc (0 : ℝ) τ = Ioc τ s := by
+      ext x
+      simp only [Set.mem_sdiff, Set.mem_Icc, Set.mem_Ioc]
+      constructor
+      · rintro ⟨⟨h0, hxs⟩, hn⟩
+        exact ⟨lt_of_not_ge (fun hle => hn ⟨h0, hle⟩), hxs⟩
+      · rintro ⟨hτx, hxs⟩
+        exact ⟨⟨le_trans hτ hτx.le, hxs⟩, fun h => not_le_of_gt hτx h.2⟩
+    have e1 : ∫ r in Ioc τ s, G r ∂volume =
+        ∫ r in Icc (0 : ℝ) s, G r ∂volume - ∫ r in Icc (0 : ℝ) τ, G r ∂volume := by
+      have E := setIntegral_sdiff (f := G) (s := Icc (0 : ℝ) s)
+        (t := Icc (0 : ℝ) τ) (μ := volume) isClosed_Icc.measurableSet hG hsub
+      rw [hdiff] at E
+      exact E
+    have hGs : IntegrableOn G (Icc τ s) volume :=
+      IntegrableOn.mono hG (fun x hx => ⟨hτ.trans hx.1, hx.2⟩) le_rfl
+    have hdiff2 : Icc τ s \ ({τ} : Set ℝ) = Ioc τ s := by
+      ext x
+      simp only [Set.mem_sdiff, Set.mem_singleton_iff, Set.mem_Icc, Set.mem_Ioc]
+      constructor
+      · rintro ⟨⟨hτx, hxs⟩, hn⟩
+        exact ⟨lt_of_le_of_ne hτx (Ne.symm hn), hxs⟩
+      · rintro ⟨hτx, hxs⟩
+        exact ⟨⟨hτx.le, hxs⟩, fun he => lt_irrefl τ (lt_of_lt_of_eq hτx he)⟩
+    have hz : ∫ r in ({τ} : Set ℝ), G r ∂volume = 0 := by
+      rw [Measure.restrict_eq_zero.mpr (Real.volume_singleton (a := τ))]
+      exact integral_zero_measure _
+    have hsing : ({τ} : Set ℝ) ⊆ Icc τ s := by
+      intro x hx
+      have he : x = τ := by simpa using hx
+      rw [he]
+      exact ⟨le_rfl, le_of_lt hts⟩
+    have e2 : ∫ r in Ioc τ s, G r ∂volume = ∫ r in Icc τ s, G r ∂volume := by
+      have E := setIntegral_sdiff (f := G) (s := Icc τ s) (t := ({τ} : Set ℝ))
+        (μ := volume) (measurableSet_singleton (τ : ℝ)) hGs hsing
+      rw [hdiff2, hz, sub_zero] at E
+      exact E
+    have split : ∫ r in Icc (0 : ℝ) s, G r ∂volume =
+        ∫ r in Icc (0 : ℝ) τ, G r ∂volume + ∫ r in Icc τ s, G r ∂volume := by
+      have e3 := e2.symm.trans e1
+      rw [e3]
+      ring
+    rw [hD, ← integral_smul]
+    show ‖∫ r in Icc (0 : ℝ) s, G r ∂volume‖ ≤ g₂ ξ + g₃ ξ
+    rw [split]
+    exact (norm_add_le _ _).trans (add_le_add h2s h3s)
+  · rw [hD, integral_undef hH, smul_zero, norm_zero]
+    exact add_nonneg (le_trans (norm_nonneg _) (h2 s hs.1.1))
+      (le_trans (norm_nonneg _) (h3 s hs.1.2))
+
+/-! ## 8. Obligation-1 envelope with the Duhamel premise discharged -/
+
+/-- **Obligation-1 envelope for the mild image, Duhamel part discharged.**
+Instantiating `exists_integrable_envelope_duhamel_deriv` at `u = v` supplies
+the `hd` premise of `exists_integrable_envelope_mildImage_deriv` from the two
+concrete joint window moments, so only the source envelope `hsrc` — the
+module header's single named residual — remains explicit. -/
+theorem exists_integrable_envelope_mildImage_deriv_of_windowMoments
+    (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace)
+    (i : Fin 3) (t₀ τ t₁ : ℝ) (ht₀ : 0 < t₀) (hτ : 0 ≤ τ) (hτt : τ < t₀)
+    (ht₀t₁ : t₀ < t₁)
+    (ha1 : Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (hmeas : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource v v p.2 p.1 i)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) τ))))
+    (hsrc₀ : Integrable (fun p : ES × ℝ =>
+      ‖p.1‖⁻¹ * ‖continuousNavierSource v v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) τ))))
+    (hsrc₁ : Integrable (fun p : ES × ℝ =>
+      ‖p.1‖ ^ 2 * ‖continuousNavierSource v v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc τ t₁))))
+    (hsrc : ∃ u ∈ 𝓝 t₀, ∃ g : ES → ℝ, Integrable g ∧
+        ∀ᵐ ξ ∂volume, ∀ s ∈ u, ‖continuousNavierSource v v s ξ i‖ ≤ g ξ) :
+    ∃ u ∈ 𝓝 t₀, ∃ g : ES → ℝ, Integrable g ∧ ∀ᵐ ξ ∂volume, ∀ s ∈ u,
+      ‖-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousMildImage ν hν a v s ξ i
+        + continuousNavierSource v v s ξ i‖ ≤ g ξ :=
+  exists_integrable_envelope_mildImage_deriv ν hν a v i t₀ ht₀ ha1
+    (exists_integrable_envelope_duhamel_deriv v v i ν τ t₀ t₁ hν hτ hτt ht₀t₁
+      hmeas hsrc₀ hsrc₁)
+    hsrc
