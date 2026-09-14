@@ -16,6 +16,7 @@ import Navier.Analysis.ContinuousLeiLinMildFixedPoint
 import Navier.Analysis.ContinuousLeiLinPressureReconstruction
 import Navier.Analysis.ContinuousLeiLinPressurePhysical
 import Navier.Analysis.BKMVorticityIntegralDivergence
+import Navier.Analysis.BKMProfileGronwallPair
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
 
@@ -209,3 +210,25 @@ and the polarization leaves' all-`ξ` pointwise convolution integrabilities. -/
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1_ae
 #check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1Int
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1Int
+
+/-! Grönwall-pair decomposition receipts (landed 2026-09-14, lane L6b2,
+DECOMPOSED): for the constructed forced alternative-C profile the Grönwall
+control pair of the BKM vorticity-divergence decomposition is equivalent to
+the single scalar velocity estimate `(†)`, the uniform-sup shortcut is
+kernel-falsified (`no_uniform_sup_bound`), the Biot–Savart route supplies the
+velocity-to-vorticity-majorant bridge `velocity_le_V`, and the exact remaining
+dependency is the named scalar vorticity-rate estimate `VorticityRateBound` —
+one inequality from the pair and from the two crown divergence corollaries.
+All six receipts print the strict axiom set. -/
+#check Navier.Analysis.BKMProfileGronwallPair.gronwall_pair_iff_velocity_bound
+#print axioms Navier.Analysis.BKMProfileGronwallPair.gronwall_pair_iff_velocity_bound
+#check Navier.Analysis.BKMProfileGronwallPair.no_uniform_sup_bound
+#print axioms Navier.Analysis.BKMProfileGronwallPair.no_uniform_sup_bound
+#check Navier.Analysis.BKMProfileGronwallPair.velocity_le_V
+#print axioms Navier.Analysis.BKMProfileGronwallPair.velocity_le_V
+#check Navier.Analysis.BKMProfileGronwallPair.gronwall_pair_of_rate_bound
+#print axioms Navier.Analysis.BKMProfileGronwallPair.gronwall_pair_of_rate_bound
+#check Navier.Analysis.BKMProfileGronwallPair.vorticity_integral_divergence_of_gronwall_pair
+#print axioms Navier.Analysis.BKMProfileGronwallPair.vorticity_integral_divergence_of_gronwall_pair
+#check Navier.Analysis.BKMProfileGronwallPair.lintegral_vorticity_integral_divergence_of_rate_bound
+#print axioms Navier.Analysis.BKMProfileGronwallPair.lintegral_vorticity_integral_divergence_of_rate_bound

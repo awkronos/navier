@@ -1,6 +1,7 @@
 import Navier.Analysis.AprioriCriticalControlQuantifiers
 import Navier.Analysis.BKMForcedBreakdownNecessity
 import Navier.Analysis.BKMLogBootstrap
+import Navier.Analysis.BKMProfileGronwallPair
 import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BiotSavartKernel
