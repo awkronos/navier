@@ -19,6 +19,7 @@ import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.BKMProfileGronwallPair
 import Navier.Analysis.BKMProfileRateBound
 import Navier.Analysis.BKMProfileEnvelope
+import Navier.Construction.BaseVorticityAxis
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
 
@@ -287,3 +288,19 @@ the leaf. All fourteen receipts print the strict axiom set. -/
 #print axioms Navier.Analysis.BKMProfileEnvelope.vorticity_integral_divergence_of_q_curlBound
 #check Navier.Analysis.BKMProfileEnvelope.lintegral_vorticity_integral_divergence_of_q_curlBound
 #print axioms Navier.Analysis.BKMProfileEnvelope.lintegral_vorticity_integral_divergence_of_q_curlBound
+
+/-! ## Lane L6b4 (2026-09-14): exact-constant axis vorticity blow-up `BaseVorticityAxis`. -/
+#check Navier.Construction.BaseVorticityAxis.baseVorticity_axis
+#print axioms Navier.Construction.BaseVorticityAxis.baseVorticity_axis
+#check Navier.Construction.BaseVorticityAxis.baseVorticity_norm_at_origin
+#print axioms Navier.Construction.BaseVorticityAxis.baseVorticity_norm_at_origin
+#check Navier.Construction.BaseVorticityAxis.baseVorticity_axis_tendsto_atTop
+#print axioms Navier.Construction.BaseVorticityAxis.baseVorticity_axis_tendsto_atTop
+#check Navier.Construction.FinalSlowBase.inv_phi_axis
+#print axioms Navier.Construction.FinalSlowBase.inv_phi_axis
+#check Navier.Construction.FinalSlowBase.f_axis_positive
+#print axioms Navier.Construction.FinalSlowBase.f_axis_positive
+#check Navier.Construction.FinalSlowBase.axis_vorticity_origin
+#print axioms Navier.Construction.FinalSlowBase.axis_vorticity_origin
+#check Navier.Construction.FinalSlowBase.axis_vorticity_tendsto
+#print axioms Navier.Construction.FinalSlowBase.axis_vorticity_tendsto
