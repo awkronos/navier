@@ -17,6 +17,7 @@ import Navier.Analysis.ContinuousLeiLinPressureReconstruction
 import Navier.Analysis.ContinuousLeiLinPressurePhysical
 import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.BKMProfileGronwallPair
+import Navier.Analysis.BKMProfileRateBound
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
 
@@ -232,3 +233,40 @@ All six receipts print the strict axiom set. -/
 #print axioms Navier.Analysis.BKMProfileGronwallPair.vorticity_integral_divergence_of_gronwall_pair
 #check Navier.Analysis.BKMProfileGronwallPair.lintegral_vorticity_integral_divergence_of_rate_bound
 #print axioms Navier.Analysis.BKMProfileGronwallPair.lintegral_vorticity_integral_divergence_of_rate_bound
+
+/-! Lane L6b3 (2026-09-14): the named `VorticityRateBound` leaf is reduced to one of two
+quantitative envelopes for the selected profile — a two-sided power-law sandwich
+(`α > 1` exact, consumed through the convergent antiderivative) or a monotone
+self-referential lag bound on geometric windows — and each envelope is wired through
+the L6b2 consumers to the Grönwall pair and both crown divergence corollaries.
+Soundness content fixed here: an UPPER envelope alone never suffices (a monotonicity or
+lower envelope is consumed too), and ODE majorization with constant C ≠ 1 does not imply
+the leaf. All fourteen receipts print the strict axiom set. -/
+#check Navier.Analysis.BKMProfileRateBound.pow_le_C_exp
+#print axioms Navier.Analysis.BKMProfileRateBound.pow_le_C_exp
+#check Navier.Analysis.BKMProfileRateBound.rpow_le_C_exp
+#print axioms Navier.Analysis.BKMProfileRateBound.rpow_le_C_exp
+#check Navier.Analysis.BKMProfileRateBound.one_add_rpow_le_C_exp
+#print axioms Navier.Analysis.BKMProfileRateBound.one_add_rpow_le_C_exp
+#check Navier.Analysis.BKMProfileRateBound.lag_pow_le_exp
+#print axioms Navier.Analysis.BKMProfileRateBound.lag_pow_le_exp
+#check Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_sandwich
+#print axioms Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_sandwich
+#check Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_monotoneLag
+#print axioms Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_monotoneLag
+#check Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_sandwich_for
+#print axioms Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_sandwich_for
+#check Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_monotoneLag_for
+#print axioms Navier.Analysis.BKMProfileRateBound.vorticityRateBound_of_monotoneLag_for
+#check Navier.Analysis.BKMProfileRateBound.gronwall_pair_of_sandwich_for
+#print axioms Navier.Analysis.BKMProfileRateBound.gronwall_pair_of_sandwich_for
+#check Navier.Analysis.BKMProfileRateBound.vorticity_integral_divergence_of_sandwich_for
+#print axioms Navier.Analysis.BKMProfileRateBound.vorticity_integral_divergence_of_sandwich_for
+#check Navier.Analysis.BKMProfileRateBound.lintegral_vorticity_integral_divergence_of_sandwich_for
+#print axioms Navier.Analysis.BKMProfileRateBound.lintegral_vorticity_integral_divergence_of_sandwich_for
+#check Navier.Analysis.BKMProfileRateBound.gronwall_pair_of_monotoneLag_for
+#print axioms Navier.Analysis.BKMProfileRateBound.gronwall_pair_of_monotoneLag_for
+#check Navier.Analysis.BKMProfileRateBound.vorticity_integral_divergence_of_monotoneLag_for
+#print axioms Navier.Analysis.BKMProfileRateBound.vorticity_integral_divergence_of_monotoneLag_for
+#check Navier.Analysis.BKMProfileRateBound.lintegral_vorticity_integral_divergence_of_monotoneLag_for
+#print axioms Navier.Analysis.BKMProfileRateBound.lintegral_vorticity_integral_divergence_of_monotoneLag_for
