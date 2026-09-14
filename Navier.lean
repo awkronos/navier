@@ -4,6 +4,7 @@ import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.BKMProfileEnvelope
 import Navier.Analysis.BKMProfileGronwallPair
 import Navier.Analysis.BKMProfileRateBound
+import Navier.Analysis.BKMProfileSelectedEnvelope
 import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BiotSavartKernel

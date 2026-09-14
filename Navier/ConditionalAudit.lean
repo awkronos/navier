@@ -19,6 +19,7 @@ import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.BKMProfileGronwallPair
 import Navier.Analysis.BKMProfileRateBound
 import Navier.Analysis.BKMProfileEnvelope
+import Navier.Analysis.BKMProfileSelectedEnvelope
 import Navier.Construction.BaseVorticityAxis
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
@@ -288,6 +289,10 @@ the leaf. All fourteen receipts print the strict axiom set. -/
 #print axioms Navier.Analysis.BKMProfileEnvelope.vorticity_integral_divergence_of_q_curlBound
 #check Navier.Analysis.BKMProfileEnvelope.lintegral_vorticity_integral_divergence_of_q_curlBound
 #print axioms Navier.Analysis.BKMProfileEnvelope.lintegral_vorticity_integral_divergence_of_q_curlBound
+
+/-! ## Lane L6b6 (2026-09-14): polynomial-upper / axis-lower third bridge `BKMProfileSelectedEnvelope`. -/
+#check Navier.Analysis.BKMProfileSelectedEnvelope.vorticityRateBound_of_polyUpper_axisLower
+#print axioms Navier.Analysis.BKMProfileSelectedEnvelope.vorticityRateBound_of_polyUpper_axisLower
 
 /-! ## Lane L6b4 (2026-09-14): exact-constant axis vorticity blow-up `BaseVorticityAxis`. -/
 #check Navier.Construction.BaseVorticityAxis.baseVorticity_axis
