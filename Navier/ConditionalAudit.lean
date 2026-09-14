@@ -18,6 +18,7 @@ import Navier.Analysis.ContinuousLeiLinPressurePhysical
 import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.BKMProfileGronwallPair
 import Navier.Analysis.BKMProfileRateBound
+import Navier.Analysis.BKMProfileEnvelope
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
 
@@ -270,3 +271,19 @@ the leaf. All fourteen receipts print the strict axiom set. -/
 #print axioms Navier.Analysis.BKMProfileRateBound.vorticity_integral_divergence_of_monotoneLag_for
 #check Navier.Analysis.BKMProfileRateBound.lintegral_vorticity_integral_divergence_of_monotoneLag_for
 #print axioms Navier.Analysis.BKMProfileRateBound.lintegral_vorticity_integral_divergence_of_monotoneLag_for
+
+/-! ## Lane L6b5 (2026-09-14): q-envelope bridge `BKMProfileEnvelope`. -/
+#check Navier.Analysis.BKMProfileEnvelope.forwardScalar_le_self
+#print axioms Navier.Analysis.BKMProfileEnvelope.forwardScalar_le_self
+#check Navier.Analysis.BKMProfileEnvelope.one_sub_le_physicalQ
+#print axioms Navier.Analysis.BKMProfileEnvelope.one_sub_le_physicalQ
+#check Navier.Analysis.BKMProfileEnvelope.physicalQ_axis
+#print axioms Navier.Analysis.BKMProfileEnvelope.physicalQ_axis
+#check Navier.Analysis.BKMProfileEnvelope.vorticityRateBound_of_q_curlBound
+#print axioms Navier.Analysis.BKMProfileEnvelope.vorticityRateBound_of_q_curlBound
+#check Navier.Analysis.BKMProfileEnvelope.gronwall_pair_of_q_curlBound
+#print axioms Navier.Analysis.BKMProfileEnvelope.gronwall_pair_of_q_curlBound
+#check Navier.Analysis.BKMProfileEnvelope.vorticity_integral_divergence_of_q_curlBound
+#print axioms Navier.Analysis.BKMProfileEnvelope.vorticity_integral_divergence_of_q_curlBound
+#check Navier.Analysis.BKMProfileEnvelope.lintegral_vorticity_integral_divergence_of_q_curlBound
+#print axioms Navier.Analysis.BKMProfileEnvelope.lintegral_vorticity_integral_divergence_of_q_curlBound
