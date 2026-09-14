@@ -34,6 +34,7 @@ import Navier.Analysis.ContinuousLeiLinPhysicalRegularity
 import Navier.Analysis.ContinuousLeiLinPhysicalSmoothing
 import Navier.Analysis.ContinuousLeiLinDuhamelPhysicalSmoothing
 import Navier.Analysis.ContinuousLeiLinFrequencyODE
+import Navier.Analysis.ContinuousLeiLinODEDominationSupply
 import Navier.Analysis.ContinuousLeiLinPhysicalODEDomination
 import Navier.Analysis.ContinuousLeiLinRecentTailInputs
 import Navier.Analysis.ContinuousLeiLinLinkedComplete
