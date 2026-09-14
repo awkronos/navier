@@ -180,3 +180,32 @@ fixed point; the conditional feed bound carries its feeds visible. -/
 #print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.fixedPoint_pressureEq
 #check Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.pressureDuhamel_grad_normXm1_le_of_feed
 #print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.pressureDuhamel_grad_normXm1_le_of_feed
+
+/-! Time-leaf receipts (landed 2026-09-13, lane L6c): the record's pointwise
+fields are restated over the horizon `t ∈ Icc 0 T` via the zero extension
+`mildImageIcc` (equal to the mild image on the horizon and zero off it — the
+unrestricted `∀ t` reading is FALSE at `t < 0`, where the heat multiplier
+`exp(ν‖ξ‖²|t|)` explodes the moments), with the constructor obligation
+supplied by `mildImageIcc_aestronglyMeasurable` /
+`mildImageIcc_integrableXm1` / `mildImageIcc_integrableX1`.  Three of the
+six time leaves are now CLOSED for general box elements at every horizon
+time — spatial measurability `hmM` (2a), `X⁻¹` integrability `hmXm1` (2b),
+and the spacetime `X¹` budget `hmX1Int` (2f) — with the `a.e.`-time `X¹`
+reading `mildTimeLeaf_hmX1_ae` as the maximal honest supplier behind the
+still-open every-time field.  Named residuals: the every-time `hmX1` (2c),
+the `Lp`-valued section measurabilities `hmXm1Time` (2d) / `hmX1Time` (2e),
+and the polarization leaves' all-`ξ` pointwise convolution integrabilities. -/
+#check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_aestronglyMeasurable
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_aestronglyMeasurable
+#check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_integrableXm1
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_integrableXm1
+#check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_integrableX1
+#print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_integrableX1
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmM
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmM
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmXm1
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmXm1
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1_ae
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1_ae
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1Int
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1Int

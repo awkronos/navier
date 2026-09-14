@@ -418,6 +418,20 @@ private theorem zeroBox_hmX1 (ν : ℝ≥0) (hν : 0 < ν) (T : ℝ)
   rw [hfn]
   simp
 
+private theorem zeroBox_mildImageIcc_fn (ν : ℝ≥0) (hν : 0 < ν) (T : ℝ)
+    (x : zeroBox ν T) :
+    mildImageIcc ν hν T (0 : ES → ComplexSpace)
+      (everywhereRawRepresentative ν T x.1) =
+      fun _ => (0 : ES → ComplexSpace) := by
+  funext t
+  funext ξ
+  by_cases ht : t ∈ Icc (0 : ℝ) T
+  · exact (mildImageIcc_of_mem ν hν T (0 : ES → ComplexSpace)
+      (everywhereRawRepresentative ν T x.1) t ht ξ).trans
+      (zeroBox_mildImage_eq_zero ν hν T x t ξ)
+  · exact mildImageIcc_of_not_mem ν hν T (0 : ES → ComplexSpace)
+      (everywhereRawRepresentative ν T x.1) t ht ξ
+
 /-! ## The assembly record at the zero box: nonvacuity -/
 
 /-- **The concrete discharge of `MildAssemblyLeaves`.**  At the zero datum and
@@ -444,32 +458,41 @@ theorem record_zeroBox (ν : ℝ≥0) (hν : 0 < ν) (T : ℝ) (hT : 0 ≤ T) :
         simp
       rw [hf]
       exact aestronglyMeasurable_const
-    hmM := fun x t i => zeroBox_hmM ν hν T x t i
-    hmXm1 := fun x t i => zeroBox_hmXm1 ν hν T x t i
-    hmX1 := fun x t i => zeroBox_hmX1 ν hν T x t i
+    hmM := fun x t ht i => zeroBox_hmM ν hν T x t i
+    hmXm1 := fun x t ht i => zeroBox_hmXm1 ν hν T x t i
+    hmX1 := fun x t ht i => zeroBox_hmX1 ν hν T x t i
     hmXm1Time := fun x => by
-      have hw : ∀ t, mildImage ν hν (0 : ES → ComplexSpace)
+      have hw : ∀ t, mildImageIcc ν hν T (0 : ES → ComplexSpace)
           (everywhereRawRepresentative ν T x.1) t = (0 : ES → ComplexSpace) :=
-        fun t => congrFun (zeroBox_mildImage_fn ν hν T x) t
+        fun t => congrFun (zeroBox_mildImageIcc_fn ν hν T x) t
       have hzero := xm1Section_zero
-        (mildImage ν hν (0 : ES → ComplexSpace) (everywhereRawRepresentative ν T x.1)) hw
-        (zeroBox_hmM ν hν T x) (zeroBox_hmXm1 ν hν T x)
+        (mildImageIcc ν hν T (0 : ES → ComplexSpace)
+          (everywhereRawRepresentative ν T x.1)) hw
+        (mildImageIcc_aestronglyMeasurable ν hν T (0 : ES → ComplexSpace)
+          (everywhereRawRepresentative ν T x.1) (fun t ht i => zeroBox_hmM ν hν T x t i))
+        (mildImageIcc_integrableXm1 ν hν T (0 : ES → ComplexSpace)
+          (everywhereRawRepresentative ν T x.1) (fun t ht i => zeroBox_hmXm1 ν hν T x t i))
       rw [hzero]
       exact aestronglyMeasurable_const
     hmX1Time := fun x => by
-      have hw : ∀ t, mildImage ν hν (0 : ES → ComplexSpace)
+      have hw : ∀ t, mildImageIcc ν hν T (0 : ES → ComplexSpace)
           (everywhereRawRepresentative ν T x.1) t = (0 : ES → ComplexSpace) :=
-        fun t => congrFun (zeroBox_mildImage_fn ν hν T x) t
+        fun t => congrFun (zeroBox_mildImageIcc_fn ν hν T x) t
       have hzero := viscousX1Section_zero
-        (mildImage ν hν (0 : ES → ComplexSpace) (everywhereRawRepresentative ν T x.1)) ν hw
-        (zeroBox_hmM ν hν T x) (zeroBox_hmX1 ν hν T x)
+        (mildImageIcc ν hν T (0 : ES → ComplexSpace)
+          (everywhereRawRepresentative ν T x.1)) ν hw
+        (mildImageIcc_aestronglyMeasurable ν hν T (0 : ES → ComplexSpace)
+          (everywhereRawRepresentative ν T x.1) (fun t ht i => zeroBox_hmM ν hν T x t i))
+        (mildImageIcc_integrableX1 ν hν T (0 : ES → ComplexSpace)
+          (everywhereRawRepresentative ν T x.1) (fun t ht i => zeroBox_hmX1 ν hν T x t i))
       rw [hzero]
       exact aestronglyMeasurable_const
     hmX1Int := fun x => by
-      have hf : (fun t : ℝ => coordinateX1Mass (mildImage ν hν (0 : ES → ComplexSpace)
-          (everywhereRawRepresentative ν T x.1) t)) = fun _ => (0 : ℝ) := by
+      have hf : (fun t : ℝ => coordinateX1Mass
+          (mildImageIcc ν hν T (0 : ES → ComplexSpace)
+            (everywhereRawRepresentative ν T x.1) t)) = fun _ => (0 : ℝ) := by
         funext t
-        rw [zeroBox_mildImage_at ν hν T x t]
+        rw [congrFun (zeroBox_mildImageIcc_fn ν hν T x) t]
         simp [coordinateX1Mass, normX1]
       rw [hf]
       exact integrable_const 0
@@ -777,13 +800,19 @@ theorem fixedPoint_pressureEq (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 
           (mildImage ν hν a (everywhereRawRepresentative ν T x.1) t) := by
   set u : ℝ → ES → ComplexSpace :=
     mildImage ν hν a (everywhereRawRepresentative ν T x.1) with hu_def
-  obtain ⟨hb1, _⟩ := selfMapEstimate ν hν T R hT a haM ha ha1 haR L x
+  set w : ℝ → ES → ComplexSpace :=
+    mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1) with hw_def
+  have hMw := mildImageIcc_aestronglyMeasurable ν hν T a
+    (everywhereRawRepresentative ν T x.1) (L.hmM x)
+  have hXm1w := mildImageIcc_integrableXm1 ν hν T a
+    (everywhereRawRepresentative ν T x.1) (L.hmXm1 x)
+  have hbIcc := selfMapEstimate_Icc ν hν T R hT a haM ha ha1 haR L x
   have hval : (actualMildSelfMap ν hν T R hT a haM ha ha1 haR L x).1 = x.1 :=
     congrArg Subtype.val hx
   have h0 : (mildLift ν hν T R hT a haM ha ha1 haR L x).1.fst = x.1.1.fst :=
     congrArg (fun c : ActualLinkedCarrier ν T => c.1.fst) hval
   have hkey : (mildLift ν hν T R hT a haM ha ha1 haR L x).1.fst =
-      toXm1TimeSlot u (L.hmM x) (L.hmXm1 x) T (2 * R) (L.hmXm1Time x) hb1 := rfl
+      toXm1TimeSlot w hMw hXm1w T (2 * R) (L.hmXm1Time x) hbIcc := rfl
   have hevery : everywhereXm1TimeSlot ν hν T x.1 =
       toXm1TimeSlot (everywhereRawRepresentative ν T x.1)
         (everywhereRawRepresentative_aestronglyMeasurable ν hν T x.1)
@@ -791,7 +820,7 @@ theorem fixedPoint_pressureEq (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 
         ‖(x.1.1.fst : Xm1TimeSlot T)‖
         (everywhereXm1Section_aestronglyMeasurable ν hν T x.1)
         (fun t _ => coordinateXm1Mass_everywhereRawRepresentative_le ν hν T x.1 t) := rfl
-  have hslot : toXm1TimeSlot u (L.hmM x) (L.hmXm1 x) T (2 * R) (L.hmXm1Time x) hb1 =
+  have hslot : toXm1TimeSlot w hMw hXm1w T (2 * R) (L.hmXm1Time x) hbIcc =
       toXm1TimeSlot (everywhereRawRepresentative ν T x.1)
         (everywhereRawRepresentative_aestronglyMeasurable ν hν T x.1)
         (everywhereRawRepresentative_xm1_integrable ν T x.1) T
@@ -801,14 +830,17 @@ theorem fixedPoint_pressureEq (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 
     rw [← hkey, h0, ← hevery]
     exact (everywhereXm1TimeSlot_eq ν hν T x.1).symm
   have hae := nested_ae_eq_of_toXm1TimeSlot_eq ν hν T (2 * R) ‖(x.1.1.fst : Xm1TimeSlot T)‖
-    u (everywhereRawRepresentative ν T x.1)
-    (L.hmM x) (everywhereRawRepresentative_aestronglyMeasurable ν hν T x.1)
-    (L.hmXm1 x) (everywhereRawRepresentative_xm1_integrable ν T x.1)
+    w (everywhereRawRepresentative ν T x.1)
+    hMw (everywhereRawRepresentative_aestronglyMeasurable ν hν T x.1)
+    hXm1w (everywhereRawRepresentative_xm1_integrable ν T x.1)
     (L.hmXm1Time x) (everywhereXm1Section_aestronglyMeasurable ν hν T x.1)
-    hb1 (fun t _ => coordinateXm1Mass_everywhereRawRepresentative_le ν hν T x.1 t) hslot
-  filter_upwards [hae] with t ht
+    hbIcc (fun t _ => coordinateXm1Mass_everywhereRawRepresentative_le ν hν T x.1 t) hslot
+  filter_upwards [ae_restrict_mem isClosed_Icc.measurableSet, hae] with t htI ht
+  have hpoint : (fun ξ : ES => u t ξ) =ᵐ[volume] w t :=
+    ae_of_all _ fun ξ =>
+      (mildImageIcc_of_mem ν hν T a (everywhereRawRepresentative ν T x.1) t htI ξ).symm
   exact continuousPressureFourier_congr_ae
-    (u := everywhereRawRepresentative ν T x.1 t) (h := ht.symm)
+    (u := everywhereRawRepresentative ν T x.1 t) (h := ht.symm.trans hpoint.symm)
 
 private theorem integrable_pressureDuhamel_coord (w : ES → ComplexSpace) (i : Fin 3)
     (hw : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => w η j) volume)

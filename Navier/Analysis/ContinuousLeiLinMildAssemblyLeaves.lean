@@ -1,5 +1,6 @@
 import Navier.Analysis.ContinuousLeiLinMildFixedPoint
 import Navier.Analysis.ContinuousLeiLinActualPolarization
+import Navier.Analysis.ContinuousLeiLinBoxD3Maximal
 import Navier.Analysis.ComplexLerayNorm
 import Navier.Analysis.FourierMajorant
 import Mathlib.MeasureTheory.Function.SimpleFuncDenseLp
@@ -39,6 +40,15 @@ open Navier.Analysis.ContinuousLeiLinTrajectoryLift
 open Navier.Analysis.ContinuousLeiLinMildFixedPoint
 open Navier.Analysis.ComplexLerayNorm
 open Navier.Analysis.FourierMajorant
+open Navier.Analysis.ContinuousLeiLinDissipation
+open Navier.Analysis.ContinuousLeiLinSelfMap
+open Navier.Analysis.ContinuousLeiLinRecentTailJoint
+open Navier.Analysis.ContinuousLeiLinMixedX1
+open Navier.Analysis.ContinuousLeiLinBoxD3Measurability
+open Navier.Analysis.ContinuousLeiLinBoxD3Output
+open Navier.Analysis.ContinuousLeiLinBoxD3Maximal
+open Navier.Analysis.ContinuousLeiLinBoxInterpolation
+open Navier.Analysis.ContinuousLeiLinBoxB1Joint
 
 namespace Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 
@@ -691,25 +701,397 @@ theorem mildLeafHjointR (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ)
     (everywhereRawRepresentative ν T y.1) (commonRepresentativeDifference ν T x.1 y.1)
     wy wdiff hySM hSM hy hsec
 
+/-! ## S3: pointwise-time mild-image leaves for general box elements (step 3)
+
+Leaves `hmM` (2a), `hmXm1` (2b) and `hmX1Int` (2f) are DERIVED here for
+every element of the actual linked box, on the horizon `t ∈ Icc 0 T` where
+the heat multiplier `exp(-ν ‖ξ‖² t)` decays rather than explodes.  Each
+per-time Duhamel spatial fact is obtained by integrating the joint
+`(ξ, s)`-measurable (or joint-integrable) heat-weighted source over the
+causal interval, through `AEStronglyMeasurable.integral_prod_right'` and
+`Integrable.integral_prod_left`; the heat part is dominated by the datum's
+own moment because the multiplier is `≤ 1` for `t ≥ 0`.  The `X¹`-mass leaf
+(2f) is the almost-everywhere-time maximal-regularity package: the
+actual-box `D₃` block of `ContinuousLeiLinBoxD3AE` is replayed with
+`mildLeafHjointDiag` as its sole structural input and `Integrable` as its
+conclusion, then transported to the horizon truncation.
+
+What S3 does NOT derive: the pointwise `X¹` leaf `hmX1` at every horizon
+time (maximal regularity supplies its Duhamel part `μ`-a.e. in `t`, never at
+every `t` — stated exactly below the theorems) and the two section leaves
+`hmXm1Time` (2d) / `hmX1Time` (2e), whose `Lp`-valued time-measurability has
+no supplier for general quotient-represented mild images (the S1 joint
+version primitive consumes such measurability, it does not produce it). -/
+
+/-- Leaf 2a for general boxes: spatial measurability of the mild image at
+every horizon time. -/
+theorem mildTimeLeaf_hmM (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ)
+    (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (x : ActualLinkedBox ν T (2 * R) (2 * R))
+    (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3) :
+    AEStronglyMeasurable (fun ξ : ES =>
+        mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i) volume := by
+  let u : ℝ → ES → ComplexSpace := everywhereRawRepresentative ν T x.1
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  have hjoint : AEStronglyMeasurable (fun p : ES × ℝ =>
+      complexEuclideanPoint (continuousNavierSource u u p.2 p.1))
+      (volume.prod (volume.restrict (Icc (0 : ℝ) T))) :=
+    by simpa [u] using mildLeafHjointDiag ν hν T R x
+  have hjointT : AEStronglyMeasurable (fun p : ES × ℝ =>
+      complexEuclideanPoint (continuousNavierSource u u p.2 p.1))
+      (volume.prod (volume.restrict (Icc (0 : ℝ) t))) :=
+    hjoint.mono_measure
+      (Measure.prod_mono le_rfl
+        (Measure.restrict_mono (Icc_subset_Icc le_rfl ht.2) le_rfl))
+  have hcoord : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource u u p.2 p.1 i)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) t))) :=
+    continuousNavierSource_coord_aestronglyMeasurable u u 0 t hjointT i
+  show AEStronglyMeasurable
+      (fun ξ : ES => heatVec (ν : ℝ) t a ξ i + continuousDuhamel (ν : ℝ) u u t ξ i) volume
+  refine AEStronglyMeasurable.add ?_ ?_
+  · show AEStronglyMeasurable
+        (fun ξ : ES =>
+          ((Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) * a ξ i) volume
+    exact (by fun_prop :
+        AEStronglyMeasurable
+          (fun ξ : ES => ((Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ)) volume)
+      |>.mul (haM i)
+  · have hjointW : AEStronglyMeasurable (fun p : ES × ℝ =>
+        ((Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t - p.2)) : ℝ) : ℂ) *
+          continuousNavierSource u u p.2 p.1 i))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))) :=
+      (by fun_prop :
+          AEStronglyMeasurable
+            (fun p : ES × ℝ =>
+              ((Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t - p.2)) : ℝ) : ℂ)))
+            (volume.prod (volume.restrict (Icc (0 : ℝ) t)))).mul hcoord
+    exact hjointW.integral_prod_right'
+
+/-- Leaf 2b for general boxes: `X⁻¹` integrability of the mild image at
+every horizon time.  The Duhamel majorant is the `ξ`-marginal of the joint
+weighted-source integrability `integrable_weightedContinuousNavierSource_coord_of_actualBox`
+(the heat multiplier is `≤ 1` on the causal interval `s ≤ t ≤ T`). -/
+theorem mildTimeLeaf_hmXm1 (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ)
+    (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ i‖))
+    (x : ActualLinkedBox ν T (2 * R) (2 * R))
+    (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3) :
+    Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
+        ‖mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i‖) := by
+  let u : ℝ → ES → ComplexSpace := everywhereRawRepresentative ν T x.1
+  let μt := volume.restrict (Icc (0 : ℝ) t)
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  have hjointT : AEStronglyMeasurable (fun p : ES × ℝ =>
+      complexEuclideanPoint (continuousNavierSource u u p.2 p.1))
+      (volume.prod μt) :=
+    (mildLeafHjointDiag ν hν T R x).mono_measure
+      (Measure.prod_mono le_rfl
+        (Measure.restrict_mono (Icc_subset_Icc le_rfl ht.2) le_rfl))
+  have hcoord : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource u u p.2 p.1 i) (volume.prod μt) :=
+    continuousNavierSource_coord_aestronglyMeasurable u u 0 t hjointT i
+  have hsrc : Integrable (fun p : ES × ℝ => ‖p.1‖⁻¹ *
+      ‖continuousNavierSource u u p.2 p.1 i‖) (volume.prod μt) :=
+    integrable_weightedContinuousNavierSource_coord_of_actualBox ν hν T (2 * R) (2 * R) x
+      t ht hjointT i
+  -- heat part, dominated by the datum: the multiplier is ≤ 1 at t ≥ 0
+  have hheat : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖heatVec (ν : ℝ) t a ξ i‖) := by
+    have hform (ξ : ES) : ‖ξ‖⁻¹ * ‖heatVec (ν : ℝ) t a ξ i‖ =
+        Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * t)) * (‖ξ‖⁻¹ * ‖a ξ i‖) := by
+      show ‖ξ‖⁻¹ * ‖heatMode (ν : ℝ) t (fun ζ : ES => a ζ i) ξ‖ = _
+      rw [norm_heatMode_eq]
+      ring
+    have hfactor : AEStronglyMeasurable
+        (fun ξ : ES => Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * t))) volume := by fun_prop
+    refine ((ha i).mono' (hfactor.mul (ha i).aestronglyMeasurable) ?_).congr
+      (Filter.Eventually.of_forall fun ξ => (hform ξ).symm)
+    filter_upwards with ξ
+    have hbase : 0 ≤ ‖ξ‖⁻¹ * ‖a ξ i‖ :=
+      mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _)
+    have hexp : Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * t)) ≤ 1 :=
+      Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+        (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) ht.1))
+    simp only [Pi.mul_apply]
+    rw [Real.norm_of_nonneg (mul_nonneg (Real.exp_pos _).le hbase)]
+    nlinarith [hexp, hbase]
+  -- Duhamel part: dominated by the ξ-marginal of the joint weighted source
+  have hM : Integrable
+      (fun ξ : ES => ∫ s, ‖ξ‖⁻¹ * ‖continuousNavierSource u u s ξ i‖ ∂μt) volume :=
+    hsrc.integral_prod_left
+  have hDle : ∀ᵐ ξ ∂volume, ‖ξ‖⁻¹ * ‖continuousDuhamel (ν : ℝ) u u t ξ i‖ ≤
+      ∫ s in Icc (0 : ℝ) t, ‖ξ‖⁻¹ * ‖continuousNavierSource u u s ξ i‖ ∂volume := by
+    filter_upwards [hsrc.prod_right_ae] with ξ hξ
+    refine le_trans (mul_le_mul_of_nonneg_left (norm_integral_le_integral_norm _)
+      (inv_nonneg.mpr (norm_nonneg ξ))) ?_
+    rw [← smul_eq_mul, ← MeasureTheory.integral_smul]
+    refine integral_mono_of_nonneg
+      (ae_of_all _ fun s => mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _))
+      hξ (by
+        filter_upwards [ae_restrict_mem isClosed_Icc.measurableSet] with s hs
+        rw [norm_heatMode_eq]
+        refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr (norm_nonneg ξ))
+        have hexp : Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * (t - s))) ≤ 1 :=
+          Real.exp_le_one_iff.mpr (neg_nonpos.mpr (mul_nonneg
+            (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr hs.2)))
+        nlinarith [hexp, norm_nonneg (continuousNavierSource u u s ξ i)])
+  have hjointW : AEStronglyMeasurable (fun p : ES × ℝ =>
+      heatMode (ν : ℝ) (t - p.2)
+        (fun ζ : ES => continuousNavierSource u u p.2 ζ i) p.1)
+      (volume.prod μt) := by
+    show AEStronglyMeasurable (fun p : ES × ℝ =>
+        ((Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t - p.2)) : ℝ) : ℂ) *
+          continuousNavierSource u u p.2 p.1 i)) (volume.prod μt)
+    exact (by fun_prop : AEStronglyMeasurable (fun p : ES × ℝ =>
+        ((Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t - p.2)) : ℝ) : ℂ))) (volume.prod μt)).mul hcoord
+  have hDAES : AEStronglyMeasurable
+      (fun ξ : ES => continuousDuhamel (ν : ℝ) u u t ξ i) volume := by
+    show AEStronglyMeasurable (fun ξ : ES => ∫ s in Icc (0 : ℝ) t,
+        heatMode (ν : ℝ) (t - s) (fun ζ : ES => continuousNavierSource u u s ζ i) ξ) volume
+    exact hjointW.integral_prod_right'
+  have hDmajor : Integrable
+      (fun ξ : ES => ‖ξ‖⁻¹ * ‖continuousDuhamel (ν : ℝ) u u t ξ i‖) volume := by
+    refine (hM.mono'
+      ((by fun_prop : AEStronglyMeasurable (fun ξ : ES => ‖ξ‖⁻¹) volume).mul hDAES.norm) ?_)
+    filter_upwards [hDle] with ξ h
+    rw [Real.norm_of_nonneg
+      (mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _))]
+    exact h
+  refine (hheat.add hDmajor).mono'
+    ((by fun_prop : AEStronglyMeasurable (fun ξ : ES => ‖ξ‖⁻¹) volume).mul
+      (mildTimeLeaf_hmM ν hν T R a haM x t ht i).norm) ?_
+  filter_upwards with ξ
+  rw [Real.norm_of_nonneg
+    (mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _))]
+  simp only [Pi.add_apply]
+  show ‖ξ‖⁻¹ * ‖heatVec (ν : ℝ) t a ξ i + continuousDuhamel (ν : ℝ) u u t ξ i‖ ≤
+    ‖ξ‖⁻¹ * ‖heatVec (ν : ℝ) t a ξ i‖ + ‖ξ‖⁻¹ * ‖continuousDuhamel (ν : ℝ) u u t ξ i‖
+  refine (mul_le_mul_of_nonneg_left (norm_add_le _ _)
+    (inv_nonneg.mpr (norm_nonneg ξ))).trans ?_
+  rw [mul_add]
+
+/-- The `D₃` maximal-regularity package for the diagonal source of a general
+box element, replaying the internal block of
+`ContinuousLeiLinBoxD3AE` with `mildLeafHjointDiag` as its sole structural
+input: the Duhamel `L¹_t(X¹)` coordinate masses are time-integrable and
+spatially `X¹`-integrable at almost every horizon time. -/
+private theorem mildTimeLeaf_d3X1 (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 ≤ T)
+    (x : ActualLinkedBox ν T (2 * R) (2 * R)) :
+    (∀ i : Fin 3, Integrable (fun t : ℝ => normX1 (fun ξ : ES =>
+        continuousDuhamel (ν : ℝ) (everywhereRawRepresentative ν T x.1)
+          (everywhereRawRepresentative ν T x.1) t ξ i))
+        (volume.restrict (Icc (0 : ℝ) T))) ∧
+    (∀ᵐ t ∂volume.restrict (Icc (0 : ℝ) T), ∀ i : Fin 3,
+      Integrable (fun ξ : ES => ‖ξ‖ * ‖continuousDuhamel (ν : ℝ)
+        (everywhereRawRepresentative ν T x.1)
+        (everywhereRawRepresentative ν T x.1) t ξ i‖)) := by
+  let u : ℝ → ES → ComplexSpace := everywhereRawRepresentative ν T x.1
+  let μ := volume.restrict (Icc (0 : ℝ) T)
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  have hjoint : AEStronglyMeasurable (fun p : ES × ℝ =>
+      complexEuclideanPoint (continuousNavierSource u u p.2 p.1))
+      (volume.prod μ) :=
+    mildLeafHjointDiag ν hν T R x
+  have hcoord (i : Fin 3) : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource u u p.2 p.1 i) (volume.prod μ) :=
+    continuousNavierSource_coord_aestronglyMeasurable u u 0 T
+      (by simpa [u, μ] using hjoint) i
+  have hDjoint (i : Fin 3) : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousDuhamel (ν : ℝ) u u p.2 p.1 i) (volume.prod μ) :=
+    continuousDuhamel_coord_joint_aestronglyMeasurable (ν : ℝ) T u u i (hcoord i)
+  have hsourceCoord (i : Fin 3) :=
+    integrable_weightedContinuousNavierSource_coord_of_actualBox
+      ν hν T (2 * R) (2 * R) x T ⟨hT, le_rfl⟩
+      (by simpa [u, μ] using mildLeafHjointDiag ν hν T R x) i
+  have hg (i : Fin 3) : Integrable (fun s : ℝ =>
+      normXm1 (fun ξ : ES => continuousNavierSource u u s ξ i)) μ := by
+    apply (hsourceCoord i).integral_norm_prod_right.congr
+    filter_upwards with s
+    unfold normXm1
+    apply integral_congr_ae
+    filter_upwards with ξ
+    exact Real.norm_of_nonneg (mul_nonneg
+      (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _))
+  have hJ (i : Fin 3) : AEMeasurable (fun p : ES × ℝ =>
+      ENNReal.ofReal (‖p.1‖⁻¹ * ‖continuousNavierSource u u p.2 p.1 i‖))
+      (volume.prod μ) :=
+    ENNReal.measurable_ofReal.comp_aemeasurable
+      (((show AEStronglyMeasurable (fun p : ES × ℝ => ‖p.1‖⁻¹ : ES × ℝ → ℝ)
+        (volume.prod μ) by fun_prop).mul (hcoord i).norm).aemeasurable)
+  obtain ⟨_, hb0⟩ := continuousNavierSource_fixedTime_inputs_of_actualBox
+    ν hν T (2 * R) (2 * R) x
+  have hW1 (i : Fin 3) (r : ℝ) (hr : r ∈ Icc (0 : ℝ) T) : AEMeasurable
+      (fun p : ES × ℝ => mixedKernelFun u u i (ν : ℝ) p.1 r p.2)
+      (volume.prod μ) := by
+    change AEMeasurable (fun p : ES × ℝ =>
+      ENNReal.ofReal ‖continuousNavierSource u u p.2 p.1 i‖ *
+        (if p.2 ≤ r then ENNReal.ofReal
+          (‖p.1‖ * Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (r - p.2)))) else 0))
+      (volume.prod μ)
+    exact (ENNReal.measurable_ofReal.comp_aemeasurable
+      (hcoord i).norm.aemeasurable).mul
+        ((Measurable.ite (measurableSet_le measurable_snd measurable_const)
+          (ENNReal.measurable_ofReal.comp (by fun_prop)) measurable_const).aemeasurable)
+  have hW (i : Fin 3) : AEMeasurable
+      (fun z : ℝ × (ES × ℝ) => mixedKernelFun u u i (ν : ℝ) z.2.1 z.1 z.2.2)
+      (μ.prod (volume.prod μ)) := by
+    have hcoord3 : AEStronglyMeasurable (fun z : ℝ × (ES × ℝ) =>
+        continuousNavierSource u u z.2.2 z.2.1 i)
+        (μ.prod (volume.prod μ)) :=
+      (hcoord i).comp_quasiMeasurePreserving Measure.quasiMeasurePreserving_snd
+    change AEMeasurable (fun z : ℝ × (ES × ℝ) =>
+      ENNReal.ofReal ‖continuousNavierSource u u z.2.2 z.2.1 i‖ *
+        (if z.2.2 ≤ z.1 then ENNReal.ofReal
+          (‖z.2.1‖ * Real.exp (-((ν : ℝ) * ‖z.2.1‖ ^ 2 *
+            (z.1 - z.2.2)))) else 0))
+      (μ.prod (volume.prod μ))
+    exact (ENNReal.measurable_ofReal.comp_aemeasurable
+      hcoord3.norm.aemeasurable).mul
+        ((Measurable.ite
+          (measurableSet_le (measurable_snd.comp measurable_snd) measurable_fst)
+          (ENNReal.measurable_ofReal.comp (by fun_prop)) measurable_const).aemeasurable)
+  have hDfacts (i : Fin 3) := continuousDuhamel_X1_integrability
+    u u (ν : ℝ) T i hνR (hDjoint i) (hW1 i) (hW i)
+      (fun s _ => hb0 s i) (hg i) (hJ i)
+  exact ⟨fun i => (hDfacts i).1, Filter.eventually_all.mpr fun i => (hDfacts i).2⟩
+
+/-- Leaf 2c for general boxes in its maximal honest form: the `X¹`
+integrability of the mild image at **almost every** horizon time.  The heat
+part holds at every `t ≥ 0`; the Duhamel part comes from `D₃` maximal
+regularity, which supplies its spatial `X¹` integrability only
+`volume.restrict (Icc 0 T)`-almost everywhere in `t`. -/
+theorem mildTimeLeaf_hmX1_ae (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 ≤ T)
+    (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (x : ActualLinkedBox ν T (2 * R) (2 * R)) :
+    ∀ᵐ t ∂leiLinTimeMeasure T, ∀ i : Fin 3, Integrable (fun ξ : ES =>
+      ‖ξ‖ * ‖mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i‖) := by
+  let u : ℝ → ES → ComplexSpace := everywhereRawRepresentative ν T x.1
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  obtain ⟨_, hDξall⟩ := mildTimeLeaf_d3X1 ν hν T R hT x
+  filter_upwards [ae_restrict_mem isClosed_Icc.measurableSet, hDξall] with t ht hDξt
+  intro i
+  refine ((integrable_weighted_heatMode_of_X1 (fun ζ : ES => a ζ i) (ha1 i)
+      (ν : ℝ) t hνR ht.1).add (hDξt i)).mono'
+    ((by fun_prop : AEStronglyMeasurable (fun ξ : ES => ‖ξ‖) volume).mul
+      (mildTimeLeaf_hmM ν hν T R a haM x t ht i).norm) ?_
+  filter_upwards with ξ
+  rw [Real.norm_of_nonneg (mul_nonneg (norm_nonneg ξ) (norm_nonneg _))]
+  show ‖ξ‖ * ‖heatVec (ν : ℝ) t a ξ i + continuousDuhamel (ν : ℝ) u u t ξ i‖ ≤
+    ‖ξ‖ * ‖heatVec (ν : ℝ) t a ξ i‖ + ‖ξ‖ * ‖continuousDuhamel (ν : ℝ) u u t ξ i‖
+  exact (mul_le_mul_of_nonneg_left (norm_add_le _ _) (norm_nonneg ξ)).trans
+    ((mul_add _ _ _).le)
+
+/-- Leaf 2f for general boxes: time integrability of the `X¹` mass of the
+horizon-truncated mild image.  The `a.e.`-time `D₃` package
+`mildTimeLeaf_d3X1` supplies the Duhamel `L¹_t(X¹)` part, the datum its heat
+part, and `Integrable.congr` transports the conclusion from
+`continuousMildImage` to the truncation `mildImageIcc`. -/
+theorem mildTimeLeaf_hmX1Int (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 ≤ T)
+    (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (x : ActualLinkedBox ν T (2 * R) (2 * R)) :
+    Integrable (fun t : ℝ => coordinateX1Mass
+      (mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1) t))
+      (leiLinTimeMeasure T) := by
+  let u : ℝ → ES → ComplexSpace := everywhereRawRepresentative ν T x.1
+  let μ := volume.restrict (Icc (0 : ℝ) T)
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  obtain ⟨hD0, hDξall⟩ := mildTimeLeaf_d3X1 ν hν T R hT x
+  have hImeas : AEStronglyMeasurable (fun t : ℝ => coordinateX1Mass
+      (continuousMildImage (ν : ℝ) hνR a u t)) μ :=
+    coordinateX1Mass_continuousMildImage_aestronglyMeasurable
+      (ν : ℝ) T hνR a haM u (mildLeafHjointDiag ν hν T R x)
+  have hHt : Integrable (fun t : ℝ => coordinateX1Mass
+      (heatVec (ν : ℝ) t a)) μ :=
+    integrable_coordinateX1Mass_heatVec_on_Icc a ha1 (ν : ℝ) T hνR
+  have hDt : Integrable (fun t : ℝ => coordinateX1Mass
+      (continuousDuhamel (ν : ℝ) u u t)) μ := by
+    unfold coordinateX1Mass
+    exact integrable_finsetSum (f := fun i (t : ℝ) =>
+      normX1 (fun ξ : ES => continuousDuhamel (ν : ℝ) u u t ξ i))
+      Finset.univ (fun i _ => hD0 i)
+  have hIt : Integrable (fun t : ℝ => coordinateX1Mass
+      (continuousMildImage (ν : ℝ) hνR a u t)) μ := by
+    apply (hHt.add hDt).mono' hImeas
+    filter_upwards [ae_restrict_mem isClosed_Icc.measurableSet, hDξall] with t ht hDξt
+    have hle := coordinateX1Mass_add_le (heatVec (ν : ℝ) t a)
+      (continuousDuhamel (ν : ℝ) u u t)
+      (fun i => integrable_weighted_heatMode_of_X1
+        (fun ξ : ES => a ξ i) (ha1 i) (ν : ℝ) t hνR ht.1)
+      hDξt
+    rw [Real.norm_of_nonneg
+      (Navier.Analysis.ContinuousLeiLinBoxProduct.coordinateX1Mass_nonneg _)]
+    change coordinateX1Mass (fun ξ => heatVec (ν : ℝ) t a ξ +
+      continuousDuhamel (ν : ℝ) u u t ξ) ≤ _
+    exact hle
+  have htrunc : (fun t : ℝ => coordinateX1Mass (continuousMildImage (ν : ℝ) hνR a u t)) =ᵐ[μ]
+      fun t : ℝ => coordinateX1Mass (mildImageIcc ν hν T a u t) := by
+    filter_upwards [ae_restrict_mem isClosed_Icc.measurableSet] with t ht
+    exact congrArg coordinateX1Mass (funext fun ξ =>
+      (mildImageIcc_of_mem ν hν T a u t ht ξ).symm)
+  exact hIt.congr htrunc
+
+/-! ### Residuals of step 3 (exact remaining propositions, not forced)
+
+The two record fields left open by S3 for *general* box elements are named
+here precisely:
+
+1. `hmX1` at **every** horizon time.  `mildTimeLeaf_hmX1_ae` derives the
+   `volume.restrict (Icc 0 T)`-a.e. reading, and `D₃` maximal regularity
+   (`continuousDuhamel_X1_integrability`, whose second conclusion is
+   `hprod.prod_left_ae`) cannot in general upgrade `a.e.` to `∀ t`: a
+   pointwise `X¹` bound for the Duhamel part at time `t` needs
+   `∫ s in Icc 0 t, τ (s)^{-1/2} ‖ξ‖-weighted` source mass finite for *that*
+   `t`, i.e. membership of the weighted source in `L¹_t` on every initial
+   interval, which the box `L²`-based weights do not supply
+   (`s^{-1/2} ∈ L¹(0,T) \ L²(0,T)`).  Exact residual:
+   `∀ x t ∈ Icc 0 T, ∀ i, Integrable (fun ξ => ‖ξ‖ * ‖mildImage ν hν a (rep x) t ξ i‖)`.
+2. `hmXm1Time` (2d) / `hmX1Time` (2e): strong measurability (into the
+   `Lp`-space valued section functions `xm1Section`/`viscousX1Section`) of
+   the horizon-truncated mild image for general boxes.  These consume
+   `Lp`-valued `t`-measurability of a *quotient-represented* mild image; the
+   repo's only suppliers are the S1 joint-version primitive (which consumes
+   such measurability rather than producing it) and
+   `ContinuousLeiLinTrajectoryMeasurability` (which needs joint *continuity*).
+   Exact residual: the `AEStronglyMeasurable` statements of the two fields
+   for general box elements.
+
+Polarization leaves 3a/3b (step 4) remain premises: packaging
+`continuousMildImage_sub_coordinateXm1Mass_le` /
+`coordinateX1Mass_continuousMildImage_sub_le` at BanachContraction level
+requires the *all-`ξ` pointwise* convolution-section integrabilities
+(`∀ ξ j i s, Integrable (fun η => rep s η j * rep s (ξ - η) i)` etc.) that
+`mildLeafHjointL/R` (a.e. joint measurability) does not supply, and the
+identities are not junk-stable on the null set where they fail. -/
+
 /-! ### Open boundary, as two named sub-records
 
-The pointwise-in-time mild-image moment leaves and the polarization
-decomposition leaves are *not* derived by this module.  Their honest
-obstruction is recorded in the module header discussion of this section:
-the record fields `hmM`, `hmXm1`, `hmX1` quantify over *every* real time and
-require, at `t < 0`, pointwise `X^{±1}` integrability of the backward heat
-flow applied to an arbitrary admissible `a`; the heat multiplier
-`exp(ν ‖ξ‖² t)` explodes there while `ha`/`ha1` supply only polynomial
-control, so no constructor can derive them from the given hypotheses.  The
-remaining record fields are therefore packaged verbatim into two named
-sub-records, and `mildAssemblyLeaves_of_namedLeaves` shows the record is
-equivalent to the trio above plus these sub-records.
--/
+The leaves `hmM`, `hmXm1`, `hmX1` of `MildAssemblyLeaves` quantify over
+every *horizon* time `t ∈ Icc 0 T`; S3 above derives `hmM` (2a), `hmXm1`
+(2b) and `hmX1Int` (2f) for every box element, and the `a.e.`-time reading
+of `hmX1` (2c) via `mildTimeLeaf_hmX1_ae`.  What remains — the every-time
+`hmX1`, and the section leaves `hmXm1Time` (2d) / `hmX1Time` (2e) — is
+packaged verbatim below.  An unrestricted `∀ t` reading of the moment leaves
+is a FALSE premise — at `t < 0` they demand pointwise `X^{±1}` integrability
+of the backward heat flow applied to an arbitrary admissible `a`; the heat
+multiplier `exp(ν ‖ξ‖² t)` explodes there while `ha`/`ha1` supply only
+polynomial control (structural witness: `a ξ i = exp(-‖ξ‖²)` at `ν = 1`,
+`t = -1`).  The restriction is the faithful one: the completed slots read
+time sections only `leiLinTimeMeasure T`-a.e., and the `∀ t` constructor
+obligation of `xm1Section`/`viscousX1Section` is discharged definitionally
+by the horizon truncation `mildImageIcc` and its promotion lemmas in
+`Navier/Analysis/ContinuousLeiLinMildFixedPoint.lean`. -/
 
 /-- The pointwise-in-time mild-image leaves: the six fields of
-`MildAssemblyLeaves` that quantify over every real time (spatial moment
-integrability at every `t`, the two time-section measurabilities, and the
-time integrability of the `X¹` mass).  These are the exact remaining
+`MildAssemblyLeaves` that speak about individual times (spatial moment
+integrability at every horizon time `t ∈ Icc 0 T`, the two time-section
+measurabilities of the horizon-truncated mild image, and the time
+integrability of its `X¹` mass).  These are the exact remaining
 propositions behind the mild fixed point constructor. -/
 structure MildAssemblyTimeLeaves
     (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 ≤ T)
@@ -718,32 +1100,51 @@ structure MildAssemblyTimeLeaves
     (ha : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ i‖))
     (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
     (haR : coordinateXm1Mass a ≤ R) where
-  /-- Leaf 2a: pointwise spatial measurability of the mild image. -/
-  hmM : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t i,
+  /-- Leaf 2a: spatial measurability of the mild image at every horizon time.
+  Quantified over `t ∈ Icc 0 T` only: the backward heat multiplier
+  `exp(ν ‖ξ‖² |t|)` destroys every `X^{±1}` moment at `t < 0` for a general
+  admissible datum, so an unrestricted `∀ t` reading of this leaf is a false
+  premise (structural witness: `a ξ i = exp(-‖ξ‖²)` at `ν = 1`, `t = -1`).
+  The restriction WEAKENS the travelling premise; the horizon is exactly what
+  the completed slots read. -/
+  hmM : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t ∈ Icc (0 : ℝ) T, ∀ i,
       AEStronglyMeasurable (fun ξ : ES =>
         mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i) volume
-  /-- Leaf 2b: pointwise `X⁻¹` integrability of the mild image. -/
-  hmXm1 : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t i,
+  /-- Leaf 2b: `X⁻¹` integrability of the mild image at every horizon time
+  (horizon-restricted for the same reason as leaf 2a). -/
+  hmXm1 : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t ∈ Icc (0 : ℝ) T, ∀ i,
       Integrable (fun ξ : ES => ‖ξ‖⁻¹ *
         ‖mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i‖)
-  /-- Leaf 2c: pointwise `X¹` integrability of the mild image. -/
-  hmX1 : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t i,
+  /-- Leaf 2c: `X¹` integrability of the mild image at every horizon time
+  (horizon-restricted for the same reason as leaf 2a). -/
+  hmX1 : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t ∈ Icc (0 : ℝ) T, ∀ i,
       Integrable (fun ξ : ES => ‖ξ‖ *
         ‖mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i‖)
-  /-- Leaf 2d: strong measurability of the `X⁻¹`-valued time section. -/
+  /-- Leaf 2d: strong measurability of the `X⁻¹`-valued time section of the
+  horizon-truncated mild image. -/
   hmXm1Time : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
       AEStronglyMeasurable
-        (xm1Section (mildImage ν hν a (everywhereRawRepresentative ν T x.1))
-          (hmM x) (hmXm1 x)) (leiLinTimeMeasure T)
-  /-- Leaf 2e: strong measurability of the viscous `X¹`-valued time section. -/
+        (xm1Section (mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1))
+          (mildImageIcc_aestronglyMeasurable ν hν T a
+            (everywhereRawRepresentative ν T x.1) (hmM x))
+          (mildImageIcc_integrableXm1 ν hν T a
+            (everywhereRawRepresentative ν T x.1) (hmXm1 x)))
+        (leiLinTimeMeasure T)
+  /-- Leaf 2e: strong measurability of the viscous `X¹`-valued time section of
+  the horizon-truncated mild image. -/
   hmX1Time : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
       AEStronglyMeasurable
-        (viscousX1Section (mildImage ν hν a (everywhereRawRepresentative ν T x.1))
-          (hmM x) (hmX1 x) ν) (leiLinTimeMeasure T)
-  /-- Leaf 2f: time integrability of the mild image's `X¹` mass. -/
+        (viscousX1Section (mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1))
+          (mildImageIcc_aestronglyMeasurable ν hν T a
+            (everywhereRawRepresentative ν T x.1) (hmM x))
+          (mildImageIcc_integrableX1 ν hν T a
+            (everywhereRawRepresentative ν T x.1) (hmX1 x)) ν)
+        (leiLinTimeMeasure T)
+  /-- Leaf 2f: time integrability of the horizon-truncated mild image's `X¹`
+  mass. -/
   hmX1Int : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
       Integrable (fun t : ℝ => coordinateX1Mass
-        (mildImage ν hν a (everywhereRawRepresentative ν T x.1) t))
+        (mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1) t))
         (leiLinTimeMeasure T)
 
 /-- The polarization decomposition leaves: the two `a.e.`-in-time budget
@@ -865,6 +1266,16 @@ theorem mildAssemblyPolarizationLeaves_of (ν : ℝ≥0) (hν : 0 < ν) (T R : �
 #print axioms mildLeafHjointL
 #check @mildLeafHjointR
 #print axioms mildLeafHjointR
+#check @mildTimeLeaf_hmM
+#print axioms mildTimeLeaf_hmM
+#check @mildTimeLeaf_hmXm1
+#print axioms mildTimeLeaf_hmXm1
+#check @mildTimeLeaf_d3X1
+#print axioms mildTimeLeaf_d3X1
+#check @mildTimeLeaf_hmX1_ae
+#print axioms mildTimeLeaf_hmX1_ae
+#check @mildTimeLeaf_hmX1Int
+#print axioms mildTimeLeaf_hmX1Int
 #check @MildAssemblyTimeLeaves
 #check @MildAssemblyTimeLeaves.mk
 #print axioms MildAssemblyTimeLeaves.mk
@@ -873,4 +1284,8 @@ theorem mildAssemblyPolarizationLeaves_of (ν : ℝ≥0) (hν : 0 < ν) (T R : �
 #print axioms MildAssemblyPolarizationLeaves.mk
 #check @mildAssemblyLeaves_of_namedLeaves
 #print axioms mildAssemblyLeaves_of_namedLeaves
+#check @mildAssemblyTimeLeaves_of
+#print axioms mildAssemblyTimeLeaves_of
+#check @mildAssemblyPolarizationLeaves_of
+#print axioms mildAssemblyPolarizationLeaves_of
 end Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
