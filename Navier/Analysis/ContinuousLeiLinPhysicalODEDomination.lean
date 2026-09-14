@@ -45,6 +45,10 @@ which the derivative and the envelope hold simultaneously for almost every
   the `[0, s] = [0, τ] ∪ [τ, s]` split; this DISCHARGES the `hd` premise of
   `exists_integrable_envelope_mildImage_deriv` outright (see §8 wrapper
   `exists_integrable_envelope_mildImage_deriv_of_windowMoments`).
+* `hasDerivAt_physicalVelocity_continuousMildImage_of_windowMoments` (§9):
+  the assembled Duhamel identity — §5's transport fed by §8's hd-free
+  envelope under the joint window moments, with the source envelope `hsrc`
+  kept as an explicit travelling premise stated at the signature.
 
 **Visible residual.**  The obligation-1 Duhamel envelope is now closed from
 concrete joint spacetime source moments; the single remaining explicit
@@ -60,10 +64,13 @@ uniformly bounded L¹ norms while `sup_{s} f_s = ∞` pointwise — the heat lag
 single time-slice source term.  The missing input is therefore genuine
 pointwise-in-`ξ` time regularity (e.g. an `L¹`-majorized essential supremum
 hypothesis), not another moment estimate.
-`exists_integrable_envelope_mildImage_deriv` below instantiates the transport
-with the remaining source piece as an explicit premise, and
-`hasDerivAt_physicalVelocity_continuousMildImage` is the pointwise ODE in
-physical coordinates modulo exactly that envelope.
+`exists_integrable_envelope_mildImage_deriv` instantiates the transport with
+the remaining source piece as an explicit premise; §8 discharges the Duhamel
+envelope premise from the two concrete joint moments, and §9
+`hasDerivAt_physicalVelocity_continuousMildImage_of_windowMoments` is the
+pointwise ODE in physical coordinates under exactly `hsrc` plus the
+frequency-side pointwise ODE and mild-slice measurability premises, each
+stated at its signature.
 -/
 
 set_option autoImplicit false
@@ -449,12 +456,17 @@ image (obligation 1, physical form).**  Given the frequency-side pointwise ODE
 on a common neighbourhood set (`hdv_diff`, produced coordinatewise by
 `hasDerivAt_continuousMildImage_coord` once its weighted-source premises are
 discharged) and the obligation-1 envelope (`henv`, assembled by
-`exists_integrable_envelope_mildImage_deriv` from the heat and strict-past
-pieces closed here and the residual recent-tail pieces), the physical velocity
+`exists_integrable_envelope_mildImage_deriv` from the heat, strict-past and
+recent-tail pieces — all three closed here from concrete moments), the physical velocity
 is pointwise differentiable with the Navier–Stokes right-hand side as its
 derivative.  This is exactly the conclusion shape recorded by the previous
-swarm lane for obligation 1; the only premise not produced by this module is
-`henv`, whose missing half is named in the module header. -/
+swarm lane for obligation 1.  The envelope premise `henv` is discharged from
+the joint window moments by §8, and §9
+(`hasDerivAt_physicalVelocity_continuousMildImage_of_windowMoments`) applies
+this theorem with it; the premises that stay explicit there are `hsrc` (named
+in the module header), the mild-slice measurability/integrability inputs
+`hw_meas`/`hw_int`/`hdv_meas`, and the frequency-side pointwise ODE
+`hdv_diff`. -/
 theorem hasDerivAt_physicalVelocity_continuousMildImage
     (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace)
     (i : Fin 3) (x : Navier.Space) (t₀ : ℝ) (_ht₀ : 0 < t₀) (u : Set ℝ)
@@ -752,3 +764,68 @@ theorem exists_integrable_envelope_mildImage_deriv_of_windowMoments
     (exists_integrable_envelope_duhamel_deriv v v i ν τ t₀ t₁ hν hτ hτt ht₀t₁
       hmeas hsrc₀ hsrc₁)
     hsrc
+
+/-! ## 9. The assembled Duhamel identity under the joint window moments -/
+
+/-- **Obligation 1 assembled: the pointwise physical ODE of the mild image
+under the joint window moments.**  The two concrete joint spacetime source
+moments over `[0, τ]` and `[τ, t₁]`, the initial-data moment `ha1`, and the
+source envelope `hsrc` supply the obligation-1 envelope via §8, and §5's
+transport through `𝓕⁻` then gives the physical velocity of the mild image
+differentiable at `t₀ > 0` with the Navier–Stokes right-hand side
+`-ν‖ξ‖²•U + src` (inverted) as its derivative.  The envelope premise of §5 is
+no longer an assumption: it is derived.  What stays explicit at the signature
+is the `hsrc` travelling premise named in the module header — a genuine
+pointwise-in-`ξ` time-regularity input, not obtainable from moment estimates
+by the measurement recorded there — together with the mild-slice
+measurability/integrability inputs `hw_meas`/`hw_int`/`hdv_meas` and the
+frequency-side pointwise ODE `hdv_diff`, which §5 consumes on a single shared
+neighbourhood: the two neighbourhoods produced independently (§5's `u` for
+the derivative, §8's for the envelope) are intersected, which is legitimate
+because both premises are stable under shrinking (`∀ s ∈ u` restricts
+pointwise, and the measurability premise is `𝓝`-eventual).  `hdv_diff` is
+supplied coordinatewise by
+`ContinuousLeiLinFrequencyODE.hasDerivAt_continuousMildImage_coord` once that
+theorem's three weighted-source regularity premises are discharged for almost
+every `ξ` simultaneously. -/
+theorem hasDerivAt_physicalVelocity_continuousMildImage_of_windowMoments
+    (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace)
+    (i : Fin 3) (x : Navier.Space) (t₀ τ t₁ : ℝ) (ht₀ : 0 < t₀)
+    (hτ : 0 ≤ τ) (hτt : τ < t₀) (ht₀t₁ : t₀ < t₁)
+    (ha1 : Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (hmeas : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource v v p.2 p.1 i)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) τ))))
+    (hsrc₀ : Integrable (fun p : ES × ℝ =>
+      ‖p.1‖⁻¹ * ‖continuousNavierSource v v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) τ))))
+    (hsrc₁ : Integrable (fun p : ES × ℝ =>
+      ‖p.1‖ ^ 2 * ‖continuousNavierSource v v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc τ t₁))))
+    (hsrc : ∃ u ∈ 𝓝 t₀, ∃ g : ES → ℝ, Integrable g ∧
+        ∀ᵐ ξ ∂volume, ∀ s ∈ u, ‖continuousNavierSource v v s ξ i‖ ≤ g ξ)
+    (u : Set ℝ) (hu : u ∈ 𝓝 t₀)
+    (hw_meas : ∀ᶠ s in 𝓝 t₀,
+      AEStronglyMeasurable (fun ξ : ES => continuousMildImage ν hν a v s ξ i))
+    (hw_int : Integrable (fun ξ : ES => continuousMildImage ν hν a v t₀ ξ i))
+    (hdv_meas : AEStronglyMeasurable (fun ξ : ES =>
+        -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousMildImage ν hν a v t₀ ξ i
+          + continuousNavierSource v v t₀ ξ i))
+    (hdv_diff : ∀ᵐ ξ ∂volume, ∀ s ∈ u,
+        HasDerivAt (fun r : ℝ => continuousMildImage ν hν a v r ξ i)
+          (-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousMildImage ν hν a v s ξ i
+            + continuousNavierSource v v s ξ i) s) :
+    HasDerivAt (fun s : ℝ =>
+        physicalVelocity (continuousMildImage ν hν a v) s x i)
+      (realPhysicalCoord (fun ξ : ES =>
+          -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousMildImage ν hν a v t₀ ξ
+            + continuousNavierSource v v t₀ ξ) i (euclidPoint x)) t₀ := by
+  obtain ⟨U, hU, g, hg, hb⟩ :=
+    exists_integrable_envelope_mildImage_deriv_of_windowMoments ν hν a v i t₀
+      τ t₁ ht₀ hτ hτt ht₀t₁ ha1 hmeas hsrc₀ hsrc₁ hsrc
+  refine hasDerivAt_physicalVelocity_continuousMildImage ν hν a v i x t₀ ht₀
+    (u ∩ U) (inter_mem hu hU) hw_meas hw_int hdv_meas ?_ ⟨g, hg, ?_⟩
+  · filter_upwards [hdv_diff] with ξ hξ s hs
+    exact hξ s hs.1
+  · filter_upwards [hb] with ξ hξ s hs
+    exact hξ s hs.2
