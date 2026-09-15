@@ -45,6 +45,7 @@ machinery, not the pointwise equation.
 |---|---|---|
 | `ha1` | `Integrable (λ ξ => ‖ξ‖ * ‖a ξ i‖)` | **this file**: `integrable_norm_mul_fourierDatum_coord` from a Schwartz datum (statement-A side) |
 | `hmeas` | joint a.e.-measurability on `[0,τ]` | `hmeas_of_sliceMeasurability` here, via `ContinuousLeiLinRecentTailJoint.continuousNavierSource_coord_aestronglyMeasurable` |
+| `hmeas₁` (bundle field, not a §9 premise) | joint a.e.-measurability on `[τ,t₁]` | `hmeas₁_of_sliceMeasurability` here — the recent-window instance of the same wire; consumed by the obligation-4 fibre package (`ContinuousLeiLinOb4FrequencyODESupply`) |
 | `hsrc₀` | joint `X⁻¹` moment on `[0,τ]` | `ContinuousLeiLinBoxB1Joint.integrable_weightedContinuousNavierSource_coord_of_actualBox` (box carrier; needs the joint-measurability leaf of `MildAssemblyLeaves`) |
 | `hsrc₁` | joint degree-2 moment on `[τ,t₁]` | `hsrc₁_of_sliceMoments` here, via `ContinuousLeiLinRecentTailJoint.integrable_joint_pow_norm_continuousNavierSource_coord` (demands degree-3 slice moments + `sourceMomentMajorant 2` integrability — beyond the box's `X⁰/X⁻¹/X¹` slots) |
 | `hsrc` | pointwise-in-`s` `L¹(ξ)` envelope | **no producer**: measured impossibility from moment estimates (module header of `ContinuousLeiLinPhysicalODEDomination`, `∃`-premise of §9; the `|ξ−s|^(−1/2)` slice family has uniformly bounded `L¹` norms but pointwise-in-`ξ` infinite sup).  Not re-attacked here; kept as an explicit travelling premise whose needed content is genuine pointwise-in-`ξ` time regularity (e.g. an `L¹`-majorized essential-supremum hypothesis). |
@@ -61,8 +62,9 @@ machinery, not the pointwise equation.
    the joint window-moment level: the three joint-moment premises of §9
    collected as one named carrier whose producers are the estate surfaces
    tabled above (box / recent-tail machinery), *not* `SatisfiesNavierStokes`.
-3. `hmeas_of_sliceMeasurability` / `hsrc₁_of_sliceMoments` — wires turning
-   the existing recent-tail producers into bundle fields.
+3. `hmeas_of_sliceMeasurability` / `hmeas₁_of_sliceMeasurability` /
+   `hsrc₁_of_sliceMoments` — wires turning the existing recent-tail producers
+   into bundle fields (`hmeas₁` serves the obligation-4 fibre package).
 4. `hasDerivAt_physicalVelocity_continuousMildImage_fourierDatum` — §9
    consumed at `a := fourierDatum u₀` with `ha1` discharged: the obligation-1
    physical pointwise ODE under exactly one named bundle plus the explicitly
@@ -111,9 +113,11 @@ theorem integrable_norm_mul_fourierDatum_coord (u₀ : Navier.SchwartzVelocity)
 
 /-- **The joint window-moment supply bundle.**  This packages exactly the
 three spacetime joint-moment premises of §9
-(`hasDerivAt_physicalVelocity_continuousMildImage_of_windowMoments`):
+(`hasDerivAt_physicalVelocity_continuousMildImage_of_windowMoments`) —
 `hmeas`/`hsrc₀` over the strict-past window `[0, τ]` and `hsrc₁` over the
-recent window `[τ, t₁]`.  Its producers are the estate's linked-box and
+recent window `[τ, t₁]` — together with the recent-window complex
+joint-measurability leaf `hmeas₁` that the obligation-4 fibre package needs
+(see its field docstring).  Its producers are the estate's linked-box and
 recent-tail surfaces (module header table) — the bundle replaces the
 wave-1 hypothesis that `SatisfiesNavierStokes` supplies them, which the
 import-graph check in the module header refutes.  The remaining §9 premises
@@ -132,6 +136,23 @@ structure PhysicalODEWindowSupply (v : ℝ → ES → ComplexSpace) (i : Fin 3)
   hsrc₁ : Integrable (fun p : ES × ℝ =>
       ‖p.1‖ ^ 2 * ‖continuousNavierSource v v p.2 p.1 i‖)
       (volume.prod (volume.restrict (Icc τ t₁)))
+  /-- Joint a.e.-strong measurability of the *complex* source coordinate over
+  the recent window `[τ, t₁]`.  Bundle producers already prove it: it is the
+  `hmeas` leaf of the same recent-tail slice-moment route that yields `hsrc₁`
+  (`hsrc₁_of_sliceMoments` calls
+  `ContinuousLeiLinRecentTailJoint.integrable_joint_pow_norm_continuousNavierSource_coord`,
+  whose hypotheses give
+  `ContinuousLeiLinRecentTailJoint.continuousNavierSource_coord_aestronglyMeasurable`
+  over `[τ, t₁]` verbatim; see `hmeas₁_of_sliceMeasurability`).  It is stored
+  as a field — not derived — because `hsrc₁` alone is the real-valued norm
+  moment and carries no complex-measurability information.
+  Obligation-4 consumer: `ContinuousLeiLinOb4FrequencyODESupply` Fubini-slices
+  it to per-`ξ` a.e. strong measurability of the fibre source, which is what
+  turns fibre `L¹`-norm integrability into `IntervalIntegrable` of the
+  complex-valued Duhamel integrand. -/
+  hmeas₁ : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource v v p.2 p.1 i)
+      (volume.prod (volume.restrict (Icc τ t₁)))
 
 /-- Bundle field `hmeas`: joint Euclidean measurability of the source supplies
 every coordinate's joint measurability (recent-tail wire). -/
@@ -143,6 +164,19 @@ theorem hmeas_of_sliceMeasurability (v : ℝ → ES → ComplexSpace) (τ : ℝ)
       continuousNavierSource v v p.2 p.1 i)
       (volume.prod (volume.restrict (Icc (0 : ℝ) τ))) :=
   continuousNavierSource_coord_aestronglyMeasurable v v 0 τ hjoint i
+
+/-- Bundle field `hmeas₁`: joint Euclidean measurability over the RECENT
+window `[τ, t₁]` supplies every coordinate's joint complex measurability over
+that window (the recent-window instance of the same wire as
+`hmeas_of_sliceMeasurability`). -/
+theorem hmeas₁_of_sliceMeasurability (v : ℝ → ES → ComplexSpace) (τ t₁ : ℝ) (i : Fin 3)
+    (hjoint : AEStronglyMeasurable (fun p : ES × ℝ =>
+        complexEuclideanPoint (continuousNavierSource v v p.2 p.1))
+        (volume.prod (volume.restrict (Icc τ t₁)))) :
+    AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource v v p.2 p.1 i)
+      (volume.prod (volume.restrict (Icc τ t₁))) :=
+  continuousNavierSource_coord_aestronglyMeasurable v v τ t₁ hjoint i
 
 /-- Bundle field `hsrc₁`: the degree-2 joint window moment follows from the
 per-slice coordinate `L¹`/degree-3 moments, the joint Euclidean measurability,
