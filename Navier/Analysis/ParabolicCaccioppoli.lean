@@ -7,10 +7,14 @@ import Mathlib.Analysis.SpecificLimits.Basic
 De Giorgi–Moser iteration engine
 
 This module builds the first two self-contained rungs of the parabolic
-Caccioppoli / Moser–De Giorgi layer consumed (as a named residual) by
-`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded` and
-`ConditionalRegularity.constantinFefferman_interior_outerRegion_bounded`.
-Both rungs are kernel-checked with no new hypotheses:
+Caccioppoli / Moser–De Giorgi layer formerly consumed (as named residuals) by
+the Prodi–Serrin and Constantin–Fefferman bridge claims
+`prodiSerrin_interior_outerRegion_bounded` and
+`constantinFefferman_interior_outerRegion_bounded` — both declarations were
+removed in the soundness cleanup (`docs/OPEN_FRONTIER_MAP.md`,
+cleanup log); the rungs below remain live, kernel-checked infrastructure for
+any reconstruction of those bridges.  Both rungs are kernel-checked with no
+new hypotheses:
 
 * `local_energy_balance` — the **pointwise local energy identity** of a
   `PartialClassicalSolution`: testing the momentum equation with `u` gives
@@ -55,8 +59,10 @@ The exact missing lemmas, in dependency order, are:
 2. `parabolic_sobolev_gain` — the parabolic Sobolev embedding converting
    `sup_t ∫ |u|² φ² + ∬ |∇u|² φ²` into `∬ |u|^{2(1+2/3)} φ^{2(1+2/3)}`
    (the `2(n+2)/n` energy-space embedding).  Blocked on a Sobolev
-   inequality on `ℝ³`; the in-repo `SobolevEmbedding` assembly still
-   carries its disclosed Plancherel `sorryAx`.
+   inequality on `ℝ³`; the in-repo `SobolevEmbedding` assembly is no
+   longer a soundness blocker — it is kernel-clean,
+   `#print axioms` → `[propext, Classical.choice, Quot.sound]`
+   (NS5-CENSUS 2026-09-16 at `3ed567cd`).
 3. `serrin_local_bound` — per-cylinder `L^∞` control of `u` on `Q_{r/2}`
    from the critical mixed norm on `Q_r`, by iterating
    `cutoff_local_energy_inequality` through `parabolic_sobolev_gain` with

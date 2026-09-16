@@ -68,11 +68,14 @@ Galerkin/compactness tower has a home with no floating restatement.
   full `IsLerayHopfWeakSolution` with pointwise `initial_attained`.  Anti-vacuity
   inhabitant: `zeroLerayLimitData`.
 * `leray_of_galerkinApproximation` is a **composition**, with no `sorry` of
-  its own.  `exists_galerkinModeData`, `galerkin_approximation_exists`, and
-  `leray_weak_existence` (same namespace, same names, same types) live
-  downstream in `Navier.Analysis.LerayWeakExistence` since 2026-08-18, wired
-  to `GalerkinBasis.exists_galerkinModeData` instead of a duplicate upstream
-  `sorry` — see the residual ledger.
+  its own.  The former downstream wrappers `exists_galerkinModeData`,
+  `galerkin_approximation_exists` and `leray_weak_existence` (relocated 2026-08-18
+  to `Navier.Analysis.LerayWeakExistence`) were later removed in the soundness
+  cleanup — that file no longer exists — because they depended on the admitted
+  mode-data construction (`docs/OPEN_FRONTIER_MAP.md`).  The live successor
+  shapes are `galerkinModeData_of_basis_modalFlow` (`GalerkinBasis.lean`) and
+  `galerkinCoefficientFlow_timeEquicontinuous` (`GalerkinModeData.lean`).
+  The tree carries zero `sorry` (NS5-CENSUS 2026-09-16 at `3ed567cd`).
 * `exists_subseq_windowCauchy` — Riesz–Fréchet–Kolmogorov total boundedness on
   the single bounded window `(0,n] × B̄(0,n)` [Brezis 2011 Thm 4.26 + Cor 4.27;
   Simon 1987 Thm 1] — now CERTIFIED: the dyadic-average projection route,
@@ -762,8 +765,10 @@ matching Temam III.3 and Constantin–Foias II: (1) build finite-mode Galerkin
 approximants with uniform energy/dissipation bounds; (2) extract a strongly
 `L²_loc`-convergent subsequence (Aubin–Lions–Simon compactness — the one
 Mathlib-absent analytic core); (3) pass to the limit in the weak form.  The
-top theorem `leray_weak_existence` below is now a real composition of these
-named leaves, not a bare `sorry`.
+composition `leray_of_galerkinApproximation` below consumes these named
+leaves with no `sorry` of its own.  (The former headline wrapper
+`leray_weak_existence` was removed in the soundness cleanup —
+`docs/OPEN_FRONTIER_MAP.md`.)
 -/
 
 /-- The weak-form residual of a velocity field `u` against a test `φ`:
@@ -7065,12 +7070,18 @@ theorem leray_of_galerkinApproximation (ν : ℝ) (hν : 0 < ν)
 /-!
 ## Existence skeleton
 
-**RELOCATED 2026-08-18 (lane NK2).**  `leray_weak_existence` now lives in
-`Navier.Analysis.LerayWeakExistence` (same namespace, same name, same type),
-downstream of `GalerkinBasis`: it composes the relocated
-`galerkin_approximation_exists` with `leray_of_galerkinApproximation` above.
-Its remaining `sorryAx` reach is exactly the named residuals
-`hspace`/`htime`/`hweak` in `GalerkinBasis`; the limit passage here is certified.
+**RELOCATED 2026-08-18 (lane NK2); REMOVED in the soundness cleanup.**
+`leray_weak_existence` was moved to `Navier.Analysis.LerayWeakExistence`
+(same namespace, same name, same type) downstream of `GalerkinBasis`,
+composing `galerkin_approximation_exists` with
+`leray_of_galerkinApproximation` above; that file was later deleted because
+the wrappers depended on the admitted mode-data construction
+(`docs/OPEN_FRONTIER_MAP.md`).  The name has no live declaration at base.
+The `sorryAx` reach this block formerly disclosed is closed: the tree
+compiles with no sorry and no `sorryAx` (NS5-CENSUS 2026-09-16 at
+`3ed567cd`: locked `lake build` exit 0 with no sorry warnings; runtime
+`collectAxioms` sweep `scripts/AuditAllAxioms.lean` exit 0, zero `sorryAx`
+occurrences).  The limit passage here remains certified.
 -/
 
 end Navier.Analysis.LerayWeak

@@ -288,7 +288,10 @@ end LogBKMControl
 /-!
 ## Skeletons: the analytic inputs over Schwartz fields
 
-Reference statements with honest `sorry` bodies.  Majorants are
+Reference statements — originally landed with honest `sorry` bodies, now
+closed: at `3ed567cd` this file compiles with no sorry warnings (NS5-CENSUS
+2026-09-16, single-file receipt `/tmp/ns5-census/probe_BKMLogBootstrap.log`,
+exit 0).  Majorants remain
 hypothesis-carried (each classical statement is monotone in the corresponding
 norm, so these forms follow from the textbook ones and avoid `⨆`-junk
 vacuity).  Norm convention: `‖·‖` on `Space → Space` values is Mathlib's Pi

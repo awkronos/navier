@@ -680,14 +680,21 @@ Beale–Kato–Majda log-bootstrap engine, the enstrophy vortex-stretching layer
 the honest Galerkin multi-frequency mild layer, and the Leray–Hopf weak
 structure.  Every declaration audited below is an UNCONDITIONAL theorem of that
 research program — each `#print axioms` receipt is a strict subset of
-`{propext, Classical.choice, Quot.sound}` (verified 2026-07-16).  The
-conditional tower theorems that consume the remaining analytic skeletons
-(`logBKMControl_of_schwartzSliced`, `halfSpaceSmooth_iff_extension`) are
-deliberately EXCLUDED — they carry a disclosed `sorryAx` until the skeletons
-close and are not unconditional.  The enstrophy chain is no longer among
-them: `EnstrophyLimit.enstrophyDifferentialInequality` and
-`EnstrophyLimit.enstrophy_apriori_bound` are UNCONDITIONAL under the two
-named Pattern-A domination hypotheses (audited below).
+`{propext, Classical.choice, Quot.sound}` (verified 2026-07-16).  The two
+skeleton-consumers this header formerly EXCLUDED as `sorryAx`-bearing no
+longer earn that exclusion (NS5-CENSUS 2026-09-16 at `3ed567cd`):
+`halfSpaceSmooth_iff_extension` (namespace `HalfSpaceSmoothnessBridge`,
+`Analysis/SeeleySynthesis.lean`) is strict
+`[propext, Classical.choice, Quot.sound]` (probe
+`/tmp/ns5-census/probe_seeley.log`; re-checked at this lane's base,
+`/tmp/ns6-axiom-probe.log`), and `logBKMControl_of_schwartzSliced` has no
+live declaration at all — only comment references survive
+(`SingularIntegralPrelims`, `Enstrophy`).  The whole-tree runtime
+`collectAxioms` sweep (`scripts/AuditAllAxioms.lean`, exit 0) finds zero
+`sorryAx` in the transitive closure of every imported Navier declaration.
+The enstrophy chain is likewise unconditional under the two named Pattern-A
+domination hypotheses: `EnstrophyLimit.enstrophyDifferentialInequality` and
+`EnstrophyLimit.enstrophy_apriori_bound` (audited below).
 -/
 
 #print axioms Navier.Analysis.BealeKatoMajda.gronwall_loglinear_apriori

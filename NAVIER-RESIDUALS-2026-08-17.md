@@ -5,6 +5,18 @@ refer to the named 2026-08 commits. They are not current verification evidence
 or instructions to preserve an obligation. See `docs/FORMALIZATION.md` for
 the current verification method and `docs/OPEN_FRONTIER_MAP.md` for navigation.
 
+**UPDATED 2026-09-16 — NS5-CENSUS: the tree compiles with ZERO sorries at `3ed567cd`**
+
+Full-tree compiler evidence (receipts in `/tmp/handoff/ns5-2026-09-16/CENSUS.md`):
+locked `lake build` exit 0 — 9740 jobs, zero `declaration uses sorry` warnings
+(`/tmp/ns5-census/build.log`); build-log raw-axiom pipeline
+`axiom-log-audit.py --strict build.log` exit 0 — **1689 receipts, 0 violations**;
+runtime `collectAxioms` sweep `lake env lean scripts/AuditAllAxioms.lean` exit 0 —
+zero `sorryAx` in the transitive closure of every imported Navier declaration.
+All 10 sorry sites tabulated below are CLOSED-verified or REMOVED (see the
+"Status at `3ed567cd`" column). This section supersedes the counts in the rest
+of this ledger; the dated wave entries below are retained as history.
+
 **UPDATED 2026-08-18 — Wave N5 count reconciliation (compiler-verified at `2c69626`)**
 
 This supersedes the 2026-08-17 Wave Ω580-N2 audit that previously occupied this
@@ -22,15 +34,27 @@ compiler-verified picture:
 | Source `^ *sorry$` tokens | **12** | 10 sorry-carrying declarations; `GalerkinBasis.exists_galerkinModeData` carries 3 named-residual tokens (`hspace`/`htime`/`hweak`) that roll up into a single compiler declaration warning |
 | 2026-08-18 proof-report row | 9 | snapshot at git_head `7e23b4a`, six commits behind HEAD — predates `42acbbe`, which added the GalerkinBasis declaration (+1 compiler warning, +3 source tokens). Temporal snapshot skew, not phantom source annotations |
 
+SUPERSEDED 2026-09-16: at `3ed567cd` both compiler counts are **0** —
+locked full-tree `lake build` exit 0 with zero `declaration uses sorry`
+warnings, `#print axioms` pipeline 1689/1689 strict receipts
+(`axiom-log-audit.py --strict /tmp/ns5-census/build.log`, exit 0), runtime
+`collectAxioms` sweep zero `sorryAx`. The rows above remain the `2c69626`
+snapshot history.
+
 ### Compiler receipts at `2c69626` (`lake env lean <file>`, all exit 0)
 
-| File | Warnings | Declaration sites |
-|---|---|---|
-| `Navier/Analysis/BKMLogBootstrap.lean` | 3 | :364, :1491, :1563 |
-| `Navier/Analysis/LerayWeak.lean` | 2 | :1492, :5522 |
-| `Navier/Analysis/ConditionalRegularity.lean` | 4 | :721, :791, :866, :951 |
-| `Navier/Analysis/GalerkinBasis.lean` | 1 | :3549 (`exists_galerkinModeData`; tokens at :3642/:3645/:3667) |
-| **Total** | **10** | |
+SUPERSEDED 2026-09-16: the Warnings column is the `2c69626` snapshot; every
+file carries **0** sorry warnings at `3ed567cd` (NS5-CENSUS full-tree
+`lake build` exit 0 + per-file probes `/tmp/ns5-census/probe_*.log`, exit 0).
+Status column names the current truth for each site.
+
+| File | Warnings | Declaration sites | Status at `3ed567cd` (2026-09-16 census) |
+|---|---|---|---|
+| `Navier/Analysis/BKMLogBootstrap.lean` | 3 | :364, :1491, :1563 | **0 warnings** — `exists_biotSavartLogTextbook` CLOSED-verified (now :615, sorry-free, 1689-receipt pipeline strict); `exists_sliceLocallyUniformDecayBound` and `exists_locallyUniformSliceDecay` REMOVED (no live declaration; docstring mention at :795 only) |
+| `Navier/Analysis/LerayWeak.lean` | 2 | :1492, :5522 | **0 warnings** — `exists_galerkinModeData` REMOVED (relocated, then dropped in the soundness cleanup; live successors `galerkinModeData_of_basis_modalFlow`, `galerkinCoefficientFlow_timeEquicontinuous`); `exists_lerayLimitData` CLOSED-verified (now :7022, sorry-free) |
+| `Navier/Analysis/ConditionalRegularity.lean` | 4 | :721, :791, :866, :951 | **0 warnings** — all four Prodi–Serrin / Constantin–Fefferman bridge declarations REMOVED (`docs/OPEN_FRONTIER_MAP.md`, soundness-cleanup log) |
+| `Navier/Analysis/GalerkinBasis.lean` | 1 | :3549 (`exists_galerkinModeData`; tokens at :3642/:3645/:3667) | **0 warnings** — `exists_galerkinModeData` REMOVED; file compiles clean at base |
+| **Total** | **10** | | **0** at `3ed567cd` |
 
 Line-number convention: the compiler reports the **declaration** line; the site
 inventory below cites the **sorry-token** line (e.g. BKM declaration :364 vs
@@ -480,6 +504,14 @@ this file (721/791/866/951), 9 repo-wide.
 | `SORRY-in-progress` | 3 | GalerkinBasis (hspace), GalerkinBasis (hweak), LerayWeak (exists_galerkinModeData) |
 | `CONDITIONAL` | 1 | LerayWeak (exists_lerayLimitData) |
 | `CONJECTURE` | 8 | GalerkinBasis (htime), BKMLogBootstrap (3), ConditionalRegularity (4) |
+
+SUPERSEDED 2026-09-16 (NS5-CENSUS at `3ed567cd`): no `SORRY-in-progress` or
+`CONDITIONAL`-via-`sorryAx` site remains — the tree compiles with **0**
+sorries (1689/1689 strict `#print axioms` receipts). Every declaration named
+in this tier table is CLOSED-verified (`exists_biotSavartLogTextbook`,
+`exists_lerayLimitData`) or REMOVED (the two slice-declay names, the four
+Prodi–Serrin / Constantin–Fefferman bridges, both `exists_galerkinModeData`
+copies and their downstream wrappers).
 
 ## Axiom spot-check
 

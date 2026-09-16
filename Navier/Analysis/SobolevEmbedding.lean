@@ -23,14 +23,18 @@ pointwise, which is the `control_dominates_velocity` field of `LogBKMControl`.
   a Fourier-side majorant `Q` with `‖u‖_∞ ≤ C₁·√(Q u)` and `Q u ≤ C₂·‖u‖²_{H³}`
   yields `‖u‖_∞ ≤ C·√Ms`, purely by monotonicity of `√`.  Unconditional in `Q`.
 
-## Honest residual
+## The named core (closed)
 
-* `exists_sobolev_intermediate` — now DERIVED from the sibling
+* `exists_sobolev_intermediate` — derived from the sibling
   `FourierMajorant.exists_fourierMajorant_intermediate`; the whole embedding
   cluster routes through the single named core
   `FourierMajorant.exists_fourierSpectralData` (Fourier inversion +
-  Plancherel), whose disclosed `sorryAx` the assembly carries
-  (ProvedModulo that one named leaf)
+  Plancherel), which is kernel-clean:
+  `#print axioms exists_fourierSpectralData` =
+  `[propext, Classical.choice, Quot.sound]` (NS5-CENSUS 2026-09-16 at
+  `3ed567cd`, probe `/tmp/ns5-census/probe_fourier.log`).  The disclosed
+  `sorryAx` this leaf formerly carried is closed; no ProvedModulo
+  conditionality travels with the statements below.
 
 Axiom set: `⊆ {propext, Classical.choice, Quot.sound}` for certified decls.
 -/
@@ -78,7 +82,7 @@ theorem sobolevH3NormSq_dominates_H2 (u : SchwartzVelocity) :
   sobolevH3NormSq_dominates_lower (n := 2) (by norm_num) u
 
 /-!
-## The Sobolev embedding theorem (honest residual)
+## The Sobolev embedding theorem (certified assembly over a closed named core)
 -/
 
 /-- **The intermediate-majorant assembly (certified, no sorry).**  If a
@@ -115,11 +119,15 @@ positive constants `C₁, C₂` with the sup bound `‖u x‖ ≤ C₁·√(Q u)
 physical bound `Q u ≤ C₂·sobolevH3NormSq u`.  Realized by
 `FourierMajorant.exists_fourierMajorant_intermediate`: the Cauchy–Schwarz
 half (`supBound_of_spectralData` against the integrable weight
-`sobWeight⁻¹`) is kernel-certified there, and the sole remaining analytic
-content of the whole embedding cluster is the single named core
+`sobWeight⁻¹`) is kernel-certified there, and the analytic core of the whole
+embedding cluster is the single named declaration
 `FourierMajorant.exists_fourierSpectralData` (Fourier inversion +
-Plancherel; Agmon; Stein III.2; Majda–Bertozzi Lemma 3.2), whose disclosed
-`sorryAx` this derivation carries. -/
+Plancherel; Agmon; Stein III.2; Majda–Bertozzi Lemma 3.2), which is
+kernel-clean — `#print axioms` →
+`[propext, Classical.choice, Quot.sound]` (NS5-CENSUS 2026-09-16 at
+`3ed567cd`, probe `/tmp/ns5-census/probe_fourier.log`; re-checked at this
+lane's base, `/tmp/ns6-axiom-probe.log`).  This derivation carries no
+`sorryAx`. -/
 theorem exists_sobolev_intermediate :
     ∃ (Q : SchwartzVelocity → ℝ) (C₁ C₂ : ℝ),
       0 < C₁ ∧ 0 < C₂ ∧
@@ -132,9 +140,11 @@ a Schwartz velocity field is dominated by the square root of its `H³` Sobolev
 norm: `‖u‖_∞ ≤ C·√(sobolevH3NormSq u)`.
 
 Reduced to its analytic core: the logical assembly is the certified
-`sobolev_domination_of_intermediate`; the sole remaining analytic content is the
-named residual `exists_sobolev_intermediate` (Fourier inversion + Cauchy–Schwarz
-against the integrable weight + Plancherel). -/
+`sobolev_domination_of_intermediate`; the analytic core is the named leaf
+`exists_sobolev_intermediate` (Fourier inversion + Cauchy–Schwarz
+against the integrable weight + Plancherel), itself kernel-clean —
+`#print axioms` → `[propext, Classical.choice, Quot.sound]`
+(`/tmp/ns6-axiom-probe.log`, 2026-09-16). -/
 theorem sobolevEmbeddingDomination_H3 :
     ∃ C : ℝ, 0 < C ∧
       ∀ (u : SchwartzVelocity) (Ms : ℝ), sobolevH3NormSq u ≤ Ms →
