@@ -140,18 +140,48 @@ reconstructed leading field in physical spacetime and is the force that this
 finite stage would require. It contains precisely the singular behavior that
 the later construction layers are designed to cancel and regularize.
 
-At `tau = 0.05` on a `7^3` grid, the focused Rust test currently reports:
+At `tau = 0.05` on a `7^3` grid, the focused Rust test reports the point
+values below. Each point value is additionally paired with an outward-rounded
+float64 interval enclosure produced by `scripts/computed_axis_intervals.py`,
+a fixed-order transliteration of `solver/src/construction.rs` in which every
+binary operation and transcendental call on the evaluated expression is
+widened by one representable step per side. The enclosure bounds that declared
+fixed-order expression under any assignment whose per-operation results lie
+within 1 ulp of correctly-rounded IEEE64 (a class that includes compiler FMA
+contraction and libm variation at that level); branch decisions —
+interpolation-cell selection, clamps, and comparison tests — follow the point
+run, and crossings are counted and reported by the script (2,744
+interpolation-cell boundary events at this grid, all through the continuous
+cubic at cell edges; 0 tie events). Containment of the cargo-reported floats
+is an observed per-entry ulp check the script prints, not a consequence of the
+enclosure.
 
 ```text
-angular profile RMS       1.9921418144623968e-6
-axial profile RMS         1.7733879359490666e-8
-pressure profile RMS      3.3903453327861445e-9
-divergence RMS            8.500463463624519e-3
-momentum residual RMS     1.4123532691928133e5
-maximum sampled speed     1.004429420038561e1
-displayed-domain energy   2.4958636773964515e-1
-minimum normalized swirl  2.6162692837448365e-1
+angular profile RMS      1.99214181446239678e-06  [1.9894148062863154e-06, 1.994870965810926e-06]
+axial profile RMS        1.77338793594906656e-08  [-5e-324, 5.554405821723014e-08]
+pressure profile RMS     3.39034533278614455e-09  [3.3687668113062652e-09, 3.412095801818341e-09]
+divergence RMS           8.50046346362855892e-03  [0.008462212794297232, 0.008538779043192793]
+momentum residual RMS    1.41235326919356623e+05  [141233.90387203425, 141236.9241501032]
+maximum sampled speed    1.00442942003856093e+01  [10.044294200282822, 10.04429420048879]
+displayed-domain energy  2.49586367739645154e-01  [0.2495863677168668, 0.24958636776243487]
+minimum normalized swirl 2.61626928374483647e-01  [0.26162692833753814, 0.2616269284113962]
 ```
+
+The point column reproduces a fresh `cargo test` run on rustc 1.98.1
+(macOS arm64, navier `3ed567cd`) bit-exactly for all eight entries, and all
+39 `--verbose` intermediates from the Appendix-A schedule through the final
+fixed-point residuals match the same build's `NAVIER_DUMP=1` checkpoints
+bit-exactly. The previously committed table agreed bit-exactly on six
+entries; its `divergence RMS` and `momentum residual RMS` entries
+(`8.500463463624519e-3`, `1.4123532691928133e5`) sit 2,329 and 2,587 ulps
+(~5e-13 relative) from the current build and are superseded above. The axial
+RMS enclosure spans zero because its accumulated cancellation reaches the
+1-ulp-per-operation widening over ~6,500 summed terms; the enclosure is wide
+where the expression cancels. None of these numbers is a continuum or
+theorem-level statement.
+
+Reproduce with `python3 scripts/computed_axis_intervals.py` (stdlib only,
+~26 s; `--verbose` for checkpoints, `--markdown` for this block).
 
 These values are regression observations at one coarse grid. In particular,
 the large momentum residual is not evidence against the theorem: the omitted
