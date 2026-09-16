@@ -1845,20 +1845,930 @@ theorem mildTimeLeaf_hmXm1Time_actualBox (ν : ℝ≥0) (hν : 0 < ν) (T R : �
     (fun i => integrable_weightedContinuousNavierSource_coord_of_actualBox ν hν T (2 * R) (2 * R)
       x T ⟨hT, le_refl T⟩ (mildLeafHjointDiag ν hν T R x) i)
 
+/-! ## S5: the every-time leaves 2c/2e under one named strengthened input
+
+The X⁻¹ continuity bootstrap of S4 fails at the `X¹` weight for one exact
+reason: at `X¹` the dominated-convergence majorant of the Duhamel difference
+is the `‖ξ‖`-weighted joint source, and the every-time Duhamel `X¹` bound
+is the Tonelli fiber integral of that same weighted source.  The box supplies
+only the `‖ξ‖⁻¹`-weighted product integrability, which is why the every-time
+reading of 2c is a genuine wall for *general* boxes (`s^{−1/2}` cannot be
+bought by smoothing an `L¹_t` time-modulation:
+`τ^{−1/2} * τ^{−3/4}` diverges at `τ = 0`).
+
+The single named input that closes 2c and 2e is the source's own spacetime
+`X¹` integrability `SourceL1X1` below — an estimate about the *source*, not
+about the mild image it produces, so consuming it to derive the image's
+every-time `X¹` integrability is a genuine estimate, not a restatement of
+the conclusion.  Under `SourceL1X1 T v` the proof needs no smoothing at
+all: `e^{−ν‖ξ‖²(t−s)} ≤ 1` gives pointwise `‖ξ‖‖duh t ξ i‖ ≤ ∫⁰ᵗ ‖ξ‖‖src‖`
+and Tonelli (`Integrable.integral_norm_prod_left`) makes that fiber integral
+`L¹(dξ)` at **every** `t ∈ Icc 0 T`; the S4 continuity template then runs
+verbatim at the raised weight, with `SourceL1X1` exactly the budget its
+dominated convergence needs.  The input is satisfiable (the zero box has
+zero source, hence `SourceL1X1`), so the conditional theorem is not vacuous.
+-/
+
+/-- **The named strengthened input.**  The self-interaction source of the
+field `v` lies in `L¹` of the product measure `volume.prod (vol|Icc 0 T)`
+against the `X¹` weight `‖ξ‖`, i.e. `v ∈ L¹_t(X¹)`-regularity propagated
+through the bilinear source.  Strictly stronger than the box's
+`L∞_t(X⁻¹) ∩ L¹_t(X¹)` budget (which yields only `‖ξ‖⁻¹`-weighted product
+integrability of the source,
+`integrable_weightedContinuousNavierSource_coord_of_actualBox`); satisfiable
+(e.g. `v = 0`). -/
+def SourceL1X1 (T : ℝ) (v : ℝ → ES → ComplexSpace) : Prop :=
+  ∀ i : Fin 3, Integrable (fun p : ES × ℝ => ‖p.1‖ *
+      ‖continuousNavierSource v v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) T)))
+
+/-- `X¹`-weighted difference integrability, coordinatewise: the analogue of
+`xm1_integrable_diff` at the raised weight. -/
+private theorem x1_integrable_diff (f g : ES → ComplexSpace)
+    (hfM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => f ξ i) volume)
+    (hgM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => g ξ i) volume)
+    (hfI : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖f ξ i‖))
+    (hgI : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖g ξ i‖))
+    (i : Fin 3) :
+    Integrable (fun ξ : ES => ‖ξ‖ * ‖(fun ξ => f ξ - g ξ) ξ i‖) := by
+  -- derivation: w‖f−g‖ ≤ w‖f‖ + w‖g‖ pointwise.
+  refine ((hfI i).add (hgI i)).mono'
+    ((by fun_prop : AEStronglyMeasurable (fun ξ : ES => ‖ξ‖) volume).mul
+      ((hfM i).sub (hgM i)).norm) ?_
+  filter_upwards with ξ
+  rw [Real.norm_of_nonneg
+    (mul_nonneg (norm_nonneg ξ) (norm_nonneg _))]
+  show ‖ξ‖ * ‖f ξ i - g ξ i‖ ≤ ‖ξ‖ * ‖f ξ i‖ + ‖ξ‖ * ‖g ξ i‖
+  refine (mul_le_mul_of_nonneg_left (norm_sub_le _ _)
+    (norm_nonneg ξ)).trans ?_
+  rw [mul_add]
+
+/-- The viscous `X¹` spatial quotient does not depend on the measurability
+or integrability proofs attached to the field, nor on the choice of a
+pointwise representative. -/
+private theorem toViscousX1Spatial_congr_raw (ν : ℝ≥0) {f g : ES → ComplexSpace}
+    (hfM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => f ξ i) volume)
+    (hgM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => g ξ i) volume)
+    (hfI : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖f ξ i‖))
+    (hgI : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖g ξ i‖))
+    (hfg : ∀ ξ : ES, f ξ = g ξ) :
+    toViscousX1Spatial ν f hfM hfI = toViscousX1Spatial ν g hgM hgI := by
+  -- derivation: both sides are `MemLp.toLp` of the coordinate field;
+  -- `toLp_congr` identifies the quotients under any a.e. equality.
+  unfold toViscousX1Spatial
+  exact MemLp.toLp_congr _ _
+    (ae_of_all _ fun ξ => congrArg (WithLp.toLp 1) (hfg ξ))
+
+/-- Subtraction of two viscous `X¹` quotients is the quotient of the
+pointwise difference. -/
+private theorem toViscousX1Spatial_sub (ν : ℝ≥0) (f g : ES → ComplexSpace)
+    (hfM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => f ξ i) volume)
+    (hgM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => g ξ i) volume)
+    (hfI : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖f ξ i‖))
+    (hgI : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖g ξ i‖)) :
+    toViscousX1Spatial ν f hfM hfI - toViscousX1Spatial ν g hgM hgI =
+      toViscousX1Spatial ν (fun ξ => f ξ - g ξ)
+        (fun i => (hfM i).sub (hgM i))
+        (fun i => x1_integrable_diff f g hfM hgM hfI hgI i) := by
+  -- derivation: a.e. in ξ the quotients are `coordinateL1`, and `WithLp.toLp`
+  -- is a pointwise homomorphism, so the difference of the quotients equals the
+  -- quotient of the pointwise difference.
+  apply Lp.ext
+  filter_upwards [Lp.coeFn_sub (toViscousX1Spatial ν f hfM hfI)
+      (toViscousX1Spatial ν g hgM hgI),
+    coeFn_toViscousX1Spatial ν f hfM hfI, coeFn_toViscousX1Spatial ν g hgM hgI,
+    coeFn_toViscousX1Spatial ν (fun ξ => f ξ - g ξ) (fun i => (hfM i).sub (hgM i))
+      (fun i => x1_integrable_diff f g hfM hgM hfI hgI i)] with ξ h0 h1 h2 h3
+  have key := coordinateL1_sub f g ξ
+  rw [← h1, ← h2, ← h3, ← Pi.sub_apply, ← h0] at key
+  exact key
+
+/-- The coordinate `X¹` weight of the free heat term is integrable for
+`t ≥ 0`: the heat multiplier is `∈ (0,1]` there, so it is dominated
+pointwise by the datum's weighted integrability. -/
+private theorem heatVec_x1Integrable (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (νR t : ℝ) (hνR : 0 < νR) (ht : 0 ≤ t) (i : Fin 3) :
+    Integrable (fun ξ : ES => ‖ξ‖ * ‖heatVec νR t a ξ i‖) := by
+  have hpe (ξ : ES) : ‖ξ‖ * ‖heatVec νR t a ξ i‖ =
+      Real.exp (-((νR * ‖ξ‖ ^ 2 * t))) * (‖ξ‖ * ‖a ξ i‖) := by
+    show ‖ξ‖ * ‖((Real.exp (-((νR * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) * a ξ i)‖ = _
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (le_of_lt (Real.exp_pos _))]
+    ring
+  have hexp_le (ξ : ES) : Real.exp (-((νR * ‖ξ‖ ^ 2 * t))) ≤ 1 :=
+    Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+      (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) ht))
+  refine (ha1 i).mono'
+    ((by fun_prop : AEStronglyMeasurable (fun ξ : ES => ‖ξ‖) volume).mul
+      ((by fun_prop :
+          AEStronglyMeasurable (fun ξ : ES => ((Real.exp (-((νR * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ)))
+            volume)
+        |>.mul (haM i)).norm) ?_
+  filter_upwards with ξ
+  rw [Real.norm_of_nonneg
+    (mul_nonneg (norm_nonneg ξ) (norm_nonneg _)), hpe ξ]
+  exact mul_le_of_le_one_left (mul_nonneg (norm_nonneg ξ) (norm_nonneg _))
+    (hexp_le ξ)
+
+/-- The `X¹`-weighted Duhamel coordinate is integrable on the horizon: the
+Duhamel term is the mild image (leaf 2c) minus the heat term, and
+`x1_integrable_diff` discharges the coordinate weight. -/
+private theorem continuousDuhamel_x1Integrable (ν : ℝ≥0) (hν : 0 < ν) (T : ℝ)
+    (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (hmM : ∀ t ∈ Icc (0 : ℝ) T, ∀ i, AEStronglyMeasurable
+        (fun ξ : ES => mildImage ν hν a v t ξ i) volume)
+    (hmX1 : ∀ t ∈ Icc (0 : ℝ) T, ∀ i, Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖mildImage ν hν a v t ξ i‖))
+    (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3) :
+    Integrable (fun ξ : ES =>
+        ‖ξ‖ * ‖continuousDuhamel (ν : ℝ) v v t ξ i‖) := by
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  have hfield : (fun ξ : ES => continuousDuhamel (ν : ℝ) v v t ξ)
+      = fun ξ : ES => mildImage ν hν a v t ξ - heatVec (ν : ℝ) t a ξ := by
+    ext ξ j
+    show continuousDuhamel (ν : ℝ) v v t ξ j =
+        mildImage ν hν a v t ξ j - heatVec (ν : ℝ) t a ξ j
+    rw [show mildImage ν hν a v t ξ j =
+        heatVec (ν : ℝ) t a ξ j + continuousDuhamel (ν : ℝ) v v t ξ j from rfl]
+    abel
+  refine (x1_integrable_diff (fun ξ : ES => mildImage ν hν a v t ξ)
+      (fun ξ : ES => heatVec (ν : ℝ) t a ξ) (hmM t ht)
+      (fun j =>
+        (by fun_prop :
+            AEStronglyMeasurable
+              (fun ξ : ES => ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ))) volume)
+          |>.mul (haM j))
+      (hmX1 t ht) (heatVec_x1Integrable a haM ha1 (ν : ℝ) t hνR ht.1) i).congr
+    (ae_of_all _ fun ξ =>
+      (congrArg (fun y : ComplexSpace => ‖ξ‖ * ‖y i‖) (congrFun hfield ξ)).symm)
+
+/-- The coordinate `X¹` weight of the free heat term tends to `0` along the
+horizon: dominated convergence against `‖ξ‖ ‖a ξ i‖`, the exact analogue of
+`tendsto_normXm1_heatVec_sub` at the raised weight — the heat multiplier
+difference is `≤ 1` for every `s ∈ Icc 0 T`, so no smoothing enters. -/
+private theorem tendsto_normX1_heatVec_sub (a : ES → ComplexSpace)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (νR : ℝ) (hνR : 0 < νR) (T t₀ : ℝ) (ht₀ : t₀ ∈ Icc (0 : ℝ) T) (i : Fin 3) :
+    Tendsto (fun s : ℝ => normX1 (fun ξ : ES =>
+        heatVec νR s a ξ i - heatVec νR t₀ a ξ i))
+      (𝓝[Icc (0 : ℝ) T] t₀) (𝓝 0) := by
+  let l := 𝓝[Icc (0 : ℝ) T] t₀
+  have hmain : Tendsto (fun s : ℝ => ∫ ξ : ES,
+      |Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) - Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))| *
+        (‖ξ‖ * ‖a ξ i‖)) l (𝓝 0) := by
+    have hlim : ∀ᵐ ξ ∂volume,
+        Tendsto (fun s : ℝ => |Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) -
+            Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))| * (‖ξ‖ * ‖a ξ i‖)) l (𝓝 0) :=
+      ae_of_all _ fun ξ => by
+        have hg : Tendsto (fun s : ℝ => -(νR * ‖ξ‖ ^ 2 * s)) l
+            (𝓝 (-(νR * ‖ξ‖ ^ 2 * t₀))) :=
+          ((continuous_const.mul continuous_id).tendsto t₀).neg.mono_left nhdsWithin_le_nhds
+        have h2 : Tendsto (fun s : ℝ =>
+            Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) - Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))) l
+            (𝓝 (Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀))) -
+              Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀))))) :=
+          ((Real.continuous_exp.continuousAt.tendsto).comp hg).sub tendsto_const_nhds
+        rw [sub_self] at h2
+        simpa using (h2.abs).mul tendsto_const_nhds
+    have hbnd : ∀ᶠ s in l, ∀ᵐ ξ ∂volume,
+        ‖|Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) - Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))| *
+            (‖ξ‖ * ‖a ξ i‖)‖ ≤
+          ‖ξ‖ * ‖a ξ i‖ := by
+      filter_upwards [self_mem_nhdsWithin] with s hs
+      apply ae_of_all _ fun ξ => by
+        have hw : 0 ≤ ‖ξ‖ * ‖a ξ i‖ :=
+          mul_nonneg (norm_nonneg ξ) (norm_nonneg _)
+        have he1 : Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) ≤ 1 :=
+          Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+            (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) hs.1))
+        have he0 : Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀))) ≤ 1 :=
+          Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+            (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) ht₀.1))
+        have h1 : 0 ≤ Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) := (Real.exp_pos _).le
+        have h0 : 0 ≤ Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀))) := (Real.exp_pos _).le
+        rw [Real.norm_of_nonneg (mul_nonneg (abs_nonneg _) hw)]
+        have habs : |Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) -
+            Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))| ≤ 1 := by
+          rw [abs_le]
+          constructor <;> nlinarith
+        nlinarith
+    have hmeas : ∀ᶠ s in l, AEStronglyMeasurable
+        (fun ξ : ES => |Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) -
+            Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))| * (‖ξ‖ * ‖a ξ i‖)) volume :=
+      Filter.Eventually.of_forall fun s =>
+        (by fun_prop :
+            AEStronglyMeasurable (fun ξ : ES =>
+              |Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) -
+                  Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))|) volume)
+          |>.mul ((ha1 i).aestronglyMeasurable)
+    simpa using tendsto_integral_filter_of_dominated_convergence
+      (f := fun _ : ES => (0 : ℝ)) (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖) hmeas hbnd (ha1 i) hlim
+  have hconv : (fun s : ℝ => normX1 (fun ξ : ES =>
+      heatVec νR s a ξ i - heatVec νR t₀ a ξ i)) =ᶠ[l]
+      fun s : ℝ => ∫ ξ : ES,
+        |Real.exp (-((νR * ‖ξ‖ ^ 2 * s))) - Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)))| *
+          (‖ξ‖ * ‖a ξ i‖) := by
+    filter_upwards [] with s
+    unfold normX1
+    apply integral_congr_ae
+    filter_upwards with ξ
+    show ‖ξ‖ * ‖heatVec νR s a ξ i - heatVec νR t₀ a ξ i‖ = _
+    rw [show heatVec νR s a ξ i =
+        ((Real.exp (-((νR * ‖ξ‖ ^ 2 * s)) : ℝ) : ℂ) * a ξ i) from rfl,
+      show heatVec νR t₀ a ξ i =
+        ((Real.exp (-((νR * ‖ξ‖ ^ 2 * t₀)) : ℝ) : ℂ) * a ξ i) from rfl]
+    rw [← sub_mul, ← Complex.ofReal_sub, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+    ring
+  exact hmain.congr' hconv.symm
+
+/-- The causal-truncation majorant of a Duhamel difference at the `X¹`
+weight: the exact analogue of `normXm1_duhamelDiff_le`, where the dominating
+product integrand is the `‖ξ‖`-weighted joint source (the `SourceL1X1`
+budget) instead of the `‖ξ‖⁻¹` one. -/
+private theorem normX1_duhamelDiff_le (ν : ℝ≥0) (hν : 0 < ν) (T t₀ s : ℝ)
+    (ht₀ : t₀ ∈ Icc (0 : ℝ) T) (hs : s ∈ Icc (0 : ℝ) T)
+    (u : ℝ → ES → ComplexSpace) (i : Fin 3)
+    (hjointT : AEStronglyMeasurable (fun p : ES × ℝ =>
+        complexEuclideanPoint (continuousNavierSource u u p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (hsrcT : Integrable (fun p : ES × ℝ => ‖p.1‖ *
+        ‖continuousNavierSource u u p.2 p.1 i‖) (volume.prod (volume.restrict (Icc (0 : ℝ) T)))) :
+    normX1 (fun ξ : ES =>
+        continuousDuhamel (ν : ℝ) u u s ξ i - continuousDuhamel (ν : ℝ) u u t₀ ξ i) ≤
+      ∫ p : ES × ℝ,
+        |(if p.2 ≤ s
+            then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2)))
+            else 0) -
+            if p.2 ≤ t₀ then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2))) else 0| *
+          (‖p.1‖ * ‖continuousNavierSource u u p.2 p.1 i‖)
+        ∂(volume.prod (volume.restrict (Icc (0 : ℝ) T))) := by
+  let μT : Measure ℝ := volume.restrict (Icc (0 : ℝ) T)
+  let Λ : Measure (ES × ℝ) := volume.prod μT
+  let νR : ℝ := (ν : ℝ)
+  have hνR : 0 < νR := by exact_mod_cast hν
+  have hcoordT : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource u u p.2 p.1 i) Λ :=
+    continuousNavierSource_coord_aestronglyMeasurable u u 0 T hjointT i
+  let G : ES × ℝ → ℝ := fun p =>
+    |(if p.2 ≤ s then Real.exp (-((νR * ‖p.1‖ ^ 2 * (s - p.2)))) else 0) -
+        if p.2 ≤ t₀ then Real.exp (-((νR * ‖p.1‖ ^ 2 * (t₀ - p.2)))) else 0| *
+      (‖p.1‖ * ‖continuousNavierSource u u p.2 p.1 i‖)
+  have hGnn : ∀ p, 0 ≤ G p := fun p =>
+    mul_nonneg (abs_nonneg _)
+      (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+  have hGaes : AEStronglyMeasurable G Λ :=
+    (Measurable.abs (Measurable.sub
+        (Measurable.ite (measurableSet_le measurable_snd measurable_const) (by fun_prop)
+          measurable_const)
+        (Measurable.ite (measurableSet_le measurable_snd measurable_const) (by fun_prop)
+          measurable_const))).aestronglyMeasurable
+      |>.mul ((by fun_prop : AEStronglyMeasurable (fun p : ES × ℝ => ‖p.1‖) Λ).mul
+        (hcoordT.norm))
+  have hGint : Integrable G Λ := by
+    refine hsrcT.mono' hGaes (ae_of_all _ fun p => ?_)
+    show ‖G p‖ ≤ ‖p.1‖ * ‖continuousNavierSource u u p.2 p.1 i‖
+    rw [Real.norm_eq_abs, abs_of_nonneg (hGnn p)]
+    have h1 : (if p.2 ≤ s then Real.exp (-((νR * ‖p.1‖ ^ 2 * (s - p.2)))) else 0) ≤ 1 := by
+      by_cases h : p.2 ≤ s
+      · rw [ite_eq_left h]
+        exact Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+          (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr h)))
+      · rw [ite_eq_right h]; exact zero_le_one
+    have h1n : 0 ≤ (if p.2 ≤ s then Real.exp (-((νR * ‖p.1‖ ^ 2 * (s - p.2)))) else 0) := by
+      by_cases h : p.2 ≤ s
+      · rw [ite_eq_left h]; exact (Real.exp_pos _).le
+      · rw [ite_eq_right h]
+    have h2 : (if p.2 ≤ t₀ then Real.exp (-((νR * ‖p.1‖ ^ 2 * (t₀ - p.2)))) else 0) ≤ 1 := by
+      by_cases h : p.2 ≤ t₀
+      · rw [ite_eq_left h]
+        exact Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+          (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr h)))
+      · rw [ite_eq_right h]; exact zero_le_one
+    have h2n : 0 ≤ (if p.2 ≤ t₀ then Real.exp (-((νR * ‖p.1‖ ^ 2 * (t₀ - p.2)))) else 0) := by
+      by_cases h : p.2 ≤ t₀
+      · rw [ite_eq_left h]; exact (Real.exp_pos _).le
+      · rw [ite_eq_right h]
+    have hsc : |(if p.2 ≤ s then Real.exp (-((νR * ‖p.1‖ ^ 2 * (s - p.2)))) else 0) -
+        if p.2 ≤ t₀ then Real.exp (-((νR * ‖p.1‖ ^ 2 * (t₀ - p.2)))) else 0| ≤ 1 := by
+      rw [abs_le]
+      constructor <;> nlinarith
+    have hb : 0 ≤ ‖p.1‖ * ‖continuousNavierSource u u p.2 p.1 i‖ :=
+      mul_nonneg (norm_nonneg _) (norm_nonneg _)
+    have heq : G p =
+        |(if p.2 ≤ s then Real.exp (-((νR * ‖p.1‖ ^ 2 * (s - p.2)))) else 0) -
+            if p.2 ≤ t₀ then Real.exp (-((νR * ‖p.1‖ ^ 2 * (t₀ - p.2)))) else 0| *
+          (‖p.1‖ * ‖continuousNavierSource u u p.2 p.1 i‖) := rfl
+    rw [heq]
+    exact (mul_le_mul_of_nonneg_right hsc hb).trans (one_mul _).le
+  have hle' : ∀ᵐ ξ ∂volume, ‖ξ‖ *
+      ‖continuousDuhamel νR u u s ξ i - continuousDuhamel νR u u t₀ ξ i‖ ≤
+      ∫ r, G (ξ, r) ∂μT := by
+    have hne : ∀ᵐ ξ ∂volume, (ξ : ES) ≠ 0 := by
+      simp [ae_iff, measure_singleton]
+    filter_upwards [hne, hsrcT.prod_right_ae, hcoordT.prodMk_left] with ξ hξ0 hq hqaes
+    let E : ℝ → ℝ → ℂ := fun t r =>
+      if r ≤ t then ((Real.exp (-((νR * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+        continuousNavierSource u u r ξ i else 0
+    have hEp (t r : ℝ) (h : r ≤ t) : E t r =
+        ((Real.exp (-((νR * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) * continuousNavierSource u u r ξ i :=
+      ite_eq_left h
+    have hEn (t r : ℝ) (h : ¬ r ≤ t) : E t r = 0 := ite_eq_right h
+    have hnrm_src : Integrable (fun r : ℝ => ‖continuousNavierSource u u r ξ i‖) μT := by
+      refine (hq.const_mul ‖(ξ : ES)‖⁻¹).congr (ae_of_all _ fun r => ?_)
+      show ‖(ξ : ES)‖⁻¹ * (‖(ξ : ES)‖ * ‖continuousNavierSource u u r ξ i‖) =
+        ‖continuousNavierSource u u r ξ i‖
+      rw [← mul_assoc, inv_mul_cancel₀ (norm_ne_zero_iff.mpr hξ0), one_mul]
+    have hsrc_int : Integrable (fun r : ℝ => continuousNavierSource u u r ξ i) μT :=
+      ⟨hqaes,
+        (hasFiniteIntegral_norm_iff (fun r : ℝ => continuousNavierSource u u r ξ i)).mp
+          hnrm_src.hasFiniteIntegral⟩
+    have hite_aes (t : ℝ) : AEStronglyMeasurable (E t) μT := by
+      have hprod : AEStronglyMeasurable (fun r : ℝ =>
+          ((Real.exp (-((νR * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+            continuousNavierSource u u r ξ i) μT :=
+        ((by fun_prop :
+            Continuous (fun r : ℝ =>
+              ((Real.exp (-((νR * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ))).aestronglyMeasurable).mul hqaes
+      have hset : (E t : ℝ → ℂ) = Set.indicator (Iic t)
+          (fun r : ℝ => ((Real.exp (-((νR * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+            continuousNavierSource u u r ξ i) := by
+        funext r
+        rw [Set.indicator_apply]
+        exact ite_congr (propext Set.mem_Iic).symm (fun _ => rfl) (fun _ => rfl)
+      rw [hset]
+      exact hprod.indicator isClosed_Iic.measurableSet
+    have hite_int (t : ℝ) : Integrable (E t) μT :=
+      hsrc_int.mono (hite_aes t) (ae_of_all _ fun r => by
+        by_cases h : r ≤ t
+        · rw [hEp t r h, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+            abs_of_nonneg (le_of_lt (Real.exp_pos _))]
+          have : Real.exp (-((νR * ‖ξ‖ ^ 2 * (t - r)))) ≤ 1 :=
+            Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+              (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr h)))
+          exact (mul_le_mul_of_nonneg_right this (norm_nonneg _)).trans (one_mul _).le
+        · rw [hEn t r h]
+          simp)
+    have hI (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) :
+        continuousDuhamel νR u u t ξ i = ∫ r : ℝ, E t r ∂μT := by
+      show ∫ r in Icc (0 : ℝ) t,
+          ((Real.exp (-((νR * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+            continuousNavierSource u u r ξ i = _
+      rw [integral_Icc_eq_horizon_indicator t T ht]
+    have hsub : continuousDuhamel νR u u s ξ i - continuousDuhamel νR u u t₀ ξ i =
+        ∫ r : ℝ, E s r - E t₀ r ∂μT := by
+      rw [hI s hs, hI t₀ ht₀, ← integral_sub (hite_int s) (hite_int t₀)]
+    have hpoint (r : ℝ) : ‖ξ‖ * ‖E s r - E t₀ r‖ = G (ξ, r) := by
+      have hG : G (ξ, r) =
+          |(if r ≤ s then Real.exp (-((νR * ‖ξ‖ ^ 2 * (s - r)))) else 0) -
+              if r ≤ t₀ then Real.exp (-((νR * ‖ξ‖ ^ 2 * (t₀ - r)))) else 0| *
+            (‖ξ‖ * ‖continuousNavierSource u u r ξ i‖) := rfl
+      rw [hG]
+      by_cases h1 : r ≤ s <;> by_cases h2 : r ≤ t₀
+      · rw [hEp s r h1, hEp t₀ r h2, ite_eq_left h1, ite_eq_left h2, ← sub_mul,
+          ← Complex.ofReal_sub, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+        ring
+      · rw [hEp s r h1, hEn t₀ r h2, ite_eq_left h1, ite_eq_right h2, sub_zero, sub_zero,
+          norm_mul, Complex.norm_real, Real.norm_eq_abs,
+          abs_of_pos (Real.exp_pos _)]
+        ring
+      · rw [hEn s r h1, hEp t₀ r h2, ite_eq_right h1, ite_eq_left h2, zero_sub, zero_sub,
+          norm_neg, norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_neg,
+          abs_of_pos (Real.exp_pos _)]
+        ring
+      · rw [hEn s r h1, hEn t₀ r h2, ite_eq_right h1, ite_eq_right h2]
+        simp
+    calc ‖ξ‖ * ‖continuousDuhamel νR u u s ξ i - continuousDuhamel νR u u t₀ ξ i‖
+        = ‖ξ‖ * ‖∫ r : ℝ, E s r - E t₀ r ∂μT‖ :=
+          congrArg (fun x => ‖ξ‖ * ‖x‖) hsub
+      _ ≤ ‖ξ‖ * ∫ r : ℝ, ‖E s r - E t₀ r‖ ∂μT :=
+          mul_le_mul_of_nonneg_left (norm_integral_le_integral_norm _)
+            (norm_nonneg ξ)
+      _ = ∫ r : ℝ, ‖ξ‖ * ‖E s r - E t₀ r‖ ∂μT :=
+          (integral_smul ‖(ξ : ES)‖ fun r => ‖E s r - E t₀ r‖).symm
+      _ = ∫ r : ℝ, G (ξ, r) ∂μT := integral_congr_ae (ae_of_all _ hpoint)
+  have hprod_int : Integrable (fun ξ : ES => ∫ r, G (ξ, r) ∂μT) volume :=
+    (hGint.integral_norm_prod_left).congr (ae_of_all _ fun ξ =>
+      integral_congr_ae (ae_of_all _ fun r =>
+        (Real.norm_eq_abs _).trans (abs_of_nonneg (hGnn _))))
+  calc normX1 (fun ξ : ES =>
+          continuousDuhamel (ν : ℝ) u u s ξ i - continuousDuhamel (ν : ℝ) u u t₀ ξ i)
+      = ∫ ξ : ES, ‖ξ‖ * ‖continuousDuhamel νR u u s ξ i - continuousDuhamel νR u u t₀ ξ i‖
+          ∂volume := rfl
+    _ ≤ ∫ ξ : ES, ∫ r : ℝ, G (ξ, r) ∂μT ∂volume :=
+          integral_mono_of_nonneg (ae_of_all _ fun ξ =>
+            mul_nonneg (norm_nonneg _) (norm_nonneg _)) hprod_int hle'
+    _ = ∫ p : ES × ℝ, G p ∂Λ := (integral_prod G hGint).symm
+
+/-- The coordinate Duhamel difference tends to `0` in the `X¹`-weighted mass
+along the horizon: dominated convergence on `Λ` against the `‖ξ‖`-weighted
+joint source (`SourceL1X1`).  As in the `X⁻¹` template, pointwise the
+causal-truncation kernel difference goes to `0` off the null fiber `p.2 = t₀`
+and is `≤ 1` there because every heat multiplier factor lies in `[0,1]` —
+no `s^{−1/2}` smoothing singularity enters at any time. -/
+private theorem tendsto_normX1_duhamelDiff (ν : ℝ≥0) (hν : 0 < ν) (T t₀ : ℝ)
+    (ht₀ : t₀ ∈ Icc (0 : ℝ) T) (v : ℝ → ES → ComplexSpace)
+    (hjointT : AEStronglyMeasurable (fun p : ES × ℝ =>
+        complexEuclideanPoint (continuousNavierSource v v p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (hsrcT : ∀ i : Fin 3, Integrable (fun p : ES × ℝ => ‖p.1‖ *
+        ‖continuousNavierSource v v p.2 p.1 i‖)
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (i : Fin 3) :
+    Tendsto (fun s : ℝ => normX1 (fun ξ : ES =>
+        continuousDuhamel (ν : ℝ) v v s ξ i - continuousDuhamel (ν : ℝ) v v t₀ ξ i))
+      (𝓝[Icc (0 : ℝ) T] t₀) (𝓝 0) := by
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  let μT : Measure ℝ := volume.restrict (Icc (0 : ℝ) T)
+  let Λ : Measure (ES × ℝ) := volume.prod μT
+  let l := 𝓝[Icc (0 : ℝ) T] t₀
+  let Gs : ℝ → ES × ℝ → ℝ := fun s p =>
+    |(if p.2 ≤ s
+        then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2)))
+        else 0) -
+        if p.2 ≤ t₀ then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2))) else 0| *
+      (‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖)
+  have hcoordT : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource v v p.2 p.1 i) Λ :=
+    continuousNavierSource_coord_aestronglyMeasurable v v 0 T hjointT i
+  have hGmeas : ∀ s : ℝ, AEStronglyMeasurable (Gs s) Λ := fun s =>
+    (Measurable.abs (Measurable.sub
+        (Measurable.ite (measurableSet_le measurable_snd measurable_const) (by fun_prop)
+          measurable_const)
+        (Measurable.ite (measurableSet_le measurable_snd measurable_const) (by fun_prop)
+          measurable_const))).aestronglyMeasurable
+      |>.mul ((by fun_prop : AEStronglyMeasurable (fun p : ES × ℝ => ‖p.1‖) Λ).mul
+        hcoordT.norm)
+  have hGnn : ∀ s p, 0 ≤ Gs s p := fun s p =>
+    mul_nonneg (abs_nonneg _)
+      (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+  have hae_snd : ∀ᵐ p ∂Λ, p.2 ≠ t₀ := by
+    have h1 : μT {t₀} = 0 := by
+      rw [Measure.restrict_apply (measurableSet_singleton t₀)]
+      exact measure_mono_null inter_subset_left Real.volume_singleton
+    have hnull : Λ {p : ES × ℝ | p.2 = t₀} = 0 := by
+      have hset : {p : ES × ℝ | p.2 = t₀} = Set.univ ×ˢ ({t₀} : Set ℝ) := by
+        ext p; simp
+      rw [hset, Measure.prod_prod, h1, mul_zero]
+    rw [ae_iff]
+    have hset : {p : ES × ℝ | ¬p.2 ≠ t₀} = {p | p.2 = t₀} := by ext p; simp
+    rw [hset]
+    exact hnull
+  have hlim : ∀ᵐ p ∂Λ, Tendsto (fun s : ℝ => Gs s p) l (𝓝 0) := by
+    refine hae_snd.mono ?_
+    intro p hp
+    rcases lt_or_gt_of_ne hp with h | h
+    · have hev : ∀ᶠ s in l, p.2 < s := nhdsWithin_le_nhds (lt_mem_nhds h)
+      have hkey : Tendsto (fun s : ℝ =>
+          |Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2))) -
+              Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2)))| *
+            (‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖)) l (𝓝 0) := by
+        have hg : Tendsto (fun s : ℝ => -((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2))) l
+            (𝓝 (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2)))) :=
+          ((continuous_const.mul (continuous_id.sub continuous_const)).tendsto t₀).neg.mono_left nhdsWithin_le_nhds
+        have h2 : Tendsto (fun s : ℝ =>
+            Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2))) -
+              Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2)))) l
+            (𝓝 (Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2))) -
+              Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2))))) :=
+          ((Real.continuous_exp.continuousAt.tendsto).comp hg).sub tendsto_const_nhds
+        rw [sub_self] at h2
+        simpa using (h2.abs).mul tendsto_const_nhds
+      have heq : (fun s : ℝ =>
+          |Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2))) -
+              Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2)))| *
+            (‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖)) =ᶠ[l]
+          fun s : ℝ => Gs s p := by
+        filter_upwards [hev] with s hs
+        show |Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2))) -
+            Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2)))| *
+            (‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖) =
+          |((if p.2 ≤ s then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2))) else 0) -
+              if p.2 ≤ t₀ then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2))) else 0)| *
+            (‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖)
+        rw [ite_eq_left (le_of_lt hs), ite_eq_left (le_of_lt h)]
+      exact hkey.congr' heq
+    · have hev : ∀ᶠ s in l, s < p.2 := nhdsWithin_le_nhds (Iio_mem_nhds h)
+      have heq : (fun _ : ℝ => (0 : ℝ)) =ᶠ[l] fun s : ℝ => Gs s p := by
+        filter_upwards [hev] with s hlt
+        show (0 : ℝ) =
+          |((if p.2 ≤ s then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2))) else 0) -
+              if p.2 ≤ t₀ then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2))) else 0)| *
+            (‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖)
+        rw [ite_eq_right (fun hh => lt_irrefl _ (lt_of_lt_of_le hlt hh)),
+          ite_eq_right (fun hh => lt_irrefl _ (lt_of_lt_of_le h hh))]
+        simp
+      exact tendsto_const_nhds.congr' heq
+  have hmeas : ∀ᶠ s in l, AEStronglyMeasurable (Gs s) Λ :=
+    Filter.Eventually.of_forall hGmeas
+  have hbnd : ∀ᶠ s in l, ∀ᵐ p ∂Λ, ‖Gs s p‖ ≤
+      ‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖ :=
+    Filter.Eventually.of_forall fun s => ae_of_all _ fun p => by
+      rw [Real.norm_of_nonneg (hGnn s p)]
+      have hA : 0 ≤ (if p.2 ≤ s
+          then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2)))
+          else 0) ∧ (if p.2 ≤ s
+          then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (s - p.2)))
+          else 0) ≤ 1 := by
+        rcases em (p.2 ≤ s) with h | h
+        · rw [ite_eq_left h]
+          exact ⟨(Real.exp_pos _).le, Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+            (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr h)))⟩
+        · rw [ite_eq_right h]
+          exact ⟨le_refl 0, zero_le_one⟩
+      have hB : 0 ≤ (if p.2 ≤ t₀
+          then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2)))
+          else 0) ∧ (if p.2 ≤ t₀
+          then Real.exp (-((ν : ℝ) * ‖p.1‖ ^ 2 * (t₀ - p.2)))
+          else 0) ≤ 1 := by
+        rcases em (p.2 ≤ t₀) with h | h
+        · rw [ite_eq_left h]
+          exact ⟨(Real.exp_pos _).le, Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+            (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr h)))⟩
+        · rw [ite_eq_right h]
+          exact ⟨le_refl 0, zero_le_one⟩
+      obtain ⟨hA0, hA1⟩ := hA
+      obtain ⟨hB0, hB1⟩ := hB
+      refine (mul_le_mul_of_nonneg_right ?_
+        (mul_nonneg (norm_nonneg _) (norm_nonneg _))).trans (one_mul _).le
+      rw [abs_le]
+      constructor <;> nlinarith
+  have hmain : Tendsto (fun s : ℝ => ∫ p : ES × ℝ, Gs s p ∂Λ) l (𝓝 0) := by
+    simpa using tendsto_integral_filter_of_dominated_convergence
+      (f := fun _ : ES × ℝ => (0 : ℝ))
+      (fun p : ES × ℝ => ‖p.1‖ * ‖continuousNavierSource v v p.2 p.1 i‖)
+      hmeas hbnd (hsrcT i) hlim
+  have hlower : ∀ᶠ s in l, (0 : ℝ) ≤ normX1 (fun ξ : ES =>
+      continuousDuhamel (ν : ℝ) v v s ξ i - continuousDuhamel (ν : ℝ) v v t₀ ξ i) :=
+    Filter.Eventually.of_forall fun s => by
+      unfold normX1
+      exact integral_nonneg fun ξ =>
+        mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le'
+    (tendsto_const_nhds : Tendsto (fun _ : ℝ => (0 : ℝ)) l (𝓝 0)) hmain hlower ?_
+  filter_upwards [self_mem_nhdsWithin] with s hs
+  exact normX1_duhamelDiff_le ν hν T t₀ s ht₀ hs v i hjointT (hsrcT i)
+
+/-- **Leaf 2c at every horizon time under `SourceL1X1`.**  The `X¹`
+integrability of the mild image holds at **every** `t ∈ Icc 0 T` once the
+self-interaction source lies in `L¹_t(X¹)`: no smoothing is used.  With
+`e^{−ν‖ξ‖²(t−s)} ≤ 1` the pointwise bound
+`‖ξ‖‖duh t ξ i‖ ≤ ∫ s in Icc 0 t, ‖ξ‖‖src s ξ i‖` holds; Tonelli
+(`Integrable.integral_norm_prod_left`) makes that fiber integral
+`L¹(dξ)` at *every* `t` (the causal interval only shrinks the integrand),
+and the heat part is integrable at every `t ≥ 0` by `ha1`.  This is the
+maximal honest upgrade of `mildTimeLeaf_hmX1_ae`: its premise is an
+estimate on the source, not on the mild image it bounds. -/
+theorem mildTimeLeaf_hmX1_of_sourceL1X1 (ν : ℝ≥0) (hν : 0 < ν) (T : ℝ)
+    (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (hmM : ∀ t ∈ Icc (0 : ℝ) T, ∀ i, AEStronglyMeasurable
+        (fun ξ : ES => mildImage ν hν a v t ξ i) volume)
+    (hjointT : AEStronglyMeasurable (fun p : ES × ℝ =>
+        complexEuclideanPoint (continuousNavierSource v v p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (H : SourceL1X1 T v) :
+    ∀ t ∈ Icc (0 : ℝ) T, ∀ i : Fin 3, Integrable (fun ξ : ES =>
+      ‖ξ‖ * ‖mildImage ν hν a v t ξ i‖) := by
+  intro t ht i
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  have hsrcT : Integrable (fun p : ES × ℝ => ‖p.1‖ *
+      ‖continuousNavierSource v v p.2 p.1 i‖)
+      (volume.prod (volume.restrict (Icc (0 : ℝ) T))) := H i
+  let μT : Measure ℝ := volume.restrict (Icc (0 : ℝ) T)
+  have hcoordT : AEStronglyMeasurable (fun p : ES × ℝ =>
+      continuousNavierSource v v p.2 p.1 i) (volume.prod μT) :=
+    continuousNavierSource_coord_aestronglyMeasurable v v 0 T hjointT i
+  have hKint : Integrable (fun ξ : ES => ∫ r : ℝ,
+      ‖ξ‖ * ‖continuousNavierSource v v r ξ i‖ ∂μT) volume :=
+    (hsrcT.integral_norm_prod_left).congr (ae_of_all _ fun ξ =>
+      integral_congr_ae (ae_of_all _ fun r =>
+        (Real.norm_eq_abs _).trans (abs_of_nonneg
+          (mul_nonneg (norm_nonneg _) (norm_nonneg _)))))
+  have hDle : ∀ᵐ ξ ∂volume, ‖ξ‖ * ‖continuousDuhamel (ν : ℝ) v v t ξ i‖ ≤
+      ∫ r : ℝ, ‖ξ‖ * ‖continuousNavierSource v v r ξ i‖ ∂μT := by
+    have hne : ∀ᵐ ξ ∂volume, (ξ : ES) ≠ 0 := by
+      simp [ae_iff, measure_singleton]
+    filter_upwards [hne, hsrcT.prod_right_ae, hcoordT.prodMk_left] with ξ hξ0 hq hqaes
+    let E : ℝ → ℂ := fun r =>
+      if r ≤ t then ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+        continuousNavierSource v v r ξ i else 0
+    have hEp (r : ℝ) (h : r ≤ t) : E r =
+        ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+          continuousNavierSource v v r ξ i :=
+      ite_eq_left h
+    have hEn (r : ℝ) (h : ¬ r ≤ t) : E r = 0 := ite_eq_right h
+    have hnrm_src : Integrable (fun r : ℝ => ‖continuousNavierSource v v r ξ i‖) μT := by
+      refine (hq.const_mul ‖(ξ : ES)‖⁻¹).congr (ae_of_all _ fun r => ?_)
+      show ‖(ξ : ES)‖⁻¹ * (‖(ξ : ES)‖ * ‖continuousNavierSource v v r ξ i‖) =
+        ‖continuousNavierSource v v r ξ i‖
+      rw [← mul_assoc, inv_mul_cancel₀ (norm_ne_zero_iff.mpr hξ0), one_mul]
+    have hsrc_int : Integrable (fun r : ℝ => continuousNavierSource v v r ξ i) μT :=
+      ⟨hqaes,
+        (hasFiniteIntegral_norm_iff (fun r : ℝ => continuousNavierSource v v r ξ i)).mp
+          hnrm_src.hasFiniteIntegral⟩
+    have hite_aes : AEStronglyMeasurable E μT := by
+      have hprod : AEStronglyMeasurable (fun r : ℝ =>
+          ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+            continuousNavierSource v v r ξ i) μT :=
+        ((by fun_prop :
+            Continuous (fun r : ℝ =>
+              ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ))).aestronglyMeasurable).mul hqaes
+      have hset : (E : ℝ → ℂ) = Set.indicator (Iic t)
+          (fun r : ℝ => ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+            continuousNavierSource v v r ξ i) := by
+        funext r
+        rw [Set.indicator_apply]
+        exact ite_congr (propext Set.mem_Iic).symm (fun _ => rfl) (fun _ => rfl)
+      rw [hset]
+      exact hprod.indicator isClosed_Iic.measurableSet
+    have hite_int : Integrable E μT :=
+      hsrc_int.mono hite_aes (ae_of_all _ fun r => by
+        by_cases h : r ≤ t
+        · rw [hEp r h, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+            abs_of_nonneg (le_of_lt (Real.exp_pos _))]
+          have : Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) ≤ 1 :=
+            Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+              (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr h)))
+          exact (mul_le_mul_of_nonneg_right this (norm_nonneg _)).trans (one_mul _).le
+        · rw [hEn r h]
+          simp)
+    have hI : continuousDuhamel (ν : ℝ) v v t ξ i = ∫ r : ℝ, E r ∂μT := by
+      show ∫ r in Icc (0 : ℝ) t,
+          ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) : ℝ) : ℂ) *
+            continuousNavierSource v v r ξ i = _
+      rw [integral_Icc_eq_horizon_indicator t T ht]
+    have hE_le (r : ℝ) : ‖ξ‖ * ‖E r‖ ≤ ‖ξ‖ * ‖continuousNavierSource v v r ξ i‖ := by
+      by_cases h : r ≤ t
+      · rw [hEp r h, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+          abs_of_pos (Real.exp_pos _)]
+        have hexp : Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) ≤ 1 :=
+          Real.exp_le_one_iff.mpr (neg_nonpos.mpr
+            (mul_nonneg (mul_nonneg hνR.le (sq_nonneg _)) (sub_nonneg.mpr h)))
+        have h1 : Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * (t - r)))) *
+            ‖continuousNavierSource v v r ξ i‖ ≤
+            ‖continuousNavierSource v v r ξ i‖ :=
+          (mul_le_mul_of_nonneg_right hexp (norm_nonneg _)).trans (one_mul _).le
+        exact mul_le_mul_of_nonneg_left h1 (norm_nonneg ξ)
+      · rw [hEn r h, norm_zero, mul_zero]
+        exact mul_nonneg (norm_nonneg _) (norm_nonneg _)
+    calc ‖ξ‖ * ‖continuousDuhamel (ν : ℝ) v v t ξ i‖
+        = ‖ξ‖ * ‖∫ r : ℝ, E r ∂μT‖ := congrArg (fun x => ‖ξ‖ * ‖x‖) hI
+      _ ≤ ‖ξ‖ * ∫ r : ℝ, ‖E r‖ ∂μT :=
+          mul_le_mul_of_nonneg_left (norm_integral_le_integral_norm _) (norm_nonneg ξ)
+      _ = ∫ r : ℝ, ‖ξ‖ * ‖E r‖ ∂μT :=
+          (integral_smul ‖(ξ : ES)‖ fun r => ‖E r‖).symm
+      _ ≤ ∫ r : ℝ, ‖ξ‖ * ‖continuousNavierSource v v r ξ i‖ ∂μT :=
+          integral_mono ((hite_int).norm.const_mul ‖(ξ : ES)‖) hq hE_le
+  have hDnorm : AEStronglyMeasurable (fun ξ : ES =>
+      ‖ξ‖ * ‖continuousDuhamel (ν : ℝ) v v t ξ i‖) volume :=
+    ((by fun_prop : AEStronglyMeasurable (fun ξ : ES => ‖ξ‖) volume).mul
+      (((hmM t ht i).sub
+        ((by fun_prop :
+            AEStronglyMeasurable
+              (fun ξ : ES => ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ)))
+              volume)
+          |>.mul (haM i))).congr (ae_of_all volume fun ξ => by
+          show mildImage ν hν a v t ξ i - heatVec (ν : ℝ) t a ξ i =
+              continuousDuhamel (ν : ℝ) v v t ξ i
+          rw [show mildImage ν hν a v t ξ i =
+                heatVec (ν : ℝ) t a ξ i + continuousDuhamel (ν : ℝ) v v t ξ i from rfl]
+          abel)).norm)
+  have hDint : Integrable (fun ξ : ES =>
+      ‖ξ‖ * ‖continuousDuhamel (ν : ℝ) v v t ξ i‖) volume := by
+    refine hKint.mono' hDnorm ?_
+    filter_upwards [hDle] with ξ h
+    rw [Real.norm_of_nonneg (mul_nonneg (norm_nonneg _) (norm_nonneg _))]
+    exact h
+  refine ((integrable_weighted_heatMode_of_X1 (fun ζ : ES => a ζ i) (ha1 i)
+      (ν : ℝ) t hνR ht.1).add hDint).mono'
+    ((by fun_prop : AEStronglyMeasurable (fun ξ : ES => ‖ξ‖) volume).mul
+      (hmM t ht i).norm) ?_
+  filter_upwards with ξ
+  rw [Real.norm_of_nonneg (mul_nonneg (norm_nonneg ξ) (norm_nonneg _))]
+  show ‖ξ‖ * ‖heatVec (ν : ℝ) t a ξ i + continuousDuhamel (ν : ℝ) v v t ξ i‖ ≤
+    ‖ξ‖ * ‖heatVec (ν : ℝ) t a ξ i‖ + ‖ξ‖ * ‖continuousDuhamel (ν : ℝ) v v t ξ i‖
+  exact (mul_le_mul_of_nonneg_left (norm_add_le _ _) (norm_nonneg ξ)).trans
+    ((mul_add _ _ _).le)
+
+/-- Leaf 2c at every horizon time for box elements under the named input:
+`SourceL1X1` on the box's everywhere representative upgrades
+`mildTimeLeaf_hmX1_ae` from `a.e.` to `∀ t ∈ Icc 0 T`. -/
+theorem mildTimeLeaf_hmX1_of_sourceL1X1_actualBox (ν : ℝ≥0) (hν : 0 < ν)
+    (T R : ℝ) (hT : 0 ≤ T)
+    (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (H : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
+        SourceL1X1 T (everywhereRawRepresentative ν T x.1)) :
+    ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t ∈ Icc (0 : ℝ) T, ∀ i,
+      Integrable (fun ξ : ES => ‖ξ‖ *
+        ‖mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i‖) :=
+  fun x => mildTimeLeaf_hmX1_of_sourceL1X1 ν hν T a (everywhereRawRepresentative ν T x.1)
+    haM ha1 (mildTimeLeaf_hmM ν hν T R a haM x) (mildLeafHjointDiag ν hν T R x) (H x)
+
+/-- **Leaf 2e under `SourceL1X1`.**  The viscous `X¹`-valued time section of
+the horizon-truncated mild image is strongly measurable — derived from
+continuity in the quotient distance exactly as in leaf 2d
+(`mildTimeLeaf_hmXm1Time`): the heat part converges by dominated convergence
+against `‖ξ‖ ‖a ξ i‖` (`tendsto_normX1_heatVec_sub`), and the Duhamel part
+by dominated convergence of the causal-truncation kernel difference against
+the `SourceL1X1` budget (`tendsto_normX1_duhamelDiff`), which is precisely
+the raised-weight domination the 2d argument needs.  The section's
+constructor obligation — every-time `hmX1` — is discharged by
+`mildTimeLeaf_hmX1_of_sourceL1X1`. -/
+theorem mildTimeLeaf_hmX1Time_of_sourceL1X1 (ν : ℝ≥0) (hν : 0 < ν) (T : ℝ)
+    (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (hmM : ∀ t ∈ Icc (0 : ℝ) T, ∀ i, AEStronglyMeasurable
+        (fun ξ : ES => mildImage ν hν a v t ξ i) volume)
+    (hjointT : AEStronglyMeasurable (fun p : ES × ℝ =>
+        complexEuclideanPoint (continuousNavierSource v v p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) T))))
+    (H : SourceL1X1 T v) :
+    AEStronglyMeasurable
+      (viscousX1Section (mildImageIcc ν hν T a v)
+        (mildImageIcc_aestronglyMeasurable ν hν T a v hmM)
+        (mildImageIcc_integrableX1 ν hν T a v
+          (mildTimeLeaf_hmX1_of_sourceL1X1 ν hν T a v haM ha1 hmM hjointT H)) ν)
+      (leiLinTimeMeasure T) := by
+  let hmX1 := mildTimeLeaf_hmX1_of_sourceL1X1 ν hν T a v haM ha1 hmM hjointT H
+  let Ψ : ℝ → ViscousX1Spatial ν := fun t =>
+    viscousX1Section (mildImageIcc ν hν T a v)
+      (mildImageIcc_aestronglyMeasurable ν hν T a v hmM)
+      (mildImageIcc_integrableX1 ν hν T a v hmX1) ν t
+  have hνR : 0 < (ν : ℝ) := by exact_mod_cast hν
+  have hheatAES : ∀ (t : ℝ), 0 ≤ t → ∀ j : Fin 3,
+      AEStronglyMeasurable (fun ξ : ES => heatVec (ν : ℝ) t a ξ j) volume :=
+    fun t ht j =>
+      (by fun_prop :
+          AEStronglyMeasurable
+            (fun ξ : ES => ((Real.exp (-(((ν : ℝ) * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ))) volume)
+        |>.mul (haM j)
+  have hΨ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) : Ψ t =
+      toViscousX1Spatial ν (fun ξ : ES => mildImage ν hν a v t ξ) (fun i => hmM t ht i)
+        (fun i => hmX1 t ht i) :=
+    toViscousX1Spatial_congr_raw ν (fun i => mildImageIcc_aestronglyMeasurable ν hν T a v hmM t i)
+      (fun i => hmM t ht i) (fun i => mildImageIcc_integrableX1 ν hν T a v hmX1 t i)
+      (fun i => hmX1 t ht i) (fun ξ => mildImageIcc_of_mem ν hν T a v t ht ξ)
+  have hcont : ContinuousOn Ψ (Icc (0 : ℝ) T) := fun t₀ ht₀ =>
+    tendsto_iff_dist_tendsto_zero.mpr (by
+      have hsum : Tendsto (fun s : ℝ => ∑ i : Fin 3,
+          (normX1 (fun ξ : ES =>
+              heatVec (ν : ℝ) s a ξ i - heatVec (ν : ℝ) t₀ a ξ i) +
+              normX1 (fun ξ : ES =>
+                continuousDuhamel (ν : ℝ) v v s ξ i -
+                  continuousDuhamel (ν : ℝ) v v t₀ ξ i)))
+          (𝓝[Icc (0 : ℝ) T] t₀) (𝓝 0) := by
+        simpa using tendsto_finsetSum (Finset.univ : Finset (Fin 3))
+          (fun i _ => (tendsto_normX1_heatVec_sub a ha1 (ν : ℝ) hνR T t₀ ht₀ i).add
+            (tendsto_normX1_duhamelDiff ν hν T t₀ ht₀ v hjointT H i))
+      have hbound : Tendsto (fun s : ℝ => (ν : ℝ) * ∑ i : Fin 3,
+          (normX1 (fun ξ : ES =>
+              heatVec (ν : ℝ) s a ξ i - heatVec (ν : ℝ) t₀ a ξ i) +
+              normX1 (fun ξ : ES =>
+                continuousDuhamel (ν : ℝ) v v s ξ i -
+                  continuousDuhamel (ν : ℝ) v v t₀ ξ i)))
+          (𝓝[Icc (0 : ℝ) T] t₀) (𝓝 0) := by
+        simpa using hsum.const_mul (ν : ℝ)
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le'
+        (tendsto_const_nhds : Tendsto (fun _ : ℝ => (0 : ℝ)) (𝓝[Icc (0 : ℝ) T] t₀) (𝓝 0))
+        hbound (Filter.Eventually.of_forall fun s => dist_nonneg) ?_
+      filter_upwards [self_mem_nhdsWithin] with s hs
+      have hdecomp : (fun ξ : ES => mildImage ν hν a v s ξ - mildImage ν hν a v t₀ ξ) =
+          (fun ξ : ES => heatVec (ν : ℝ) s a ξ - heatVec (ν : ℝ) t₀ a ξ) +
+            fun ξ : ES =>
+              continuousDuhamel (ν : ℝ) v v s ξ - continuousDuhamel (ν : ℝ) v v t₀ ξ := by
+        ext ξ j
+        show mildImage ν hν a v s ξ j - mildImage ν hν a v t₀ ξ j =
+            heatVec (ν : ℝ) s a ξ j - heatVec (ν : ℝ) t₀ a ξ j +
+              (continuousDuhamel (ν : ℝ) v v s ξ j - continuousDuhamel (ν : ℝ) v v t₀ ξ j)
+        rw [show mildImage ν hν a v s ξ j =
+              heatVec (ν : ℝ) s a ξ j + continuousDuhamel (ν : ℝ) v v s ξ j from rfl,
+          show mildImage ν hν a v t₀ ξ j =
+              heatVec (ν : ℝ) t₀ a ξ j + continuousDuhamel (ν : ℝ) v v t₀ ξ j from rfl]
+        abel
+      calc dist (Ψ s) (Ψ t₀)
+          = ‖Ψ s - Ψ t₀‖ := dist_eq_norm _ _
+        _ = ‖toViscousX1Spatial ν
+              (fun ξ : ES => mildImage ν hν a v s ξ - mildImage ν hν a v t₀ ξ)
+              (fun i => (hmM s hs i).sub (hmM t₀ ht₀ i))
+              (fun i => x1_integrable_diff (fun ξ : ES => mildImage ν hν a v s ξ)
+                (fun ξ : ES => mildImage ν hν a v t₀ ξ) (hmM s hs) (hmM t₀ ht₀)
+                (hmX1 s hs) (hmX1 t₀ ht₀) i)‖ := by
+              rw [hΨ s hs, hΨ t₀ ht₀,
+                toViscousX1Spatial_sub ν (fun ξ : ES => mildImage ν hν a v s ξ)
+                  (fun ξ : ES => mildImage ν hν a v t₀ ξ) (hmM s hs) (hmM t₀ ht₀)
+                  (hmX1 s hs) (hmX1 t₀ ht₀)]
+        _ = (ν : ℝ) * coordinateX1Mass
+              (fun ξ : ES => mildImage ν hν a v s ξ - mildImage ν hν a v t₀ ξ) :=
+              norm_toViscousX1Spatial ν
+                (fun ξ : ES => mildImage ν hν a v s ξ - mildImage ν hν a v t₀ ξ)
+                (fun i => (hmM s hs i).sub (hmM t₀ ht₀ i))
+                (fun i => x1_integrable_diff (fun ξ : ES => mildImage ν hν a v s ξ)
+                  (fun ξ : ES => mildImage ν hν a v t₀ ξ) (hmM s hs) (hmM t₀ ht₀)
+                  (hmX1 s hs) (hmX1 t₀ ht₀) i)
+        _ ≤ (ν : ℝ) * (coordinateX1Mass (fun ξ : ES =>
+                heatVec (ν : ℝ) s a ξ - heatVec (ν : ℝ) t₀ a ξ)
+            + coordinateX1Mass (fun ξ : ES =>
+                continuousDuhamel (ν : ℝ) v v s ξ - continuousDuhamel (ν : ℝ) v v t₀ ξ)) := by
+              refine mul_le_mul_of_nonneg_left ?_ hνR.le
+              rw [hdecomp]
+              exact coordinateX1Mass_add_le
+                (fun ξ : ES => heatVec (ν : ℝ) s a ξ - heatVec (ν : ℝ) t₀ a ξ)
+                (fun ξ : ES =>
+                  continuousDuhamel (ν : ℝ) v v s ξ - continuousDuhamel (ν : ℝ) v v t₀ ξ)
+                (fun i => x1_integrable_diff (fun ξ : ES => heatVec (ν : ℝ) s a ξ)
+                  (fun ξ : ES => heatVec (ν : ℝ) t₀ a ξ) (hheatAES s hs.1) (hheatAES t₀ ht₀.1)
+                  (heatVec_x1Integrable a haM ha1 (ν : ℝ) s hνR hs.1)
+                  (heatVec_x1Integrable a haM ha1 (ν : ℝ) t₀ hνR ht₀.1) i)
+                (fun i => x1_integrable_diff
+                  (fun ξ : ES => continuousDuhamel (ν : ℝ) v v s ξ)
+                  (fun ξ : ES => continuousDuhamel (ν : ℝ) v v t₀ ξ)
+                  (fun j => ((hmM s hs j).sub (hheatAES s hs.1 j)).congr
+                    (ae_of_all volume fun ξ => by
+                      show mildImage ν hν a v s ξ j - heatVec (ν : ℝ) s a ξ j =
+                          continuousDuhamel (ν : ℝ) v v s ξ j
+                      rw [show mildImage ν hν a v s ξ j =
+                            heatVec (ν : ℝ) s a ξ j + continuousDuhamel (ν : ℝ) v v s ξ j
+                            from rfl]
+                      abel))
+                  (fun j => ((hmM t₀ ht₀ j).sub (hheatAES t₀ ht₀.1 j)).congr
+                    (ae_of_all volume fun ξ => by
+                      show mildImage ν hν a v t₀ ξ j - heatVec (ν : ℝ) t₀ a ξ j =
+                          continuousDuhamel (ν : ℝ) v v t₀ ξ j
+                      rw [show mildImage ν hν a v t₀ ξ j =
+                            heatVec (ν : ℝ) t₀ a ξ j + continuousDuhamel (ν : ℝ) v v t₀ ξ j
+                            from rfl]
+                      abel))
+                  (continuousDuhamel_x1Integrable ν hν T a v haM ha1 hmM hmX1 s hs)
+                  (continuousDuhamel_x1Integrable ν hν T a v haM ha1 hmM hmX1 t₀ ht₀) i)
+          _ = (ν : ℝ) * ∑ i : Fin 3, (normX1 (fun ξ : ES =>
+                  heatVec (ν : ℝ) s a ξ i - heatVec (ν : ℝ) t₀ a ξ i) +
+                normX1 (fun ξ : ES =>
+                  continuousDuhamel (ν : ℝ) v v s ξ i -
+                    continuousDuhamel (ν : ℝ) v v t₀ ξ i)) := by
+              simp only [coordinateX1Mass, Finset.sum_add_distrib, Pi.sub_apply])
+  exact (hcont.aestronglyMeasurable (μ := volume) isClosed_Icc.measurableSet)
+
+/-- Leaf 2e for box elements under the named input. -/
+theorem mildTimeLeaf_hmX1Time_of_sourceL1X1_actualBox (ν : ℝ≥0) (hν : 0 < ν)
+    (T R : ℝ) (hT : 0 ≤ T)
+    (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (H : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
+        SourceL1X1 T (everywhereRawRepresentative ν T x.1)) :
+    ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
+      AEStronglyMeasurable
+        (viscousX1Section (mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1))
+          (mildImageIcc_aestronglyMeasurable ν hν T a
+            (everywhereRawRepresentative ν T x.1) (mildTimeLeaf_hmM ν hν T R a haM x))
+          (mildImageIcc_integrableX1 ν hν T a
+            (everywhereRawRepresentative ν T x.1)
+            (mildTimeLeaf_hmX1_of_sourceL1X1_actualBox ν hν T R hT a haM ha1 H x)) ν)
+        (leiLinTimeMeasure T) := fun x =>
+  mildTimeLeaf_hmX1Time_of_sourceL1X1 ν hν T a (everywhereRawRepresentative ν T x.1)
+    haM ha1 (mildTimeLeaf_hmM ν hν T R a haM x) (mildLeafHjointDiag ν hν T R x) (H x)
+
 /-!
 
 The two record fields left open by S3 for *general* box elements are named
-here precisely:
+here precisely; S5 above reduces BOTH of them to the single named input
+`SourceL1X1` (the source's own spacetime `X¹` budget) and derives them
+conditionally under it — `mildTimeLeaf_hmX1_of_sourceL1X1_actualBox` (2c
+at every horizon time), `mildTimeLeaf_hmX1Time_of_sourceL1X1_actualBox`
+(2e), assembled at record level by
+`mildAssemblyTimeLeaves_of_sourceL1X1`.  The input is satisfiable (the
+zero box has zero source) and is an estimate on the *source*, not a
+restatement of the image-level conclusions.  What remains UNCONDITIONAL
+for general boxes, from box data alone:
 
 1. `hmX1` at **every** horizon time.  `mildTimeLeaf_hmX1_ae` derives the
-   `volume.restrict (Icc 0 T)`-a.e. reading, and `D₃` maximal regularity
-   (`continuousDuhamel_X1_integrability`, whose second conclusion is
-   `hprod.prod_left_ae`) cannot in general upgrade `a.e.` to `∀ t`: a
-   pointwise `X¹` bound for the Duhamel part at time `t` needs
-   `∫ s in Icc 0 t, τ (s)^{-1/2} ‖ξ‖-weighted` source mass finite for *that*
-   `t`, i.e. membership of the weighted source in `L¹_t` on every initial
-   interval, which the box `L²`-based weights do not supply
-   (`s^{-1/2} ∈ L¹(0,T) \ L²(0,T)`).  Exact residual:
+   `volume.restrict (Icc 0 T)`-a.e. reading, and the smoothing route
+   cannot in general upgrade `a.e.` to `∀ t`: three distinct estimators
+   of the pointwise `X¹` Duhamel bound at `t` — the `τ^{-1}`-weighted
+   fiber integral, the `τ^{-1/2}`-weighted unweighted-source convolution,
+   and the interpolated-weight variants — all die at the same wall:
+   `L¹`-in-time source data convolved with `τ^{-1/2}` is finite only
+   `a.e.` in `t` (`τ^{-1/2} * τ^{-3/4} χ_{(0,t)} = ∞` at `t`), and the
+   box weights are `‖ξ‖⁻¹`-based
+   (`s^{-1/2} ∈ L¹(0,T) \ L²(0,T)`).  The gap from box data to
+   `SourceL1X1` is the product budget `∫₀ᵀ u₀(s) u₁(s) ds < ∞` along box
+   representatives (`u₀` the `X⁰` mass, `u₁` the `X¹` mass) — an
+   explicit slot strengthening (`u₁ ∈ L^{1+ε}_t`, or `u₀ ∈ L^{1+ε'}_t`),
+   not supplied by `L∞_t(X⁻¹) ∩ L¹_t(X¹)` alone.  Named construction
+   candidate for genuine unconditional failure (NOT kernel-checked, NOT a
+   falsification): sweeping thin shells `r(s) = (t₀ − s)^{−1/2}`,
+   `u₁ = K τ^{−0.9}` inside the box slots with `X¹`-divergent Duhamel at
+   `t₀`; until that construction is carried out and compiled the
+   unconditional every-time statement is OPEN, not refuted.  Exact
+   residual:
    `∀ x t ∈ Icc 0 T, ∀ i, Integrable (fun ξ => ‖ξ‖ * ‖mildImage ν hν a (rep x) t ξ i‖)`.
 2. `hmX1Time` (2e): strong measurability (into the `Lp`-space valued
    section function `viscousX1Section`) of the horizon-truncated mild image
@@ -1873,13 +2783,15 @@ here precisely:
    weights `|ite(p.2 ≤ s) e^{−ν‖p.1‖²(s−p.2)} − ite(p.2 ≤ t₀)
    e^{−ν‖p.1‖²(t₀−p.2)}|` are bounded by `1` for all `s`, so no `L¹_t`
    source budget — and no `s^{−1/2}` smoothing singularity — enters.
-   The `X¹`-valued section 2e has no analogous derivation: its
-   constructor obligation is the field `hmX1` (leaf 2c) at every horizon
-   time, and supplying that is exactly the `s^{−1/2} ∈ L¹(0,T) \ L²(0,T)`
-   wall of item 1.  Exact residual: the `AEStronglyMeasurable` statement
-   of `viscousX1Section` for general box elements, blocked at the
-   surviving proposition of item 1 — not an `a.e.`-time restatement of
-   the closed `xm1Section` reading.
+   The `X¹`-valued section 2e runs on the SAME continuity template raised
+   to the `X¹` weight under `SourceL1X1` (`tendsto_normX1_heatVec_sub` +
+   `tendsto_normX1_duhamelDiff`, again with kernel difference `≤ 1` — no
+   smoothing enters), but its constructor obligation is the field `hmX1`
+   (leaf 2c) at every horizon time, so unconditionally for general boxes
+   2e is open exactly where 2c is.  Exact residual: the
+   `AEStronglyMeasurable` statement of `viscousX1Section` for general box
+   elements, blocked at the surviving proposition of item 1 — not an
+   `a.e.`-time restatement of the closed `xm1Section` reading.
 
 Polarization leaves 3a/3b (step 4) remain premises: packaging
 `continuousMildImage_sub_coordinateXm1Mass_le` /
@@ -1916,10 +2828,12 @@ integrability at every horizon time `t ∈ Icc 0 T`, the two time-section
 measurabilities of the horizon-truncated mild image, and the time
 integrability of its `X¹` mass).  For general box elements this module
 derives `hmM` (2a), `hmXm1` (2b), `hmXm1Time` (2d,
-`mildTimeLeaf_hmXm1Time_actualBox`) and `hmX1Int` (2f), and the `a.e.`
-reading of `hmX1` (`mildTimeLeaf_hmX1_ae`); the every-time `hmX1` and
-`hmX1Time` (2e) remain the exact open propositions behind the mild fixed
-point constructor (see the obstruction record above). -/
+`mildTimeLeaf_hmXm1Time_actualBox`) and `hmX1Int` (2f), the `a.e.`
+reading of `hmX1` (`mildTimeLeaf_hmX1_ae`), and — under the named input
+`SourceL1X1` — the every-time `hmX1` and `hmX1Time` (2e), assembled by
+`mildAssemblyTimeLeaves_of_sourceL1X1`.  The unconditional every-time
+`hmX1`/`hmX1Time` remain the exact open propositions behind the mild
+fixed point constructor (see the obstruction record above). -/
 structure MildAssemblyTimeLeaves
     (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ) (hT : 0 ≤ T)
     (a : ES → ComplexSpace)
@@ -1944,9 +2858,11 @@ structure MildAssemblyTimeLeaves
         ‖mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i‖)
   /-- Leaf 2c: `X¹` integrability of the mild image at every horizon time
   (horizon-restricted for the same reason as leaf 2a).  For general boxes
-  only the `leiLinTimeMeasure T`-a.e. reading is derived
-  (`mildTimeLeaf_hmX1_ae`); the every-time upgrade is the `s^{−1/2}` wall
-  recorded above. -/
+  the `leiLinTimeMeasure T`-a.e. reading is derived unconditionally
+  (`mildTimeLeaf_hmX1_ae`); the every-time upgrade is derived under the
+  named input `SourceL1X1`
+  (`mildTimeLeaf_hmX1_of_sourceL1X1_actualBox`), and from box data alone
+  remains the `s^{−1/2}` wall recorded above. -/
   hmX1 : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R), ∀ t ∈ Icc (0 : ℝ) T, ∀ i,
       Integrable (fun ξ : ES => ‖ξ‖ *
         ‖mildImage ν hν a (everywhereRawRepresentative ν T x.1) t ξ i‖)
@@ -1963,9 +2879,11 @@ structure MildAssemblyTimeLeaves
             (everywhereRawRepresentative ν T x.1) (hmXm1 x)))
         (leiLinTimeMeasure T)
   /-- Leaf 2e: strong measurability of the viscous `X¹`-valued time section of
-  the horizon-truncated mild image.  Open for general boxes: the section's
-  `∀ t` constructor obligation is leaf 2c, so the surviving proposition is
-  the every-time `hmX1` recorded above. -/
+  the horizon-truncated mild image.  Derived under the named input
+  `SourceL1X1` by `mildTimeLeaf_hmX1Time_of_sourceL1X1_actualBox` (the
+  leaf 2d continuity template at the raised weight); the section's `∀ t`
+  constructor obligation is leaf 2c, so it is open unconditionally for
+  general boxes exactly where 2c is. -/
   hmX1Time : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
       AEStronglyMeasurable
         (viscousX1Section (mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1))
@@ -1980,6 +2898,26 @@ structure MildAssemblyTimeLeaves
       Integrable (fun t : ℝ => coordinateX1Mass
         (mildImageIcc ν hν T a (everywhereRawRepresentative ν T x.1) t))
         (leiLinTimeMeasure T)
+
+/-- **Record-level closure under the named input.**  Every `x` in the actual
+linked box whose everywhere representative has `SourceL1X1`-regular source
+assembles a full `MildAssemblyTimeLeaves`: the two formerly open fields
+2c/2e come from the S5 theorems, the other four from S3/S4. -/
+theorem mildAssemblyTimeLeaves_of_sourceL1X1 (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ)
+    (hT : 0 ≤ T) (a : ES → ComplexSpace)
+    (haM : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ : ES => a ξ i) volume)
+    (ha : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖⁻¹ * ‖a ξ i‖))
+    (ha1 : ∀ i : Fin 3, Integrable (fun ξ : ES => ‖ξ‖ * ‖a ξ i‖))
+    (haR : coordinateXm1Mass a ≤ R)
+    (H : ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
+        SourceL1X1 T (everywhereRawRepresentative ν T x.1)) :
+    MildAssemblyTimeLeaves ν hν T R hT a haM ha ha1 haR where
+  hmM := mildTimeLeaf_hmM ν hν T R a haM
+  hmXm1 := mildTimeLeaf_hmXm1 ν hν T R a haM ha
+  hmX1 := mildTimeLeaf_hmX1_of_sourceL1X1_actualBox ν hν T R hT a haM ha1 H
+  hmXm1Time := mildTimeLeaf_hmXm1Time_actualBox ν hν T R hT a haM ha
+  hmX1Time := mildTimeLeaf_hmX1Time_of_sourceL1X1_actualBox ν hν T R hT a haM ha1 H
+  hmX1Int := mildTimeLeaf_hmX1Int ν hν T R hT a haM ha1
 
 /-- The polarization decomposition leaves: the two `a.e.`-in-time budget
 identities of `MildAssemblyLeaves`. -/
@@ -2934,4 +3872,15 @@ theorem mildPolarizationLeaves_actualBox (ν : ℝ≥0) (hν : 0 < ν) (T R : �
 #print axioms mildAssemblyPolarizationLeaves_of
 #check @mildPolarizationLeaves_actualBox
 #print axioms mildPolarizationLeaves_actualBox
+#check @SourceL1X1
+#check @mildTimeLeaf_hmX1_of_sourceL1X1
+#print axioms mildTimeLeaf_hmX1_of_sourceL1X1
+#check @mildTimeLeaf_hmX1_of_sourceL1X1_actualBox
+#print axioms mildTimeLeaf_hmX1_of_sourceL1X1_actualBox
+#check @mildTimeLeaf_hmX1Time_of_sourceL1X1
+#print axioms mildTimeLeaf_hmX1Time_of_sourceL1X1
+#check @mildTimeLeaf_hmX1Time_of_sourceL1X1_actualBox
+#print axioms mildTimeLeaf_hmX1Time_of_sourceL1X1_actualBox
+#check @mildAssemblyTimeLeaves_of_sourceL1X1
+#print axioms mildAssemblyTimeLeaves_of_sourceL1X1
 end Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
