@@ -46,19 +46,26 @@ it cancels inside the symbol `ξᵢξⱼ/‖ξ‖²` (primitive header).
 
 ## Honest scope: which physical identity is genuinely proved
 
-The remaining rewrite of the transported source
-`((2π)²∑ᵢⱼ ξᵢξⱼ(ûᵢ⋆ûⱼ))` into `∑ᵢⱼ ∂ᵢ∂ⱼ(vᵢ vⱼ)` with the physical
-velocities `vᵢ = 𝓕⁻ ûᵢ` requires the product-to-convolution bridge
-`𝓕⁻(ûᵢ ⋆ ûⱼ) = vᵢ · vⱼ` for merely-`L¹` frequency data.  The pinned Mathlib
-carries only the convolution-to-product direction
-(`Real.fourier_bilin_convolution_eq`); the product-to-convolution direction
-holds in `𝓢` (`SchwartzMap.fourier_convolution` + inversion) but the physical
-velocities of `L¹` profiles are bounded continuous functions that need not be
-integrable, so the `𝓢`-level bridge does not transport to this carrier
-without strengthening the velocity hypothesis (e.g. `u = fourierDatum` of a
-`SchwartzVelocity`, cf. `ContinuousLeiLinPhysicalCarrier`).  This is the
-exact named residual, not a defect of the identity proved above: the brief's
-target — `∫ p Δφ` equal to the transported frequency pairing — is PROVED.
+The rewrite of the transported source `((2π)²∑ᵢⱼ ξᵢξⱼ(ûᵢ⋆ûⱼ))` into
+`-∑ᵢⱼ ∂ᵢ∂ⱼ(vᵢ vⱼ)` with the physical velocities `vᵢ = 𝓕⁻ ûᵢ` is delivered in
+`Navier.Analysis.PressureStressTensor` under the Schwartz specialization
+`u = fourierDatum u₀` of a `SchwartzVelocity`
+(`continuousPressurePhysical_pairing_stressTensor`, which consumes the
+pairing below termwise).  The bridge itself
+`𝓕⁻(ûᵢ ⋆ ûⱼ) = vᵢ · vⱼ` turned out to need NO specialization: it holds
+pointwise for merely-`L¹` frequency data
+(`PressureStressTensor.fourierInv_bilin_convolution`, via
+`Real.fourierInv_eq_fourier_comp_neg` + `Real.fourier_mul_convolution_eq`),
+and `pressureStress_bridge_pointwise` applies it to exactly the `u` carriers
+of this module's premises.  What remains open for general box elements is
+the STRESS-PAIRING transport (the physical-side integral of
+`∂ᵢ∂ⱼ(vᵢ vⱼ)` against a test): bounded continuous `vᵢ` need not be
+integrable and the `𝓢`-level forward bridge does not transport to that
+carrier inside the `X⁰`/`X¹` quotients; the named replacement route is the
+`TemperedDistribution` API (see the header of
+`Navier.Analysis.PressureStressTensor`).  The identity proved below —
+`∫ p Δφ` equal to the transported frequency pairing — holds for every
+admissible `u`, unconditionally on this residual.
 
 ## Mean-zero normalization
 
