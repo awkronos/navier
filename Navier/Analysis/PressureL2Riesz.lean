@@ -101,8 +101,10 @@ theorem exists_doubleRieszTransform_space (i j : Fin 3) (f : L2Space) :
 
   `‖P‖₂ ≤ Σᵢⱼ ‖wᵢⱼ‖₂`.
 
-This is the `p = 2` half of blocker (b) of
-`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded`, stated on the
+This is the `p = 2` half of blocker (b) as recorded for
+`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded`
+(`NAVIER-RESIDUALS-2026-08-17.md` #10; that bridge declaration was removed in
+the soundness cleanup, `docs/OPEN_FRONTIER_MAP.md`), stated on the
 carrier the PDE actually uses.  The remaining half is the Calderón–Zygmund
 *representation* itself, which is a hypothesis here. -/
 theorem pressure_l2_bound_space

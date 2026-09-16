@@ -6,10 +6,13 @@ import Navier.Breakdown.MaximalNonextension
 /-!
 # Pressure gauge freedom, the `L^r` no-go, and the normalized pressure
 
-Blocker (b) of `ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded`
-is recorded as "an `L^r` pressure bound for `∫ χ² ⟨∇p, u⟩`; no
-`MemLp`/`Integrable` estimate for `sol.pressure` exists in the estate".  This
-file settles *why* no such estimate exists, and supplies the Pattern-A repair.
+Blocker (b) as recorded for
+`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded` (the bridge
+declaration itself was since removed in the soundness cleanup,
+`docs/OPEN_FRONTIER_MAP.md`) is recorded as "an `L^r` pressure bound for
+`∫ χ² ⟨∇p, u⟩`; no `MemLp`/`Integrable` estimate for `sol.pressure` exists in
+the estate".  This file settles *why* no such estimate exists, and supplies
+the Pattern-A repair.
 
 ## The obstruction (certified, not conjectured)
 
@@ -162,10 +165,11 @@ The explicit witness is `shiftPressure sol 1`: it has the same velocity, the
 same initial datum and the same viscosity, and its pressure differs from
 `sol.pressure` by the constant `1`, which is in no `L^r(ℝ³)`.
 
-This is the reason blocker (b) of
-`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded` has no
-`MemLp` estimate for `sol.pressure` anywhere in the estate: there is none to
-find.  The repair is normalization — see `pressure_eq_of_memLp`. -/
+This is the reason blocker (b) as recorded for
+`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded` (bridge
+declaration since removed, `docs/OPEN_FRONTIER_MAP.md`) had no `MemLp`
+estimate for `sol.pressure` anywhere in the estate: there is none to find.
+The repair is normalization — see `pressure_eq_of_memLp`. -/
 theorem not_forall_memLp_pressure
     {ν : ℝ} {f : ForceField} {u₀ : VelocityField} {T : ℝ}
     (sol : PartialClassicalSolution ν f u₀ T) (t : ℝ)

@@ -11,9 +11,12 @@ momentum equation yields the **pressure Poisson equation**
   `Δp = − Σᵢⱼ (∂ᵢuⱼ)(∂ⱼuᵢ)`  on `[0,T) × ℝ³`.
 
 This is the first rung of the pressure-representation program behind blocker
-(b) of `ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded` (the
-`L^r` pressure bound for the Caccioppoli pressure term; see
-`NAVIER-RESIDUALS-2026-08-17.md`, #10): combined with a Newtonian-potential /
+(b) as recorded for
+`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded` (the `L^r`
+pressure bound for the Caccioppoli pressure term; see
+`NAVIER-RESIDUALS-2026-08-17.md`, #10 — that bridge declaration was since
+removed in the soundness cleanup, `docs/OPEN_FRONTIER_MAP.md`): combined with
+a Newtonian-potential /
 Liouville argument it identifies `p` with the Calderón–Zygmund singular
 integral `Σ RᵢRⱼ(uᵢuⱼ)`, whose `L^r` bounds are the remaining named residual.
 The derivative-free cutoff form that consumes such a bound is certified in

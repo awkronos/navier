@@ -39,15 +39,23 @@ force. The selected velocity is classical before its singular deadline and
 cannot be continued as a global smooth bounded-energy solution. “Global smooth
 velocity” would describe A or B and must not be inferred from C.
 
-## Structural certification (measured 2026-09-13)
+## Structural certification (measured 2026-09-16 at `3ed567cd`)
 
-`scripts/proof_graph.py` over this tree: 966 modules, 2,665 local
-import edges, **0 cycles**, longest path 65, crown import closures 616 (C) /
+`scripts/proof_graph.py` over this tree: 978 modules, 2,728 local
+import edges, **0 cycles**, longest path 68, crown import closures 616 (C) /
 538 (D) / 611 (deadline-C); umbrella coverage excludes only `Main` (the mild
 fixed-point assembly and the pressure-reconstruction primitive are wired into
 the build-time receipt pipeline through `Navier/ConditionalAudit.lean`). 619
-modules are consumed by at least one crown; 346 are intermediate-unconsumed
-research infrastructure feeding future endpoints.
+modules are consumed by at least one crown; 358 are intermediate-unconsumed
+research infrastructure feeding future endpoints. (Receipt:
+`python3 scripts/proof_graph.py --root . --dirs Navier --crown
+Navier.Breakdown.ConstructedBreakdown --crown
+Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown --crown
+Navier.Analysis.PeriodicConstructedBreakdown --umbrella Main`, exit 0,
+lane NS6-DOCS worktree at `3ed567cd`; corroborated by NS5-CENSUS.
+The 2026-09-13 measurement — 966 modules / 2,665 edges / longest path 65 /
+346 intermediate-unconsumed — is superseded; crown closures 616/538/611 and
+the consumed count 619 are unchanged at re-measurement.)
 `formalization.yaml` is the machine-readable mirror of the table above;
 `scripts/check_formalization.py --check` validates it fail-closed and
 `--probe` prints the raw-axiom command sequence without asserting results.

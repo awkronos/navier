@@ -42,8 +42,10 @@ to its genuinely deep core: the Calderón–Zygmund near-field cancellation boun
   `‖RᵢRⱼ f‖₂ ≤ ‖f‖₂`.
 * `pressure_l2_bound_of_doubleRiesz_representation` — the consumer shape of
   the Navier–Stokes pressure: if `p = Σᵢⱼ RᵢRⱼ(uᵢuⱼ)` in `L²(ℝ³)`, then
-  `‖p‖₂ ≤ Σᵢⱼ ‖uᵢuⱼ‖₂`.  This is the `p = 2` half of blocker (b) of
-  `ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded`.
+  `‖p‖₂ ≤ Σᵢⱼ ‖uᵢuⱼ‖₂`.  This is the `p = 2` half of blocker (b) as
+  recorded for `ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded`
+  (bridge declaration removed in the soundness cleanup,
+  `docs/OPEN_FRONTIER_MAP.md`).
 
 Scope, stated once and travelling with every claim above: this is the
 **`p = 2`** theory only.  It is exactly the Hilbert-space/Plancherel case and
@@ -359,9 +361,10 @@ theorem exists_doubleRieszTransform (i j : Fin 3) (f : Lp (α := FourierSpace) �
 
   `‖P‖₂ ≤ Σᵢⱼ ‖wᵢⱼ‖₂`.
 
-This is the `p = 2` half of blocker (b) of
-`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded`: the local
-`L²` bound on the normalized pressure that
+This is the `p = 2` half of blocker (b) as recorded for
+`ConditionalRegularity.prodiSerrin_interior_outerRegion_bounded` (removed in
+the soundness cleanup, `docs/OPEN_FRONTIER_MAP.md`): the local `L²`
+bound on the normalized pressure that
 `PressureNormalization.abs_cutoffPressure_le_localL2` consumes as its first
 factor.
 
