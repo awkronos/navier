@@ -1,4 +1,5 @@
 import Navier.Analysis.AprioriCriticalControlQuantifiers
+import Navier.Analysis.BKMEnvAxis
 import Navier.Analysis.BKMForcedBreakdownNecessity
 import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.BKMProfileEnvelope
@@ -115,6 +116,7 @@ import Navier.Analysis.EnergyViscousIntegral
 import Navier.Analysis.Enstrophy
 import Navier.Analysis.EnstrophyLimit
 import Navier.Analysis.EnstrophyPointwise
+import Navier.Analysis.FloatExpCrossover
 import Navier.Analysis.ForceCoordinateBridge
 import Navier.Analysis.ForceCoordinateDecayBridge
 import Navier.Analysis.ForceMultiIndexConvention
@@ -194,6 +196,7 @@ import Navier.Analysis.PressurePoisson
 import Navier.Analysis.MadelungTransportIdentity
 import Navier.Analysis.MadelungDecoderCurlObstruction
 import Navier.Analysis.MadelungResidualPrimitives
+import Navier.Analysis.PressureStressTensor
 import Navier.Analysis.QuantumVortexRegularity
 import Navier.Analysis.QuantumVortexTopologyChange
 import Navier.Analysis.QuantumVortexWinding
@@ -274,6 +277,7 @@ import Navier.Routes.R7.SymmetrizedWitness
 import Navier.Routes.R7.Triad
 import Navier.Routes.R7.WeightedShellTransfer
 import Navier.Scaling
+import Navier.Transfer.LatticeExtensionTransport
 
 /-!
 # Navier
