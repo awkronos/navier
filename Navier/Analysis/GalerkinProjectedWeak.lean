@@ -36,6 +36,7 @@ import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.GalerkinWeakConsistency
 import Navier.Analysis.GalerkinModeData
 import Navier.Analysis.GalerkinEnergyBudget
+import Navier.Analysis.EnergyOfficialClause
 
 set_option autoImplicit false
 set_option maxHeartbeats 4000000
@@ -588,3 +589,241 @@ theorem convectionSlot_eq_zero_of_not_mem (phi : DivergenceFreeTestFunction)
     rw [convectionSchwartzBilin_apply, spatialDerivative]
   rw [hkey, hfd]
   simp
+
+/-! ### Bridge part 2A: scalar continuity leaves and the squared curl error -/
+
+/-- A fixed field paired against a compactly carried, jointly continuous
+slice family is continuous in time. -/
+theorem fixedPairingContinuousOn (w : SchwartzVelocity)
+    {f : ℝ → SchwartzVelocity} {s : Set ℝ}
+    (hjoint : ContinuousOn (fun z : ℝ × Space => f z.1 z.2) (s ×ˢ Set.univ))
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → f t x = 0) :
+    ContinuousOn (fun t => schwartzL2Inner w (f t)) s :=
+  (pairing_continuousOn hjoint hK hspace w).congr fun t _ => schwartzL2Inner_comm w (f t)
+
+/-- The modal coefficient family `t ↦ ⟨f(t), wⱼ⟩` of a compactly carried,
+jointly continuous slice family is continuous. -/
+theorem coeffContinuousOn {f : ℝ → SchwartzVelocity} {s : Set ℝ}
+    (hjoint : ContinuousOn (fun z : ℝ × Space => f z.1 z.2) (s ×ˢ Set.univ))
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → f t x = 0)
+    (W : GalerkinBasisFamily) (j : ℕ) :
+    ContinuousOn (fun t => W.coeff (f t) j) s :=
+  pairing_continuousOn hjoint hK hspace (W.w j)
+
+/-- The curl–curl pairing of a fixed mode against the test curl family is
+continuous on the nonnegative half-line. -/
+theorem curlSlotContinuousOn (W : GalerkinBasisFamily)
+    (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0) (j : ℕ) :
+    ContinuousOn (fun t => schwartzL2Inner (curlSchwartzCLM (W.w j))
+        (curlSchwartzCLM (phi.field t))) (Set.Ici (0 : ℝ)) :=
+  fixedPairingContinuousOn (curlSchwartzCLM (W.w j)) (curlContinuousOn phi) hK
+    (fun t x hx => testCurl_eq_zero_of_not_mem phi hK hspace t hx)
+
+/-- The squared curl norm of the test family is continuous on the
+nonnegative half-line. -/
+theorem selfCurlSqContinuousOn (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0) :
+    ContinuousOn (fun t => schwartzL2Inner (curlSchwartzCLM (phi.field t))
+        (curlSchwartzCLM (phi.field t))) (Set.Ici (0 : ℝ)) :=
+  selfPairing_continuousOn (curlContinuousOn phi) hK
+    (fun t x hx => testCurl_eq_zero_of_not_mem phi hK hspace t hx)
+
+/-- The fixed-slot convection family paired against a retained mode is
+continuous on the nonnegative half-line. -/
+theorem convectionPairingContinuousOn (W : GalerkinBasisFamily)
+    (phi : DivergenceFreeTestFunction) (w : SchwartzVelocity)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0) (j : ℕ) :
+    ContinuousOn (fun t => schwartzL2Inner (W.w j)
+        (convectionSchwartzBilin w (phi.field t))) (Set.Ici (0 : ℝ)) :=
+  (pairing_continuousOn (convectionSlotContinuousOn phi w) hK
+    (fun t x hx => convectionSlot_eq_zero_of_not_mem phi hK hspace w t hx)
+    (W.w j)).congr fun t _ =>
+    schwartzL2Inner_comm (W.w j) (convectionSchwartzBilin w (phi.field t))
+
+/-- Each coefficient of a Galerkin coefficient flow is continuous on the
+nonnegative half-line (the flow is differentiable there). -/
+theorem cSlotContinuousOn (W : GalerkinBasisFamily) {ν : ℝ}
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) (i : Fin m) :
+    ContinuousOn (fun t : ℝ => (c m t) i) (Set.Ici (0 : ℝ)) := by
+  have hc_cont : ContinuousOn (c m) (Set.Ici (0 : ℝ)) :=
+    fun s hs => (hc m s hs).continuousWithinAt
+  have heval : Continuous fun v : EuclideanSpace ℝ (Fin m) => v i :=
+    PiLp.continuous_apply 2 (fun _ : Fin m => ℝ) i
+  exact heval.comp_continuousOn hc_cont
+
+/-- The enstrophy density along a coefficient flow is integrable on every
+`(0, T]` window (host continuity on `[0,∞)` plus the standard
+`Icc`/`Ioc` squeeze). -/
+theorem henstrophyIntegrable_of_flow (W : GalerkinBasisFamily) {ν : ℝ}
+    (T : ℝ) (hT : 0 ≤ T)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) :
+    IntegrableOn (fun t => W.coefficientEnstrophy (c m t)) (Set.Ioc (0 : ℝ) T) :=
+  (((coefficientFlow_enstrophy_continuousOn W c hc m).mono Set.Icc_subset_Ici_self).integrableOn_Icc).mono_set
+    Set.Ioc_subset_Icc_self
+
+/-- The realized modal energy of a coefficient vector: the official Euclidean
+spatial energy integral is exactly the squared Euclidean norm (orthonormality,
+no dimension factor). -/
+theorem energyField_eq_norm_sq (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) :
+    (∫ x : Space, officialEuclideanNorm ((W.coefficientField a) x) ^ 2) = ‖a‖ ^ 2 := by
+  rw [← coefficientField_l2_isometry W, schwartzL2Inner]
+  refine integral_congr_ae ?_
+  filter_upwards with x
+  rw [officialInner_eq_sum]
+  refine (Navier.Analysis.EnergyOfficialClause.officialEuclideanNorm_sq_eq_sum_sq
+      (W.coefficientField a x)).trans ?_
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [pow_two]
+
+/-- The modal test projection does not change the pairing with a retained
+mode: `⟨wⱼ, Pₘ u⟩ = ⟨wⱼ, u⟩` for `j < m` (orthonormality). -/
+theorem wPair_proj (W : GalerkinBasisFamily) {m : ℕ} (j : Fin m)
+    (u : SchwartzVelocity) :
+    schwartzL2Inner (W.w j) (W.proj m u) = schwartzL2Inner (W.w j) u := by
+  unfold GalerkinBasisFamily.proj
+  rw [inner_sum_right]
+  simp_rw [schwartzL2Inner_smul_right]
+  rw [Finset.sum_eq_single (j : ℕ)]
+  · rw [W.orthonormal (j : ℕ) (j : ℕ), if_pos rfl, mul_one]
+    unfold GalerkinBasisFamily.coeff
+    exact schwartzL2Inner_comm u (W.w j)
+  · intro i _ hj
+    rw [W.orthonormal j i, if_neg (by omega : ¬((j : ℕ) = i)), mul_zero]
+  · intro h
+    exact absurd h (by simpa [Finset.mem_range] using Fin.is_lt j)
+
+/-- Distribution of the Schwartz Laplacian into the curl pairing (the sign
+half of the viscous-commutator expansion). -/
+private theorem lapFlip (u v : SchwartzVelocity) (hv : DivergenceFreeInitial v) :
+    schwartzL2Inner u (laplacianSchwartz v) =
+      -schwartzL2Inner (curlSchwartzCLM u) (curlSchwartzCLM v) := by
+  linarith [schwartzL2Inner_curl_eq_neg_laplacian u v hv]
+
+/-- The curl of the modal projection as a coefficient expansion. -/
+private theorem curl_proj_expand (W : GalerkinBasisFamily) {m : ℕ}
+    (u : SchwartzVelocity) :
+    curlSchwartzCLM (W.proj m u) =
+      ∑ i ∈ Finset.range m, (W.coeff u i) • curlSchwartzCLM (W.w i) := by
+  unfold GalerkinBasisFamily.proj
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [map_smul]
+
+/-- The squared modal curl error, expanded as a scalar polynomial in the
+modal coefficients of the slice: `‖curl(Pₘx − x)‖₂²` equals
+`Σᵢₖ αᵢ αₖ ⟨curl wᵢ, curl wₖ⟩ − Σᵢ αᵢ ⟨curl wᵢ, curl x⟩ −
+Σᵢ αᵢ ⟨curl x, curl wᵢ⟩ + ⟨curl x, curl x⟩`, pairings of fixed Schwartz
+fields and their scalar coefficients. -/
+private theorem errSqExpand (W : GalerkinBasisFamily) {m : ℕ} (x : SchwartzVelocity) :
+    ‖toL2 (curlSchwartzCLM (W.proj m x - x))‖ ^ 2 =
+      (∑ i ∈ Finset.range m, ∑ k ∈ Finset.range m,
+          W.coeff x i * (W.coeff x k * schwartzL2Inner (curlSchwartzCLM (W.w i))
+            (curlSchwartzCLM (W.w k))))
+        - ∑ i ∈ Finset.range m, W.coeff x i *
+            schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM x)
+        - ∑ i ∈ Finset.range m, W.coeff x i *
+            schwartzL2Inner (curlSchwartzCLM x) (curlSchwartzCLM (W.w i))
+        + schwartzL2Inner (curlSchwartzCLM x) (curlSchwartzCLM x) := by
+  rw [norm_toL2_sq, map_sub, inner_sub_left, inner_sub_right, inner_sub_right,
+    curl_proj_expand]
+  simp_rw [inner_sum_left, schwartzL2Inner_smul_left, inner_sum_right,
+    schwartzL2Inner_smul_right, Finset.mul_sum]
+  ring
+
+/-- The squared modal curl error of a test family,
+`t ↦ ‖curl(Pₘφ(t) − φ(t))‖₂²`, is continuous on the nonnegative half-line:
+it is the scalar polynomial from `errSqExpand` in continuous modal
+coefficients, fixed curl Gram constants, continuous curl pairings, and the
+continuous self curl norm. -/
+theorem errSqContinuousOn (W : GalerkinBasisFamily) (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0) (m : ℕ) :
+    ContinuousOn (fun t => err W phi.field m t ^ 2) (Set.Ici (0 : ℝ)) := by
+  have hj : ContinuousOn (fun z : ℝ × Space => phi.field z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := evalContinuousOn phi
+  have hα (i : ℕ) :
+      ContinuousOn (fun t => W.coeff (phi.field t) i) (Set.Ici (0 : ℝ)) :=
+    coeffContinuousOn hj hK hspace W i
+  have hδ (i : ℕ) :
+      ContinuousOn (fun t => schwartzL2Inner (curlSchwartzCLM (W.w i))
+          (curlSchwartzCLM (phi.field t))) (Set.Ici (0 : ℝ)) :=
+    curlSlotContinuousOn W phi hK hspace i
+  have hδ' (i : ℕ) :
+      ContinuousOn (fun t => schwartzL2Inner (curlSchwartzCLM (phi.field t))
+          (curlSchwartzCLM (W.w i))) (Set.Ici (0 : ℝ)) :=
+    (hδ i).congr fun t _ => schwartzL2Inner_comm _ _
+  have hS : ContinuousOn (fun t => schwartzL2Inner (curlSchwartzCLM (phi.field t))
+      (curlSchwartzCLM (phi.field t))) (Set.Ici (0 : ℝ)) :=
+    selfCurlSqContinuousOn phi hK hspace
+  have hA : ContinuousOn (fun t => ∑ i ∈ Finset.range m, ∑ k ∈ Finset.range m,
+      W.coeff (phi.field t) i * (W.coeff (phi.field t) k *
+        schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (W.w k))))
+      (Set.Ici (0 : ℝ)) :=
+    continuousOn_finsetSum (Finset.range m) fun i _ =>
+      continuousOn_finsetSum (Finset.range m) fun k _ =>
+        (hα i).mul ((hα k).mul continuousOn_const)
+  have hB : ContinuousOn (fun t => ∑ i ∈ Finset.range m, W.coeff (phi.field t) i *
+      schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (phi.field t)))
+      (Set.Ici (0 : ℝ)) :=
+    continuousOn_finsetSum (Finset.range m) fun i _ => (hα i).mul (hδ i)
+  have hC : ContinuousOn (fun t => ∑ i ∈ Finset.range m, W.coeff (phi.field t) i *
+      schwartzL2Inner (curlSchwartzCLM (phi.field t)) (curlSchwartzCLM (W.w i)))
+      (Set.Ici (0 : ℝ)) :=
+    continuousOn_finsetSum (Finset.range m) fun i _ => (hα i).mul (hδ' i)
+  have heq : (fun t => err W phi.field m t ^ 2) = fun t =>
+      (∑ i ∈ Finset.range m, ∑ k ∈ Finset.range m,
+          W.coeff (phi.field t) i * (W.coeff (phi.field t) k *
+            schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (W.w k))))
+        - ∑ i ∈ Finset.range m, W.coeff (phi.field t) i *
+            schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (phi.field t))
+        - ∑ i ∈ Finset.range m, W.coeff (phi.field t) i *
+            schwartzL2Inner (curlSchwartzCLM (phi.field t))
+              (curlSchwartzCLM (W.w i))
+        + schwartzL2Inner (curlSchwartzCLM (phi.field t))
+            (curlSchwartzCLM (phi.field t)) := by
+    funext t
+    exact errSqExpand W (phi.field t)
+  rw [heq]
+  exact ((hA.sub hB).sub hC).add hS
+
+/-- The squared modal curl error is integrable on every `(0, T]` window. -/
+theorem errSqIntegrableOn (W : GalerkinBasisFamily) (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    (T : ℝ) (hT : 0 ≤ T) (m : ℕ) :
+    IntegrableOn (fun t => err W phi.field m t ^ 2) (Set.Ioc (0 : ℝ) T) :=
+  (((errSqContinuousOn W phi hK hspace m).mono Set.Icc_subset_Ici_self).integrableOn_Icc).mono_set
+    Set.Ioc_subset_Icc_self
+
+/-- The zero coefficient vector realizes the zero modal field. -/
+private theorem coefficientField_zero (W : GalerkinBasisFamily) {m : ℕ} :
+    W.coefficientField (0 : EuclideanSpace ℝ (Fin m)) = 0 := by
+  ext x
+  unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+  simp
+
+/-- The `L²` norm of `toL2` vanishes at zero. -/
+private theorem norm_toL2_zero : ‖toL2 (0 : SchwartzVelocity)‖ = 0 := by
+  have h : ‖toL2 (0 : SchwartzVelocity)‖ ^ 2 = 0 := by
+    rw [norm_toL2_sq, schwartzL2Inner_zero_left]
+  have : (‖toL2 (0 : SchwartzVelocity)‖ : ℝ) ^ 2 = ‖toL2 (0 : SchwartzVelocity)‖ *
+      ‖toL2 (0 : SchwartzVelocity)‖ := by ring
+  rw [this, mul_self_eq_zero] at h
+  exact h
