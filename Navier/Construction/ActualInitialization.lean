@@ -56,6 +56,59 @@ noncomputable def curlBlock (l : Index B N0) : HarmonicBlock Point :=
 noncomputable def gaussianBlock (l : Index B N0) : HarmonicBlock Point :=
   (primaryPiece l).excludedBlock (phase l) (angularMode l)
 
+/-! The four actual blocks retain the chart frequency and the supplied
+slice phase and angular mode.  These are the carrier identities the cycle
+machinery projects (`SameCarrier`, `fullPhase`, `current_frequency`); they
+follow from the `CorrectionInitialization.PrimaryPiece` block metadata. -/
+
+theorem primaryBlock_frequency (l : Index B N0) (n : ℕ) :
+    (primaryBlock l).frequency n = (ChartScales.carrier ActualPrimary.h n : ℝ) :=
+  congrFun (PrimaryPiece.harmonicBlock_frequency (primaryPiece l) (phase l) (angularMode l)) n
+
+theorem primaryBlock_phase (l : Index B N0) :
+    (primaryBlock l).phase = phase l :=
+  PrimaryPiece.harmonicBlock_phase (primaryPiece l) (phase l) (angularMode l)
+
+theorem primaryBlock_angularFrequency (l : Index B N0) :
+    (primaryBlock l).angularFrequency = angularMode l :=
+  PrimaryPiece.harmonicBlock_angularFrequency (primaryPiece l) (phase l) (angularMode l)
+
+theorem tangentBlock_frequency (l : Index B N0) (n : ℕ) :
+    (tangentBlock l).frequency n = (ChartScales.carrier ActualPrimary.h n : ℝ) :=
+  congrFun (PrimaryPiece.tangentBlock_frequency (primaryPiece l) (phase l) (angularMode l)) n
+
+theorem tangentBlock_phase (l : Index B N0) :
+    (tangentBlock l).phase = phase l :=
+  PrimaryPiece.tangentBlock_phase (primaryPiece l) (phase l) (angularMode l)
+
+theorem tangentBlock_angularFrequency (l : Index B N0) :
+    (tangentBlock l).angularFrequency = angularMode l :=
+  PrimaryPiece.tangentBlock_angularFrequency (primaryPiece l) (phase l) (angularMode l)
+
+theorem curlBlock_frequency (l : Index B N0) (n : ℕ) :
+    (curlBlock l).frequency n = (ChartScales.carrier ActualPrimary.h n : ℝ) :=
+  congrFun (PrimaryPiece.differenceBlock_frequency (primaryPiece l) (phase l) (angularMode l)) n
+
+theorem curlBlock_phase (l : Index B N0) :
+    (curlBlock l).phase = phase l :=
+  PrimaryPiece.differenceBlock_phase (primaryPiece l) (phase l) (angularMode l)
+
+theorem curlBlock_angularFrequency (l : Index B N0) :
+    (curlBlock l).angularFrequency = angularMode l :=
+  PrimaryPiece.differenceBlock_angularFrequency (primaryPiece l) (phase l) (angularMode l)
+
+theorem gaussianBlock_frequency (l : Index B N0) (n : ℕ) :
+    (gaussianBlock l).frequency n = (ChartScales.carrier ActualPrimary.h n : ℝ) :=
+  congrFun (PrimaryPiece.excludedBlock_frequency (primaryPiece l) (phase l) (angularMode l)) n
+
+theorem gaussianBlock_phase (l : Index B N0) :
+    (gaussianBlock l).phase = phase l :=
+  PrimaryPiece.excludedBlock_phase (primaryPiece l) (phase l) (angularMode l)
+
+theorem gaussianBlock_angularFrequency (l : Index B N0) :
+    (gaussianBlock l).angularFrequency = angularMode l :=
+  PrimaryPiece.excludedBlock_angularFrequency (primaryPiece l) (phase l) (angularMode l)
+
 theorem angularMode_ne_zero (l : Index B N0) (n : ℕ) : angularMode l n ≠ 0 :=
   PrimaryGeometryAssembly.angularMode_ne_zero ActualPrimary.certificate ActualPrimary.modulation (ActualPrimary.choice B N0).prepared l.2 l.1
 
