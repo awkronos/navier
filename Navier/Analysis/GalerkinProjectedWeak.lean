@@ -827,3 +827,291 @@ private theorem norm_toL2_zero : ‖toL2 (0 : SchwartzVelocity)‖ = 0 := by
       ‖toL2 (0 : SchwartzVelocity)‖ := by ring
   rw [this, mul_self_eq_zero] at h
   exact h
+
+
+/-! ### Bridge part 2B: provider integrand expansions and interval integrability -/
+
+/-- Realize a coefficient field as the explicit mode sum (the definitional
+form of `coefficientField` through `finiteModes`). -/
+private theorem coefficientField_sum (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) :
+    W.coefficientField a = ∑ i : Fin m, a i • W.w i := by
+  unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
+  rfl
+
+/-- Pointwise scalar-polynomial expansion of the provider's main integrand at
+a fixed coefficient vector: the fixed-test time-derivative pairing, the
+viscous Laplacian pairing (through the curl flip), and the retained-slot
+convection pairing all expand into a single `Fin m`-sum of continuous scalar
+factors. -/
+private theorem mainExpand (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (ν : ℝ)
+    (v w' : SchwartzVelocity) (hv : DivergenceFreeInitial v) :
+    schwartzL2Inner (W.coefficientField a) w' +
+        schwartzL2Inner (W.coefficientField a)
+          (ν • laplacianSchwartz v +
+            convectionSchwartzBilin (W.coefficientField a) v) =
+    ∑ i : Fin m, a i * (schwartzL2Inner (W.w i) w'
+        - ν * schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM v)
+        + ∑ k : Fin m, a k *
+            schwartzL2Inner (W.w i) (convectionSchwartzBilin (W.w k) v)) := by
+  rw [schwartzL2Inner_add_right, inner_smul_right]
+  simp_rw [inner_coefficientField_left]
+  simp_rw [Finset.mul_sum]
+  rw [coefficientField_sum W]
+  simp_rw [bilin_sum_left, bilin_smul_left, inner_sum_right, inner_smul_right]
+  have hflip : ∀ u : SchwartzVelocity,
+      schwartzL2Inner u (laplacianSchwartz v) =
+        -schwartzL2Inner (curlSchwartzCLM u) (curlSchwartzCLM v) :=
+    fun u => lapFlip u v hv
+  simp_rw [hflip]
+  rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  ring
+
+/-- Pointwise scalar-polynomial expansion of the viscous commutator pairing
+`⟨cf a, Δ(Pₘv) − Pₘ(Δv)⟩`: against the retained-mode span, the projected-Laplacian
+term collapses to modal coefficient pairings of `v` against the fixed curl Gram,
+and the physical term to the continuous curl pairing. -/
+private theorem lapCommExpand (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (v : SchwartzVelocity)
+    (hv : DivergenceFreeInitial v) :
+    schwartzL2Inner (W.coefficientField a)
+        (W.laplacianProjectionCommutator m v) =
+    ∑ i : Fin m, a i * (schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM v)
+        - ∑ k ∈ Finset.range m, W.coeff v k *
+            schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (W.w k))) := by
+  unfold GalerkinBasisFamily.laplacianProjectionCommutator
+  rw [inner_sub_right, coefficientField_pairing_proj W a]
+  have hproj : W.proj m v = ∑ k ∈ Finset.range m, W.coeff v k • W.w k := rfl
+  rw [hproj, laplacianSchwartz_sum]
+  simp_rw [laplacianSchwartz_smul, inner_coefficientField_left, inner_sum_right,
+    inner_smul_right]
+  have hflip : ∀ u : SchwartzVelocity,
+      schwartzL2Inner u (laplacianSchwartz v) =
+        -schwartzL2Inner (curlSchwartzCLM u) (curlSchwartzCLM v) :=
+    fun u => lapFlip u v hv
+  have hflipW : ∀ (u : SchwartzVelocity) (k : ℕ),
+      schwartzL2Inner u (laplacianSchwartz (W.w k)) =
+        -schwartzL2Inner (curlSchwartzCLM u) (curlSchwartzCLM (W.w k)) :=
+    fun u k => lapFlip u (W.w k) (W.divergence_free k)
+  rw [← Finset.sum_sub_distrib]
+  simp_rw [hflip, hflipW]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [mul_neg, Finset.sum_neg_distrib, mul_sub]
+  ring
+
+/-- Pointwise scalar-polynomial expansion of the nonlinear commutator pairing
+`⟨cf a, B(cf a)(Pₘv − v)⟩` into products of coefficients and fixed trilinear
+constants. -/
+private theorem convCommExpand (W : GalerkinBasisFamily) {m : ℕ}
+    (a : EuclideanSpace ℝ (Fin m)) (v : SchwartzVelocity) :
+    schwartzL2Inner (W.coefficientField a)
+        (W.convectionTestProjectionCommutator m (W.coefficientField a) v) =
+    ∑ i : Fin m, a i * (∑ k : Fin m, a k *
+        (∑ l ∈ Finset.range m, W.coeff v l *
+            schwartzL2Inner (W.w i)
+              (convectionSchwartzBilin (W.w k) (W.w l)) -
+          schwartzL2Inner (W.w i) (convectionSchwartzBilin (W.w k) v))) := by
+  unfold GalerkinBasisFamily.convectionTestProjectionCommutator
+  rw [inner_coefficientField_left]
+  simp_rw [coefficientField_sum W, bilin_sum_left, bilin_smul_left,
+    inner_sum_right, inner_smul_right]
+  have hproj : W.proj m v = ∑ l ∈ Finset.range m, W.coeff v l • W.w l := rfl
+  rw [hproj]
+  simp_rw [bilin_sub_right, bilin_sum_right, bilin_smul_right, inner_sub_right,
+    inner_sum_right, inner_smul_right]
+
+/-- The provider's main integrand is continuous on `[0,∞)`: through
+`mainExpand` it is a polynomial in the continuous coefficient slots, the
+continuous fixed-test pairings, and constants. -/
+private theorem mainIntegrandContinuousOn (W : GalerkinBasisFamily)
+    (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    {K₂ : Set Space} (hK₂ : IsCompact K₂)
+    (hspace₂ : ∀ t : ℝ, ∀ x : Space, x ∉ K₂ → phi.timeDerivSchwartz t x = 0)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) :
+    ContinuousOn (fun t =>
+        schwartzL2Inner (W.coefficientField (c m t)) (phi.timeDerivSchwartz t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (phi.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t)) (phi.field t)))
+      (Set.Ici (0 : ℝ)) := by
+  have hj : ContinuousOn (fun z : ℝ × Space => phi.field z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := evalContinuousOn phi
+  have heq : (fun t =>
+      schwartzL2Inner (W.coefficientField (c m t)) (phi.timeDerivSchwartz t) +
+        schwartzL2Inner (W.coefficientField (c m t))
+          (ν • laplacianSchwartz (phi.field t) +
+            convectionSchwartzBilin (W.coefficientField (c m t)) (phi.field t))) =
+      fun t => ∑ i : Fin m, (c m t) i *
+        (schwartzL2Inner (W.w i) (phi.timeDerivSchwartz t)
+          - ν * schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (phi.field t))
+          + ∑ k : Fin m, (c m t) k *
+              schwartzL2Inner (W.w i)
+                (convectionSchwartzBilin (W.w k) (phi.field t))) := by
+    funext t
+    exact mainExpand W (c m t) ν (phi.field t) (phi.timeDerivSchwartz t)
+      (phi.divergence_free t)
+  rw [heq]
+  refine continuousOn_finsetSum Finset.univ fun i _ => ?_
+  have hci : ContinuousOn (fun t : ℝ => (c m t) i) (Set.Ici (0 : ℝ)) :=
+    cSlotContinuousOn W c hc m i
+  have hw' : ContinuousOn (fun t => schwartzL2Inner (W.w i) (phi.timeDerivSchwartz t))
+      (Set.Ici (0 : ℝ)) :=
+    fixedPairingContinuousOn (W.w i) (timeDerivContinuousOn phi) hK₂ hspace₂
+  have hδ : ContinuousOn (fun t => schwartzL2Inner (curlSchwartzCLM (W.w i))
+      (curlSchwartzCLM (phi.field t))) (Set.Ici (0 : ℝ)) :=
+    curlSlotContinuousOn W phi hK hspace i
+  have hS : ContinuousOn (fun t => ∑ k : Fin m, (c m t) k *
+      schwartzL2Inner (W.w i) (convectionSchwartzBilin (W.w k) (phi.field t)))
+      (Set.Ici (0 : ℝ)) :=
+    continuousOn_finsetSum Finset.univ fun k _ =>
+      (cSlotContinuousOn W c hc m k).mul
+        (convectionPairingContinuousOn W phi (W.w k) hK hspace i)
+  exact hci.mul ((hw'.sub (ContinuousOn.const_mul hδ ν)).add hS)
+
+/-- The provider's viscous-commutator integrand is continuous on `[0,∞)`. -/
+private theorem hlapIntegrandContinuousOn (W : GalerkinBasisFamily)
+    (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) :
+    ContinuousOn (fun t => ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (phi.field t)))
+      (Set.Ici (0 : ℝ)) := by
+  have hj : ContinuousOn (fun z : ℝ × Space => phi.field z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := evalContinuousOn phi
+  have heq : (fun t => ν * schwartzL2Inner (W.coefficientField (c m t))
+      (W.laplacianProjectionCommutator m (phi.field t))) = fun t =>
+      ν * ∑ i : Fin m, (c m t) i *
+        (schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (phi.field t))
+          - ∑ k ∈ Finset.range m, W.coeff (phi.field t) k *
+              schwartzL2Inner (curlSchwartzCLM (W.w i))
+                (curlSchwartzCLM (W.w k))) := by
+    funext t
+    rw [lapCommExpand W (c m t) (phi.field t) (phi.divergence_free t)]
+  rw [heq]
+  refine ContinuousOn.const_mul ?_ ν
+  refine continuousOn_finsetSum Finset.univ fun i _ => ?_
+  have hδ : ContinuousOn (fun t => schwartzL2Inner (curlSchwartzCLM (W.w i))
+      (curlSchwartzCLM (phi.field t))) (Set.Ici (0 : ℝ)) :=
+    curlSlotContinuousOn W phi hK hspace i
+  have hG : ContinuousOn (fun t => ∑ k ∈ Finset.range m, W.coeff (phi.field t) k *
+      schwartzL2Inner (curlSchwartzCLM (W.w i)) (curlSchwartzCLM (W.w k)))
+      (Set.Ici (0 : ℝ)) :=
+    continuousOn_finsetSum (Finset.range m) fun k _ =>
+      (coeffContinuousOn hj hK hspace W k).mul continuousOn_const
+  exact (cSlotContinuousOn W c hc m i).mul (hδ.sub hG)
+
+/-- The provider's nonlinear-commutator integrand is continuous on `[0,∞)`. -/
+private theorem hconvIntegrandContinuousOn (W : GalerkinBasisFamily)
+    (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) :
+    ContinuousOn (fun t => schwartzL2Inner (W.coefficientField (c m t))
+        (W.convectionTestProjectionCommutator m (W.coefficientField (c m t))
+          (phi.field t)))
+      (Set.Ici (0 : ℝ)) := by
+  have hj : ContinuousOn (fun z : ℝ × Space => phi.field z.1 z.2)
+      (Set.Ici (0 : ℝ) ×ˢ Set.univ) := evalContinuousOn phi
+  have heq : (fun t => schwartzL2Inner (W.coefficientField (c m t))
+      (W.convectionTestProjectionCommutator m (W.coefficientField (c m t))
+        (phi.field t))) = fun t =>
+      ∑ i : Fin m, (c m t) i * (∑ k : Fin m, (c m t) k *
+        (∑ l ∈ Finset.range m, W.coeff (phi.field t) l *
+            schwartzL2Inner (W.w i)
+              (convectionSchwartzBilin (W.w k) (W.w l)) -
+          schwartzL2Inner (W.w i)
+            (convectionSchwartzBilin (W.w k) (phi.field t)))) := by
+    funext t
+    exact convCommExpand W (c m t) (phi.field t)
+  rw [heq]
+  refine continuousOn_finsetSum Finset.univ fun i _ => ?_
+  refine (cSlotContinuousOn W c hc m i).mul ?_
+  refine continuousOn_finsetSum Finset.univ fun k _ => ?_
+  have hG : ContinuousOn (fun t => ∑ l ∈ Finset.range m, W.coeff (phi.field t) l *
+      schwartzL2Inner (W.w i) (convectionSchwartzBilin (W.w k) (W.w l)))
+      (Set.Ici (0 : ℝ)) :=
+    continuousOn_finsetSum (Finset.range m) fun l _ =>
+      (coeffContinuousOn hj hK hspace W l).mul continuousOn_const
+  have hE : ContinuousOn (fun t => schwartzL2Inner (W.w i)
+      (convectionSchwartzBilin (W.w k) (phi.field t))) (Set.Ici (0 : ℝ)) :=
+    convectionPairingContinuousOn W phi (W.w k) hK hspace i
+  exact (cSlotContinuousOn W c hc m k).mul (hG.sub hE)
+
+/-- **Provider premise `hmainInt`.**  For every mode count and window, the
+main fixed-test integrand is interval integrable. -/
+theorem hmainInt_of_flow (W : GalerkinBasisFamily) (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    {K₂ : Set Space} (hK₂ : IsCompact K₂)
+    (hspace₂ : ∀ t : ℝ, ∀ x : Space, x ∉ K₂ → phi.timeDerivSchwartz t x = 0)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (T : ℝ) (hT : 0 ≤ T) (m : ℕ) :
+    IntervalIntegrable (fun t =>
+        schwartzL2Inner (W.coefficientField (c m t)) (phi.timeDerivSchwartz t) +
+          schwartzL2Inner (W.coefficientField (c m t))
+            (ν • laplacianSchwartz (phi.field t) +
+              convectionSchwartzBilin (W.coefficientField (c m t)) (phi.field t)))
+      volume 0 T := by
+  apply ContinuousOn.intervalIntegrable
+  rw [Set.uIcc_of_le hT]
+  exact (mainIntegrandContinuousOn W phi hK hspace hK₂ hspace₂ c hc m).mono
+    Set.Icc_subset_Ici_self
+
+/-- **Provider premise `hlapInt`.** -/
+theorem hlapInt_of_flow (W : GalerkinBasisFamily) (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (T : ℝ) (hT : 0 ≤ T) (m : ℕ) :
+    IntervalIntegrable (fun t => ν * schwartzL2Inner (W.coefficientField (c m t))
+        (W.laplacianProjectionCommutator m (phi.field t))) volume 0 T := by
+  apply ContinuousOn.intervalIntegrable
+  rw [Set.uIcc_of_le hT]
+  exact (hlapIntegrandContinuousOn W phi hK hspace c hc m).mono
+    Set.Icc_subset_Ici_self
+
+/-- **Provider premise `hconvInt`.** -/
+theorem hconvInt_of_flow (W : GalerkinBasisFamily) (phi : DivergenceFreeTestFunction)
+    {K : Set Space} (hK : IsCompact K)
+    (hspace : ∀ t : ℝ, ∀ x : Space, x ∉ K → phi.field t x = 0)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (T : ℝ) (hT : 0 ≤ T) (m : ℕ) :
+    IntervalIntegrable (fun t => schwartzL2Inner (W.coefficientField (c m t))
+        (W.convectionTestProjectionCommutator m (W.coefficientField (c m t))
+          (phi.field t))) volume 0 T := by
+  apply ContinuousOn.intervalIntegrable
+  rw [Set.uIcc_of_le hT]
+  exact (hconvIntegrandContinuousOn W phi hK hspace c hc m).mono
+    Set.Icc_subset_Ici_self
