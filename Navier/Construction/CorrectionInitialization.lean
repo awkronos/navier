@@ -1041,6 +1041,18 @@ noncomputable def excludedBlock (p : PrimaryPiece (D × ℝ))
   ErrorHarmonics.gaussianBlock p.directions p.cutoff p.coefficients.amplitude 0 1
     p.coefficients.frequency Φ kp
 
+theorem excludedBlock_frequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.excludedBlock Φ kp).frequency = p.coefficients.frequency := rfl
+
+theorem excludedBlock_phase (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.excludedBlock Φ kp).phase = Φ := rfl
+
+theorem excludedBlock_angularFrequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.excludedBlock Φ kp).angularFrequency = kp := rfl
+
 theorem excludedBlock_represents (p : PrimaryPiece (D × ℝ))
     (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ)
     (hcut : ∀ n, ContDiff ℝ ∞ (p.cutoff n))
@@ -1763,6 +1775,47 @@ noncomputable def differenceCoefficients (p : PrimaryPiece (D × ℝ)) : WaveCoe
 noncomputable def differenceBlock (p : PrimaryPiece (D × ℝ))
     (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) : HarmonicBlock D :=
   PrimaryHarmonics.block p.differenceCoefficients Φ kp
+
+/-! The correction and cutoff operations act on amplitude and pressure only,
+so each derived block retains the piece's own frequency and the supplied
+slice phase and angular mode.  These are the carrier identities read by the
+cycle machinery (`SameCarrier`, `fullPhase`, `current_frequency`). -/
+
+theorem harmonicBlock_frequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.harmonicBlock Φ kp).frequency = p.coefficients.frequency := rfl
+
+theorem harmonicBlock_phase (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.harmonicBlock Φ kp).phase = Φ := rfl
+
+theorem harmonicBlock_angularFrequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.harmonicBlock Φ kp).angularFrequency = kp := rfl
+
+theorem tangentBlock_frequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.tangentBlock Φ kp).frequency = p.coefficients.frequency := rfl
+
+theorem tangentBlock_phase (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.tangentBlock Φ kp).phase = Φ := rfl
+
+theorem tangentBlock_angularFrequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.tangentBlock Φ kp).angularFrequency = kp := rfl
+
+theorem differenceBlock_frequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.differenceBlock Φ kp).frequency = p.coefficients.frequency := rfl
+
+theorem differenceBlock_phase (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.differenceBlock Φ kp).phase = Φ := rfl
+
+theorem differenceBlock_angularFrequency (p : PrimaryPiece (D × ℝ))
+    (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ) :
+    (p.differenceBlock Φ kp).angularFrequency = kp := rfl
 
 theorem harmonicBlock_represents (p : PrimaryPiece (D × ℝ))
     (Φ : ℕ → D → ℝ) (kp : ℕ → ℤ)

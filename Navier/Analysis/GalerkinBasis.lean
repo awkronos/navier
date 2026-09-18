@@ -2315,6 +2315,65 @@ theorem coefficientFlow_energy_identity (W : GalerkinBasisFamily)
     exact stokesOperator_inner_eq_enstrophy W m (c m s)
   rwa [hcongr] at h
 
+/-- **Exact interval energy–dissipation balance (positive-restart form).**
+For every restart time `0 ≤ s ≤ t`,
+
+  `‖c t‖² + 2ν ∫_{r ∈ (s,t]} Ω(c r) = ‖c s‖²`.
+
+Subtracting the forward identity at `s` from the forward identity at `t` and
+splitting the `Ioc` integral at `s` (continuity of the density from
+`coefficientFlow_enstrophy_continuousOn`).  The downstream budget
+`Navier.Analysis.GalerkinEnergyBudget.coefficientEnstrophy_budget` is exactly
+the `s = 0` instance; the `s > 0` cases bound the dissipation *after* any
+restart time by the energy present at that time — the finite-mode content of
+the Leray energy inequality on shifted intervals [Leray 1934 §§18–20; Temam
+III §3 eq. (3.29)].  No uniformity or continuum claim is made: every
+statement here is for the concrete `m`-mode projected flow. -/
+theorem coefficientFlow_energy_identity_interval (W : GalerkinBasisFamily)
+    {ν : ℝ} (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t) :
+    ‖c m t‖ ^ 2 + 2 * ν * (∫ r in Set.Ioc s t, W.coefficientEnstrophy (c m r))
+      = ‖c m s‖ ^ 2 := by
+  have ht : 0 ≤ t := le_trans hs hst
+  have hidt := coefficientFlow_energy_identity W c hc m ht
+  have hids := coefficientFlow_energy_identity W c hc m hs
+  have hΩ : ContinuousOn (fun r => W.coefficientEnstrophy (c m r)) (Set.Ici (0 : ℝ)) :=
+    coefficientFlow_enstrophy_continuousOn W c hc m
+  have h0si : IntervalIntegrable (fun r => W.coefficientEnstrophy (c m r)) volume 0 s :=
+    ((hΩ.mono (by rw [Set.uIcc_of_le hs]; exact Set.Icc_subset_Ici_self)).intervalIntegrable)
+  have hsti : IntervalIntegrable (fun r => W.coefficientEnstrophy (c m r)) volume s t :=
+    (hΩ.mono (by rw [Set.uIcc_of_le hst]; exact fun x hx => hs.trans hx.1)).intervalIntegrable
+  have hsplit : (∫ r in (0 : ℝ)..t, W.coefficientEnstrophy (c m r)) =
+      (∫ r in (0 : ℝ)..s, W.coefficientEnstrophy (c m r)) +
+        (∫ r in s..t, W.coefficientEnstrophy (c m r)) := by
+    rw [intervalIntegral.integral_add_adjacent_intervals h0si hsti]
+  rw [intervalIntegral.integral_of_le hs, intervalIntegral.integral_of_le hst,
+    intervalIntegral.integral_of_le ht] at hsplit
+  rw [hsplit, mul_add] at hidt
+  linarith [hidt, hids]
+
+/-- **Shifted dissipation budget.**  For `ν > 0` and any restart window
+`s ≤ t` with `0 ≤ s`: `∫_{(s,t]} Ω(c r) ≤ ‖c m s‖² / (2ν)`.  This is the
+interval identity plus `‖c m t‖² ≥ 0`, in the same `Set.Ioc` shape the
+enstrophy budget consumes at `s = 0`
+(`Navier.Analysis.GalerkinEnergyBudget.coefficientEnstrophy_budget`). -/
+theorem coefficientEnstrophy_integral_Ioc_le_initial (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (m : ℕ) {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t) :
+    (∫ r in Set.Ioc s t, W.coefficientEnstrophy (c m r)) ≤ ‖c m s‖ ^ 2 / (2 * ν) := by
+  have hid := coefficientFlow_energy_identity_interval W c hc m hs hst
+  rw [le_div_iff₀ (by positivity : (0 : ℝ) < 2 * ν)]
+  nlinarith [hid, sq_nonneg ‖c m t‖]
+
 /-- **A compact spherical shell carries a uniform positive enstrophy floor.**
 On `{a : L ≤ ‖a‖ ≤ R}` with `L > 0` the continuous form `Ω` attains its minimum
 (the shell is closed and bounded in a finite-dimensional space, hence compact),
@@ -4430,6 +4489,38 @@ theorem coefficientFlow_energy_le_data (W : GalerkinBasisFamily)
       filter_upwards with x
       rw [officialInner_eq_sum]
       exact Finset.sum_congr rfl (fun i _ => by rw [pow_two])
+
+/-- **Uniform shifted dissipation budget at the datum constant.**  For
+`ν > 0`, projected-flow data with `c m 0 = W.initialCoefficients u₀ m`, and
+any restart window `0 ≤ s ≤ t`:
+
+  `∫_{(s,t]} Ω(c r) ≤ (∫ x, Σ i, (u₀ x i)²) / (2ν)`,
+
+uniformly in `m`, `s`, and `t`.  Chaining `coefficientEnstrophy_integral_Ioc_le_initial`
+with the energy bound at the restart time `s`
+(`coefficientFlow_energy_le_data`).  At `s = 0` this reproduces the budget
+constant of `Navier.Analysis.GalerkinEnergyBudget.coefficientEnstrophy_budget_of_datum`;
+the shifted form additionally bounds the dissipation accumulated after any
+restart time by the datum alone. -/
+theorem coefficientEnstrophy_integral_Ioc_le_datum (W : GalerkinBasisFamily)
+    {ν : ℝ} (hν : 0 < ν) (u₀ : SchwartzVelocity)
+    (c : ∀ m : ℕ, ℝ → EuclideanSpace ℝ (Fin m))
+    (hc : ∀ (m : ℕ) (t : ℝ), 0 ≤ t →
+      HasDerivWithinAt (c m)
+        (-(ν • W.stokesOperator m (c m t)) + W.convectionOperator m (c m t))
+        (Set.Ici (0 : ℝ)) t)
+    (hc0 : ∀ m : ℕ, c m 0 = W.initialCoefficients u₀ m)
+    (m : ℕ) {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t) :
+    (∫ r in Set.Ioc s t, W.coefficientEnstrophy (c m r)) ≤
+      (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2) / (2 * ν) := by
+  have hpos : (0 : ℝ) < 2 * ν := by positivity
+  calc
+    (∫ r in Set.Ioc s t, W.coefficientEnstrophy (c m r))
+        ≤ ‖c m s‖ ^ 2 / (2 * ν) :=
+      coefficientEnstrophy_integral_Ioc_le_initial W hν c hc m hs hst
+    _ ≤ (∫ x : Space, ∑ i : Fin 3, (u₀ x i) ^ 2) / (2 * ν) :=
+      (div_le_div_iff₀ hpos hpos).mpr (mul_le_mul_of_nonneg_right
+        (coefficientFlow_energy_le_data W hν u₀ c hc hc0 m hs) hpos.le)
 
 /-- **Exact retained-span weak equation.**  Let `b(t)` be a differentiable
 finite coefficient test, with continuous derivative and vanishing at a finite

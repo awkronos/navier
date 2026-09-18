@@ -1997,8 +1997,18 @@ theorem constructed_particular_wave
   have hout := constructed_linear_wave_with_excluded h0 hκ hψ hR hNa hpos hlow hupp hfrequency hsolve hg
   exact ⟨component_classes h0.amplitude, component_classes hc.amplitude, hc.pressure, hout.1, hout.2⟩
 
-/-- The cutoff remainder is both retained in the exact equation and proved
-smaller than every prescribed epsilon power under the Gaussian envelope. -/
+/-- The complete component-class bundle for the constructed wave with the
+Gaussian cutoff: the amplitude, corrected amplitude, and pressure classes of
+`constructed_particular_wave`, the good-wave class, the cutoff remainder
+retained in the exact equation and proved smaller than every prescribed
+epsilon power under the Gaussian envelope, and the exact equation itself —
+all from one application.  (This form previously dropped the three
+component-class conjuncts, so any consumer needed the unbundled theorem plus a
+separate flat-gain call; the modal twin below is the one whose conjuncts
+`Navier.Construction.ParticularWaveAssembly.LocalControl.local_result` and
+`LocalControl.gaussian_flat` re-derive in two applications.)  Strengthened
+2026-09-17 (W10-A19); the conclusion gained conjuncts only, no consumer of the
+old shape existed. -/
 theorem constructed_particular_wave_with_flat_error
     {s : StripData (P × Plane)} {α κ : ℝ} {dirs : GraphDirections (P × Plane)}
     (base : WaveCoefficients (P × Plane))
@@ -2030,6 +2040,9 @@ theorem constructed_particular_wave_with_flat_error
     (hg : ExactConditions s dirs ((complexCopyCoefficients base t source g copy L hL).corrected s dirs slot.cutoff)) :
     let a := complexCopyCoefficients base t source g copy L hL
     let P := fun n p => W n ((g n).coordinates (copy n) p.2).2
+    WaveClass s P α a.amplitude ∧
+    WaveClass s P α (a.corrected s dirs slot.cutoff).amplitude ∧
+    WaveClass s P (α + 1 / 2) (a.corrected s dirs slot.cutoff).pressure ∧
     WaveClass s P (α + 1 / 2 - 3 * κ) (a.constructedGood s dirs slot.cutoff) ∧
     (∀ β : ℝ, UnweightedClass s β (excludedSlotError dirs slot.cutoff a.amplitude source)) ∧
     ∀ n x, x ∈ s.domain →
@@ -2039,7 +2052,8 @@ theorem constructed_particular_wave_with_flat_error
         excludedSlotError dirs slot.cutoff a.amplitude source n x i) * carrier (a.frequency n) (a.phase n) x) := by
   have hres := constructed_particular_wave base t source g copy L hL W hr hi hb hN hNdot hA hf
     hpos hlower hupper hfrequency hgeometry hfrequency_ne hsource_smooth hκ slot.cutoff slot.cutoff_memClass hR hg
-  exact ⟨hres.2.2.2.1, fun β => excludedSlotError_all_gains slot dirs hfast edges scales hres.1 hf hc hW β,
+  exact ⟨hres.1, hres.2.1, hres.2.2.1, hres.2.2.2.1,
+    fun β => excludedSlotError_all_gains slot dirs hfast edges scales hres.1 hf hc hW β,
     hres.2.2.2.2⟩
 
 
@@ -2103,8 +2117,17 @@ theorem constructed_modal_particular_wave
   have hout := constructed_linear_wave_with_excluded h0 hκ hψ hR hNa hpos hlow hupp hfrequency hsolve hg
   exact ⟨component_classes h0.amplitude, component_classes hc.amplitude, hc.pressure, hout.1, hout.2⟩
 
-/-- The cutoff remainder is both retained in the exact equation and proved
-smaller than every prescribed epsilon power under the Gaussian envelope. -/
+/-- The complete component-class bundle for the constructed modal wave with
+the Gaussian cutoff: amplitude, corrected amplitude, and pressure classes of
+`constructed_modal_particular_wave`, the good-wave class, the cutoff
+remainder retained in the exact equation and proved smaller than every
+prescribed epsilon power under the Gaussian envelope, and the exact equation
+itself — all from one application.  This is the shape whose conjuncts
+`Navier.Construction.ParticularWaveAssembly.LocalControl.local_result` and
+`LocalControl.gaussian_flat` currently obtain by two applications of the
+unbundled theorem plus a separate `excludedSlotError_all_gains` call.
+Strengthened 2026-09-17 (W10-A19); the conclusion gained conjuncts only, no
+consumer of the old shape existed. -/
 theorem constructed_modal_particular_wave_with_flat_error
     {s : StripData (P × Plane)} {α κ : ℝ} {dirs : GraphDirections (P × Plane)}
     (base : WaveCoefficients (P × Plane))
@@ -2135,6 +2158,9 @@ theorem constructed_modal_particular_wave_with_flat_error
     (hg : ExactConditions s dirs ((complexCopyCoefficients base t source g copy L hL).corrected s dirs slot.cutoff)) :
     let a := complexCopyCoefficients base t source g copy L hL
     let P := fun n p => W n ((g n).coordinates (copy n) p.2).2
+    WaveClass s P α a.amplitude ∧
+    WaveClass s P α (a.corrected s dirs slot.cutoff).amplitude ∧
+    WaveClass s P (α + 1 / 2) (a.corrected s dirs slot.cutoff).pressure ∧
     WaveClass s P (α + 1 / 2 - 3 * κ) (a.constructedGood s dirs slot.cutoff) ∧
     (∀ β : ℝ, UnweightedClass s β (excludedSlotError dirs slot.cutoff a.amplitude source)) ∧
     ∀ n x, x ∈ s.domain →
@@ -2144,7 +2170,8 @@ theorem constructed_modal_particular_wave_with_flat_error
         excludedSlotError dirs slot.cutoff a.amplitude source n x i) * carrier (a.frequency n) (a.phase n) x) := by
   have hres := constructed_modal_particular_wave base t source g copy L hL W d harmonic hr hi hb hN hNdot hA hf
     hpos hlower hupper hfrequency hgeometry hfrequency_ne hκ slot.cutoff slot.cutoff_memClass hR hg
-  exact ⟨hres.2.2.2.1, fun β => excludedSlotError_all_gains slot dirs hfast edges scales hres.1 hf hc hW β,
+  exact ⟨hres.1, hres.2.1, hres.2.2.1, hres.2.2.2.1,
+    fun β => excludedSlotError_all_gains slot dirs hfast edges scales hres.1 hf hc hW β,
     hres.2.2.2.2⟩
 
 end ConstructedWave
