@@ -144,9 +144,10 @@ This file lays that layer over the repo's own objects:
   `coefficientFlow_displacement_sq_le`,
   `coefficientFlow_shifted_displacement_integral_le`.
 * `galerkinCoefficientFlow_timeEquicontinuous` itself is **closed** and lives in
-  `Navier.Analysis.GalerkinModeData`, together with its only consumer
-  `exists_galerkinModeData`.  It cannot live here: discharging the convective
-  hypothesis needs
+  `Navier.Analysis.GalerkinModeData` (its only consumer at banking time,
+  `exists_galerkinModeData`, was later removed in the soundness cleanup; the
+  downstream user is the `GalerkinEnergyBudget` assembly).  It cannot live
+  here: discharging the convective hypothesis needs
   `ConvectionLadyzhenskaya.abs_convectionOperator_inner_pow_four_le_enstrophy`,
   and `ConvectionTrilinear` imports *this* file for `convectionOperator`, so
   the estimate is strictly downstream.  The relocation is a routing fact only;

@@ -94,10 +94,13 @@ Galerkin/compactness tower has a home with no floating restatement.
 ## Residual routing and certified closures
 
 * (`exists_galerkinModeData` — the finite-mode Galerkin construction — was
-  RELOCATED 2026-08-18 to `Navier.Analysis.LerayWeakExistence`, where it is a
-  one-line composition of `GalerkinBasis.exists_galerkinModeData`; that
-  downstream construction is assembled modulo exactly the named residuals
-  `hspace`/`htime`/`hweak` [Temam III.3; Constantin–Foias II; Leray 1934
+  RELOCATED 2026-08-18 to `Navier.Analysis.LerayWeakExistence` as a one-line
+  composition; that file and the upstream `GalerkinBasis.exists_galerkinModeData`
+  were later removed in the soundness cleanup (header bullet above).  The live
+  shape is `galerkinModeData_of_basis_modalFlow`: the old named residuals in
+  modern dress — `hspace` = the `SpaceEquicontinuous` premise, `hweak` = the
+  projected weak-consistency `Tendsto` premise, the `htime` role supplied from
+  the derivative-bound premise [Temam III.3; Constantin–Foias II; Leray 1934
   §§18–20].  The duplicate upstream `sorry` is deleted.)
 (`exists_limit_of_forall_windowCauchy` — Fischer–Riesz limit extraction from
 window-Cauchy, with the pointwise-limit-or-zero representative that makes the
@@ -1523,14 +1526,15 @@ identity fails — which is precisely the curl-free falsification.
 The product-norm/Euclidean conversion that used to sit inside this obligation is
 now certified (`galerkinApproximation_of_modeData`).
 
-**RELOCATED 2026-08-18 (lane NK2).**  The declarations
-`exists_galerkinModeData` and `galerkin_approximation_exists` now live in
-`Navier.Analysis.LerayWeakExistence` (same namespace, same names, same types),
-downstream of `GalerkinBasis`: `exists_galerkinModeData` is there a one-line
-composition of `GalerkinBasis.exists_galerkinModeData` — the construction
-described above, assembled from the certified basis modulo exactly
-`hspace`/`htime`/`hweak`.  The duplicate upstream `sorry` that sat here is
-deleted; nothing in this file referenced it in code. -/
+**RELOCATED 2026-08-18 (lane NK2); since REMOVED** (soundness cleanup —
+status checked 2026-09-18).  The declarations `exists_galerkinModeData` and
+`galerkin_approximation_exists` lived in `Navier.Analysis.LerayWeakExistence`
+until that file was deleted, and `GalerkinBasis.exists_galerkinModeData` is
+gone with it.  The live shapes named in the header above are
+`galerkinModeData_of_basis_modalFlow` (the old `hspace`/`htime`/`hweak`
+residuals become explicit premises of the constructor) and
+`galerkinCoefficientFlow_timeEquicontinuous`.  The duplicate upstream `sorry`
+that sat here is deleted; nothing in this file referenced it in code. -/
 
 /-!
 ### `StrongL2LocLimit` plumbing (certified)

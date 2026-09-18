@@ -392,9 +392,10 @@ private theorem convectionSchwartzBilin_sub_right_local
 ODE, with a uniform time-integrated enstrophy bound, is `L²`-in-time
 translation equicontinuous *uniformly in the mode count `m`*.
 
-This is the residual of the `time_equicontinuous` field of
-`exists_galerkinModeData` after `timeEquicontinuous_of_coefficientDisplacement`
-discharges the spatial half.  It is strictly lower than what it replaces: the
+This supplies the `time_equicontinuous` field of `GalerkinModeData` (its
+former consumer `exists_galerkinModeData` was later removed in the soundness
+cleanup; live constructor `galerkinModeData_of_basis_modalFlow`) after
+`timeEquicontinuous_of_coefficientDisplacement` discharges the spatial half.  It is strictly lower than what it replaces: the
 conclusion mentions only `ℝ^m`-valued curves — no Schwartz field, no spatial
 integral, no basis property — and it is not circular, since nothing in its
 proof may use the time equicontinuity it supplies.

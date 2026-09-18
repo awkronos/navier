@@ -5,9 +5,11 @@ import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
 /-!
 # Spatial equicontinuity of the Galerkin modal family (Riesz–Fréchet–Kolmogorov input)
 
-This file discharges the `hspace` residual of
-`GalerkinBasis.exists_galerkinModeData`: the finite-mode Galerkin
-approximants are uniformly spatially-translation equicontinuous.
+This file discharges the `hspace` premise (`SpaceEquicontinuous`) of the
+mode-data constructor `galerkinModeData_of_basis_modalFlow` — formerly the
+`hspace` residual of the removed `GalerkinBasis.exists_galerkinModeData`: the
+finite-mode Galerkin approximants are uniformly spatially-translation
+equicontinuous.
 
 ## Route
 

@@ -454,7 +454,7 @@ theorem exists_staticCurlSchwartz_h2_le_h3 :
     _ = 3 * K ^ 2 * sobolevH3NormSq u := by simp; ring
 
 
-/-- **[NAMED RESIDUAL -- exact physical-space Biot--Savart representation.]**
+/-- **[CERTIFIED -- exact physical-space Biot--Savart representation; closed via `BiotSavartPVAssembly.exists_gradient_bound_of_curlH2` (`338a292`), strict raw-axiom receipts at the bottom of this file.]**
 For a supplied `H²` upper bound on the Schwartz vorticity, the principal-value
 formula for `∇u` splits into its locally integrable Morrey-cancellation term,
 logarithmic annulus, local distributional term, and square-integrable far
@@ -467,9 +467,10 @@ between the actual vector kernel derivative and `bsGradKernel` is certified by
 `bsVectorKernel_coordinateLine_hasDerivAt_gradKernel`; the radial estimates
 are the certified near/shell/far theorems below.  The finite punctured
 integration-by-parts step is
-`integral_bsGradKernel_testFactor_ibp_away`.  What remains here is the
-puncture-closing limit with its origin local term, its application to the
-velocity, and finite tensor norm bookkeeping. -/
+`integral_bsGradKernel_testFactor_ibp_away`.  The puncture-closing limit
+with its origin local term, its application to the velocity, and finite tensor
+norm bookkeeping are assembled there (`BiotSavartPVAssembly`) — nothing
+remains; the strict receipts are below. -/
 theorem exists_biotSavartKernelSplit_of_curlH2 :
     ∃ A B F : ℝ, 0 < A ∧ 0 < B ∧ 0 < F ∧
       ∀ (u : SchwartzVelocity), DivergenceFreeInitial u →
@@ -497,15 +498,18 @@ splits as
 
   `‖∇u(x)‖ ≤ A·ρ^{1/4}·‖u‖_{H³} + B·‖ω‖_∞·(1 + log(1/ρ)) + F·‖ω‖_{L²}`.
 
-This is `exists_biotSavartLogTextbook` with the *cutoff still free*: it is a
-strictly lower residual, because the passage from this `ρ`-indexed family to
-the `ρ`-free logarithmic shape is now certified as `le_of_forall_cutoff_le`
-above, and `exists_biotSavartLogTextbook` is derived from it below.
+This is `exists_biotSavartLogTextbook` with the *cutoff still free*: it sits
+strictly lower in the dependency chain (and is itself closed, `338a292`),
+because the passage from this `ρ`-indexed family to the `ρ`-free logarithmic
+shape is now certified as `le_of_forall_cutoff_le` above, and
+`exists_biotSavartLogTextbook` is derived from it below.
 
-**What the lower residual still carries.**  The Biot–Savart representation
-`∇u = PV(∇K ∗ ω)` with its local term, for divergence-free Schwartz fields —
-genuinely Mathlib-absent — and the tensor/operator-norm reduction from that
-representation to the three certified scalar kernel regions.  **The
+**What the lower step consumes** (certified; no open obligation).  The
+Biot–Savart representation `∇u = PV(∇K ∗ ω)` with its local term, for
+divergence-free Schwartz fields — absent from Mathlib but proved in-repo by
+`BiotSavartGradientRecovery.fderiv_eq_principalValueConvolution_curl` — and
+the tensor/operator-norm reduction from that representation to the three
+certified scalar kernel regions, landed in `BiotSavartPVAssembly` (`338a292`).  **The
 curl-component bridge is no
 longer part of it**: `CurlDerivativeBridge.exists_norm_iteratedFDeriv_staticCurl_le`
 certifies `‖Dⁿ(staticCurl u)(x)‖ ≤ C‖D^{n+1}u(x)‖` at *every* order `n` with a
@@ -559,8 +563,9 @@ theorem exists_biotSavartKernelSplitting :
   convert hbound using 1 <;> ring
 
 /-- **[DERIVED — no `sorry` in this declaration.  Reduced to the strictly lower
-residual `exists_biotSavartKernelSplitting` (Biot–Savart representation +
-Calderón–Zygmund split, est ~350 LOC) via the certified cutoff optimisation
+closed lower step `exists_biotSavartKernelSplitting` (Biot–Savart
+representation + Calderón–Zygmund split, landed `338a292`) via the certified
+cutoff optimisation
 `le_of_forall_cutoff_le`.  BKM 1984 Lemma 1; Majda–Bertozzi Prop. 3.8;
 Stein, *Singular Integrals* (1970) Ch. II §4.]**
 The Biot–Savart logarithmic inequality in its **textbook shape**
@@ -572,10 +577,13 @@ with `‖u‖_{H³} = √(sobolevH3NormSq u)` written out as
 majorants stay hypothesis-carried; the right-hand side is monotone in both, so
 this form follows from the classical statement.
 
-**Status.**  This declaration is *conditional*, not closed: it is proved from
-`exists_biotSavartKernelSplitting`, which propagates the honest lower residual
-`exists_biotSavartKernelSplit_of_curlH2`.  The
-constant produced here is `max A (max (4B) F)` in that residual's constants.
+**Status.**  This declaration is a closed kernel-clean theorem (strict
+receipts at the bottom of this file); *conditional* in the crown's sense only
+— the two vorticity majorants stay hypothesis-carried inside the `∀`, and each
+crown application discharges them for its own data.  It is proved from
+`exists_biotSavartKernelSplitting`, itself closed on
+`exists_biotSavartKernelSplit_of_curlH2` (`338a292`).  The constant produced
+here is `max A (max (4B) F)` in those constants.
 
 **What the derivation certifies.**  Exactly the log-producing step: the
 `ρ`-indexed Calderón–Zygmund family is collapsed at the optimising scale
@@ -583,10 +591,12 @@ constant produced here is `max A (max (4B) F)` in that residual's constants.
 norm, so no smallness/largeness case split is needed and the `e +` guard is
 genuine rather than cosmetic.
 
-**Dependencies still carried by the lower residual (Mathlib-absent).**  The
-Biot–Savart representation `∇u = ∇K ∗ ω` for the homogeneous degree `−3`
-kernel `∇K`, with its local term, for divergence-free Schwartz fields, and
-the tensor/operator-norm reduction to the certified scalar kernel estimates.
+**Inputs the lower step consumes from Mathlib-absent territory (all
+certified in-repo).**  The Biot–Savart representation `∇u = ∇K ∗ ω` for the
+homogeneous degree `−3` kernel `∇K`, with its local term, for divergence-free
+Schwartz fields (`BiotSavartGradientRecovery.fderiv_eq_principalValueConvolution_curl`),
+and the tensor/operator-norm reduction to the certified scalar kernel
+estimates (`BiotSavartPVAssembly`, `338a292`).
 The fractional near-field moment, including its sharp `ρ^(1/4)` scaling, and
 the curl-component bridge are certified below and in
 `Navier.Analysis.CurlDerivativeBridge`, respectively.
@@ -608,10 +618,11 @@ for Schwartz fields, kernel axioms only): the cancellation factor
 the vorticity components — exactly the `H³`-of-`u` order this statement
 carries, not the `H⁴` that a Lipschitz/`‖∇ω‖∞` route would cost — so the
 cutoff optimisation at `ρ ≈ ‖u‖_{H³}^{-4}` produces the `log(e + ‖u‖_{H³})`
-factor.  What remains genuinely Mathlib-absent is the Biot–Savart
-*representation* `∇u = PV(∇K ∗ ω)` (with its local term) for divergence-free
-Schwartz fields, which is what converts these kernel estimates into a bound
-on `‖∇u‖_∞`.  The curl-component bridge that feeds the vorticity into
+factor.  The Mathlib-absent input that converts these kernel estimates into
+a bound on `‖∇u‖_∞` — the Biot–Savart *representation* `∇u = PV(∇K ∗ ω)`
+(with its local term) for divergence-free Schwartz fields — is certified
+in-repo: `BiotSavartGradientRecovery.fderiv_eq_principalValueConvolution_curl`,
+assembled by `BiotSavartPVAssembly` (`338a292`).  The curl-component bridge that feeds the vorticity into
 `exists_agmonMorreyBound` is **no longer residual**: it is certified at every
 derivative order, with one constant, as
 `CurlDerivativeBridge.exists_norm_iteratedFDeriv_staticCurl_le`. -/
@@ -1298,7 +1309,8 @@ weight `‖z‖`) and `integrableOn_bsKernelScalar_sq_farField` (far field, `L²
 this closes those three stated estimates.  The actual Morrey cancellation uses
 the fractional weight `‖z‖^(1/4)`; its exact quantitative `O(ρ^(1/4))`
 scaling and Hölder convolution form are certified above.  The Biot–Savart
-principal-value representation remains for `exists_biotSavartLogTextbook`.
+principal-value representation consumed by `exists_biotSavartLogTextbook` is
+likewise landed (`BiotSavartGradientRecovery` / `BiotSavartPVAssembly`).
 -/
 
 /-- **Unit-scale shell amplitude bound (certified).**  On the dyadic shell
@@ -1534,8 +1546,10 @@ arbitrary factor.  (Checked numerically: at `(a,b) = (10³,1), (10⁶,1),
 `b(5 + 4 log(a/(4b)))` to six digits, with minimum/`a` equal to
 `2.7·10⁻², 5.5·10⁻⁵, 3.6·10⁻³`.)  So the endpoint bound is exactly the `ρ = 1`
 corner and nothing more: the genuine Biot–Savart singular-integral content —
-the representation `∇u = PV(∇K ∗ ω)` — is untouched, and the residual's own
-proof obligation stands.
+the representation `∇u = PV(∇K ∗ ω)` — is untouched by this endpoint step,
+and lives separately in `BiotSavartGradientRecovery` / `BiotSavartPVAssembly`;
+`exists_biotSavartKernelSplitting` itself is closed above with strict
+receipts.
 -/
 
 /-- The norm of a coordinate basis vector of the sup-normed `Space`. -/

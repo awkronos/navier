@@ -3,8 +3,9 @@ import Navier.Analysis.GalerkinBasis
 /-!
 # Gram–Schmidt orthonormalization of a raw divergence-free family
 
-The recursion layer for the named residual `rawDivFree_orthonormalize`
-(`Navier/Analysis/GalerkinBasis.lean`).  Given a `RawDivFreeFamily` — a
+The recursion layer behind `rawDivFree_orthonormalize`
+(`Navier/Analysis/GalerkinBasis.lean`) — itself a closed kernel-clean theorem
+(strict receipt probed 2026-09-18), formerly described here as a residual.  Given a `RawDivFreeFamily` — a
 countable, `L²`-dense, `L²`-linearly-independent family of divergence-free
 Schwartz fields — the classical Gram–Schmidt recursion
 `w_n = normalize(v_n − ∑_{k<n} ⟨v_n, w_k⟩ • w_k)` in the `schwartzL2Inner`
@@ -216,10 +217,11 @@ theorem gsVec_dense_span (R : RawDivFreeFamily) :
 
 /-- **Assembly: a raw dense divergence-free family orthonormalizes into a
 `GalerkinBasisFamily`** [Robinson–Rodrigo–Sadowski Ch. 4; Temam III §3] —
-ProvedModulo the two named leaves `gsU_pos` (residual positivity) and
-`gsVec_dense_span` (density transfer); divergence-free preservation and
-orthonormality are fully derived above.  This is the recursion-side half of
-the named residual `rawDivFree_orthonormalize` in `GalerkinBasis.lean`. -/
+Assembled from the two named leaves `gsU_pos` (residual positivity) and
+`gsVec_dense_span` (density transfer), themselves closed above (strict
+receipts probed 2026-09-18); divergence-free preservation and orthonormality
+are fully derived above.  This is the recursion-side half of
+`rawDivFree_orthonormalize` in `GalerkinBasis.lean`, itself closed there. -/
 theorem rawDivFree_orthonormalize' (R : RawDivFreeFamily) : Nonempty GalerkinBasisFamily :=
   ⟨{ w := gsVec R.v
      divergence_free := gsVec_divFree R

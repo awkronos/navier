@@ -7,7 +7,9 @@ This file banks the analytic infrastructure for the uniform time-derivative
 bound for the Galerkin ODE in the dual `H⁻¹` (more precisely `V'`) norm, and
 the Simon (1987) time-translation equicontinuity that follows from it.  The
 payoff theorem (`modalApprox_timeEquicontinuous_of_dualBound`, discharging the
-`htime` residual of `GalerkinBasis.exists_galerkinModeData`) is NOT yet here:
+time-continuity input of the mode-data constructor
+`galerkinModeData_of_basis_modalFlow` — formerly the `htime` residual of the
+removed `GalerkinBasis.exists_galerkinModeData`) is NOT yet here:
 what is certified here is the form-level Cauchy–Schwarz layer and the
 measure-theoretic window-Hölder layer that the dual bound consumes.
 
