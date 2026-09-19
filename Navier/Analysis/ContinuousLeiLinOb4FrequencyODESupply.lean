@@ -55,6 +55,18 @@ of §9 (fiber continuity in `s` at fixed `ξ` versus an `L¹`-majorized
 essential supremum over `ξ`); the wave-1 slice-level impossibility
 measurement for `hsrc` is untouched and not re-attacked here.
 
+**Status (2026-09-19, §5 below):** `hcont` is no longer a travelling
+hypothesis on the fixed-point route.  §4 decomposes it into (FC-rep)/(FC-dom)
+and §5 DERIVES both from the pointwise mild identity
+`v s η = continuousMildImage ν hν a v s η` on the window
+(`ae_ContinuousOn_weightedSource_of_mildFixed`), and
+`ContinuousLeiLinMildFixedPointPointwise.hcont_fixedPoint` instantiates that
+identity at the actual box fixed point of
+`actual_existsUnique_mildFixedPoint`.  What now travels at the fixed point is
+the window bundle at every coordinate plus the recent-window `X⁻¹` source
+moment of its representative (the degree-2 recent moment is the input beyond
+the box slots, as the `ContinuousLeiLinODEDominationSupply` header records).
+
 The conclusion is stated over the shrunk neighbourhood
 `u ∩ Ioo (max 0 τ) t₁`, which lies in `𝓝 t₀` under `0 ≤ τ`, `0 < t₀`,
 `τ < t₀ < t₁` with `u` open and `t₀ ∈ u`, so §9's `hu : u ∈ 𝓝 t₀` and its
@@ -278,7 +290,7 @@ INPUT frequency variable `η` rather than the output `ξ`:
   single time-uniform `L¹(η)` profile majorant on the window;
 
 together with the bare per-slice measurability **(FC-smeas)**
-`∀ s j, AEStronglyMeasurable (fun η => v s η j)`.  Mechanism: for almost every
+`∀ s ∈ w, ∀ j, AEStronglyMeasurable (fun η => v s η j)` (on the window only).  Mechanism: for almost every
 output frequency `ξ`, at each `s₀ ∈ w` the fiberwise filter dominated
 convergence theorem (`tendsto_integral_filter_of_dominated_convergence`)
 along `𝓝[∩ w] s₀` acts on the convolution integrand
@@ -307,7 +319,7 @@ fiber jumps at `s₀`), so no moment/slot-level datum can imply it; the route
 this forces is exactly the pointwise-representative class (FC-rep)+(FC-dom). -/
 theorem ae_ContinuousOn_weightedSource_of_fiberData
     (ν : ℝ) (v : ℝ → ES → ComplexSpace) (i : Fin 3) (w : Set ℝ)
-    (hv_meas : ∀ s : ℝ, ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => v s η j))
+    (hv_meas : ∀ s ∈ w, ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => v s η j))
     (hv_cont : ∀ᵐ η ∂volume, ∀ j : Fin 3, ContinuousOn (fun s : ℝ => v s η j) w)
     (hdom : ∃ M : ES → ℝ, Integrable M ∧
       ∀ᵐ η ∂volume, ∀ s ∈ w, ∀ j : Fin 3, ‖v s η j‖ ≤ M η) :
@@ -338,16 +350,16 @@ theorem ae_ContinuousOn_weightedSource_of_fiberData
       (fun s : ℝ => ∫ η : ES,
           ContinuousLinearMap.mul ℂ ℂ (v s η j) (v s (ξ - η) k)) w s₀ := by
     intro j k s₀ hs₀
-    have hmeas : ∀ s : ℝ, AEStronglyMeasurable
+    have hmeas : ∀ s ∈ w, AEStronglyMeasurable
         (fun η : ES => ContinuousLinearMap.mul ℂ ℂ (v s η j) (v s (ξ - η) k)) := by
-      intro s
+      intro s hs
       have hg : AEStronglyMeasurable (fun x : ES => v s x k)
           (Measure.map (fun η : ES => ξ - η) volume) := by
         rw [hsubpres.map_eq]
-        exact hv_meas s k
-      exact (hv_meas s j).convolution_integrand_snd' (ContinuousLinearMap.mul ℂ ℂ) hg
+        exact hv_meas s hs k
+      exact (hv_meas s hs j).convolution_integrand_snd' (ContinuousLinearMap.mul ℂ ℂ) hg
     refine tendsto_integral_filter_of_dominated_convergence
-        (fun η : ES => M η * M (ξ - η)) (Eventually.of_forall hmeas)
+        (fun η : ES => M η * M (ξ - η)) (eventually_nhdsWithin_of_forall hmeas)
         (eventually_nhdsWithin_iff.mpr (Eventually.of_forall fun s hs =>
           (hMmaj.and hMmaj_shift).mono fun η hη => by
             rw [ContinuousLinearMap.mul_apply', norm_mul]
@@ -409,7 +421,7 @@ theorem ae_ContinuousOn_weightedSource_heat (ν : ℝ) (hν : 0 < ν)
         (fun s => heatVec ν s (fourierDatum u₀)) ξ i) w := by
   refine ae_ContinuousOn_weightedSource_of_fiberData ν _ i w ?_ ?_ ?_
   · -- (FC-smeas): continuous Gaussian factor times a Schwartz Fourier coordinate
-    intro s j
+    intro s _ j
     show AEStronglyMeasurable (fun η : ES =>
         ((Real.exp (-(ν * ‖η‖ ^ 2 * s) : ℝ) : ℂ) * fourierDatum u₀ η j)) volume
     refine Continuous.aestronglyMeasurable (Continuous.mul ?_ ?_)
@@ -461,6 +473,417 @@ theorem hcont_heat (ν : ℝ) (hν : 0 < ν) (u₀ : Navier.SchwartzVelocity)
   ae_ContinuousOn_weightedSource_heat ν hν u₀ i _
     fun _x hx => lt_of_le_of_lt (le_max_left 0 τ) hx.2.1
 
+/-! ## 5. `hcont` at pointwise mild fixed points: (FC-rep) and (FC-dom) from the
+mild identity
+
+The three leaves of §4 are DISCHARGED here for every trajectory that is, on
+the window and at almost every input frequency, its own mild image
+(`hfix : ∀ᵐ η, ∀ s ∈ w, v s η = continuousMildImage ν hν a v s η`) — the
+exact shape a pointwise representative of the box fixed point carries (its
+mild image is again a mild image of itself, because the Duhamel source only
+reads its input up to spacetime null sets).  No continuity or majorant
+hypothesis on `v` enters; both are DERIVED from the mild identity:
+
+* **(FC-rep)** the mild coordinate is `heat + exp(−ν‖η‖²s)·∫₀ˢ weightedSource`
+  by the pull-out identity `continuousDuhamel_coord_eq`, and a primitive of an
+  interval-integrable function is continuous
+  (`intervalIntegral.continuousOn_primitive_interval'`); the interval
+  integrability is §1's `ae_intervalIntegrable_weightedSource_of_windowMoments`
+  at every coordinate — so time-continuity of the fixed point's fibres is a
+  consequence of the joint window moments alone;
+* **(FC-dom)** on the shrunk window `w ⊆ (τ', t₁)`, `τ < τ'`, the Duhamel
+  coordinate is dominated uniformly in `s` by
+  `C·∫₀^τ ‖η‖⁻¹‖src‖ + ∫_τ^{t₁} (‖η‖⁻¹ + ‖η‖²)‖src‖` with
+  `C = 1 + (ν(τ'−τ))⁻¹`: on the strict past the heat factor obeys
+  `‖η‖·exp(−ν‖η‖²(s−σ)) ≤ C` (`mul_exp_neg_sq_le`, the lag `s − σ ≥ τ' − τ`
+  buys one `‖η‖`), and on the recent window `exp ≤ 1` and
+  `1 ≤ ‖η‖⁻¹ + ‖η‖²` (`one_le_inv_add_sq`).  Tonelli
+  (`Integrable.integral_norm_prod_left`) makes the three fibre integrals
+  `L¹(η)` from the joint moments `hsrc₀`, `hsrc₁` and the box-native recent
+  `X⁻¹` product moment `hsrcm1`; the heat term is dominated by the datum.
+
+The surviving inputs are therefore: the window bundle at every coordinate,
+the recent-window `X⁻¹` source moment (the weight the box slots supply), the
+datum's `L¹` mass (free for the Schwartz datum), slice measurability on the
+window, and the pointwise mild identity `hfix`.  The residual `hcont` of §2
+is no longer a travelling hypothesis on this route. -/
+
+/-- Scalar leaf: with a positive lag `δ ≤ x`, the heat factor buys one power
+of the frequency, `r·exp(−ν r² x) ≤ 1 + (νδ)⁻¹`. -/
+theorem mul_exp_neg_sq_le (ν δ r x : ℝ) (hν : 0 < ν) (hδ : 0 < δ) (hr : 0 ≤ r)
+    (hx : δ ≤ x) :
+    r * Real.exp (-(ν * r ^ 2 * x)) ≤ 1 + (ν * δ)⁻¹ := by
+  have hνδ : 0 < ν * δ := mul_pos hν hδ
+  have hinvnn : 0 ≤ (ν * δ)⁻¹ := (inv_pos.mpr hνδ).le
+  have hνr : 0 ≤ ν * r ^ 2 := mul_nonneg hν.le (sq_nonneg r)
+  have hexp_le : Real.exp (-(ν * r ^ 2 * x)) ≤ Real.exp (-(ν * δ * r ^ 2)) := by
+    apply Real.exp_le_exp.mpr
+    nlinarith [mul_le_mul_of_nonneg_left hx hνr]
+  have hinv : Real.exp (-(ν * δ * r ^ 2)) ≤ (1 + ν * δ * r ^ 2)⁻¹ := by
+    rw [Real.exp_neg]
+    have hpos : 0 < 1 + ν * δ * r ^ 2 := by positivity
+    exact inv_anti₀ hpos (by linarith [Real.add_one_le_exp (ν * δ * r ^ 2)])
+  rcases le_or_gt r 1 with h1 | h1
+  · have hone : Real.exp (-(ν * r ^ 2 * x)) ≤ 1 :=
+      Real.exp_le_one_iff.mpr (by nlinarith [mul_nonneg hνr (hδ.le.trans hx)])
+    calc r * Real.exp (-(ν * r ^ 2 * x)) ≤ 1 * 1 :=
+          mul_le_mul h1 hone (Real.exp_pos _).le zero_le_one
+      _ ≤ 1 + (ν * δ)⁻¹ := by linarith
+  · have hpos : 0 < 1 + ν * δ * r ^ 2 := by positivity
+    calc r * Real.exp (-(ν * r ^ 2 * x))
+        ≤ r * (1 + ν * δ * r ^ 2)⁻¹ :=
+          mul_le_mul_of_nonneg_left (hexp_le.trans hinv) hr
+      _ ≤ (ν * δ)⁻¹ := by
+          rw [← div_eq_mul_inv, div_le_iff₀ hpos]
+          have hcalc : (ν * δ)⁻¹ * (1 + ν * δ * r ^ 2) = (ν * δ)⁻¹ + r ^ 2 := by
+            rw [mul_add, mul_one, ← mul_assoc, inv_mul_cancel₀ hνδ.ne', one_mul]
+          rw [hcalc]
+          nlinarith
+      _ ≤ 1 + (ν * δ)⁻¹ := by linarith
+
+/-- Scalar leaf: `1 ≤ r⁻¹ + r²` for `r > 0`. -/
+theorem one_le_inv_add_sq (r : ℝ) (hr : 0 < r) : 1 ≤ r⁻¹ + r ^ 2 := by
+  rcases le_or_gt r 1 with h | h
+  · have h1 : 1 ≤ r⁻¹ := (one_le_inv₀ hr).mpr h
+    nlinarith [sq_nonneg r]
+  · have h1 : 1 ≤ r ^ 2 := by nlinarith
+    have h2 : 0 ≤ r⁻¹ := (inv_pos.mpr hr).le
+    linarith
+
+/-- The fibre data of the window bundle at one coordinate, Fubini-sliced to
+almost every input frequency: the three fibre moments and the two fibre
+measurabilities. -/
+theorem ae_fiberSliceData (v : ℝ → ES → ComplexSpace) (j : Fin 3) (τ t₁ : ℝ)
+    (sup : PhysicalODEWindowSupply v j τ t₁)
+    (hsrcm1 : Integrable (fun p : ES × ℝ =>
+        ‖p.1‖⁻¹ * ‖continuousNavierSource v v p.2 p.1 j‖)
+      (volume.prod (volume.restrict (Icc τ t₁)))) :
+    ∀ᵐ η ∂volume,
+      Integrable (fun s : ℝ => ‖η‖⁻¹ * ‖continuousNavierSource v v s η j‖)
+        (volume.restrict (Icc (0 : ℝ) τ)) ∧
+      Integrable (fun s : ℝ => ‖η‖⁻¹ * ‖continuousNavierSource v v s η j‖)
+        (volume.restrict (Icc τ t₁)) ∧
+      Integrable (fun s : ℝ => ‖η‖ ^ 2 * ‖continuousNavierSource v v s η j‖)
+        (volume.restrict (Icc τ t₁)) ∧
+      AEStronglyMeasurable (fun s : ℝ => continuousNavierSource v v s η j)
+        (volume.restrict (Icc (0 : ℝ) τ)) ∧
+      AEStronglyMeasurable (fun s : ℝ => continuousNavierSource v v s η j)
+        (volume.restrict (Icc τ t₁)) := by
+  have h0 := ((integrable_prod_iff sup.hsrc₀.aestronglyMeasurable).mp sup.hsrc₀).1
+  have hm := ((integrable_prod_iff hsrcm1.aestronglyMeasurable).mp hsrcm1).1
+  have h1 := ((integrable_prod_iff sup.hsrc₁.aestronglyMeasurable).mp sup.hsrc₁).1
+  have ha0 := sup.hmeas.prodMk_left
+  have ha1 := sup.hmeas₁.prodMk_left
+  filter_upwards [h0, hm, h1, ha0, ha1] with η h0 hm h1 ha0 ha1
+  exact ⟨h0, hm, h1, ha0, ha1⟩
+
+/-- **Time-uniform Duhamel majorant on the shrunk window.**  For `s ∈ (τ', t₁)`
+with `τ < τ'`, and a fibre `η ≠ 0` carrying the sliced window data, the
+Duhamel coordinate is bounded — independently of `s` — by the strict-past
+`X⁻¹` fibre moment times `1 + (ν(τ'−τ))⁻¹` plus the recent-window
+`X⁻¹ + X²` fibre moments. -/
+theorem norm_continuousDuhamel_le_window (ν : ℝ) (hν : 0 < ν)
+    (v : ℝ → ES → ComplexSpace) (j : Fin 3) (τ τ' t₁ s : ℝ) (hτ : 0 ≤ τ) (hττ' : τ < τ')
+    (hs : s ∈ Ioo τ' t₁) (η : ES) (hη : η ≠ 0)
+    (h0 : Integrable (fun s : ℝ => ‖η‖⁻¹ * ‖continuousNavierSource v v s η j‖)
+      (volume.restrict (Icc (0 : ℝ) τ)))
+    (hm : Integrable (fun s : ℝ => ‖η‖⁻¹ * ‖continuousNavierSource v v s η j‖)
+      (volume.restrict (Icc τ t₁)))
+    (h1 : Integrable (fun s : ℝ => ‖η‖ ^ 2 * ‖continuousNavierSource v v s η j‖)
+      (volume.restrict (Icc τ t₁)))
+    (ha0 : AEStronglyMeasurable (fun s : ℝ => continuousNavierSource v v s η j)
+      (volume.restrict (Icc (0 : ℝ) τ)))
+    (ha1 : AEStronglyMeasurable (fun s : ℝ => continuousNavierSource v v s η j)
+      (volume.restrict (Icc τ t₁))) :
+    ‖continuousDuhamel ν v v s η j‖ ≤
+      (1 + (ν * (τ' - τ))⁻¹) *
+          (∫ σ in Icc (0 : ℝ) τ, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) +
+        ((∫ σ in Icc τ t₁, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) +
+          ∫ σ in Icc τ t₁, ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η j‖) := by
+  set C : ℝ := 1 + (ν * (τ' - τ))⁻¹ with hC
+  set F : ℝ → ℂ := fun σ =>
+    heatMode ν (s - σ) (fun ζ : ES => continuousNavierSource v v σ ζ j) η with hF
+  have hFnorm : ∀ σ : ℝ, ‖F σ‖ =
+      Real.exp (-(ν * ‖η‖ ^ 2 * (s - σ))) * ‖continuousNavierSource v v σ η j‖ := by
+    intro σ
+    show ‖((Real.exp (-(ν * ‖η‖ ^ 2 * (s - σ))) : ℝ) : ℂ) *
+        continuousNavierSource v v σ η j‖ = _
+    rw [Complex.norm_mul, Complex.norm_real, Real.norm_of_nonneg (Real.exp_pos _).le]
+  have hτs : τ ≤ s := (hττ'.trans hs.1).le
+  have hn : 0 < ‖η‖ := norm_pos_iff.mpr hη
+  have hexpc : Continuous (fun σ : ℝ => ((Real.exp (-(ν * ‖η‖ ^ 2 * (s - σ))) : ℝ) : ℂ)) :=
+    Complex.continuous_ofReal.comp (Real.continuous_exp.comp
+      ((continuous_const.mul (continuous_const.sub continuous_id)).neg))
+  have hFm0 : AEStronglyMeasurable F (volume.restrict (Icc (0 : ℝ) τ)) :=
+    hexpc.aestronglyMeasurable.mul ha0
+  have hFm1 : AEStronglyMeasurable F (volume.restrict (Icc τ t₁)) :=
+    hexpc.aestronglyMeasurable.mul ha1
+  -- strict past: the lag buys one power of `‖η‖`
+  have hpast : ∀ σ ∈ Icc (0 : ℝ) τ,
+      ‖F σ‖ ≤ C * (‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) := by
+    intro σ hσ
+    rw [hFnorm]
+    have hx : τ' - τ ≤ s - σ := by linarith [hσ.2, hs.1]
+    have key := mul_exp_neg_sq_le ν (τ' - τ) ‖η‖ (s - σ) hν (sub_pos.mpr hττ')
+      (norm_nonneg η) hx
+    have hfac : Real.exp (-(ν * ‖η‖ ^ 2 * (s - σ))) ≤ C * ‖η‖⁻¹ := by
+      rw [← div_eq_mul_inv, le_div_iff₀ hn]
+      linarith [key]
+    calc Real.exp (-(ν * ‖η‖ ^ 2 * (s - σ))) * ‖continuousNavierSource v v σ η j‖
+        ≤ (C * ‖η‖⁻¹) * ‖continuousNavierSource v v σ η j‖ :=
+          mul_le_mul_of_nonneg_right hfac (norm_nonneg _)
+      _ = C * (‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) := by ring
+  -- recent window: the heat factor is a contraction and `1 ≤ ‖η‖⁻¹ + ‖η‖²`
+  have hrecent : ∀ σ ∈ Icc τ s, ‖F σ‖ ≤
+      ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖ +
+        ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η j‖ := by
+    intro σ hσ
+    rw [hFnorm]
+    have hsσ : 0 ≤ s - σ := by linarith [hσ.2]
+    have hexp1 : Real.exp (-(ν * ‖η‖ ^ 2 * (s - σ))) ≤ 1 := by
+      refine Real.exp_le_one_iff.mpr ?_
+      have := mul_nonneg (mul_nonneg hν.le (sq_nonneg ‖η‖)) hsσ
+      linarith
+    have h1' := one_le_inv_add_sq ‖η‖ hn
+    calc Real.exp (-(ν * ‖η‖ ^ 2 * (s - σ))) * ‖continuousNavierSource v v σ η j‖
+        ≤ 1 * ‖continuousNavierSource v v σ η j‖ :=
+          mul_le_mul_of_nonneg_right hexp1 (norm_nonneg _)
+      _ ≤ (‖η‖⁻¹ + ‖η‖ ^ 2) * ‖continuousNavierSource v v σ η j‖ :=
+          mul_le_mul_of_nonneg_right h1' (norm_nonneg _)
+      _ = _ := by ring
+  -- integrability of the Duhamel integrand on both pieces
+  have hsub : Ioc τ s ⊆ Icc τ t₁ := fun σ hσ => ⟨hσ.1.le, hσ.2.trans hs.2.le⟩
+  have hG : Integrable (fun σ : ℝ => ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖ +
+      ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η j‖) (volume.restrict (Icc τ t₁)) :=
+    hm.add h1
+  have hGr : Integrable (fun σ : ℝ => ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖ +
+      ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η j‖) (volume.restrict (Ioc τ s)) :=
+    hG.mono_measure (Measure.restrict_mono hsub le_rfl)
+  have hFi0 : IntegrableOn F (Icc (0 : ℝ) τ) :=
+    (h0.const_mul C).mono' hFm0
+      ((ae_restrict_mem measurableSet_Icc).mono fun σ hσ => hpast σ hσ)
+  have hFi1 : IntegrableOn F (Ioc τ s) :=
+    hGr.mono' (hFm1.mono_measure (Measure.restrict_mono hsub le_rfl))
+      ((ae_restrict_mem measurableSet_Ioc).mono fun σ hσ => hrecent σ ⟨hσ.1.le, hσ.2⟩)
+  -- split the causal integral at `τ`
+  have hunion : Icc (0 : ℝ) τ ∪ Ioc τ s = Icc 0 s := Icc_union_Ioc_eq_Icc hτ hτs
+  have hdisj : Disjoint (Icc (0 : ℝ) τ) (Ioc τ s) := by
+    rw [Set.disjoint_left]
+    intro σ hσ hσ'
+    exact absurd hσ'.1 (not_lt.mpr hσ.2)
+  have hsplit : continuousDuhamel ν v v s η j =
+      (∫ σ in Icc (0 : ℝ) τ, F σ) + ∫ σ in Ioc τ s, F σ := by
+    show ∫ σ in Icc (0 : ℝ) s, F σ = _
+    rw [← hunion, setIntegral_union hdisj measurableSet_Ioc hFi0 hFi1]
+  rw [hsplit]
+  refine (norm_add_le _ _).trans (add_le_add ?_ ?_)
+  · refine (norm_integral_le_of_norm_le (h0.const_mul C)
+      ((ae_restrict_mem measurableSet_Icc).mono fun σ hσ => hpast σ hσ)).trans ?_
+    rw [integral_const_mul]
+  · refine (norm_integral_le_of_norm_le hGr
+      ((ae_restrict_mem measurableSet_Ioc).mono fun σ hσ =>
+        hrecent σ ⟨hσ.1.le, hσ.2⟩)).trans ?_
+    refine (setIntegral_mono_set hG
+      (Eventually.of_forall fun σ => by
+        simp only [Pi.zero_apply]
+        positivity)
+      (Eventually.of_forall fun σ hσ => hsub hσ)).trans ?_
+    rw [integral_add hm h1]
+
+/-- **`hcont` at a pointwise mild fixed point.**  If `v` is its own mild image
+on the window `w ⊆ (τ', t₁)` at almost every input frequency, then the
+reweighted source is fibre-continuous on `w` for almost every output
+frequency — the residual `hcont` of §2 — from the window bundle at every
+coordinate, the recent-window `X⁻¹` source moment, the datum's `L¹` mass and
+slice measurability on the window.  (FC-rep) and (FC-dom) are derived, not
+assumed (module header of §5). -/
+theorem ae_ContinuousOn_weightedSource_of_mildFixed
+    (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace) (i : Fin 3)
+    (τ τ' t₁ : ℝ) (hτ : 0 ≤ τ) (hττ' : τ < τ') (w : Set ℝ) (hw : w ⊆ Ioo τ' t₁)
+    (ha0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖a η j‖))
+    (sup : ∀ j : Fin 3, PhysicalODEWindowSupply v j τ t₁)
+    (hsrcm1 : ∀ j : Fin 3, Integrable (fun p : ES × ℝ =>
+        ‖p.1‖⁻¹ * ‖continuousNavierSource v v p.2 p.1 j‖)
+      (volume.prod (volume.restrict (Icc τ t₁))))
+    (hv_meas : ∀ s ∈ w, ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => v s η j))
+    (hfix : ∀ᵐ η ∂volume, ∀ s ∈ w, ∀ j : Fin 3,
+      v s η j = continuousMildImage ν hν a v s η j) :
+    ∀ᵐ ξ ∂volume, ContinuousOn (weightedSource ν v v ξ i) w := by
+  have hdata := ae_all_iff.mpr fun j : Fin 3 => ae_fiberSliceData v j τ t₁ (sup j) (hsrcm1 j)
+  have hII : ∀ᵐ η ∂volume, ∀ j : Fin 3, ∀ s' ∈ Ioo (max 0 τ) t₁,
+      IntervalIntegrable (weightedSource ν v v η j) volume 0 s' :=
+    ae_all_iff.mpr fun j =>
+      ae_intervalIntegrable_weightedSource_of_windowMoments ν v j τ t₁ hτ (sup j)
+  have hne : ∀ᵐ η ∂volume, (η : ES) ≠ 0 := volume.ae_ne (0 : ES)
+  refine ae_ContinuousOn_weightedSource_of_fiberData ν v i w hv_meas ?_ ?_
+  · -- (FC-rep): fibre continuity of the mild image, transported to `v`
+    filter_upwards [hfix, hII] with η hfixη hIIη
+    intro j
+    have hEη : Continuous (fun s : ℝ => ((Real.exp (-(ν * ‖η‖ ^ 2 * s)) : ℝ) : ℂ)) :=
+      Complex.continuous_ofReal.comp
+        (Real.continuous_exp.comp ((continuous_const.mul continuous_id).neg))
+    have hmild : ContinuousOn (fun s : ℝ => continuousMildImage ν hν a v s η j) w := by
+      intro s₀ hs₀
+      have hs₀' := hw hs₀
+      have hpos : 0 < s₀ := by linarith [hs₀'.1]
+      have hs'mem : (s₀ + t₁) / 2 ∈ Ioo (max 0 τ) t₁ :=
+        ⟨max_lt (by linarith [hs₀'.2]) (by linarith [hs₀'.1, hs₀'.2]), by linarith [hs₀'.2]⟩
+      have hs₀s' : s₀ < (s₀ + t₁) / 2 := by linarith [hs₀'.2]
+      have hprim : ContinuousOn
+          (fun b : ℝ => ∫ x in (0 : ℝ)..b, weightedSource ν v v η j x)
+          (Icc 0 ((s₀ + t₁) / 2)) := by
+        have := intervalIntegral.continuousOn_primitive_interval'
+          (hIIη j _ hs'mem) (left_mem_uIcc (a := (0 : ℝ)) (b := (s₀ + t₁) / 2))
+        rwa [uIcc_of_le (by linarith : (0 : ℝ) ≤ (s₀ + t₁) / 2)] at this
+      have hprimAt : ContinuousAt
+          (fun b : ℝ => ∫ x in (0 : ℝ)..b, weightedSource ν v v η j x) s₀ :=
+        hprim.continuousAt (Icc_mem_nhds hpos hs₀s')
+      have hD : ContinuousAt (fun s : ℝ => ((Real.exp (-(ν * ‖η‖ ^ 2 * s)) : ℝ) : ℂ) *
+          ∫ x in (0 : ℝ)..s, weightedSource ν v v η j x) s₀ :=
+        hEη.continuousAt.mul hprimAt
+      have hheat : ContinuousAt (fun s : ℝ => heatVec ν s a η j) s₀ := by
+        show ContinuousAt (fun s : ℝ => ((Real.exp (-(ν * ‖η‖ ^ 2 * s)) : ℝ) : ℂ) * a η j) s₀
+        exact hEη.continuousAt.mul continuousAt_const
+      refine (hheat.add hD).continuousWithinAt.congr ?_ ?_
+      · intro s hs
+        rw [ContinuousLeiLinSelfMap.continuousMildImage_coord_apply,
+          continuousDuhamel_coord_eq ν v v s (by linarith [(hw hs).1] : (0 : ℝ) ≤ s) η j]
+        try rfl
+      · rw [ContinuousLeiLinSelfMap.continuousMildImage_coord_apply,
+          continuousDuhamel_coord_eq ν v v s₀ hpos.le η j]
+        try rfl
+    exact hmild.congr fun s hs => hfixη s hs j
+  · -- (FC-dom): the time-uniform majorant of the mild image
+    set C : ℝ := 1 + (ν * (τ' - τ))⁻¹ with hC
+    have hCnn : 0 ≤ C := add_nonneg zero_le_one (inv_pos.mpr (mul_pos hν (sub_pos.mpr hττ'))).le
+    refine ⟨fun η : ES => ∑ j : Fin 3, (‖a η j‖ +
+      C * (∫ σ in Icc (0 : ℝ) τ, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) +
+      ((∫ σ in Icc τ t₁, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) +
+        ∫ σ in Icc τ t₁, ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η j‖)), ?_, ?_⟩
+    · refine integrable_finsetSum Finset.univ fun j _ => ?_
+      have hnn0 : ∀ (η : ES) (σ : ℝ),
+          0 ≤ ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖ :=
+        fun η σ => mul_nonneg (inv_nonneg.mpr (norm_nonneg _)) (norm_nonneg _)
+      have hnn2 : ∀ (η : ES) (σ : ℝ),
+          0 ≤ ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η j‖ :=
+        fun η σ => mul_nonneg (sq_nonneg _) (norm_nonneg _)
+      have hI0 : Integrable (fun η : ES =>
+          ∫ σ in Icc (0 : ℝ) τ, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) := by
+        refine (sup j).hsrc₀.integral_norm_prod_left.congr (ae_of_all _ fun η => ?_)
+        exact integral_congr_ae (ae_of_all _ fun σ => Real.norm_of_nonneg (hnn0 η σ))
+      have hIm : Integrable (fun η : ES =>
+          ∫ σ in Icc τ t₁, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η j‖) := by
+        refine (hsrcm1 j).integral_norm_prod_left.congr (ae_of_all _ fun η => ?_)
+        exact integral_congr_ae (ae_of_all _ fun σ => Real.norm_of_nonneg (hnn0 η σ))
+      have hI1 : Integrable (fun η : ES =>
+          ∫ σ in Icc τ t₁, ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η j‖) := by
+        refine (sup j).hsrc₁.integral_norm_prod_left.congr (ae_of_all _ fun η => ?_)
+        exact integral_congr_ae (ae_of_all _ fun σ => Real.norm_of_nonneg (hnn2 η σ))
+      exact ((ha0 j).add (hI0.const_mul C)).add (hIm.add hI1)
+    · filter_upwards [hfix, hdata, hne] with η hfixη hdataη hη
+      intro s hs j
+      have hs' := hw hs
+      have hs0 : 0 ≤ s := by linarith [hs'.1]
+      obtain ⟨h0, hm, h1, ha0', ha1'⟩ := hdataη j
+      have hD := norm_continuousDuhamel_le_window ν hν v j τ τ' t₁ s hτ hττ' hs' η hη
+        h0 hm h1 ha0' ha1'
+      have hheat : ‖heatVec ν s a η j‖ ≤ ‖a η j‖ := by
+        show ‖((Real.exp (-(ν * ‖η‖ ^ 2 * s)) : ℝ) : ℂ) * a η j‖ ≤ _
+        rw [Complex.norm_mul, Complex.norm_real, Real.norm_of_nonneg (Real.exp_pos _).le]
+        refine mul_le_of_le_one_left (norm_nonneg _) (Real.exp_le_one_iff.mpr ?_)
+        have := mul_nonneg (mul_nonneg hν.le (sq_nonneg ‖η‖)) hs0
+        linarith
+      rw [← hC] at hD
+      rw [hfixη s hs j, ContinuousLeiLinSelfMap.continuousMildImage_coord_apply]
+      refine (norm_add_le _ _).trans ((add_le_add hheat hD).trans ?_)
+      refine le_trans (le_of_eq (by ring)) (Finset.single_le_sum (f := fun k : Fin 3 => ‖a η k‖ +
+        C * (∫ σ in Icc (0 : ℝ) τ, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η k‖) +
+        ((∫ σ in Icc τ t₁, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η k‖) +
+          ∫ σ in Icc τ t₁, ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η k‖))
+        (fun k _ => ?_) (Finset.mem_univ j))
+      try dsimp only
+      have hi0 : 0 ≤ ∫ σ in Icc (0 : ℝ) τ, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η k‖ :=
+        integral_nonneg fun σ => mul_nonneg (inv_nonneg.mpr (norm_nonneg _)) (norm_nonneg _)
+      have him : 0 ≤ ∫ σ in Icc τ t₁, ‖η‖⁻¹ * ‖continuousNavierSource v v σ η k‖ :=
+        integral_nonneg fun σ => mul_nonneg (inv_nonneg.mpr (norm_nonneg _)) (norm_nonneg _)
+      have hi1 : 0 ≤ ∫ σ in Icc τ t₁, ‖η‖ ^ 2 * ‖continuousNavierSource v v σ η k‖ :=
+        integral_nonneg fun σ => mul_nonneg (sq_nonneg _) (norm_nonneg _)
+      have := mul_nonneg hCnn hi0
+      linarith [norm_nonneg (a η k)]
+
+/-- **Obligation 4 at a pointwise mild fixed point.**  The `hdv_diff` family of
+§2 on the shrunk window `u ∩ (τ', t₁)`, with the residual `hcont` DISCHARGED
+by `ae_ContinuousOn_weightedSource_of_mildFixed`. -/
+theorem hdvDiff_of_windowMoments_mildFixed
+    (ν : ℝ) (hν : 0 < ν) (a : ES → ComplexSpace) (v : ℝ → ES → ComplexSpace) (i : Fin 3)
+    (τ τ' t₁ : ℝ) (hτ : 0 ≤ τ) (hττ' : τ < τ') (u : Set ℝ) (hu : IsOpen u)
+    (ha0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖a η j‖))
+    (sup : ∀ j : Fin 3, PhysicalODEWindowSupply v j τ t₁)
+    (hsrcm1 : ∀ j : Fin 3, Integrable (fun p : ES × ℝ =>
+        ‖p.1‖⁻¹ * ‖continuousNavierSource v v p.2 p.1 j‖)
+      (volume.prod (volume.restrict (Icc τ t₁))))
+    (hv_meas : ∀ s ∈ Ioo τ' t₁, ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => v s η j))
+    (hfix : ∀ᵐ η ∂volume, ∀ s ∈ Ioo τ' t₁, ∀ j : Fin 3,
+      v s η j = continuousMildImage ν hν a v s η j) :
+    ∀ᵐ ξ ∂volume, ∀ s ∈ u ∩ Ioo τ' t₁,
+      HasDerivAt (fun r : ℝ => continuousMildImage ν hν a v r ξ i)
+        (-((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousMildImage ν hν a v s ξ i
+          + continuousNavierSource v v s ξ i) s := by
+  have hcont := ae_ContinuousOn_weightedSource_of_mildFixed ν hν a v i τ τ' t₁ hτ hττ'
+    (u ∩ Ioo τ' t₁) inter_subset_right ha0 sup hsrcm1
+    (fun s hs => hv_meas s hs.2) (hfix.mono fun η h s hs => h s hs.2)
+  have hu' : IsOpen (u ∩ Ioo τ' t₁) := hu.inter isOpen_Ioo
+  have key := hdvDiff_of_windowMoments_and_sourceContinuous ν hν a v i τ t₁ hτ
+    (u ∩ Ioo τ' t₁) hu' (sup i) (hcont.mono fun ξ h => h.mono inter_subset_left)
+  filter_upwards [key] with ξ hξ
+  intro s hs
+  exact hξ s ⟨hs, max_lt (by linarith [hs.2.1, hττ', hτ]) (hττ'.trans hs.2.1), hs.2.2⟩
+
+/-- **Glue: obligation 4 feeding obligation 1 at a pointwise mild fixed point
+of the Schwartz datum.**  The §9 physical pointwise ODE with `hcont` no
+longer a hypothesis: the datum's `L¹` mass is the Schwartz Fourier
+transform's, and the fibre continuity is derived from the window bundle at
+every coordinate, the recent-window `X⁻¹` source moment and the pointwise
+mild identity on `(τ', t₁)`.  The genuinely-travelling residuals are now the
+`hsrc` pointwise envelope, the mild-slice fields `hw_meas`/`hw_int`/`hdv_meas`,
+the bundle and moment inputs, and `hfix` itself. -/
+theorem hasDerivAt_physicalVelocity_continuousMildImage_fourierDatum_of_mildFixed
+    (ν : ℝ) (hν : 0 < ν) (u₀ : Navier.SchwartzVelocity)
+    (v : ℝ → ES → ComplexSpace) (i : Fin 3) (x : Navier.Space)
+    (t₀ τ τ' t₁ : ℝ) (ht₀ : 0 < t₀) (hτ : 0 ≤ τ) (hττ' : τ < τ') (hτ't : τ' < t₀)
+    (ht₀t₁ : t₀ < t₁)
+    (sup : ∀ j : Fin 3, PhysicalODEWindowSupply v j τ t₁)
+    (hsrcm1 : ∀ j : Fin 3, Integrable (fun p : ES × ℝ =>
+        ‖p.1‖⁻¹ * ‖continuousNavierSource v v p.2 p.1 j‖)
+      (volume.prod (volume.restrict (Icc τ t₁))))
+    (hsrc : ∃ u ∈ 𝓝 t₀, ∃ g : ES → ℝ, Integrable g ∧
+        ∀ᵐ ξ ∂volume, ∀ s ∈ u, ‖continuousNavierSource v v s ξ i‖ ≤ g ξ)
+    (hw_meas : ∀ᶠ s in 𝓝 t₀,
+      AEStronglyMeasurable (fun ξ : ES =>
+        continuousMildImage ν hν (fourierDatum u₀) v s ξ i))
+    (hw_int : Integrable (fun ξ : ES =>
+        continuousMildImage ν hν (fourierDatum u₀) v t₀ ξ i))
+    (hdv_meas : AEStronglyMeasurable (fun ξ : ES =>
+        -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousMildImage ν hν (fourierDatum u₀) v t₀ ξ i
+          + continuousNavierSource v v t₀ ξ i))
+    (hv_meas : ∀ s ∈ Ioo τ' t₁, ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => v s η j))
+    (hfix : ∀ᵐ η ∂volume, ∀ s ∈ Ioo τ' t₁, ∀ j : Fin 3,
+      v s η j = continuousMildImage ν hν (fourierDatum u₀) v s η j) :
+    HasDerivAt (fun s : ℝ =>
+        physicalVelocity (continuousMildImage ν hν (fourierDatum u₀) v) s x i)
+      (realPhysicalCoord (fun ξ : ES =>
+          -((ν * ‖ξ‖ ^ 2 : ℝ) : ℂ) • continuousMildImage ν hν (fourierDatum u₀) v t₀ ξ
+            + continuousNavierSource v v t₀ ξ) i (euclidPoint x)) t₀ := by
+  have ha0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖fourierDatum u₀ η j‖) := fun j =>
+    ((𝓕 (euclidComponent u₀ j) : SchwartzMap ES ℂ).integrable).norm
+  refine hasDerivAt_physicalVelocity_continuousMildImage_fourierDatum_of_sourceContinuous
+    ν hν u₀ v i x t₀ τ t₁ ht₀ hτ (hττ'.trans hτ't) ht₀t₁ (sup i) hsrc
+    (Ioo τ' t₁) isOpen_Ioo ⟨hτ't, ht₀t₁⟩ hw_meas hw_int hdv_meas ?_
+  exact ae_ContinuousOn_weightedSource_of_mildFixed ν hν (fourierDatum u₀) v i τ τ' t₁
+    hτ hττ' (Ioo τ' t₁ ∩ Ioo (max 0 τ) t₁) inter_subset_left ha0 sup hsrcm1
+    (fun s hs => hv_meas s hs.1) (hfix.mono fun η h s hs => h s hs.1)
+
+
 end Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply
 
 #print axioms Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.ae_ContinuousOn_weightedSource_of_fiberData
@@ -469,3 +892,9 @@ end Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply
 #check @Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.ae_ContinuousOn_weightedSource_of_fiberData
 #check @Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.ae_ContinuousOn_weightedSource_heat
 #check @Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.hcont_heat
+#print axioms Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.norm_continuousDuhamel_le_window
+#print axioms Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.ae_ContinuousOn_weightedSource_of_mildFixed
+#print axioms Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.hdvDiff_of_windowMoments_mildFixed
+#print axioms Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.hasDerivAt_physicalVelocity_continuousMildImage_fourierDatum_of_mildFixed
+#check @Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.ae_ContinuousOn_weightedSource_of_mildFixed
+#check @Navier.Analysis.ContinuousLeiLinOb4FrequencyODESupply.hasDerivAt_physicalVelocity_continuousMildImage_fourierDatum_of_mildFixed
