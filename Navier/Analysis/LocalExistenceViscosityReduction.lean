@@ -25,7 +25,7 @@ set_option autoImplicit false
 
 noncomputable section
 
-open scoped ContDiff
+open scoped BigOperators ContDiff ENNReal Matrix NNReal
 open MeasureTheory Set
 
 namespace Navier.Analysis.LocalExistenceViscosityReduction
@@ -37,6 +37,7 @@ open Navier.Analysis.RestartPaste
 open Navier.Analysis.RestartBKMConsumer
 open Navier.Analysis.ViscosityTransport
 open Navier.Analysis.ViscosityAdmissibility
+open Navier.Analysis.Vorticity
 
 /-- The time-dilation map sends the scaled half-open horizon into the original
 half-open horizon. -/
@@ -147,6 +148,96 @@ theorem solvesBefore_viscosityScaled_mul
       simpa only [mul_comm] using h'
     · positivity
 
+/-! ## The BKM control is viscosity-scale invariant -/
+
+/-- Vorticity has amplitude weight one under the time/amplitude viscosity
+rescaling. -/
+theorem vorticity_viscosityScaled (a : ℝ) (u : VelocityEvolution)
+    (t : ℝ) (x : Space) :
+    vorticity (viscosityScaledVelocity a u) t x =
+      a • vorticity u (a * t) x := by
+  simp only [vorticity, staticCurl]
+  rw [Finset.smul_sum]
+  apply Finset.sum_congr rfl
+  intro i _hi
+  rw [show fderiv ℝ ((viscosityScaledVelocity a u) t) x =
+      spatialDerivative (viscosityScaledVelocity a u) t x by rfl]
+  rw [spatialDerivative_viscosityScaled]
+  exact (crossProduct (basisVector i)).map_smul a _
+
+/-- The extended-real spatial vorticity supremum has the same amplitude
+weight. -/
+theorem vorticityRate_viscosityScaled
+    (a : ℝ) (ha : 0 < a) (u : VelocityEvolution) (t : ℝ) :
+    vorticityRate (viscosityScaledVelocity a u) t =
+      ENNReal.ofReal a * vorticityRate u (a * t) := by
+  unfold vorticityRate
+  simp_rw [vorticity_viscosityScaled, officialEuclideanNorm_smul,
+    abs_of_pos ha, ENNReal.ofReal_mul ha.le]
+  exact (ENNReal.mul_iSup _ _).symm
+
+/-- Multiplication by a positive scalar pushes Lebesgue measure to the
+inverse-weighted Lebesgue measure. -/
+theorem measurePreserving_mul
+    (a : ℝ) (ha : 0 < a) :
+    MeasurePreserving (fun t : ℝ => a * t) volume
+      ((ENNReal.ofReal a)⁻¹ • volume) := by
+  refine ⟨measurable_const_mul a, ?_⟩
+  rw [show (fun t : ℝ => a * t) = (fun t : ℝ => a • t) by rfl]
+  rw [Measure.map_addHaar_smul volume ha.ne']
+  simp [Module.finrank_self, abs_of_pos ha, ENNReal.ofReal_inv_of_pos ha]
+
+/-- The time-amplitude factors in the BKM integral cancel exactly. -/
+theorem setLIntegral_vorticityScale
+    (a : ℝ) (ha : 0 < a) (f : ℝ → ℝ≥0∞) (s : ℝ) :
+    ∫⁻ t in Icc 0 s, ENNReal.ofReal a * f (a * t) =
+      ∫⁻ r in Icc 0 (a * s), f r := by
+  have hpre : (fun t : ℝ => a * t) ⁻¹' Icc 0 (a * s) = Icc 0 s := by
+    ext t
+    simp only [mem_preimage, mem_Icc]
+    constructor
+    · rintro ⟨h0, hs⟩
+      exact ⟨(mul_nonneg_iff_of_pos_left ha |>.mp <| h0), by nlinarith⟩
+    · rintro ⟨h0, hs⟩
+      exact ⟨mul_nonneg ha.le h0, by nlinarith⟩
+  have hemb : MeasurableEmbedding (fun t : ℝ => a * t) := by
+    exact (continuous_const.mul continuous_id).measurableEmbedding
+      (by intro x y h; exact mul_left_cancel₀ ha.ne' h)
+  have hchange := (measurePreserving_mul a ha).setLIntegral_comp_preimage_emb
+    hemb f (Icc 0 (a * s))
+  rw [hpre] at hchange
+  rw [MeasureTheory.lintegral_const_mul' (ENNReal.ofReal a) _ ENNReal.ofReal_ne_top,
+    hchange, Measure.restrict_smul, MeasureTheory.lintegral_smul_measure]
+  rw [smul_eq_mul, ← mul_assoc, ENNReal.mul_inv_cancel]
+  · exact one_mul _
+  · exact ne_of_gt (ENNReal.ofReal_pos.mpr ha)
+  · exact ENNReal.ofReal_ne_top
+
+/-- The BKM vorticity-integral quantity is invariant when the horizon is
+scaled contragrediently to the viscosity time dilation. -/
+theorem bkmVorticityControl_viscosityScaled
+    (a : ℝ) (ha : 0 < a) (T : ℝ) (u : VelocityEvolution) :
+    bkmVorticityControl (T / a) (viscosityScaledVelocity a u) =
+      bkmVorticityControl T u := by
+  unfold bkmVorticityControl
+  simp_rw [vorticityRate_viscosityScaled a ha]
+  simp_rw [setLIntegral_vorticityScale a ha]
+  apply le_antisymm
+  · refine iSup₂_le fun s hs => ?_
+    have has : a * s ∈ Ico (0 : ℝ) T := by
+      have hsT := (lt_div_iff₀ ha).mp hs.2
+      exact ⟨mul_nonneg ha.le hs.1, by simpa only [mul_comm] using hsT⟩
+    exact le_iSup₂_of_le (a * s) has le_rfl
+  · refine iSup₂_le fun r hr => ?_
+    have hs : r / a ∈ Ico (0 : ℝ) (T / a) :=
+      ⟨div_nonneg hr.1 ha.le, (div_lt_div_iff_of_pos_right ha).mpr hr.2⟩
+    have har : a * (r / a) = r := by field_simp
+    simpa only [har] using
+      (le_iSup₂_of_le (r / a) hs le_rfl :
+        (∫⁻ t in Icc 0 (a * (r / a)), vorticityRate u t) ≤
+          ⨆ s ∈ Ico (0 : ℝ) (T / a),
+            ∫⁻ t in Icc 0 (a * s), vorticityRate u t)
+
 /-- The exact unit-viscosity surface of the local-existence leaf. -/
 def LocalClassicalExistenceAtViscosityOne : Prop :=
   ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
@@ -186,7 +277,60 @@ theorem wholeSpaceGlobalRegularity_of_localAtOne_bkmRestart
     (hrestart : HorizonIndependentRestart bkmVorticityControl) :
     ProblemStatements.WholeSpaceGlobalRegularity := by
   exact wholeSpaceGlobalRegularity_of_local_bkmRestart
-    (localClassicalExistence_iff_atViscosityOne.mpr hlocal) hbkm hrestart
+      (localClassicalExistence_iff_atViscosityOne.mpr hlocal) hbkm hrestart
+
+/-- The exact unit-viscosity surface of the solution-uniform, horizon-uniform
+BKM a priori leaf. -/
+def NSBKMUniformVorticityAprioriAtViscosityOne : Prop :=
+  ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
+    ∃ M : ℝ≥0, ∀ T : ℝ, 0 < T →
+      ∀ u : VelocityEvolution, ∀ p : PressureEvolution,
+        (∀ x : Space, u 0 x = u₀ x) → SolvesBefore 1 T u p →
+          bkmVorticityControl T u ≤ (M : ℝ≥0∞)
+
+/-- The all-positive-viscosity BKM a priori leaf is equivalent to its
+unit-viscosity surface.  The reverse direction rescales each supplied local
+solution back to viscosity one; exact invariance of `bkmVorticityControl`
+then transfers the unit-viscosity budget without changing its value. -/
+theorem nsBKMUniformVorticityApriori_iff_atViscosityOne :
+    NSBKMUniformVorticityApriori ↔
+      NSBKMUniformVorticityAprioriAtViscosityOne := by
+  constructor
+  · intro h u₀ hu₀
+    exact h 1 zero_lt_one u₀ hu₀
+  · intro h nu hnu u₀ hu₀
+    let a := nu⁻¹
+    have ha : 0 < a := inv_pos.mpr hnu
+    let base := viscosityScaledSchwartzDatum a u₀
+    have hbase : DivergenceFreeInitial base :=
+      divergenceFreeInitial_viscosityScaledSchwartzDatum a u₀ hu₀
+    obtain ⟨M, hM⟩ := h base hbase
+    refine ⟨M, ?_⟩
+    intro T hT u p hinit hsol
+    have hinitScaled : ∀ x : Space,
+        viscosityScaledVelocity a u 0 x = base x := by
+      simpa only [base] using
+        initialCondition_viscosityScaledSchwartz a u₀ u hinit
+    have hsolScaled : SolvesBefore 1 (T / a)
+        (viscosityScaledVelocity a u) (viscosityScaledPressure a p) := by
+      simpa only [a, inv_mul_cancel₀ hnu.ne'] using
+        solvesBefore_viscosityScaled_mul a ha nu T u p hsol
+    have hbound := hM (T / a) (div_pos hT ha)
+      (viscosityScaledVelocity a u) (viscosityScaledPressure a p)
+      hinitScaled hsolScaled
+    rw [bkmVorticityControl_viscosityScaled a ha T u] at hbound
+    exact hbound
+
+/-- The checked whole-space consumer with both local existence and the BKM
+a priori estimate normalized to viscosity one.  The same-quantity restart
+engine remains the sole all-viscosity hypothesis. -/
+theorem wholeSpaceGlobalRegularity_of_localAtOne_bkmAtOne_restart
+    (hlocal : LocalClassicalExistenceAtViscosityOne)
+    (hbkm : NSBKMUniformVorticityAprioriAtViscosityOne)
+    (hrestart : HorizonIndependentRestart bkmVorticityControl) :
+    ProblemStatements.WholeSpaceGlobalRegularity := by
+  exact wholeSpaceGlobalRegularity_of_localAtOne_bkmRestart hlocal
+    (nsBKMUniformVorticityApriori_iff_atViscosityOne.mpr hbkm) hrestart
 
 end Navier.Analysis.LocalExistenceViscosityReduction
 
@@ -195,6 +339,18 @@ set_option pp.fullNames true in
 set_option pp.fullNames true in
 #check @Navier.Analysis.LocalExistenceViscosityReduction.wholeSpaceGlobalRegularity_of_localAtOne_bkmRestart
 set_option pp.fullNames true in
+#check @Navier.Analysis.LocalExistenceViscosityReduction.bkmVorticityControl_viscosityScaled
+set_option pp.fullNames true in
+#check @Navier.Analysis.LocalExistenceViscosityReduction.nsBKMUniformVorticityApriori_iff_atViscosityOne
+set_option pp.fullNames true in
+#check @Navier.Analysis.LocalExistenceViscosityReduction.wholeSpaceGlobalRegularity_of_localAtOne_bkmAtOne_restart
+set_option pp.fullNames true in
 #print axioms Navier.Analysis.LocalExistenceViscosityReduction.localClassicalExistence_iff_atViscosityOne
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LocalExistenceViscosityReduction.wholeSpaceGlobalRegularity_of_localAtOne_bkmRestart
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LocalExistenceViscosityReduction.bkmVorticityControl_viscosityScaled
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LocalExistenceViscosityReduction.nsBKMUniformVorticityApriori_iff_atViscosityOne
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LocalExistenceViscosityReduction.wholeSpaceGlobalRegularity_of_localAtOne_bkmAtOne_restart
