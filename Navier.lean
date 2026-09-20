@@ -204,6 +204,7 @@ import Navier.Analysis.QuantumVortexRegularity
 import Navier.Analysis.QuantumVortexTopologyChange
 import Navier.Analysis.QuantumVortexWinding
 import Navier.Analysis.RieszKolmogorov
+import Navier.Analysis.RestartBKMConsumer
 import Navier.Analysis.RestartEnergyControl
 import Navier.Analysis.RestartPaste
 import Navier.Analysis.ScaledConstructedBreakdown
