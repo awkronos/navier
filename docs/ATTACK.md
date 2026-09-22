@@ -381,7 +381,12 @@ or logical kill test), and **observation-only** (computation).
   **obstruction** [TAO2016];
   weak nonuniqueness is a boundary result [BUCKMASTER_VICOL2019],
   [ALBRITTON_BRUE_COLOMBO2022]. The subsequently integrated construction now
-  closes exact whole-space C; periodic D remains **open** in this repository.
+  closes exact whole-space C. This blueprint's remaining open status for D was
+  superseded on 2026-09-09: periodic D is inhabited here by
+  [`PeriodicConstructedBreakdown.periodicBreakdown`](../Navier/Analysis/PeriodicConstructedBreakdown.lean)
+  (`#check @` and raw-axiom probe re-run 2026-09-22 at `ed433e8`:
+  strict `[propext, Classical.choice, Quot.sound]`; current status in
+  `RESULT_MAP.md`).
 
 ## 6. Using the blueprint
 

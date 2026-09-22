@@ -52,6 +52,7 @@ labels are historical and are superseded by `RESULT_MAP.md` for current claims.
 | --- | --- |
 | [Attack blueprint](ATTACK.md) | Original route architecture and proposed proof program |
 | [Polya strategy map](POLYA_MAP.md) | Match between an earlier Polya catalogue snapshot and Navier proof shapes |
+| [Residual ledger 2026-08-17](../NAVIER-RESIDUALS-2026-08-17.md) | Dated sorry-count and wave reconciliation; its 2026-09-16 census note (zero sorries at `3ed567cd`) supersedes the earlier counts in the same file |
 
 Deterministic numerical artifacts have their own scope note in
 [`artifacts/README.md`](../artifacts/README.md). Raw compiler and axiom evidence
