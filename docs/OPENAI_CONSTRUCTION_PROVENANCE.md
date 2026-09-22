@@ -10,6 +10,26 @@ Lean modules comprise the 511-module candidate construction and the 66-module
 whole-space finite-energy comparison closure. Each adapted file names the
 upstream source, pinned revision, and applicable license in its header.
 
+## Release scope (checked 2026-09-13; restated 2026-09-21)
+
+What OpenAI released is the **papers plus the Lean certificate repository**
+(`openai/NavierStokesAndEuler`, Apache-2.0). Model search/rollout trajectories
+were **not** released: the `openai` Hugging Face org carries no Navier–Stokes
+dataset, and the blog phrase "trajectories show inward spiraling and axial
+stretching" is a fluid-particle figure caption, not a data artifact. Treat any
+plan that consumes "the released trajectories" as built on a phantom artifact.
+
+What the release does supply, and what is actually reusable here, is the
+proof-engineering pattern layer (statement provenance with an independently
+referenced statement and proved bridge, heartbeat repair-before-budget tactic
+shapes, a closure-capable precursor as the fleet feasibility gate, and the
+frozen numerical-budget-as-record induction) — those patterns now live at
+their owning estate rules, not in this repository. The mathematical endpoint
+the release establishes is the **forced** whole-space/torus breakdown (C/D)
+and the unforced Euler singularity; it supplies **no** unforced A/B
+regularity endpoint, and nothing in this section promotes a released result
+past that boundary (`BARRIERS.md` §5, ledger F-019).
+
 ## Upstream boundary (2026-09-13)
 
 Upstream `openai/NavierStokesAndEuler` has advanced from the pinned

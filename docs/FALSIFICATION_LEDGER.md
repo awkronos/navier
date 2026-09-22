@@ -18,51 +18,72 @@ Statuses:
 - **QUARANTINED:** the claim concerns a different model/domain/solution class
   and lacks a transfer theorem.
 
+Table columns map one-to-one onto the six entry-protocol fields below:
+quantified claim, route · dependency node, date · revision · witness,
+witness class, smallest repaired statement (Consequence + Permitted
+successor), and successor links. Witness classes:
+
+- **M** — the witness refutes the mathematics (a counterexample to the stated
+  universal claim);
+- **I** — the witness refutes an inference, attribution, or misreading of
+  scope; the underlying mathematics stands in its own scope;
+- **T** — the witness shows only that a model transfer is absent; neither
+  model is refuted.
+
 ## Initial ledger
 
-| ID | Status | Claim tested | Falsifier or audit witness | Consequence | Permitted successor |
-|---|---|---|---|---|---|
-| F-001 | RED | The smooth energy identity alone controls a scale-critical norm | Under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\), energy scales as \(\lambda^{-1/2}\) while a critical norm scales as \(\lambda^0\) | No scale-uniform critical inequality can be obtained from energy size alone | Add a named exact-structure or geometric estimate and retest |
+Dates and revisions: every entry in this table was opened at ledger init
+(2026-07-14, baseline `81448ed`) unless its witness cell names a different
+revision; the witness cell then also names the primary source or command
+that checks the claim.
 
-> F-001 formal side REALIZED (2026-07-14, `c411f27`): `Navier.EnergyObstruction.energy_not_scale_coercive`
-> proves the obstruction kernel-clean — a rescaling whose `L²` energy is
-> arbitrarily small while its scale-critical `L³` mass stays fixed and positive.
-> The entry remains RED: it records that energy alone cannot control the
-> critical quantity, which the theorem now certifies rather than refutes.
-| F-002 | RED | Energy cancellation plus generic harmonic-analysis estimates suffice for global regularity | Tao's averaged bilinear equation preserves those coarse properties and admits finite-time blowup [TAO2016] | Any decisive positive estimate must distinguish the exact Navier–Stokes bilinear symbol | State the discriminator and show failure under Tao averaging |
-| F-003 | RED | A continuation criterion is itself an unconditional route payload | Logical normalization: “if \(N(u)<\infty\), then continue” does not prove \(N(u)<\infty\) | Serrin/ESS remain bridge results, not R1 closure | Prove the norm from strictly lower hypotheses |
-| F-004 | DECOMPOSED | Banach contraction gives arbitrary-large-data global existence | Kato/Koch–Tataru mechanisms obtain local large-data or global small-data control [KATO1984], [KOCH_TATARU2001] | FixedPointBanach may close local wiring only | Produce an interval-independent large-data gain not based on assumed smallness |
-| F-005 | RED | CKN partial regularity proves that every suitable solution is smooth | CKN controls the parabolic size of the singular set; it does not show the set is empty [CKN1982] | Partial regularity cannot inhabit FeffermanA | Add a quantitative all-cylinder exclusion theorem |
-| F-006 | RED | Leray weak existence proves Fefferman alternative A | A requires globally smooth velocity and pressure; Leray supplies a finite-energy weak solution [LERAY1934] | Weak existence is a lower producer only | Prove weak-to-strong regularity for every admissible smooth datum |
-| F-007 | RED | Weak nonuniqueness proves Fefferman C or D | Nonuniqueness is not nonexistence of every global smooth physically reasonable solution; the solution/force classes also require an exact audit [BUCKMASTER_VICOL2019], [ALBRITTON_BRUE_COLOMBO2022] | These papers mark a weak-category boundary, not a problem-statement breakdown witness | Construct an exact C/D datum and force and prove the stated nonexistence |
-| F-008 | QUARANTINED | A periodic global theorem automatically proves the whole-space theorem | Fefferman states B and A as distinct alternatives with different domains [FEFFERMAN2000] | No B-to-A coercion is admitted | Supply a theorem transporting all data, pressure, decay, and energy properties |
-| F-009 | RED | Polya EnergyMethod is a formal PDE energy theorem | Its live theorem concerns finite additive energy and small difference sets | Name similarity cannot supply P5 | Formalize a new kinetic/local-energy theorem with the correct integral domain |
-| F-010 | RED | Polya DyadicDecomposition supplies Littlewood–Paley theory | Its live theorem is dyadic pigeonholing for a finite set of natural numbers | It cannot build R5 frequency projections or Besov estimates | Add genuine Fourier projection/paraproduct infrastructure |
-| F-011 | DECOMPOSED | Instantaneous analyticity alone prevents finite-time singularity | Known Gevrey estimates are conditional/local and their radius bounds can depend on quantities that may diverge [FOIAS_TEMAM1989] | Analyticity is a diagnostic unless its radius inequality closes noncircularly | Prove a positive radius bound from lower exact-structure control |
-| F-012 | RED | A large finite numerical survey proves a universal regularity or blowup statement | Finite samples do not cover arbitrary smooth data or unresolved arbitrarily small scales | Numerical results remain observation-only | Give interval certificates, a compact finite-cover theorem, and an analytic tail bound |
-| F-013 | RED | Weak convergence of approximate solutions passes the quadratic term automatically | The product \(u_n\otimes u_n\) needs strong convergence or explicit defect control; weak convergence alone is insufficient | R4/R9 compactness must expose pressure and nonlinear defects | Prove strong local compactness or carry and eliminate a defect measure |
-| F-014 | DECOMPOSED | A vorticity-direction criterion shows the direction condition is dynamically automatic | Constantin–Fefferman supplies a conditional geometric criterion, not a derivation of its hypothesis for every datum [CONSTANTIN_FEFFERMAN1993] | R3's first residual is the dynamical coherence estimate | Derive coherence on the high-vorticity set from the exact evolution |
-| F-015 | RED | Fefferman C/D are defined as zero-force blowup statements | The official C/D statements quantify an admissible smooth force and conclude absence of a global physically reasonable solution [FEFFERMAN2000] | Do not replace the official target by a narrower paraphrase | Treat zero-force breakdown as a stronger optional subroute; retain force in the exact target |
-| F-016 | RED | The official wording of C/D specifically requires a finite-time blowup profile | The official conclusion is nonexistence of a global solution satisfying the listed clauses; it does not prescribe a profile/mechanism [FEFFERMAN2000] | A local-theory equivalence is not assumed without proof | Prove any equivalence as a separate bridge, or use the exact nonexistence conclusion |
-| F-017 | QUARANTINED | Blowup for Tao's averaged equation is blowup for Navier–Stokes | The averaged bilinear operator is different from the exact Leray-projected nonlinearity [TAO2016] | Averaged blowup is an obstruction to generic positive arguments only | Prove an exact-symbol embedding before any C/D use |
-| F-018 | RED | A compiling endpoint wrapper establishes scientific closure when its payload is assumed or axiomatized | Dependency/axiom inspection distinguishes a checked implication from realization of its premise | Wrapper progress is wiring and keeps frontier status unchanged | Supply the lower payload and rerun raw axiom/dependency audits |
-| F-019 | QUARANTINED | A two-dimensional, axisymmetric, bounded-domain, hyperdissipative, or Euler theorem can be reported as A | At least one load-bearing dimension/domain/dissipation/nonlinearity field differs | Model results remain benchmarks | Prove a field-by-field transfer theorem to the exact whole-space equation |
-| F-020 | RED | Source grep, status prose, or a registry boolean is sufficient proof evidence | Such text can be stale or disconnected from theorem dependencies; only native compiler/axiom output checks the formal artifact | Status cannot mint closure | Bind fresh native output to the exact revision and declaration |
+| ID | Status | Claim tested (exact quantified form) | Route · dependency node | Falsifier or audit witness (date · revision) | Witness refutes | Consequence | Permitted successor | Supersessions / links |
+|---|---|---|---|---|---|---|---|---|
+| F-001 | RED | The smooth energy identity alone controls a scale-critical norm | universal scaling barrier · P3; test T-001 | Under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\), energy scales as \(\lambda^{-1/2}\) while a critical norm scales as \(\lambda^0\) | M | No scale-uniform critical inequality can be obtained from energy size alone | Add a named exact-structure or geometric estimate and retest | Formal side REALIZED (`c411f27`): `Navier.EnergyObstruction.energy_not_scale_coercive` certifies the obstruction kernel-clean |
+| F-002 | RED | Energy cancellation plus generic harmonic-analysis estimates suffice for global regularity — i.e. every argument that uses only properties of the bilinear form preserved under Tao-admissible averaging settles global regularity | positive-route gate · P8; tests T-003/T-007 | [TAO2016]: the averaged bilinear equation preserves those coarse properties and admits finite-time blowup | M | Any decisive positive estimate must distinguish the exact Navier–Stokes bilinear symbol | State the discriminator and show failure under Tao averaging | Gate restated in `BARRIERS.md` §3 and `ATTACK.md` §3 |
+| F-003 | RED | A continuation criterion is itself an unconditional route payload — "if \(N(u)<\infty\) then continue" supplies the bound | R1 endpoint · P6 | Logical normalization: "if \(N(u)<\infty\), then continue" does not prove \(N(u)<\infty\) | I | Serrin/ESS remain bridge results, not R1 closure | Prove the norm from strictly lower hypotheses | — |
+| F-004 | DECOMPOSED | Banach contraction gives arbitrary-large-data global existence | R2 fixed point · P4 | [KATO1984], [KOCH_TATARU2001]: these mechanisms obtain local large-data or global small-data control | I | FixedPointBanach may close local wiring only | Produce an interval-independent large-data gain not based on assumed smallness | — |
+| F-005 | RED | CKN partial regularity proves that every suitable solution is smooth | R9 weak-to-smooth · P7 | [CKN1982]: CKN controls the parabolic size of the singular set; it does not show the set is empty | I | Partial regularity cannot inhabit FeffermanA | Add a quantitative all-cylinder exclusion theorem | — |
+| F-006 | RED | Leray weak existence proves Fefferman alternative A | R4/R9 · P5 | [LERAY1934]: A requires globally smooth velocity and pressure; Leray supplies a finite-energy weak solution | I | Weak existence is a lower producer only | Prove weak-to-strong regularity for every admissible smooth datum | — |
+| F-007 | RED | Weak nonuniqueness proves Fefferman C or D | R11 exact breakdown · P0 | [BUCKMASTER_VICOL2019], [ALBRITTON_BRUE_COLOMBO2022]: nonuniqueness is not nonexistence of every global smooth physically reasonable solution; the solution/force classes also require an exact audit | I | These papers mark a weak-category boundary, not a problem-statement breakdown witness | Construct an exact C/D datum and force and prove the stated nonexistence | Forced C/D later inhabited independently (`ConstructedBreakdown.wholeSpaceBreakdown`); the ledger entry still bars citing the nonuniqueness papers as the witness |
+| F-008 | QUARANTINED | A periodic global theorem automatically proves the whole-space theorem | transfer · P0 (domain clauses) | [FEFFERMAN2000] states B and A as distinct alternatives with different domains | T | No B-to-A coercion is admitted | Supply a theorem transporting all data, pressure, decay, and energy properties | Partial successor landed 2026-09-16: `Navier.Transfer.LatticeExtensionTransport` (`OPEN_FRONTIER_MAP.md` lattice→whole-space row); declared residual `MildSelfMapTransport` |
+| F-009 | RED | Polya EnergyMethod is a formal PDE energy theorem — i.e. the catalogue entry can be consumed as an energy estimate | infrastructure mislabel · P5 | Its live theorem concerns finite additive energy and small difference sets | I | Name similarity cannot supply P5 | Formalize a new kinetic/local-energy theorem with the correct integral domain | — |
+| F-010 | RED | Polya DyadicDecomposition supplies Littlewood–Paley theory — i.e. the catalogue entry provides frequency projections and Besov estimates | infrastructure mislabel · P3/R5 | Its live theorem is dyadic pigeonholing for a finite set of natural numbers | I | It cannot build R5 frequency projections or Besov estimates | Add genuine Fourier projection/paraproduct infrastructure | — |
+| F-011 | DECOMPOSED | Instantaneous analyticity alone prevents finite-time singularity | R8 analyticity · P6 | [FOIAS_TEMAM1989]: known Gevrey estimates are conditional/local and their radius bounds can depend on quantities that may diverge | I | Analyticity is a diagnostic unless its radius inequality closes noncircularly | Prove a positive radius bound from lower exact-structure control | — |
+| F-012 | RED | A large finite numerical survey proves a universal regularity or blowup statement | R10 certified computation · evidence tier; test T-006 | Finite samples do not cover arbitrary smooth data or unresolved arbitrarily small scales | I | Numerical results remain observation-only | Give interval certificates, a compact finite-cover theorem, and an analytic tail bound | Successor target recorded in `NS5-SOLVER-FINDINGS.md` §6 (`interval_cert`/rustfftw route) |
+| F-013 | RED | Weak convergence of approximate solutions passes the quadratic term automatically | R4 compactness/rigidity · P7; test T-004 | The product \(u_n\otimes u_n\) needs strong convergence or explicit defect control; weak convergence alone is insufficient | M | R4/R9 compactness must expose pressure and nonlinear defects | Prove strong local compactness or carry and eliminate a defect measure | Partial successor landed 2026-09-16 (`e655a44`, W7O-NV2): `Analysis.GalerkinEnergyBudget` budgets the Riesz–Kolmogorov/Aubin–Lions input; named residual is the `hprojectedWeak` commutator carry (`OPEN_FRONTIER_MAP.md` Galerkin modal compactness row) |
+| F-014 | DECOMPOSED | A vorticity-direction criterion shows the direction condition is dynamically automatic | R3 vorticity geometry · P8; test T-002 | [CONSTANTIN_FEFFERMAN1993] supplies a conditional geometric criterion, not a derivation of its hypothesis for every datum | I | R3's first residual is the dynamical coherence estimate (still open at current source: `ATTACK.md` R3 marks automatic coherence **open-residual**) | Derive coherence on the high-vorticity set from the exact evolution | — |
+| F-015 | RED | Fefferman C/D are defined as zero-force blowup statements | R11 target statement · P0; test T-007 | [FEFFERMAN2000]: the official C/D statements quantify an admissible smooth force and conclude absence of a global physically reasonable solution | I | Do not replace the official target by a narrower paraphrase | Treat zero-force breakdown as a stronger optional subroute; retain force in the exact target | — |
+| F-016 | RED | The official wording of C/D specifically requires a finite-time blowup profile | R11 target statement · P0; test T-007 | [FEFFERMAN2000]: the official conclusion is nonexistence of a global solution satisfying the listed clauses; it does not prescribe a profile/mechanism | I | A local-theory equivalence is not assumed without proof | Prove any equivalence as a separate bridge, or use the exact nonexistence conclusion | — |
+| F-017 | QUARANTINED | Blowup for Tao's averaged equation is blowup for Navier–Stokes | transfer · P8; test T-007 | [TAO2016]: the averaged bilinear operator is different from the exact Leray-projected nonlinearity | T | Averaged blowup is an obstruction to generic positive arguments only | Prove an exact-symbol embedding before any C/D use | — |
+| F-018 | RED | A compiling endpoint wrapper establishes scientific closure when its payload is assumed or axiomatized | evidence discipline · all routes | Dependency/axiom inspection distinguishes a checked implication from realization of its premise | I | Wrapper progress is wiring and keeps frontier status unchanged | Supply the lower payload and rerun raw axiom/dependency audits | — |
+| F-019 | QUARANTINED | A two-dimensional, axisymmetric, bounded-domain, hyperdissipative, or Euler theorem can be reported as A | transfer · P0; test T-007 | At least one load-bearing dimension/domain/dissipation/nonlinearity field differs | T | Model results remain benchmarks | Prove a field-by-field transfer theorem to the exact whole-space equation | Upstream unforced Euler breakdown `Euler.euler_breakdown_R3` (`OPENAI2026_EULER`) re-verified 2026-09-13: settles the Euler model only; `BARRIERS.md` §5 quarantine stands |
+| F-020 | RED | Source grep, status prose, or a registry boolean is sufficient proof evidence | evidence discipline · all routes | Such text can be stale or disconnected from theorem dependencies; only native compiler/axiom output checks the formal artifact | I | Status cannot mint closure | Bind fresh native output to the exact revision and declaration | — |
+
+### Notes
+
+- F-001 formal side REALIZED (2026-07-14, `c411f27`):
+  `Navier.EnergyObstruction.energy_not_scale_coercive` proves the obstruction
+  kernel-clean — a rescaling whose `L²` energy is arbitrarily small while its
+  scale-critical `L³` mass stays fixed and positive. The entry remains RED: it
+  records that energy alone cannot control the critical quantity, which the
+  theorem now certifies rather than refutes.
 
 ## Integration audit additions
 
-| ID | Status | Claim tested | Falsifier or audit witness | Consequence | Permitted successor |
-|---|---|---|---|---|---|
-| F-021 | RED | A periodic B/D contract may constrain velocity but omit pressure periodicity | 2026-07-14 audit at formal-source revision `528ff6f4fa06d7ea4dcebbd308eaee2d5dfcb07f`; Fefferman's official erratum explicitly adds \(p(x+e_j,t)=p(x,t)\) | Any future B/D surface or validator must require periodicity of both fields | Add adversarial contract tests that reject a velocity-only periodic surface |
+| ID | Status | Claim tested (exact quantified form) | Route · dependency node | Falsifier or audit witness (date · revision) | Witness refutes | Consequence | Permitted successor | Supersessions / links |
+|---|---|---|---|---|---|---|---|---|
+| F-021 | RED | A periodic B/D contract may constrain velocity but omit pressure periodicity | B/D surfaces · P0; test T-007 | 2026-07-14 audit at formal-source revision `528ff6f4fa06d7ea4dcebbd308eaee2d5dfcb07f`; Fefferman's official erratum explicitly adds \(p(x+e_j,t)=p(x,t)\) | I | Any future B/D surface or validator must require periodicity of both fields | Add adversarial contract tests that reject a velocity-only periodic surface | `PeriodicClassicalUniqueness` consumes periodic velocity **and** periodic pressure (`RESULT_MAP.md`) |
 
 ## Route test queue
 
 These are not yet falsifications; they are the first adversarial probes to run
-when a concrete inequality is proposed.
+when a concrete inequality is proposed. A §6 row of `BARRIERS.md` with no F-id
+here is a kill **class** that has not been executed, not a kill.
 
 | Test ID | Route | Input family | Failure signal |
 |---|---|---|---|
-| T-001 | R1 | rescaled compactly supported divergence-free packets | a “uniform” constant changes with \(\lambda\) |
+| T-001 | R1 | rescaled compactly supported divergence-free packets | a "uniform" constant changes with \(\lambda\) |
 | T-002 | R3 | high-vorticity packets with rapidly rotating direction | coherence estimate lacks an equation-derived exclusion |
 | T-003 | R5/R7 | exact divergence-free Fourier triads across adjacent and separated shells | claimed sign/gain fails on one admissible triad |
 | T-004 | R4/R9 | concentrating suitable approximants with pressure tracked | limit loses nontriviality or retains nonlinear defect |
@@ -87,3 +108,9 @@ A route is killed only at the granularity of the tested claim. A counterexample
 to a proposed sign estimate kills that estimate, not all exact-structure
 approaches; it forces the next proposal to be narrower and to explain the
 witness.
+
+Re-runnable status-prose check over the docs (vocabulary sweep required by
+`research-mathematics.md` §2): `python3 scripts/status_vocab_sweep.py` from the
+repository root lists every residual/modulo/remains/ceiling/impossible hit with
+its file and line; each hit must be checked against the elaborated signature or
+current file state it names before being inherited or repeated.

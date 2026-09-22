@@ -10,16 +10,22 @@ route that fails a kill test either records a narrower residual or pivots.
 
 ## 1. Universal barriers
 
-| Barrier | Hard test | Killed claim class | Permitted pivot |
-|---|---|---|---|
-| Scaling/criticality | Compute every norm under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\) | Energy or a supercritical norm asserted to control concentration with no new gain | Search for a scale-critical local/frequency/geometric estimate |
-| Energy-only | Does the decisive proof use more than \(\langle B(u,u),u\rangle=0\) and generic multiplier estimates? | “Energy plus harmonic analysis proves global regularity” | Identify a property of the exact bilinear symbol |
-| Endpoint-as-assumption | Normalize all hypotheses and compare with the conclusion/continuation criterion | Serrin, \(L^\infty_tL^3_x\), BKM-type, or strain criterion simply assumed | Move the assumed bound into the open-residual field |
-| Weak/smooth category | Check solution class, energy inequality, force, uniqueness, and regularity | Weak existence/nonuniqueness presented as whole-space global-regularity alternative–D | Build an explicit weak-to-smooth or breakdown bridge |
-| Model/domain drift | Compare dimension, domain, dissipation, force, and nonlinearity | 2D, Euler, averaged, dyadic, hyperdissipative, bounded-domain, or periodic result presented as whole-space A | Prove a transfer theorem or quarantine the model |
-| Compactness defect | Track pressure, strong convergence, nonlinear products, and nontriviality | Weak limit treated as a strong exact solution without defect accounting | Promote the defect to the first residual |
-| Numerics-as-proof | Demand universal coverage, interval bounds, truncation and tail proof | Finite sampling or floating-point evidence presented as a theorem | Use observations to propose a falsifiable inequality |
-| Wrapper laundering | Inspect whether a theorem only repackages a supplied endpoint witness | Record/constructor/status theorem counted as progress | Classify as wiring and keep frontier status unchanged |
+Every killed claim class below is supported by a `FALSIFICATION_LEDGER.md`
+entry; the Support column names it.
+
+| Barrier | Hard test | Killed claim class | Permitted pivot | Ledger support |
+|---|---|---|---|---|
+| Scaling/criticality | Compute every norm under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\) | Energy or a supercritical norm asserted to control concentration with no new gain | Search for a scale-critical local/frequency/geometric estimate | F-001 (+ kernel certification `energy_not_scale_coercive`) |
+| Energy-only | Does the decisive proof use more than \(\langle B(u,u),u\rangle=0\) and generic multiplier estimates? | “Energy plus harmonic analysis proves global regularity” | Identify a property of the exact bilinear symbol | F-002 |
+| Endpoint-as-assumption | Normalize all hypotheses and compare with the conclusion/continuation criterion | Serrin, \(L^\infty_tL^3_x\), BKM-type, or strain criterion simply assumed | Move the assumed bound into the open-residual field | F-003, F-011 |
+| Weak/smooth category | Check solution class, energy inequality, force, uniqueness, and regularity | Weak existence/nonuniqueness presented as whole-space global-regularity alternative–D | Build an explicit weak-to-smooth or breakdown bridge | F-005, F-006, F-007, F-013 |
+| Model/domain drift | Compare dimension, domain, dissipation, force, and nonlinearity | 2D, Euler, averaged, dyadic, hyperdissipative, bounded-domain, or periodic result presented as whole-space A | Prove a transfer theorem or quarantine the model | F-008, F-017, F-019 |
+| Statement-paraphrase drift | Restate the official Fefferman clause verbatim and diff against the working target | Narrower paraphrase (zero-force reading, profile requirement, velocity-only periodicity) counted as the official target | Prove the equivalence as a separate bridge or use the exact clause | F-015, F-016, F-021 |
+| Attribution/name similarity | Read the cited strategy's live theorem statement, not its name | A catalogue or similarly-named theorem consumed as content it does not carry | Formalize the theorem with the correct domain or build real infrastructure | F-009, F-010 |
+| Compactness defect | Track pressure, strong convergence, nonlinear products, and nontriviality | Weak limit treated as a strong exact solution without defect accounting | Promote the defect to the first residual | F-013 |
+| Numerics-as-proof | Demand universal coverage, interval bounds, truncation and tail proof | Finite sampling or floating-point evidence presented as a theorem | Use observations to propose a falsifiable inequality | F-012 |
+| Wrapper laundering | Inspect whether a theorem only repackages a supplied endpoint witness | Record/constructor/status theorem counted as progress | Classify as wiring and keep frontier status unchanged | F-018 |
+| Text-as-proof | Bind every status claim to fresh native compiler/axiom output at the named revision | Source grep, status prose, or a registry boolean reported as closure evidence | Rerun the native probe and cite its receipt | F-020 |
 
 ## 2. Exact scaling barrier
 
@@ -105,19 +111,24 @@ produce the exact consumer type. Similarity of notation is not a bridge.
 
 ## 6. Route-specific kill and pivot matrix
 
-| Route | Minimal adversarial test | Kill event | Pivot after kill |
-|---|---|---|---|
-| R1 critical norms | rescaled concentrating smooth packets | constant depends on maximal time or assumes the target norm | localize the failed flux; R3/R5/R7 |
-| R2 fixed point | arbitrarily large critical initial norm | contraction uses small data or small time only | keep local theory; analyze large term in R5/R7 |
-| R3 vorticity geometry | high-vorticity fields with rapidly changing direction | alignment is assumed or loses critical scaling | catalog saturating geometry; R7 |
-| R4 compactness/rigidity | rescaled sequence with pressure concentration | nonlinear defect or zero limiting profile survives | quantify defect; R5/R9 |
-| R5 frequency cascade | adjacent and nonlocal exact divergence-free triads | derivative/log loss, divergent shell sum, or Tao-invariant estimate | exact symbol analysis in R7 |
-| R6 Lagrangian | strong strain with modest energy | requires \(\int\|\nabla u\|_\infty\) as an input | localize strain; R3/R7 |
-| R7 exact cancellation | exhaustive symbolic/numerical exact-triad probe | one admissible triad violates claimed sign/gain | weaken claim or expose cascade candidate to R11 |
-| R8 analyticity | radius inequality near hypothetical critical growth | coefficient is just a continuation norm | identify coefficient; R5/R6 |
-| R9 weak-to-smooth | suitable solution with CKN-scale defect | proves only partial/eventual regularity | minimal profile in R4 |
-| R10 certified computation | tail and all-scale coverage audit | finite samples, non-rigorous floats, or circular tail bound | observation becomes conjecture for R3/R5/R7 |
-| R11 exact breakdown | Fefferman clause-by-clause admissibility | different operator/domain/class or only weak nonuniqueness | use model only as positive-route falsifier |
+The Kill event column defines the kill **class**; the Ledger support column
+names the executed kills recorded in `FALSIFICATION_LEDGER.md`. A row with no
+F-id is a probe that has not run (see the route-test queue there) — it is not
+a killed route, and no lane may cite it as one.
+
+| Route | Minimal adversarial test | Kill event | Pivot after kill | Ledger support |
+|---|---|---|---|---|
+| R1 critical norms | rescaled concentrating smooth packets | constant depends on maximal time or assumes the target norm | localize the failed flux; R3/R5/R7 | F-001, F-003; queued T-001 |
+| R2 fixed point | arbitrarily large critical initial norm | contraction uses small data or small time only | keep local theory; analyze large term in R5/R7 | F-004 (DECOMPOSED) |
+| R3 vorticity geometry | high-vorticity fields with rapidly changing direction | alignment is assumed or loses critical scaling | catalog saturating geometry; R7 | F-014 (DECOMPOSED); queued T-002 |
+| R4 compactness/rigidity | rescaled sequence with pressure concentration | nonlinear defect or zero limiting profile survives | quantify defect; R5/R9 | F-013; queued T-004 |
+| R5 frequency cascade | adjacent and nonlocal exact divergence-free triads | derivative/log loss, divergent shell sum, or Tao-invariant estimate | exact symbol analysis in R7 | F-002, F-010 (infrastructure kill); queued T-003 |
+| R6 Lagrangian | strong strain with modest energy | requires \(\int\|\nabla u\|_\infty\) as an input | localize strain; R3/R7 | no kill recorded; no queued probe yet |
+| R7 exact cancellation | exhaustive symbolic/numerical exact-triad probe | one admissible triad violates claimed sign/gain | weaken claim or expose cascade candidate to R11 | no route kill recorded; T-003 (shared with R5) is the next probe |
+| R8 analyticity | radius inequality near hypothetical critical growth | coefficient is just a continuation norm | identify coefficient; R5/R6 | F-011 (DECOMPOSED); queued T-005 |
+| R9 weak-to-smooth | suitable solution with CKN-scale defect | proves only partial/eventual regularity | minimal profile in R4 | F-005, F-006; queued T-004 |
+| R10 certified computation | tail and all-scale coverage audit | finite samples, non-rigorous floats, or circular tail bound | observation becomes conjecture for R3/R5/R7 | F-012; queued T-006 |
+| R11 exact breakdown | Fefferman clause-by-clause admissibility | different operator/domain/class or only weak nonuniqueness | use model only as positive-route falsifier | F-007, F-015, F-016, F-017, F-019, F-021; queued T-007 |
 
 ## 7. Falsification protocol
 

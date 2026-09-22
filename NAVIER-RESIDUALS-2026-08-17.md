@@ -116,6 +116,18 @@ warnings (LerayWeak 2 → 1; GalerkinBasis unchanged at 1; the new file 0).
 When N1's three residuals land, the headline `leray_weak_existence` becomes
 `sorryAx`-free with no further wiring.
 
+**Correction (2026-09-21, r4-navier-ledger audit):** the conditional above is
+superseded. The relocated wrappers were **removed** in the later soundness
+cleanup — not discharged — because they depended on the admitted mode-data
+construction; `Navier/Analysis/LerayWeakExistence.lean` does not exist at
+current source and the names have no live declaration
+(`LerayWeak.lean` header notes; NS5-CENSUS 2026-09-16 at `3ed567cd` records
+zero `sorry`/`sorryAx` tree-wide). The live successor shapes are
+`galerkinModeData_of_basis_modalFlow` and
+`galerkinCoefficientFlow_timeEquicontinuous`; the surviving obligation is the
+`hprojectedWeak` commutator carry named in the F-013 successor row of
+`docs/OPEN_FRONTIER_MAP.md`, not three residuals that "land" into a headline.
+
 ### #5 — LerayWeak `exists_lerayLimitData` (:5526) → unchanged (N3 typed no-go stands)
 
 Re-checked at this HEAD: the sole residue remains the `hweak` hypothesis of
