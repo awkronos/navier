@@ -163,6 +163,36 @@ def NormalizedContinuationFromCriticalControl (N : CriticalQuantity) : Prop :=
             PressureNormalizedBefore (T + δ) p' ∧
             VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p'
 
+/-- Datum-dependent continuation interface: the uniform step `δ` may depend on
+the viscosity, the datum `u₀` and the budget `M`, but not on the horizon `T`
+or on the chosen solution.  This is exactly the quantifier order the gluing
+composition consumes — the datum is fixed before the step is requested — and
+it is the order in which classical continuation criteria are proved: the
+restart length is controlled by a datum-dependent Sobolev budget propagated
+under the control bound.  `NormalizedContinuationFromCriticalControl N`, where
+`δ` is chosen before the datum, implies it
+(`datumContinuation_of_normalizedContinuation`). -/
+def DatumContinuationFromCriticalControl (N : CriticalQuantity) : Prop :=
+  ∀ ν : ℝ, 0 < ν → ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
+    ∀ M : ℝ≥0, ∃ δ : ℝ, 0 < δ ∧
+      ∀ T : ℝ, 0 < T → ∀ u : VelocityEvolution, ∀ p : PressureEvolution,
+        (∀ x : Space, u 0 x = u₀ x) → SolvesBefore ν T u p →
+        PressureNormalizedBefore T p → N T u ≤ (M : ℝ≥0∞) →
+        ∃ u' : VelocityEvolution, ∃ p' : PressureEvolution,
+          SolvesBefore ν (T + δ) u' p' ∧
+            PressureNormalizedBefore (T + δ) p' ∧
+            VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p'
+
+/-- The datum-uniform continuation interface implies the datum-dependent one:
+a step chosen before the datum serves every datum. -/
+theorem datumContinuation_of_normalizedContinuation {N : CriticalQuantity}
+    (h : NormalizedContinuationFromCriticalControl N) :
+    DatumContinuationFromCriticalControl N := by
+  intro ν hν u₀ hdiv M
+  obtain ⟨δ, hδ, hstep⟩ := h ν hν M
+  exact ⟨δ, hδ, fun T hT u p hinit hsol hnorm hN =>
+    hstep u₀ hdiv T hT u p hinit hsol hnorm hN⟩
+
 /-- A uniform bound on the selected velocity quantity, uniform in the
 horizon and in the chosen solution for each viscosity and datum.
 This proposition does not assert that `N` controls a physical critical norm;
@@ -233,16 +263,18 @@ uniform bound on the chosen quantity give a coherent global solution. The
 finite-energy and dissipative-energy fields are carried by every rung; after
 gluing they supply the two energy clauses of `WholeSpaceGlobalRegularity` for
 the constructed velocity itself. All three analytic inputs remain explicit
-hypotheses of this theorem. -/
-theorem wholeSpaceGlobalRegularity_of_local_continuation_apriori
+hypotheses of this theorem.  The continuation step is requested only after the
+datum is fixed (`DatumContinuationFromCriticalControl`), the weakest order the
+gluing consumes. -/
+theorem wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori
     (N : CriticalQuantity)
     (hlocal : LocalClassicalExistence)
-    (hcont : NormalizedContinuationFromCriticalControl N)
+    (hcont : DatumContinuationFromCriticalControl N)
     (hapriori : APrioriCriticalControl N) :
     ProblemStatements.WholeSpaceGlobalRegularity := by
   intro ν hν u₀ hdiv
   obtain ⟨M, hM⟩ := hapriori ν hν u₀ hdiv
-  obtain ⟨δ, hδ, hstep⟩ := hcont ν hν M
+  obtain ⟨δ, hδ, hstep⟩ := hcont ν hν u₀ hdiv M
   obtain ⟨T₀, hT₀, v₀, q₀, hinit₀, hsolves₀⟩ := hlocal ν hν u₀ hdiv
   let base : Stage ν u₀ :=
     { horizon := T₀, vel := v₀, pres := normalizePressure q₀, horizon_pos := hT₀,
@@ -254,7 +286,7 @@ theorem wholeSpaceGlobalRegularity_of_local_continuation_apriori
         PressureAgreesBefore s.horizon s.pres s'.pres := by
     intro s
     obtain ⟨u', p', hsolve', hpnormalized', hvagree, hpagree⟩ :=
-      hstep u₀ hdiv s.horizon s.horizon_pos s.vel s.pres s.init s.solves
+      hstep s.horizon s.horizon_pos s.vel s.pres s.init s.solves
         s.pressure_normalized
         (hM s.horizon s.horizon_pos s.vel s.pres s.init s.solves)
     refine ⟨{ horizon := s.horizon + δ, vel := u', pres := p',
@@ -415,6 +447,17 @@ theorem wholeSpaceGlobalRegularity_of_local_continuation_apriori
     finite_energy := hfinite
     uniformly_bounded_energy := hbounded }⟩
 
+/-- The datum-uniform form of the composition, retained for its consumers: it
+factors through the datum-dependent composition. -/
+theorem wholeSpaceGlobalRegularity_of_local_continuation_apriori
+    (N : CriticalQuantity)
+    (hlocal : LocalClassicalExistence)
+    (hcont : NormalizedContinuationFromCriticalControl N)
+    (hapriori : APrioriCriticalControl N) :
+    ProblemStatements.WholeSpaceGlobalRegularity :=
+  wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori N hlocal
+    (datumContinuation_of_normalizedContinuation hcont) hapriori
+
 /-! ## Regression witnesses for the repaired interface -/
 
 /-- An infinite critical value cannot pass a finite continuation threshold. -/
@@ -534,6 +577,8 @@ end Navier.Analysis.CriticalControlDecomposition
 #print axioms Navier.Analysis.CriticalControlDecomposition.pressureGradient_normalize_eq
 #print axioms Navier.Analysis.CriticalControlDecomposition.SolvesBefore.normalizePressure
 #print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_continuation_apriori
+#print axioms Navier.Analysis.CriticalControlDecomposition.datumContinuation_of_normalizedContinuation
+#print axioms Navier.Analysis.CriticalControlDecomposition.wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori
 #print axioms Navier.Analysis.CriticalControlDecomposition.top_not_le_finiteCriticalBound
 #print axioms Navier.Analysis.CriticalControlDecomposition.acceleratingVelocity_not_admissible
 #print axioms Navier.Analysis.CriticalControlDecomposition.aPrioriCriticalControl_zero

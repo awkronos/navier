@@ -501,6 +501,43 @@ theorem normalizedContinuation_of_horizonIndependentRestart {N : CriticalQuantit
   obtain ⟨T₀, hT₀, hT₀T, w, q, hv, hp, hw, hq⟩ := heng u₀ hu₀ T hT u p hinit hsol hnorm hNbound
   exact restart_paste hT₀ hT₀T hh hsol hnorm hw hq hv hp
 
+/-- **The datum-dependent restart engine.**  Same conclusion as
+`HorizonIndependentRestart N`, but the restart length `h = h(ν, u₀, M)` is
+chosen after the datum.  It stays independent of the horizon `T` and of the
+chosen solution, which is all the gluing composition consumes; this is the
+quantifier order of the classical continuation criteria, whose restart length
+is governed by a datum-dependent Sobolev budget. -/
+def DatumHorizonIndependentRestart (N : CriticalQuantity) : Prop :=
+  ∀ ν : ℝ, 0 < ν → ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
+    ∀ M : ℝ≥0, ∃ h : ℝ, 0 < h ∧
+      ∀ T : ℝ, 0 < T → ∀ u : VelocityEvolution, ∀ p : PressureEvolution,
+        (∀ x : Space, u 0 x = u₀ x) → SolvesBefore ν T u p →
+        PressureNormalizedBefore T p → N T u ≤ (M : ℝ≥0∞) →
+        ∃ T₀ : ℝ, 0 ≤ T₀ ∧ T₀ < T ∧ ∃ w : VelocityEvolution, ∃ q : PressureEvolution,
+          (∀ t : ℝ, T₀ ≤ t → t < T → u t = w t) ∧
+          (∀ t : ℝ, T₀ ≤ t → t < T → p t = q t) ∧
+          SolvesFrom ν T₀ (T - T₀ + h) w q ∧
+          (∀ t : ℝ, T₀ ≤ t → t < T + h → q t 0 = 0)
+
+/-- The datum-uniform restart engine implies the datum-dependent one. -/
+theorem datumRestart_of_horizonIndependentRestart {N : CriticalQuantity}
+    (hN : HorizonIndependentRestart N) : DatumHorizonIndependentRestart N := by
+  intro ν hν u₀ hu₀ M
+  obtain ⟨h, hh, heng⟩ := hN ν hν M
+  exact ⟨h, hh, fun T hT u p hinit hsol hnorm hNb =>
+    heng u₀ hu₀ T hT u p hinit hsol hnorm hNb⟩
+
+/-- **The datum-dependent brick (f) reduction**: the datum-dependent restart
+engine implies the datum-dependent continuation leaf consumed by
+`wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori`. -/
+theorem datumContinuation_of_datumRestart {N : CriticalQuantity}
+    (hN : DatumHorizonIndependentRestart N) : DatumContinuationFromCriticalControl N := by
+  intro ν hν u₀ hu₀ M
+  obtain ⟨h, hh, heng⟩ := hN ν hν u₀ hu₀ M
+  refine ⟨h, hh, fun T hT u p hinit hsol hnorm hNbound => ?_⟩
+  obtain ⟨T₀, hT₀, hT₀T, w, q, hv, hp, hw, hq⟩ := heng T hT u p hinit hsol hnorm hNbound
+  exact restart_paste hT₀ hT₀T hh hsol hnorm hw hq hv hp
+
 end Navier.Analysis.RestartPaste
 
 #print axioms Navier.Analysis.RestartPaste.timeDerivative_shift
@@ -508,3 +545,5 @@ end Navier.Analysis.RestartPaste
 #print axioms Navier.Analysis.RestartPaste.solvesFrom_zero
 #print axioms Navier.Analysis.RestartPaste.restart_paste
 #print axioms Navier.Analysis.RestartPaste.normalizedContinuation_of_horizonIndependentRestart
+#print axioms Navier.Analysis.RestartPaste.datumRestart_of_horizonIndependentRestart
+#print axioms Navier.Analysis.RestartPaste.datumContinuation_of_datumRestart
