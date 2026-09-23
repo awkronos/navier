@@ -98,6 +98,27 @@ theorem lintegral_sq_fourierInv_eq {f : ES → ℂ} (hf1 : Integrable f) (hf2 : 
   simp only [ENNReal.rpow_two] at hinj
   exact hinj
 
+/-- **Parseval's identity for the integral transform on `L¹ ∩ L²`.** -/
+theorem integral_conj_fourierInv_mul {f g : ES → ℂ} (hf1 : Integrable f) (hf2 : MemLp f 2)
+    (hg1 : Integrable g) (hg2 : MemLp g 2) :
+    ∫ y, (starRingEnd ℂ) (𝓕⁻ f y) * 𝓕⁻ g y = ∫ ξ, (starRingEnd ℂ) (f ξ) * g ξ := by
+  have hinner := (Lp.fourierTransformₗᵢ ES ℂ).symm.inner_map_map (hf2.toLp f) (hg2.toLp g)
+  change inner ℂ (𝓕⁻ (hf2.toLp f) : Lp ℂ 2 (volume : Measure ES)) (𝓕⁻ (hg2.toLp g)) = _ at hinner
+  rw [MeasureTheory.L2.inner_def, MeasureTheory.L2.inner_def] at hinner
+  have e1 : ∫ a, inner ℂ ((𝓕⁻ (hf2.toLp f) : Lp ℂ 2 (volume : Measure ES)) a)
+      ((𝓕⁻ (hg2.toLp g) : Lp ℂ 2 (volume : Measure ES)) a) =
+      ∫ y, (starRingEnd ℂ) (𝓕⁻ f y) * 𝓕⁻ g y := by
+    refine integral_congr_ae ?_
+    filter_upwards [fourierInv_toLp_ae_eq hf1 hf2, fourierInv_toLp_ae_eq hg1 hg2] with y h1 h2
+    rw [h1, h2, RCLike.inner_apply, mul_comm]
+  have e2 : ∫ a, inner ℂ ((hf2.toLp f : Lp ℂ 2 (volume : Measure ES)) a)
+      ((hg2.toLp g : Lp ℂ 2 (volume : Measure ES)) a) = ∫ ξ, (starRingEnd ℂ) (f ξ) * g ξ := by
+    refine integral_congr_ae ?_
+    filter_upwards [hf2.coeFn_toLp, hg2.coeFn_toLp] with y h1 h2
+    rw [h1, h2, RCLike.inner_apply, mul_comm]
+  rw [← e1, ← e2]
+  exact hinner
+
 end Navier.Analysis.FourierL2Agree
 
 set_option pp.fullNames true in
@@ -106,3 +127,5 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.FourierL2Agree.fourierInv_toLp_ae_eq
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.FourierL2Agree.lintegral_sq_fourierInv_eq
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.FourierL2Agree.integral_conj_fourierInv_mul
