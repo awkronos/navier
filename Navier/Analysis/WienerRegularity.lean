@@ -110,6 +110,43 @@ theorem fderiv2_physU_eq {t : ℝ} (ht : t ∈ Icc (0 : ℝ) T) (i j : Fin 3) :
       fun ξ => mono (ej i + ej j) ξ * w t ξ k from
     funext fun ξ => by rw [mono_ej_ej]; ring]
 
+
+theorem mono_add (α β : Fin 3 → ℕ) (ξ : ES) : mono (α + β) ξ = mono α ξ * mono β ξ := by
+  unfold mono
+  simp only [Pi.add_apply, pow_add, Finset.prod_mul_distrib]
+
+include hT hν hG in
+theorem fderiv3_physU_eq {t : ℝ} (ht : t ∈ Icc (0 : ℝ) T) (i j l : Fin 3) :
+    (fun x => fderiv ℝ (fun z => fderiv ℝ (fun y => fderiv ℝ (physU w t) y (basisVector i)) z
+      (basisVector j)) x (basisVector l)) =
+      fun x k => -(1 / (2 * Real.pi)) * ((2 * Real.pi : ℂ) * Complex.I *
+        ((2 * Real.pi : ℂ) * Complex.I * ((2 * Real.pi : ℂ) * Complex.I *
+          𝓕⁻ (fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k) (euclidPoint x)))).re := by
+  have hg : ∀ k : Fin 3, ∀ α : Fin 3 → ℕ,
+      Integrable (fun ξ => mono α ξ * (mono (ej i + ej j) ξ * w t ξ k)) := by
+    intro k α
+    refine (hmom_w hT hν hG ht k (α + (ej i + ej j))).congr
+      (Eventually.of_forall fun ξ => ?_)
+    simp only [mono_add]; ring
+  have hF2 := fderiv2_physU_eq hT hν hG ht i j
+  funext x k
+  rw [hF2]
+  set F : Fin 3 → ES → ℂ := fun k z => (2 * Real.pi : ℂ) * Complex.I *
+    ((2 * Real.pi : ℂ) * Complex.I * 𝓕⁻ (fun ξ => mono (ej i + ej j) ξ * w t ξ k) z) with hFdef
+  have hFd : ∀ k y, DifferentiableAt ℝ (F k) y := fun k y =>
+    ((differentiable_fourierInv (hg k) y).const_mul _).const_mul _
+  have h := fderiv_reCompVec_apply hFd (-(1 / (2 * Real.pi))) x (basisVector l) k
+  simp only [hFdef] at h
+  rw [h, euclidPoint_basisVector]
+  rw [fderiv_const_mul ((differentiable_fourierInv (hg k) _).const_mul _),
+    ContinuousLinearMap.smul_apply, smul_eq_mul,
+    fderiv_const_mul (differentiable_fourierInv (hg k) _),
+    ContinuousLinearMap.smul_apply, smul_eq_mul,
+    fderiv_fourierInv_single (integrable_of_hmom (hg k)) (integrable_coord_mul (hg k)) _ l]
+  rw [show (fun ξ : ES => ((ξ l : ℝ) : ℂ) * (mono (ej i + ej j) ξ * w t ξ k)) =
+      fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k from
+    funext fun ξ => by rw [mono_add_ej (ej i + ej j) l]; ring]
+
 theorem abs_re_scaled_le (z : ℂ) :
     |-(1 / (2 * Real.pi)) * ((2 * Real.pi : ℂ) * Complex.I * z).re| ≤ ‖z‖ := by
   have hπ : 0 < Real.pi := Real.pi_pos
@@ -129,22 +166,35 @@ theorem regularOnCompacts_physU :
   obtain ⟨B, hB0, hB⟩ := l2_bound hT hν hG hR0 hRb
   intro T' hT'
   set c2 : ℝ := (2 * Real.pi) ^ 2
-  set K : ℝ := ∑ i : Fin 3, ∑ j : Fin 3,
-    (3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j)))) with hK
-  refine ⟨K, fun t ht i j => ?_⟩
+  set c4 : ℝ := (2 * Real.pi) ^ 4
+  set K : ℝ := ∑ i : Fin 3, ∑ j : Fin 3, ∑ l : Fin 3,
+    (3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j))) +
+      c4 * (3 * B (2 * deg (ej i + ej j + ej l)))) with hK
+  refine ⟨K, fun t ht i j l => ?_⟩
   have htT : t ∈ Icc (0 : ℝ) T := ⟨ht.1, ht.2.trans hT'.le⟩
-  have hterm_le : 3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j))) ≤ K := by
-    have hnn : ∀ i j : Fin 3,
-        0 ≤ 3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j))) := fun i j => by
-      have := hB0 (2 * deg (ej i)); have := hB0 (2 * deg (ej i + ej j)); positivity
-    calc 3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j)))
-        ≤ ∑ j' : Fin 3, (3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j')))) :=
-          Finset.single_le_sum (f := fun j' =>
-            3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j'))))
-            (fun j' _ => hnn i j') (Finset.mem_univ j)
-      _ ≤ K := Finset.single_le_sum (f := fun i' => ∑ j' : Fin 3,
-            (3 * B (2 * deg (ej i')) + c2 * (3 * B (2 * deg (ej i' + ej j')))))
-            (fun i' _ => Finset.sum_nonneg fun j' _ => hnn i' j') (Finset.mem_univ i)
+  have hnn : ∀ i j l : Fin 3, 0 ≤ 3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j))) +
+      c4 * (3 * B (2 * deg (ej i + ej j + ej l))) := fun i j l => by
+    have := hB0 (2 * deg (ej i)); have := hB0 (2 * deg (ej i + ej j))
+    have := hB0 (2 * deg (ej i + ej j + ej l)); positivity
+  have hterm_le : 3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j))) +
+      c4 * (3 * B (2 * deg (ej i + ej j + ej l))) ≤ K := by
+    calc _ ≤ ∑ l' : Fin 3, (3 * B (2 * deg (ej i)) + c2 * (3 * B (2 * deg (ej i + ej j))) +
+            c4 * (3 * B (2 * deg (ej i + ej j + ej l')))) :=
+          Finset.single_le_sum (f := fun l' => 3 * B (2 * deg (ej i)) +
+            c2 * (3 * B (2 * deg (ej i + ej j))) + c4 * (3 * B (2 * deg (ej i + ej j + ej l'))))
+            (fun l' _ => hnn i j l') (Finset.mem_univ l)
+      _ ≤ ∑ j' : Fin 3, ∑ l' : Fin 3, (3 * B (2 * deg (ej i)) +
+            c2 * (3 * B (2 * deg (ej i + ej j'))) + c4 * (3 * B (2 * deg (ej i + ej j' + ej l')))) :=
+          Finset.single_le_sum (f := fun j' => ∑ l' : Fin 3, (3 * B (2 * deg (ej i)) +
+            c2 * (3 * B (2 * deg (ej i + ej j'))) + c4 * (3 * B (2 * deg (ej i + ej j' + ej l')))))
+            (fun j' _ => Finset.sum_nonneg fun l' _ => hnn i j' l') (Finset.mem_univ j)
+      _ ≤ K := Finset.single_le_sum (f := fun i' => ∑ j' : Fin 3, ∑ l' : Fin 3,
+            (3 * B (2 * deg (ej i')) + c2 * (3 * B (2 * deg (ej i' + ej j'))) +
+              c4 * (3 * B (2 * deg (ej i' + ej j' + ej l')))))
+            (fun i' _ => Finset.sum_nonneg fun j' _ => Finset.sum_nonneg fun l' _ => hnn i' j' l')
+            (Finset.mem_univ i)
+  have hc4 : 0 ≤ c4 := by positivity
+  have hBijl := hB0 (2 * deg (ej i + ej j + ej l))
   have hc2 : 0 ≤ c2 := by positivity
   have hBi := hB0 (2 * deg (ej i)); have hBij := hB0 (2 * deg (ej i + ej j))
   -- first derivatives
@@ -226,13 +276,68 @@ theorem regularOnCompacts_physU :
     hg2i.mono' ((continuous_norm.comp hc2c).pow 2).aestronglyMeasurable
       (Eventually.of_forall fun x => by
         rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]; exact hb2 x)
-  refine ⟨hI1, ?_, hI2, ?_⟩
-  · refine (integral_mono hI1 hg1i hb1).trans (hg1v.trans (le_trans ?_ hterm_le))
-    have : 0 ≤ c2 * (3 * B (2 * deg (ej i + ej j))) := by positivity
-    linarith
-  · refine (integral_mono hI2 hg2i hb2).trans (hg2v.trans (le_trans ?_ hterm_le))
-    have : 0 ≤ 3 * B (2 * deg (ej i)) := by positivity
-    linarith
+  -- third derivatives
+  set g3 : Space → ℝ := fun x => c4 * ∑ k : Fin 3,
+    ‖𝓕⁻ (fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k) (euclidPoint x)‖ ^ 2 with hg3
+  have hg3i : Integrable g3 := integrable_space_euclid (g := fun y => c4 * ∑ k : Fin 3,
+    ‖𝓕⁻ (fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k) y‖ ^ 2)
+    ((integrable_finsetSum _ fun k _ => (hB (ej i + ej j + ej l) k t htT).1).const_mul _)
+  have hg3v : ∫ x, g3 x ≤ c4 * (3 * B (2 * deg (ej i + ej j + ej l))) := by
+    rw [hg3, integral_space_euclid (fun y => c4 * ∑ k : Fin 3,
+      ‖𝓕⁻ (fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k) y‖ ^ 2), integral_const_mul,
+      integral_finsetSum _ fun k _ => (hB (ej i + ej j + ej l) k t htT).1]
+    refine mul_le_mul_of_nonneg_left ?_ hc4
+    calc ∑ k : Fin 3, ∫ y, ‖𝓕⁻ (fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k) y‖ ^ 2
+        ≤ ∑ _k : Fin 3, B (2 * deg (ej i + ej j + ej l)) :=
+          Finset.sum_le_sum fun k _ => (hB (ej i + ej j + ej l) k t htT).2
+      _ = 3 * B (2 * deg (ej i + ej j + ej l)) := by simp
+  have hF3 := fderiv3_physU_eq hT hν hG htT i j l
+  have hc3c : Continuous (fun x => fderiv ℝ (fun z => fderiv ℝ
+      (fun y => fderiv ℝ (physU w t) y (basisVector i)) z (basisVector j)) x (basisVector l)) := by
+    rw [hF3]
+    refine continuous_pi fun k => continuous_const.mul (Complex.continuous_re.comp
+      (continuous_const.mul (continuous_const.mul (continuous_const.mul
+        ((continuous_fourierInv ?_).comp (PiLp.continuous_toLp 2 _))))))
+    exact hmom_w hT hν hG htT k (ej i + ej j + ej l)
+  have hb3 : ∀ x, ‖fderiv ℝ (fun z => fderiv ℝ
+      (fun y => fderiv ℝ (physU w t) y (basisVector i)) z (basisVector j)) x
+      (basisVector l)‖ ^ 2 ≤ g3 x := by
+    intro x
+    refine (sq_norm_le_sum _).trans ?_
+    show _ ≤ c4 * ∑ k : Fin 3,
+      ‖𝓕⁻ (fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k) (euclidPoint x)‖ ^ 2
+    rw [Finset.mul_sum]
+    refine Finset.sum_le_sum fun k _ => ?_
+    have := congrFun (congrFun hF3 x) k
+    rw [this, ← sq_abs]
+    set z := 𝓕⁻ (fun ξ => mono (ej i + ej j + ej l) ξ * w t ξ k) (euclidPoint x)
+    have h2 : ‖(2 * Real.pi : ℂ)‖ = 2 * Real.pi := by
+      rw [show (2 * Real.pi : ℂ) = ((2 * Real.pi : ℝ) : ℂ) by push_cast; ring,
+        Complex.norm_real, Real.norm_eq_abs, abs_of_pos (by positivity)]
+    have hz := abs_re_scaled_le ((2 * Real.pi : ℂ) * Complex.I *
+      ((2 * Real.pi : ℂ) * Complex.I * z))
+    have hn : ‖(2 * Real.pi : ℂ) * Complex.I * ((2 * Real.pi : ℂ) * Complex.I * z)‖ =
+        (2 * Real.pi) ^ 2 * ‖z‖ := by
+      have h2I : ‖(2 * Real.pi : ℂ) * Complex.I‖ = 2 * Real.pi := by
+        rw [norm_mul, Complex.norm_I, mul_one, h2]
+      rw [norm_mul ((2 * Real.pi : ℂ) * Complex.I), norm_mul ((2 * Real.pi : ℂ) * Complex.I) z,
+        h2I]; ring
+    rw [hn] at hz
+    calc _ ≤ ((2 * Real.pi) ^ 2 * ‖z‖) ^ 2 := pow_le_pow_left₀ (abs_nonneg _) hz 2
+      _ = c4 * ‖z‖ ^ 2 := by ring
+  have hI3 : Integrable (fun x : Space => ‖fderiv ℝ (fun z => fderiv ℝ
+      (fun y => fderiv ℝ (physU w t) y (basisVector i)) z (basisVector j)) x
+      (basisVector l)‖ ^ 2) :=
+    hg3i.mono' ((continuous_norm.comp hc3c).pow 2).aestronglyMeasurable
+      (Eventually.of_forall fun x => by
+        rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]; exact hb3 x)
+  have e1 : 0 ≤ 3 * B (2 * deg (ej i)) := by positivity
+  have e2 : 0 ≤ c2 * (3 * B (2 * deg (ej i + ej j))) := by positivity
+  have e3 : 0 ≤ c4 * (3 * B (2 * deg (ej i + ej j + ej l))) := by positivity
+  refine ⟨hI1, ?_, hI2, ?_, hI3, ?_⟩
+  · refine (integral_mono hI1 hg1i hb1).trans (hg1v.trans (le_trans ?_ hterm_le)); linarith
+  · refine (integral_mono hI2 hg2i hb2).trans (hg2v.trans (le_trans ?_ hterm_le)); linarith
+  · refine (integral_mono hI3 hg3i hb3).trans (hg3v.trans (le_trans ?_ hterm_le)); linarith
 
 end Reg
 

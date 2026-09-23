@@ -290,19 +290,25 @@ theorem wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori_via_class
 
 /-! ## The regular class `R` -/
 
-/-- **`R`: uniform `Ḣ¹ ∩ Ḣ²` control on compact sub-horizons.**  For every
-`T' < T` the first and second directional derivatives of the velocity slices
-are square-integrable with a bound uniform over `t ∈ [0,T']` (the `L²` part is
-already in `SolvesBefore`).  In three dimensions this is the Sobolev class in
-which weak–strong uniqueness and the classical continuation estimates live. -/
+/-- **`R`: uniform `Ḣ¹ ∩ Ḣ² ∩ Ḣ³` control on compact sub-horizons.**  For every
+`T' < T` the first, second and third directional derivatives of the velocity
+slices are square-integrable with a bound uniform over `t ∈ [0,T']` (the `L²`
+part is already in `SolvesBefore`).  Third derivatives are required because the
+logarithmic Sobolev inequality behind the T-uniform continuation estimate needs
+`Hˢ`, `s > 5/2` (OPEN_FRONTIER_MAP row A, (P) verdict). -/
 def RegularOnCompacts : SolutionClassPred := fun T u =>
-  ∀ T' : ℝ, T' < T → ∃ K : ℝ, ∀ t ∈ Set.Icc (0 : ℝ) T', ∀ i j : Fin 3,
+  ∀ T' : ℝ, T' < T → ∃ K : ℝ, ∀ t ∈ Set.Icc (0 : ℝ) T', ∀ i j l : Fin 3,
     MeasureTheory.Integrable (fun x : Space => ‖fderiv ℝ (u t) x (basisVector i)‖ ^ 2) ∧
     (∫ x : Space, ‖fderiv ℝ (u t) x (basisVector i)‖ ^ 2) ≤ K ∧
     MeasureTheory.Integrable (fun x : Space =>
       ‖fderiv ℝ (fun y => fderiv ℝ (u t) y (basisVector i)) x (basisVector j)‖ ^ 2) ∧
     (∫ x : Space, ‖fderiv ℝ (fun y => fderiv ℝ (u t) y (basisVector i)) x (basisVector j)‖ ^ 2)
-      ≤ K
+      ≤ K ∧
+    MeasureTheory.Integrable (fun x : Space =>
+      ‖fderiv ℝ (fun z => fderiv ℝ (fun y => fderiv ℝ (u t) y (basisVector i)) z
+        (basisVector j)) x (basisVector l)‖ ^ 2) ∧
+    (∫ x : Space, ‖fderiv ℝ (fun z => fderiv ℝ (fun y => fderiv ℝ (u t) y (basisVector i)) z
+        (basisVector j)) x (basisVector l)‖ ^ 2) ≤ K
 
 /-- **The R-route consumer** (primary): every leaf quantifies over
 `SolvesBefore ∧ RegularOnCompacts` only. -/
