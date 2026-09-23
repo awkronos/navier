@@ -317,7 +317,7 @@ continuation is thereby pushed into *supplying* the `SolvesFrom` witness with
 side, whose equation clause is open at `T₀ < T`; the `t = T₀` end of the
 restart piece is never asked for an equation, because it is covered by the
 `u`-piece whose clause is closed at `0 ≤ t`. -/
-theorem restart_paste {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
+theorem restart_paste_explicit {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
     {w : VelocityEvolution} {q : PressureEvolution}
     (hT₀ : 0 ≤ T₀) (hT₀T : T₀ < T) (hh : 0 < h)
     (hsol : SolvesBefore ν T u p) (hnorm : PressureNormalizedBefore T p)
@@ -327,7 +327,8 @@ theorem restart_paste {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : PressureE
     (hagree_p : ∀ t : ℝ, T₀ ≤ t → t < T → p t = q t) :
     ∃ u' : VelocityEvolution, ∃ p' : PressureEvolution,
       SolvesBefore ν (T + h) u' p' ∧ PressureNormalizedBefore (T + h) p' ∧
-        VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p' := by
+        VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p' ∧
+        ∀ t : ℝ, u' t = if t < T then u t else w t := by
   have hstrip : T₀ + (T - T₀ + h) = T + h := by ring
   obtain ⟨hu, hp, hinc, heq⟩ := hsol.classical
   obtain ⟨wv, wp, winc, weq, wfe, wel⟩ := hw
@@ -462,7 +463,23 @@ theorem restart_paste {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : PressureE
     · rw [hp' t htT]; exact hnorm t ht htT
     · rw [hq' t htT]; exact hq_norm t (le_of_lt (lt_of_lt_of_le hT₀T htT)) htTh
   exact ⟨u', p', ⟨⟨hvel_smooth, hpres_smooth, hinc', heq'⟩, hfe', heli'⟩, hpnorm,
-    fun t _ htT => (hu' t htT).symm, fun t _ htT => (hp' t htT).symm⟩
+    fun t _ htT => (hu' t htT).symm, fun t _ htT => (hp' t htT).symm, fun _ => rfl⟩
+
+/-- The restart paste, without the explicit form of the glued velocity. -/
+theorem restart_paste {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
+    {w : VelocityEvolution} {q : PressureEvolution}
+    (hT₀ : 0 ≤ T₀) (hT₀T : T₀ < T) (hh : 0 < h)
+    (hsol : SolvesBefore ν T u p) (hnorm : PressureNormalizedBefore T p)
+    (hw : SolvesFrom ν T₀ (T - T₀ + h) w q)
+    (hq_norm : ∀ t : ℝ, T₀ ≤ t → t < T + h → q t 0 = 0)
+    (hagree_v : ∀ t : ℝ, T₀ ≤ t → t < T → u t = w t)
+    (hagree_p : ∀ t : ℝ, T₀ ≤ t → t < T → p t = q t) :
+    ∃ u' : VelocityEvolution, ∃ p' : PressureEvolution,
+      SolvesBefore ν (T + h) u' p' ∧ PressureNormalizedBefore (T + h) p' ∧
+        VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p' := by
+  obtain ⟨u', p', h1, h2, h3, h4, -⟩ :=
+    restart_paste_explicit hT₀ hT₀T hh hsol hnorm hw hq_norm hagree_v hagree_p
+  exact ⟨u', p', h1, h2, h3, h4⟩
 
 /-! ## The engine, named -/
 
