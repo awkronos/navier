@@ -270,6 +270,7 @@ import Navier.Analysis.DampedThresholdGronwall
 import Navier.Analysis.SobolevInterpolation
 import Navier.Analysis.RegularRestart
 import Navier.Analysis.RegularUniqueness
+import Navier.Analysis.RestartUniqueness
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerReality

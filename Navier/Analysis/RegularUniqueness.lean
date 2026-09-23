@@ -608,13 +608,32 @@ theorem slice_div {T t : ℝ} {u : VelocityEvolution} (hinc : IncompressibleBefo
     (ht0 : 0 ≤ t) (htT : t < T) (x : Space) : ∑ i : Fin 3, pd (u t) i i x = 0 :=
   hinc t ht0 htT x
 
+/-- **The solution clauses the energy method uses**, with the equation only at
+interior times (so that restart strips qualify) and an explicit energy bound `E0`. -/
+structure SolClass (ν T : ℝ) (u : VelocityEvolution) (p : PressureEvolution) (E0 : ℝ) :
+    Prop where
+  smooth : SmoothVelocityBefore T u
+  psmooth : SmoothPressureBefore T p
+  inc : ∀ t : ℝ, 0 < t → t < T → ∀ x : Space, ∑ i : Fin 3, pd (u t) i i x = 0
+  eqn : ∀ t : ℝ, 0 < t → t < T → ∀ x : Space,
+    timeDerivative u t x = ν • lapF (u t) x - gradF (p t) x - fderiv ℝ (u t) x (u t x)
+  fe : ∀ t : ℝ, 0 ≤ t → t < T → Integrable (fun x : Space => ‖u t x‖ ^ 2)
+  ebd : ∀ t : ℝ, 0 ≤ t → t < T → kineticEnergy u t ≤ E0
+
+theorem SolClass.of_solvesBefore {ν T : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
+    (h : SolvesBefore ν T u p) : SolClass ν T u p (kineticEnergy u 0) :=
+  ⟨h.classical.1, h.classical.2.1,
+    fun t ht htT x => slice_div h.classical.2.2.1 ht.le htT x,
+    fun t ht htT x => slice_equation h.classical.2.2.2 ht.le htT x,
+    h.finite_energy, h.energy_le_initial⟩
+
 /-- The difference energy `∫ ∑ᵢ (uᵢ - vᵢ)²` at time `t`. -/
 def Ediff (u v : VelocityEvolution) (t : ℝ) : ℝ := ∫ x, ∑ i : Fin 3, (u t x i - v t x i) ^ 2
 
 /-- **The time-slice energy bound**: `∫ 2 W·∂ₜW ≤ 6K ‖W‖²`. -/
 theorem time_slice_energy {ν T K t : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvolution}
-    {p q : PressureEvolution} (hu : SolvesBefore ν T u p) (hv : SolvesBefore ν T v q)
-    (ht0 : 0 ≤ t) (htT : t < T)
+    {p q : PressureEvolution} {Eu Ev : ℝ} (hu : SolClass ν T u p Eu) (hv : SolClass ν T v q Ev)
+    (ht0 : 0 < t) (htT : t < T)
     (hRu : RegSlice K (u t) ∧ PresSlice K (p t) ∧ TimeSlice K u t ∧ SupSlice K (u t) ∧
       PresL2 K (p t))
     (hRv : RegSlice K (v t) ∧ PresSlice K (q t) ∧ TimeSlice K v t ∧ SupSlice K (v t) ∧
@@ -623,16 +642,13 @@ theorem time_slice_energy {ν T K t : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvolu
         (timeDerivative u t x i - timeDerivative v t x i)) ∧
       ∫ x, ∑ i : Fin 3, 2 * (u t x i - v t x i) *
         (timeDerivative u t x i - timeDerivative v t x i) ≤ 6 * K * Ediff u v t := by
-  have ht : t ∈ Ico (0 : ℝ) T := ⟨ht0, htT⟩
-  obtain ⟨hu1, hu2, hu3, hu4⟩ := hu.classical
-  obtain ⟨hv1, hv2, hv3, hv4⟩ := hv.classical
+  have ht : t ∈ Ico (0 : ℝ) T := ⟨ht0.le, htT⟩
   have h := slice_energy hν (DU := fun x => timeDerivative u t x)
     (DV := fun x => timeDerivative v t x)
-    (contDiff_slice hu1 ht) (contDiff_slice hv1 ht) (contDiff_pslice hu2 ht)
-    (contDiff_pslice hv2 ht) (hu.finite_energy t ht0 htT) (hv.finite_energy t ht0 htT)
+    (contDiff_slice hu.smooth ht) (contDiff_slice hv.smooth ht) (contDiff_pslice hu.psmooth ht)
+    (contDiff_pslice hv.psmooth ht) (hu.fe t ht0.le htT) (hv.fe t ht0.le htT)
     hRu.1 hRv.1 hRu.2.1 hRv.2.1 hRu.2.2.2.1 hRv.2.2.2.1 hRu.2.2.2.2 hRv.2.2.2.2
-    (slice_div hu3 ht0 htT) (slice_div hv3 ht0 htT)
-    (slice_equation hu4 ht0 htT) (slice_equation hv4 ht0 htT)
+    (hu.inc t ht0 htT) (hv.inc t ht0 htT) (hu.eqn t ht0 htT) (hv.eqn t ht0 htT)
   have hfun : (fun x => ∑ i : Fin 3, 2 * (u t x i - v t x i) *
       (timeDerivative u t x i - timeDerivative v t x i)) = fun x =>
       2 * ∑ i : Fin 3, (u t x i - v t x i) * (timeDerivative u t x i - timeDerivative v t x i) := by
@@ -694,16 +710,16 @@ theorem integrable_sum_sq {F : Space → Space} (hFc : Continuous F)
 
 /-- **Section bound for the joint integrand.** -/
 theorem Fint_section {ν T K r : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvolution}
-    {p q : PressureEvolution} (hu : SolvesBefore ν T u p) (hv : SolvesBefore ν T v q)
+    {p q : PressureEvolution} {Eu Ev : ℝ} (hu : SolClass ν T u p Eu) (hv : SolClass ν T v q Ev)
     (hr : r ∈ Ioo (0 : ℝ) T) (hRu : Rslice K u p r) (hRv : Rslice K v q r) :
     Integrable (fun x => Fint u v (r, x)) ∧
-      ∫ x, ‖Fint u v (r, x)‖ ≤ 2 * (kineticEnergy u 0 + kineticEnergy v 0) + 12 * K := by
-  have hsu := hu.classical.1
-  have hsv := hv.classical.1
+      ∫ x, ‖Fint u v (r, x)‖ ≤ 2 * (Eu + Ev) + 12 * K := by
+  have hsu := hu.smooth
+  have hsv := hv.smooth
   have hrI : r ∈ Ico (0 : ℝ) T := Ioo_subset_Ico_self hr
   have htdu : ∀ x, timeDerivative u r x = tD u r x := timeDerivative_eq_tD hsu hr
   have htdv : ∀ x, timeDerivative v r x = tD v r x := timeDerivative_eq_tD hsv hr
-  obtain ⟨hint, -⟩ := time_slice_energy hν hu hv hr.1.le hr.2 hRu hRv
+  obtain ⟨hint, -⟩ := time_slice_energy hν hu hv hr.1 hr.2 hRu hRv
   have hfun : (fun x => Fint u v (r, x)) = fun x => ∑ i : Fin 3, 2 * (u r x i - v r x i) *
       (timeDerivative u r x i - timeDerivative v r x i) := by
     funext x; unfold Fint; simp only [htdu, htdv]
@@ -724,8 +740,8 @@ theorem Fint_section {ν T K r : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvolution}
   set G : Space → ℝ := fun x => 2 * (∑ i : Fin 3, u r x i ^ 2 + ∑ i : Fin 3, v r x i ^ 2) +
     6 * (‖timeDerivative u r x‖ ^ 2 + ‖timeDerivative v r x‖ ^ 2) with hG
   have hGi : Integrable G :=
-    (((integrable_sum_sq huc (hu.finite_energy r hr.1.le hr.2)).add
-      (integrable_sum_sq hvc (hv.finite_energy r hr.1.le hr.2))).const_mul 2).add
+    (((integrable_sum_sq huc (hu.fe r hr.1.le hr.2)).add
+      (integrable_sum_sq hvc (hv.fe r hr.1.le hr.2))).const_mul 2).add
       ((hRu.2.2.1.1.add hRv.2.2.1.1).const_mul 6)
   have hbd : ∀ x, ‖Fint u v (r, x)‖ ≤ G x := by
     intro x
@@ -754,9 +770,9 @@ theorem Fint_section {ν T K r : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvolution}
   have hFn : Integrable (fun x => ‖Fint u v (r, x)‖) := (hfun ▸ hint).norm
   refine (integral_mono hFn hGi hbd).trans ?_
   have iU : Integrable (fun x => ∑ i : Fin 3, u r x i ^ 2) :=
-    integrable_sum_sq huc (hu.finite_energy r hr.1.le hr.2)
+    integrable_sum_sq huc (hu.fe r hr.1.le hr.2)
   have iV : Integrable (fun x => ∑ i : Fin 3, v r x i ^ 2) :=
-    integrable_sum_sq hvc (hv.finite_energy r hr.1.le hr.2)
+    integrable_sum_sq hvc (hv.fe r hr.1.le hr.2)
   have iDU : Integrable (fun x => ‖timeDerivative u r x‖ ^ 2) := hRu.2.2.1.1
   have iDV : Integrable (fun x => ‖timeDerivative v r x‖ ^ 2) := hRv.2.2.1.1
   have i1 : Integrable (fun x => 2 * (∑ i : Fin 3, u r x i ^ 2 + ∑ i : Fin 3, v r x i ^ 2)) :=
@@ -767,8 +783,8 @@ theorem Fint_section {ν T K r : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvolution}
     6 * (‖timeDerivative u r x‖ ^ 2 + ‖timeDerivative v r x‖ ^ 2)) ≤ _
   rw [integral_add i1 i2, integral_const_mul, integral_const_mul, integral_add iU iV,
     integral_add iDU iDV]
-  have e1 : ∫ x, ∑ i : Fin 3, u r x i ^ 2 ≤ kineticEnergy u 0 := hu.energy_le_initial r hr.1.le hr.2
-  have e2 : ∫ x, ∑ i : Fin 3, v r x i ^ 2 ≤ kineticEnergy v 0 := hv.energy_le_initial r hr.1.le hr.2
+  have e1 : ∫ x, ∑ i : Fin 3, u r x i ^ 2 ≤ Eu := hu.ebd r hr.1.le hr.2
+  have e2 : ∫ x, ∑ i : Fin 3, v r x i ^ 2 ≤ Ev := hv.ebd r hr.1.le hr.2
   have e3 := hRu.2.2.1.2
   have e4 := hRv.2.2.1.2
   linarith
@@ -788,13 +804,13 @@ theorem integrable_sum_sq_diff {U V : Space → Space} (hUc : Continuous U) (hVc
 
 /-- **The energy identity**: `E(s) - E(0) = ∫₀ˢ ∫ 2 W·∂ₜW`. -/
 theorem energy_identity {ν T T' K s : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvolution}
-    {p q : PressureEvolution} (hu : SolvesBefore ν T u p) (hv : SolvesBefore ν T v q)
+    {p q : PressureEvolution} {Eu Ev : ℝ} (hu : SolClass ν T u p Eu) (hv : SolClass ν T v q Ev)
     (hT'T : T' < T) (hs : s ∈ Icc (0 : ℝ) T')
-    (hR : ∀ r ∈ Icc (0 : ℝ) T', Rslice K u p r ∧ Rslice K v q r) :
+    (hR : ∀ r ∈ Ioc (0 : ℝ) T', Rslice K u p r ∧ Rslice K v q r) :
     IntegrableOn (fun r => ∫ x, Fint u v (r, x)) (Ioc 0 s) ∧
       Ediff u v s - Ediff u v 0 = ∫ r in Ioc 0 s, ∫ x, Fint u v (r, x) := by
-  have hsu := hu.classical.1
-  have hsv := hv.classical.1
+  have hsu := hu.smooth
+  have hsv := hv.smooth
   have hsT : s < T := lt_of_le_of_lt hs.2 hT'T
   set μ : Measure ℝ := volume.restrict (Ioc 0 s) with hμ
   have hprod : μ.prod (volume : Measure Space) =
@@ -806,11 +822,11 @@ theorem energy_identity {ν T T' K s : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvol
     rw [hprod]
     exact ((continuousOn_Fint hsu hsv).mono hsub).aestronglyMeasurable
       (measurableSet_Ioc.prod MeasurableSet.univ)
-  set B : ℝ := 2 * (kineticEnergy u 0 + kineticEnergy v 0) + 12 * K
+  set B : ℝ := 2 * (Eu + Ev) + 12 * K
   have hsec : ∀ r ∈ Ioc (0 : ℝ) s, Integrable (fun x => Fint u v (r, x)) ∧
       ∫ x, ‖Fint u v (r, x)‖ ≤ B := fun r hr =>
-    Fint_section hν hu hv ⟨hr.1, lt_of_le_of_lt hr.2 hsT⟩ (hR r ⟨hr.1.le, hr.2.trans hs.2⟩).1
-      (hR r ⟨hr.1.le, hr.2.trans hs.2⟩).2
+    Fint_section hν hu hv ⟨hr.1, lt_of_le_of_lt hr.2 hsT⟩ (hR r ⟨hr.1, hr.2.trans hs.2⟩).1
+      (hR r ⟨hr.1, hr.2.trans hs.2⟩).2
   have hInt : Integrable (Fint u v) (μ.prod volume) := by
     refine (integrable_prod_iff hmeas).2 ⟨?_, ?_⟩
     · filter_upwards [ae_restrict_mem measurableSet_Ioc] with r hr using (hsec r hr).1
@@ -850,9 +866,9 @@ theorem energy_identity {ν T T' K s : ℝ} (hν : 0 ≤ ν) {u v : VelocityEvol
   have h0 : (0 : ℝ) ∈ Ico (0 : ℝ) T := ⟨le_rfl, lt_of_le_of_lt hs.1 hsT⟩
   rw [integral_sub
     (integrable_sum_sq_diff (contDiff_slice hsu hs0).continuous (contDiff_slice hsv hs0).continuous
-      (hu.finite_energy s hs.1 hsT) (hv.finite_energy s hs.1 hsT))
+      (hu.fe s hs.1 hsT) (hv.fe s hs.1 hsT))
     (integrable_sum_sq_diff (contDiff_slice hsu h0).continuous (contDiff_slice hsv h0).continuous
-      (hu.finite_energy 0 le_rfl h0.2) (hv.finite_energy 0 le_rfl h0.2))]
+      (hu.fe 0 le_rfl h0.2) (hv.fe 0 le_rfl h0.2))]
   rfl
 
 /-! ## Strong–strong uniqueness -/
@@ -861,43 +877,39 @@ theorem Ediff_nonneg (u v : VelocityEvolution) (t : ℝ) : 0 ≤ Ediff u v t :=
   integral_nonneg fun x => Finset.sum_nonneg fun i _ => sq_nonneg _
 
 theorem Ediff_le {ν T t : ℝ} {u v : VelocityEvolution} {p q : PressureEvolution}
-    (hu : SolvesBefore ν T u p) (hv : SolvesBefore ν T v q) (ht0 : 0 ≤ t) (htT : t < T) :
-    Ediff u v t ≤ 2 * (kineticEnergy u 0 + kineticEnergy v 0) := by
+    {Eu Ev : ℝ} (hu : SolClass ν T u p Eu) (hv : SolClass ν T v q Ev) (ht0 : 0 ≤ t)
+    (htT : t < T) : Ediff u v t ≤ 2 * (Eu + Ev) := by
   have ht : t ∈ Ico (0 : ℝ) T := ⟨ht0, htT⟩
-  have huc := (contDiff_slice hu.classical.1 ht).continuous
-  have hvc := (contDiff_slice hv.classical.1 ht).continuous
-  have iU := integrable_sum_sq huc (hu.finite_energy t ht0 htT)
-  have iV := integrable_sum_sq hvc (hv.finite_energy t ht0 htT)
+  have huc := (contDiff_slice hu.smooth ht).continuous
+  have hvc := (contDiff_slice hv.smooth ht).continuous
+  have iU := integrable_sum_sq huc (hu.fe t ht0 htT)
+  have iV := integrable_sum_sq hvc (hv.fe t ht0 htT)
   have hmono : Ediff u v t ≤ ∫ x, 2 * (∑ i : Fin 3, u t x i ^ 2 + ∑ i : Fin 3, v t x i ^ 2) := by
-    refine integral_mono (integrable_sum_sq_diff huc hvc (hu.finite_energy t ht0 htT)
-      (hv.finite_energy t ht0 htT)) ((iU.add iV).const_mul 2) (fun x => ?_)
+    refine integral_mono (integrable_sum_sq_diff huc hvc (hu.fe t ht0 htT)
+      (hv.fe t ht0 htT)) ((iU.add iV).const_mul 2) (fun x => ?_)
     show ∑ i : Fin 3, (u t x i - v t x i) ^ 2 ≤ 2 * (∑ i : Fin 3, u t x i ^ 2 + ∑ i : Fin 3, v t x i ^ 2)
     rw [← Finset.sum_add_distrib, Finset.mul_sum]
     exact Finset.sum_le_sum fun i _ => by nlinarith [sq_nonneg (u t x i + v t x i)]
   have e : ∫ x, 2 * (∑ i : Fin 3, u t x i ^ 2 + ∑ i : Fin 3, v t x i ^ 2) =
       2 * (kineticEnergy u t + kineticEnergy v t) := by
     rw [integral_const_mul, integral_add iU iV]; rfl
-  have h1 := hu.energy_le_initial t ht0 htT
-  have h2 := hv.energy_le_initial t ht0 htT
+  have h1 := hu.ebd t ht0 htT
+  have h2 := hv.ebd t ht0 htT
   linarith
 
-/-- **Strong–strong uniqueness in `R`.** -/
-theorem uniqueness_R {ν T : ℝ} (hν : 0 < ν) {u v : VelocityEvolution} {p q : PressureEvolution}
-    (hu : SolvesBefore ν T u p) (hv : SolvesBefore ν T v q)
-    (hRu : RegularOnCompacts T u p) (hRv : RegularOnCompacts T v q) (h0 : u 0 = v 0) :
-    ∀ t : ℝ, 0 ≤ t → t < T → u t = v t := by
-  intro t ht0 htT
-  set T' : ℝ := (t + T) / 2 with hT'
-  have hT'T : T' < T := by rw [hT']; linarith
-  have htT' : t ≤ T' := by rw [hT']; linarith
-  obtain ⟨Ku, hKu⟩ := hRu T' hT'T
-  obtain ⟨Kv, hKv⟩ := hRv T' hT'T
-  set K : ℝ := max Ku Kv
-  have hR : ∀ r ∈ Icc (0 : ℝ) T', Rslice K u p r ∧ Rslice K v q r := fun r hr =>
-    ⟨Rslice.mono (hKu r hr) (le_max_left _ _), Rslice.mono (hKv r hr) (le_max_right _ _)⟩
-  have hK0 : 0 ≤ K := (norm_nonneg _).trans ((hR 0 ⟨le_rfl, (ht0.trans htT')⟩).1.2.2.2.1.1 0)
-  have hsu := hu.classical.1
-  have hsv := hv.classical.1
+/-- **Strong–strong uniqueness for the energy class**, on `[0, T']` with `T' < T`,
+from a uniform `R`-bound at positive times. -/
+theorem uniqueness_class {ν T T' K Eu Ev : ℝ} (hν : 0 < ν) {u v : VelocityEvolution}
+    {p q : PressureEvolution} (hu : SolClass ν T u p Eu) (hv : SolClass ν T v q Ev)
+    (hT'T : T' < T) (hK0 : 0 ≤ K)
+    (hR : ∀ r ∈ Ioc (0 : ℝ) T', Rslice K u p r ∧ Rslice K v q r) (h0 : u 0 = v 0) :
+    ∀ t ∈ Icc (0 : ℝ) T', u t = v t := by
+  intro t htI
+  have ht0 := htI.1
+  have htT' := htI.2
+  have htT : t < T := lt_of_le_of_lt htT' hT'T
+  have hsu := hu.smooth
+  have hsv := hv.smooth
   set E : ℝ → ℝ := Ediff u v
   have hE0 : E 0 = 0 := by
     show ∫ x, ∑ i : Fin 3, (u 0 x i - v 0 x i) ^ 2 = 0
@@ -922,7 +934,7 @@ theorem uniqueness_R {ν T : ℝ} (hν : 0 < ν) {u v : VelocityEvolution} {p q 
       rw [hprod]
       exact hc.aestronglyMeasurable (measurableSet_Icc.prod MeasurableSet.univ)
     exact hm.integral_prod_right'
-  set Bd : ℝ := 2 * (kineticEnergy u 0 + kineticEnergy v 0)
+  set Bd : ℝ := 2 * (Eu + Ev)
   have hEB : ∀ r ∈ Icc (0 : ℝ) T', E r ≤ Bd := fun r hr =>
     Ediff_le hu hv hr.1 (lt_of_le_of_lt hr.2 hT'T)
   have hEint : IntegrableOn E (Icc (0 : ℝ) T') := by
@@ -938,8 +950,8 @@ theorem uniqueness_R {ν T : ℝ} (hν : 0 < ν) {u v : VelocityEvolution} {p q 
     have hJle : ∀ r ∈ Ioc (0 : ℝ) s, ∫ x, Fint u v (r, x) ≤ 6 * K * E r := by
       intro r hr
       have hrT : r ∈ Ioo (0 : ℝ) T := ⟨hr.1, lt_of_le_of_lt (hr.2.trans hs.2) hT'T⟩
-      have hRr := hR r ⟨hr.1.le, hr.2.trans hs.2⟩
-      have h := (time_slice_energy hν.le hu hv hrT.1.le hrT.2 hRr.1 hRr.2).2
+      have hRr := hR r ⟨hr.1, hr.2.trans hs.2⟩
+      have h := (time_slice_energy hν.le hu hv hrT.1 hrT.2 hRr.1 hRr.2).2
       have e : ∫ x, Fint u v (r, x) = ∫ x, ∑ i : Fin 3, 2 * (u r x i - v r x i) *
           (timeDerivative u r x i - timeDerivative v r x i) := by
         refine integral_congr_ae (Eventually.of_forall fun x => ?_)
@@ -963,8 +975,8 @@ theorem uniqueness_R {ν T : ℝ} (hν : 0 < ν) {u v : VelocityEvolution} {p q 
   have hgc : Continuous (fun x => ∑ i : Fin 3, (u t x i - v t x i) ^ 2) :=
     continuous_finsetSum _ fun i _ =>
       (((continuous_apply i).comp huc).sub ((continuous_apply i).comp hvc)).pow 2
-  have hgi := integrable_sum_sq_diff huc hvc (hu.finite_energy t ht0 htT)
-    (hv.finite_energy t ht0 htT)
+  have hgi := integrable_sum_sq_diff huc hvc (hu.fe t ht0 htT)
+    (hv.fe t ht0 htT)
   have hae : (fun x => ∑ i : Fin 3, (u t x i - v t x i) ^ 2) =ᵐ[volume] 0 :=
     (integral_eq_zero_iff_of_nonneg (fun x => Finset.sum_nonneg fun i _ => sq_nonneg _) hgi).1
       hzero
@@ -977,6 +989,24 @@ theorem uniqueness_R {ν T : ℝ} (hν : 0 < ν) {u v : VelocityEvolution} {p q 
     (Finset.sum_eq_zero_iff_of_nonneg (fun j _ => sq_nonneg _)).1 hx i (Finset.mem_univ i)
   have := pow_eq_zero_iff (n := 2) (by norm_num) |>.1 hi
   linarith
+
+/-- **Strong–strong uniqueness in `R`.** -/
+theorem uniqueness_R {ν T : ℝ} (hν : 0 < ν) {u v : VelocityEvolution} {p q : PressureEvolution}
+    (hu : SolvesBefore ν T u p) (hv : SolvesBefore ν T v q)
+    (hRu : RegularOnCompacts T u p) (hRv : RegularOnCompacts T v q) (h0 : u 0 = v 0) :
+    ∀ t : ℝ, 0 ≤ t → t < T → u t = v t := by
+  intro t ht0 htT
+  set T' : ℝ := (t + T) / 2 with hT'
+  have hT'T : T' < T := by rw [hT']; linarith
+  have htT' : t ≤ T' := by rw [hT']; linarith
+  obtain ⟨Ku, hKu⟩ := hRu T' hT'T
+  obtain ⟨Kv, hKv⟩ := hRv T' hT'T
+  set K : ℝ := max Ku Kv
+  have hR : ∀ r ∈ Icc (0 : ℝ) T', Rslice K u p r ∧ Rslice K v q r := fun r hr =>
+    ⟨Rslice.mono (hKu r hr) (le_max_left _ _), Rslice.mono (hKv r hr) (le_max_right _ _)⟩
+  have hK0 : 0 ≤ K := (norm_nonneg _).trans ((hR 0 ⟨le_rfl, (ht0.trans htT')⟩).1.2.2.2.1.1 0)
+  exact uniqueness_class hν (SolClass.of_solvesBefore hu) (SolClass.of_solvesBefore hv) hT'T hK0
+    (fun r hr => hR r ⟨hr.1.le, hr.2⟩) h0 t ⟨ht0, htT'⟩
 
 end Navier.Analysis.RegularUniqueness
 
