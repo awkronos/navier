@@ -415,6 +415,47 @@ theorem heatOp_coord_ae_eq (hν : 0 < ν) (a₀ : V1) {t : ℝ} (ht : 0 ≤ t) (
 
 /-! ## The consumed endpoint: a pointwise fixed point of `continuousMildImage` -/
 
+/-- **Every Wiener-carrier fixed point is represented by a pointwise fixed point
+of `continuousMildImage`.** -/
+theorem exists_pointwise_of_fixedPoint (hν : 0 < ν) (hT : 0 < T) (a₀ : V1)
+    (x : C(Icc (0 : ℝ) T, V1)) (hxeq : x = heatPath hν a₀ + duhamelPath hν hT.le x x) :
+    ∃ w : ℝ → ES → ComplexSpace,
+      (∀ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3),
+        (fun ξ => w t ξ i) =ᵐ[volume] ⇑(x ⟨t, ht⟩ i)) ∧
+      ∀ t ∈ Icc (0 : ℝ) T, ∀ ξ : ES,
+        w t ξ = continuousMildImage ν hν (fun ξ i => a₀ i ξ) w t ξ := by
+  obtain ⟨v, hvm, hv⟩ := exists_joint_rep hT.le x
+  set a₀' : ES → ComplexSpace := fun ξ i => a₀ i ξ with ha₀'
+  set w : ℝ → ES → ComplexSpace := continuousMildImage ν hν a₀' v with hw
+  have hext : ∀ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T), extend hT.le x t = x ⟨t, ht⟩ := by
+    intro t ht
+    unfold WienerLocalMild.extend
+    rw [projIcc_of_mem hT.le ht]
+  have key : ∀ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3),
+      (fun ξ => w t ξ i) =ᵐ[volume] ⇑(x ⟨t, ht⟩ i) := by
+    intro t ht i
+    have hx : x ⟨t, ht⟩ = heatOp ν t a₀ + duhamel ν hT.le x x t := by
+      conv_lhs => rw [hxeq]
+      rfl
+    rw [hx]
+    filter_upwards [Lp.coeFn_add (heatOp ν t a₀ i) (duhamel ν hT.le x x t i),
+      heatOp_coord_ae_eq hν a₀ ht.1 i,
+      duhamel_coord_ae_eq hν hT.le x v hvm hv ht i] with ξ h1 h2 h3
+    rw [Pi.add_apply, h1, Pi.add_apply, h2, h3]
+    rfl
+  refine ⟨w, key, fun t ht ξ => ?_⟩
+  have huv : ∀ᵐ s ∂leiLinTimeMeasure T, w s =ᵐ[volume] v s := by
+    filter_upwards [hv, ae_restrict_mem measurableSet_Icc] with s hs hmem
+    have hc : ∀ i : Fin 3, (fun ξ => w s ξ i) =ᵐ[volume] fun ξ => v s ξ i := fun i => by
+      have h1 := key s hmem i
+      have h2 := hs i
+      rw [hext s hmem] at h2
+      exact h1.trans h2.symm
+    filter_upwards [ae_all_iff.mpr hc] with ξ h
+    funext i
+    exact h i
+  rw [continuousMildImage_congr_ae_on_horizon ν hν T a₀' w v huv t ht ξ]
+
 /-- **Large-data local existence of a pointwise continuous mild fixed point.**
 For every `ν > 0`, every Wiener datum `a₀ ∈ L¹(ℝ³;ℂ)³` and every horizon with
 `10⁴ T ‖a₀‖² ≤ ν`, there is a Wiener-carrier path `x` with `‖x‖ ≤ 2‖a₀‖` and
@@ -429,36 +470,12 @@ theorem exists_wienerMild_pointwise (hν : 0 < ν) (hT : 0 < T) (a₀ : V1)
       ∀ t ∈ Icc (0 : ℝ) T, ∀ ξ : ES,
         w t ξ = continuousMildImage ν hν (fun ξ i => a₀ i ξ) w t ξ := by
   obtain ⟨x, hxle, hxeq⟩ := exists_wienerMildSolution hν hT a₀ hsmall
-  obtain ⟨v, hvm, hv⟩ := exists_joint_rep hT.le x
-  set a₀' : ES → ComplexSpace := fun ξ i => a₀ i ξ with ha₀'
-  set w : ℝ → ES → ComplexSpace := continuousMildImage ν hν a₀' v with hw
-  have hext : ∀ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T), extend hT.le x t = x ⟨t, ht⟩ := by
-    intro t ht
-    unfold WienerLocalMild.extend
-    rw [projIcc_of_mem hT.le ht]
-  have key : ∀ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3),
-      (fun ξ => w t ξ i) =ᵐ[volume] ⇑(x ⟨t, ht⟩ i) := by
-    intro t ht i
-    have hx := hxeq ⟨t, ht⟩
-    rw [← duhamel_eq_causal hT.le x x ht.2] at hx
-    rw [hx]
-    filter_upwards [Lp.coeFn_add (heatOp ν t a₀ i) (duhamel ν hT.le x x t i),
-      heatOp_coord_ae_eq hν a₀ ht.1 i,
-      duhamel_coord_ae_eq hν hT.le x v hvm hv ht i] with ξ h1 h2 h3
-    rw [Pi.add_apply, h1, Pi.add_apply, h2, h3]
+  have hpath : x = heatPath hν a₀ + duhamelPath hν hT.le x x := by
+    ext1 t
+    rw [hxeq t, ContinuousMap.add_apply, duhamelPath_apply,
+      duhamel_eq_causal hT.le x x t.2.2]
     rfl
-  refine ⟨x, hxle, w, key, fun t ht ξ => ?_⟩
-  have huv : ∀ᵐ s ∂leiLinTimeMeasure T, w s =ᵐ[volume] v s := by
-    filter_upwards [hv, ae_restrict_mem measurableSet_Icc] with s hs hmem
-    have hc : ∀ i : Fin 3, (fun ξ => w s ξ i) =ᵐ[volume] fun ξ => v s ξ i := fun i => by
-      have h1 := key s hmem i
-      have h2 := hs i
-      rw [hext s hmem] at h2
-      exact h1.trans h2.symm
-    filter_upwards [ae_all_iff.mpr hc] with ξ h
-    funext i
-    exact h i
-  rw [continuousMildImage_congr_ae_on_horizon ν hν T a₀' w v huv t ht ξ]
+  exact ⟨x, hxle, exists_pointwise_of_fixedPoint hν hT a₀ x hpath⟩
 
 end Navier.Analysis.WienerPointwiseBridge
 
