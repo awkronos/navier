@@ -1055,6 +1055,252 @@ theorem norm_partitionMomentBlock_four_mul_le_H3
       unfold partitionHighConstant
       ring
 
+
+/-! ## LP3 — transverse Riesz-curl algebra and the physical convolution bridge -/
+
+open Navier.Analysis.FourierL2Agree
+
+/-- The unnormalized Fourier curl profile `ξ × a(ξ)`.  The global Fourier
+derivative factor is deliberately kept outside this algebraic object. -/
+def partitionCurlMoment
+    (a : ES → Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace)
+    (r : Fin 3) (ξ : ES) : ℂ :=
+  if r = 0 then ((ξ 1 : ℝ) : ℂ) * a ξ 2 - ((ξ 2 : ℝ) : ℂ) * a ξ 1
+  else if r = 1 then ((ξ 2 : ℝ) : ℂ) * a ξ 0 - ((ξ 0 : ℝ) : ℂ) * a ξ 2
+  else ((ξ 0 : ℝ) : ℂ) * a ξ 1 - ((ξ 1 : ℝ) : ℂ) * a ξ 0
+
+/-- The finite Riesz contraction which recovers the localized derivative
+moment from the localized curl profile on transverse data. -/
+def partitionRieszCurlProfile
+    (a : ES → Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace)
+    (i k : Fin 3) (q : ℤ) (ξ : ES) : ℂ :=
+  if i = 0 then
+    partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 1 ξ -
+      partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 2 ξ
+  else if i = 1 then
+    partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 2 ξ -
+      partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 0 ξ
+  else
+    partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 0 ξ -
+      partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 1 ξ
+
+/-- Divergence-free Fourier algebra: every normalized dyadic derivative
+symbol is a two-term contraction of the localized curl profile. -/
+theorem partitionedMoment_eq_rieszCurl
+    (a : ES → Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace)
+    (ξ : ES)
+    (hdiv : ∑ r : Fin 3, ((ξ r : ℝ) : ℂ) * a ξ r = 0)
+    (i k : Fin 3) (q : ℤ) :
+    (partitionDyadicCutoff q ξ : ℂ) * (((ξ k : ℝ) : ℂ) * a ξ i) =
+      if i = 0 then
+        partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 1 ξ -
+          partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 2 ξ
+      else if i = 1 then
+        partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 2 ξ -
+          partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 0 ξ
+      else
+        partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 0 ξ -
+          partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 1 ξ := by
+  by_cases hx : ξ = 0
+  · subst ξ
+    simp [partitionCurlMoment, partitionAnnularRieszSymbol]
+  have hn : ‖ξ‖ ^ 2 ≠ 0 := pow_ne_zero 2 (norm_ne_zero_iff.mpr hx)
+  have hnorm : (‖ξ‖ ^ 2 : ℂ) =
+      ((ξ 0 : ℝ) : ℂ) * ((ξ 0 : ℝ) : ℂ) +
+      ((ξ 1 : ℝ) : ℂ) * ((ξ 1 : ℝ) : ℂ) +
+      ((ξ 2 : ℝ) : ℂ) * ((ξ 2 : ℝ) : ℂ) := by
+    norm_cast
+    simpa [Fin.sum_univ_three, pow_two] using
+      (EuclideanSpace.real_norm_sq_eq ξ)
+  have hsum_ne :
+      ((ξ 0 : ℝ) : ℂ) ^ 2 + ((ξ 1 : ℝ) : ℂ) ^ 2 +
+          ((ξ 2 : ℝ) : ℂ) ^ 2 ≠ 0 := by
+    simp only [pow_two]
+    rw [← hnorm]
+    exact pow_ne_zero 2
+      (Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hx))
+  fin_cases i <;>
+    simp only [Fin.isValue, if_pos, Fin.zero_eta, Fin.reduceFinMk, if_false,
+      partitionCurlMoment, partitionAnnularRieszSymbol] <;>
+    push_cast <;>
+    rw [hnorm] <;>
+    field_simp [hsum_ne] <;>
+    simp only [Fin.sum_univ_three] at hdiv <;>
+    ring_nf at hdiv ⊢
+  · linear_combination
+      (((ξ k : ℝ) : ℂ) * (partitionDyadicCutoff q ξ : ℂ) *
+        ((ξ 0 : ℝ) : ℂ)) * hdiv
+  · linear_combination
+      (((ξ k : ℝ) : ℂ) * (partitionDyadicCutoff q ξ : ℂ) *
+        ((ξ 1 : ℝ) : ℂ)) * hdiv
+  · linear_combination
+      (((ξ k : ℝ) : ℂ) * (partitionDyadicCutoff q ξ : ℂ) *
+        ((ξ 2 : ℝ) : ℂ)) * hdiv
+
+/-- Actual `Rep` carrier form of the frequency-side curl contraction. -/
+theorem partitionedMoment_eq_rieszCurl_ae
+    {v : Navier.VelocityField}
+    {a : ES → Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace}
+    (hr : Navier.Analysis.WienerRestartLeaf.Rep v a)
+    (i k : Fin 3) (q : ℤ) :
+    (fun ξ : ES => (partitionDyadicCutoff q ξ : ℂ) *
+      (((ξ k : ℝ) : ℂ) * a ξ i)) =ᵐ[volume]
+      partitionRieszCurlProfile a i k q := by
+  filter_upwards [hr.div] with ξ hdiv
+  simpa only [partitionRieszCurlProfile] using
+    partitionedMoment_eq_rieszCurl a ξ hdiv i k q
+
+/-- LP3 algebra at the actual reconstructed block: the normalized dyadic
+moment block is exactly the inverse integral of its two-term Riesz-curl
+profile.  The remaining analytic leaf is the multiplier-to-physical-
+convolution identity for each term. -/
+theorem partitionMomentBlock_eq_rieszCurl
+    {v : Navier.VelocityField}
+    {a : ES → Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace}
+    (hr : Navier.Analysis.WienerRestartLeaf.Rep v a)
+    (x : ES) (i k : Fin 3) (q : ℤ) :
+    partitionMomentBlock a i k q x =
+      ∫ ξ : ES, 𝐞 (inner ℝ ξ x) • partitionRieszCurlProfile a i k q ξ := by
+  rw [partitionMomentBlock]
+  apply integral_congr_ae
+  filter_upwards [partitionedMoment_eq_rieszCurl_ae hr i k q] with ξ hξ
+  rw [hξ]
+
+noncomputable def phaseMultiplier (m : SchwartzMap ES ℂ)
+    (hm : HasCompactSupport (m : ES → ℂ)) (x : ES) : SchwartzMap ES ℂ := by
+  let p : ES → ℂ := fun ξ => (𝐞 (inner ℝ ξ x) : ℂ)
+  have hp : ContDiff ℝ (↑(⊤ : ℕ∞)) p := by
+    change ContDiff ℝ (↑(⊤ : ℕ∞))
+      (fun ξ : ES => Complex.exp (((2 * Real.pi * inner ℝ ξ x : ℝ) : ℂ) * Complex.I))
+    have hi : ContDiff ℝ (↑(⊤ : ℕ∞)) (fun ξ : ES => inner ℝ ξ x) :=
+      ((innerSL ℝ).flip x).contDiff
+    exact Complex.contDiff_exp.comp
+      ((Complex.ofRealCLM.contDiff.comp (contDiff_const.mul hi)).mul contDiff_const)
+  exact (HasCompactSupport.mul_left (f := p) hm).toSchwartzMap
+    (hp.mul (m.smooth ⊤))
+
+@[simp]
+theorem phaseMultiplier_apply (m : SchwartzMap ES ℂ)
+    (hm : HasCompactSupport (m : ES → ℂ)) (x ξ : ES) :
+    phaseMultiplier m hm x ξ = (𝐞 (inner ℝ ξ x) : ℂ) * m ξ := rfl
+
+noncomputable def phaseMultiplierTest (m : SchwartzMap ES ℂ)
+    (hm : HasCompactSupport (m : ES → ℂ)) (x : ES) : SchwartzMap ES ℂ :=
+  FourierTransform.fourier (phaseMultiplier m hm x)
+
+theorem fourierInv_phaseMultiplierTest (m : SchwartzMap ES ℂ)
+    (hm : HasCompactSupport (m : ES → ℂ)) (x : ES) :
+    FourierTransform.fourierInv (phaseMultiplierTest m hm x) = phaseMultiplier m hm x := by
+  exact FourierTransform.fourierInv_fourier_eq (phaseMultiplier m hm x)
+
+theorem phaseMultiplierTest_apply (m : SchwartzMap ES ℂ)
+    (hm : HasCompactSupport (m : ES → ℂ)) (x z : ES) :
+    phaseMultiplierTest m hm x z =
+      FourierTransform.fourierInv (m : ES → ℂ) (x - z) := by
+  rw [phaseMultiplierTest, SchwartzMap.fourier_coe, Real.fourier_eq,
+    Real.fourierInv_eq]
+  apply integral_congr_ae
+  filter_upwards [] with ξ
+  simp only [phaseMultiplier_apply, Circle.smul_def, Real.fourierChar_apply,
+    inner_sub_right, smul_eq_mul]
+  rw [← mul_assoc, ← Complex.exp_add]
+  congr 2
+  push_cast
+  ring
+
+/-- The missing product-to-physical-convolution identity at exactly the
+regularity used by LP3: the multiplier is Schwartz and the profile is merely
+integrable.  Mathlib's pinned convolution theorem has the opposite direction,
+so this proof uses inverse-Fourier self-adjointness against a phase-modulated
+Schwartz test. -/
+theorem fourierInv_schwartz_mul_eq_convolution
+    (m : SchwartzMap ES ℂ) (hm : HasCompactSupport (m : ES → ℂ))
+    {f : ES → ℂ} (hf : Integrable f) (x : ES) :
+    FourierTransform.fourierInv (fun ξ : ES => m ξ * f ξ) x =
+      ∫ z : ES, FourierTransform.fourierInv (m : ES → ℂ) (x - z) *
+        FourierTransform.fourierInv f z := by
+  have hself := integral_fourierInv_smul_eq (phaseMultiplierTest m hm x) hf
+  have hinv : ∀ ξ : ES,
+      FourierTransform.fourierInv (phaseMultiplierTest m hm x : ES → ℂ) ξ =
+        phaseMultiplier m hm x ξ := by
+    intro ξ
+    rw [← SchwartzMap.fourierInv_coe,
+      fourierInv_phaseMultiplierTest m hm x]
+  rw [Real.fourierInv_eq]
+  calc
+    (∫ ξ : ES, 𝐞 (inner ℝ ξ x) • (m ξ * f ξ)) =
+        ∫ ξ : ES, phaseMultiplier m hm x ξ • f ξ := by
+      apply integral_congr_ae
+      filter_upwards [] with ξ
+      rw [phaseMultiplier_apply]
+      simp only [Circle.smul_def, smul_eq_mul]
+      ring
+    _ = ∫ z : ES, phaseMultiplierTest m hm x z •
+          FourierTransform.fourierInv f z := by
+      rw [← hself]
+      apply integral_congr_ae
+      filter_upwards [] with ξ
+      rw [hinv]
+    _ = ∫ z : ES, FourierTransform.fourierInv (m : ES → ℂ) (x - z) *
+          FourierTransform.fourierInv f z := by
+      apply integral_congr_ae
+      filter_upwards [] with z
+      rw [phaseMultiplierTest_apply]
+      rfl
+
+theorem partitionAnnularRieszSymbol_contDiff (q : ℤ) (i k : Fin 3) :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) (partitionAnnularRieszSymbol q i k) := by
+  rw [show partitionAnnularRieszSymbol q i k =
+      partitionDyadicRieszMultiplier q i k by
+    funext ξ
+    exact partitionAnnularRieszSymbol_eq_multiplier q i k ξ]
+  unfold partitionDyadicRieszMultiplier
+  exact (partitionUnitRieszMultiplier i k).smooth'.comp (by fun_prop)
+
+theorem partitionAnnularRieszSymbol_hasCompactSupport (q : ℤ) (i k : Fin 3) :
+    HasCompactSupport (partitionAnnularRieszSymbol q i k) := by
+  rw [show partitionAnnularRieszSymbol q i k =
+      partitionDyadicRieszMultiplier q i k by
+    funext ξ
+    exact partitionAnnularRieszSymbol_eq_multiplier q i k ξ]
+  unfold partitionDyadicRieszMultiplier
+  have hu : HasCompactSupport (partitionUnitRieszMultiplier i k : ES → ℂ) :=
+    (partitionUnitRieszMultiplierReal_hasCompactSupport i k).comp_left
+      Complex.ofReal_zero
+  exact hu.comp_homeomorph
+    (Homeomorph.smulOfNeZero ((2 : ℝ) ^ q)⁻¹
+      (inv_ne_zero (zpow_ne_zero q (by norm_num))))
+
+noncomputable def partitionAnnularRieszSchwartz (q : ℤ) (i k : Fin 3) :
+    SchwartzMap ES ℂ :=
+  (partitionAnnularRieszSymbol_hasCompactSupport q i k).toSchwartzMap
+    (partitionAnnularRieszSymbol_contDiff q i k)
+
+@[simp]
+theorem partitionAnnularRieszSchwartz_apply (q : ℤ) (i k : Fin 3) (ξ : ES) :
+    partitionAnnularRieszSchwartz q i k ξ =
+      partitionAnnularRieszSymbol q i k ξ := rfl
+
+/-- The general Schwartz-times-`L¹` bridge specialized to the actual LP2
+kernel and the exact normalized annular symbol used in LP1. -/
+theorem fourierInv_partitionAnnularRiesz_mul_eq_convolution
+    (q : ℤ) (i k : Fin 3) {f : ES → ℂ} (hf : Integrable f) (x : ES) :
+    FourierTransform.fourierInv
+        (fun ξ : ES => partitionAnnularRieszSymbol q i k ξ * f ξ) x =
+      ∫ z : ES, partitionBlockKernel q i k (x - z) *
+        FourierTransform.fourierInv f z := by
+  rw [show (fun ξ : ES => partitionAnnularRieszSymbol q i k ξ * f ξ) =
+      fun ξ : ES => partitionAnnularRieszSchwartz q i k ξ * f ξ by
+    funext ξ
+    rw [partitionAnnularRieszSchwartz_apply]]
+  rw [fourierInv_schwartz_mul_eq_convolution
+    (partitionAnnularRieszSchwartz q i k)
+    (partitionAnnularRieszSymbol_hasCompactSupport q i k) hf x]
+  apply integral_congr_ae
+  filter_upwards [] with z
+  rw [partitionBlockKernel]
+  congr 1
+
 end Navier.Analysis.LittlewoodPaleyPartition
 
 set_option pp.fullNames true in
@@ -1099,3 +1345,15 @@ set_option pp.fullNames true in
 #check @Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_four_mul_le_H3
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_four_mul_le_H3
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.partitionedMoment_eq_rieszCurl
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.partitionedMoment_eq_rieszCurl_ae
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.partitionMomentBlock_eq_rieszCurl
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.phaseMultiplierTest_apply
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.fourierInv_schwartz_mul_eq_convolution
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.fourierInv_partitionAnnularRiesz_mul_eq_convolution
