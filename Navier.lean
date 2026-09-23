@@ -254,6 +254,7 @@ import Navier.Analysis.WienerL1Carrier
 import Navier.Analysis.WienerLocalMild
 import Navier.Analysis.WienerMoments
 import Navier.Analysis.WienerPointwiseBridge
+import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerSchwartzLocal
 import Navier.Analysis.WienerSmoothPath
 import Navier.Analysis.ZeroDataGlobal
