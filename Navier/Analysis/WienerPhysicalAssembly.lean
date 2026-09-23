@@ -349,6 +349,41 @@ theorem satisfiesNavierStokesBefore_physU (hν4 : ν = 4 * Real.pi ^ 2)
   field_simp
   ring
 
+include hT hν hfix hG in
+/-- **The official equation at physical viscosity `νp`**, for repository
+viscosity `ν = 4π² νp`. -/
+theorem satisfiesNavierStokesBefore_physU_visc {νp : ℝ} (hν4 : ν = 4 * Real.pi ^ 2 * νp)
+    (ha : ProfileDivergenceFree a)
+    (hreal : ∀ t ∈ Icc (0 : ℝ) T, ∀ (k : Fin 3) (y : ES),
+      conj (𝓕⁻ (fun ξ => w t ξ k) y) = 𝓕⁻ (fun ξ => w t ξ k) y) :
+    SatisfiesNavierStokesBefore νp zeroForce T (physU w) (physP w) := by
+  intro t ht0 htT x
+  have htI : t ∈ Icc (0 : ℝ) T := ⟨ht0, htT.le⟩
+  funext k
+  simp only [Pi.add_apply, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, zeroForce,
+    Pi.zero_apply, add_zero]
+  rw [timeDerivative_physU hT hν a hfix hG ha ht0 htT x k, convection_physU hT hν hG htI x k,
+    laplacian_physU hT hν hG htI x k, pressureGradient_physP hT hν hG htI x k]
+  have him : ∀ j : Fin 3, (𝓕⁻ (fun ξ => w t ξ j) (euclidPoint x)).im = 0 := fun j =>
+    Complex.conj_eq_iff_im.mp (hreal t htI j (euclidPoint x))
+  have hπ : Real.pi ≠ 0 := Real.pi_ne_zero
+  have h1 : ((ν : ℝ) : ℂ) / (4 * (Real.pi : ℂ) ^ 2) = ((νp : ℝ) : ℂ) := by
+    rw [hν4]; push_cast; field_simp
+  have h2 : (1 / (2 * (Real.pi : ℂ))) = ((1 / (2 * Real.pi) : ℝ) : ℂ) := by push_cast; ring
+  rw [h1, h2, Complex.sub_re, Complex.add_re, Complex.re_ofReal_mul,
+    Complex.re_ofReal_mul, Complex.re_ofReal_mul]
+  simp only [Complex.re_sum, Complex.mul_re, him, zero_mul, sub_zero]
+  have h3 : ∑ j : Fin 3, physU w t x j *
+      (fderiv ℝ (𝓕⁻ (fun ξ => w t ξ k)) (euclidPoint x) (EuclideanSpace.single j 1)).re =
+      -(1 / (2 * Real.pi)) * ∑ j : Fin 3, (𝓕⁻ (fun ξ => w t ξ j) (euclidPoint x)).re *
+        (fderiv ℝ (𝓕⁻ (fun ξ => w t ξ k)) (euclidPoint x) (EuclideanSpace.single j 1)).re := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    unfold physU; ring
+  rw [h3]
+  field_simp
+  ring
+
 /-- **Joint smoothness of the rescaled velocity** from joint smoothness of the
 complex physical coordinates. -/
 theorem smoothVelocityBefore_physU

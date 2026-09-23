@@ -265,7 +265,16 @@ gluing they supply the two energy clauses of `WholeSpaceGlobalRegularity` for
 the constructed velocity itself. All three analytic inputs remain explicit
 hypotheses of this theorem.  The continuation step is requested only after the
 datum is fixed (`DatumContinuationFromCriticalControl`), the weakest order the
-gluing consumes. -/
+gluing consumes.
+
+Superseded as the primary route by
+`ClassDecomposition.wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori_R`:
+the continuation and a priori leaves here quantify over EVERY `SolvesBefore`
+solution, a class supercritical at spatial infinity in which uniqueness is not
+known, so each leaf carries a hidden uniqueness burden (ledger F-024).  The
+R-route asks both leaves only of solutions regular on compacts; this theorem is
+retained and also factors through the class form
+(`ClassDecomposition.wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori_via_class`). -/
 theorem wholeSpaceGlobalRegularity_of_local_datumContinuation_apriori
     (N : CriticalQuantity)
     (hlocal : LocalClassicalExistence)

@@ -263,6 +263,8 @@ import Navier.Analysis.WienerLinfBound
 import Navier.Analysis.WienerEnergyCancel
 import Navier.Analysis.WienerEnergy
 import Navier.Analysis.WienerLocalClassical
+import Navier.Analysis.ClassDecomposition
+import Navier.Analysis.WienerRegularity
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerReality
