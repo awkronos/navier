@@ -265,6 +265,7 @@ import Navier.Analysis.WienerEnergy
 import Navier.Analysis.WienerLocalClassical
 import Navier.Analysis.ClassDecomposition
 import Navier.Analysis.WienerRegularity
+import Navier.Analysis.WienerRegularityFull
 import Navier.Analysis.DampedThresholdGronwall
 import Navier.Analysis.SobolevInterpolation
 import Navier.Analysis.RegularRestart

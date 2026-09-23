@@ -328,7 +328,8 @@ theorem restart_paste_explicit {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : 
     ∃ u' : VelocityEvolution, ∃ p' : PressureEvolution,
       SolvesBefore ν (T + h) u' p' ∧ PressureNormalizedBefore (T + h) p' ∧
         VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p' ∧
-        ∀ t : ℝ, u' t = if t < T then u t else w t := by
+        (∀ t : ℝ, u' t = if t < T then u t else w t) ∧
+        ∀ t : ℝ, p' t = if t < T then p t else q t := by
   have hstrip : T₀ + (T - T₀ + h) = T + h := by ring
   obtain ⟨hu, hp, hinc, heq⟩ := hsol.classical
   obtain ⟨wv, wp, winc, weq, wfe, wel⟩ := hw
@@ -463,7 +464,7 @@ theorem restart_paste_explicit {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : 
     · rw [hp' t htT]; exact hnorm t ht htT
     · rw [hq' t htT]; exact hq_norm t (le_of_lt (lt_of_lt_of_le hT₀T htT)) htTh
   exact ⟨u', p', ⟨⟨hvel_smooth, hpres_smooth, hinc', heq'⟩, hfe', heli'⟩, hpnorm,
-    fun t _ htT => (hu' t htT).symm, fun t _ htT => (hp' t htT).symm, fun _ => rfl⟩
+    fun t _ htT => (hu' t htT).symm, fun t _ htT => (hp' t htT).symm, fun _ => rfl, fun _ => rfl⟩
 
 /-- The restart paste, without the explicit form of the glued velocity. -/
 theorem restart_paste {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : PressureEvolution}
@@ -477,7 +478,7 @@ theorem restart_paste {ν T T₀ h : ℝ} {u : VelocityEvolution} {p : PressureE
     ∃ u' : VelocityEvolution, ∃ p' : PressureEvolution,
       SolvesBefore ν (T + h) u' p' ∧ PressureNormalizedBefore (T + h) p' ∧
         VelocityAgreesBefore T u u' ∧ PressureAgreesBefore T p p' := by
-  obtain ⟨u', p', h1, h2, h3, h4, -⟩ :=
+  obtain ⟨u', p', h1, h2, h3, h4, -, -⟩ :=
     restart_paste_explicit hT₀ hT₀T hh hsol hnorm hw hq_norm hagree_v hagree_p
   exact ⟨u', p', h1, h2, h3, h4⟩
 
