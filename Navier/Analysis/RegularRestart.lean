@@ -39,7 +39,8 @@ open Navier.Analysis.RestartPaste
 /-- R on a restart strip `[T₀, T₀ + L)` (velocity, pressure and `∂ₜ` slices). -/
 def RegularOnCompactsFrom (T₀ L : ℝ) (w : VelocityEvolution) (q : PressureEvolution) : Prop :=
   ∀ T' : ℝ, T' < T₀ + L → ∃ K : ℝ, ∀ t ∈ Icc T₀ T',
-    RegSlice K (w t) ∧ PresSlice K (q t) ∧ TimeSlice K w t
+    RegSlice K (w t) ∧ PresSlice K (q t) ∧ TimeSlice K w t ∧ SupSlice K (w t) ∧
+      PresL2 K (q t)
 
 /-- **Gluing preserves R.** -/
 theorem regularOnCompacts_glue {T T₀ h : ℝ} {u w : VelocityEvolution}
@@ -82,8 +83,8 @@ theorem regularOnCompacts_glue {T T₀ h : ℝ} {u w : VelocityEvolution}
   refine ⟨max K₁ K₂, fun t ht => ?_⟩
   rcases le_or_gt t m with htm | htm
   · have htT : t < T := lt_of_le_of_lt htm hmT
-    obtain ⟨a1, a2, a3⟩ := hK₁ t ⟨ht.1, htm⟩
-    refine ⟨?_, ?_, ?_⟩
+    obtain ⟨a1, a2, a3, a4, a5⟩ := hK₁ t ⟨ht.1, htm⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
     · rw [hu_on t htT]; exact a1.mono (le_max_left _ _)
     · rw [hp_on t htT]; exact a2.mono (le_max_left _ _)
     · have e : ∀ x, timeDerivative u' t x = timeDerivative u t x :=
@@ -91,9 +92,11 @@ theorem regularOnCompacts_glue {T T₀ h : ℝ} {u w : VelocityEvolution}
       refine (TimeSlice.mono ?_ (le_max_left _ _))
       simp only [TimeSlice, e]
       exact a3
+    · rw [hu_on t htT]; exact a4.mono (le_max_left _ _)
+    · rw [hp_on t htT]; exact a5.mono (le_max_left _ _)
   · have hT₀t : T₀ < t := lt_trans hT₀m htm
-    obtain ⟨a1, a2, a3⟩ := hK₂ t ⟨hT₀t.le, ht.2⟩
-    refine ⟨?_, ?_, ?_⟩
+    obtain ⟨a1, a2, a3, a4, a5⟩ := hK₂ t ⟨hT₀t.le, ht.2⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
     · rw [hw_on t hT₀t]; exact a1.mono (le_max_right _ _)
     · rw [hq_on t hT₀t]; exact a2.mono (le_max_right _ _)
     · have e : ∀ x, timeDerivative u' t x = timeDerivative w t x :=
@@ -101,6 +104,8 @@ theorem regularOnCompacts_glue {T T₀ h : ℝ} {u w : VelocityEvolution}
       refine (TimeSlice.mono ?_ (le_max_right _ _))
       simp only [TimeSlice, e]
       exact a3
+    · rw [hw_on t hT₀t]; exact a4.mono (le_max_right _ _)
+    · rw [hq_on t hT₀t]; exact a5.mono (le_max_right _ _)
 
 /-- **The R-restart leaf**: the restart is requested only from R-solutions and
 must return an R-strip. -/

@@ -395,19 +395,135 @@ theorem timeSlice_physU : ∃ K : ℝ, ∀ t ∈ Ico (0 : ℝ) T, TimeSlice K (p
         rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]; exact hb x)
   exact ⟨hI, (integral_mono hI hgi hb).trans hgv⟩
 
+
+/-- Pointwise bound of an inverse transform by a lintegral majorant. -/
+theorem norm_fourierInv_le_of_enorm {f : ES → ℂ} (hfi : Integrable f) {G : ES → ℝ≥0∞}
+    (hG : ∀ᵐ ξ ∂(volume : Measure ES), ‖f ξ‖ₑ ≤ G ξ) (hfin : ∫⁻ ξ, G ξ ≠ ⊤) (y : ES) :
+    ‖𝓕⁻ f y‖ ≤ (∫⁻ ξ, G ξ).toReal := by
+  refine (Navier.Analysis.WienerPlancherel.norm_fourierInv_le_integral f y).trans ?_
+  rw [integral_eq_lintegral_of_nonneg_ae (Eventually.of_forall fun ξ => norm_nonneg _)
+    hfi.norm.aestronglyMeasurable]
+  refine ENNReal.toReal_mono hfin (lintegral_mono_ae ?_)
+  filter_upwards [hG] with ξ h
+  rw [ofReal_norm]; exact h
+
+include hT hν hG in
+/-- **Sup bounds on the velocity and its first derivatives.** -/
+theorem supSlice_physU : ∃ K : ℝ, ∀ t ∈ Icc (0 : ℝ) T, SupSlice K (physU w t) := by
+  have hGc := hG
+  obtain ⟨hm, M, hM, hb, hmom, -⟩ := hGc
+  set B : ℕ → ℝ := fun n => (∫⁻ ξ, ENNReal.ofReal (‖ξ‖ ^ n) * M ξ).toReal
+  refine ⟨B 0 + ∑ i : Fin 3, B (deg (ej i)), fun t ht => ⟨fun x => ?_, fun x i => ?_⟩⟩
+  · have hB : ∀ i : Fin 3, 0 ≤ B (deg (ej i)) := fun i => ENNReal.toReal_nonneg
+    refine (pi_norm_le_iff_of_nonneg (by
+      have : 0 ≤ ∑ i : Fin 3, B (deg (ej i)) := Finset.sum_nonneg fun i _ => hB i
+      have : 0 ≤ B 0 := ENNReal.toReal_nonneg
+      linarith)).mpr fun k => ?_
+    have hfi : Integrable (fun ξ => w t ξ k) := integrable_of_hmom (hmom_w hT hν hG ht k)
+    have h1 : ‖𝓕⁻ (fun ξ => w t ξ k) (euclidPoint x)‖ ≤ B 0 := by
+      refine norm_fourierInv_le_of_enorm hfi (G := fun ξ => ENNReal.ofReal (‖ξ‖ ^ 0) * M ξ)
+        ?_ (hmom 0) _
+      filter_upwards [hb] with ξ h
+      simp only [pow_zero, ENNReal.ofReal_one, one_mul]
+      exact (enorm_coord_le _ k).trans (h t ht)
+    have hπ : 0 < Real.pi := Real.pi_pos
+    have : 1 / (2 * Real.pi) ≤ 1 := by
+      rw [div_le_one (by positivity)]; nlinarith [Real.pi_gt_three]
+    calc ‖physU w t x k‖ = |-(1 / (2 * Real.pi)) * (𝓕⁻ (fun ξ => w t ξ k) (euclidPoint x)).re| :=
+          Real.norm_eq_abs _
+      _ ≤ 1 / (2 * Real.pi) * ‖𝓕⁻ (fun ξ => w t ξ k) (euclidPoint x)‖ := by
+          rw [abs_mul, abs_neg, abs_of_pos (by positivity)]
+          exact mul_le_mul_of_nonneg_left (Complex.abs_re_le_norm _) (by positivity)
+      _ ≤ 1 * B 0 := mul_le_mul this h1 (norm_nonneg _) zero_le_one
+      _ ≤ _ := by
+          have : 0 ≤ ∑ i : Fin 3, B (deg (ej i)) := Finset.sum_nonneg fun i _ => hB i
+          linarith
+  · have hB : ∀ i : Fin 3, 0 ≤ B (deg (ej i)) := fun i => ENNReal.toReal_nonneg
+    have hle : B (deg (ej i)) ≤ B 0 + ∑ i : Fin 3, B (deg (ej i)) := by
+      have := Finset.single_le_sum (f := fun i => B (deg (ej i))) (fun i _ => hB i)
+        (Finset.mem_univ i)
+      have : 0 ≤ B 0 := ENNReal.toReal_nonneg
+      linarith
+    refine (pi_norm_le_iff_of_nonneg ((hB i).trans hle)).mpr fun k => ?_
+    rw [congrFun (congrFun (fderiv_physU_eq hT hν hG ht i) x) k]
+    have hfi : Integrable (fun ξ => mono (ej i) ξ * w t ξ k) := hmom_w hT hν hG ht k (ej i)
+    have h1 : ‖𝓕⁻ (fun ξ => mono (ej i) ξ * w t ξ k) (euclidPoint x)‖ ≤ B (deg (ej i)) := by
+      refine norm_fourierInv_le_of_enorm hfi
+        (G := fun ξ => ENNReal.ofReal (‖ξ‖ ^ deg (ej i)) * M ξ) ?_ (hmom _) _
+      filter_upwards [hb] with ξ h
+      rw [enorm_mul, ← ofReal_norm (mono (ej i) ξ)]
+      exact mul_le_mul' (ENNReal.ofReal_le_ofReal (norm_mono_le _ ξ))
+        ((enorm_coord_le _ k).trans (h t ht))
+    rw [Real.norm_eq_abs]
+    refine ((abs_neg_mul_re_le _ (by positivity) _ _).trans ?_).trans hle
+    rw [norm_two_pi_I]
+    have hπ : 0 < Real.pi := Real.pi_pos
+    calc 1 / (2 * Real.pi) * (2 * Real.pi * ‖𝓕⁻ (fun ξ => mono (ej i) ξ * w t ξ k)
+          (euclidPoint x)‖) = ‖𝓕⁻ (fun ξ => mono (ej i) ξ * w t ξ k) (euclidPoint x)‖ := by
+          field_simp
+      _ ≤ _ := h1
+
+include hT hν hG hR0 hRb in
+/-- **The pressure is square-integrable** (constant `0`). -/
+theorem presL2_physP : ∃ K : ℝ, ∀ t ∈ Icc (0 : ℝ) T, PresL2 K (physP w t) := by
+  obtain ⟨BQ, hBQ0, hBQ⟩ := l2_bound_Q hT hν hG hR0 hRb
+  refine ⟨BQ (2 * deg 0), fun t ht => ⟨0, ?_, ?_⟩⟩
+  all_goals
+    have hfun : (fun ξ => mono 0 ξ * Qhat w t ξ) = Qhat w t := by
+      funext ξ; rw [mono_zero, one_mul]
+    have h1 := hBQ 0 t ht
+    rw [hfun] at h1
+    have hq := hmom_Qhat hG ht
+    have hπ : 0 < Real.pi := Real.pi_pos
+    have hb : ∀ x, (physP w t x - 0) ^ 2 ≤ ‖𝓕⁻ (Qhat w t) (euclidPoint x)‖ ^ 2 := by
+      intro x
+      rw [sub_zero, ← sq_abs]
+      refine pow_le_pow_left₀ (abs_nonneg _) ?_ 2
+      show |-(1 / (4 * Real.pi ^ 2)) * (𝓕⁻ (Qhat w t) (euclidPoint x)).re| ≤ _
+      rw [abs_mul, abs_neg, abs_of_pos (by positivity)]
+      have : 1 / (4 * Real.pi ^ 2) ≤ 1 := by
+        rw [div_le_one (by positivity)]; nlinarith [Real.pi_gt_three]
+      calc 1 / (4 * Real.pi ^ 2) * |(𝓕⁻ (Qhat w t) (euclidPoint x)).re|
+          ≤ 1 * ‖𝓕⁻ (Qhat w t) (euclidPoint x)‖ :=
+            mul_le_mul this (Complex.abs_re_le_norm _) (abs_nonneg _) zero_le_one
+        _ = _ := one_mul _
+    have hgi : Integrable (fun x : Space => ‖𝓕⁻ (Qhat w t) (euclidPoint x)‖ ^ 2) :=
+      integrable_space_euclid h1.1
+    have hc : Continuous (fun x : Space => (physP w t x - 0) ^ 2) := by
+      show Continuous (fun x : Space =>
+        (-(1 / (4 * Real.pi ^ 2)) * (𝓕⁻ (Qhat w t) (euclidPoint x)).re - 0) ^ 2)
+      exact ((continuous_const.mul (Complex.continuous_re.comp
+        ((continuous_fourierInv (integrable_of_hmom hq)).comp (PiLp.continuous_toLp 2 _)))).sub
+        continuous_const).pow 2
+    have hI : Integrable (fun x : Space => (physP w t x - 0) ^ 2) :=
+      hgi.mono' hc.aestronglyMeasurable (Eventually.of_forall fun x => by
+        rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]; exact hb x)
+  · exact hI
+  · refine (integral_mono hI hgi hb).trans ?_
+    rw [integral_space_euclid (fun y => ‖𝓕⁻ (Qhat w t) y‖ ^ 2)]
+    exact h1.2
+
 include hT hν hfix hG hR0 hRb in
 /-- **The Wiener pair is in `R`.** -/
 theorem regularOnCompacts_phys : RegularOnCompacts T (physU w) (physP w) := by
   obtain ⟨K1, hK1⟩ := regSlice_physU hT hν hG hR0 hRb
   obtain ⟨K2, hK2⟩ := presSlice_physP hT hν hG hR0 hRb
   obtain ⟨K3, hK3⟩ := timeSlice_physU hT hν a hfix hG hR0 hRb
+  obtain ⟨K4, hK4⟩ := supSlice_physU hT hν hG
+  obtain ⟨K5, hK5⟩ := presL2_physP hT hν hG hR0 hRb
   intro T' hT'
-  refine ⟨max K1 (max K2 K3), fun t ht => ⟨?_, ?_, ?_⟩⟩
-  · exact (hK1 t ⟨ht.1, ht.2.trans hT'.le⟩).mono (le_max_left _ _)
+  set K := max (max K1 K2) (max K3 (max K4 K5))
+  refine ⟨K, fun t ht => ⟨?_, ?_, ?_, ?_, ?_⟩⟩
+  · exact (hK1 t ⟨ht.1, ht.2.trans hT'.le⟩).mono
+      ((le_max_left _ _).trans (le_max_left _ _))
   · exact (hK2 t ⟨ht.1, ht.2.trans hT'.le⟩).mono
-      ((le_max_left _ _).trans (le_max_right _ _))
+      ((le_max_right _ _).trans (le_max_left _ _))
   · exact (hK3 t ⟨ht.1, lt_of_le_of_lt ht.2 hT'⟩).mono
-      ((le_max_right _ _).trans (le_max_right _ _))
+      ((le_max_left _ _).trans (le_max_right _ _))
+  · exact (hK4 t ⟨ht.1, ht.2.trans hT'.le⟩).mono
+      (((le_max_left _ _).trans (le_max_right _ _)).trans (le_max_right _ _))
+  · exact (hK5 t ⟨ht.1, ht.2.trans hT'.le⟩).mono
+      (((le_max_right _ _).trans (le_max_right _ _)).trans (le_max_right _ _))
 
 end Full
 

@@ -324,6 +324,23 @@ def TimeSlice (K : ℝ) (u : VelocityEvolution) (t : ℝ) : Prop :=
   MeasureTheory.Integrable (fun x : Space => ‖timeDerivative u t x‖ ^ 2) ∧
     (∫ x : Space, ‖timeDerivative u t x‖ ^ 2) ≤ K
 
+/-- Pointwise bounds on the velocity and its first derivatives (Serrin class). -/
+def SupSlice (K : ℝ) (v : VelocityField) : Prop :=
+  (∀ x : Space, ‖v x‖ ≤ K) ∧ ∀ (x : Space) (i : Fin 3), ‖fderiv ℝ v x (basisVector i)‖ ≤ K
+
+/-- The pressure is square-integrable modulo a constant (gauge-invariant). -/
+def PresL2 (K : ℝ) (q : PressureField) : Prop :=
+  ∃ c : ℝ, MeasureTheory.Integrable (fun x : Space => (q x - c) ^ 2) ∧
+    (∫ x : Space, (q x - c) ^ 2) ≤ K
+
+theorem SupSlice.mono {K K' : ℝ} {v : VelocityField} (h : SupSlice K v) (hK : K ≤ K') :
+    SupSlice K' v := ⟨fun x => (h.1 x).trans hK, fun x i => (h.2 x i).trans hK⟩
+
+theorem PresL2.mono {K K' : ℝ} {q : PressureField} (h : PresL2 K q) (hK : K ≤ K') :
+    PresL2 K' q := by
+  obtain ⟨c, h1, h2⟩ := h
+  exact ⟨c, h1, h2.trans hK⟩
+
 theorem RegSlice.mono {K K' : ℝ} {v : VelocityField} (h : RegSlice K v) (hK : K ≤ K') :
     RegSlice K' v := fun i j l => by
   obtain ⟨a1, a2, a3, a4, a5, a6⟩ := h i j l
@@ -347,10 +364,14 @@ and time derivative must be integrable).
 OBLIGATION (recorded 2026-09-23): the R-restart leaf must RETURN an R-strip, so
 the local existence theorem from `H³` data (item 6) must produce the pressure
 and `∂ₜu` bounds as well as the velocity bounds; otherwise this strengthening
-would make `RegularRestart.DatumHorizonIndependentRestartR` unsatisfiable. -/
+would make `RegularRestart.DatumHorizonIndependentRestartR` unsatisfiable.  The
+sup bounds on `u`, `∇u` and `p - c ∈ L²` (added 2026-09-23 for strong–strong
+uniqueness) extend the same obligation: every extension of `R` makes item 6
+harder. -/
 def RegularOnCompacts : SolutionClassPred := fun T u p =>
   ∀ T' : ℝ, T' < T → ∃ K : ℝ, ∀ t ∈ Set.Icc (0 : ℝ) T',
-    RegSlice K (u t) ∧ PresSlice K (p t) ∧ TimeSlice K u t
+    RegSlice K (u t) ∧ PresSlice K (p t) ∧ TimeSlice K u t ∧ SupSlice K (u t) ∧
+      PresL2 K (p t)
 
 theorem presSlice_normalize {K : ℝ} {p : PressureEvolution} {t : ℝ}
     (h : PresSlice K (p t)) : PresSlice K (normalizePressure p t) := by
@@ -366,7 +387,16 @@ theorem regularOnCompacts_normalize (T : ℝ) (u : VelocityEvolution) (p : Press
     (h : RegularOnCompacts T u p) : RegularOnCompacts T u (normalizePressure p) := by
   intro T' hT'
   obtain ⟨K, hK⟩ := h T' hT'
-  exact ⟨K, fun t ht => ⟨(hK t ht).1, presSlice_normalize (hK t ht).2.1, (hK t ht).2.2⟩⟩
+  refine ⟨K, fun t ht => ?_⟩
+  obtain ⟨a1, a2, a3, a4, a5⟩ := hK t ht
+  refine ⟨a1, presSlice_normalize a2, a3, a4, ?_⟩
+  obtain ⟨c, hc1, hc2⟩ := a5
+  refine ⟨c - p t 0, ?_, ?_⟩
+  · refine hc1.congr (Filter.Eventually.of_forall fun x => ?_)
+    simp only [normalizePressure]; ring
+  · refine le_trans (le_of_eq (MeasureTheory.integral_congr_ae
+      (Filter.Eventually.of_forall fun x => ?_))) hc2
+    simp only [normalizePressure]; ring
 
 /-- **The R-route consumer** (primary): every leaf quantifies over
 `SolvesBefore ∧ RegularOnCompacts` only. -/
