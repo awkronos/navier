@@ -256,6 +256,7 @@ import Navier.Analysis.WienerMildGood
 import Navier.Analysis.WienerMoments
 import Navier.Analysis.WienerPhysicalPDE
 import Navier.Analysis.WienerPhysicalAssembly
+import Navier.Analysis.WienerLocalExistence
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerReality

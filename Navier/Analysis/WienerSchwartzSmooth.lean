@@ -77,6 +77,7 @@ theorem exists_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < T)
           (fun ξ => w t ξ i) =ᵐ[volume] ⇑(x ⟨t, ht⟩ i)) ∧
         (∀ t ∈ Icc (0 : ℝ) T, ∀ ξ : ES,
           w t ξ = continuousMildImage ν hν (fourierDatum u₀) w t ξ) ∧
+        Good T w ∧
         ∀ i : Fin 3, ContDiffOn ℝ ∞ (fun z : ℝ × ES => physicalCoord (w z.1) i z.2)
           (Ico (0 : ℝ) T ×ˢ (univ : Set ES)) := by
   set a₀ := wienerDatum u₀ with ha₀
@@ -151,7 +152,7 @@ theorem exists_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < T)
         ν hν T a v w huv t ht ξ]
   have hG : Good T w := good_mildImage hν hT (measurable_fourierDatum u₀)
     (fourierDatum_mom_ne_top u₀) hvm hvmom
-  refine ⟨x, hxle, hxeq, w, fun t ht i => ?_, hfix, fun i =>
+  refine ⟨x, hxle, hxeq, w, fun t ht i => ?_, hfix, hG, fun i =>
     contDiffOn_physicalCoord_of_mild hT hν a hfix hG i⟩
   rw [hwt t ht]
   exact key t ht i

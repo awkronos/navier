@@ -358,14 +358,15 @@ theorem exists_real_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < 
           (fun ξ => w t ξ i) =ᵐ[volume] ⇑(x ⟨t, ht⟩ i)) ∧
         (∀ t ∈ Icc (0 : ℝ) T, ∀ ξ : ES,
           w t ξ = continuousMildImage ν hν (fourierDatum u₀) w t ξ) ∧
+        Navier.Analysis.WienerPointwiseODE.Good T w ∧
         (∀ i : Fin 3, ContDiffOn ℝ ∞ (fun z : ℝ × ES => physicalCoord (w z.1) i z.2)
           (Ico (0 : ℝ) T ×ˢ (univ : Set ES))) ∧
         ∀ t ∈ Icc (0 : ℝ) T, ∀ (i : Fin 3) (y : ES),
           conj (physicalCoord (w t) i y) = physicalCoord (w t) i y := by
-  obtain ⟨x, hxle, hxeq, w, hw, hfix, hsm⟩ := exists_smooth_wienerSolution hν hT u₀ hsmall
+  obtain ⟨x, hxle, hxeq, w, hw, hfix, hG, hsm⟩ := exists_smooth_wienerSolution hν hT u₀ hsmall
   have hR : Rpath x = x := Rpath_fixed hν hT (wienerDatum u₀) hsmall (RV_wienerDatum u₀) x
     hxle hxeq
-  refine ⟨x, hxeq, w, hw, hfix, hsm, fun t ht i y => ?_⟩
+  refine ⟨x, hxeq, w, hw, hfix, hG, hsm, fun t ht i y => ?_⟩
   have hRt : Rc (x ⟨t, ht⟩ i) = x ⟨t, ht⟩ i := by
     have h := congrArg (fun z : C(Icc (0 : ℝ) T, V1) => z ⟨t, ht⟩ i) hR
     exact h
