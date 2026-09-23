@@ -21,6 +21,7 @@ import Navier.Analysis.ComplexLerayProjection
 import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.ContinuationScaleSelfImprovement
 import Navier.Analysis.ClassRestartDecomposition
+import Navier.Analysis.ClassRestartLocallyUniform
 import Navier.Analysis.ContinuousLeiLinSpace
 import Navier.Analysis.ContinuousLeiLinTimeDuhamel
 import Navier.Analysis.ContinuousLeiLinDissipation
