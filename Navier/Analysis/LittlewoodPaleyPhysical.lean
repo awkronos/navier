@@ -1,0 +1,272 @@
+import Navier.Analysis.LittlewoodPaleyBlock
+import Navier.Analysis.LittlewoodPaleyPartition
+
+/-!
+# Physical Littlewood--Paley curl block estimate
+
+This module joins the mechanical physical Fourier facts from
+`LittlewoodPaleyBlock` to the normalized partition, kernel, and convolution
+provider in `LittlewoodPaleyPartition`. It proves the scale-uniform LP3 block
+bound under the actual pointwise vorticity bound. It does not assert the final
+`GradSupLogHyp`, whose reconstruction and shell assembly remain separate.
+-/
+
+set_option autoImplicit false
+
+noncomputable section
+
+open MeasureTheory Filter
+open scoped ENNReal FourierTransform RealInnerProductSpace
+
+namespace Navier.Analysis.LittlewoodPaleyPhysical
+
+open Navier Navier.Analysis.ContinuousLeiLinSpace
+open Navier.Analysis.WienerRestartLeaf
+open Navier.Analysis.ContinuousLeiLinPhysicalVelocity (euclidPoint)
+open Navier.Analysis.Vorticity (staticCurl)
+open Navier.Analysis.LittlewoodPaleyBlock
+open Navier.Analysis.LittlewoodPaleyPartition
+
+/-- Every component of the unnormalized Fourier curl profile is integrable on
+an actual represented Wiener datum. -/
+theorem integrable_partitionCurlMoment
+    {v : VelocityField} {a : ES → ComplexSpace} (hr : Rep v a)
+    (r : Fin 3) : Integrable (partitionCurlMoment a r) := by
+  fin_cases r
+  · change Integrable (fun ξ : ES =>
+      ((ξ 1 : ℝ) : ℂ) * a ξ 2 - ((ξ 2 : ℝ) : ℂ) * a ξ 1)
+    exact (integrable_moment hr.datum 2 1).sub (integrable_moment hr.datum 1 2)
+  · change Integrable (fun ξ : ES =>
+      ((ξ 2 : ℝ) : ℂ) * a ξ 0 - ((ξ 0 : ℝ) : ℂ) * a ξ 2)
+    exact (integrable_moment hr.datum 0 2).sub (integrable_moment hr.datum 2 0)
+  · change Integrable (fun ξ : ES =>
+      ((ξ 0 : ℝ) : ℂ) * a ξ 1 - ((ξ 1 : ℝ) : ℂ) * a ξ 0)
+    exact (integrable_moment hr.datum 1 0).sub (integrable_moment hr.datum 0 1)
+
+/-- Multiplication by the actual normalized annular Riesz symbol preserves
+integrability. -/
+theorem integrable_partitionAnnularRiesz_mul
+    (q : ℤ) (i k : Fin 3) {f : ES → ℂ} (hf : Integrable f) :
+    Integrable (fun ξ : ES => partitionAnnularRieszSymbol q i k ξ * f ξ) := by
+  apply hf.bdd_mul
+  · exact (partitionAnnularRieszSchwartz q i k).continuous.aestronglyMeasurable
+  · filter_upwards [] with ξ
+    simpa only [SchwartzMap.toBoundedContinuousFunction_apply,
+      partitionAnnularRieszSchwartz_apply] using
+      (partitionAnnularRieszSchwartz q i k).toBoundedContinuousFunction.norm_coe_le_norm ξ
+
+/-- The inverse transform of each curl-moment component is pointwise bounded
+by the physical vorticity supremum. The real part vanishes by Hermitian
+symmetry; the imaginary part is the corresponding `staticCurl` coordinate. -/
+theorem norm_fourierInv_partitionCurlMoment_le
+    {v : VelocityField} {a : ES → ComplexSpace} (hr : Rep v a)
+    {y : ℝ}
+    (hω : ∀ x : Space,
+      Navier.Analysis.OfficialABEncoding.officialEuclideanNorm (staticCurl v x) ≤ y)
+    (r : Fin 3) (z : ES) :
+    ‖FourierTransform.fourierInv (partitionCurlMoment a r) z‖ ≤ y := by
+  obtain ⟨x, rfl⟩ := euclidPoint_surjective z
+  fin_cases r
+  · change ‖FourierTransform.fourierInv
+      (fun ξ : ES => ((ξ 1 : ℝ) : ℂ) * a ξ 2 - ((ξ 2 : ℝ) : ℂ) * a ξ 1)
+        (euclidPoint x)‖ ≤ y
+    rw [fourierInv_sub_fn (integrable_moment hr.datum 2 1)
+      (integrable_moment hr.datum 1 2)]
+    have hre :
+        (FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 1 : ℝ) : ℂ) * a ξ 2) (euclidPoint x) -
+        FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 2 : ℝ) : ℂ) * a ξ 1) (euclidPoint x)).re = 0 := by
+      rw [Complex.sub_re, moment_im hr.datum 2 1, moment_im hr.datum 1 2]
+      simp
+    have him :
+        (FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 1 : ℝ) : ℂ) * a ξ 2) (euclidPoint x) -
+        FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 2 : ℝ) : ℂ) * a ξ 1) (euclidPoint x)).im =
+          staticCurl v x 0 := by
+      rw [Complex.sub_im, ← hr.fderiv_coord_im x 2 1,
+        ← hr.fderiv_coord_im x 1 2, staticCurl_comp_zero]
+    rw [Complex.norm_def, Complex.normSq_apply, hre, him, zero_mul, zero_add,
+      ← pow_two, Real.sqrt_sq_eq_abs]
+    have hcoord : |staticCurl v x 0| ≤ ‖staticCurl v x‖ := by
+      simpa [Real.norm_eq_abs] using norm_le_pi_norm (staticCurl v x) 0
+    exact (hcoord.trans
+      (Navier.Analysis.OfficialABEncoding.norm_le_officialEuclideanNorm _)).trans (hω x)
+  · change ‖FourierTransform.fourierInv
+      (fun ξ : ES => ((ξ 2 : ℝ) : ℂ) * a ξ 0 - ((ξ 0 : ℝ) : ℂ) * a ξ 2)
+        (euclidPoint x)‖ ≤ y
+    rw [fourierInv_sub_fn (integrable_moment hr.datum 0 2)
+      (integrable_moment hr.datum 2 0)]
+    have hre :
+        (FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 2 : ℝ) : ℂ) * a ξ 0) (euclidPoint x) -
+        FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 0 : ℝ) : ℂ) * a ξ 2) (euclidPoint x)).re = 0 := by
+      rw [Complex.sub_re, moment_im hr.datum 0 2, moment_im hr.datum 2 0]
+      simp
+    have him :
+        (FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 2 : ℝ) : ℂ) * a ξ 0) (euclidPoint x) -
+        FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 0 : ℝ) : ℂ) * a ξ 2) (euclidPoint x)).im =
+          staticCurl v x 1 := by
+      rw [Complex.sub_im, ← hr.fderiv_coord_im x 0 2,
+        ← hr.fderiv_coord_im x 2 0, staticCurl_comp_one]
+    rw [Complex.norm_def, Complex.normSq_apply, hre, him, zero_mul, zero_add,
+      ← pow_two, Real.sqrt_sq_eq_abs]
+    have hcoord : |staticCurl v x 1| ≤ ‖staticCurl v x‖ := by
+      simpa [Real.norm_eq_abs] using norm_le_pi_norm (staticCurl v x) 1
+    exact (hcoord.trans
+      (Navier.Analysis.OfficialABEncoding.norm_le_officialEuclideanNorm _)).trans (hω x)
+  · change ‖FourierTransform.fourierInv
+      (fun ξ : ES => ((ξ 0 : ℝ) : ℂ) * a ξ 1 - ((ξ 1 : ℝ) : ℂ) * a ξ 0)
+        (euclidPoint x)‖ ≤ y
+    rw [fourierInv_sub_fn (integrable_moment hr.datum 1 0)
+      (integrable_moment hr.datum 0 1)]
+    have hre :
+        (FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 0 : ℝ) : ℂ) * a ξ 1) (euclidPoint x) -
+        FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 1 : ℝ) : ℂ) * a ξ 0) (euclidPoint x)).re = 0 := by
+      rw [Complex.sub_re, moment_im hr.datum 1 0, moment_im hr.datum 0 1]
+      simp
+    have him :
+        (FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 0 : ℝ) : ℂ) * a ξ 1) (euclidPoint x) -
+        FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ 1 : ℝ) : ℂ) * a ξ 0) (euclidPoint x)).im =
+          staticCurl v x 2 := by
+      rw [Complex.sub_im, ← hr.fderiv_coord_im x 1 0,
+        ← hr.fderiv_coord_im x 0 1, staticCurl_comp_two]
+    rw [Complex.norm_def, Complex.normSq_apply, hre, him, zero_mul, zero_add,
+      ← pow_two, Real.sqrt_sq_eq_abs]
+    have hcoord : |staticCurl v x 2| ≤ ‖staticCurl v x‖ := by
+      simpa [Real.norm_eq_abs] using norm_le_pi_norm (staticCurl v x) 2
+    exact (hcoord.trans
+      (Navier.Analysis.OfficialABEncoding.norm_le_officialEuclideanNorm _)).trans (hω x)
+
+/-- **LP3.** Every normalized derivative block is bounded uniformly in the
+dyadic scale by the pointwise physical vorticity bound. -/
+theorem exists_uniform_partitionMomentBlock_le_curl
+    {v : VelocityField} {a : ES → ComplexSpace} (hr : Rep v a)
+    {y : ℝ} (hy : 0 ≤ y)
+    (hω : ∀ x : Space,
+      Navier.Analysis.OfficialABEncoding.officialEuclideanNorm (staticCurl v x) ≤ y)
+    (i k : Fin 3) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (q : ℤ) (x : ES),
+      ‖partitionMomentBlock a i k q x‖ ≤ C * y := by
+  fin_cases i
+  · obtain ⟨C₂, hC₂, h₂⟩ := partitionAnnularRiesz_young_uniform 2 k
+    obtain ⟨C₁, hC₁, h₁⟩ := partitionAnnularRiesz_young_uniform 1 k
+    refine ⟨C₂ + C₁, add_nonneg hC₂ hC₁, ?_⟩
+    intro q x
+    change ‖partitionMomentBlock a 0 k q x‖ ≤ (C₂ + C₁) * y
+    rw [partitionMomentBlock_eq_rieszCurl hr x 0 k q, ← Real.fourierInv_eq]
+    change ‖FourierTransform.fourierInv (fun ξ : ES =>
+      partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 1 ξ -
+      partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 2 ξ) x‖ ≤
+        (C₂ + C₁) * y
+    rw [fourierInv_sub_fn
+      (integrable_partitionAnnularRiesz_mul q 2 k
+        (integrable_partitionCurlMoment hr 1))
+      (integrable_partitionAnnularRiesz_mul q 1 k
+        (integrable_partitionCurlMoment hr 2))]
+    calc
+      ‖FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+            partitionCurlMoment a 1 ξ) x -
+        FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+            partitionCurlMoment a 2 ξ) x‖
+          ≤ ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+                partitionCurlMoment a 1 ξ) x‖ +
+            ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+                partitionCurlMoment a 2 ξ) x‖ := norm_sub_le _ _
+      _ ≤ C₂ * y + C₁ * y := add_le_add
+        (h₂ q (integrable_partitionCurlMoment hr 1) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 1) x)
+        (h₁ q (integrable_partitionCurlMoment hr 2) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 2) x)
+      _ = (C₂ + C₁) * y := by ring
+  · obtain ⟨C₀, hC₀, h₀⟩ := partitionAnnularRiesz_young_uniform 0 k
+    obtain ⟨C₂, hC₂, h₂⟩ := partitionAnnularRiesz_young_uniform 2 k
+    refine ⟨C₀ + C₂, add_nonneg hC₀ hC₂, ?_⟩
+    intro q x
+    change ‖partitionMomentBlock a 1 k q x‖ ≤ (C₀ + C₂) * y
+    rw [partitionMomentBlock_eq_rieszCurl hr x 1 k q, ← Real.fourierInv_eq]
+    change ‖FourierTransform.fourierInv (fun ξ : ES =>
+      partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 2 ξ -
+      partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 0 ξ) x‖ ≤
+        (C₀ + C₂) * y
+    rw [fourierInv_sub_fn
+      (integrable_partitionAnnularRiesz_mul q 0 k
+        (integrable_partitionCurlMoment hr 2))
+      (integrable_partitionAnnularRiesz_mul q 2 k
+        (integrable_partitionCurlMoment hr 0))]
+    calc
+      ‖FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+            partitionCurlMoment a 2 ξ) x -
+        FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+            partitionCurlMoment a 0 ξ) x‖
+          ≤ ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+                partitionCurlMoment a 2 ξ) x‖ +
+            ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+                partitionCurlMoment a 0 ξ) x‖ := norm_sub_le _ _
+      _ ≤ C₀ * y + C₂ * y := add_le_add
+        (h₀ q (integrable_partitionCurlMoment hr 2) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 2) x)
+        (h₂ q (integrable_partitionCurlMoment hr 0) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 0) x)
+      _ = (C₀ + C₂) * y := by ring
+  · obtain ⟨C₁, hC₁, h₁⟩ := partitionAnnularRiesz_young_uniform 1 k
+    obtain ⟨C₀, hC₀, h₀⟩ := partitionAnnularRiesz_young_uniform 0 k
+    refine ⟨C₁ + C₀, add_nonneg hC₁ hC₀, ?_⟩
+    intro q x
+    change ‖partitionMomentBlock a 2 k q x‖ ≤ (C₁ + C₀) * y
+    rw [partitionMomentBlock_eq_rieszCurl hr x 2 k q, ← Real.fourierInv_eq]
+    change ‖FourierTransform.fourierInv (fun ξ : ES =>
+      partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 0 ξ -
+      partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 1 ξ) x‖ ≤
+        (C₁ + C₀) * y
+    rw [fourierInv_sub_fn
+      (integrable_partitionAnnularRiesz_mul q 1 k
+        (integrable_partitionCurlMoment hr 0))
+      (integrable_partitionAnnularRiesz_mul q 0 k
+        (integrable_partitionCurlMoment hr 1))]
+    calc
+      ‖FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+            partitionCurlMoment a 0 ξ) x -
+        FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+            partitionCurlMoment a 1 ξ) x‖
+          ≤ ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+                partitionCurlMoment a 0 ξ) x‖ +
+            ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+                partitionCurlMoment a 1 ξ) x‖ := norm_sub_le _ _
+      _ ≤ C₁ * y + C₀ * y := add_le_add
+        (h₁ q (integrable_partitionCurlMoment hr 0) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 0) x)
+        (h₀ q (integrable_partitionCurlMoment hr 1) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 1) x)
+      _ = (C₁ + C₀) * y := by ring
+
+end Navier.Analysis.LittlewoodPaleyPhysical
+
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.integrable_partitionCurlMoment
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.integrable_partitionAnnularRiesz_mul
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.norm_fourierInv_partitionCurlMoment_le
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_uniform_partitionMomentBlock_le_curl
