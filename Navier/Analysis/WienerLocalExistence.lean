@@ -122,7 +122,7 @@ theorem exists_local_classical_clauses (u₀ : SchwartzVelocity)
     rw [show 10 ^ 4 * (ν / (10 ^ 4 * (n + 1))) * n = ν * (n / (n + 1)) by field_simp]
     have : n / (n + 1) ≤ 1 := (div_le_one (by positivity)).mpr (by linarith)
     nlinarith
-  obtain ⟨-, -, w, -, hfix, hG, hsm, hreal⟩ :=
+  obtain ⟨-, -, -, w, -, hfix, hG, hsm, hreal, -⟩ :=
     Navier.Analysis.WienerReality.exists_real_smooth_wienerSolution hν hT v₀ hsmall
   have ha : ProfileDivergenceFree (fourierDatum v₀) :=
     profileDivergenceFree_fourierDatum v₀ (divergenceFreeInitial_smul _ hdiv)

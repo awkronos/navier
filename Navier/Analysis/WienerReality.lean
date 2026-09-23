@@ -351,7 +351,7 @@ In addition to `exists_smooth_wienerSolution`, every physical coordinate is
 real-valued on `[0, T] × ℝ³`. -/
 theorem exists_real_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < T)
     (u₀ : Navier.SchwartzVelocity) (hsmall : 10 ^ 4 * T * ‖wienerDatum u₀‖ ^ 2 ≤ ν) :
-    ∃ x : C(Icc (0 : ℝ) T, V1),
+    ∃ x : C(Icc (0 : ℝ) T, V1), ‖x‖ ≤ 2 * ‖wienerDatum u₀‖ ∧
       x = heatPath hν (wienerDatum u₀) + duhamelPath hν hT.le x x ∧
       ∃ w : ℝ → ES → ComplexSpace,
         (∀ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3),
@@ -361,18 +361,26 @@ theorem exists_real_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < 
         Navier.Analysis.WienerPointwiseODE.Good T w ∧
         (∀ i : Fin 3, ContDiffOn ℝ ∞ (fun z : ℝ × ES => physicalCoord (w z.1) i z.2)
           (Ico (0 : ℝ) T ×ˢ (univ : Set ES))) ∧
-        ∀ t ∈ Icc (0 : ℝ) T, ∀ (i : Fin 3) (y : ES),
-          conj (physicalCoord (w t) i y) = physicalCoord (w t) i y := by
+        (∀ t ∈ Icc (0 : ℝ) T, ∀ (i : Fin 3) (y : ES),
+          conj (physicalCoord (w t) i y) = physicalCoord (w t) i y) ∧
+        ∀ t ∈ Icc (0 : ℝ) T, ∀ i : Fin 3,
+          ∀ᵐ ξ ∂(volume : Measure ES), w t (-ξ) i = conj (w t ξ i) := by
   obtain ⟨x, hxle, hxeq, w, hw, hfix, hG, hsm⟩ := exists_smooth_wienerSolution hν hT u₀ hsmall
   have hR : Rpath x = x := Rpath_fixed hν hT (wienerDatum u₀) hsmall (RV_wienerDatum u₀) x
     hxle hxeq
-  refine ⟨x, hxeq, w, hw, hfix, hG, hsm, fun t ht i y => ?_⟩
-  have hRt : Rc (x ⟨t, ht⟩ i) = x ⟨t, ht⟩ i := by
+  have hRt : ∀ t (ht : t ∈ Icc (0 : ℝ) T) i, Rc (x ⟨t, ht⟩ i) = x ⟨t, ht⟩ i := by
+    intro t ht i
     have h := congrArg (fun z : C(Icc (0 : ℝ) T, V1) => z ⟨t, ht⟩ i) hR
     exact h
-  unfold physicalCoord
-  rw [fourierInv_congr (hw t ht i) y]
-  exact conj_fourierInv_of_Rc hRt y
+  refine ⟨x, hxle, hxeq, w, hw, hfix, hG, hsm, fun t ht i y => ?_, fun t ht i => ?_⟩
+  · unfold physicalCoord
+    rw [fourierInv_congr (hw t ht i) y]
+    exact conj_fourierInv_of_Rc (hRt t ht i) y
+  · have h1 := coeFn_Rc (x ⟨t, ht⟩ i)
+    rw [hRt t ht i] at h1
+    filter_upwards [hw t ht i, ae_neg (hw t ht i), h1] with ξ ha hb hc
+    rw [hb, ha, hc]
+    simp [reflC]
 
 end Navier.Analysis.WienerReality
 
