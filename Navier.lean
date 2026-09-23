@@ -281,6 +281,7 @@ import Navier.Analysis.PressureAgree
 import Navier.Analysis.StripOfPiece
 import Navier.Analysis.WienerRestartLeaf
 import Navier.Analysis.WienerHigherEnergy
+import Navier.Analysis.L4Interpolation
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerReality
