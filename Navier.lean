@@ -272,6 +272,7 @@ import Navier.Analysis.RegularRestart
 import Navier.Analysis.RegularUniqueness
 import Navier.Analysis.RestartUniqueness
 import Navier.Analysis.WienerGevrey
+import Navier.Analysis.WienerRestartShift
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerReality
