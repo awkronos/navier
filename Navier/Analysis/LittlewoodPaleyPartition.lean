@@ -833,6 +833,228 @@ theorem norm_partitionMomentBlock_zero_le_L2
 
 
 
+/-- The scale-one high-frequency Cauchy--Schwarz weight.  The cutoff removes
+the apparent singularity at the origin. -/
+def partitionHighWeight (x : ES) : ℝ :=
+  |partitionUnitCutoff x| * ‖x‖⁻¹ ^ 2
+
+theorem partitionHighWeight_continuous : Continuous partitionHighWeight := by
+  rw [continuous_iff_continuousAt]
+  intro x
+  by_cases hx : x = 0
+  · subst x
+    have hconst : ContinuousAt (fun _ : ES => (0 : ℝ)) 0 := continuousAt_const
+    apply hconst.congr_of_eventuallyEq
+    filter_upwards [Metric.ball_mem_nhds (0 : ES) (by norm_num : (0 : ℝ) < 1 / 2)]
+      with y hy
+    have hynorm : ‖y‖ ≤ (1 / 2 : ℝ) := by
+      exact (by simpa [Metric.mem_ball, dist_zero_right] using hy : ‖y‖ < 1 / 2).le
+    simp [partitionHighWeight, partitionUnitCutoff_eq_zero_of_norm_le_half hynorm]
+  · exact partitionUnitCutoff_contDiff.continuous.continuousAt.abs.mul
+      ((continuousAt_id.norm.inv₀ (norm_ne_zero_iff.mpr hx)).pow 2)
+
+theorem partitionHighWeight_hasCompactSupport :
+    HasCompactSupport partitionHighWeight := by
+  apply partitionUnitCutoff_hasCompactSupport.mono
+  intro x hx
+  simp only [Function.mem_support] at hx ⊢
+  intro hzero
+  exact hx (by simp [partitionHighWeight, hzero])
+
+theorem integrable_partitionHighWeight_sq :
+    Integrable (fun x : ES => partitionHighWeight x ^ 2) := by
+  exact (partitionHighWeight_continuous.pow 2).integrable_of_hasCompactSupport
+    (by simpa [pow_two] using
+      (partitionHighWeight_hasCompactSupport.mul_right
+        (f' := partitionHighWeight)))
+
+noncomputable def partitionHighConstant : ℝ :=
+  Real.sqrt (∫ x : ES, partitionHighWeight x ^ 2)
+
+theorem partitionHighConstant_nonneg : 0 ≤ partitionHighConstant :=
+  Real.sqrt_nonneg _
+
+/-- The high-frequency derivative weight is the inverse-square dilation of
+its scale-one model. -/
+theorem partitionHighWeight_dyadic (q : ℤ) (x : ES) :
+    |partitionDyadicCutoff q x| * ‖x‖⁻¹ ^ 2 =
+      ((2 : ℝ) ^ q)⁻¹ ^ 2 *
+        partitionHighWeight (((2 : ℝ) ^ q)⁻¹ • x) := by
+  have hr : 0 < (2 : ℝ) ^ q := zpow_pos (by norm_num) q
+  by_cases hx : x = 0
+  · subst x
+    simp [partitionHighWeight, partitionDyadicCutoff, partitionUnitCutoff,
+      partitionLowPass_eq_one]
+  · unfold partitionDyadicCutoff partitionHighWeight
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (inv_pos.mpr hr)]
+    field_simp [hr.ne', norm_ne_zero_iff.mpr hx]
+
+/-- In dimension three the squared inverse-square shell weight scales as
+`r⁻¹`. -/
+theorem integral_partitionHighWeight_dyadic_sq (q : ℤ) :
+    (∫ x : ES, (|partitionDyadicCutoff q x| * ‖x‖⁻¹ ^ 2) ^ 2) =
+      ((2 : ℝ) ^ q)⁻¹ * ∫ x : ES, partitionHighWeight x ^ 2 := by
+  let r : ℝ := (2 : ℝ) ^ q
+  have hr : 0 < r := zpow_pos (by norm_num) q
+  have hdim : Module.finrank ℝ ES = 3 := finrank_euclideanSpace
+  simp_rw [partitionHighWeight_dyadic q]
+  rw [show (fun x : ES => (r⁻¹ ^ 2 * partitionHighWeight (r⁻¹ • x)) ^ 2) =
+      fun x : ES => r⁻¹ ^ 4 * (partitionHighWeight (r⁻¹ • x)) ^ 2 by
+        funext x
+        ring]
+  rw [integral_const_mul,
+    MeasureTheory.Measure.integral_comp_smul volume
+      (fun x : ES => partitionHighWeight x ^ 2) r⁻¹,
+    hdim]
+  simp only [inv_pow, inv_inv, abs_pow, abs_of_pos hr, smul_eq_mul]
+  field_simp [hr.ne']
+  change (∫ x : ES, partitionHighWeight x ^ 2) * r =
+    r * ∫ x : ES, partitionHighWeight x ^ 2
+  ring
+
+set_option maxHeartbeats 1000000 in
+/-- General LP4 block estimate against the Fourier `Ḣ³` profile norm. -/
+theorem norm_partitionMomentBlock_le_H3
+    (a : ES → Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace)
+    (ha : Measurable a)
+    (hH3 : Integrable (fun ξ : ES =>
+      ‖ξ‖ ^ 6 * ∑ m : Fin 3, ‖a ξ m‖ ^ 2))
+    (i k : Fin 3) (q : ℤ) (x : ES) :
+    ‖partitionMomentBlock a i k q x‖ ≤
+      Real.sqrt (((2 : ℝ) ^ q)⁻¹ *
+        ∫ ξ : ES, partitionHighWeight ξ ^ 2) *
+        Navier.Analysis.WienerGradLog.profH3 a := by
+  let w : ES → ℝ := fun ξ => |partitionDyadicCutoff q ξ| * ‖ξ‖⁻¹ ^ 2
+  let g : ES → ℝ := fun ξ => ‖ξ‖ ^ 3 * ‖a ξ i‖
+  have hwcont : Continuous w := by
+    rw [show w = fun ξ : ES => ((2 : ℝ) ^ q)⁻¹ ^ 2 *
+        partitionHighWeight (((2 : ℝ) ^ q)⁻¹ • ξ) by
+      funext ξ
+      exact partitionHighWeight_dyadic q ξ]
+    have hs : Continuous (fun ξ : ES => ((2 : ℝ) ^ q)⁻¹ • ξ) := by fun_prop
+    exact continuous_const.mul (partitionHighWeight_continuous.comp hs)
+  have hwcomp : HasCompactSupport w := by
+    apply (show HasCompactSupport (partitionDyadicCutoff q) by
+      unfold partitionDyadicCutoff
+      exact partitionUnitCutoff_hasCompactSupport.comp_homeomorph
+        (Homeomorph.smulOfNeZero ((2 : ℝ) ^ q)⁻¹
+          (inv_ne_zero (zpow_ne_zero q (by norm_num))))).mono
+    intro ξ hξ
+    simp only [Function.mem_support] at hξ ⊢
+    intro hzero
+    exact hξ (by simp [w, hzero])
+  have hw2 : Integrable (fun ξ : ES => w ξ ^ 2) :=
+    (hwcont.pow 2).integrable_of_hasCompactSupport (by
+      simpa [pow_two] using (hwcomp.mul_right (f' := w)))
+  have hgmeas : AEStronglyMeasurable g volume := by
+    exact ((continuous_norm.pow 3).measurable.mul
+      (((measurable_pi_apply i).comp ha).norm)).aestronglyMeasurable
+  have hg2 : Integrable (fun ξ : ES => g ξ ^ 2) := by
+    refine hH3.mono' (hgmeas.pow 2) (Eventually.of_forall fun ξ => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+    dsimp [g]
+    have hi : ‖a ξ i‖ ^ 2 ≤ ∑ m : Fin 3, ‖a ξ m‖ ^ 2 :=
+      Finset.single_le_sum (fun m _ => sq_nonneg ‖a ξ m‖) (Finset.mem_univ i)
+    nlinarith [pow_nonneg (norm_nonneg ξ) 6]
+  have hwLp : MemLp w 2 volume :=
+    (memLp_two_iff_integrable_sq hwcont.aestronglyMeasurable).mpr hw2
+  have hgLp : MemLp g 2 volume :=
+    (memLp_two_iff_integrable_sq hgmeas).mpr hg2
+  have hprod : Integrable (fun ξ : ES => w ξ * g ξ) := by
+    change Integrable (w * g)
+    exact hwLp.integrable_mul hgLp
+  have hcs := Navier.Analysis.Ladyzhenskaya.integral_mul_le_sqrt_mul_sqrt
+    (μ := volume) (f := w) (g := g)
+    (fun ξ => mul_nonneg (abs_nonneg _) (sq_nonneg _))
+    (fun ξ => mul_nonneg (pow_nonneg (norm_nonneg _) 3) (norm_nonneg _))
+    hwcont.aestronglyMeasurable hgmeas hw2 hg2
+  have hcoord : Real.sqrt (∫ ξ : ES, g ξ ^ 2) ≤
+      Navier.Analysis.WienerGradLog.profH3 a := by
+    unfold Navier.Analysis.WienerGradLog.profH3
+    exact Real.sqrt_le_sqrt (MeasureTheory.integral_mono_ae hg2 hH3
+      (Eventually.of_forall fun ξ => by
+        dsimp [g]
+        have hi : ‖a ξ i‖ ^ 2 ≤ ∑ m : Fin 3, ‖a ξ m‖ ^ 2 :=
+          Finset.single_le_sum (fun m _ => sq_nonneg ‖a ξ m‖) (Finset.mem_univ i)
+        nlinarith [pow_nonneg (norm_nonneg ξ) 6]))
+  have hpoint (ξ : ES) :
+      ‖𝐞 (inner ℝ ξ x) •
+        ((partitionDyadicCutoff q ξ : ℂ) * (((ξ k : ℝ) : ℂ) * a ξ i))‖ ≤
+        w ξ * g ξ := by
+    simp only [Circle.norm_smul, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+    by_cases hξ : ξ = 0
+    · subst ξ
+      simp [w, g]
+    · have hk : |ξ k| ≤ ‖ξ‖ := by
+        simpa [Real.norm_eq_abs] using
+          (PiLp.norm_apply_le (p := 2) (β := fun _ : Fin 3 => ℝ) ξ k)
+      dsimp [w, g]
+      have hn : 0 < ‖ξ‖ := norm_pos_iff.mpr hξ
+      calc
+        |partitionDyadicCutoff q ξ| * (|ξ k| * ‖a ξ i‖)
+            ≤ |partitionDyadicCutoff q ξ| * (‖ξ‖ * ‖a ξ i‖) := by
+              gcongr
+        _ = (|partitionDyadicCutoff q ξ| * ‖ξ‖⁻¹ ^ 2) *
+              (‖ξ‖ ^ 3 * ‖a ξ i‖) := by field_simp [hn.ne']
+  have horig : Integrable (fun ξ : ES =>
+      ‖𝐞 (inner ℝ ξ x) •
+        ((partitionDyadicCutoff q ξ : ℂ) * (((ξ k : ℝ) : ℂ) * a ξ i))‖) := by
+    refine hprod.mono' ?_ (Eventually.of_forall fun ξ => ?_)
+    have hphase : Measurable (fun ξ : ES => (𝐞 (inner ℝ ξ x) : ℂ)) := by
+      simp_rw [Real.fourierChar_apply]
+      fun_prop
+    · exact ((hphase.mul ((Complex.measurable_ofReal.comp
+      (partitionDyadicCutoff_continuous q).measurable).mul
+      ((Complex.measurable_ofReal.comp
+        ((PiLp.continuous_apply 2 _ k).comp continuous_id).measurable).mul
+        ((measurable_pi_apply i).comp ha)))).norm).aestronglyMeasurable
+    · rw [Real.norm_eq_abs, abs_of_nonneg]
+      · exact hpoint ξ
+      · exact norm_nonneg _
+  calc
+    ‖partitionMomentBlock a i k q x‖ ≤ ∫ ξ : ES, w ξ * g ξ := by
+      rw [partitionMomentBlock]
+      exact (norm_integral_le_integral_norm _).trans
+        (MeasureTheory.integral_mono_ae horig hprod (Eventually.of_forall hpoint))
+    _ ≤ Real.sqrt (∫ ξ : ES, w ξ ^ 2) *
+          Real.sqrt (∫ ξ : ES, g ξ ^ 2) := hcs
+    _ ≤ Real.sqrt (∫ ξ : ES, w ξ ^ 2) *
+          Navier.Analysis.WienerGradLog.profH3 a :=
+      mul_le_mul_of_nonneg_left hcoord (Real.sqrt_nonneg _)
+    _ = _ := by
+      dsimp [w]
+      rw [integral_partitionHighWeight_dyadic_sq]
+
+/-- Grouping the high shells into residue classes modulo four produces the
+same `4⁻ʲ` geometric factor used by the shell-sum envelope. -/
+theorem norm_partitionMomentBlock_four_mul_le_H3
+    (a : ES → Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace)
+    (ha : Measurable a)
+    (hH3 : Integrable (fun ξ : ES =>
+      ‖ξ‖ ^ 6 * ∑ m : Fin 3, ‖a ξ m‖ ^ 2))
+    (i k : Fin 3) (j : ℕ) (x : ES) :
+    ‖partitionMomentBlock a i k (4 * (j : ℤ)) x‖ ≤
+      (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) *
+        ((1 : ℝ) / 4) ^ j := by
+  have hs := norm_partitionMomentBlock_le_H3 a ha hH3 i k (4 * (j : ℤ)) x
+  have hpow : ((2 : ℝ) ^ (4 * (j : ℤ)))⁻¹ = (((1 : ℝ) / 4) ^ j) ^ 2 := by
+    rw [zpow_mul, zpow_natCast]
+    norm_num [div_pow]
+    rw [show (16 : ℝ) = 4 ^ 2 by norm_num, ← pow_mul, ← pow_mul]
+    congr 1
+    omega
+  calc
+    ‖partitionMomentBlock a i k (4 * (j : ℤ)) x‖
+        ≤ Real.sqrt (((2 : ℝ) ^ (4 * (j : ℤ)))⁻¹ *
+            ∫ ξ : ES, partitionHighWeight ξ ^ 2) *
+            Navier.Analysis.WienerGradLog.profH3 a := hs
+    _ = (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) *
+          ((1 : ℝ) / 4) ^ j := by
+      rw [hpow, Real.sqrt_mul (sq_nonneg _),
+        Real.sqrt_sq (pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 4) j)]
+      unfold partitionHighConstant
+      ring
+
 end Navier.Analysis.LittlewoodPaleyPartition
 
 set_option pp.fullNames true in
@@ -867,3 +1089,13 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_neg_le_L2
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_zero_le_L2
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.integral_partitionHighWeight_dyadic_sq
+set_option pp.fullNames true in
+#check @Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_le_H3
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_le_H3
+set_option pp.fullNames true in
+#check @Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_four_mul_le_H3
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.norm_partitionMomentBlock_four_mul_le_H3
