@@ -491,6 +491,110 @@ theorem exists_global_partitionAnnularRiesz_young :
   exact (hY i k q hf y hy hfy x).trans
     (mul_le_mul_of_nonneg_right hik hy)
 
+/-- Global LP3 constant, selected before the represented field and datum. -/
+theorem exists_global_partitionMomentBlock_le_curl :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ {v : VelocityField} {a : ES → ComplexSpace}, Rep v a →
+      ∀ {y : ℝ}, 0 ≤ y →
+        (∀ x : Space,
+          Navier.Analysis.OfficialABEncoding.officialEuclideanNorm (staticCurl v x) ≤ y) →
+        ∀ (i k : Fin 3) (q : ℤ) (x : ES),
+          ‖partitionMomentBlock a i k q x‖ ≤ C * y := by
+  obtain ⟨M, hM, hY⟩ := exists_global_partitionAnnularRiesz_young
+  refine ⟨2 * M, mul_nonneg (by norm_num) hM, ?_⟩
+  intro v a hr y hy hω i k q x
+  fin_cases i
+  · change ‖partitionMomentBlock a 0 k q x‖ ≤ (2 * M) * y
+    rw [partitionMomentBlock_eq_rieszCurl hr x 0 k q, ← Real.fourierInv_eq]
+    change ‖FourierTransform.fourierInv (fun ξ : ES =>
+      partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 1 ξ -
+      partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 2 ξ) x‖ ≤
+        (2 * M) * y
+    rw [fourierInv_sub_fn
+      (integrable_partitionAnnularRiesz_mul q 2 k
+        (integrable_partitionCurlMoment hr 1))
+      (integrable_partitionAnnularRiesz_mul q 1 k
+        (integrable_partitionCurlMoment hr 2))]
+    calc
+      ‖FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+            partitionCurlMoment a 1 ξ) x -
+        FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+            partitionCurlMoment a 2 ξ) x‖
+          ≤ ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+                partitionCurlMoment a 1 ξ) x‖ +
+            ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+                partitionCurlMoment a 2 ξ) x‖ := norm_sub_le _ _
+      _ ≤ M * y + M * y := add_le_add
+        (hY 2 k q (integrable_partitionCurlMoment hr 1) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 1) x)
+        (hY 1 k q (integrable_partitionCurlMoment hr 2) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 2) x)
+      _ = (2 * M) * y := by ring
+  · change ‖partitionMomentBlock a 1 k q x‖ ≤ (2 * M) * y
+    rw [partitionMomentBlock_eq_rieszCurl hr x 1 k q, ← Real.fourierInv_eq]
+    change ‖FourierTransform.fourierInv (fun ξ : ES =>
+      partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 2 ξ -
+      partitionAnnularRieszSymbol q 2 k ξ * partitionCurlMoment a 0 ξ) x‖ ≤
+        (2 * M) * y
+    rw [fourierInv_sub_fn
+      (integrable_partitionAnnularRiesz_mul q 0 k
+        (integrable_partitionCurlMoment hr 2))
+      (integrable_partitionAnnularRiesz_mul q 2 k
+        (integrable_partitionCurlMoment hr 0))]
+    calc
+      ‖FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+            partitionCurlMoment a 2 ξ) x -
+        FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+            partitionCurlMoment a 0 ξ) x‖
+          ≤ ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+                partitionCurlMoment a 2 ξ) x‖ +
+            ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 2 k ξ *
+                partitionCurlMoment a 0 ξ) x‖ := norm_sub_le _ _
+      _ ≤ M * y + M * y := add_le_add
+        (hY 0 k q (integrable_partitionCurlMoment hr 2) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 2) x)
+        (hY 2 k q (integrable_partitionCurlMoment hr 0) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 0) x)
+      _ = (2 * M) * y := by ring
+  · change ‖partitionMomentBlock a 2 k q x‖ ≤ (2 * M) * y
+    rw [partitionMomentBlock_eq_rieszCurl hr x 2 k q, ← Real.fourierInv_eq]
+    change ‖FourierTransform.fourierInv (fun ξ : ES =>
+      partitionAnnularRieszSymbol q 1 k ξ * partitionCurlMoment a 0 ξ -
+      partitionAnnularRieszSymbol q 0 k ξ * partitionCurlMoment a 1 ξ) x‖ ≤
+        (2 * M) * y
+    rw [fourierInv_sub_fn
+      (integrable_partitionAnnularRiesz_mul q 1 k
+        (integrable_partitionCurlMoment hr 0))
+      (integrable_partitionAnnularRiesz_mul q 0 k
+        (integrable_partitionCurlMoment hr 1))]
+    calc
+      ‖FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+            partitionCurlMoment a 0 ξ) x -
+        FourierTransform.fourierInv
+          (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+            partitionCurlMoment a 1 ξ) x‖
+          ≤ ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 1 k ξ *
+                partitionCurlMoment a 0 ξ) x‖ +
+            ‖FourierTransform.fourierInv
+              (fun ξ : ES => partitionAnnularRieszSymbol q 0 k ξ *
+                partitionCurlMoment a 1 ξ) x‖ := norm_sub_le _ _
+      _ ≤ M * y + M * y := add_le_add
+        (hY 1 k q (integrable_partitionCurlMoment hr 0) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 0) x)
+        (hY 0 k q (integrable_partitionCurlMoment hr 1) y hy
+          (norm_fourierInv_partitionCurlMoment_le hr hω 1) x)
+      _ = (2 * M) * y := by ring
+
 end Navier.Analysis.LittlewoodPaleyPhysical
 
 set_option pp.fullNames true in
@@ -513,3 +617,5 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_fourierInv_moment_le_shells
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_global_partitionAnnularRiesz_young
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_global_partitionMomentBlock_le_curl
