@@ -22,6 +22,7 @@ namespace Navier.Analysis.LittlewoodPaleyPhysical
 
 open Navier Navier.Analysis.ContinuousLeiLinSpace
 open Navier.Analysis.WienerRestartLeaf
+open Navier.Analysis.WienerGradLog
 open Navier.Analysis.ContinuousLeiLinPhysicalVelocity (euclidPoint)
 open Navier.Analysis.Vorticity (staticCurl)
 open Navier.Analysis.LittlewoodPaleyBlock
@@ -595,6 +596,151 @@ theorem exists_global_partitionMomentBlock_le_curl :
           (norm_fourierInv_partitionCurlMoment_le hr hω 1) x)
       _ = (2 * M) * y := by ring
 
+/-- Fixed multiplier constants can be absorbed into the final logarithmic envelope. -/
+theorem one_add_log_one_add_mul_le
+    {P B t : ℝ} (hP : 0 ≤ P) (hPB : P ≤ B) (hB : 1 ≤ B) (ht : 0 ≤ t) :
+    1 + Real.log (1 + P * t) ≤
+      (1 + Real.log B) * (1 + Real.log (1 + t)) := by
+  have harg : 1 + P * t ≤ B * (1 + t) := by
+    have hmul := mul_le_mul_of_nonneg_right hPB ht
+    nlinarith
+  have hlog := Real.log_le_log (by positivity : 0 < 1 + P * t) harg
+  rw [Real.log_mul (by linarith : B ≠ 0) (by positivity : 1 + t ≠ 0)] at hlog
+  have hLB : 0 ≤ Real.log B := Real.log_nonneg hB
+  have hLt : 0 ≤ Real.log (1 + t) :=
+    Real.log_nonneg (le_add_of_nonneg_right ht)
+  nlinarith [mul_nonneg hLB hLt]
+
+theorem gradSupLogHyp_proved : GradSupLogHyp := by
+  obtain ⟨C, hC, hblock⟩ := exists_global_partitionMomentBlock_le_curl
+  let A : ℝ := C + 1
+  let B : ℝ := 1 + partitionHighConstant + partitionLowConstant
+  let L : ℝ := 1 + Real.log B
+  have hA : 1 ≤ A := by dsimp [A]; linarith
+  have hPH : 0 ≤ partitionHighConstant := partitionHighConstant_nonneg
+  have hPL : 0 ≤ partitionLowConstant := partitionLowConstant_nonneg
+  have hB : 1 ≤ B := by dsimp [B]; linarith
+  have hLB : 0 ≤ Real.log B := Real.log_nonneg hB
+  have hL : 0 ≤ L := by dsimp [L]; linarith
+  refine ⟨40 * A * L, mul_nonneg (mul_nonneg (by norm_num) (by linarith)) hL, ?_⟩
+  intro v a hr y hy hω x i j
+  by_cases hy0 : y = 0
+  · subst y
+    have hz := rep_curlfree_grad_zero hr hω x i j
+    rw [hz]
+    simp
+  have hyp : 0 < y := lt_of_le_of_ne hy (Ne.symm hy0)
+  have hAy : 0 < A * y := mul_pos (lt_of_lt_of_le zero_lt_one hA) hyp
+  have hunif : ∀ q : ℤ,
+      ‖partitionMomentBlock a i j q (euclidPoint x)‖ ≤ A * y := by
+    intro q
+    exact (hblock hr hy hω i j q (euclidPoint x)).trans
+      (mul_le_mul_of_nonneg_right (by dsimp [A]; linarith) hy)
+  have hs := hasSum_partitionMomentBlock hr (euclidPoint x) i j
+  have hnorm := hs.summable.norm
+  have hhigh := tsum_nonneg_partitionMomentBlock_le_high hr hr.datum.meas
+    hr.integrable_profH3_integrand i j (euclidPoint x) hAy hunif
+  have hlow := tsum_negSucc_partitionMomentBlock_le_low hr i j
+    (euclidPoint x) hAy hunif
+  have hmoment :
+      ‖FourierTransform.fourierInv
+        (fun ξ : ES => ((ξ j : ℝ) : ℂ) * a ξ i) (euclidPoint x)‖ ≤
+      32 * (A * y) * (1 + Real.log (1 +
+        (partitionHighConstant * profH3 a) / (A * y))) +
+      8 * (A * y) * (1 + Real.log (1 +
+        (partitionLowConstant * profL2 a) / (A * y))) := by
+    calc
+      ‖FourierTransform.fourierInv
+          (fun ξ : ES => ((ξ j : ℝ) : ℂ) * a ξ i) (euclidPoint x)‖
+          = ‖∑' q : ℤ, partitionMomentBlock a i j q (euclidPoint x)‖ := by
+            rw [hs.tsum_eq]
+      _ ≤ ∑' q : ℤ, ‖partitionMomentBlock a i j q (euclidPoint x)‖ :=
+        norm_tsum_le_tsum_norm hnorm
+      _ = (∑' n : ℕ, ‖partitionMomentBlock a i j (n : ℤ) (euclidPoint x)‖) +
+          ∑' n : ℕ, ‖partitionMomentBlock a i j (Int.negSucc n) (euclidPoint x)‖ :=
+        tsum_int_split hnorm
+      _ ≤ _ := add_le_add hhigh hlow
+  have hH : 0 ≤ profH3 a := Real.sqrt_nonneg _
+  have hE : 0 ≤ profL2 a := Real.sqrt_nonneg _
+  have hden : y ≤ A * y := by
+    simpa only [one_mul] using mul_le_mul_of_nonneg_right hA hy
+  have hqH : profH3 a / (A * y) ≤ profH3 a / y :=
+    div_le_div_of_nonneg_left hH hyp hden
+  have hqE : profL2 a / (A * y) ≤ profL2 a / y :=
+    div_le_div_of_nonneg_left hE hyp hden
+  have hlogH :
+      1 + Real.log (1 + (partitionHighConstant * profH3 a) / (A * y)) ≤
+        L * (1 + Real.log (1 + profH3 a / y)) := by
+    have harg : (partitionHighConstant * profH3 a) / (A * y) ≤
+        partitionHighConstant * (profH3 a / y) := by
+      calc
+        (partitionHighConstant * profH3 a) / (A * y)
+            = partitionHighConstant * (profH3 a / (A * y)) := by ring
+        _ ≤ partitionHighConstant * (profH3 a / y) :=
+          mul_le_mul_of_nonneg_left hqH hPH
+    have hm := Real.log_le_log (by positivity : 0 < 1 +
+      (partitionHighConstant * profH3 a) / (A * y)) (by linarith : 1 +
+      (partitionHighConstant * profH3 a) / (A * y) ≤
+        1 + partitionHighConstant * (profH3 a / y))
+    calc
+      1 + Real.log (1 + (partitionHighConstant * profH3 a) / (A * y))
+          ≤ 1 + Real.log (1 + partitionHighConstant * (profH3 a / y)) :=
+        add_le_add_right hm 1
+      _ ≤ L * (1 + Real.log (1 + profH3 a / y)) := by
+        simpa [L] using (one_add_log_one_add_mul_le hPH
+          (by dsimp [B]; linarith) hB (div_nonneg hH hy))
+  have hlogE :
+      1 + Real.log (1 + (partitionLowConstant * profL2 a) / (A * y)) ≤
+        L * (1 + Real.log (1 + profL2 a / y)) := by
+    have harg : (partitionLowConstant * profL2 a) / (A * y) ≤
+        partitionLowConstant * (profL2 a / y) := by
+      calc
+        (partitionLowConstant * profL2 a) / (A * y)
+            = partitionLowConstant * (profL2 a / (A * y)) := by ring
+        _ ≤ partitionLowConstant * (profL2 a / y) :=
+          mul_le_mul_of_nonneg_left hqE hPL
+    have hm := Real.log_le_log (by positivity : 0 < 1 +
+      (partitionLowConstant * profL2 a) / (A * y)) (by linarith : 1 +
+      (partitionLowConstant * profL2 a) / (A * y) ≤
+        1 + partitionLowConstant * (profL2 a / y))
+    calc
+      1 + Real.log (1 + (partitionLowConstant * profL2 a) / (A * y))
+          ≤ 1 + Real.log (1 + partitionLowConstant * (profL2 a / y)) :=
+        add_le_add_right hm 1
+      _ ≤ L * (1 + Real.log (1 + profL2 a / y)) := by
+        simpa [L] using (one_add_log_one_add_mul_le hPL
+          (by dsimp [B]; linarith) hB (div_nonneg hE hy))
+  have hlogH0 : 0 ≤ Real.log (1 + profH3 a / y) :=
+    Real.log_nonneg (le_add_of_nonneg_right (div_nonneg hH hy))
+  have hlogE0 : 0 ≤ Real.log (1 + profL2 a / y) :=
+    Real.log_nonneg (le_add_of_nonneg_right (div_nonneg hE hy))
+  have hcoef : 0 ≤ A * y * L := mul_nonneg (mul_nonneg (by linarith) hy) hL
+  rw [hr.fderiv_coord_im x i j]
+  refine (Complex.abs_im_le_norm _).trans (hmoment.trans ?_)
+  calc
+    32 * (A * y) * (1 + Real.log (1 +
+        (partitionHighConstant * profH3 a) / (A * y))) +
+      8 * (A * y) * (1 + Real.log (1 +
+        (partitionLowConstant * profL2 a) / (A * y)))
+        ≤ 32 * (A * y) * (L * (1 + Real.log (1 + profH3 a / y))) +
+          8 * (A * y) * (L * (1 + Real.log (1 + profL2 a / y))) := by
+            gcongr <;> positivity
+    _ ≤ 40 * A * L * y *
+          (1 + Real.log (1 + profH3 a / y) + Real.log (1 + profL2 a / y)) := by
+      have hSH : 1 + Real.log (1 + profH3 a / y) ≤
+          1 + Real.log (1 + profH3 a / y) + Real.log (1 + profL2 a / y) := by linarith
+      have hSE : 1 + Real.log (1 + profL2 a / y) ≤
+          1 + Real.log (1 + profH3 a / y) + Real.log (1 + profL2 a / y) := by linarith
+      calc
+        32 * (A * y) * (L * (1 + Real.log (1 + profH3 a / y))) +
+            8 * (A * y) * (L * (1 + Real.log (1 + profL2 a / y)))
+            ≤ 32 * (A * y) * (L *
+                (1 + Real.log (1 + profH3 a / y) + Real.log (1 + profL2 a / y))) +
+              8 * (A * y) * (L *
+                (1 + Real.log (1 + profH3 a / y) + Real.log (1 + profL2 a / y))) := by
+              gcongr
+        _ = _ := by ring
+
 end Navier.Analysis.LittlewoodPaleyPhysical
 
 set_option pp.fullNames true in
@@ -619,3 +765,7 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_global_partitionAnnularRiesz_young
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_global_partitionMomentBlock_le_curl
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.one_add_log_one_add_mul_le
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.gradSupLogHyp_proved
