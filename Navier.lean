@@ -255,6 +255,7 @@ import Navier.Analysis.WienerLocalMild
 import Navier.Analysis.WienerMildGood
 import Navier.Analysis.WienerMoments
 import Navier.Analysis.WienerPhysicalPDE
+import Navier.Analysis.WienerPlancherel
 import Navier.Analysis.WienerPhysicalAssembly
 import Navier.Analysis.WienerPressureSmooth
 import Navier.Analysis.WienerLocalExistence
