@@ -278,6 +278,7 @@ import Navier.Analysis.WienerDatumSmooth
 import Navier.Analysis.WienerPiece
 import Navier.Analysis.WienerSobolevL1
 import Navier.Analysis.PressureAgree
+import Navier.Analysis.StripOfPiece
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerReality
