@@ -1,6 +1,7 @@
 import Navier.Analysis.WienerMoments
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.ContinuousLeiLinPhysicalCarrier
+import Navier.Analysis.WienerSmoothPath
 
 /-!
 # Large-data local solutions from Schwartz data on the Wiener carrier
@@ -23,7 +24,7 @@ set_option autoImplicit false
 noncomputable section
 
 open MeasureTheory Set Filter
-open scoped ENNReal NNReal FourierTransform
+open scoped ENNReal NNReal FourierTransform ContDiff
 
 namespace Navier.Analysis.WienerSchwartzLocal
 
@@ -109,9 +110,40 @@ theorem exists_wienerSchwartzSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < T)
     rw [Navier.Analysis.ContinuousLeiLinRepresentativeInvariant.continuousMildImage_congr_ae_on_horizon
       ν hν T (fourierDatum u₀) w' w huv t ht ξ]
 
+/-! ## The heat part of a Schwartz datum is a smooth Fourier path -/
+
+theorem integrable_pow_mul_fourierDatum (u₀ : Navier.SchwartzVelocity) (i : Fin 3) (n : ℕ) :
+    Integrable (fun ξ : ES => ‖ξ‖ ^ n * ‖fourierDatum u₀ ξ i‖) :=
+  (𝓕 (euclidComponent u₀ i) : SchwartzMap ES ℂ).integrable_pow_mul volume n
+
+/-- The heat evolution of each Fourier coordinate of a Schwartz datum, as a
+smooth Fourier path on every horizon. -/
+def heatSchwartzPath {ν : ℝ} (hν : 0 ≤ ν) (u₀ : Navier.SchwartzVelocity) (i : Fin 3) (T : ℝ) :
+    Navier.Analysis.WienerSmoothPath.SmoothFourierPath T :=
+  Navier.Analysis.WienerSmoothPath.heatPathSFP hν
+    ((𝓕 (euclidComponent u₀ i) : SchwartzMap ES ℂ).continuous.aestronglyMeasurable)
+    (integrable_pow_mul_fourierDatum u₀ i) T
+
+/-- **Joint `C^∞` smoothness of the physical heat field of a Schwartz datum on
+`[0, T) × ℝ³`,** obtained by consuming `WienerSmoothPath.contDiffOn_phys` at the
+heat instance. -/
+theorem contDiffOn_heatField {ν T : ℝ} (hν : 0 ≤ ν) (hT : 0 < T)
+    (u₀ : Navier.SchwartzVelocity) (i : Fin 3) :
+    ContDiffOn ℝ ∞ (fun z : ℝ × ES => 𝓕⁻ (fun ξ =>
+        Navier.Analysis.WienerSmoothPath.heatSym ν (fun ξ => fourierDatum u₀ ξ i) 0 0 z.1 ξ) z.2)
+      (Ico (0 : ℝ) T ×ˢ (univ : Set ES)) := by
+  refine (Navier.Analysis.WienerSmoothPath.contDiffOn_phys hT
+    (heatSchwartzPath hν u₀ i T)).congr fun z _ => ?_
+  exact Navier.Analysis.WienerSmoothPath.fourierInv_congr
+    (Navier.Analysis.WienerSmoothPath.coeFn_heatD hν
+      ((𝓕 (euclidComponent u₀ i) : SchwartzMap ES ℂ).continuous.aestronglyMeasurable)
+      (integrable_pow_mul_fourierDatum u₀ i) 0 0 z.1).symm z.2
+
 end Navier.Analysis.WienerSchwartzLocal
 
 set_option pp.fullNames true in
 #check @Navier.Analysis.WienerSchwartzLocal.exists_wienerSchwartzSolution
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.WienerSchwartzLocal.exists_wienerSchwartzSolution
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.WienerSchwartzLocal.contDiffOn_heatField
