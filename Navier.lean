@@ -257,6 +257,7 @@ import Navier.Analysis.WienerMoments
 import Navier.Analysis.WienerPhysicalPDE
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
+import Navier.Analysis.WienerReality
 import Navier.Analysis.WienerSchwartzLocal
 import Navier.Analysis.WienerSchwartzSmooth
 import Navier.Analysis.WienerSmoothPath

@@ -70,7 +70,7 @@ theorem fourierDatum_mom_ne_top (u₀ : Navier.SchwartzVelocity) (n : ℕ) :
 Schwartz data.** -/
 theorem exists_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < T)
     (u₀ : Navier.SchwartzVelocity) (hsmall : 10 ^ 4 * T * ‖wienerDatum u₀‖ ^ 2 ≤ ν) :
-    ∃ x : C(Icc (0 : ℝ) T, V1),
+    ∃ x : C(Icc (0 : ℝ) T, V1), ‖x‖ ≤ 2 * ‖wienerDatum u₀‖ ∧
       x = heatPath hν (wienerDatum u₀) + duhamelPath hν hT.le x x ∧
       ∃ w : ℝ → ES → ComplexSpace,
         (∀ (t : ℝ) (ht : t ∈ Icc (0 : ℝ) T) (i : Fin 3),
@@ -81,7 +81,7 @@ theorem exists_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < T)
           (Ico (0 : ℝ) T ×ˢ (univ : Set ES)) := by
   set a₀ := wienerDatum u₀ with ha₀
   set a := fourierDatum u₀ with ha
-  obtain ⟨x, -, hxeq, hmom⟩ := exists_wienerMildSolution_moments hν hT a₀ hsmall
+  obtain ⟨x, hxle, hxeq, hmom⟩ := exists_wienerMildSolution_moments hν hT a₀ hsmall
   obtain ⟨v, hvm, hv⟩ := exists_joint_rep hT.le x
   set wv : ℝ → ES → ComplexSpace := continuousMildImage ν hν a v with hwv
   set w : ℝ → ES → ComplexSpace := fun t => wv (projIcc 0 T hT.le t) with hw
@@ -151,7 +151,7 @@ theorem exists_smooth_wienerSolution {ν T : ℝ} (hν : 0 < ν) (hT : 0 < T)
         ν hν T a v w huv t ht ξ]
   have hG : Good T w := good_mildImage hν hT (measurable_fourierDatum u₀)
     (fourierDatum_mom_ne_top u₀) hvm hvmom
-  refine ⟨x, hxeq, w, fun t ht i => ?_, hfix, fun i =>
+  refine ⟨x, hxle, hxeq, w, fun t ht i => ?_, hfix, fun i =>
     contDiffOn_physicalCoord_of_mild hT hν a hfix hG i⟩
   rw [hwt t ht]
   exact key t ht i
