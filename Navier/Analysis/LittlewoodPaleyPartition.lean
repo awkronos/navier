@@ -1301,6 +1301,38 @@ theorem fourierInv_partitionAnnularRiesz_mul_eq_convolution
   rw [partitionBlockKernel]
   congr 1
 
+/-- Uniform `L¹ * L∞` estimate for the exact normalized annular Riesz symbol.
+This is the analytic Young step consumed by the physical-curl block bound: the
+constant is independent of the dyadic scale and of the input profile. -/
+theorem partitionAnnularRiesz_young_uniform (i k : Fin 3) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (q : ℤ) {f : ES → ℂ}, Integrable f →
+      ∀ (y : ℝ), 0 ≤ y →
+        (∀ z : ES, ‖FourierTransform.fourierInv f z‖ ≤ y) →
+        ∀ x : ES,
+          ‖FourierTransform.fourierInv
+            (fun ξ : ES => partitionAnnularRieszSymbol q i k ξ * f ξ) x‖ ≤
+            C * y := by
+  obtain ⟨C, hC, hK⟩ := partitionBlockKernel_L1_uniform i k
+  refine ⟨C, hC, ?_⟩
+  intro q f hf y hy hfy x
+  rw [fourierInv_partitionAnnularRiesz_mul_eq_convolution q i k hf x]
+  have hKx : Integrable (fun z : ES => ‖partitionBlockKernel q i k (x - z)‖) :=
+    (hK q).1.comp_sub_left x
+  calc
+    ‖∫ z : ES, partitionBlockKernel q i k (x - z) *
+          FourierTransform.fourierInv f z‖
+        ≤ ∫ z : ES, ‖partitionBlockKernel q i k (x - z)‖ * y := by
+          apply norm_integral_le_of_norm_le (hKx.mul_const y)
+          filter_upwards [] with z
+          rw [norm_mul]
+          exact mul_le_mul_of_nonneg_left (hfy z) (norm_nonneg _)
+    _ = (∫ z : ES, ‖partitionBlockKernel q i k (x - z)‖) * y := by
+          rw [integral_mul_const]
+    _ = (∫ z : ES, ‖partitionBlockKernel q i k z‖) * y := by
+          rw [integral_sub_left_eq_self
+            (fun z : ES => ‖partitionBlockKernel q i k z‖) volume x]
+    _ ≤ C * y := mul_le_mul_of_nonneg_right (hK q).2 hy
+
 end Navier.Analysis.LittlewoodPaleyPartition
 
 set_option pp.fullNames true in
@@ -1357,3 +1389,5 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPartition.fourierInv_schwartz_mul_eq_convolution
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPartition.fourierInv_partitionAnnularRiesz_mul_eq_convolution
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPartition.partitionAnnularRiesz_young_uniform
