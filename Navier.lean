@@ -259,6 +259,7 @@ import Navier.Analysis.WienerPlancherel
 import Navier.Analysis.WienerPhysicalAssembly
 import Navier.Analysis.WienerPressureSmooth
 import Navier.Analysis.WienerLocalExistence
+import Navier.Analysis.WienerLinfBound
 import Navier.Analysis.WienerPointwiseBridge
 import Navier.Analysis.WienerPointwiseODE
 import Navier.Analysis.WienerReality
