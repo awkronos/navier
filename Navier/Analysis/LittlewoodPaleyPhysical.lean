@@ -260,6 +260,213 @@ theorem exists_uniform_partitionMomentBlock_le_curl
           (norm_fourierInv_partitionCurlMoment_le hr hω 1) x)
       _ = (C₁ + C₀) * y := by ring
 
+theorem norm_partitionMomentBlock_four_mul_add_le_H3
+    (a : ES → ComplexSpace)
+    (ha : Measurable a)
+    (hH3 : Integrable (fun ξ : ES =>
+      ‖ξ‖ ^ 6 * ∑ m : Fin 3, ‖a ξ m‖ ^ 2))
+    (i k : Fin 3) (j : ℕ) (r : Fin 4) (x : ES) :
+    ‖partitionMomentBlock a i k (4 * (j : ℤ) + (r : ℕ)) x‖ ≤
+      (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) *
+        ((1 : ℝ) / 4) ^ j := by
+  have hs := norm_partitionMomentBlock_le_H3 a ha hH3 i k
+    (4 * (j : ℤ) + (r : ℕ)) x
+  have hfour : ((2 : ℝ) ^ (4 * (j : ℤ)))⁻¹ =
+      (((1 : ℝ) / 4) ^ j) ^ 2 := by
+    rw [zpow_mul, zpow_natCast]
+    norm_num [div_pow]
+    rw [show (16 : ℝ) = 4 ^ 2 by norm_num, ← pow_mul, ← pow_mul]
+    congr 1
+    omega
+  have hscale : ((2 : ℝ) ^ (4 * (j : ℤ) + (r : ℕ)))⁻¹ ≤
+      (((1 : ℝ) / 4) ^ j) ^ 2 := by
+    rw [zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0), mul_inv_rev, hfour,
+      zpow_natCast]
+    have hr1 : ((2 : ℝ) ^ (r : ℕ))⁻¹ ≤ 1 :=
+      inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
+    nlinarith [sq_nonneg (((1 : ℝ) / 4) ^ j)]
+  have hweight : 0 ≤ ∫ ξ : ES, partitionHighWeight ξ ^ 2 :=
+    integral_nonneg fun _ => sq_nonneg _
+  have hsqrt :
+      Real.sqrt (((2 : ℝ) ^ (4 * (j : ℤ) + (r : ℕ)))⁻¹ *
+        ∫ ξ : ES, partitionHighWeight ξ ^ 2) ≤
+      ((1 : ℝ) / 4) ^ j * partitionHighConstant := by
+    calc
+      Real.sqrt (((2 : ℝ) ^ (4 * (j : ℤ) + (r : ℕ)))⁻¹ *
+          ∫ ξ : ES, partitionHighWeight ξ ^ 2)
+          ≤ Real.sqrt (((((1 : ℝ) / 4) ^ j) ^ 2) *
+            ∫ ξ : ES, partitionHighWeight ξ ^ 2) :=
+              Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_right hscale hweight)
+      _ = ((1 : ℝ) / 4) ^ j * partitionHighConstant := by
+        rw [Real.sqrt_mul (sq_nonneg _), Real.sqrt_sq
+          (pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 4) j)]
+        rfl
+  calc
+    ‖partitionMomentBlock a i k (4 * (j : ℤ) + (r : ℕ)) x‖
+        ≤ Real.sqrt (((2 : ℝ) ^ (4 * (j : ℤ) + (r : ℕ)))⁻¹ *
+            ∫ ξ : ES, partitionHighWeight ξ ^ 2) *
+              Navier.Analysis.WienerGradLog.profH3 a := hs
+    _ ≤ (((1 : ℝ) / 4) ^ j * partitionHighConstant) *
+          Navier.Analysis.WienerGradLog.profH3 a :=
+      mul_le_mul_of_nonneg_right hsqrt (Real.sqrt_nonneg _)
+    _ = (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) *
+          ((1 : ℝ) / 4) ^ j := by ring
+
+theorem tsum_int_split {f : ℤ → ℝ} (hf : Summable f) :
+    (∑' q : ℤ, f q) = (∑' n : ℕ, f (n : ℤ)) +
+      ∑' n : ℕ, f (Int.negSucc n) := by
+  have hp : Summable (fun n : ℕ => f (n : ℤ)) :=
+    hf.comp_injective (fun _ _ h => Int.ofNat_inj.mp h)
+  have hn : Summable (fun n : ℕ => f (Int.negSucc n)) :=
+    hf.comp_injective (fun _ _ h => Int.negSucc_inj.mp h)
+  rw [← (Equiv.intEquivNatSumNat.symm.tsum_eq f)]
+  exact hp.tsum_sum hn
+
+theorem tsum_nonneg_partitionMomentBlock_le_high
+    {v : VelocityField} {a : ES → ComplexSpace} (hr : Rep v a)
+    (ha : Measurable a)
+    (hH3 : Integrable (fun ξ : ES =>
+      ‖ξ‖ ^ 6 * ∑ m : Fin 3, ‖a ξ m‖ ^ 2))
+    (i k : Fin 3) (x : ES) {U : ℝ} (hU : 0 < U)
+    (hunif : ∀ q : ℤ, ‖partitionMomentBlock a i k q x‖ ≤ U) :
+    (∑' n : ℕ, ‖partitionMomentBlock a i k (n : ℤ) x‖) ≤
+      32 * U * (1 + Real.log (1 +
+        (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) / U)) := by
+  let f : ℕ → ℝ := fun n => ‖partitionMomentBlock a i k (n : ℤ) x‖
+  have hf : Summable f := by
+    have hs := hasSum_partitionMomentBlock hr x i k
+    exact hs.summable.norm.comp_injective (fun _ _ h => Int.ofNat_inj.mp h)
+  rw [Nat.sumByResidueClasses hf 4]
+  have hY : 0 ≤ partitionHighConstant *
+      Navier.Analysis.WienerGradLog.profH3 a :=
+    mul_nonneg partitionHighConstant_nonneg (Real.sqrt_nonneg _)
+  have hj : ∀ j : ZMod 4,
+      (∑' m : ℕ, f (j.val + 4 * m)) ≤
+        8 * U * (1 + Real.log (1 +
+          (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) / U)) := by
+    intro j
+    let g : ℕ → ℝ := fun m => min U
+      ((partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) *
+        ((1 : ℝ) / 4) ^ m)
+    have hg : Summable g := by
+      have hgeom : Summable (fun m : ℕ =>
+          (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) *
+            ((1 : ℝ) / 4) ^ m) :=
+        Summable.mul_left _ (summable_geometric_of_lt_one (by norm_num) (by norm_num))
+      exact Summable.of_nonneg_of_le
+        (fun m => le_min hU.le (mul_nonneg hY (pow_nonneg (by norm_num) m)))
+        (fun m => min_le_right _ _) hgeom
+    have hfm : Summable (fun m : ℕ => f (j.val + 4 * m)) :=
+      hf.comp_injective (fun m n h => by omega)
+    have hpoint : ∀ m : ℕ, f (j.val + 4 * m) ≤ g m := by
+      intro m
+      apply le_min
+      · exact hunif _
+      · dsimp [f, g]
+        simpa only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, add_comm,
+          mul_comm] using
+          norm_partitionMomentBlock_four_mul_add_le_H3
+            a ha hH3 i k m (⟨j.val, j.val_lt⟩ : Fin 4) x
+    exact (hfm.tsum_le_tsum hpoint hg).trans
+      (blockEnvelopeLogBound hU hY)
+  calc
+    ∑ j : ZMod 4, ∑' m : ℕ, f (j.val + 4 * m)
+        ≤ ∑ _j : ZMod 4, 8 * U * (1 + Real.log (1 +
+          (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) / U)) :=
+      Finset.sum_le_sum fun j _ => hj j
+    _ = 32 * U * (1 + Real.log (1 +
+          (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) / U)) := by
+      simp
+      ring
+
+theorem tsum_negSucc_partitionMomentBlock_le_low
+    {v : VelocityField} {a : ES → ComplexSpace} (hr : Rep v a)
+    (i k : Fin 3) (x : ES) {U : ℝ} (hU : 0 < U)
+    (hunif : ∀ q : ℤ, ‖partitionMomentBlock a i k q x‖ ≤ U) :
+    (∑' n : ℕ, ‖partitionMomentBlock a i k (Int.negSucc n) x‖) ≤
+      8 * U * (1 + Real.log (1 +
+        (partitionLowConstant * Navier.Analysis.WienerGradLog.profL2 a) / U)) := by
+  let f : ℕ → ℝ := fun n => ‖partitionMomentBlock a i k (Int.negSucc n) x‖
+  have hf : Summable f := by
+    have hs := (hasSum_partitionMomentBlock hr x i k).summable.norm
+    exact hs.comp_injective (fun _ _ h => Int.negSucc_inj.mp h)
+  let g : ℕ → ℝ := fun n => min U
+    ((partitionLowConstant * Navier.Analysis.WienerGradLog.profL2 a) *
+      ((1 : ℝ) / 4) ^ n)
+  have hE : 0 ≤ partitionLowConstant *
+      Navier.Analysis.WienerGradLog.profL2 a :=
+    mul_nonneg partitionLowConstant_nonneg (Real.sqrt_nonneg _)
+  have hg : Summable g := by
+    have hgeom : Summable (fun n : ℕ =>
+        (partitionLowConstant * Navier.Analysis.WienerGradLog.profL2 a) *
+          ((1 : ℝ) / 4) ^ n) :=
+      Summable.mul_left _ (summable_geometric_of_lt_one (by norm_num) (by norm_num))
+    exact Summable.of_nonneg_of_le
+      (fun n => le_min hU.le (mul_nonneg hE (pow_nonneg (by norm_num) n)))
+      (fun n => min_le_right _ _) hgeom
+  have hpoint : ∀ n : ℕ, f n ≤ g n := by
+    intro n
+    apply le_min
+    · exact hunif _
+    · dsimp [f, g]
+      have hlow := norm_partitionMomentBlock_neg_le_L2 a hr.datum.meas
+        hr.integrable_profL2_integrand i k (n + 1) x
+      rw [show Int.negSucc n = -((n + 1 : ℕ) : ℤ) by omega]
+      calc
+        ‖partitionMomentBlock a i k (-((n + 1 : ℕ) : ℤ)) x‖
+            ≤ (partitionLowConstant * Navier.Analysis.WienerGradLog.profL2 a) *
+              ((1 : ℝ) / 4) ^ (n + 1) := hlow
+        _ ≤ (partitionLowConstant * Navier.Analysis.WienerGradLog.profL2 a) *
+              ((1 : ℝ) / 4) ^ n := by
+          apply mul_le_mul_of_nonneg_left _ hE
+          rw [pow_succ]
+          nlinarith [pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 4) n]
+  exact (hf.tsum_le_tsum hpoint hg).trans
+    (blockEnvelopeLogBound hU hE)
+
+theorem exists_fourierInv_moment_le_shells
+    {v : VelocityField} {a : ES → ComplexSpace} (hr : Rep v a)
+    {y : ℝ} (hy : 0 < y)
+    (hω : ∀ x : Space,
+      Navier.Analysis.OfficialABEncoding.officialEuclideanNorm
+        (Navier.Analysis.Vorticity.staticCurl v x) ≤ y)
+    (x : ES) (i k : Fin 3) :
+    ∃ A : ℝ, 1 ≤ A ∧
+      ‖FourierTransform.fourierInv
+        (fun ξ : ES => ((ξ k : ℝ) : ℂ) * a ξ i) x‖ ≤
+        32 * (A * y) * (1 + Real.log (1 +
+          (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) / (A * y))) +
+        8 * (A * y) * (1 + Real.log (1 +
+          (partitionLowConstant * Navier.Analysis.WienerGradLog.profL2 a) / (A * y))) := by
+  obtain ⟨C, hC, hblock⟩ :=
+    exists_uniform_partitionMomentBlock_le_curl hr hy.le hω i k
+  let A : ℝ := C + 1
+  have hA : 1 ≤ A := by dsimp [A]; linarith
+  have hAy : 0 < A * y := mul_pos (lt_of_lt_of_le zero_lt_one hA) hy
+  have hunif : ∀ q : ℤ, ‖partitionMomentBlock a i k q x‖ ≤ A * y := by
+    intro q
+    exact (hblock q x).trans (mul_le_mul_of_nonneg_right (by dsimp [A]; linarith) hy.le)
+  have hs := hasSum_partitionMomentBlock hr x i k
+  have hnorm := hs.summable.norm
+  refine ⟨A, hA, ?_⟩
+  calc
+    ‖FourierTransform.fourierInv
+        (fun ξ : ES => ((ξ k : ℝ) : ℂ) * a ξ i) x‖
+        = ‖∑' q : ℤ, partitionMomentBlock a i k q x‖ := by rw [hs.tsum_eq]
+    _ ≤ ∑' q : ℤ, ‖partitionMomentBlock a i k q x‖ :=
+      norm_tsum_le_tsum_norm hnorm
+    _ = (∑' n : ℕ, ‖partitionMomentBlock a i k (n : ℤ) x‖) +
+        ∑' n : ℕ, ‖partitionMomentBlock a i k (Int.negSucc n) x‖ :=
+      tsum_int_split hnorm
+    _ ≤ 32 * (A * y) * (1 + Real.log (1 +
+          (partitionHighConstant * Navier.Analysis.WienerGradLog.profH3 a) / (A * y))) +
+        8 * (A * y) * (1 + Real.log (1 +
+          (partitionLowConstant * Navier.Analysis.WienerGradLog.profL2 a) / (A * y))) :=
+      add_le_add
+        (tsum_nonneg_partitionMomentBlock_le_high hr hr.datum.meas
+          hr.integrable_profH3_integrand i k x hAy hunif)
+        (tsum_negSucc_partitionMomentBlock_le_low hr i k x hAy hunif)
+
 end Navier.Analysis.LittlewoodPaleyPhysical
 
 set_option pp.fullNames true in
@@ -270,3 +477,13 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.norm_fourierInv_partitionCurlMoment_le
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_uniform_partitionMomentBlock_le_curl
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.norm_partitionMomentBlock_four_mul_add_le_H3
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.tsum_int_split
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.tsum_nonneg_partitionMomentBlock_le_high
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.tsum_negSucc_partitionMomentBlock_le_low
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_fourierInv_moment_le_shells
