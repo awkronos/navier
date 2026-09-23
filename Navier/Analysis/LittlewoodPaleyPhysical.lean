@@ -467,6 +467,30 @@ theorem exists_fourierInv_moment_le_shells
           hr.integrable_profH3_integrand i k x hAy hunif)
         (tsum_negSucc_partitionMomentBlock_le_low hr i k x hAy hunif)
 
+theorem exists_global_partitionAnnularRiesz_young :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (i k : Fin 3) (q : ℤ) {f : ES → ℂ}, Integrable f →
+      ∀ (y : ℝ), 0 ≤ y →
+        (∀ z : ES, ‖FourierTransform.fourierInv f z‖ ≤ y) →
+        ∀ x : ES,
+          ‖FourierTransform.fourierInv
+            (fun ξ : ES => partitionAnnularRieszSymbol q i k ξ * f ξ) x‖ ≤
+            C * y := by
+  choose C hC hY using fun i k : Fin 3 => partitionAnnularRiesz_young_uniform i k
+  let M : ℝ := ∑ i : Fin 3, ∑ k : Fin 3, C i k
+  have hM : 0 ≤ M := Finset.sum_nonneg fun i _ => Finset.sum_nonneg fun k _ => hC i k
+  refine ⟨M, hM, ?_⟩
+  intro i k q f hf y hy hfy x
+  have hik : C i k ≤ M := by
+    calc
+      C i k ≤ ∑ k' : Fin 3, C i k' :=
+        Finset.single_le_sum (fun k' _ => hC i k') (Finset.mem_univ k)
+      _ ≤ ∑ i' : Fin 3, ∑ k' : Fin 3, C i' k' :=
+        Finset.single_le_sum
+          (fun i' _ => Finset.sum_nonneg fun k' _ => hC i' k')
+          (Finset.mem_univ i)
+  exact (hY i k q hf y hy hfy x).trans
+    (mul_le_mul_of_nonneg_right hik hy)
+
 end Navier.Analysis.LittlewoodPaleyPhysical
 
 set_option pp.fullNames true in
@@ -487,3 +511,5 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.tsum_negSucc_partitionMomentBlock_le_low
 set_option pp.fullNames true in
 #print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_fourierInv_moment_le_shells
+set_option pp.fullNames true in
+#print axioms Navier.Analysis.LittlewoodPaleyPhysical.exists_global_partitionAnnularRiesz_young
