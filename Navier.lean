@@ -167,6 +167,9 @@ import Navier.Analysis.LeiLinSpace
 import Navier.Analysis.LeiLinTimeMixed
 import Navier.Analysis.LerayProjection
 import Navier.Analysis.LerayWeak
+import Navier.Analysis.LittlewoodPaleyBlock
+import Navier.Analysis.LittlewoodPaleyPartition
+import Navier.Analysis.LittlewoodPaleyPhysical
 import Navier.Analysis.LocalEnstrophyBalance
 import Navier.Analysis.LocalExistenceViscosityReduction
 import Navier.Analysis.MadelungDegeneracySharpness
