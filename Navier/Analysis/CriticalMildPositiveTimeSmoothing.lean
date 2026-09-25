@@ -253,3 +253,7 @@ theorem criticalMildImage_sub_terminalTail_halfGenerator
       hpast.2)
 
 end Navier.Analysis.CriticalMildPositiveTimeSmoothing
+
+#print axioms Navier.Analysis.CriticalMildPositiveTimeSmoothing.lagSeparatedDuhamel_halfGenerator
+#print axioms Navier.Analysis.CriticalMildPositiveTimeSmoothing.summable_halfGenerator_resolvedMildHistory
+#print axioms Navier.Analysis.CriticalMildPositiveTimeSmoothing.criticalMildImage_sub_terminalTail_halfGenerator
