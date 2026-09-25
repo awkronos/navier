@@ -629,3 +629,19 @@ theorem exists_abs_second_heatKernel_space_le_gaussians
         add_le_add hquad (le_refl _)
 
 end Navier.Analysis.WholeSpaceHeatThirdDerivative
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.fderiv_fderiv_heatKernel_space_apply_mixed
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.fderiv_fderiv_fderiv_heatKernel_space_apply
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.exists_abs_third_heatKernel_le_gaussians
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.integrable_abs_third_heatKernel_sq
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.fderiv_fderiv_fderiv_heatKernel_translate_apply
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.integrable_abs_third_heatKernel_translate_sq
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.SolvesBefore.integrable_thirdHeatKernel_translate_mul_velocity
+
+#print axioms Navier.Analysis.WholeSpaceHeatThirdDerivative.backwardHeatCurlField_eq_gradient_cross
