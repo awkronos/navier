@@ -2793,13 +2793,15 @@ for general boxes, from box data alone:
    elements, blocked at the surviving proposition of item 1 — not an
    `a.e.`-time restatement of the closed `xm1Section` reading.
 
-Polarization leaves 3a/3b (step 4) remain premises: packaging
-`continuousMildImage_sub_coordinateXm1Mass_le` /
-`coordinateX1Mass_continuousMildImage_sub_le` at BanachContraction level
-requires the *all-`ξ` pointwise* convolution-section integrabilities
-(`∀ ξ j i s, Integrable (fun η => rep s η j * rep s (ξ - η) i)` etc.) that
-`mildLeafHjointL/R` (a.e. joint measurability) does not supply, and the
-identities are not junk-stable on the null set where they fail. -/
+Polarization leaves 3a/3b (step 4) are CLOSED for every actual box element
+by `mildPolarizationLeaves_actualBox` (S6 below; hypotheses: the datum's
+measurability, `X^{±1}` integrability and `X⁻¹` radius bound only).  The
+earlier packaging diagnosis — that the record demanded the *all-`ξ`
+pointwise* convolution-section integrabilities
+(`∀ ξ j i s, Integrable (fun η => rep s η j * rep s (ξ - η) i)`) that
+`mildLeafHjointL/R` does not supply — is retired: the record's fields are
+`a.e.` in `ξ`, and S6 obtains them from the `a.e.` joint measurabilities by
+the per-`s`-a.e.-`ξ` → per-`ξ`-a.e.-`s` quantifier exchange. -/
 
 /-! ### Open boundary, as two named sub-records
 

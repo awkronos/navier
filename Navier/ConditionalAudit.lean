@@ -15,6 +15,7 @@ import Navier.Analysis.PeriodicConstructedBreakdown
 import Navier.Analysis.ContinuousLeiLinMildFixedPoint
 import Navier.Analysis.ContinuousLeiLinPressureReconstruction
 import Navier.Analysis.ContinuousLeiLinPressurePhysical
+import Navier.Analysis.PressureStressTensor
 import Navier.Analysis.BKMVorticityIntegralDivergence
 import Navier.Analysis.BKMProfileGronwallPair
 import Navier.Analysis.BKMProfileRateBound
@@ -136,14 +137,23 @@ will use. -/
 /-! Physical-space pressure receipts (landed 2026-09-13): the inverted
 pressure p = 𝓕⁻ p̂ with its pointwise budget, and the ∫ p Δφ identity in
 transported-pairing form — the primitive's first named residual, now a
-theorem; the fully-physical stress-tensor rewrite of the frequency side
-remains named where the L¹ product→convolution bridge is missing. -/
+theorem.  The `L¹` product→convolution bridge `𝓕⁻(a ⋆ b) = 𝓕⁻a · 𝓕⁻b`
+is proved (`PressureStressTensor.fourierInv_bilin_convolution`, bare `L¹`
+hypotheses), and the fully-physical stress-tensor rewrite
+`∫ p Δψ = -∑ᵢⱼ ∫ ∂ᵢ∂ⱼ(vᵢvⱼ) ψ` is proved for Schwartz data
+(`continuousPressurePhysical_pairing_stressTensor`); the open part is the
+stress-pairing transport for general box elements, whose bounded continuous
+`vᵢ` need not be integrable (header of `PressureStressTensor`). -/
 #check Navier.Analysis.ContinuousLeiLinPressurePhysical.continuousPressurePhysical_pairing_physicalLaplacian
 #print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.continuousPressurePhysical_pairing_physicalLaplacian
 #check Navier.Analysis.ContinuousLeiLinPressurePhysical.norm_continuousPressurePhysical_le
 #print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.norm_continuousPressurePhysical_le
 #check Navier.Analysis.ContinuousLeiLinPressurePhysical.integral_fourierInv_pairing
 #print axioms Navier.Analysis.ContinuousLeiLinPressurePhysical.integral_fourierInv_pairing
+#check Navier.Analysis.PressureStressTensor.fourierInv_bilin_convolution
+#print axioms Navier.Analysis.PressureStressTensor.fourierInv_bilin_convolution
+#check Navier.Analysis.PressureStressTensor.continuousPressurePhysical_pairing_stressTensor
+#print axioms Navier.Analysis.PressureStressTensor.continuousPressurePhysical_pairing_stressTensor
 
 /-! BKM vorticity-divergence receipts (landed 2026-09-13, DECOMPOSED): the
 vorticity rate V, its continuity, the conditional divergence chain and the
@@ -161,7 +171,7 @@ nowhere; these receipts prove everything downstream of such a pair. -/
 joint-source measurability primitive and its three consumer leaves are closed
 for general box elements; the remaining record content is the two named
 sub-records, and the ∀t heat-explosion obstruction (t < 0) is recorded where
-it is packaged — the restricted-domain repair is the named next construction. -/
+it is packaged; the restricted-domain repair landed in lane L6c (below). -/
 #check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.continuousNavierSource_joint_aestronglyMeasurable_of_jointProxies
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.continuousNavierSource_joint_aestronglyMeasurable_of_jointProxies
 #check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildLeafHjointDiag
@@ -174,8 +184,8 @@ the assembly premise is WITNESSED INHABITED — `record_zeroBox` constructs a
 full `MildAssemblyLeaves` instance (a = 0, R = 0) and
 `existsUnique_mildFixedPoint_zeroBox` applies the conditional assembly to it,
 so `actual_existsUnique_mildFixedPoint` is not a vacuous conditional; the
-non-degenerate discharge and the restricted-domain time leaves remain named
-constructions. `fixedPoint_pressureEq` consumes the physical inversion AT a
+non-degenerate discharge of the every-time `X¹` time leaves is the named
+open construction (time-leaf block below). `fixedPoint_pressureEq` consumes the physical inversion AT a
 fixed point; the conditional feed bound carries its feeds visible. -/
 #check Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.record_zeroBox
 #print axioms Navier.Analysis.ContinuousLeiLinMildFixedPointPressure.record_zeroBox
@@ -192,14 +202,18 @@ fields are restated over the horizon `t ∈ Icc 0 T` via the zero extension
 unrestricted `∀ t` reading is FALSE at `t < 0`, where the heat multiplier
 `exp(ν‖ξ‖²|t|)` explodes the moments), with the constructor obligation
 supplied by `mildImageIcc_aestronglyMeasurable` /
-`mildImageIcc_integrableXm1` / `mildImageIcc_integrableX1`.  Three of the
-six time leaves are now CLOSED for general box elements at every horizon
-time — spatial measurability `hmM` (2a), `X⁻¹` integrability `hmXm1` (2b),
-and the spacetime `X¹` budget `hmX1Int` (2f) — with the `a.e.`-time `X¹`
-reading `mildTimeLeaf_hmX1_ae` as the maximal honest supplier behind the
-still-open every-time field.  Named residuals: the every-time `hmX1` (2c),
-the `Lp`-valued section measurabilities `hmXm1Time` (2d) / `hmX1Time` (2e),
-and the polarization leaves' all-`ξ` pointwise convolution integrabilities. -/
+`mildImageIcc_integrableXm1` / `mildImageIcc_integrableX1`.  Four of the
+six time leaves are CLOSED for general box elements at every horizon time —
+spatial measurability `hmM` (2a), `X⁻¹` integrability `hmXm1` (2b), the
+`X⁻¹` section measurability `hmXm1Time` (2d,
+`mildTimeLeaf_hmXm1Time_actualBox`, lane L6d2) and the spacetime `X¹`
+budget `hmX1Int` (2f) — with the `a.e.`-time `X¹` reading
+`mildTimeLeaf_hmX1_ae` as the maximal honest unconditional supplier behind
+the every-time field.  Both polarization leaves are CLOSED for every actual
+box element (`mildPolarizationLeaves_actualBox`, lane L6d4).  The every-time
+`hmX1` (2c) and `hmX1Time` (2e) are proved under the named input
+`SourceL1X1` (`mildAssemblyTimeLeaves_of_sourceL1X1`) and are the exact open
+propositions unconditionally. -/
 #check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_aestronglyMeasurable
 #print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_aestronglyMeasurable
 #check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_integrableXm1
@@ -214,6 +228,12 @@ and the polarization leaves' all-`ξ` pointwise convolution integrabilities. -/
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1_ae
 #check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1Int
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmX1Int
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmXm1Time_actualBox
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildTimeLeaf_hmXm1Time_actualBox
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildPolarizationLeaves_actualBox
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildPolarizationLeaves_actualBox
+#check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyTimeLeaves_of_sourceL1X1
+#print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyTimeLeaves_of_sourceL1X1
 
 /-! Grönwall-pair decomposition receipts (landed 2026-09-14, lane L6b2,
 DECOMPOSED): for the constructed forced alternative-C profile the Grönwall
