@@ -17,7 +17,7 @@ entry; the Support column names it.
 |---|---|---|---|---|
 | Scaling/criticality | Compute every norm under \(u_\lambda=\lambda u(\lambda x,\lambda^2t)\) | Energy or a supercritical norm asserted to control concentration with no new gain | Search for a scale-critical local/frequency/geometric estimate | F-001 (+ kernel certification `energy_not_scale_coercive`) |
 | Energy-only | Does the decisive proof use more than \(\langle B(u,u),u\rangle=0\) and generic multiplier estimates? | “Energy plus harmonic analysis proves global regularity” | Identify a property of the exact bilinear symbol | F-002 |
-| Endpoint-as-assumption | Normalize all hypotheses and compare with the conclusion/continuation criterion | Serrin, \(L^\infty_tL^3_x\), BKM-type, or strain criterion simply assumed | Move the assumed bound into the open-residual field | F-003, F-011, F-022 |
+| Endpoint-as-assumption | Normalize all hypotheses and compare with the conclusion/continuation criterion | Serrin, \(L^\infty_tL^3_x\), BKM-type, or strain criterion simply assumed | Move the assumed bound into the open-residual field | F-003, F-011, F-022, F-023, F-025 |
 | Weak/smooth category | Check solution class, energy inequality, force, uniqueness, and regularity | Weak existence/nonuniqueness presented as whole-space global-regularity alternative–D | Build an explicit weak-to-smooth or breakdown bridge | F-005, F-006, F-007, F-013 |
 | Model/domain drift | Compare dimension, domain, dissipation, force, and nonlinearity | 2D, Euler, averaged, dyadic, hyperdissipative, bounded-domain, or periodic result presented as whole-space A | Prove a transfer theorem or quarantine the model | F-008, F-017, F-019 |
 | Statement-paraphrase drift | Restate the official Fefferman clause verbatim and diff against the working target | Narrower paraphrase (zero-force reading, profile requirement, velocity-only periodicity) counted as the official target | Prove the equivalence as a separate bridge or use the exact clause | F-015, F-016, F-021 |
@@ -26,6 +26,7 @@ entry; the Support column names it.
 | Numerics-as-proof | Demand universal coverage, interval bounds, truncation and tail proof | Finite sampling or floating-point evidence presented as a theorem | Use observations to propose a falsifiable inequality | F-012 |
 | Wrapper laundering | Inspect whether a theorem only repackages a supplied endpoint witness | Record/constructor/status theorem counted as progress | Classify as wiring and keep frontier status unchanged | F-018 |
 | Text-as-proof | Bind every status claim to fresh native compiler/axiom output at the named revision | Source grep, status prose, or a registry boolean reported as closure evidence | Rerun the native probe and cite its receipt | F-020 |
+| Carrier non-persistence | Check that the regularity frame of an energy method is preserved by the flow (decay rates, momentum-flux identities) | A frame the equation leaves instantly (Schwartz slices for whole-space NS) used as the class on which a priori estimates are propagated | Re-carry the estimates on a persisting class (Sobolev, weighted) and quarantine the non-persisting frame | F-024 |
 
 ## 2. Exact scaling barrier
 
