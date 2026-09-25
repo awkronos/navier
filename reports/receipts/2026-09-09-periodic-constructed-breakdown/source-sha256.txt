@@ -1,0 +1,1 @@
+e86bffe69b5bdb08ea21dfdf33a02ba1f21e7d4b9c0e9dfc70aaa146ecacf3c8  Navier/Analysis/PeriodicConstructedBreakdown.lean
