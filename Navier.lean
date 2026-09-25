@@ -285,6 +285,7 @@ import Navier.Analysis.WienerSobolevL1
 import Navier.Analysis.PressureAgree
 import Navier.Analysis.StripOfPiece
 import Navier.Analysis.WienerRestartLeaf
+import Navier.Analysis.HorizonFreeBudgetRestart
 import Navier.Analysis.WienerHigherEnergy
 import Navier.Analysis.L4Interpolation
 import Navier.Analysis.WienerGradLog
