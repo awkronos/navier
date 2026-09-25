@@ -1,0 +1,56 @@
+Navier.Analysis.CriticalMildTrajectoryReality.criticalMildDuhamel_antiHermitian (ν : ℝ) (hν : 0 < ν)
+  (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (huc : Continuous u)
+  (hdiv : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u s))
+  (hreal : ∀ (s : ℝ), Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian (u s)) {R t : ℝ}
+  (hR : 0 ≤ R) (ht : 0 ≤ t) (huR : ∀ s ∈ Set.Ioc 0 t, ‖u s‖ ≤ R) :
+  Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian
+    (Navier.Analysis.CriticalMildPathIntegrand.criticalMildDuhamel ν hν u hdiv t)
+Navier.Analysis.CriticalMildTrajectoryReality.criticalMildImage_antiHermitian (ν : ℝ) (hν : 0 < ν)
+  {u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hu₀ : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian u₀)
+  (u : ℝ → ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach) (huc : Continuous u)
+  (hdiv : ∀ (s : ℝ), Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree (u s))
+  (hreal : ∀ (s : ℝ), Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian (u s)) {R t : ℝ}
+  (hR : 0 ≤ R) (ht : 0 ≤ t) (huR : ∀ s ∈ Set.Ioc 0 t, ‖u s‖ ≤ R) :
+  Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian
+    (Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀ u hdiv t ht)
+Navier.Analysis.CriticalMildTrajectoryReality.criticalMildPathBallImage_mapsTo_reality (ν : ℝ) (hν : 0 < ν)
+  {u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach}
+  (hu₀ : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian u₀) {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+  (hbudget : ‖u₀‖ + 2 * √T / √ν * R ^ 2 ≤ R) :
+  Set.MapsTo (Navier.Analysis.CriticalMildPathFixedPoint.criticalMildPathBallImage ν hν u₀ hT hR hbudget)
+    (Navier.Analysis.CriticalMildTrajectoryReality.RealityPathSet T R)
+    (Navier.Analysis.CriticalMildTrajectoryReality.RealityPathSet T R)
+Navier.Analysis.CriticalMildTrajectoryReality.exists_criticalMild_trajectory_antiHermitian (ν : ℝ) (hν : 0 < ν)
+  (u₀ : ↥Navier.Analysis.CriticalMildWeightedBanach.WeightedLatticeBanach)
+  (hu₀ : Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian u₀) {T R : ℝ} (hT : 0 ≤ T) (hR : 0 ≤ R)
+  (hbudget : ‖u₀‖ + 2 * √T / √ν * R ^ 2 ≤ R) (hcontr : 4 * √T / √ν * R < 1) :
+  ∃ u,
+    (∀ (τ : ↑(Set.Icc 0 T)), Navier.Analysis.PeriodicMildClassicalRealization.LatticeAntiHermitian (↑u τ)) ∧
+      (∀ (τ : ↑(Set.Icc 0 T)),
+          Navier.Analysis.PeriodicFourierReconstruction.LatticeHermitian
+            (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (↑u τ))) ∧
+        (∀ (τ : ↑(Set.Icc 0 T)) (x : Navier.Space),
+            Navier.Analysis.ComplexLerayNorm.complexEuclideanPoint
+                (Navier.Analysis.ComplexLerayProjection.complexOfReal
+                  (Navier.Analysis.PeriodicFourierReconstruction.physicalFourierReconstruction
+                    (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (↑u τ)) x)) =
+              Navier.Analysis.PeriodicFourierReconstruction.complexFourierReconstruction
+                (Navier.Analysis.PeriodicMildClassicalRealization.physicalCarrier (↑u τ)) x) ∧
+          ∀ (τ : ↑(Set.Icc 0 T)),
+            ↑u τ =
+              Navier.Analysis.CriticalMildSelfMap.criticalMildImage ν hν u₀
+                (Navier.Analysis.CriticalMildPathFixedPoint.criticalMildPathExtension T hT ↑u) ⋯ ↑τ ⋯
+'Navier.Analysis.CriticalMildTrajectoryReality.criticalMildDuhamel_antiHermitian' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildTrajectoryReality.criticalMildImage_antiHermitian' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildTrajectoryReality.criticalMildPathBallImage_mapsTo_reality' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'Navier.Analysis.CriticalMildTrajectoryReality.exists_criticalMild_trajectory_antiHermitian' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+exit_code=0
