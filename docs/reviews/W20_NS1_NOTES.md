@@ -72,6 +72,28 @@ analogous datum-free propagation for `preterminalEnergyControl`.)
 - `exists_preterminalEnergyControl_lt_top` — `preterminalEnergyControl 1 0 = 0
   < ⊤` (zero evolution): `N` is neither identically 0 nor identically ⊤.
 
+## Parallel item — physical-carrier transport: assessed, not landed (RED-by-blocker)
+
+The four pieces each already have a transported layer on main:
+smoothing moments (`ContinuousLeiLinPhysicalSmoothing`), frequency
+derivative (`ContinuousLeiLinFrequencyODE` consumed at the datum via
+`ContinuousLeiLinODEDominationSupply.hasDerivAt_physicalVelocity_continuousMildImage_fourierDatum`),
+pressure (`ContinuousLeiLinPressurePhysical` + transported budgets in
+`ContinuousLeiLinMildFixedPointPressure`), admissible-ball integrability
+(`ContinuousLeiLinPhysicalIntegrability.integrable_of_integrable_Xm1_X1`
+→ `physicalCoord_im_eq_zero_of_Xm1_X1`).
+The remaining hop at each named consumer is gated by exactly one of three
+premises that the estate names as unproduced: the 12-field
+`MildAssemblyLeaves` record (produced nowhere for general box elements;
+nonvacuous only at the zero datum —
+`ContinuousLeiLinMildFixedPointPressure.existsUnique_mildFixedPoint_zeroBox`),
+the degree-2 recent moment ("beyond the box slots",
+`ContinuousLeiLinODEDominationSupply` producer table), and the pointwise-in-ξ
+`hsrc` envelope ("measured impossibility from moment estimates", same table —
+NOT re-attacked here per that file's own directive). No hop among the four
+is cheap; the transport needs its own lane with the `ActualLinkedBox` /
+`RepresentativeGoodAt` carrier tutorial, not an opportunistic slice.
+
 ## What this lane does NOT claim
 
 Global regularity does not follow: both crown routes above keep their named
