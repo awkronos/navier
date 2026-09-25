@@ -5,8 +5,8 @@ import Navier.Analysis.CriticalMildModeDifferentiation
 
 For the entire scalar mode `Fₐ(z) = exp (-a z)`, restriction to positive real
 time is the heat multiplier, whereas restriction to imaginary time has unit
-modulus. Thus analytic continuation changes the real-time generator into a
-skew generator and loses the strict parabolic damping estimate. The final theorem
+modulus.  Thus the analytic continuation retains the mode and its generator
+but does not retain the strict parabolic damping estimate.  The final theorem
 links this calculation to the repository's literal lattice heat multiplier.
 
 This is a statement about the linear multiplier of one Fourier mode.  It does
