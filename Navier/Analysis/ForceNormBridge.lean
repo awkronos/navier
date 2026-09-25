@@ -58,9 +58,13 @@ none of them is proof slack.
 Not closed, and untouched: Fefferman writes the force clause in coordinate
 multi-index partial derivatives, not in total Fréchet bundles.  Everything below
 compares two *measurements* of one fixed bundle and never changes which map is
-differentiated, so the `forceFrechetCoordinatewiseEquivalence` and
-`problemFrechetCoordinatePDEEquivalence` residuals are unaffected.  No a priori
-estimate, and no analytic property of any force, is proved here.
+differentiated, so the `forceFrechetCoordinatewiseEquivalence` residual is
+unaffected — retiring it still needs the slot-permutation theorem named in
+`Analysis.ForceMultiIndexObstruction`.  The sibling
+`problemFrechetCoordinatePDEEquivalence` was already closed by
+`Analysis.CoordinatePDEBridge` (`incompressible_iff_officialCoordinateDivergenceFree`
+and the momentum half, landed `9dc815b`) and is likewise untouched here.
+No a priori estimate, and no analytic property of any force, is proved here.
 -/
 
 set_option autoImplicit false
@@ -520,10 +524,10 @@ def OfficialWholeSpaceGlobalRegularity : Prop :=
 clause is restated in Fefferman's Euclidean norm.
 
 This settled the last clause of the former
-`ProblemEncodingResidual.currentSpaceNormEuclideanNormEquivalence` that bore on
-statement A itself; with every consumer transported, that residual is retired
-from `Navier.Problem.problemEncodingResiduals`.  It proves nothing about
-whether either side holds. -/
+`currentSpaceNormEuclideanNormEquivalence` residual that bore on
+statement A itself; with every consumer transported, that residual is
+retired, and `Navier.Problem` no longer enumerates residuals.  It proves
+nothing about whether either side holds. -/
 theorem wholeSpaceGlobalRegularity_iff_official :
     ProblemStatements.WholeSpaceGlobalRegularity ↔
       OfficialWholeSpaceGlobalRegularity := by

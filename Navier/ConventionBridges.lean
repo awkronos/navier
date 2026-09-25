@@ -21,8 +21,13 @@ rapidly-decaying data, which is the safety-relevant half of the bridge.
 **Closed here (smoothness direction).** The companion `C^infinity` statement
 is Mathlib's `SchwartzMap.smooth'`.  Its regularity index is `∞`, the coerced
 top element of `ℕ∞`; Mathlib's distinct `ω` index denotes analytic regularity.
-The converse representation from Fefferman's coordinatewise conditions to a
-bundled `SchwartzMap` remains part of `schwartzConventionEquivalence`.
+
+**Converse direction (closed elsewhere).**  The representation from
+Fefferman's coordinatewise conditions to a bundled `SchwartzMap` is proved in
+`Navier.Analysis.SchwartzConventionEquivalence`
+(`fefferman_clause_four_iff_schwartz`, landed `3c000fd`), which upgrades the
+two halves recorded here to the full equivalence — so
+`schwartzConventionEquivalence` is no longer an open encoding residual.
 -/
 
 set_option autoImplicit false
@@ -49,10 +54,10 @@ theorem schwartzmap_satisfies_fefferman_rapid_decay (s : SchwartzMap Space Space
 
 /-- Every Mathlib `SchwartzMap` on `ℝ³` is smooth as an ordinary function.
 
-This is the smoothness direction of Fefferman clause (4).  It does not prove
-the converse representation theorem from coordinatewise smooth rapid decay to
-Mathlib's bundled `SchwartzMap`, so `schwartzConventionEquivalence` remains an
-explicit encoding residual. -/
+This is the smoothness direction of Fefferman clause (4).  The converse
+representation theorem from coordinatewise smooth rapid decay to Mathlib's
+bundled `SchwartzMap` is proved in `Navier.Analysis.SchwartzConventionEquivalence`
+(`fefferman_clause_four_iff_schwartz`); see the module header. -/
 theorem schwartzmap_satisfies_fefferman_smoothness (s : SchwartzMap Space Space) :
     ContDiff ℝ ∞ s.toFun := by
   exact s.smooth'
