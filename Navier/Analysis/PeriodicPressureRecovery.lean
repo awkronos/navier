@@ -196,3 +196,8 @@ theorem projected_mode_equation_to_unprojected
     _ = 0 := hprojected
 
 end Navier.Analysis.PeriodicPressureRecovery
+
+#check Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected
+#print axioms Navier.Analysis.PeriodicPressureRecovery.periodOneGradient_pressureCoefficient
+#print axioms Navier.Analysis.PeriodicPressureRecovery.pressureCoefficient_neg_conjugate
+#print axioms Navier.Analysis.PeriodicPressureRecovery.projected_mode_equation_to_unprojected
