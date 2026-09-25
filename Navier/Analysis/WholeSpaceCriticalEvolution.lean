@@ -271,3 +271,8 @@ theorem solvesBefore_lerayWeakEvolution_timeIntegrated
   exact partialSolution_lerayWeakEvolution_timeIntegrated sol φ ha0 hab hbT
 
 end Navier.Analysis.WholeSpaceCriticalEvolution
+
+#print axioms Navier.Analysis.WholeSpaceCriticalEvolution.CompactSolenoidalTest.ofNative
+#print axioms Navier.Analysis.WholeSpaceCriticalEvolution.pressurePairing_sum_eq_zero
+#print axioms Navier.Analysis.WholeSpaceCriticalEvolution.partialSolution_lerayWeakEvolution_timeIntegrated
+#print axioms Navier.Analysis.WholeSpaceCriticalEvolution.solvesBefore_lerayWeakEvolution_timeIntegrated
