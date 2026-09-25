@@ -8,18 +8,31 @@ import Navier.Analysis.GalerkinSpaceEquicontinuity
 /-!
 # Divergence-free Galerkin basis (finite-mode projection layer)
 
-The one obligation blocking the assembly of a
-`Navier.Analysis.LerayWeak.GalerkinApproximation` — even to *state* the
-per-mode objects — is the finite-mode divergence-free basis: an
-`L²`-orthonormal sequence of divergence-free Schwartz fields whose span
-approximates every divergence-free Schwartz datum in `L²`
-[Temam, *Navier–Stokes Equations*, Ch. III §3; Robinson–Rodrigo–Sadowski,
-*The Three-Dimensional Navier–Stokes Equations*, Ch. 4; Leray, Acta Math. 63
-(1934); Constantin–Foias, *NSE*, Ch. II].  On the whole space `ℝ³` the Stokes
+The finite-mode divergence-free basis is **delivered**: `L²`-orthonormal
+sequences of divergence-free Schwartz fields whose span approximates every
+divergence-free Schwartz datum in `L²` exist unconditionally
+(`exists_galerkinBasisFamily : Nonempty GalerkinBasisFamily`; the density core
+is `exists_dense_divFree_family`).  On the whole space `ℝ³` the Stokes
 operator has no discrete spectrum, so — unlike the bounded-domain Temam
 presentation — the basis is *any* orthonormalized countable dense family of
 divergence-free fields (Galerkin needs orthonormality + density, not
-eigenfunctions; Robinson–Rodrigo–Sadowski Ch. 4 runs exactly this way).
+eigenfunctions; Robinson–Rodrigo–Sadowski Ch. 4 runs exactly this way)
+[Temam, *Navier–Stokes Equations*, Ch. III §3; Robinson–Rodrigo–Sadowski,
+*The Three-Dimensional Navier–Stokes Equations*, Ch. 4; Leray, Acta Math. 63
+(1934); Constantin–Foias, *NSE*, Ch. II].
+
+What still blocks the assembly of a
+`Navier.Analysis.LerayWeak.GalerkinApproximation` is not the existence of a
+basis but the weak-consistency carry `hprojectedWeak` consumed by the mode-data
+constructors at the end of this file (`galerkinModeData_of_basis_modalFlow`)
+and its twin `GalerkinEnergyBudget.galerkinModeData_of_modalFlow`.  Its
+intended supplier `curl_proj_converges` takes two structural properties of the
+*ordering* of a certified basis — graph density of the span in the `H(curl)`
+norm (`GraphDense`, named below) and uniform `H¹` boundedness of the finite
+projections (`CurlStable`) — and no ordering certified to satisfy them is
+constructed in the repository; the tempting substitute, exact commutation
+`curl ∘ P_m = P_m ∘ curl`, is refuted on `ℝ³` (docstring of
+`curl_proj_sq_le_of_commutes`, registry row NAVIER-01).
 
 This file lays that layer over the repo's own objects:
 
@@ -61,8 +74,9 @@ This file lays that layer over the repo's own objects:
 
 * `dense_span_of_member_approximation` — **the coefficient bookkeeping of
   `dense_span`**: approximation by a single family member implies approximation
-  by a finite combination, so the remaining density obligation is stated in the
-  coefficient-free form every construction produces.
+  by a finite combination, so a construction may deliver density in the
+  member-approximation form (the density obligation itself is discharged by
+  `exists_dense_divFree_family`, not open).
 * `rawDivFree_orthonormalize` — **Gram–Schmidt** of a raw dense family into a
   `GalerkinBasisFamily`, now a full composition of the banked recursion
   (`gramSchmidtField_orthonormal`, `gramSchmidtField_divergenceFree`,
@@ -72,8 +86,9 @@ This file lays that layer over the repo's own objects:
   (and the `initial_converges_L2` field of `GalerkinModeData`) at
   `initialMode m := P_m u₀`, obtained from `proj_tendsto_self` through the
   coordinate-norm bridge in `LerayWeak`.
-* `exists_rawDivFreeFamily` — now a **composition** of the single residual below
-  with `dense_span_of_member_approximation`, no `sorry` of its own.
+* `exists_rawDivFreeFamily` — now a **composition** of the density core
+  `exists_denseIndependentDivFreeFamily` with
+  `dense_span_of_member_approximation`, no `sorry` of its own.
 
 * `esCLM` / `toES` / `toL2` — the divergence-free Schwartz class mapped into
   `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume`, with `toL2_sub` (linearity) and
@@ -92,8 +107,9 @@ This file lays that layer over the repo's own objects:
   family of divergence-free Schwartz fields `L²`-approximating every
   divergence-free Schwartz datum, from second-countability of `L²` (hereditary,
   so the dense sequence is drawn from the divergence-free image itself).
-* `toL2_smul` / `toL2_sum` / `independent_iff_toL2` — the residual's
-  `independent` conjunct restated as ordinary linear independence of the `L²`
+* `toL2_smul` / `toL2_sum` / `independent_iff_toL2` — the `independent`
+  conjunct of `exists_denseIndependentDivFreeFamily` restated as ordinary
+  linear independence of the `L²`
   images `toL2 ∘ v`.  `schwartzL2Inner` is only a seminorm on Schwartz fields,
   but `norm_toL2_sq` makes it the honest `Lp` norm, so the two notions coincide.
 
@@ -145,20 +161,31 @@ This file lays that layer over the repo's own objects:
   `coefficientFlow_shifted_displacement_integral_le`.
 * `galerkinCoefficientFlow_timeEquicontinuous` itself is **closed** and lives in
   `Navier.Analysis.GalerkinModeData` (its only consumer at banking time,
-  `exists_galerkinModeData`, was later removed in the soundness cleanup; the
-  downstream user is the `GalerkinEnergyBudget` assembly).  It cannot live
-  here: discharging the convective hypothesis needs
+  `exists_galerkinModeData`, was later removed in the soundness cleanup; its
+  consumers are `GalerkinEnergyBudget.timeEquicontinuous_modalApprox_of_flow`
+  and, through it, the assembly `GalerkinEnergyBudget.galerkinModeData_of_modalFlow`).
+  It cannot live here: discharging the convective hypothesis needs
   `ConvectionLadyzhenskaya.abs_convectionOperator_inner_pow_four_le_enstrophy`,
   and `ConvectionTrilinear` imports *this* file for `convectionOperator`, so
   the estimate is strictly downstream.  The relocation is a routing fact only;
   the statement is byte-identical.
 
-With this layer, `galerkin_approximation_exists`'s remaining inputs are: the
-projected Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
+With this layer, the assembly chain is explicit: the projected
+Stokes/nonlinearity operators on `span{w_0, …, w_{m−1}}` (feeding
 `finiteDim_dissipative_ode_global` + `galerkin_apriori_bound` +
-`EnergyDissipation.dissipation_integral_le_forward`, all BANKED), the
-coefficient-level time-regularity leaf above, and the weak-consistency
-bookkeeping.
+`EnergyDissipation.dissipation_integral_le_forward`, all BANKED) and the
+coefficient-level time-regularity leaf above are certified; the constructors
+`galerkinModeData_of_basis_modalFlow` (end of this file) and
+`GalerkinEnergyBudget.galerkinModeData_of_modalFlow` assemble them into a
+`GalerkinModeData`, and
+`Navier.Analysis.LerayWeak.galerkinApproximation_of_modeData` transports that
+into a `GalerkinApproximation`.  The one analytic hypothesis the constructors
+do not supply — and that no Lean declaration in the repository currently
+derives from a constructed basis — is `hprojectedWeak`, the vanishing of the
+projected modal-flow residual against fixed tests.  Via
+`modalFlow_fixedTest_projectedResidual_tendsto_of_commutators` (this file) and
+`curl_proj_converges` (this file), it reduces to `GraphDense ∧ CurlStable` of
+the ordering: the named construction target of this file.
 -/
 
 set_option autoImplicit false
@@ -302,8 +329,9 @@ theorem dense_span_of_member_approximation (v : ℕ → SchwartzVelocity)
 /-!
 ## `L²` separability of the divergence-free Schwartz class
 
-The density conjunct of the residual below is settled here, by separability
-rather than by either of the two constructions the residual's docstring
+The density conjunct of the theorem below
+(`exists_denseIndependentDivFreeFamily`, now discharged) is settled here, by
+separability rather than by either of the two constructions its docstring
 previously proposed.  `Lp (EuclideanSpace ℝ (Fin 3)) 2 volume` over `ℝ³` is
 second-countable (`Lp.SecondCountableTopology`, which needs only
 `Fact (2 ≠ ⊤)` supplied by hand), second-countability is hereditary, so the
@@ -556,7 +584,7 @@ theorem nextIdx_spec (w p : ℕ → SchwartzVelocity)
     toL2 (p (nextIdx w p S n)) ∉ Submodule.span ℝ (↑(insert (toL2 (w n)) S) : Set L2Sp) := by
   have h : ∃ k : ℕ, toL2 (p k) ∉ Submodule.span ℝ (↑(insert (toL2 (w n)) S) : Set L2Sp) :=
     exists_not_mem_span_of_linearIndependent (fun k : ℕ => toL2 (p k)) hp _
-  rw [nextIdx, dif_pos h]
+  rw [nextIdx, dite_eq_left h]
   exact Classical.choose_spec h
 
 /-- One stage of the recursion. -/
@@ -765,8 +793,8 @@ theorem exists_denseIndependentDivFreeFamily :
   exact exists_denseIndependentDivFreeFamily_of_reservoir p hpdiv hpindep
 
 /-- **Non-vacuity of `RawDivFreeFamily`** — now a composition of the density
-residual with the certified coefficient bookkeeping
-`dense_span_of_member_approximation`. -/
+core `exists_denseIndependentDivFreeFamily` with the certified coefficient
+bookkeeping `dense_span_of_member_approximation`. -/
 theorem exists_rawDivFreeFamily : Nonempty RawDivFreeFamily := by
   obtain ⟨v, hdiv, hindep, hmem⟩ := exists_denseIndependentDivFreeFamily
   exact ⟨{ v := v
@@ -794,10 +822,10 @@ theorem gramSchmidt_residual_inner (w : ℕ → SchwartzVelocity) (n : ℕ)
   rw [schwartzL2Inner_sub_left, schwartzL2Inner_sum_left,
     Finset.sum_eq_single j
       (fun k _ hkj => by
-        rw [schwartzL2Inner_smul_left, horth k j (Finset.mem_range.mp ‹_›) hj, if_neg hkj,
+        rw [schwartzL2Inner_smul_left, horth k j (Finset.mem_range.mp ‹_›) hj, ite_eq_right hkj,
           mul_zero])
       (fun hjn => absurd (Finset.mem_range.mpr hj) hjn),
-    schwartzL2Inner_smul_left, horth j j hj hj, if_pos rfl, mul_one, sub_self]
+    schwartzL2Inner_smul_left, horth j j hj hj, ite_eq_left rfl, mul_one, sub_self]
 
 /-- **Gram–Schmidt normalization.**  A field with strictly positive `L²`
 seminorm normalizes to unit seminorm: `⟨(1/√⟨x,x⟩)•x, (1/√⟨x,x⟩)•x⟩ = 1` — the
@@ -878,10 +906,10 @@ theorem finComb_mono {f : ℕ → SchwartzVelocity} {m m' : ℕ} (h : m ≤ m')
       (fun j hj => Finset.mem_range.mpr (lt_of_lt_of_le (Finset.mem_range.mp hj) h))
       (fun j _ hj => by
         simp only []
-        rw [if_neg (fun hlt => hj (Finset.mem_range.mpr hlt)), zero_smul])]
+        rw [ite_eq_right (fun hlt => hj (Finset.mem_range.mpr hlt)), zero_smul])]
   exact Finset.sum_congr rfl fun j hj => by
     simp only []
-    rw [if_pos (Finset.mem_range.mp hj)]
+    rw [ite_eq_left (Finset.mem_range.mp hj)]
 
 theorem finComb_self (f : ℕ → SchwartzVelocity) {m j : ℕ} (hj : j < m) :
     FinComb f m (f j) := by
@@ -921,14 +949,14 @@ theorem gsResidual_repr (R : RawDivFreeFamily) : ∀ n : ℕ,
         schwartzL2Inner (R.v n) (gramSchmidtField R k) • gramSchmidtField R k) :=
       finComb_sum_smul _ _ _ (fun k hk => hw k (Finset.mem_range.mp hk))
     obtain ⟨e, he⟩ := hsum
-    refine ⟨fun j => if j = n then 1 else -(e j), ?_, if_pos rfl⟩
+    refine ⟨fun j => if j = n then 1 else -(e j), ?_, ite_eq_left rfl⟩
     rw [Finset.sum_range_succ]
     have h1 : ∑ j ∈ Finset.range n, (if j = n then (1:ℝ) else -(e j)) • R.v j
         = ∑ j ∈ Finset.range n, (-(e j)) • R.v j :=
       Finset.sum_congr rfl fun j hj => by
-        rw [if_neg (Nat.ne_of_lt (Finset.mem_range.mp hj))]
+        rw [ite_eq_right (Nat.ne_of_lt (Finset.mem_range.mp hj))]
     simp only []
-    rw [h1, if_true, one_smul]
+    rw [h1, ite_true, one_smul]
     show R.v n - ∑ k ∈ Finset.range n,
         schwartzL2Inner (R.v n) (gramSchmidtField R k) • gramSchmidtField R k
       = ∑ j ∈ Finset.range n, -(e j) • R.v j + R.v n
@@ -974,12 +1002,12 @@ theorem gramSchmidtField_orthonormal_table (R : RawDivFreeFamily) :
     rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi' | hie
     · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk' | hke
       · exact ih i k hi' hk'
-      · rw [hke, if_neg (ne_of_lt hi'), schwartzL2Inner_comm]
+      · rw [hke, ite_eq_right (ne_of_lt hi'), schwartzL2Inner_comm]
         exact hwnj i hi'
     · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk' | hke
-      · rw [hie, if_neg (ne_of_gt hk')]
+      · rw [hie, ite_eq_right (ne_of_gt hk')]
         exact hwnj k hk'
-      · rw [hie, hke, if_pos rfl, gramSchmidtField_eq]
+      · rw [hie, hke, ite_eq_left rfl, gramSchmidtField_eq]
         exact schwartzL2Inner_normalize_self (gsResidual R n) (gsResidual_inner_pos R n)
 
 /-- Full orthonormality of the Gram–Schmidt family. -/
@@ -1118,10 +1146,10 @@ theorem coefficientField_l2_isometry (W : GalerkinBasisFamily) {m : ℕ}
     intro j
     unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
     rw [schwartzL2Inner_finset_sum_right, Finset.sum_eq_single j]
-    · rw [schwartzL2Inner_smul_right, W.orthonormal j j, if_pos rfl, mul_one]
+    · rw [schwartzL2Inner_smul_right, W.orthonormal j j, ite_eq_left rfl, mul_one]
     · intro i _ hij
       rw [schwartzL2Inner_smul_right, W.orthonormal j i,
-        if_neg (fun h => hij (Fin.ext h.symm)), mul_zero]
+        ite_eq_right (fun h => hij (Fin.ext h.symm)), mul_zero]
     · exact fun hj => (hj (Finset.mem_univ j)).elim
   calc
     schwartzL2Inner (W.coefficientField a) (W.coefficientField a) =
@@ -1146,10 +1174,10 @@ theorem coefficientField_l2_inner (W : GalerkinBasisFamily) {m : ℕ}
     intro j
     unfold GalerkinBasisFamily.coefficientField GalerkinBasisFamily.finiteModes
     rw [schwartzL2Inner_finset_sum_right, Finset.sum_eq_single j]
-    · rw [schwartzL2Inner_smul_right, W.orthonormal j j, if_pos rfl, mul_one]
+    · rw [schwartzL2Inner_smul_right, W.orthonormal j j, ite_eq_left rfl, mul_one]
     · intro i _ hij
       rw [schwartzL2Inner_smul_right, W.orthonormal j i,
-        if_neg (fun h => hij (Fin.ext h.symm)), mul_zero]
+        ite_eq_right (fun h => hij (Fin.ext h.symm)), mul_zero]
     · exact fun hj => (hj (Finset.mem_univ j)).elim
   change schwartzL2Inner (∑ j : Fin m, a j • W.w j) (W.coefficientField b) =
     inner ℝ a b
@@ -2447,7 +2475,7 @@ theorem coefficientFlow_initial_norm_sq_le_of_enstrophyBound (W : GalerkinBasisF
   have hE0 : 0 ≤ enstrophyBound := by simpa using henst m 0 le_rfl
   have hid := fun (T : ℝ) (hT : 0 ≤ T) => coefficientFlow_energy_identity W c hc m hT
   by_contra hcon
-  push_neg at hcon
+  push Not at hcon
   set R : ℝ := ‖c m 0‖ with hR
   set Lsq : ℝ := ‖c m 0‖ ^ 2 - 2 * ν * enstrophyBound with hLsq
   have hLsq_pos : 0 < Lsq := by simp only [hLsq]; linarith
@@ -2562,7 +2590,7 @@ this converts it into a bound that is *linear* in the enstrophy density, which
 is exactly the quantity the budget `henst` controls.  Sending `θ → 0` recovers
 the sharp `d ≤ K^{1/4} y^{3/4}` in the limit. -/
 theorem quartic_root_le_mul_add {K θ d y : ℝ} (hK : 0 ≤ K) (hθ : 0 < θ)
-    (hy : 0 ≤ y) (hd : 0 ≤ d) (hd4 : d ^ 4 ≤ K * y ^ 3) :
+    (hy : 0 ≤ y) (_hd : 0 ≤ d) (hd4 : d ^ 4 ≤ K * y ^ 3) :
     d ≤ θ * y + K / (4 * θ ^ 3) := by
   have hC0 : 0 ≤ K / (4 * θ ^ 3) := by positivity
   have hb : 0 ≤ θ * y := by positivity
@@ -2955,7 +2983,7 @@ theorem coefficientFlow_displacement_sq_le (W : GalerkinBasisFamily)
         ≤ ∫ s in Set.Ioc (0:ℝ) (max q p), W.coefficientEnstrophy (c m s) :=
           setIntegral_mono_set hIntBig
             (Filter.Eventually.of_forall fun s => integral_nonneg fun x => by positivity)
-            (HasSubset.Subset.eventuallyLE hsub)
+            (LE.le.eventuallyLE hsub)
       _ ≤ enstrophyBound := henst m _ hmax
   -- (3) assemble
   have hPhi : (0:ℝ) ≤ A * enstrophyBound + B * |p - q| := by positivity
@@ -3078,7 +3106,7 @@ theorem coefficientFlow_shifted_displacement_integral_le (W : GalerkinBasisFamil
     calc (∫ t in Set.Ioc a T, W.coefficientEnstrophy (c m t))
         ≤ ∫ t in Set.Ioc (0:ℝ) T, W.coefficientEnstrophy (c m t) := by
           refine setIntegral_mono_set ?_ (Filter.Eventually.of_forall fun s => hOm s)
-            (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc_left ha))
+            (LE.le.eventuallyLE (Set.Ioc_subset_Ioc_left ha))
           exact (((hOmcont.mono Set.Icc_subset_Ici_self).integrableOn_Icc).mono_set
             Set.Ioc_subset_Icc_self)
       _ ≤ enstrophyBound := henst m T hT0
@@ -3089,7 +3117,7 @@ theorem coefficientFlow_shifted_displacement_integral_le (W : GalerkinBasisFamil
     calc (∫ t in Set.Ioc (a + h) (T + h), W.coefficientEnstrophy (c m t))
         ≤ ∫ t in Set.Ioc (0:ℝ) (T + h), W.coefficientEnstrophy (c m t) := by
           refine setIntegral_mono_set ?_ (Filter.Eventually.of_forall fun s => hOm s)
-            (HasSubset.Subset.eventuallyLE (Set.Ioc_subset_Ioc_left hah))
+            (LE.le.eventuallyLE (Set.Ioc_subset_Ioc_left hah))
           exact (((hOmcont.mono Set.Icc_subset_Ici_self).integrableOn_Icc).mono_set
             Set.Ioc_subset_Icc_self)
       _ ≤ enstrophyBound := henst m (T + h) hTh
@@ -3339,9 +3367,9 @@ theorem proj_basis (W : GalerkinBasisFamily) {m j : ℕ} (hj : j < m) :
     W.proj m (W.w j) = W.w j := by
   unfold GalerkinBasisFamily.proj GalerkinBasisFamily.coeff
   rw [Finset.sum_eq_single j]
-  · rw [W.orthonormal j j, if_pos rfl, one_smul]
+  · rw [W.orthonormal j j, ite_eq_left rfl, one_smul]
   · intro i hi hij
-    rw [W.orthonormal j i, if_neg (fun h => hij h.symm), zero_smul]
+    rw [W.orthonormal j i, ite_eq_right (fun h => hij h.symm), zero_smul]
   · intro hj'
     exact absurd (Finset.mem_range.mpr hj) hj'
 
@@ -3408,9 +3436,9 @@ theorem proj_inner_basis (W : GalerkinBasisFamily) {m k : ℕ} (hk : k < m)
     schwartzL2Inner (W.proj m u) (W.w k) = schwartzL2Inner u (W.w k) := by
   unfold GalerkinBasisFamily.proj
   rw [schwartzL2Inner_sum_left, Finset.sum_eq_single k]
-  · rw [schwartzL2Inner_smul_left, W.orthonormal k k, if_pos rfl, mul_one]; rfl
+  · rw [schwartzL2Inner_smul_left, W.orthonormal k k, ite_eq_left rfl, mul_one]; rfl
   · intro j _ hjk
-    rw [schwartzL2Inner_smul_left, W.orthonormal j k, if_neg hjk, mul_zero]
+    rw [schwartzL2Inner_smul_left, W.orthonormal j k, ite_eq_right hjk, mul_zero]
   · intro hkr; exact absurd (Finset.mem_range.mpr hk) hkr
 
 /-- **The projection residual is orthogonal to every retained basis field**:
@@ -3464,9 +3492,9 @@ theorem proj_error_antitone (W : GalerkinBasisFamily) (u : SchwartzVelocity) :
   have hkey := proj_best_approx W (m+1) u (fun k => if k < m then W.coeff u k else 0)
   have heq : (∑ k ∈ Finset.range (m+1), (if k < m then W.coeff u k else 0) • W.w k)
       = W.proj m u := by
-    rw [Finset.sum_range_succ, if_neg (lt_irrefl m), zero_smul, add_zero]
+    rw [Finset.sum_range_succ, ite_eq_right (lt_irrefl m), zero_smul, add_zero]
     unfold GalerkinBasisFamily.proj
-    exact Finset.sum_congr rfl (fun k hk => by rw [if_pos (Finset.mem_range.mp hk)])
+    exact Finset.sum_congr rfl (fun k hk => by rw [ite_eq_left (Finset.mem_range.mp hk)])
   rw [heq] at hkey
   exact hkey
 
@@ -3640,14 +3668,14 @@ theorem proj_sum_range_eq_of_le (W : GalerkinBasisFamily) {M m : ℕ}
     unfold GalerkinBasisFamily.coeff
     rw [schwartzL2Inner_sum_left]
     by_cases hi : i < M
-    · rw [if_pos hi, Finset.sum_eq_single i]
+    · rw [ite_eq_left hi, Finset.sum_eq_single i]
       · rw [schwartzL2Inner_smul_left, W.orthonormal i i,
-          if_pos rfl, mul_one]
+          ite_eq_left rfl, mul_one]
       · intro j _ hji
         rw [schwartzL2Inner_smul_left, W.orthonormal j i,
-          if_neg hji, mul_zero]
+          ite_eq_right hji, mul_zero]
       · exact fun hi' => (hi' (Finset.mem_range.mpr hi)).elim
-    · rw [if_neg hi]
+    · rw [ite_eq_right hi]
       apply Finset.sum_eq_zero
       intro j hj
       have hji : j ≠ i := by
@@ -3655,17 +3683,47 @@ theorem proj_sum_range_eq_of_le (W : GalerkinBasisFamily) {M m : ℕ}
         subst i
         exact hi (Finset.mem_range.mp hj)
       rw [schwartzL2Inner_smul_left, W.orthonormal j i,
-        if_neg hji, mul_zero]
+        ite_eq_right hji, mul_zero]
   unfold GalerkinBasisFamily.proj
   conv_lhs =>
     enter [2, i]
     rw [hcoeff i]
   rw [← Finset.sum_subset (Finset.range_mono hMm) (fun i _ hiM => by
     have hnot : ¬i < M := by simpa only [Finset.mem_range] using hiM
-    simp only [hnot, if_false, zero_smul])]
+    simp only [hnot, ite_false, zero_smul])]
   apply Finset.sum_congr rfl
   intro i hi
-  rw [if_pos (Finset.mem_range.mp hi)]
+  rw [ite_eq_left (Finset.mem_range.mp hi)]
+
+/-- **Graph density of a `GalerkinBasisFamily` ordering.**  The ordered span
+approximates every divergence-free Schwartz datum not only in `L²` (the
+`dense_span` field every `GalerkinBasisFamily` already carries) but in the
+`H(curl)` graph norm as well — simultaneously in the field and its curl.
+This is the first hypothesis of `curl_proj_converges`, named so the concrete
+construction (a divergence-free Hermite/Schrödinger-operator ordering on `ℝ³`)
+has a citable target; it is a property *of an ordering*, deliberately not a
+field of `GalerkinBasisFamily`. -/
+def GraphDense (W : GalerkinBasisFamily) : Prop :=
+  ∀ u : SchwartzVelocity, DivergenceFreeInitial u →
+    ∀ ε : ℝ, 0 < ε → ∃ (M : ℕ) (c : ℕ → ℝ),
+      ‖toL2 (u - ∑ j ∈ Finset.range M, c j • W.w j)‖ < ε ∧
+      ‖toL2 (curlSchwartzCLM
+        (u - ∑ j ∈ Finset.range M, c j • W.w j))‖ < ε
+
+/-- **Uniform `H¹` boundedness of a `GalerkinBasisFamily`'s finite
+projections.**  The curl of the projected field is controlled by the graph
+norm of the input, uniformly in the mode count `m` — the classical statement
+that the Galerkin projections are bounded in `H¹` on the divergence-free
+Schwartz class, with one constant for all `m`.  This is the second hypothesis
+of `curl_proj_converges`, named as a construction target.  The tempting
+strengthening — exact commutation `curl ∘ P_m = P_m ∘ curl` — is *refuted* on
+`ℝ³` for any orthonormal divergence-free family (docstring of
+`curl_proj_sq_le_of_commutes`, registry row NAVIER-01): stability, not
+commutation, is the live route. -/
+def CurlStable (W : GalerkinBasisFamily) : Prop :=
+  ∃ C : ℝ, 0 ≤ C ∧ ∀ (m : ℕ) (u : SchwartzVelocity),
+    ‖toL2 (curlSchwartzCLM (W.proj m u))‖ ≤
+      C * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖)
 
 set_option maxHeartbeats 3000000 in
 /-- **Curl convergence from graph-density and uniformly `H¹`-bounded partial
@@ -3674,17 +3732,16 @@ projections.**
 This is the exact analytic consumer for a divergence-free Hermite/wavelet
 ordering on `ℝ³`.  Graph-density supplies a finite modal approximant, later
 projections fix it, and the uniform graph bound controls the remaining error.
-Neither property is added to `GalerkinBasisFamily`; a concrete construction
-passes its two proved theorems directly. -/
+The two hypotheses are `GraphDense W` and `CurlStable W`; a concrete
+construction passes its two proved theorems directly.  Combined with
+`modalFlow_fixedTest_projectedResidual_tendsto_of_commutators` (end of this
+file) this is the reduction path from a constructed `GraphDense ∧ CurlStable`
+ordering to the `hprojectedWeak` carry of `galerkinModeData_of_basis_modalFlow`;
+the commutator-annihilation steps themselves are owned downstream
+(`GalerkinWeakConsistency`, `GalerkinModeData`). -/
 theorem curl_proj_converges (W : GalerkinBasisFamily)
-    (hgraph_dense : ∀ u : SchwartzVelocity, DivergenceFreeInitial u →
-      ∀ ε : ℝ, 0 < ε → ∃ (M : ℕ) (c : ℕ → ℝ),
-        ‖toL2 (u - ∑ j ∈ Finset.range M, c j • W.w j)‖ < ε ∧
-        ‖toL2 (curlSchwartzCLM
-          (u - ∑ j ∈ Finset.range M, c j • W.w j))‖ < ε)
-    (hstable : ∃ C : ℝ, 0 ≤ C ∧ ∀ (m : ℕ) (u : SchwartzVelocity),
-      ‖toL2 (curlSchwartzCLM (W.proj m u))‖ ≤
-        C * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖))
+    (hgraph_dense : GraphDense W)
+    (hstable : CurlStable W)
     (phi : SchwartzVelocity) (hphi : DivergenceFreeInitial phi) :
     Filter.Tendsto (fun m : Nat =>
       ‖toL2 (curlSchwartzCLM (W.proj m phi - phi))‖)
@@ -3725,6 +3782,35 @@ theorem curl_proj_converges (W : GalerkinBasisFamily)
       dsimp [δ]
       field_simp
       ring
+
+/-- **Uniform `H(curl)` error bound from `CurlStable`.**  The triangle
+inequality plus the stability estimate shows the *error* projections are
+equally uniform: `‖curl(P_m u − u)‖ ≤ D·(‖u‖ + ‖curl u‖)` with `D = C + 1`,
+independent of `m`.  This is exactly the dominating function that
+`curlSqError_integral_tendsto_zero` in `Navier/Analysis/GalerkinModeData.lean`
+re-derives inline for its dominated-convergence step, and the uniform
+`m`-independence here is the content of the `hfM`-shaped hypothesis of the
+convection commutator bounds in `Navier/Analysis/GalerkinWeakConsistency.lean`;
+supplying it from `CurlStable` at the source keeps the estimate with the
+structure that carries it. -/
+theorem curl_proj_error_le_of_stable (W : GalerkinBasisFamily) (hS : CurlStable W) :
+    ∃ D : ℝ, 0 ≤ D ∧ ∀ (m : ℕ) (u : SchwartzVelocity),
+      ‖toL2 (curlSchwartzCLM (W.proj m u - u))‖ ≤
+        D * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖) := by
+  obtain ⟨C, hC, hstab⟩ := hS
+  refine ⟨C + 1, by linarith, fun m u => ?_⟩
+  have hmap : curlSchwartzCLM (W.proj m u - u) =
+      curlSchwartzCLM (W.proj m u) - curlSchwartzCLM u := map_sub _ _ _
+  rw [hmap, toL2_sub]
+  have hgraph : ‖toL2 (curlSchwartzCLM u)‖ ≤
+      ‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖ :=
+    le_add_of_nonneg_left (norm_nonneg _)
+  calc ‖toL2 (curlSchwartzCLM (W.proj m u)) - toL2 (curlSchwartzCLM u)‖ ≤
+        ‖toL2 (curlSchwartzCLM (W.proj m u))‖ + ‖toL2 (curlSchwartzCLM u)‖ :=
+          norm_sub_le _ _
+    _ ≤ C * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖) +
+          ‖toL2 (curlSchwartzCLM u)‖ := add_le_add (hstab m u) le_rfl
+    _ ≤ (C + 1) * (‖toL2 u‖ + ‖toL2 (curlSchwartzCLM u)‖) := by nlinarith
 
 /-!
 ## The `initial_converges` field, delivered

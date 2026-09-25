@@ -1089,7 +1089,7 @@ theorem slowNormal_local (B N0 : ℕ) (i : Fin 3) :
   · apply (fullNormal_slice_local B N0 i).congr_germ
     intro n l x hx hc
     filter_upwards [strip.isOpen_domain.mem_nhds hx] with y hy
-    rw [slowNormal_component l n hy, if_neg hi]
+    rw [slowNormal_component l n hy, ite_eq_right hi]
 
 theorem frequency_local (B N0 : ℕ) :
     LocalizedWaveBounds.LocalUnweighted strip meanControlCell (-(1/2 : ℝ))
