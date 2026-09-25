@@ -139,6 +139,30 @@ def DivergenceFreeInitial (u₀ : SchwartzVelocity) : Prop :=
 def Incompressible (u : VelocityEvolution) : Prop :=
   ∀ t : ℝ, 0 ≤ t → ∀ x : Space, divergence u t x = 0
 
+/-- The two pinned divergences agree on every time slice: `divergence u t x`
+*is* `staticDivergence (u t) x`, both reducing to
+`∑ i, fderiv ℝ (u t) x (basisVector i) i`; this is why
+`Analysis.ConvectionCurl` can `exact` an `Incompressible` application against
+a `staticDivergence` target.  Named consumers:
+`Analysis.EnergyPressureCancellation`, `Analysis.EnergyConvectionCancellation`,
+`Analysis.CutoffEnergyIbp` and `Analysis.ConvectionCurl` currently re-derive
+the equation by unfolding the definition bodies at their call sites, and the
+`grails` Warp front (`Warp/Shift.lean`, mutual ratchet) pins the slice
+bridge; this equation lets each transport without unfolding the pinned
+bodies. -/
+theorem divergence_eq_staticDivergence (u : VelocityEvolution) (t : ℝ)
+    (x : Space) : divergence u t x = staticDivergence (u t) x := rfl
+
+/-- Every nonnegative-time slice of an `Incompressible` evolution is
+statically divergence-free — the shape taken by the energy-identity
+consumers, e.g.
+`Analysis.EnergyConvectionCancellation.convection_work_eq_staticDivergence_of_incompressible`,
+which currently supplies it by `simpa` over the definition bodies. -/
+theorem staticDivergence_of_incompressible (u : VelocityEvolution)
+    (hu : Incompressible u) (t : ℝ) (ht : 0 ≤ t) (x : Space) :
+    staticDivergence (u t) x = 0 :=
+  (divergence_eq_staticDivergence u t x).symm.trans (hu t ht x)
+
 /-- The forced incompressible Navier--Stokes momentum equation on `R^3`:
 `partial_t u + (u . grad)u = nu Delta u - grad p + f`.
 
