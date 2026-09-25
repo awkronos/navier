@@ -2,15 +2,41 @@ name: Verify
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# The old topology was the defect, not the tree. Measured 2026-09-22: the
+# last ~100 Verify runs on this repo recorded ZERO successes — every
+# `push:` (any branch, unbounded) queued a fresh cold GitHub-hosted build of
+# the full ~9750-target project graph, and the next fleet-lane push cancelled
+# the one in flight at ~44 min (timed run 2026-09-22T01:38:59Z -> 02:22:51Z,
+# conclusion=cancelled). A build that can only finish between two pushes
+# never finishes. The same source compiles green on the warm Studio tree
+# (lake build exit 0), so the math is fine; the runner choice and trigger
+# scope are not.
+#
+# This is the pattern already proven green for awkronos/polya on the same
+# org runners: trigger on main + PRs only, one run per ref with
+# cancel-in-progress so a burst collapses to the newest, and run the Lean
+# job on the self-hosted [self-hosted, lean] runner where the Mathlib shared
+# cache and toolchain already resolve (lake exe cache get), with an explicit
+# timeout instead of an open-ended queue.
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   python:
+    # Kept GitHub-hosted: measured green in the same cancelled run above
+    # (python conclusion=success); it needs no Lean cache and no self-hosted
+    # runner time.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,19 +50,41 @@ jobs:
         run: python3 -m unittest discover -s tests -v
 
   lean:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, lean]
+    timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
-        with:
-          auto-config: false
-          build: true
-          test: false
-          lint: false
-          leanchecker: true
-          nanoda: true
-          nanoda-allow-sorry: false
+      - uses: actions/checkout@v4  # v7 injects credentials via includeIf.gitdir, which git matches against the REAL path; this runner checks out through a symlink onto the NAS (see kagami docs/ops/RUNNERS_ON_NAS.md), so v7 fetches with no credentials
+      - name: Install the pinned Lean toolchain
+        shell: bash
+        run: |
+          # Host user `runner` has no elan in a shared place and
+          # actions/setup-python-style tool-cache writes fail on these hosts
+          # ("mkdir: /Users/runner: Permission denied"); the per-run $HOME
+          # install is the polya-proven route. --default-toolchain none lets
+          # the repo's lean-toolchain (v4.34.0-rc2) pick the version.
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            --output elan-init.sh
+          sh elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Fetch the shared Mathlib cache
+        run: lake exe cache get
+      # The full build IS the deliverable here (this is the project tree, not
+      # a tool that imports a slice of it), and unlike the cancelled hosted
+      # runs it lands on a warm-cache runner: lake build only elaborates
+      # navier's own modules — Mathlib arrives from cache get. Budget 180 min
+      # above polya's 90 because navier's own tree is the larger one; the
+      # timeout exists to surface a stall as a FAILURE receipt, never as an
+      # open-ended queue.
+      - name: Build the project
+        run: lake build
       - name: Emit public axiom audit
         run: lake env lean Navier/AxiomAudit.lean
+      # Strict transitive census over every Navier declaration via
+      # Lean.Util.CollectAxioms, rejecting anything outside
+      # {propext, Classical.choice, Quot.sound}. sorryAx is not in the
+      # allowed set, so this subsumes the lean-action `nanoda` sorry gate the
+      # GitHub-hosted version used — one project-resident auditor instead of
+      # an action input that silently disappears if the action stops running.
       - name: Reject disallowed transitive project axioms
         run: lake env lean scripts/AuditAllAxioms.lean
