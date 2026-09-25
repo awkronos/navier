@@ -200,3 +200,11 @@ theorem SolvesBefore.integrable_and_ae_tendsto_scaledCutoff_secondDirectional_mu
       κ τ x₀ a direction fieldComponent y).mul_const (u s y velocityComponent)
 
 end Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit
+
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit.secondDirectional_mul
+
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit.tendsto_secondDirectional_scaledCutoff_mul
+
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit.tendsto_secondDirectional_scaledCutoff_backwardHeatCurlField
+
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit.SolvesBefore.integrable_and_ae_tendsto_scaledCutoff_secondDirectional_mul_velocity
