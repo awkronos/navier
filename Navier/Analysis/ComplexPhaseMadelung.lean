@@ -28,11 +28,10 @@ whatever dimension the algebra supports:
    ansatz `ψ = exp((iS - Γ)/ħ)` has logarithmic derivative
    `(Dψ·v)/ψ = (i D S·v - DΓ·v)/ħ` exactly; the repo's Madelung decoder law
    (`MadelungInitialDecoder`) reads the IMAGINARY part and gets `∝ ∇S`
-   (`complexPhase_phase_is_slope`), while the Cole–Hopf velocity of the
-   strictly positive amplitude `θ = e^{-Γ/ħ}` reads the REAL part
+   (Bridge 1 read below), while the Cole–Hopf velocity of the strictly
+   positive amplitude `θ = e^{-Γ/ħ}` reads the REAL part
    (`complexPhase_colehopf_eq_negRe`).  Bridges 1 and 3 are the two halves of
-   one checked identity; `positive_amplitude` here is
-   `Real.exp_pos`, no hypothesis.
+   one checked identity; positivity here is `Real.exp_pos`, no hypothesis.
 4. `no_colehopf_of_plane_rotation` — the gradient carrier cannot represent
    rotational data: in dimension 2 the plane-rotation field
    `(x₀,x₁) ↦ (-x₁, x₀)` admits no Cole–Hopf representation, because its
@@ -51,10 +50,14 @@ Honesty notes:
   equivalence `∂t θ = νΔθ ↔ ∂t logθ = ν(Δlogθ + ‖∇logθ‖²)`; it is a genuine
   second-derivative product-rule expansion and is stated as the residual in
   the module footer rather than claimed.
-* The field names `phase_is_slope`, `positive_amplitude`,
-  `amplitude_is_heat` mirror the vocabulary of the reality bridge's
-  `ComplexProgenitor` as relayed by the fleet lead; this file imports nothing
-  from that relay (navier and reality have separate lakefiles).
+* All vocabulary is repo-native or local to this file: `amplitude_is_heat`
+  is a local binder name for the log-heat hypothesis, and every cited
+  declaration lives in the four imported navier modules above
+  (`MadelungInitialDecoder` in MadelungDecoderCurlObstruction, curl carriers
+  in CurlIdentities).  This file imports nothing outside navier and carries no
+  cross-repository citation (root correction 2026-09-26: a phantom peer frame
+  attributed a "ComplexProgenitor" relay to the fleet lead; unverifiable and
+  removed).
 -/
 
 set_option autoImplicit false
@@ -223,8 +226,8 @@ noncomputable def complexPhaseWave (ħ : ℝ) (S Γ : PressureField) (x : Space)
 theorem complexPhaseWave_ne (ħ : ℝ) (S Γ : PressureField) (x : Space) :
     complexPhaseWave ħ S Γ x ≠ 0 := Complex.exp_ne_zero _
 
-/-- The Cole–Hopf amplitude of the real slot; `positive_amplitude` is the
-kernel-checked `Real.exp_pos`, no hypothesis. -/
+/-- The Cole–Hopf amplitude of the real slot, `θ = e^{-Γ/ħ}`; its positivity
+is kernel-checked by `Real.exp_pos`, no hypothesis. -/
 noncomputable def complexPhaseAmplitude (ħ : ℝ) (Γ : PressureField) (x : Space) : ℝ :=
   Real.exp (-Γ x / ħ)
 
