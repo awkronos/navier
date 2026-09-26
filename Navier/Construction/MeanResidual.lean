@@ -807,7 +807,7 @@ noncomputable def baseAxial (b : Components) (p : Scalar) (q : SpaceTime) : ℝ 
   dt (b 2) q + radialDivergence 1 (fun y => b 0 y * b 2 y) q +
     dz (fun y => b 2 y * b 2 y) q - meanLaplacian (b 2) q + dz p q
 
-/-- Physical version of `E_theta` in (32), with viscosity one. -/
+/-- Physical version of the manuscript's E_θ in (32), with viscosity one. -/
 noncomputable def Etheta (b m o : Components) (Ttheta : Scalar) (q : SpaceTime) : ℝ :=
   dt (m 1) q + radialDivergence 2 (fluxDifference b m o 0 1) q +
     dz (fluxDifference b m o 2 1) q - meanLaplacian (m 1) q + m 1 q / radius q ^ 2 -

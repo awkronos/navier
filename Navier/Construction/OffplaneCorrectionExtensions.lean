@@ -812,7 +812,7 @@ noncomputable def azimuthalPotential (h : ℝ) (n : ℕ) (f : Lift → ℝ) (w :
     (w.2 0 / AnnularEndpoint.radius w * physicalScalar h n f w) • ProblemStatement.coordinateVector 1
 
 /-- A direct angular velocity uses the same Cartesian multiplication by
-`e_theta`.  This definition does not apply a curl or a radial primitive. -/
+the unit vector e_θ.  This definition does not apply a curl or a radial primitive. -/
 noncomputable def angularField (h : ℝ) (n : ℕ) (f : Lift → ℝ) : SpaceTime → Space :=
   azimuthalPotential h n f
 

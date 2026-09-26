@@ -4,7 +4,7 @@ import Navier.ConventionBridges
 # Schwartz convention equivalence: Fefferman clause (4) realizes `SchwartzMap`
 
 `Navier/ConventionBridges.lean` proved the forward half of the
-`schwartzConventionEquivalence` residual: every Mathlib `SchwartzMap` datum is
+schwartzConventionEquivalence residual (retired label): every Mathlib `SchwartzMap` datum is
 smooth and satisfies the seminorm-form rapid-decay bound
 `ConventionBridges.FeffermanRapidDecayBound`.  This file
 closes the converse representation: every smooth field satisfying Fefferman's
@@ -48,7 +48,7 @@ def schwartzOfFeffermanData (f : Space → Space)
     (hs : ContDiff ℝ ∞ f) (hd : FeffermanRapidDecayBound f) (x : Space) :
     schwartzOfFeffermanData f hs hd x = f x := rfl
 
-/-- The full `schwartzConventionEquivalence` bridge: a velocity field
+/-- The full schwartzConventionEquivalence bridge (retired residual label): a velocity field
 satisfies Fefferman's clause (4) iff some bundled Schwartz velocity realizes
 it pointwise. -/
 theorem fefferman_clause_four_iff_schwartz (f : Space → Space) :

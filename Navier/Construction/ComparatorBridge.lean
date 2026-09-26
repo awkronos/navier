@@ -14,7 +14,9 @@ import Navier.Construction.ProblemStatement
 This module translates the project's physical differential operators to the
 comparator's operators, and normalizes any positive viscosity to one. It uses
 only the independent comparator definitions; no reference theorem is imported.
-The application to the constructed candidate is in `ComparatorTheorem`.
+The application to the constructed candidate is in
+`Navier.Construction.R3FiniteEnergyComparison`
+(`Navier.Construction.ComparatorBridge.compact_candidate_excludes_global_solution`).
 -/
 
 noncomputable section

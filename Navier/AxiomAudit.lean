@@ -687,9 +687,10 @@ longer earn that exclusion (NS5-CENSUS 2026-09-16 at `3ed567cd`):
 `Analysis/SeeleySynthesis.lean`) is strict
 `[propext, Classical.choice, Quot.sound]` (probe
 `/tmp/ns5-census/probe_seeley.log`; re-checked at this lane's base,
-`/tmp/ns6-axiom-probe.log`), and `logBKMControl_of_schwartzSliced` has no
+`/tmp/ns6-axiom-probe.log`), and the retired logBKMControl_of_schwartzSliced has no
 live declaration at all — only comment references survive
-(`SingularIntegralPrelims`, `Enstrophy`).  The whole-tree runtime
+(`SingularIntegralPrelims`, `Enstrophy`); its absorption step lives on as
+`Navier.Analysis.SingularIntegralPrelims.bkm_shape_absorption`.  The whole-tree runtime
 `collectAxioms` sweep (`scripts/AuditAllAxioms.lean`, exit 0) finds zero
 `sorryAx` in the transitive closure of every imported Navier declaration.
 The enstrophy chain is likewise unconditional under the two named Pattern-A

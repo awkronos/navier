@@ -47,7 +47,7 @@ elements are plain `lp (fun _ => ComplexE3) 1` summable coefficient fields).
 
 Honest boundary: the full mild self-map spacetime integrability (peer time
 leaves `hmX1`, `ContinuousLeiLinMildAssemblyLeaves`, Fourier-lattice row of
-`OPEN_FRONTIER_MAP`) is NOT proved here — it is declared as the open
+`docs/OPEN_FRONTIER_MAP.md`) is NOT proved here — it is declared as the open
 obligation `MildSelfMapTransport` and nothing above depends on it. Peer-owned
 continuous files are untouched; this is the first owner of `Navier/Transfer/`.
 -/

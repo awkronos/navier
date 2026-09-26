@@ -36,7 +36,7 @@ the seminorm-form conditions to a bundled `SchwartzMap` is proved in
 `Navier.Analysis.SchwartzConventionEquivalence`
 (`fefferman_clause_four_iff_schwartz`, landed `3c000fd`), which upgrades the
 two halves recorded here to the full equivalence — so
-`schwartzConventionEquivalence` is no longer an open encoding residual.
+the retired schwartzConventionEquivalence residual is no longer open.
 -/
 
 set_option autoImplicit false

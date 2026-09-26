@@ -12,8 +12,9 @@ The enstrophy `E(t) = ∫ |ω(t,x)|² dx` obeys the vortex-stretching estimate
 incompressibility, the viscous term is dissipative, and the stretching term is
 bounded pointwise by Cauchy–Schwarz.  Combined with the linear Grönwall engine
 `gronwall_log_apriori` this bounds the enstrophy by the time-integral of the
-gradient sup — the exact `M₂` (vorticity-`L²`) majorant that
-`logBKMControl_of_schwartzSliced` consumes.  The assembly line is:
+gradient sup — the exact `M₂` (vorticity-`L²`) majorant that the retired
+logBKMControl_of_schwartzSliced consumed (its absorption step is now
+`Navier.Analysis.SingularIntegralPrelims.bkm_shape_absorption`).  The assembly line is:
 
   `∫‖ω‖_∞ < ∞` → (Biot–Savart log) gradient majorant → (this file) enstrophy
   bounded → `M₂` majorant → `LogBKMControl` → `velocity_bounded`.

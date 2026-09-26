@@ -252,7 +252,7 @@ theorem linearResidual_mode_split {U : Set E} (ε κ : ℝ) (R b F G : E → ℝ
 /-! ## Actual slot phase and projected pressure -/
 
 /-- Scaling a prescribed fast direction produces exactly the manuscript's
-prefactor, for example `c = Q^(1+h)` multiplying `Nabs`. -/
+prefactor, for example `c = Q^(1+h)` multiplying the manuscript's N_abs. -/
 theorem along_scaled_direction (c : ℝ) (V : E → E) (f : E → ℂ) (x : E) :
     along (fun y => c • V y) f x = (c : ℂ) * along V f x := by
   simp [along, map_smul, Complex.real_smul]

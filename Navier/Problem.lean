@@ -115,7 +115,7 @@ squared norm `∑ᵢ uᵢ²`.  The physical kinetic energy is `½∫|u|²`; this
 factor `½`.
 
 Choosing the Euclidean density here discharged *one clause* of the former
-`currentSpaceNormEuclideanNormEquivalence` residual — the energy integrand
+currentSpaceNormEuclideanNormEquivalence residual — the energy integrand
 itself, which previously used the sup norm inherited by `Fin 3 → ℝ`.  The
 remaining clauses were then transported one by one. `finite_energy` below still
 *states* integrability of the inherited sup norm `‖u t x‖²`, and the Schwartz and
@@ -192,7 +192,7 @@ the mismatch does cost is a constant — the two energies are interderivable onl
 up to the attained dimension factor three
 (`Analysis.EnergyNormBridge.uniformlyBoundedEnergy_iff_sup`).  Every consumer
 provably transports across the mismatch, so the former
-`currentSpaceNormEuclideanNormEquivalence` residual is retired rather than
+currentSpaceNormEuclideanNormEquivalence residual is retired rather than
 listed. -/
 structure IsClassicalSolution (ν : ℝ) (f : ForceField)
     (u₀ : SchwartzVelocity) (u : VelocityEvolution)
