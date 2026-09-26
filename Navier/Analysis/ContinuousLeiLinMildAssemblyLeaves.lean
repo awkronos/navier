@@ -2756,7 +2756,12 @@ for general boxes, from box data alone:
    fiber integral, the `τ^{-1/2}`-weighted unweighted-source convolution,
    and the interpolated-weight variants — all die at the same wall:
    `L¹`-in-time source data convolved with `τ^{-1/2}` is finite only
-   `a.e.` in `t` (`τ^{-1/2} * τ^{-3/4} χ_{(0,t)} = ∞` at `t`), and the
+   `a.e.` in `t` (a source singularity travelling with the evaluation time:
+   `∫₀ᵗ (t−s)^{-1/2} (t−s)^{-3/4} ds = ∫₀ᵗ w^{-5/4} dw = ∞`; with the
+   `τ^{-3/4}` singularity at the initial time instead the integral is
+   finite, `t^{1/4} B(1/4, 1/2)` — the divergence and the finiteness are
+   kernel-checked in grails Grails/Audit/NavierStokesSoundness.lean,
+   2026-09-25; the Beta value is not), and the
    box weights are `‖ξ‖⁻¹`-based
    (`s^{-1/2} ∈ L¹(0,T) \ L²(0,T)`).  The gap from box data to
    `SourceL1X1` is the product budget `∫₀ᵀ u₀(s) u₁(s) ds < ∞` along box

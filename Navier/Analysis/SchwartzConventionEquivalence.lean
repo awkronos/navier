@@ -5,7 +5,8 @@ import Navier.ConventionBridges
 
 `Navier/ConventionBridges.lean` proved the forward half of the
 `schwartzConventionEquivalence` residual: every Mathlib `SchwartzMap` datum is
-smooth and satisfies Fefferman's coordinatewise rapid-decay bound.  This file
+smooth and satisfies the seminorm-form rapid-decay bound
+`ConventionBridges.FeffermanRapidDecayBound`.  This file
 closes the converse representation: every smooth field satisfying Fefferman's
 clause-(4) rapid-decay bound is realized pointwise by a bundled `SchwartzMap`.
 
@@ -13,8 +14,15 @@ Together the two directions give the full equivalence
 `(smooth ∧ rapid decay) ↔ (realized by a SchwartzMap)`, so the statement-A
 initial-data convention quantifies over exactly the official clause-(4) class.
 The final theorem transports statement A itself: if the formal surface holds,
-then every coordinatewise-admissible divergence-free datum in Fefferman's
-prose class launches a classical solution attaining it.
+then every seminorm-form admissible divergence-free datum launches a classical
+solution attaining it.
+
+Scope: because `FeffermanRapidDecayBound` is `SchwartzMap.decay'` restated,
+the equivalence here is a repackaging, not a comparison with Fefferman's
+literal coordinate-partial form `|∂ₓ^α u°(x)| ≤ C_{αK}(1 + |x|)^{-K}`.  That
+comparison is kernel-checked in grails
+(grails file Grails/Audit/NavierStokesSoundness.lean, theorem
+feffermanClauseFourLiteral_iff_schwartz, 2026-09-25).
 -/
 
 set_option autoImplicit false
@@ -27,7 +35,7 @@ open Navier
 open Navier.ConventionBridges
 open scoped ContDiff
 
-/-- Bundle Fefferman clause-(4) data (smoothness plus coordinatewise rapid
+/-- Bundle Fefferman clause-(4) data (smoothness plus seminorm-form rapid
 decay) into a Mathlib Schwartz velocity. -/
 def schwartzOfFeffermanData (f : Space → Space)
     (hs : ContDiff ℝ ∞ f) (hd : FeffermanRapidDecayBound f) :
@@ -81,7 +89,7 @@ theorem divergenceFreeInitial_schwartzOfFeffermanData
 
 /-- Statement-A coverage of the official clause-(4) class: if the formal
 statement-A surface holds, then every smooth, rapidly decaying,
-divergence-free datum in Fefferman's coordinatewise prose class launches a
+divergence-free datum in the seminorm-form clause-(4) class launches a
 smooth bounded-energy classical solution attaining it at time zero. -/
 theorem wholeSpaceGlobalRegularity_covers_fefferman_data (hA : ProblemStatements.WholeSpaceGlobalRegularity)
     (ν : ℝ) (hν : 0 < ν) (f : Space → Space)
