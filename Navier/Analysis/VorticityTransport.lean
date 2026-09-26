@@ -953,8 +953,11 @@ holds at `(t, x)` iff the convection–curl identity
 holds at `(t, x)`.  The latter is a pure vector-calculus identity under
 `div u = div ω = 0` (the `div ω = 0` half is `staticDivergence_staticCurl_eq_zero`;
 the `div u = 0` half is the classical-solution incompressibility hypothesis).
-The convection–curl identity is the named residual for the full
-`Navier.Analysis.Enstrophy.vorticityTransportEquation`. -/
+The former named residual — the convection–curl identity — was discharged
+in `Navier.Analysis.ConvectionCurl.staticCurl_convection_evolution`; its consumer
+`Navier.Analysis.Enstrophy.vorticityTransportEquation` is now proved unconditionally
+on a classical solution. The equivalence recorded here is the historical
+decomposition leaf, not a live obligation. -/
 theorem vorticityTransport_eq_partial_and_convection_curl
     {ν : ℝ} {u₀ : SchwartzVelocity} {u : VelocityEvolution} {p : PressureEvolution}
     (hsol : IsClassicalSolution ν zeroForce u₀ u p)

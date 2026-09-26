@@ -271,8 +271,11 @@ theorem continuous_timeDerivative_vorticity
 
 /-- The **cutoff enstrophy**: the vorticity `L²` mass weighted by a spatial
 multiplier `χ`.  (For a cutoff family `χ = χ_R` this is `E_R`; the `R → ∞`
-recovery of the full `enstrophy` is the named residual of the integral
-layer.) -/
+recovery of the full `enstrophy` — the named residual of the integral layer
+when this definition was written — is carried by
+`Navier.Analysis.EnstrophyLimit` (`enstrophy_continuousOn`, `enstrophy_rate_le`,
+`enstrophy_apriori_bound`) under the two named Pattern-A domination
+hypotheses.) -/
 def cutoffEnstrophy (χ : Space → ℝ) (u : VelocityEvolution) (t : ℝ) : ℝ :=
   ∫ x : Space, χ x * officialEuclideanNorm (vorticity u t x) ^ 2
 

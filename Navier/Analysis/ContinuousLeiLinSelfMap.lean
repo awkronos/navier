@@ -38,9 +38,21 @@ so `R <= ν / 16` (the lattice threshold) gives `(7/4) * R` and
 weight-compatible transport of the `ε = ν / 16` small-data threshold from the
 Fourier lattice onto the whole-space carrier, with the attained constant
 reported honestly (lattice-matching `ν / 16`; the raw budget closes already at
-`ν / 12`).  The remaining fixed-point obligations — contraction of the image
-on the spacetime metric and completeness of the ball — are the named residual
-of this module.
+`ν / 12`).  The fixed-point obligations named by this
+module as its residual — contraction of the image on the spacetime metric and
+completeness of the ball — were discharged downstream: the linear contraction
+(factor `3/4` at `R ≤ ν / 16`, consuming this module's mild-image budgets) is
+`Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildLift_contraction`, built
+from the `X¹` slot chain of
+`Navier/Analysis/ContinuousLeiLinBanachContraction.lean`
+(`X1_slot_admissible_reduction`) and the `X⁻¹` slot of
+`Navier/Analysis/ContinuousLeiLinAdmissibleContraction.lean`; the fixed point
+itself is `actual_existsUnique_mildFixedPoint`, conditional on the named
+`MildAssemblyLeaves` bundle; completeness of the ball subtype is the instance
+`Navier.Analysis.ContinuousLeiLinLinkedComplete.linkedAdmissibleBoxComplete`.
+What remains open is the non-degenerate discharge of that leaf bundle (the
+every-time `X¹` leaf `hmX1Time`), recorded in
+`Navier/Analysis/ContinuousLeiLinMildAssemblyLeaves.lean`.
 
 Reference: T. Kato, Math. Z. 187 (1984), "Strong `L^p`-solutions of the
 Navier--Stokes equation in `R^m`"; Z. Lei and F. Lin, Comm. Pure Appl. Math.
@@ -1667,8 +1679,12 @@ the ball budgets `<= 2 R` (pointwise `X⁻¹`) and `<= 2 ν⁻¹ R` (total `X¹`
 `12 * sqrt ν⁻¹ * R * sqrt (∫₀ᵗ X⁻¹(u − v) · X¹(u − v))`.
 
 Honest status: this is a quadratic/Hölder-½ modulus with a ball-radius factor,
-NOT a linear Banach contraction constant; the linear-constant residual of the
-module header remains OPEN, as does completeness of the ball subtype.  The
+NOT a linear Banach contraction constant; the linear-constant obligation of the
+module header was subsequently closed at factor `3/4` by
+`ContinuousLeiLinMildFixedPoint.mildLift_contraction` (downstream of this
+modulus — it consumes the slot budgets assembled here), and completeness of
+the ball subtype is the instance
+`ContinuousLeiLinLinkedComplete.linkedAdmissibleBoxComplete`.  The
 attained constant is `12 sqrt ν⁻¹ R` against the mixed `X⁻¹·X¹` feed of the
 difference slot. -/
 theorem continuousMildImage_sub_coordinateXm1Mass_le_ball_modulus
