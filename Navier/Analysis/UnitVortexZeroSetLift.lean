@@ -45,25 +45,27 @@ consuming `QuantumVortexRegularity.density/current/velocity` and
    and therefore cannot be imported back; the obstruction is restated
    minimally here through the wave-1 Winding file).
 5. **The general mechanism — CONDITIONAL, named hypotheses in the
-   signature.** `circulation_eq_zero_of_phaseLift`: for any `C^∞` field
-   `ψ` admitting a single-valued differentiable phase lift on its vortex
-   complement, the Madelung-velocity circulation around every zero-free
-   circle vanishes. The unitVortex instance has circulation `2π ≠ 0`,
-   which is the same obstruction as §4 uniformly in `ψ` (wave-3: close
-   the proof by the quotient-rule derivative identity, and replace the
-   complement-differentiability hypothesis by real-analyticity where
-   possible).
+   signature (kernel-strict proof).** `circulation_eq_zero_of_phaseLift`:
+   for any `C^∞` field `ψ` admitting a single-valued differentiable
+   phase lift on its vortex complement, the Madelung-velocity
+   circulation around every circle missing the zero set vanishes. The
+   unitVortex instance has circulation `2π ≠ 0` (§3), so its lift
+   hypotheses fail — the §4 refutation is one instance of this uniform
+   obstruction (wave-3: replace the complement-differentiability
+   hypothesis by real-analytic data where possible, and classify the
+   per-lift zero loci).
 
 Status vocabulary: CLOSED = strict kernel axioms (receipts at file
-tail); the only `sorry`s sit at honest WIP blockers named in a comment
-line directly above each.
+tail); CONDITIONAL = same strict receipts, with the unresolved
+hypotheses named explicitly in the signature. There is no `sorry` in
+this file.
 -/
 
 set_option autoImplicit false
 noncomputable section
 
 open Set MeasureTheory Metric
-open scoped Interval
+open scoped Interval ContDiff
 
 namespace Navier.Analysis
 
@@ -259,24 +261,32 @@ theorem unitVortex_no_phaseLift_continuous_at_core :
 
 /-! ## 5. The general conditional mechanism -/
 
+/-- Chain rule for the exponential of an imaginary real-phase curve; the
+exact idiom of wave-1 `hasDerivAt_phaseLift_eq_charge`, isolated. -/
+private theorem exp_phaseCurve_hasDerivAt {α : ℝ → ℝ} {θ : ℝ}
+    (hα : DifferentiableAt ℝ α θ) :
+    HasDerivAt (fun s => Complex.exp (↑(α s) * Complex.I))
+      (Complex.exp (↑(α θ) * Complex.I) * (↑(deriv α θ) * Complex.I)) θ := by
+  have he := (Complex.hasDerivAt_exp (↑(α θ) * Complex.I)).scomp θ
+    ((Complex.ofRealCLM.hasFDerivAt.comp_hasDerivAt θ hα.hasDerivAt).mul_const Complex.I)
+  simpa [Function.comp_def, smul_eq_mul, mul_comm] using he
+
 /-- CONDITIONAL headline (named hypotheses in the signature; see
 `#check @circulation_eq_zero_of_phaseLift`): if a `C^∞` field `ψ`
 admits a single-valued real phase differentiable on all of its vortex
 complement and exponentiating to the normalized field there, then the
 Madelung-velocity circulation around every circle missing the zero set
 vanishes. `unitVortex` with `z₀ = 0`, `ρ = 1` has circulation `2π`
-(§3), so the hypothesis fails for it — the §4 refutation is one
-instance of this uniform statement.
-WIP blocker (chunk 3): the pointwise identity
-`deriv (Θ ∘ γ) θ = ⟪velocity ψ (γ θ), γ' θ⟫_ℝ` for `γ θ = z₀ + ρ·e^{iθ}`,
-obtained by differentiating the lift equation `exp(Θ·I) = ψ/‖ψ‖` along
-`γ` via the quotient rule (`HasDerivAt.div`), `ContDiffAt.norm` for the
-denominator, `HasFDerivAt.comp_hasDerivAt` for the numerator, the
-conj/normSq inversion `Complex.inv_def`, and
-`inner_velocity_eq_im_fderiv_div`; then
-`intervalIntegral.integral_eq_sub_of_hasDerivAt` plus periodicity of
-`γ`. -/
-theorem circulation_eq_zero_of_phaseLift {ψ : ℂ → ℂ} (hψ : ContDiff ℝ ⊤ ψ)
+(§3), so the hypotheses fail for it — the §4 refutation is one instance
+of this uniform statement. Proof: differentiate the lift equation along
+the circle; multiplying by the inverse `‖ψ‖/ψ` of the lift value
+collapses the product-rule expansion to the logarithmic derivative
+`ψ'/ψ` plus the single purely real term
+`↑(deriv (‖ψ ∘ γ‖⁻¹) θ · ‖ψ ∘ γ θ‖)`, whose imaginary part vanishes;
+`inner_velocity_eq_im_fderiv_div` then rewrites the integrand as
+`deriv (Θ ∘ γ)`, and the interval FTC plus periodicity of `γ`
+finishes. -/
+theorem circulation_eq_zero_of_phaseLift {ψ : ℂ → ℂ} (hψ : ContDiff ℝ ∞ ψ)
     {Θ : ℂ → ℝ} {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
     (hcomp : ∀ θ : ℝ, z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ ∈ vortexComplement ψ)
     (hdiff : ∀ z ∈ vortexComplement ψ, DifferentiableAt ℝ Θ z)
@@ -285,10 +295,156 @@ theorem circulation_eq_zero_of_phaseLift {ψ : ℂ → ℂ} (hψ : ContDiff ℝ 
     ∫ θ in (0 : ℝ)..(2 * Real.pi),
         inner ℝ (velocity ψ (z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ))
           (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ)) = 0 := by
-  -- WIP: see the blocker list in the docstring above; every ingredient
-  -- except the quotient-rule derivative identity is probe-verified to
-  -- exist in this build.
-  sorry
+  let γ : ℝ → ℂ := fun s => z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) s
+  have hvpd (s : ℝ) :
+      HasDerivAt γ (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) s)) s := by
+    have h1 := (hasDerivAt_vortexPhase (1 : ℤ) s).const_mul (ρ : ℂ)
+    have h2 := (hasDerivAt_const s z₀).add h1
+    refine h2.congr_deriv ?_
+    simp [vortexPhaseDerivative, zero_add, mul_comm, mul_left_comm]
+  have hγ (s : ℝ) : DifferentiableAt ℝ γ s := (hvpd s).differentiableAt
+  set gfn : ℝ → ℝ := fun θ =>
+    inner ℝ (velocity ψ (γ θ)) (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))
+    with hgfn
+  -- Pointwise derivative identity: deriv (Θ ∘ γ) θ = gfn θ.
+  have hpoint (θ : ℝ) : HasDerivAt (fun s => Θ (γ s)) (gfn θ) θ := by
+    have hz : γ θ ∈ vortexComplement ψ := hcomp θ
+    have hne : ψ (γ θ) ≠ 0 := mem_vortexComplement.mp hz
+    have hψfa : HasFDerivAt (𝕜 := ℝ) ψ (fderiv ℝ ψ (γ θ)) (γ θ) :=
+      (hψ.contDiffAt.differentiableAt (by simp)).hasFDerivAt
+    have hnum : HasDerivAt (fun s => ψ (γ s))
+        (fderiv ℝ ψ (γ θ) (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))) θ :=
+      hψfa.comp_hasDerivAt θ (hvpd θ)
+    -- denominator of the normalized field along the curve
+    have hnd : DifferentiableAt ℝ (fun w : ℂ => ‖ψ w‖) (γ θ) := by
+      have hc : DifferentiableAt ℝ ψ (γ θ) := hψ.contDiffAt.differentiableAt (by simp)
+      have hnz : DifferentiableAt ℝ (fun z : ℂ => ‖z‖) (ψ (γ θ)) :=
+        (contDiffAt_norm ℝ (n := ∞) hne).differentiableAt (by simp)
+      exact DifferentiableAt.comp (γ θ) hnz hc
+    have hden : HasDerivAt (fun s : ℝ => ‖ψ (γ s)‖)
+        (deriv (fun s : ℝ => ‖ψ (γ s)‖) θ) θ :=
+      (hnd.comp θ (hγ θ)).hasDerivAt
+    have hr' : (‖ψ (γ θ)‖ : ℝ) ≠ 0 := norm_ne_zero_iff.mpr hne
+    have hinv : HasDerivAt (fun s : ℝ => ((‖ψ (γ s)‖ : ℝ)⁻¹ : ℝ))
+        (deriv (fun s : ℝ => (‖ψ (γ s)‖ : ℝ)⁻¹) θ) θ :=
+      ((hden.inv (by simpa using hr')).differentiableAt).hasDerivAt
+    have hcinv : HasDerivAt (fun s : ℝ => (((‖ψ (γ s)‖ : ℝ)⁻¹ : ℝ) : ℂ))
+        (((deriv (fun s : ℝ => (‖ψ (γ s)‖ : ℝ)⁻¹) θ : ℝ) : ℂ)) θ :=
+      Complex.ofRealCLM.hasFDerivAt.comp_hasDerivAt θ hinv
+    have hmul : HasDerivAt (fun s : ℝ =>
+        ψ (γ s) * (((‖ψ (γ s)‖ : ℝ)⁻¹ : ℝ) : ℂ))
+        (fderiv ℝ ψ (γ θ) (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))
+          * ((‖ψ (γ θ)‖ : ℝ)⁻¹ : ℂ)
+          + ψ (γ θ) * ((deriv (fun s : ℝ => (‖ψ (γ s)‖ : ℝ)⁻¹) θ : ℝ) : ℂ)) θ :=
+      ((hnum.mul hcinv).congr_of_eventuallyEq
+        (Filter.Eventually.of_forall fun _ => rfl)).congr_deriv
+        (by simp [Complex.ofReal_inv])
+    have hpsiF : (fun s : ℝ => normalizedVortexField ψ (γ s)) =
+        fun s => ψ (γ s) * (((‖ψ (γ s)‖ : ℝ)⁻¹ : ℝ) : ℂ) := by
+      funext s
+      simp [normalizedVortexField, div_eq_mul_inv]
+    have hpsi : HasDerivAt (fun s : ℝ => normalizedVortexField ψ (γ s))
+        (fderiv ℝ ψ (γ θ) (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))
+          * ((‖ψ (γ θ)‖ : ℝ)⁻¹ : ℂ)
+          + ψ (γ θ) * ((deriv (fun s : ℝ => (‖ψ (γ s)‖ : ℝ)⁻¹) θ : ℝ) : ℂ)) θ := by
+      rw [hpsiF]; exact hmul
+    -- exp side and uniqueness of the derivative along the curve
+    have hα : DifferentiableAt ℝ (fun s => Θ (γ s)) θ :=
+      DifferentiableAt.comp θ (hdiff _ hz) (hγ θ)
+    have hexp : HasDerivAt (fun s => Complex.exp (↑(Θ (γ s)) * Complex.I))
+        (Complex.exp (↑(Θ (γ θ)) * Complex.I)
+          * (↑(deriv (fun s => Θ (γ s)) θ) * Complex.I)) θ :=
+      exp_phaseCurve_hasDerivAt hα
+    have hee : Filter.EventuallyEq (nhds θ)
+        (fun s => normalizedVortexField ψ (γ s))
+        (fun s => Complex.exp (↑(Θ (γ s)) * Complex.I)) :=
+      Filter.Eventually.of_forall fun s => (hlift (γ s) (hcomp s)).symm
+    have he1 : deriv (fun s : ℝ => normalizedVortexField ψ (γ s)) θ =
+        Complex.exp (↑(Θ (γ θ)) * Complex.I)
+          * (↑(deriv (fun s => Θ (γ s)) θ) * Complex.I) :=
+      (hexp.congr_of_eventuallyEq hee).deriv
+    have he2 := hpsi.deriv
+    have hD := he1.symm.trans he2
+    have hEexp : Complex.exp (↑(Θ (γ θ)) * Complex.I) =
+        ψ (γ θ) * ((‖ψ (γ θ)‖ : ℝ)⁻¹ : ℂ) := by
+      have h1 : normalizedVortexField ψ (γ θ) =
+          ψ (γ θ) * ((‖ψ (γ θ)‖ : ℝ)⁻¹ : ℂ) := by
+        simp [normalizedVortexField, div_eq_mul_inv]
+      rw [← h1, hlift (γ θ) hz]
+    -- Multiply the differentiated lift equation by `exp⁻¹ = ‖ψ‖ · ψ⁻¹`
+    -- (from `hEexp`).  The derivative of the real factor `‖ψ ∘ γ‖⁻¹` then
+    -- appears only as the REAL quantity `deriv (‖ψ ∘ γ‖⁻¹) θ · ‖ψ γθ‖`,
+    -- so no explicit inverse-derivative formula is needed: the imaginary
+    -- part kills it.
+    have hmain : (↑(deriv (fun s => Θ (γ s)) θ) : ℂ) * Complex.I =
+        fderiv ℝ ψ (γ θ) (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))
+          * (ψ (γ θ))⁻¹
+          + ↑(deriv (fun s : ℝ => (‖ψ (γ s)‖ : ℝ)⁻¹) θ * ‖ψ (γ θ)‖) := by
+      have hnE : Complex.exp (↑(Θ (γ θ)) * Complex.I) ≠ 0 :=
+        Complex.exp_ne_zero _
+      have h3 : (Complex.exp (↑(Θ (γ θ)) * Complex.I))⁻¹ =
+          (‖ψ (γ θ)‖ : ℂ) * (ψ (γ θ))⁻¹ := by
+        rw [hEexp]
+        field_simp [hne]
+      have h := congrArg (fun w : ℂ =>
+          w * (Complex.exp (↑(Θ (γ θ)) * Complex.I))⁻¹) hD
+      rw [h3, hEexp] at h
+      field_simp [hne, hr', hnE] at h ⊢
+      rw [h]
+      simp only [mul_comm, mul_assoc, Complex.ofReal_mul]
+    have him : deriv (fun s => Θ (γ s)) θ =
+        (fderiv ℝ ψ (γ θ) (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))
+          / ψ (γ θ)).im := by
+      have h := congrArg Complex.im hmain
+      simp only [Complex.mul_im, Complex.add_im, Complex.ofReal_re,
+        Complex.ofReal_im, Complex.I_re, Complex.I_im,
+        mul_one, mul_zero, add_zero] at h
+      simpa [div_eq_mul_inv] using h
+    have heq' : deriv (fun s => Θ (γ s)) θ = gfn θ := by
+      rw [him]
+      exact (inner_velocity_eq_im_fderiv_div ψ (γ θ)
+        (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))).symm
+    exact hα.hasDerivAt.congr_deriv heq'
+  -- Continuity of the integrand, hence interval integrability.
+  have hgc : Continuous gfn := by
+    have h1 : Continuous (fun θ => velocity ψ (γ θ)) := by
+      refine continuous_iff_continuousAt.mpr fun θ => ?_
+      have hz : γ θ ∈ vortexComplement ψ := hcomp θ
+      exact ContinuousAt.comp
+        ((velocity_smoothAt_of_nonzero hψ (mem_vortexComplement.mp hz)).continuousAt)
+        ((hγ θ).continuousAt)
+    have hv : Continuous fun θ : ℝ => vortexPhase (1 : ℤ) θ := by
+      refine continuous_iff_continuousAt.mpr fun θ =>
+        ((hasDerivAt_vortexPhase (1 : ℤ) θ).differentiableAt).continuousAt
+    have h2 : Continuous fun θ : ℝ =>
+        (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ) : ℂ) :=
+      (hv.const_mul (ρ : ℂ)).const_mul Complex.I
+    have hconj : Continuous fun θ => (starRingEnd ℂ (velocity ψ (γ θ)) : ℂ) :=
+      Complex.conjCLE.continuous.comp h1
+    have h3 : gfn = fun θ =>
+        ((Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ))
+          * starRingEnd ℂ (velocity ψ (γ θ))).re := by
+      funext θ
+      show inner ℝ (velocity ψ (γ θ))
+          (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ)) = _
+      rw [Complex.inner]
+    rw [h3]
+    exact Complex.reCLM.continuous.comp (h2.mul hconj)
+  have hI : IntervalIntegrable gfn MeasureTheory.volume 0 (2 * Real.pi) :=
+    (hgc.continuousOn).intervalIntegrable
+  have hper : γ (2 * Real.pi) = γ 0 := by
+    show z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) (2 * Real.pi) = _
+    rw [show (2 : ℝ) * Real.pi = (0 : ℝ) + 2 * Real.pi by ring,
+      vortexPhase_two_pi_periodic (1 : ℤ) 0]
+  have hFTC : ∫ θ in (0 : ℝ)..(2 * Real.pi), gfn θ =
+      (fun s => Θ (γ s)) (2 * Real.pi) - (fun s => Θ (γ s)) 0 :=
+    intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (by intro θ _hθ; exact hpoint θ) hI
+  have hzero : (fun s => Θ (γ s)) (2 * Real.pi) - (fun s => Θ (γ s)) 0 = 0 := by
+    show Θ (γ (2 * Real.pi)) - Θ (γ 0) = 0
+    rw [hper]
+    exact sub_self _
+  exact hFTC.trans hzero
 
 /-! ## 6. Receipts (raw `#print axioms`, strict tier) -/
 
@@ -305,5 +461,6 @@ theorem circulation_eq_zero_of_phaseLift {ψ : ℂ → ℂ} (hψ : ContDiff ℝ 
 #print axioms unitVortex_circulation_eq_integral_vortexCirculant
 #print axioms unitVortex_no_differentiable_phaseLift
 #print axioms unitVortex_no_phaseLift_continuous_at_core
+#print axioms circulation_eq_zero_of_phaseLift
 
 end Navier.Analysis
