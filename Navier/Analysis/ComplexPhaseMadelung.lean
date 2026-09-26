@@ -45,11 +45,17 @@ Honesty notes:
   (measured gap 2026-09-26).  The two adjacent-swap generators
   `swap3_inner` / `swap3_outer` are proved here once, in arbitrary dimension,
   and generate the third-order symmetry the Burgers assembly consumes.
-* The heat hypothesis is taken in the log variable `W`.  Converting a
-  pre-given positive heat solution `θ` into `W = log θ` is the chain-rule
-  equivalence `∂t θ = νΔθ ↔ ∂t logθ = ν(Δlogθ + ‖∇logθ‖²)`; it is a genuine
-  second-derivative product-rule expansion and is stated as the residual in
-  the module footer rather than claimed.
+* The heat hypothesis is taken in the log variable `W`.  The converse
+  direction — a positive heat solution `θ` transported to `W = log θ` via the
+  chain-rule expansion `Δ logθ = Δθ/θ − ‖∇θ‖²/θ²` — is discharged in §5
+  (`colehopf_logheat_of_pos_heat`), together with an `ε`-exhaustion
+  (`colehopf_burgers_of_heat_eps`) showing global positivity is NOT needed to
+  run Cole–Hopf: `θ ≥ 0` and positivity at a single point suffice for the
+  pointwise limit `−2ν∇θ/θ` (`colehopf_eps_tendsto_formal`).  §6 bridges the
+  abstract spacetime `ι` formulation to the concrete dim-3 `coleHopfSlice`
+  carrier through the slice embedding (`coleHopfU_eq_coleHopfSlice`) and
+  restates vorticity vanishing through the bridge
+  (`coleHopfU_vorticity_zero`).
 * All vocabulary is repo-native or local to this file: `amplitude_is_heat`
   is a local binder name for the log-heat hypothesis, and every cited
   declaration lives in the four imported navier modules above
@@ -573,3 +579,294 @@ theorem no_colehopf_of_plane_rotation :
             (dirS (Fin 2) 0) := congrArg ((-2 * ν) • ·) hX
       _ = 1 := hB
   linarith
+/-! ## 5. R1 positivity transport: heat in `θ` ⇒ log-heat in `log θ`, and the
+ε-exhaustion that removes global positivity -/
+
+namespace Navier.Analysis
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+/-- Directional derivative of `log ∘ θ`, pointwise in the base point. -/
+theorem colehopf_logFD {θ : Spacetime ι → ℝ} (hθ : ContDiff ℝ ⊤ θ) (hpos : ∀ p, 0 < θ p)
+    (q v : Spacetime ι) :
+    fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) q v = (θ q)⁻¹ • fderiv ℝ θ q v := by
+  have hθd : HasFDerivAt θ (fderiv ℝ θ q) q :=
+    (Differentiable.differentiableAt (ContDiff.differentiable hθ (by simp))).hasFDerivAt
+  have h : fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) q = (θ q)⁻¹ • fderiv ℝ θ q :=
+    (hθd.log ((hpos q).ne')).fderiv
+  rw [h]
+  exact ContinuousLinearMap.smul_apply _ _ _
+
+/-- Slope function identity for `log ∘ θ`. -/
+theorem colehopf_logSlope {θ : Spacetime ι → ℝ} (hθ : ContDiff ℝ ⊤ θ) (hpos : ∀ p, 0 < θ p)
+    (w : Spacetime ι) :
+    (fun q : Spacetime ι => fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) q w)
+      = (fun q : Spacetime ι => (θ q)⁻¹ • fderiv ℝ θ q w) :=
+  funext fun q => colehopf_logFD hθ hpos q w
+
+/-- Product rule for the slope function of the log. -/
+theorem colehopf_logSlopeFD {θ : Spacetime ι → ℝ} (hθ : ContDiff ℝ ⊤ θ) (hpos : ∀ p, 0 < θ p)
+    (p : Spacetime ι) (w v : Spacetime ι) :
+    fderiv ℝ (fun q : Spacetime ι => (θ q)⁻¹ • fderiv ℝ θ q w) p v
+      = (θ p)⁻¹ • fderiv ℝ (fun q : Spacetime ι => fderiv ℝ θ q w) p v
+        + (-(θ p)⁻¹ * (θ p)⁻¹ * fderiv ℝ θ p v) * fderiv ℝ θ p w := by
+  have hθd : HasFDerivAt θ (fderiv ℝ θ p) p :=
+    (Differentiable.differentiableAt (ContDiff.differentiable hθ (by simp))).hasFDerivAt
+  have hA : HasFDerivAt (fun q : Spacetime ι => (θ q)⁻¹)
+      ((-ContinuousLinearMap.mulLeftRight ℝ ℝ (θ p)⁻¹ (θ p)⁻¹) ∘L fderiv ℝ θ p) p :=
+    (hasFDerivAt_inv' ((hpos p).ne' : (θ p : ℝ) ≠ 0)).comp p hθd
+  have hB : HasFDerivAt (fun q : Spacetime ι => fderiv ℝ θ q w)
+      (fderiv ℝ (fun q : Spacetime ι => fderiv ℝ θ q w) p) p :=
+    (Differentiable.differentiableAt
+      (ContDiff.differentiable (contDiff_fderiv_apply hθ w) (by simp))).hasFDerivAt
+  have hprod := (hA.smul hB).fderiv
+  rw [show (fun q : Spacetime ι => (θ q)⁻¹ • fderiv ℝ θ q w)
+      = ((fun q : Spacetime ι => (θ q)⁻¹) • (fun q : Spacetime ι => fderiv ℝ θ q w)) from rfl,
+    hprod]
+  simp only [ContinuousLinearMap.add_apply, ContinuousLinearMap.smul_apply,
+    ContinuousLinearMap.smulRight_apply, ContinuousLinearMap.mulLeftRight_apply,
+    ContinuousLinearMap.comp_apply, ContinuousLinearMap.compSL_apply,
+    ContinuousLinearMap.neg_apply, smul_eq_mul]
+  ring
+
+/-- **R1 positivity transport.**  If `θ > 0` is a smooth heat solution
+(`∂t θ = ν Δθ`), then `log ∘ θ` satisfies the log-heat equation. -/
+theorem colehopf_logheat_of_pos_heat (ν : ℝ) (θ : Spacetime ι → ℝ) (hθ : ContDiff ℝ ⊤ θ)
+    (hpos : ∀ p, 0 < θ p)
+    (heat : ∀ p, fderiv ℝ θ p (dirT ι) = ν * heatLap ι θ p) :
+    ∀ p, fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) p (dirT ι)
+      = ν * (heatLap ι (fun p : Spacetime ι => Real.log (θ p)) p
+          + heatGsq ι (fun p : Spacetime ι => Real.log (θ p)) p) := by
+  intro p
+  have hT : fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) p (dirT ι)
+      = (θ p)⁻¹ • fderiv ℝ θ p (dirT ι) := colehopf_logFD hθ hpos p (dirT ι)
+  have key : (fun j : ι => fderiv ℝ (fun q : Spacetime ι =>
+        fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) q (dirS ι j)) p (dirS ι j))
+      = (fun j : ι => (θ p)⁻¹ *
+            fderiv ℝ (fun q : Spacetime ι => fderiv ℝ θ q (dirS ι j)) p (dirS ι j)
+          - (θ p)⁻¹ * (θ p)⁻¹ *
+              (fderiv ℝ θ p (dirS ι j) * fderiv ℝ θ p (dirS ι j))) := by
+    funext j
+    rw [colehopf_logSlope hθ hpos (dirS ι j),
+      colehopf_logSlopeFD hθ hpos p (dirS ι j) (dirS ι j)]
+    simp only [smul_eq_mul]
+    ring
+  have hlap : heatLap ι (fun p : Spacetime ι => Real.log (θ p)) p
+      = (θ p)⁻¹ * heatLap ι θ p - (θ p)⁻¹ * (θ p)⁻¹ * heatGsq ι θ p := by
+    show ∑ j : ι, fderiv ℝ (fun q : Spacetime ι =>
+        fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) q (dirS ι j)) p (dirS ι j) = _
+    rw [key, Finset.sum_sub_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+    rw [show (∑ j : ι, fderiv ℝ (fun q : Spacetime ι => fderiv ℝ θ q (dirS ι j)) p (dirS ι j))
+          = heatLap ι θ p from rfl,
+        Finset.sum_congr rfl fun j _ => (pow_two _).symm,
+        show (∑ j : ι, (fderiv ℝ θ p (dirS ι j)) ^ 2) = heatGsq ι θ p from rfl]
+  have key2 : (fun j : ι =>
+        (fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) p (dirS ι j)) ^ 2)
+      = (fun j : ι => (θ p)⁻¹ * (θ p)⁻¹ *
+            (fderiv ℝ θ p (dirS ι j) * fderiv ℝ θ p (dirS ι j))) := by
+    funext j
+    rw [colehopf_logFD hθ hpos p (dirS ι j)]
+    simp only [smul_eq_mul]
+    ring
+  have hgsq : heatGsq ι (fun p : Spacetime ι => Real.log (θ p)) p
+      = (θ p)⁻¹ * (θ p)⁻¹ * heatGsq ι θ p := by
+    show ∑ j : ι, (fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) p (dirS ι j)) ^ 2 = _
+    rw [key2, ← Finset.mul_sum,
+      Finset.sum_congr rfl fun j _ => (pow_two _).symm,
+      show (∑ j : ι, (fderiv ℝ θ p (dirS ι j)) ^ 2) = heatGsq ι θ p from rfl]
+  calc fderiv ℝ (fun p : Spacetime ι => Real.log (θ p)) p (dirT ι)
+      = (θ p)⁻¹ • fderiv ℝ θ p (dirT ι) := hT
+    _ = (θ p)⁻¹ • (ν * heatLap ι θ p) := by rw [heat p]
+    _ = ν * (heatLap ι (fun p : Spacetime ι => Real.log (θ p)) p
+        + heatGsq ι (fun p : Spacetime ι => Real.log (θ p)) p) := by
+        rw [hlap, hgsq]
+        simp only [smul_eq_mul]
+        ring
+
+/-- **R1 crown consumer.**  A strictly positive smooth heat amplitude yields a
+Cole–Hopf velocity satisfying vector Burgers. -/
+theorem colehopf_burgers_of_positive_heat (ν : ℝ) {θ : Spacetime ι → ℝ}
+    (hθ : ContDiff ℝ ⊤ θ) (hpos : ∀ p, 0 < θ p)
+    (heat : ∀ p, fderiv ℝ θ p (dirT ι) = ν * heatLap ι θ p) :
+    ∀ (p : Spacetime ι) (i : ι),
+      fderiv ℝ (coleHopfU ι ν (fun q => Real.log (θ q)) · i) p (dirT ι)
+        + ∑ j : ι, coleHopfU ι ν (fun q => Real.log (θ q)) p j
+            * fderiv ℝ (coleHopfU ι ν (fun q => Real.log (θ q)) · i) p (dirS ι j)
+        - ν * ∑ j : ι,
+            fderiv ℝ (fun q =>
+              fderiv ℝ (coleHopfU ι ν (fun q => Real.log (θ q)) · i) q (dirS ι j))
+              p (dirS ι j) = 0 :=
+  colehopf_burgers_of_logheat ν (fun q => Real.log (θ q))
+    (hθ.log fun q => (hpos q).ne')
+    (colehopf_logheat_of_pos_heat ν θ hθ hpos heat)
+
+/-- The unregularized formal Cole–Hopf velocity of an amplitude, `-2ν ∇θ / θ`. -/
+def formalColeHopfU (ν : ℝ) (θ : Spacetime ι → ℝ) (p : Spacetime ι) : ι → ℝ :=
+  fun i => (-2 * ν) * (θ p)⁻¹ * fderiv ℝ θ p (dirS ι i)
+
+/-- On the positivity set the two shapes of the velocity agree. -/
+theorem coleHopfU_log_eq_formal (ν : ℝ) {θ : Spacetime ι → ℝ} (hθ : ContDiff ℝ ⊤ θ)
+    (hpos : ∀ p, 0 < θ p) (p : Spacetime ι) :
+    coleHopfU ι ν (fun q => Real.log (θ q)) p = formalColeHopfU ν θ p := by
+  funext i
+  show (-2 * ν) • fderiv ℝ (fun q : Spacetime ι => Real.log (θ q)) p (dirS ι i) = _
+  rw [colehopf_logFD hθ hpos p (dirS ι i)]
+  simp only [formalColeHopfU, smul_eq_mul]
+  ring
+
+/-- **R1 exhaustion by positive parts.**  Nonnegativity alone suffices to run
+Cole–Hopf on the `ε`-regularization `θ + ε`: each member of the family is a
+Burgers solution with NO pointwise positivity hypothesis on `θ`. -/
+theorem colehopf_burgers_of_heat_eps (ν : ℝ) {θ : Spacetime ι → ℝ} (hθ : ContDiff ℝ ⊤ θ)
+    (hnonneg : ∀ p, 0 ≤ θ p) (ε : ℝ) (hε : 0 < ε)
+    (heat : ∀ p, fderiv ℝ θ p (dirT ι) = ν * heatLap ι θ p) :
+    ∀ (p : Spacetime ι) (i : ι),
+      fderiv ℝ (coleHopfU ι ν (fun q => Real.log (θ q + ε)) · i) p (dirT ι)
+        + ∑ j : ι, coleHopfU ι ν (fun q => Real.log (θ q + ε)) p j
+            * fderiv ℝ (coleHopfU ι ν (fun q => Real.log (θ q + ε)) · i) p (dirS ι j)
+        - ν * ∑ j : ι,
+            fderiv ℝ (fun q =>
+              fderiv ℝ (coleHopfU ι ν (fun q => Real.log (θ q + ε)) · i) q (dirS ι j))
+              p (dirS ι j) = 0 := by
+  have hpos : ∀ p, 0 < θ p + ε := fun p => by linarith [hnonneg p]
+  have hθe : ContDiff ℝ ⊤ (fun p : Spacetime ι => θ p + ε) := hθ.add contDiff_const
+  have heatε : ∀ p, fderiv ℝ (fun p : Spacetime ι => θ p + ε) p (dirT ι)
+      = ν * heatLap ι (fun p : Spacetime ι => θ p + ε) p := by
+    intro p
+    have d1ε (w : Spacetime ι) :
+        (fun q : Spacetime ι => fderiv ℝ (fun x : Spacetime ι => θ x + ε) q w)
+          = (fun q : Spacetime ι => fderiv ℝ θ q w) := by
+      funext q
+      have hθd : HasFDerivAt θ (fderiv ℝ θ q) q :=
+        (Differentiable.differentiableAt
+          (ContDiff.differentiable hθ (by simp))).hasFDerivAt
+      have h2 : HasFDerivAt (fun x : Spacetime ι => θ x + ε) (fderiv ℝ θ q) q := by
+        have h := hθd.add (hasFDerivAt_const ε q)
+        rw [add_zero] at h
+        exact h
+      rw [h2.fderiv]
+    have heqT : fderiv ℝ (fun x : Spacetime ι => θ x + ε) p (dirT ι)
+        = fderiv ℝ θ p (dirT ι) := congrFun (d1ε (dirT ι)) p
+    have heqL : heatLap ι (fun x : Spacetime ι => θ x + ε) p = heatLap ι θ p := by
+      show ∑ j : ι, fderiv ℝ (fun q : Spacetime ι =>
+          fderiv ℝ (fun x : Spacetime ι => θ x + ε) q (dirS ι j)) p (dirS ι j)
+          = ∑ j : ι, fderiv ℝ (fun q : Spacetime ι =>
+              fderiv ℝ θ q (dirS ι j)) p (dirS ι j)
+      rw [Finset.sum_congr rfl fun j _ => by rw [d1ε (dirS ι j)]]
+    rw [heqT, heqL]
+    exact heat p
+  exact colehopf_burgers_of_positive_heat ν hθe hpos heatε
+
+/-- The `ε`-family converges pointwise, at every point where `θ p > 0`, to the
+formal Cole–Hopf velocity `-2ν ∇θ/θ`.  Positivity is needed only AT THE LIMIT
+POINT, not on the whole field. -/
+theorem colehopf_eps_tendsto_formal (ν : ℝ) {θ : Spacetime ι → ℝ} (hθ : ContDiff ℝ ⊤ θ)
+    (p : Spacetime ι) (i : ι) (hp : 0 < θ p) :
+    Tendsto (fun ε : ℝ => coleHopfU ι ν (fun q => Real.log (θ q + ε)) p i)
+      (nhds 0) (nhds (formalColeHopfU ν θ p i)) := by
+  have hθd : HasFDerivAt θ (fderiv ℝ θ p) p :=
+    (Differentiable.differentiableAt (ContDiff.differentiable hθ (by simp))).hasFDerivAt
+  have val (ε : ℝ) (hεn : θ p + ε ≠ 0) :
+      coleHopfU ι ν (fun q => Real.log (θ q + ε)) p i
+        = (-2 * ν) • ((θ p + ε)⁻¹ • fderiv ℝ θ p (dirS ι i)) := by
+    have h : HasFDerivAt (fun x : Spacetime ι => θ x + ε) (fderiv ℝ θ p) p := by
+      have h2 := hθd.add (hasFDerivAt_const ε p)
+      rw [add_zero] at h2
+      exact h2
+    have hl : fderiv ℝ (fun x : Spacetime ι => Real.log (θ x + ε)) p
+        = (θ p + ε)⁻¹ • fderiv ℝ θ p := (h.log hεn).fderiv
+    show (-2 * ν) • fderiv ℝ (fun q : Spacetime ι => Real.log (θ q + ε)) p (dirS ι i) = _
+    rw [hl, ContinuousLinearMap.smul_apply]
+  have htarget : ((-2 * ν) • ((θ p)⁻¹ • fderiv ℝ θ p (dirS ι i)))
+      = formalColeHopfU ν θ p i := by
+    simp only [formalColeHopfU, smul_eq_mul]
+    ring
+  have hopen : ∀ᶠ (ε : ℝ) in nhds 0, θ p + ε ≠ 0 := by
+    have hcont : ContinuousAt (fun ε : ℝ => θ p + ε) 0 :=
+      continuousAt_const.add continuousAt_id
+    refine hcont.eventually_ne ?_
+    rw [add_zero]
+    exact hp.ne'
+  have hlim : Tendsto (fun ε : ℝ => (-2 * ν) • ((θ p + ε)⁻¹ • fderiv ℝ θ p (dirS ι i)))
+      (nhds 0) (nhds (formalColeHopfU ν θ p i)) := by
+    have h0 : Tendsto (fun ε : ℝ => θ p + ε) (nhds 0) (nhds (θ p)) := by
+      convert tendsto_const_nhds.add tendsto_id using 1
+      · funext ε
+        rfl
+      · rw [add_zero]
+      · infer_instance
+    have h1 : Tendsto (fun ε : ℝ => (θ p + ε)⁻¹) (nhds 0) (nhds (θ p)⁻¹) := h0.inv₀ hp.ne'
+    have h2 : Tendsto (fun ε : ℝ => (θ p + ε)⁻¹ • fderiv ℝ θ p (dirS ι i)) (nhds 0)
+        (nhds ((θ p)⁻¹ • fderiv ℝ θ p (dirS ι i))) :=
+      h1.smul tendsto_const_nhds
+    convert h2.const_smul (-2 * ν) using 1
+    rw [htarget]
+  refine Tendsto.congr' ?_ hlim
+  filter_upwards [hopen] with ε hε
+  rw [val ε hε]
+
+/-! ### R2: the slice bridge -/
+
+/-- Spatial slice of spacetime at time `t`. -/
+def spacetimeSliceAt (t : ℝ) : Space → Spacetime (Fin 3) := fun x => (t, x)
+
+/-- Differential of the slice: the continuous linear embedding `v ↦ (0, v)`. -/
+def spacetimeSliceDir : Space →L[ℝ] Spacetime (Fin 3) :=
+  ContinuousLinearMap.prod (0 : Space →L[ℝ] ℝ) (ContinuousLinearMap.id ℝ Space)
+
+theorem hasFDerivAt_spacetimeSliceAt (t : ℝ) (x : Space) :
+    HasFDerivAt (spacetimeSliceAt t) spacetimeSliceDir x :=
+  (hasFDerivAt_const t x).prodMk (hasFDerivAt_id (𝕜 := ℝ) (E := Space) x)
+
+/-- **Hom bridge.**  The derivative of a spacetime field composed with a time
+slice is the derivative precomposed with the embedding. -/
+theorem fderiv_spacetimeSlice_comp {W : Spacetime (Fin 3) → ℝ} (t : ℝ) (x : Space)
+    (hW : DifferentiableAt ℝ W (t, x)) :
+    fderiv ℝ (fun y : Space => W (t, y)) x = fderiv ℝ W (t, x) ∘L spacetimeSliceDir := by
+  have hs := hasFDerivAt_spacetimeSliceAt t x
+  have heq : (fun y : Space => W (t, y)) = W ∘ spacetimeSliceAt t := rfl
+  rw [heq, fderiv_comp (f := spacetimeSliceAt t) (x := x) hW hs.differentiableAt, hs.fderiv]
+  simp only [spacetimeSliceAt]
+
+theorem dirS_spacetimeSliceDir (i : Fin 3) :
+    spacetimeSliceDir (basisVector i) = dirS (Fin 3) i := by
+  simp only [spacetimeSliceDir, ContinuousLinearMap.prod_apply, ContinuousLinearMap.zero_apply,
+    ContinuousLinearMap.id_apply, dirS, basisVector]
+  rw [Prod.mk.injEq]
+  refine ⟨rfl, ?_⟩
+  funext k
+  rw [Pi.single_apply]
+
+/-- **R2 field bridge.**  The abstract Cole–Hopf field of a spacetime
+amplitude, sliced at time `t`, IS the concrete dim-3 `coleHopfSlice` of the
+sliced amplitude. -/
+theorem coleHopfU_eq_coleHopfSlice (ν : ℝ) (W : Spacetime (Fin 3) → ℝ)
+    (hW : ContDiff ℝ ⊤ W) (t : ℝ) :
+    (fun y : Space => coleHopfU (Fin 3) ν W (t, y))
+      = coleHopfSlice ν (fun y : Space => W (t, y)) := by
+  ext x i
+  have hWd : DifferentiableAt ℝ W (t, x) :=
+    Differentiable.differentiableAt (ContDiff.differentiable hW (by simp))
+  have hx : fderiv ℝ (fun y : Space => W (t, y)) x = fderiv ℝ W (t, x) ∘L spacetimeSliceDir :=
+    fderiv_spacetimeSlice_comp t x hWd
+  calc coleHopfU (Fin 3) ν W (t, x) i
+      = (-2 * ν) • fderiv ℝ W (t, x) (dirS (Fin 3) i) := rfl
+    _ = (-2 * ν) • fderiv ℝ W (t, x) (spacetimeSliceDir (basisVector i)) := by
+        rw [← dirS_spacetimeSliceDir i]
+    _ = (-2 * ν) • (fderiv ℝ W (t, x) ∘L spacetimeSliceDir) (basisVector i) := by
+        rw [ContinuousLinearMap.comp_apply]
+    _ = (-2 * ν) • fderiv ℝ (fun y : Space => W (t, y)) x (basisVector i) := by rw [hx]
+    _ = coleHopfSlice ν (fun y : Space => W (t, y)) x i := rfl
+
+/-- **R2 crown restatement.**  The abstract Cole–Hopf spacetime field, viewed
+through the bridge, is a repo `VelocityEvolution` whose VORTICITY (the
+dynamical NS carrier) vanishes at every time. -/
+theorem coleHopfU_vorticity_zero (ν : ℝ) (W : Spacetime (Fin 3) → ℝ) (hW : ContDiff ℝ ⊤ W)
+    (t : ℝ) (x : Space) :
+    Vorticity.vorticity (fun s y => coleHopfU (Fin 3) ν W (s, y)) t x = 0 := by
+  show Vorticity.staticCurl (fun y : Space => coleHopfU (Fin 3) ν W (t, y)) x = 0
+  rw [coleHopfU_eq_coleHopfSlice ν W hW t]
+  refine colehopf_staticCurl_zero ν ?_ x
+  exact hW.comp (ContDiff.prodMk contDiff_const contDiff_id)
+
+end Navier.Analysis
