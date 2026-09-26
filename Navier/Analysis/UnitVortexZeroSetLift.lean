@@ -55,6 +55,14 @@ consuming `QuantumVortexRegularity.density/current/velocity` and
    hypothesis by real-analytic data where possible, and classify the
    per-lift zero loci).
 
+6. **Reduction — section 4 falls out of section 5 — CLOSED** (wave-3 lane
+   N2b). `unitVortex_no_differentiable_phaseLift_of_circulation` derives the
+   section-4 refutations from the section-5 uniform obstruction plus the
+   section-3 pinned circulation alone, consuming none of wave-1's
+   periodic-lift lemma; `hcomp_of_isolated_ball` produces the section-5
+   `hcomp` hypothesis from the isolation-radius data of
+   `hasIsolatedVortexZeros` for every `ρ` below the isolation bound.
+
 Status vocabulary: CLOSED = strict kernel axioms (receipts at file
 tail); CONDITIONAL = same strict receipts, with the unresolved
 hypotheses named explicitly in the signature. There is no `sorry` in
@@ -446,7 +454,91 @@ theorem circulation_eq_zero_of_phaseLift {ψ : ℂ → ℂ} (hψ : ContDiff ℝ 
     exact sub_self _
   exact hFTC.trans hzero
 
-/-! ## 6. Receipts (raw `#print axioms`, strict tier) -/
+/-! ## 6. Reduction: section 4 falls out of section 5 (wave-3 item 1) -/
+
+/-- **The uniform-obstruction reduction.** The section-4 headline negative is
+derived from the general section-5 mechanism plus the section-3 pinned
+circulation ALONE: assuming a complement-differentiable phase lift `Θ` for
+`unitVortex`, §5 at `ψ := unitVortex`, `z₀ := 0`, `ρ := 1` forces the
+circulation integral around the unit circle to vanish, while §3 pins the very
+same integral at `2 * Real.pi ≠ 0`. Wave-1's periodic-lift lemma
+`no_differentiable_periodic_phaseLift_of_nonzero` is not consumed here: the
+trichotomy (§2 CLOSED / §4 FALSIFIED / §5 CONDITIONAL) is one theorem with a
+witness, not three independent artifacts. -/
+theorem unitVortex_no_differentiable_phaseLift_of_circulation :
+    ¬ ∃ Θ : ℂ → ℝ, (∀ z ∈ vortexComplement unitVortex, DifferentiableAt ℝ Θ z) ∧
+      ∀ z ∈ vortexComplement unitVortex,
+        Complex.exp (Θ z * Complex.I) = normalizedVortexField unitVortex z := by
+  rintro ⟨Θ, hdiff, hlift⟩
+  have hcomp : ∀ θ : ℝ,
+      (0 : ℂ) + ((1 : ℝ) : ℂ) * vortexPhase (1 : ℤ) θ ∈ vortexComplement unitVortex := by
+    intro θ
+    simp [mem_vortexComplement, unitVortex, zero_add, vortexPhase_ne_zero]
+  have hz0 : (∫ θ in (0 : ℝ)..(2 * Real.pi),
+      inner ℝ (velocity unitVortex (0 + ((1 : ℝ) : ℂ) * vortexPhase (1 : ℤ) θ))
+        (Complex.I * (((1 : ℝ) : ℂ) * vortexPhase (1 : ℤ) θ))) = 0 :=
+    circulation_eq_zero_of_phaseLift (ψ := unitVortex) (Θ := Θ) (z₀ := (0 : ℂ)) (ρ := (1 : ℝ))
+      unitVortex_smooth (by norm_num : (0 : ℝ) < 1) hcomp hdiff hlift
+  have hpi : (∫ θ in (0 : ℝ)..(2 * Real.pi),
+      inner ℝ (velocity unitVortex (0 + ((1 : ℝ) : ℂ) * vortexPhase (1 : ℤ) θ))
+        (Complex.I * (((1 : ℝ) : ℂ) * vortexPhase (1 : ℤ) θ)))
+      = ∫ θ in (0 : ℝ)..(2 * Real.pi),
+        vortexCirculant unitVortex (vortexPhase (1 : ℤ) θ) := by
+    congr 1
+    funext θ
+    show inner ℝ (velocity unitVortex (0 + ((1 : ℝ) : ℂ) * vortexPhase (1 : ℤ) θ))
+        (Complex.I * (((1 : ℝ) : ℂ) * vortexPhase (1 : ℤ) θ)) = _
+    simp [vortexCirculant, zero_add, one_mul]
+  rw [hpi, unitVortex_circulation_eq_integral_vortexCirculant] at hz0
+  exact ne_of_gt Real.two_pi_pos hz0
+
+/-- The physically-read corollary follows through §5 as well: a lift
+continuous on the whole plane (hence on the complement, differentiably) does
+not exist — same contradiction, same single mechanism. -/
+theorem unitVortex_no_phaseLift_continuous_at_core_of_circulation :
+    ¬ ∃ Θ : ℂ → ℝ, Continuous Θ ∧
+      (∀ z ∈ vortexComplement unitVortex, DifferentiableAt ℝ Θ z) ∧
+      ∀ z ∈ vortexComplement unitVortex,
+        Complex.exp (Θ z * Complex.I) = normalizedVortexField unitVortex z := by
+  rintro ⟨Θ, _, hdiff, hlift⟩
+  exact unitVortex_no_differentiable_phaseLift_of_circulation ⟨Θ, hdiff, hlift⟩
+
+/-- **Section-5 hypothesis producer (item 4, narrow form).** Inside the
+isolation radius of an isolated vortex zero, EVERY circle centered at that
+zero misses the zero set — so `circulation_eq_zero_of_phaseLift`'s `hcomp` is
+DERIVED from the isolation data of `hasIsolatedVortexZeros` (its matrix body,
+spelled in the signature), not assumed, for every `ρ ∈ (0, r)`. The global
+almost-all-`ρ` statement over the whole plane needs the discrete-intersect-
+compact finiteness route and is recorded for wave-4. -/
+theorem hcomp_of_isolated_ball {ψ : ℂ → ℂ} {z₀ : ℂ} {r : ℝ}
+    (hr : 0 < r)
+    (hiso : ∀ w ∈ ball z₀ r, w ∈ vortexZeroSet ψ → w = z₀)
+    {ρ : ℝ} (hρ : 0 < ρ) (hρr : ρ < r) :
+    ∀ θ : ℝ, z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ ∈ vortexComplement ψ := by
+  intro θ
+  have hnw : ‖(ρ : ℂ) * vortexPhase (1 : ℤ) θ‖ = ρ := by
+    have hc : ‖(ρ : ℂ)‖ = ρ := by
+      rw [Complex.norm_def, Complex.normSq_ofReal, ← sq, Real.sqrt_sq (le_of_lt hρ)]
+    rw [norm_mul, hc, norm_vortexPhase, mul_one]
+  have hw : z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ ∈ ball z₀ r := by
+    rw [mem_ball, dist_eq_norm]
+    rw [show z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ - z₀
+        = (ρ : ℂ) * vortexPhase (1 : ℤ) θ from by abel]
+    rw [hnw]
+    exact hρr
+  by_contra h
+  rw [mem_vortexComplement, not_ne_iff] at h
+  have hm : z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ ∈ vortexZeroSet ψ := by
+    simpa [vortexZeroSet] using h
+  have heq := hiso _ hw hm
+  have hu : (ρ : ℂ) * vortexPhase (1 : ℤ) θ = 0 := by
+    have h' := congrArg (fun x : ℂ => x - z₀) heq
+    simpa using h'
+  rcases mul_eq_zero.mp hu with hρ0 | hv0
+  · exact (ne_of_gt hρ) (Complex.ofReal_eq_zero.mp hρ0)
+  · exact vortexPhase_ne_zero (1 : ℤ) θ hv0
+
+/-! ## 7. Receipts (raw `#print axioms`, strict tier) -/
 
 #print axioms madelungPhaseLift_exponentiates
 #print axioms madelungPhaseLift_measurable
@@ -462,5 +554,8 @@ theorem circulation_eq_zero_of_phaseLift {ψ : ℂ → ℂ} (hψ : ContDiff ℝ 
 #print axioms unitVortex_no_differentiable_phaseLift
 #print axioms unitVortex_no_phaseLift_continuous_at_core
 #print axioms circulation_eq_zero_of_phaseLift
+#print axioms unitVortex_no_differentiable_phaseLift_of_circulation
+#print axioms unitVortex_no_phaseLift_continuous_at_core_of_circulation
+#print axioms hcomp_of_isolated_ball
 
 end Navier.Analysis
