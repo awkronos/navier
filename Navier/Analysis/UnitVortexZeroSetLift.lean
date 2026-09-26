@@ -18,37 +18,45 @@ consuming `QuantumVortexRegularity.density/current/velocity` and
 2. **Measurable lift ACROSS the zero set — CLOSED.** `madelungPhaseLift ψ`
    is the everywhere-defined real function `Complex.arg ∘ ψ`; it is
    measurable for measurable ψ, it exponentiates exactly to
-   `normalizedVortexField ψ` on the complement, and the exception set is
-   the zero set itself (measure zero for isolated zeros; `{0}` for
-   `unitVortex`). So the Madelung phase of a vortex-type field DOES extend
-   across its zeros — in the measurable category.
-3. **Curl control on the complement — CLOSED.** Off the zero set the
-   Madelung `velocity` is the gradient of a locally constructed smooth
-   real phase (`vortex_localPhaseLift`), so its planar curl commutes on
-   the complement.
-4. **Smooth lift across the zero set — FALSIFIED with a pinned witness.**
-   `unitVortex_no_continuous_phaseLift`: no phase function continuous at
-   the core can lift the normalized `unitVortex` field on a punctured
-   neighbourhood. Witness data: the unit-circle circulation of the actual
-   Madelung velocity of `unitVortex` is exactly `2π`
-   (`unitVortex_velocity_circulation`, wave-1 Winding file) while any
-   single-valued continuous lift forces the circulation to vanish;
-   equivalently the U(1) holonomy of the charge-one loop is trivial
-   (`exp(2πi·1) = 1`) yet no real lift exists. This is the
-   `trivial_holonomy_without_real_lift` refuter pattern (mirrored in
-   reality at `Reality/Physics/MadelungHolonomy.lean:65`, which imports
-   navier and therefore cannot be imported here; the obstruction is
-   restated minimally in this file via
-   `no_differentiable_periodic_phaseLift_of_nonzero`).
-5. **The remaining positive regime — CONDITIONAL with a named
-   hypothesis.** Where a single-valued differentiable complement lift is
-   uniformly continuous up to the core, it extends continuously across
-   the zero set, and the extension's circulation around each core
-   vanishes. The named hypothesis is NOT vacuous; replacing it by
-   "ψ real-analytic" is the recorded wave-3 residual.
+   `normalizedVortexField ψ` on the complement, the exception set is the
+   zero set itself (`liftException_subset_zeroSet`), and for `unitVortex`
+   the lift holds almost everywhere across the core
+   (`unitVortex_phaseLift_eventually_ae`). So the Madelung phase of a
+   vortex-type field DOES extend across its zeros — in the measurable
+   category.
+3. **Pinned circulation witness — CLOSED.** `vortexCirculant` is the
+   Euclidean pairing of the decoded Madelung velocity with the CCW
+   tangent; `vortexCirculant_unitVortex_on_loop` pins its value to
+   exactly `1` pointwise on the unit circle and
+   `unitVortex_circulation_eq_integral_vortexCirculant` restates the
+   wave-1 `unitVortex_velocity_circulation = 2π` as the integral of this
+   geometric density.
+4. **Differentiable lift across the zero set — FALSIFIED with a pinned
+   witness.** `unitVortex_no_differentiable_phaseLift` (and its
+   corollary `unitVortex_no_phaseLift_continuous_at_core`): no real
+   phase differentiable on the whole punctured plane exponentiates to
+   the normalized `unitVortex` field. Witness: restricting a putative
+   lift to the unit circle `vortexPhase 1` yields a differentiable
+   PERIODIC real lift of the charge-1 loop, contradicting wave-1's
+   `no_differentiable_periodic_phaseLift_of_nonzero`; equivalently the
+   loop has trivial U(1) holonomy (`exp(2πi·1) = 1`) yet no real lift —
+   the `trivial_holonomy_without_real_lift` pattern (mirrored in reality
+   at `Reality/Physics/MadelungHolonomy.lean:65`, which imports navier
+   and therefore cannot be imported back; the obstruction is restated
+   minimally here through the wave-1 Winding file).
+5. **The general mechanism — CONDITIONAL, named hypotheses in the
+   signature.** `circulation_eq_zero_of_phaseLift`: for any `C^∞` field
+   `ψ` admitting a single-valued differentiable phase lift on its vortex
+   complement, the Madelung-velocity circulation around every zero-free
+   circle vanishes. The unitVortex instance has circulation `2π ≠ 0`,
+   which is the same obstruction as §4 uniformly in `ψ` (wave-3: close
+   the proof by the quotient-rule derivative identity, and replace the
+   complement-differentiability hypothesis by real-analyticity where
+   possible).
 
-Status vocabulary: CLOSED = strict kernel axioms; the only `sorry`s sit at
-honest WIP blockers named in a comment line directly above each.
+Status vocabulary: CLOSED = strict kernel axioms (receipts at file
+tail); the only `sorry`s sit at honest WIP blockers named in a comment
+line directly above each.
 -/
 
 set_option autoImplicit false
@@ -151,52 +159,138 @@ theorem liftException_subset_zeroSet {ψ : ℂ → ℂ} :
   exact hz (madelungPhaseLift_exponentiates ψ z h)
 
 /-- For `unitVortex` the lift equation holds `volume`-almost everywhere
-ACROSS the zero set: measurable lift + null exceptional fibre.
-WIP blocker: `volume ({0} : Set ℂ) = 0` for the planar Lebesgue measure
-(`ℂ ≃ᵢᵐ ℝ²` measure algebra); the exception-set containment is already
-`liftException_subset_zeroSet`. Resolved by the `NullSingletonClass
-volume` instance / `volume_eq_zero_of_countable` name probe. -/
+ACROSS the zero set: measurable lift + null exceptional fibre
+(`Set.Countable.ae_notMem` under the `NullSingletonClass volume`
+instance for the planar measure; the exception-set containment is
+`liftException_subset_zeroSet`). -/
 theorem unitVortex_phaseLift_eventually_ae :
     ∀ᵐ z ∂(volume : Measure ℂ),
       Complex.exp (madelungPhaseLift unitVortex z * Complex.I) =
         normalizedVortexField unitVortex z := by
-  have hsub : {z : ℂ | Complex.exp (madelungPhaseLift unitVortex z * Complex.I) ≠
-      normalizedVortexField unitVortex z} ⊆ ({0} : Set ℂ) := by
-    intro z hz
-    have := liftException_subset_zeroSet hz
-    rwa [unitVortex_vortexZeroSet, mem_singleton_iff] at this
-  -- WIP: need `volume ({0}:Set ℂ) = 0`, then Filter.mem_of_superset (mem_ae.mpr ..)
-  sorry
+  have hzc : (vortexZeroSet unitVortex).Countable := by
+    rw [unitVortex_vortexZeroSet]; exact Set.countable_singleton 0
+  filter_upwards [hzc.ae_notMem volume] with z hz
+  exact madelungPhaseLift_exponentiates unitVortex z (by
+    rw [mem_vortexComplement]; exact hz)
 
-/-! ## 3. Curl control on the complement — local smooth phase lifts -/
--- Chunk 2. The rotated principal-branch local phase
--- `vortexLocalPhase ψ c w = arg (conj (ψ c) * ψ w)` has positive real
--- part `‖ψ c‖ ^ 2 > 0` at the center, giving a continuous branch near
--- any nonzero point; `arg` is then smooth and the Madelung velocity is
--- its gradient, so the planar curl commutes off the zero set.
+/-! ## 3. Pinned circulation witness — the density the obstruction sees -/
 
-/-! ## 4. Smooth lift across the zero set — FALSIFIED, pinned witness -/
+/-- The circulation density: the decoded Madelung velocity paired with
+the counter-clockwise tangent `I · z` at `z` (the Euclidean integrand of
+wave-1 `unitVortex_velocity_circulation`). -/
+noncomputable def vortexCirculant (ψ : ℂ → ℂ) (z : ℂ) : ℝ :=
+  inner ℝ (velocity ψ z) (Complex.I * z)
 
-/-- The headline negative: no phase function continuous at the core lifts
-the normalized `unitVortex` field on the whole punctured plane. This is
-the circulation-quantization obstruction (nonzero-degree zero with
-trivial U(1) holonomy), the navier-side restatement of reality's
-`trivial_holonomy_without_real_lift` pattern.
-WIP blocker (chunk 2): restrict `Θ` to the unit circle
-`z = vortexPhase 1 θ`, differentiate to get a differentiable periodic
-real lift of the charge-1 loop, contradict
-`no_differentiable_periodic_phaseLift_of_nonzero 1`. -/
-theorem unitVortex_no_continuous_phaseLift :
-    ¬ ∃ Θ : ℂ → ℝ, Continuous Θ ∧
+/-- Pointwise witness pin: on the unit circle the `unitVortex` velocity
+IS the CCW tangent, so the circulation density is exactly `1`. -/
+theorem vortexCirculant_unitVortex_on_loop (θ : ℝ) :
+    vortexCirculant unitVortex (vortexPhase (1 : ℤ) θ) = 1 := by
+  have ht : vortexPhaseDerivative (1 : ℤ) θ = Complex.I * vortexPhase (1 : ℤ) θ := by
+    simp [vortexPhaseDerivative]
+  rw [vortexCirculant, unitVortex_velocity_on_phase_loop, ← ht,
+    real_inner_self_eq_norm_sq, ht]
+  have hn : ‖Complex.I * vortexPhase (1 : ℤ) θ‖ = 1 := by
+    rw [norm_mul]
+    simp [norm_vortexPhase]
+  rw [hn]
+  norm_num
+
+/-- The wave-1 exact circulation `2π` restated as the integral of the
+geometric circulation density over the charge-1 loop. -/
+theorem unitVortex_circulation_eq_integral_vortexCirculant :
+    (∫ θ in (0 : ℝ)..(2 * Real.pi),
+        vortexCirculant unitVortex (vortexPhase (1 : ℤ) θ)) = 2 * Real.pi := by
+  convert unitVortex_velocity_circulation with θ
+  have ht : vortexPhaseDerivative (1 : ℤ) θ = Complex.I * vortexPhase (1 : ℤ) θ := by
+    simp [vortexPhaseDerivative]
+  show inner ℝ (velocity unitVortex (vortexPhase (1 : ℤ) θ))
+      (Complex.I * vortexPhase (1 : ℤ) θ) = _
+  rw [← ht, Complex.inner]
+  simp [mul_comm]
+
+/-! ## 4. Differentiable lift across the zero set — FALSIFIED -/
+
+/-- The headline negative: no real phase differentiable on the vortex
+complement of `unitVortex` (the whole punctured plane) exponentiates to
+its normalized field everywhere off the core. Proof: restrict to the
+unit circle `vortexPhase 1`; the pullback is a differentiable periodic
+real lift of the charge-1 loop, contradicting wave-1
+`no_differentiable_periodic_phaseLift_of_nonzero` (whose own proof runs
+through `hasDerivAt_phaseLift_eq_charge`: a lift's derivative is
+pointwise the integer charge, so periodicity forces charge `0`). This is
+the circulation-quantization obstruction with the pinned witness of §3:
+density `1` on the loop, total circulation `2π ≠ 0`. -/
+theorem unitVortex_no_differentiable_phaseLift :
+    ¬ ∃ Θ : ℂ → ℝ, (∀ z ∈ vortexComplement unitVortex, DifferentiableAt ℝ Θ z) ∧
       ∀ z ∈ vortexComplement unitVortex,
         Complex.exp (Θ z * Complex.I) = normalizedVortexField unitVortex z := by
+  rintro ⟨Θ, hdiff, hlift⟩
+  refine no_differentiable_periodic_phaseLift_of_nonzero (1 : ℤ) (by norm_num)
+    ⟨fun θ => Θ (vortexPhase (1 : ℤ) θ), ?_, ?_, ?_⟩
+  · intro θ
+    exact DifferentiableAt.comp θ
+      (hdiff _ (mem_vortexComplement.mpr (vortexPhase_ne_zero (1 : ℤ) θ)))
+      (hasDerivAt_vortexPhase (1 : ℤ) θ).differentiableAt
+  · intro θ
+    have hz : vortexPhase (1 : ℤ) θ ∈ vortexComplement unitVortex :=
+      mem_vortexComplement.mpr (vortexPhase_ne_zero (1 : ℤ) θ)
+    have hnorm : normalizedVortexField unitVortex (vortexPhase (1 : ℤ) θ) =
+        vortexPhase (1 : ℤ) θ := by
+      simp [normalizedVortexField, unitVortex, norm_vortexPhase]
+    rw [← hnorm]
+    exact hlift _ hz
+  · show Θ (vortexPhase (1 : ℤ) (2 * Real.pi)) = Θ (vortexPhase (1 : ℤ) 0)
+    rw [show (2 : ℝ) * Real.pi = (0 : ℝ) + 2 * Real.pi by ring,
+      vortexPhase_two_pi_periodic (1 : ℤ) 0]
+
+/-- Corollary (the physically-read form): a lift that is continuous AT
+THE CORE and differentiable off it is in particular a complement-
+differentiable lift, so it does not exist either. Lifting the
+continuity-at-core hypothesis off differentiability (a continuous-but-
+nowhere-differentiable candidate) needs the §5 FTC mechanism and is the
+recorded wave-3 residual. -/
+theorem unitVortex_no_phaseLift_continuous_at_core :
+    ¬ ∃ Θ : ℂ → ℝ, Continuous Θ ∧
+      (∀ z ∈ vortexComplement unitVortex, DifferentiableAt ℝ Θ z) ∧
+      ∀ z ∈ vortexComplement unitVortex,
+        Complex.exp (Θ z * Complex.I) = normalizedVortexField unitVortex z := by
+  rintro ⟨Θ, _, hdiff, hlift⟩
+  exact unitVortex_no_differentiable_phaseLift ⟨Θ, hdiff, hlift⟩
+
+/-! ## 5. The general conditional mechanism -/
+
+/-- CONDITIONAL headline (named hypotheses in the signature; see
+`#check @circulation_eq_zero_of_phaseLift`): if a `C^∞` field `ψ`
+admits a single-valued real phase differentiable on all of its vortex
+complement and exponentiating to the normalized field there, then the
+Madelung-velocity circulation around every circle missing the zero set
+vanishes. `unitVortex` with `z₀ = 0`, `ρ = 1` has circulation `2π`
+(§3), so the hypothesis fails for it — the §4 refutation is one
+instance of this uniform statement.
+WIP blocker (chunk 3): the pointwise identity
+`deriv (Θ ∘ γ) θ = ⟪velocity ψ (γ θ), γ' θ⟫_ℝ` for `γ θ = z₀ + ρ·e^{iθ}`,
+obtained by differentiating the lift equation `exp(Θ·I) = ψ/‖ψ‖` along
+`γ` via the quotient rule (`HasDerivAt.div`), `ContDiffAt.norm` for the
+denominator, `HasFDerivAt.comp_hasDerivAt` for the numerator, the
+conj/normSq inversion `Complex.inv_def`, and
+`inner_velocity_eq_im_fderiv_div`; then
+`intervalIntegral.integral_eq_sub_of_hasDerivAt` plus periodicity of
+`γ`. -/
+theorem circulation_eq_zero_of_phaseLift {ψ : ℂ → ℂ} (hψ : ContDiff ℝ ⊤ ψ)
+    {Θ : ℂ → ℝ} {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
+    (hcomp : ∀ θ : ℝ, z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ ∈ vortexComplement ψ)
+    (hdiff : ∀ z ∈ vortexComplement ψ, DifferentiableAt ℝ Θ z)
+    (hlift : ∀ z ∈ vortexComplement ψ,
+      Complex.exp (Θ z * Complex.I) = normalizedVortexField ψ z) :
+    ∫ θ in (0 : ℝ)..(2 * Real.pi),
+        inner ℝ (velocity ψ (z₀ + (ρ : ℂ) * vortexPhase (1 : ℤ) θ))
+          (Complex.I * ((ρ : ℂ) * vortexPhase (1 : ℤ) θ)) = 0 := by
+  -- WIP: see the blocker list in the docstring above; every ingredient
+  -- except the quotient-rule derivative identity is probe-verified to
+  -- exist in this build.
   sorry
 
-/-! ## 5. Conditional extension regime -/
--- Chunk 3: FTC-based circulation theorem for continuous complement
--- lifts and the CauchyMap extension across the core under a named
--- uniform-continuity hypothesis. The obstruction these pin:
--- `unitVortex_velocity_circulation = 2π ≠ 0` (wave-1 Winding file).
+/-! ## 6. Receipts (raw `#print axioms`, strict tier) -/
 
 #print axioms madelungPhaseLift_exponentiates
 #print axioms madelungPhaseLift_measurable
@@ -206,5 +300,10 @@ theorem unitVortex_no_continuous_phaseLift :
 #print axioms normalizedVortexField_norm_one
 #print axioms normalizedVortexField_ne_zero
 #print axioms mem_vortexComplement
+#print axioms unitVortex_phaseLift_eventually_ae
+#print axioms vortexCirculant_unitVortex_on_loop
+#print axioms unitVortex_circulation_eq_integral_vortexCirculant
+#print axioms unitVortex_no_differentiable_phaseLift
+#print axioms unitVortex_no_phaseLift_continuous_at_core
 
 end Navier.Analysis
