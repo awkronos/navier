@@ -271,9 +271,7 @@ step: it needs `Function.HasTemperateGrowth` for the Gaussian multiplier
 `fun ξ : ES => (Real.exp (-(ν * ‖ξ‖ ^ 2 * t) : ℝ) : ℂ)` so that
 `SchwartzMap.smulLeftCLM`/`bilinLeftCLM` can multiply it into the Schwartz
 datum slice `̂u₀ᵢ`, after which `FourierTransformInv` maps SchwartzMaps to
-SchwartzMaps.  This rev carries neither half (measured by source grep of
-`Analysis/Distribution/SchwartzSpace` and `SpecialFunctions/Gaussian`).
-Given `hs`, the proof is mechanical: `L²`-integrability of each Schwartz
+SchwartzMaps.  The claimed absence was FALSE at the shared pin: `Function.HasTemperateGrowth` for the Gaussian multiplier is constructible at mathlib 85e3a25e (measured 2026-09-26 by lane g1b: grails `Warp/HeatCarrierRegularity.lean` supplies the `hs` witness for all admissible parameters and instantiates this criterion unconditionally). Given `hs`, the proof is mechanical: `L²`-integrability of each Schwartz
 coordinate, Euclidean transport along `euclidPoint`, and the
 `norm_sq_le_sum_sq` bridge. -/
 theorem freeHeatPhysical_finiteEnergy_of_schwartz (ν : ℝ) (_hν : 0 ≤ ν) (t : ℝ) (_ht : 0 ≤ t)

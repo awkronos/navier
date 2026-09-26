@@ -231,6 +231,7 @@ import Navier.Analysis.SobolevGNS
 import Navier.Analysis.TriadUnitarySymmetry
 import Navier.Analysis.TypedCoordinateEndpoints
 import Navier.Analysis.UniformDecayDominated
+import Navier.Analysis.UnitVortexZeroSetLift
 import Navier.Analysis.VacuityAudit
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.ViscosityAdmissibility
