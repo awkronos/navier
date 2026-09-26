@@ -185,7 +185,17 @@ theorem colehopf_jacobian_symmetric (ν : ℝ) {W : PressureField} (hW : ContDif
     (x : Space) (i j : Fin 3) :
     fderiv ℝ (fun y => coleHopfSlice ν W y i) x (basisVector j)
       = fderiv ℝ (fun y => coleHopfSlice ν W y j) x (basisVector i) := by
-  sorry
+  have key (k m : Fin 3) :
+      fderiv ℝ (fun y => coleHopfSlice ν W y k) x (basisVector m)
+        = (-2 * ν) • fderiv ℝ (fun y => fderiv ℝ W y (basisVector k)) x (basisVector m) := by
+      have hk : DifferentiableAt ℝ (fun y : Space => fderiv ℝ W y (basisVector k)) x :=
+        Differentiable.differentiableAt
+          (ContDiff.differentiable (contDiff_fderiv_apply hW (basisVector k)) (by simp))
+      show fderiv ℝ ((-2 * ν) • (fun z : Space => fderiv ℝ W z (basisVector k))) x
+          (basisVector m) = _
+      rw [fderiv_const_smul hk (-2 * ν), ContinuousLinearMap.smul_apply]
+  rw [key i j, key j i]
+  exact congrArg ((-2 * ν) • ·) (swap2' hW x (basisVector i) (basisVector j))
 
 /-- **Cole–Hopf velocities are irrotational (repo carrier).**  Write
 `c • ∇W = ∇(cW)` and apply the repo's public
@@ -193,13 +203,22 @@ theorem colehopf_jacobian_symmetric (ν : ℝ) {W : PressureField} (hW : ContDif
 WIP body: the one-line calc is fixed in NOTES. -/
 theorem colehopf_staticCurl_zero (ν : ℝ) {W : PressureField} (hW : ContDiff ℝ ⊤ W)
     (x : Space) : staticCurl (coleHopfSlice ν W) x = 0 := by
-  sorry
+  have hc : coleHopfSlice ν W = staticGradient (fun y : Space => (-2 * ν) • W y) := by
+    ext y i
+    have hWy : DifferentiableAt ℝ W y :=
+      Differentiable.differentiableAt (ContDiff.differentiable hW (by simp))
+    simp only [coleHopfSlice, staticGradient, Pi.smul_apply]
+    show (-2 * ν) • fderiv ℝ W y (basisVector i) = fderiv ℝ ((-2 * ν) • W) y (basisVector i)
+    rw [fderiv_const_smul hWy (-2 * ν), ContinuousLinearMap.smul_apply]
+  rw [hc]
+  exact CurlIdentities.staticCurl_staticGradient_eq_zero (fun y : Space => (-2 * ν) • W y) x
+    ((hW.const_smul (-2 * ν)).contDiffAt.of_le (by simp))
 
 /-- Cole–Hopf slices carry zero vorticity. WIP body. -/
 theorem colehopf_vorticity_zero (ν : ℝ) {W : PressureField} (hW : ContDiff ℝ ⊤ W)
     (t : ℝ) (x : Space) :
-    vorticity (fun s y => coleHopfSlice ν W y) t x = 0 := by
-  sorry
+    vorticity (fun s y => coleHopfSlice ν W y) t x = 0 :=
+  colehopf_staticCurl_zero ν hW x
 
 /-- **Zero vortex stretching.**  The NS nonlinear term `(ω·∇)u` evaluated on
 a Cole–Hopf slice vanishes because `ω = 0`: the transport derivative is a
@@ -208,7 +227,8 @@ theorem colehopf_stretching_zero (ν : ℝ) {W : PressureField} (hW : ContDiff �
     (t : ℝ) (x : Space) :
     spatialDerivative (fun s y => coleHopfSlice ν W y) t x
         (vorticity (fun s y => coleHopfSlice ν W y) t x) = 0 := by
-  sorry
+  rw [colehopf_vorticity_zero ν hW t x]
+  exact map_zero _
 
 end Navier.Analysis
 
@@ -281,6 +301,10 @@ theorem no_colehopf_of_plane_rotation :
 #print axioms swap2'
 #print axioms swap3_inner
 #print axioms swap3_outer
+#print axioms Navier.Analysis.colehopf_jacobian_symmetric
+#print axioms Navier.Analysis.colehopf_staticCurl_zero
+#print axioms Navier.Analysis.colehopf_vorticity_zero
+#print axioms Navier.Analysis.colehopf_stretching_zero
 #print axioms complexPhaseWave_ne
 #print axioms complexPhaseAmplitude_pos
 
