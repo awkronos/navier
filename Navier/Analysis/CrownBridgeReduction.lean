@@ -217,14 +217,69 @@ theorem trapWitness_majorant {σ : ℝ} (hσ : 0 < σ) (t : ℝ) (ht : 0 < t) :
       simp [trapWitness, if_neg (by linarith : ¬ (t ≤ σ))]
     rw [hvt]
     have hmin : min t σ = σ := min_eq_right hst.le
+    have hσ0 : (0 : ℝ) ≤ σ := hσ.le
+    have normLe : ∀ s : ℝ, ‖trapMajorant (trapWitness σ s)‖ ≤ (1 : ℝ) := by
+      intro s
+      have h0 : (0 : ℝ) ≤ trapWitness σ s := by
+        simp only [trapWitness]
+        split <;> linarith
+      rw [Real.norm_eq_abs]
+      simp only [trapMajorant]
+      rw [abs_of_nonneg (le_max_left 0 (1 - trapWitness σ s))]
+      refine max_le_iff.mpr ⟨zero_le_one, ?_⟩
+      linarith
+    have htrapM : Continuous trapMajorant := by
+      show Continuous fun x => max (0 : ℝ) (1 - x)
+      exact continuous_const.max (continuous_const.sub continuous_id)
+    have hmeas : Measurable (fun s : ℝ => trapMajorant (trapWitness σ s)) :=
+      htrapM.measurable.comp
+        (Measurable.ite measurableSet_Iic measurable_const measurable_const)
+    have hfi0σ : Integrable (fun _ : ℝ => (1 : ℝ)) (volume.restrict (Ioc 0 σ)) :=
+      ⟨aestronglyMeasurable_const, hasFiniteIntegral_const 1⟩
+    have hfiσt : Integrable (fun _ : ℝ => (1 : ℝ)) (volume.restrict (Ioc σ t)) :=
+      ⟨aestronglyMeasurable_const, hasFiniteIntegral_const 1⟩
+    have hfi0t : Integrable (fun _ : ℝ => (1 : ℝ)) (volume.restrict (Ioc 0 t)) :=
+      ⟨aestronglyMeasurable_const, hasFiniteIntegral_const 1⟩
+    have hint0σ : IntervalIntegrable (fun s => trapMajorant (trapWitness σ s))
+        volume 0 σ :=
+      (intervalIntegrable_iff_integrableOn_Ioc_of_le hσ0).mpr
+        (hfi0σ.mono' hmeas.aestronglyMeasurable (ae_of_all _ normLe))
+    have hintσt : IntervalIntegrable (fun s => trapMajorant (trapWitness σ s))
+        volume σ t :=
+      (intervalIntegrable_iff_integrableOn_Ioc_of_le hst.le).mpr
+        (hfiσt.mono' hmeas.aestronglyMeasurable (ae_of_all _ normLe))
+    have hint0t : IntervalIntegrable (fun s => trapMajorant (trapWitness σ s))
+        volume 0 t :=
+      (intervalIntegrable_iff_integrableOn_Ioc_of_le (by linarith)).mpr
+        (hfi0t.mono' hmeas.aestronglyMeasurable (ae_of_all _ normLe))
     have hsub : ∫ s in (0)..min t σ, trapMajorant (trapWitness σ s) ≤
         ∫ s in (0)..t, trapMajorant (trapWitness σ s) := by
-      -- interval-integrability + monotonicity of the integral in the upper slot
-      sorry
+      rw [hmin]
+      have hadd : ∫ s in (0)..t, trapMajorant (trapWitness σ s)
+          = (∫ s in (0)..σ, trapMajorant (trapWitness σ s))
+            + ∫ s in σ..t, trapMajorant (trapWitness σ s) :=
+        (integral_add_adjacent_intervals hint0σ hintσt).symm
+      rw [hadd]
+      have hnn : 0 ≤ ∫ s in σ..t, trapMajorant (trapWitness σ s) :=
+        integral_nonneg hst.le fun s _ => le_max_left 0 (1 - trapWitness σ s)
+      linarith
     have hval : ∫ s in (0)..min t σ, trapMajorant (trapWitness σ s) = σ := by
-      -- on (0, min t σ] the witness is 0, so the majorant is identically 1
-      sorry
-    linarith
+      rw [hmin]
+      have hc1 : ∫ s in (0)..σ, trapMajorant (trapWitness σ s) =
+          ∫ s in (0)..σ, (1 : ℝ) := by
+        refine integral_congr_ae (ae_of_all volume fun x hx => ?_)
+        have hxσ : x ≤ σ := by
+          have h2 : x ≤ max (0 : ℝ) σ := hx.2
+          rwa [max_eq_right hσ0] at h2
+        show trapMajorant (if x ≤ σ then (0 : ℝ) else σ / 2) = 1
+        rw [if_pos hxσ]
+        simp only [trapMajorant, sub_zero,
+          max_eq_right (show (0 : ℝ) ≤ 1 by norm_num)]
+      rw [hc1, intervalIntegral.integral_const]
+      simp
+    have hhalf : σ / 2 ≤ σ := by nlinarith
+    rw [hval] at hsub
+    exact hhalf.trans hsub
 
 /-- **Trap-rung refutation.**  For the fixed continuous trap majorant
 `trapMajorant` (positive below the level `1`, zero above it, and Osgood
@@ -360,6 +415,9 @@ theorem h3EnvelopeBudget_le_h3EnvelopeControl {u : VelocityEvolution} {t : ℝ}
 
 #print axioms Navier.Analysis.CrownBridgeReduction.no_monotone_trap
 #print axioms Navier.Analysis.CrownBridgeReduction.osgoodTrap_le_initial
+#print axioms Navier.Analysis.CrownBridgeReduction.trapWitness_monotone
+#print axioms Navier.Analysis.CrownBridgeReduction.trapWitness_leftCont
+#print axioms Navier.Analysis.CrownBridgeReduction.trapWitness_majorant
 #print axioms Navier.Analysis.CrownBridgeReduction.trap_rung_refuted
 #print axioms Navier.Analysis.CrownBridgeReduction.h3EnvelopeControl_mono
 #print axioms Navier.Analysis.CrownBridgeReduction.h3EnvelopeBudget_le_h3EnvelopeControl
