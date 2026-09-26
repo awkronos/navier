@@ -147,9 +147,11 @@ def coleHopfU (ι : Type*) [DecidableEq ι] (ν : ℝ) (W : Spacetime ι → ℝ
 /-- **Hopf–Cole exactness (arbitrary dimension).**  If the smooth
 log-amplitude `W` satisfies `∂t W = ν(ΔW + ‖∇W‖²)` — the heat equation for
 `θ = e^W` in the log variable — then `u = -2ν∇W` satisfies the vector Burgers
-system pointwise in componentwise Fréchet form.  WIP body: the assembly is
-complete on paper (heatKey + swap-cancel, see `/tmp/mc.NOTES.md`); only
-Mathlib API-name side conditions remain. -/
+system pointwise in componentwise Fréchet form.  The proof is the swap-cancel
+assembly: the time derivative of a component (hT1) is `-2ν²(S₁ + 2S₂)`, the
+convective term (hT2) `4ν²S₂`, and the diffusion term (hT3) `-2ν·(-2νS₁)`, so
+the three cancel by `ring`.  Here S₁ is the double-gradient sum `heatLap` of
+the i-th component in the summed direction and S₂ the matched product sum. -/
 theorem colehopf_burgers_of_logheat {ι : Type*} [Fintype ι] [DecidableEq ι]
     (ν : ℝ) (W : Spacetime ι → ℝ) (hW : ContDiff ℝ ⊤ W)
     (amplitude_is_heat : ∀ p,
@@ -159,8 +161,153 @@ theorem colehopf_burgers_of_logheat {ι : Type*} [Fintype ι] [DecidableEq ι]
         + ∑ j : ι, coleHopfU ι ν W p j * fderiv ℝ (coleHopfU ι ν W · i) p (dirS ι j)
         - ν * ∑ j : ι,
             fderiv ℝ (fun q => fderiv ℝ (coleHopfU ι ν W · i) q (dirS ι j)) p (dirS ι j) = 0 := by
-  -- WIP NSQM-0926: failed rewrite reverted to honest sorry at root publish; winning design + prior green body recorded in /tmp/mc.NOTES.md §RESUME STATE; full draft incl. heatLap/heatGsq scaffolding quarantined at /tmp/mc2_draft_backup_ComplexPhaseMadelung.lean
-  sorry
+  intro p i
+  -- Derivative of a Cole–Hopf component at any base point, in any direction.
+  have key (r : Spacetime ι) (k : ι) (v : Spacetime ι) :
+      fderiv ℝ (fun q => coleHopfU ι ν W q k) r v
+        = (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirS ι k)) r v := by
+    have hk : DifferentiableAt ℝ (fun q : Spacetime ι => fderiv ℝ W q (dirS ι k)) r :=
+      Differentiable.differentiableAt
+        (ContDiff.differentiable (contDiff_fderiv_apply hW (dirS ι k)) (by simp))
+    show fderiv ℝ ((-2 * ν) • (fun q : Spacetime ι => fderiv ℝ W q (dirS ι k))) r v = _
+    rw [fderiv_const_smul hk (-2 * ν), ContinuousLinearMap.smul_apply]
+  have hfun : (fun q : Spacetime ι => fderiv ℝ W q (dirT ι))
+      = (fun q => ν * (heatLap ι W q + heatGsq ι W q)) := funext amplitude_is_heat
+  have hslap : ContDiff ℝ ⊤ (fun q : Spacetime ι => heatLap ι W q) := by
+    show ContDiff ℝ ⊤ (fun q =>
+      ∑ i : ι, fderiv ℝ (fun q' => fderiv ℝ W q' (dirS ι i)) q (dirS ι i))
+    refine ContDiff.sum fun j _ => ?_
+    exact contDiff_fderiv_apply (contDiff_fderiv_apply hW (dirS ι j)) (dirS ι j)
+  have hsq : ContDiff ℝ ⊤ (fun q : Spacetime ι => heatGsq ι W q) := by
+    show ContDiff ℝ ⊤ (fun q => ∑ i : ι, (fderiv ℝ W q (dirS ι i)) ^ 2)
+    refine ContDiff.sum fun j _ => ?_
+    exact ContDiff.pow (contDiff_fderiv_apply hW (dirS ι j)) 2
+  -- Time derivative of the i-th component: swap, transport the log-heat law, expand.
+  have hT1 : fderiv ℝ (fun q => coleHopfU ι ν W q i) p (dirT ι)
+      = (-2 * ν) • ν •
+          (∑ j : ι, fderiv ℝ (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i)) q (dirS ι j))
+              p (dirS ι j)
+            + 2 * ∑ j : ι, fderiv ℝ W p (dirS ι j)
+                * fderiv ℝ (fun q => fderiv ℝ W q (dirS ι i)) p (dirS ι j)) := by
+    have hAeq : fderiv ℝ (fun q : Spacetime ι => heatLap ι W q) p (dirS ι i)
+        = ∑ j : ι, fderiv ℝ (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i)) q (dirS ι j))
+            p (dirS ι j) := by
+      have hlapSum : (fun q : Spacetime ι => heatLap ι W q)
+          = ∑ j : ι, (fun q : Spacetime ι =>
+              fderiv ℝ (fun q' : Spacetime ι => fderiv ℝ W q' (dirS ι j)) q (dirS ι j)) :=
+        funext fun q => by show heatLap ι W q = _; rw [Finset.sum_apply]; rfl
+      rw [hlapSum]
+      rw [fderiv_sum (fun j _ => Differentiable.differentiableAt
+          (ContDiff.differentiable
+            (contDiff_fderiv_apply (contDiff_fderiv_apply hW (dirS ι j)) (dirS ι j))
+            (by simp)))]
+      rw [ContinuousLinearMap.sum_apply]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      rw [swap3_outer hW p (dirS ι j) (dirS ι j) (dirS ι i),
+        swap3_inner hW p (dirS ι j) (dirS ι i) (dirS ι j)]
+    have hjd (j : ι) : DifferentiableAt ℝ (fun q : Spacetime ι => fderiv ℝ W q (dirS ι j)) p :=
+      Differentiable.differentiableAt
+        (ContDiff.differentiable (contDiff_fderiv_apply hW (dirS ι j)) (by simp))
+    have hBeq : fderiv ℝ (fun q : Spacetime ι => heatGsq ι W q) p (dirS ι i)
+        = 2 * ∑ j : ι, fderiv ℝ W p (dirS ι j)
+            * fderiv ℝ (fun q => fderiv ℝ W q (dirS ι i)) p (dirS ι j) := by
+      have hgsqSum : (fun q : Spacetime ι => heatGsq ι W q)
+          = ∑ j : ι, (fun q : Spacetime ι => (fderiv ℝ W q (dirS ι j)) ^ 2) :=
+        funext fun q => by show heatGsq ι W q = _; rw [Finset.sum_apply]; rfl
+      rw [hgsqSum]
+      rw [fderiv_sum (fun j _ => Differentiable.differentiableAt
+          (ContDiff.differentiable (ContDiff.pow (contDiff_fderiv_apply hW (dirS ι j)) 2)
+            (by simp)))]
+      rw [ContinuousLinearMap.sum_apply, Finset.mul_sum]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      show (fderiv ℝ ((fun q : Spacetime ι => fderiv ℝ W q (dirS ι j)) ^ 2) p) (dirS ι i) = _
+      rw [show fderiv ℝ ((fun q : Spacetime ι => fderiv ℝ W q (dirS ι j)) ^ 2) p
+            = (2 • fderiv ℝ W p (dirS ι j) ^ (2 - 1)) •
+              fderiv ℝ (fun q : Spacetime ι => fderiv ℝ W q (dirS ι j)) p from fderiv_pow 2 (hjd j)]
+      simp only [ContinuousLinearMap.smul_apply, Pi.smul_apply, pow_one, smul_eq_mul,
+        nsmul_eq_mul]
+      rw [swap2' hW p (dirS ι j) (dirS ι i)]
+      ring
+    have hd2 : DifferentiableAt ℝ (fun q : Spacetime ι => heatLap ι W q + heatGsq ι W q) p :=
+      Differentiable.differentiableAt (ContDiff.differentiable (hslap.add hsq) (by simp))
+    have hsumf : fderiv ℝ (fun q : Spacetime ι => heatLap ι W q + heatGsq ι W q) p
+        = fderiv ℝ (fun q => heatLap ι W q) p + fderiv ℝ (fun q => heatGsq ι W q) p :=
+      fderiv_add (Differentiable.differentiableAt (ContDiff.differentiable hslap (by simp)))
+        (Differentiable.differentiableAt (ContDiff.differentiable hsq (by simp)))
+    calc fderiv ℝ (fun q => coleHopfU ι ν W q i) p (dirT ι)
+        = (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirS ι i)) p (dirT ι) := key p i (dirT ι)
+      _ = (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirT ι)) p (dirS ι i) := by
+          congr 1
+          exact swap2' hW p (dirS ι i) (dirT ι)
+      _ = (-2 * ν) • fderiv ℝ (fun q : Spacetime ι =>
+          ν * (heatLap ι W q + heatGsq ι W q)) p (dirS ι i) := by
+          congr 1
+          exact congrArg (fun H : Spacetime ι → ℝ => fderiv ℝ H p (dirS ι i)) hfun
+      _ = (-2 * ν) • ν • (fderiv ℝ (fun q : Spacetime ι => heatLap ι W q) p (dirS ι i)
+          + fderiv ℝ (fun q : Spacetime ι => heatGsq ι W q) p (dirS ι i)) := by
+          congr 1
+          have hsm : (fun q : Spacetime ι => ν * (heatLap ι W q + heatGsq ι W q))
+              = (ν • (fun q : Spacetime ι => heatLap ι W q + heatGsq ι W q)) := rfl
+          rw [hsm, fderiv_const_smul hd2 ν, hsumf, ContinuousLinearMap.smul_apply,
+            ContinuousLinearMap.add_apply]
+      _ = (-2 * ν) • ν •
+          (∑ j : ι, fderiv ℝ (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i)) q (dirS ι j))
+              p (dirS ι j)
+            + 2 * ∑ j : ι, fderiv ℝ W p (dirS ι j)
+                * fderiv ℝ (fun q => fderiv ℝ W q (dirS ι i)) p (dirS ι j)) := by
+          congr 1
+          rw [hAeq, hBeq]
+  -- Convective term: `4 ν² S₂` with the same atom shapes as `hT1`.
+  have hT2 : ∑ j : ι, coleHopfU ι ν W p j
+        * fderiv ℝ (fun q => coleHopfU ι ν W q i) p (dirS ι j)
+      = (4 * ν * ν) * ∑ j : ι, fderiv ℝ W p (dirS ι j)
+          * fderiv ℝ (fun q => fderiv ℝ W q (dirS ι i)) p (dirS ι j) := by
+    calc ∑ j : ι, coleHopfU ι ν W p j
+            * fderiv ℝ (fun q => coleHopfU ι ν W q i) p (dirS ι j)
+        = ∑ j : ι, (4 * ν * ν) *
+            (fderiv ℝ W p (dirS ι j)
+              * fderiv ℝ (fun q => fderiv ℝ W q (dirS ι i)) p (dirS ι j)) :=
+            Finset.sum_congr rfl fun j _ => by
+              rw [show coleHopfU ι ν W p j = (-2 * ν) • fderiv ℝ W p (dirS ι j) from rfl,
+                key p i (dirS ι j)]
+              simp only [ContinuousLinearMap.smul_apply, smul_eq_mul]
+              ring
+      _ = (4 * ν * ν) * ∑ j : ι, fderiv ℝ W p (dirS ι j)
+          * fderiv ℝ (fun q => fderiv ℝ W q (dirS ι i)) p (dirS ι j) :=
+            by rw [← Finset.mul_sum]
+  -- Diffusion term: `-2 ν S₁` with the same atom shape as `hT1`.
+  have hT3 : ∑ j : ι, fderiv ℝ (fun q => fderiv ℝ (fun x => coleHopfU ι ν W x i) q (dirS ι j))
+        p (dirS ι j)
+      = (-2 * ν) * ∑ j : ι, fderiv ℝ (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i))
+          q (dirS ι j)) p (dirS ι j) := by
+    calc ∑ j : ι, fderiv ℝ (fun q => fderiv ℝ (fun x => coleHopfU ι ν W x i) q (dirS ι j))
+            p (dirS ι j)
+        = ∑ j : ι, (-2 * ν) • fderiv ℝ
+            (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i)) q (dirS ι j)) p (dirS ι j) :=
+            Finset.sum_congr rfl fun j _ => by
+              have hj : (fun q : Spacetime ι =>
+                  fderiv ℝ (fun x => coleHopfU ι ν W x i) q (dirS ι j))
+                  = ((-2 * ν) • (fun q : Spacetime ι =>
+                    fderiv ℝ (fun y : Spacetime ι => fderiv ℝ W y (dirS ι i)) q (dirS ι j))) :=
+                funext fun q => key q i (dirS ι j)
+              have hdj : DifferentiableAt ℝ (fun q : Spacetime ι =>
+                  fderiv ℝ (fun y : Spacetime ι => fderiv ℝ W y (dirS ι i)) q (dirS ι j)) p :=
+                Differentiable.differentiableAt
+                  (ContDiff.differentiable
+                    (contDiff_fderiv_apply (contDiff_fderiv_apply hW (dirS ι i)) (dirS ι j))
+                    (by simp))
+              rw [hj, fderiv_const_smul hdj (-2 * ν), ContinuousLinearMap.smul_apply]
+      _ = (-2 * ν) • ∑ j : ι, fderiv ℝ
+          (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i)) q (dirS ι j)) p (dirS ι j) :=
+            (Finset.smul_sum (f := fun j =>
+              fderiv ℝ (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i)) q (dirS ι j)) p
+                (dirS ι j))).symm
+      _ = (-2 * ν) * ∑ j : ι, fderiv ℝ (fun q => fderiv ℝ (fun y => fderiv ℝ W y (dirS ι i))
+          q (dirS ι j)) p (dirS ι j) := by rw [smul_eq_mul]
+  -- Assembly: `-2ν²(S₁ + 2S₂) + 4ν²S₂ - ν(-2ν S₁) = 0`.
+  rw [hT1, hT2, hT3]
+  simp only [smul_eq_mul]
+  ring
 /-! ## 3. Irrotationality: the curl-free boundary (dimension 3, repo carriers) -/
 
 namespace Navier.Analysis
