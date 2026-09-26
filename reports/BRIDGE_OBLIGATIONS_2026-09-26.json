@@ -1,0 +1,308 @@
+{
+ "obligations": [
+  "PDE",
+  "forcing",
+  "energy class",
+  "phase topology",
+  "zeros"
+ ],
+ "bridges": [
+  "hopf-cole",
+  "wick",
+  "madelung",
+  "warp"
+ ],
+ "matrix": {
+  "hopf-cole": {
+   "PDE": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "grep -rlni 'cole.hopf|cole-hopf' Navier docs (navier MacBook) + Reality docs (Studio) + Grails --include=*.lean",
+    "host": "macbook+studio",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "No Cole-Hopf transform surface in navier, reality, or grails. 'Leray-Hopf' hits (Navier/Analysis/LerayWeak.lean) are the weak-solution notion, a different Hopf."
+   },
+   "forcing": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "same grep",
+    "host": "macbook+studio",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   },
+   "energy class": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "same grep",
+    "host": "macbook+studio",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   },
+   "phase topology": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "same grep",
+    "host": "macbook+studio",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   },
+   "zeros": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "same grep",
+    "host": "macbook+studio",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   }
+  },
+  "wick": {
+   "PDE": {
+    "status": "open",
+    "backing": "module boundary: Navier/Analysis/WickRotationModes.lean header ('does not identify the nonlinear real Navier--Stokes equation with a quantum or Gross-Pitaevskii evolution')",
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "Linear one-mode multiplier only; no PDE transport theorem exists on this bridge."
+   },
+   "forcing": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "WickRotationModes (15 decls) contains no force-supply statement."
+   },
+   "energy class": {
+    "status": "counterexample",
+    "backing": "Navier.Analysis.WickRotationModes.nonzero_lattice_mode_strictly_damped_but_wick_mode_not (strict; census 15/15)",
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "Scoped: strict parabolic damping is NOT retained by the Wick continuation at the linear multiplier level (unit modulus on imaginary time). Not a nonlinear-energy counterexample; carrier bound stated in the module header."
+   },
+   "phase topology": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   },
+   "zeros": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   }
+  },
+  "madelung": {
+   "PDE": {
+    "status": "open",
+    "backing": "docs/MADELUNG_CORRESPONDENCE.md:125-128 (obligation moved to WholeSpaceScaledCutoff family WholeSpaceSolenoidalHeatApproximation/ConvectionLimit/FullViscousLimit); no lift-side decl discharges it",
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "Source result agrees with doc."
+   },
+   "forcing": {
+    "status": "open",
+    "backing": "Navier.Analysis.ConstructedFiniteTimeObstruction.compact_candidate_madelung_amplitude_or_derivative_degenerates enters via the forced dichotomy; forcing obligation itself unproven for the lift (docs MADELUNG_CORRESPONDENCE.md:125)",
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   },
+   "energy class": {
+    "status": "open",
+    "backing": "partial structure: Navier.Analysis.MadelungTransportIdentity.psiFamily_transport_excludes_amplitude_floor, uniformDensity_transport_rigidity, cpsi_transport_along_flow (all strict, census 43/43)",
+    "probe": "python3 ~/.claude/scripts/proof-loop.py census /tmp/nsqm-rb --full --output /tmp/rb_navier_census.json (head 2fe9a63948)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "First transport/energy-identity structure built (module header cites docs requirement); does not yet discharge the NS energy-class obligation."
+   },
+   "phase topology": {
+    "status": "counterexample",
+    "backing": "Navier.Analysis.MadelungDecoderCurlObstruction.no_scalar_madelung_initial_lift_of_rotational_data (datum rotationalDatum : SchwartzVelocity; strict, census 35/35) + QuantumVortexWinding.vortex_phase_circulation_quantized, no_differentiable_periodic_phaseLift_of_nonzero (strict, 30/30) + reality gauge side: Reality.Physics.MadelungHolonomy (9/9 strict) reading QuantumVortexWinding",
+    "probe": "proof-loop.py census ~/reality --package Reality --aggregate Reality (studio, head 8723f545c5, 2026-09-26T09:05:51)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "Scalar route transports irrotational data only."
+   },
+   "zeros": {
+    "status": "counterexample",
+    "backing": "no_scalar_madelung_initial_lift_of_rotational_data (discharges {phase topology, zeros} jointly per docs/MADELUNG_CORRESPONDENCE.md:121-122) + QuantumVortexRegularity.unitVortex_velocity_unbounded_at_core, smooth_wavefunction_does_not_bound_decoded_velocity (strict, 48/48)",
+    "probe": "proof-loop.py census ~/reality --package Reality --aggregate Reality (studio, head 8723f545c5, 2026-09-26T09:05:51)",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": " Reality.Physics.MadelungEuclideanVelocityBound (34/34 strict) gives the Euclidean-3 carrier version."
+   }
+  },
+  "warp": {
+   "PDE": {
+    "status": "open",
+    "backing": "grails/Warp/Shift.lean warpShift_staticDivergence, warpShiftEvol_incompressible, warpShift_convection_zero (incompressible slice + rigid self-advection only; no momentum-equation theorem)",
+    "probe": "read /Users/schizodactyl/grails/Warp/Shift.lean header; Navier/Problem.lean:150 names the mutual ratchet",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "Zero-expansion (Natario) class; NS evolution not claimed. Grails decls NOT axiom-probed this lane (no census receipt) - see residual."
+   },
+   "forcing": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "Warp/Shift.lean read",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   },
+   "energy class": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "Warp/Shift.lean read",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "GR constraint density rho=-s/32pi exists in grails but is a different energy datum; not an NS energy-class statement."
+   },
+   "phase topology": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "grep warp Navier docs",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": "No wavefunction/phase carrier on this bridge."
+   },
+   "zeros": {
+    "status": "unformalized",
+    "backing": null,
+    "probe": "Warp/Shift.lean read",
+    "host": "macbook",
+    "timestamp": "2026-09-26T08:45:53.881970-07:00",
+    "note": ""
+   }
+  }
+ },
+ "doc_crosscheck": {
+  "MADELUNG_CORRESPONDENCE.md:121-127": "AGREES with source: decl exists, joint {phase topology, zeros} discharge claim matches statement form (psi 0 = 0 excluded); 'All three public results are strict' confirmed (foundational_only all, 0 sorry).",
+  "OPEN_FRONTIER_MAP.md:39": "AGREES: 'FALSIFIED (kernel, decoder level)' row names the same decl and the same obligation split.",
+  "RESULT_MAP.md:348-359": "AGREES: 'on the crown SchwartzVelocity carrier and under strict axioms' verified - rotationalDatum : SchwartzVelocity (MadelungDecoderCurlObstruction.lean:199); census strict 35/35."
+ },
+ "census_navier": {
+  "Navier.Analysis.QuantumVortexWinding": {
+   "decl_count": 30,
+   "strict": 30,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown": {
+   "decl_count": 37,
+   "strict": 37,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Analysis.WickRotationModes": {
+   "decl_count": 15,
+   "strict": 15,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Analysis.MadelungDegeneracySharpness": {
+   "decl_count": 41,
+   "strict": 41,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Analysis.ConstructedFiniteTimeObstruction": {
+   "decl_count": 22,
+   "strict": 22,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Analysis.QuantumVortexRegularity": {
+   "decl_count": 48,
+   "strict": 48,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Analysis.BKMForcedBreakdownNecessity": {
+   "decl_count": 14,
+   "strict": 14,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Analysis.MadelungTransportIdentity": {
+   "decl_count": 43,
+   "strict": 43,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  },
+  "Navier.Analysis.MadelungDecoderCurlObstruction": {
+   "decl_count": 35,
+   "strict": 35,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "nonstrict_axiom_sets": {},
+   "crown_reachable": 0
+  }
+ },
+ "generated_by": "R-B fleet NSQM-0926",
+ "census_reality": {
+  "Reality.Physics.ResonanceCorrespondence": {
+   "decl_count": 524,
+   "strict": 524,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "crown_reachable": 0
+  },
+  "Reality.Cosmology.NavierBlowupIntegration": {
+   "decl_count": 10,
+   "strict": 10,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "crown_reachable": 0
+  },
+  "Reality.Cosmology.SingularityBounce": {
+   "decl_count": 44,
+   "strict": 44,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "crown_reachable": 0
+  },
+  "Reality.Physics.MadelungEuclideanVelocityBound": {
+   "decl_count": 34,
+   "strict": 34,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "crown_reachable": 0
+  },
+  "Reality.Physics.MadelungHolonomy": {
+   "decl_count": 9,
+   "strict": 9,
+   "sorry_tainted": [],
+   "native_tainted": [],
+   "crown_reachable": 0
+  }
+ },
+ "census_reality_meta": {
+  "head": "8723f545c54330623a014a9b90565204b60cf354",
+  "host": "studio",
+  "generated_at": "2026-09-26T09:05:51.800227-07:00",
+  "receipt": "/tmp/rb_reality_census_receipt.json (studio) + /tmp/rb_reality_census.json"
+ }
+}
