@@ -18,6 +18,7 @@ import Navier.Analysis.CZNearField
 import Navier.Analysis.ComplexFrequencyHeatLeray
 import Navier.Analysis.ComplexLerayNorm
 import Navier.Analysis.ComplexLerayProjection
+import Navier.Analysis.ComplexPhaseMadelung
 import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.ContinuationScaleSelfImprovement
 import Navier.Analysis.ClassRestartDecomposition
@@ -206,6 +207,7 @@ import Navier.Analysis.PressurePoisson
 import Navier.Analysis.MadelungTransportIdentity
 import Navier.Analysis.MadelungDecoderCurlObstruction
 import Navier.Analysis.MadelungResidualPrimitives
+import Navier.Analysis.MadelungSpinorDecoder
 import Navier.Analysis.PressureStressTensor
 import Navier.Analysis.QuantumVortexRegularity
 import Navier.Analysis.QuantumVortexTopologyChange
@@ -239,6 +241,7 @@ import Navier.Analysis.Vorticity
 import Navier.Analysis.VorticityTransport
 import Navier.Analysis.WeightIntegrability
 import Navier.Analysis.WeightedCommutator
+import Navier.Analysis.WholeSpaceCarrierReconstruction
 import Navier.Analysis.WholeSpaceHeatCurlClosedEvolution
 import Navier.Analysis.WholeSpaceHeatCurlTerminalTrace
 import Navier.Analysis.WholeSpaceHeatThirdDerivative

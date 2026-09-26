@@ -178,8 +178,8 @@ Cole–Hopf velocity is symmetric at every point — mixed partials of the log
 amplitude commute (`swap2'`).  This is the SAME irrotationality wall the
 scalar Madelung decoder hits
 (`Navier/Analysis/MadelungDecoderCurlObstruction.lean`, cited, not edited).
-WIP body: `congrArg ((-2ν) • ·) ∘ swap2'` modulo `fderiv_const_smul` side
-conditions. -/
+PROVED (fleet NSQM-0926) by `congrArg ((-2ν) • ·) ∘ swap2'` modulo the
+`fderiv_const_smul` side conditions. -/
 theorem colehopf_jacobian_symmetric (ν : ℝ) {W : PressureField} (hW : ContDiff ℝ ⊤ W)
     (x : Space) (i j : Fin 3) :
     fderiv ℝ (fun y => coleHopfSlice ν W y i) x (basisVector j)
@@ -199,7 +199,7 @@ theorem colehopf_jacobian_symmetric (ν : ℝ) {W : PressureField} (hW : ContDif
 /-- **Cole–Hopf velocities are irrotational (repo carrier).**  Write
 `c • ∇W = ∇(cW)` and apply the repo's public
 `staticCurl_staticGradient_eq_zero` (namespace `Navier.Analysis.CurlIdentities`).
-WIP body: the one-line calc is fixed in NOTES. -/
+PROVED by the one-line calc via `staticCurl_staticGradient_eq_zero`. -/
 theorem colehopf_staticCurl_zero (ν : ℝ) {W : PressureField} (hW : ContDiff ℝ ⊤ W)
     (x : Space) : staticCurl (coleHopfSlice ν W) x = 0 := by
   have hc : coleHopfSlice ν W = staticGradient (fun y : Space => (-2 * ν) • W y) := by
@@ -213,7 +213,8 @@ theorem colehopf_staticCurl_zero (ν : ℝ) {W : PressureField} (hW : ContDiff �
   exact CurlIdentities.staticCurl_staticGradient_eq_zero (fun y : Space => (-2 * ν) • W y) x
     ((hW.const_smul (-2 * ν)).contDiffAt.of_le (by simp))
 
-/-- Cole–Hopf slices carry zero vorticity. WIP body. -/
+/-- Cole–Hopf slices carry zero vorticity: immediate from
+`colehopf_staticCurl_zero`. -/
 theorem colehopf_vorticity_zero (ν : ℝ) {W : PressureField} (hW : ContDiff ℝ ⊤ W)
     (t : ℝ) (x : Space) :
     vorticity (fun s y => coleHopfSlice ν W y) t x = 0 :=
@@ -221,7 +222,7 @@ theorem colehopf_vorticity_zero (ν : ℝ) {W : PressureField} (hW : ContDiff �
 
 /-- **Zero vortex stretching.**  The NS nonlinear term `(ω·∇)u` evaluated on
 a Cole–Hopf slice vanishes because `ω = 0`: the transport derivative is a
-continuous linear map applied to the zero vector. WIP body (one `rw`). -/
+continuous linear map applied to the zero vector. PROVED (one `rw`). -/
 theorem colehopf_stretching_zero (ν : ℝ) {W : PressureField} (hW : ContDiff ℝ ⊤ W)
     (t : ℝ) (x : Space) :
     spatialDerivative (fun s y => coleHopfSlice ν W y) t x
