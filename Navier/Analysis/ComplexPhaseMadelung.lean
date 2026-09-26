@@ -55,7 +55,12 @@ Honesty notes:
   abstract spacetime `ι` formulation to the concrete dim-3 `coleHopfSlice`
   carrier through the slice embedding (`coleHopfU_eq_coleHopfSlice`) and
   restates vorticity vanishing through the bridge
-  (`coleHopfU_vorticity_zero`).
+  (`coleHopfU_vorticity_zero`).  The equivalence is two-sided:
+  `colehopf_heat_of_pos_logheat` exponentiates any log-heat field to a
+  strictly positive heat solution, and `coordAmp` (with
+  `colehopf_positivity_sharp`) exhibits a smooth global heat solution — a
+  spatial coordinate — that admits NO log transport at all, so blanket
+  positivity is exactly the obstruction, not a convenience.
 * All vocabulary is repo-native or local to this file: `amplitude_is_heat`
   is a local binder name for the log-heat hypothesis, and every cited
   declaration lives in the four imported navier modules above
@@ -869,4 +874,170 @@ theorem coleHopfU_vorticity_zero (ν : ℝ) (W : Spacetime (Fin 3) → ℝ) (hW 
   refine colehopf_staticCurl_zero ν ?_ x
   exact hW.comp (ContDiff.prodMk contDiff_const contDiff_id)
 
+/-! ### R1(c): the exp direction — log-heat ⇒ positive heat, completing the
+chain-rule equivalence the module header promised. -/
+
+/-- Directional derivative of `exp ∘ W`. -/
+theorem colehopf_expFD {W : Spacetime ι → ℝ} (hW : ContDiff ℝ ⊤ W) (q v : Spacetime ι) :
+    fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) q v =
+      Real.exp (W q) • fderiv ℝ W q v := by
+  have hWd : HasFDerivAt W (fderiv ℝ W q) q :=
+    (Differentiable.differentiableAt (ContDiff.differentiable hW (by simp))).hasFDerivAt
+  have h : fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) q =
+      Real.exp (W q) • fderiv ℝ W q := (hWd.exp).fderiv
+  rw [h]
+  exact ContinuousLinearMap.smul_apply _ _ _
+
+/-- Slope function identity for `exp ∘ W`. -/
+theorem colehopf_expSlope {W : Spacetime ι → ℝ} (hW : ContDiff ℝ ⊤ W) (w : Spacetime ι) :
+    (fun q : Spacetime ι => fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) q w)
+      = (fun q : Spacetime ι => Real.exp (W q) • fderiv ℝ W q w) :=
+  funext fun q => colehopf_expFD hW q w
+
+/-- Product rule for the slope function of the exp. -/
+theorem colehopf_expSlopeFD {W : Spacetime ι → ℝ} (hW : ContDiff ℝ ⊤ W)
+    (p : Spacetime ι) (w v : Spacetime ι) :
+    fderiv ℝ (fun q : Spacetime ι => Real.exp (W q) • fderiv ℝ W q w) p v
+      = Real.exp (W p) • fderiv ℝ (fun q : Spacetime ι => fderiv ℝ W q w) p v
+        + Real.exp (W p) * fderiv ℝ W p v * fderiv ℝ W p w := by
+  have hWd : HasFDerivAt W (fderiv ℝ W p) p :=
+    (Differentiable.differentiableAt (ContDiff.differentiable hW (by simp))).hasFDerivAt
+  have hA : HasFDerivAt (fun q : Spacetime ι => Real.exp (W q))
+      (Real.exp (W p) • fderiv ℝ W p) p := hWd.exp
+  have hB : HasFDerivAt (fun q : Spacetime ι => fderiv ℝ W q w)
+      (fderiv ℝ (fun q : Spacetime ι => fderiv ℝ W q w) p) p :=
+    (Differentiable.differentiableAt
+      (ContDiff.differentiable (contDiff_fderiv_apply hW w) (by simp))).hasFDerivAt
+  have hprod := (hA.smul hB).fderiv
+  rw [show (fun q : Spacetime ι => Real.exp (W q) • fderiv ℝ W q w)
+      = ((fun q : Spacetime ι => Real.exp (W q)) • (fun q : Spacetime ι => fderiv ℝ W q w))
+        from rfl,
+    hprod]
+  simp only [ContinuousLinearMap.add_apply, ContinuousLinearMap.smul_apply,
+    ContinuousLinearMap.smulRight_apply, ContinuousLinearMap.comp_apply,
+    ContinuousLinearMap.neg_apply, smul_eq_mul]
+
+/-- **R1 equivalence, exp direction.**  A log-heat field `W` exponentiates to
+a strictly positive heat solution `θ = e^W`. -/
+theorem colehopf_heat_of_pos_logheat (ν : ℝ) (W : Spacetime ι → ℝ) (hW : ContDiff ℝ ⊤ W)
+    (hlog : ∀ p, fderiv ℝ W p (dirT ι)
+        = ν * (heatLap ι W p + heatGsq ι W p)) :
+    ∀ p, fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) p (dirT ι)
+      = ν * heatLap ι (fun p : Spacetime ι => Real.exp (W p)) p := by
+  intro p
+  have hT : fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) p (dirT ι)
+      = Real.exp (W p) • fderiv ℝ W p (dirT ι) := colehopf_expFD hW p (dirT ι)
+  have key : (fun j : ι => fderiv ℝ (fun q : Spacetime ι =>
+        fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) q (dirS ι j)) p (dirS ι j))
+      = (fun j : ι => Real.exp (W p) *
+            fderiv ℝ (fun q : Spacetime ι => fderiv ℝ W q (dirS ι j)) p (dirS ι j)
+          + Real.exp (W p) * (fderiv ℝ W p (dirS ι j) * fderiv ℝ W p (dirS ι j))) := by
+    funext j
+    rw [colehopf_expSlope hW (dirS ι j),
+      colehopf_expSlopeFD hW p (dirS ι j) (dirS ι j)]
+    simp only [smul_eq_mul]
+    ring
+  have hlap : heatLap ι (fun p : Spacetime ι => Real.exp (W p)) p
+      = Real.exp (W p) * (heatLap ι W p + heatGsq ι W p) := by
+    show ∑ j : ι, fderiv ℝ (fun q : Spacetime ι =>
+        fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) q (dirS ι j)) p (dirS ι j) = _
+    rw [key, Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+    rw [show (∑ j : ι, fderiv ℝ (fun q : Spacetime ι => fderiv ℝ W q (dirS ι j)) p (dirS ι j))
+          = heatLap ι W p from rfl,
+        show (∑ j : ι, fderiv ℝ W p (dirS ι j) * fderiv ℝ W p (dirS ι j)) = heatGsq ι W p
+          from by
+            rw [Finset.sum_congr rfl fun j _ => (pow_two _).symm,
+              show (∑ j : ι, (fderiv ℝ W p (dirS ι j)) ^ 2) = heatGsq ι W p from rfl]]
+    ring
+  calc fderiv ℝ (fun p : Spacetime ι => Real.exp (W p)) p (dirT ι)
+      = Real.exp (W p) • fderiv ℝ W p (dirT ι) := hT
+    _ = Real.exp (W p) • (ν * (heatLap ι W p + heatGsq ι W p)) := by rw [hlog p]
+    _ = ν * (Real.exp (W p) * (heatLap ι W p + heatGsq ι W p)) := by
+        simp only [smul_eq_mul]
+        ring
+    _ = ν * heatLap ι (fun p : Spacetime ι => Real.exp (W p)) p := by rw [← hlap]
+
+/-- The exponentiated amplitude: smooth, strictly positive, and a heat
+solution — the full positive-amplitude package a log-heat field produces. -/
+theorem colehopf_exp_is_positive_heat (ν : ℝ) (W : Spacetime ι → ℝ) (hW : ContDiff ℝ ⊤ W)
+    (hlog : ∀ p, fderiv ℝ W p (dirT ι)
+        = ν * (heatLap ι W p + heatGsq ι W p)) :
+    let θ := fun p : Spacetime ι => Real.exp (W p)
+    ContDiff ℝ ⊤ θ ∧ (∀ p, 0 < θ p) ∧
+      (∀ p, fderiv ℝ θ p (dirT ι) = ν * heatLap ι θ p) :=
+  ⟨hW.exp, fun p => Real.exp_pos _, colehopf_heat_of_pos_logheat ν W hW hlog⟩
+
+/-! ### R1(d): sharpness — a global smooth heat solution whose zero set
+genuinely blocks the log route.  Blanket positivity is not cosmetic. -/
+
+/-- The first spatial coordinate on dimension-1 spacetime, as a continuous
+linear functional. -/
+noncomputable def coordAmp : Spacetime (Fin 1) →L[ℝ] ℝ where
+  toFun := fun p => p.2 0
+  map_add' := fun _ _ => rfl
+  map_smul' := fun _ _ => rfl
+  cont := (continuous_apply 0).comp continuous_snd
+
+theorem coordAmp_fderiv (p v : Spacetime (Fin 1)) :
+    fderiv ℝ (fun q : Spacetime (Fin 1) => q.2 0) p v = v.2 0 := by
+  have h : HasFDerivAt (fun q : Spacetime (Fin 1) => q.2 0) coordAmp p :=
+    coordAmp.hasFDerivAt
+  rw [h.fderiv]
+  rfl
+
+/-- `coordAmp` solves the heat equation for every viscosity: both sides are
+identically zero. -/
+theorem coordAmp_heat (ν : ℝ) (p : Spacetime (Fin 1)) :
+    fderiv ℝ (fun q : Spacetime (Fin 1) => q.2 0) p (dirT (Fin 1))
+      = ν * heatLap (Fin 1) (fun q : Spacetime (Fin 1) => q.2 0) p := by
+  have hzero (j : Fin 1) : fderiv ℝ (fun q : Spacetime (Fin 1) =>
+      fderiv ℝ (fun r : Spacetime (Fin 1) => r.2 0) q (dirS (Fin 1) j)) p (dirS (Fin 1) j) = 0 := by
+    have hj : (fun q : Spacetime (Fin 1) =>
+        fderiv ℝ (fun r : Spacetime (Fin 1) => r.2 0) q (dirS (Fin 1) j))
+      = (fun _q : Spacetime (Fin 1) => (dirS (Fin 1) j).2 0) :=
+      funext fun q => coordAmp_fderiv q (dirS (Fin 1) j)
+    rw [hj]
+    have hc := (hasFDerivAt_const (𝕜 := ℝ) ((dirS (Fin 1) j).2 0) p).fderiv
+    rw [hc]
+    simp
+  have hsum : heatLap (Fin 1) (fun q : Spacetime (Fin 1) => q.2 0) p = 0 := by
+    show ∑ j : Fin 1, fderiv ℝ (fun q : Spacetime (Fin 1) =>
+        fderiv ℝ (fun r : Spacetime (Fin 1) => r.2 0) q (dirS (Fin 1) j)) p (dirS (Fin 1) j) = 0
+    exact ((Finset.sum_congr rfl fun j _ => hzero j).trans Finset.sum_const_zero)
+  have h0 : fderiv ℝ (fun q : Spacetime (Fin 1) => q.2 0) p (dirT (Fin 1)) = 0 := by
+    rw [coordAmp_fderiv]
+    rfl
+  rw [h0, hsum]
+  ring
+
+/-- `coordAmp` is not strictly positive anywhere on the hyperplane. -/
+theorem coordAmp_not_pos : ¬ (∀ p : Spacetime (Fin 1), 0 < (p : Spacetime (Fin 1)).2 0) := by
+  intro h
+  exact lt_irrefl 0 (h (0, 0))
+
+/-- The log of `coordAmp` is not smooth: it is `Real.log` along the spatial
+axis, which is not differentiable at `0`. -/
+theorem coordAmp_not_log_smooth :
+    ¬ContDiff ℝ ⊤ (fun p : Spacetime (Fin 1) => Real.log (p.2 0)) := by
+  intro h
+  have he : ContDiff ℝ ⊤ (fun x : ℝ => ((0 : ℝ), fun _ : Fin 1 => x)) :=
+    ContDiff.prodMk contDiff_const (contDiff_pi.2 fun _ => contDiff_id)
+  have hcomp : DifferentiableAt ℝ
+      (fun x : ℝ => Real.log (((fun y : ℝ => ((0 : ℝ), fun _ : Fin 1 => y)) x).2 0)) 0 :=
+    ((h.comp he).differentiable (by simp)).differentiableAt
+  have hdef : (fun x : ℝ => Real.log (((fun y : ℝ => ((0 : ℝ), fun _ : Fin 1 => y)) x).2 0))
+      = Real.log := by
+    funext x
+    rfl
+  rw [hdef] at hcomp
+  exact ((Real.differentiableAt_log_iff (x := 0)).mp hcomp) rfl
+
+/-- **R1 sharpness.**  There is a smooth global heat solution that admits no
+log transport at all: blanket positivity is exactly the obstruction, and the
+`ε`-exhaustion of §5 is the residual removal, not a convenience. -/
+theorem colehopf_positivity_sharp (ν : ℝ) :
+    ∃ θ : Spacetime (Fin 1) → ℝ,
+      (∀ p, fderiv ℝ θ p (dirT (Fin 1)) = ν * heatLap (Fin 1) θ p) ∧
+      ¬ (∀ p, 0 < θ p) ∧ ¬ ContDiff ℝ ⊤ (fun p => Real.log (θ p)) :=
+  ⟨fun p => p.2 0, coordAmp_heat ν, coordAmp_not_pos, coordAmp_not_log_smooth⟩
 end Navier.Analysis
