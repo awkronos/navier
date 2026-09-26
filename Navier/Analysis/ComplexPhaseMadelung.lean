@@ -262,16 +262,82 @@ theorem complexPhase_logDeriv {ħ : ℝ} (hħ : ħ ≠ 0) (S Γ : PressureField)
     (hS : ContDiff ℝ ⊤ S) (hΓ : ContDiff ℝ ⊤ Γ) (x v : Space) :
     fderiv ℝ (complexPhaseWave ħ S Γ) x v / complexPhaseWave ħ S Γ x =
       Complex.I * (fderiv ℝ S x v / ħ) - fderiv ℝ Γ x v / ħ := by
-  -- WIP NSQM-0926: failed rewrite reverted to honest sorry at root publish; winning design + prior green body recorded in /tmp/mc.NOTES.md §RESUME STATE; full draft incl. heatLap/heatGsq scaffolding quarantined at /tmp/mc2_draft_backup_ComplexPhaseMadelung.lean
-  sorry
+  have hSx : HasFDerivAt S (fderiv ℝ S x) x :=
+    (Differentiable.differentiableAt (ContDiff.differentiable hS (by simp))).hasFDerivAt
+  have hΓx : HasFDerivAt Γ (fderiv ℝ Γ x) x :=
+    (Differentiable.differentiableAt (ContDiff.differentiable hΓ (by simp))).hasFDerivAt
+  -- (S·/ħ) and (Γ/ħ) as ℂ-valued (real division, lifted), with derivative CLMs
+  have hs1 : HasFDerivAt (fun y : Space => (S y / ħ : ℂ))
+      (Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ S x)) x := by
+    have h0 := hSx.mul_const (ħ⁻¹ : ℝ)
+    have h1 :=
+      HasFDerivAt.comp x (ContinuousLinearMap.hasFDerivAt (f := Complex.ofRealCLM)) h0
+    exact HasFDerivAt.congr_of_eventuallyEq h1 (Filter.EventuallyEq.of_eq
+      (funext fun y => by
+        rw [div_eq_mul_inv, ← Complex.ofReal_inv, ← Complex.ofReal_mul]
+        simp only [Function.comp_apply, Complex.ofRealCLM_apply]))
+  have hG1 : HasFDerivAt (fun y : Space => (Γ y / ħ : ℂ))
+      (Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ Γ x)) x := by
+    have h0 := hΓx.mul_const (ħ⁻¹ : ℝ)
+    have h1 :=
+      HasFDerivAt.comp x (ContinuousLinearMap.hasFDerivAt (f := Complex.ofRealCLM)) h0
+    exact HasFDerivAt.congr_of_eventuallyEq h1 (Filter.EventuallyEq.of_eq
+      (funext fun y => by
+        rw [div_eq_mul_inv, ← Complex.ofReal_inv, ← Complex.ofReal_mul]
+        simp only [Function.comp_apply, Complex.ofRealCLM_apply]))
+  have hI : HasFDerivAt (fun y : Space => Complex.I * (S y / ħ))
+      (Complex.I • (Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ S x))) x := by
+    have h : (fun y : Space => Complex.I * (S y / ħ))
+        = (fun y : Space => (S y / ħ : ℂ) * Complex.I) := by
+      ext y
+      rw [mul_comm]
+    rw [h]
+    exact hs1.mul_const Complex.I
+  have hg : HasFDerivAt (fun y : Space => Complex.I * (S y / ħ) - Γ y / ħ)
+      (Complex.I • (Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ S x))
+        - Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ Γ x)) x := hI.sub hG1
+  have hψ : HasFDerivAt (complexPhaseWave ħ S Γ)
+      (Complex.exp (Complex.I * (S x / ħ) - Γ x / ħ) •
+        (Complex.I • (Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ S x))
+          - Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ Γ x))) x := by
+    show HasFDerivAt (fun y : Space => Complex.exp (Complex.I * (S y / ħ) - Γ y / ħ))
+      (Complex.exp (Complex.I * (S x / ħ) - Γ x / ħ) •
+        (Complex.I • (Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ S x))
+          - Complex.ofRealCLM ∘L (ħ⁻¹ • fderiv ℝ Γ x))) x
+    exact hg.cexp
+  have den : complexPhaseWave ħ S Γ x =
+      Complex.exp (Complex.I * (S x / ħ) - Γ x / ħ) := rfl
+  rw [hψ.fderiv, den]
+  rw [ContinuousLinearMap.smul_apply, smul_eq_mul]
+  field_simp [hħ, Complex.exp_ne_zero]
+  simp only [ContinuousLinearMap.comp_apply, ContinuousLinearMap.smul_apply,
+    ContinuousLinearMap.sub_apply, ContinuousLinearMap.neg_apply,
+    Complex.ofRealCLM_apply, smul_eq_mul]
+  push_cast
+  field_simp [hħ]
 theorem complexPhase_colehopf_eq_negRe {ħ ν : ℝ} (hħ : ħ ≠ 0) (S Γ : PressureField)
     (hS : ContDiff ℝ ⊤ S) (hΓ : ContDiff ℝ ⊤ Γ) (x : Space) (i : Fin 3) :
     (-2 * ν) • fderiv ℝ (fun y => Real.log (complexPhaseAmplitude ħ Γ y)) x
         (basisVector i)
       = (-2 * ν) * (fderiv ℝ (complexPhaseWave ħ S Γ) x (basisVector i)
           / complexPhaseWave ħ S Γ x).re := by
-  -- WIP NSQM-0926: failed rewrite reverted to honest sorry at root publish; winning design + prior green body recorded in /tmp/mc.NOTES.md §RESUME STATE; full draft incl. heatLap/heatGsq scaffolding quarantined at /tmp/mc2_draft_backup_ComplexPhaseMadelung.lean
-  sorry
+  have hGd : DifferentiableAt ℝ Γ x :=
+    Differentiable.differentiableAt (ContDiff.differentiable hΓ (by simp))
+  have hfun : (fun y : Space => Real.log (complexPhaseAmplitude ħ Γ y))
+      = (fun y => -(Γ y) / ħ) :=
+    funext fun y => Real.log_exp _
+  have hsmul : (fun y : Space => -(Γ y) / ħ) = (fun y => (-ħ⁻¹ : ℝ) • Γ y) :=
+    funext fun y => by simp only [neg_mul, div_eq_mul_inv]; ring
+  rw [hfun, hsmul]
+  show (-2 * ν) • (fderiv ℝ ((-ħ⁻¹ : ℝ) • Γ) x) (basisVector i) = _
+  rw [fderiv_const_smul hGd (-ħ⁻¹), ContinuousLinearMap.smul_apply]
+  rw [complexPhase_logDeriv hħ S Γ hS hΓ x (basisVector i)]
+  simp only [ContinuousLinearMap.smul_apply, smul_eq_mul, Complex.sub_re, Complex.mul_re,
+    Complex.I_re, Complex.I_im, Complex.ofReal_re,
+    Complex.ofReal_im, Complex.div_re, Complex.div_im, Complex.normSq_ofReal, mul_zero,
+    zero_mul, sub_self, zero_div, add_zero]
+  try field_simp [hħ]
+  try ring
 /-- **Separation.**  In dimension 2 the plane-rotation field
 `rot(x₀,x₁) = (-x₁, x₀)` equals `-2ν∇W` for NO smooth `W` and NO viscosity
 `ν`: Jacobian symmetry (`swap2'`) forces `∂₁u₀ = ∂₀u₁`, while the field
@@ -284,5 +350,79 @@ coordinate linear functionals at the origin, and the `swap2'`-forced
 theorem no_colehopf_of_plane_rotation :
     ¬ ∃ (ν : ℝ) (W : Spacetime (Fin 2) → ℝ), ContDiff ℝ ⊤ W ∧
       ∀ p, coleHopfU (Fin 2) ν W p = fun i => if i = 0 then -(p.2 1) else p.2 0 := by
-  -- WIP NSQM-0926: failed rewrite reverted to honest sorry at root publish; winning design + prior green body recorded in /tmp/mc.NOTES.md §RESUME STATE; full draft incl. heatLap/heatGsq scaffolding quarantined at /tmp/mc2_draft_backup_ComplexPhaseMadelung.lean
-  sorry
+  rintro ⟨ν, W, hW, hEq⟩
+  have he0 : (fun p : Spacetime (Fin 2) => coleHopfU (Fin 2) ν W p 0)
+      = (fun p => -(p.2 1)) := by
+    funext p
+    rw [hEq]
+    rfl
+  have he1 : (fun p : Spacetime (Fin 2) => coleHopfU (Fin 2) ν W p 1)
+      = (fun p => p.2 0) := by
+    funext p
+    rw [hEq]
+    rfl
+  -- differentiating the Cole–Hopf side in a spatial direction
+  have key (k m : Fin 2) :
+      fderiv ℝ (fun p : Spacetime (Fin 2) => coleHopfU (Fin 2) ν W p k) (0, 0)
+          (dirS (Fin 2) m)
+        = (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirS (Fin 2) k)) (0, 0)
+            (dirS (Fin 2) m) := by
+    have hk : DifferentiableAt ℝ
+        (fun q : Spacetime (Fin 2) => fderiv ℝ W q (dirS (Fin 2) k)) (0, 0) :=
+      Differentiable.differentiableAt
+        (ContDiff.differentiable (contDiff_fderiv_apply hW (dirS (Fin 2) k)) (by simp))
+    show fderiv ℝ ((-2 * ν) • (fun p : Spacetime (Fin 2) => fderiv ℝ W p (dirS (Fin 2) k)))
+        (0, 0) (dirS (Fin 2) m) = _
+    rw [fderiv_const_smul hk (-2 * ν), ContinuousLinearMap.smul_apply]
+  -- differentiating the two coordinate functions at the origin; each is the
+  -- bundled evaluation-at-index linear functional on `ℝ × (Fin 2 → ℝ)`
+  let ev1 : Spacetime (Fin 2) →L[ℝ] ℝ :=
+    { toFun := fun p => p.2 1,
+      map_add' := fun _ _ => rfl,
+      map_smul' := fun _ _ => rfl,
+      cont := (continuous_apply (1 : Fin 2)).comp continuous_snd }
+  let ev0 : Spacetime (Fin 2) →L[ℝ] ℝ :=
+    { toFun := fun p => p.2 0,
+      map_add' := fun _ _ => rfl,
+      map_smul' := fun _ _ => rfl,
+      cont := (continuous_apply (0 : Fin 2)).comp continuous_snd }
+  have key1 : ⇑ev1 = fun p : Spacetime (Fin 2) => p.2 1 := by
+    ext p
+    rfl
+  have key0 : ⇑ev0 = fun p : Spacetime (Fin 2) => p.2 0 := by
+    ext p
+    rfl
+  have h0 : HasFDerivAt (fun p : Spacetime (Fin 2) => -(p.2 1)) (-ev1) (0, 0) := by
+    refine ((ev1.hasFDerivAt.congr_of_eventuallyEq ?_).neg)
+    exact Filter.EventuallyEq.of_eq (funext fun p => rfl)
+  have h1 : HasFDerivAt (fun p : Spacetime (Fin 2) => p.2 0) ev0 (0, 0) := by
+    refine (ev0.hasFDerivAt.congr_of_eventuallyEq ?_)
+    exact Filter.EventuallyEq.of_eq (funext fun p => rfl)
+  have d0 : fderiv ℝ (fun p : Spacetime (Fin 2) => -(p.2 1)) (0, 0) (dirS (Fin 2) 1) = -1 := by
+    rw [h0.fderiv, ContinuousLinearMap.neg_apply, key1]
+    rfl
+  have d1 : fderiv ℝ (fun p : Spacetime (Fin 2) => p.2 0) (0, 0) (dirS (Fin 2) 0) = 1 := by
+    rw [h1.fderiv, key0]
+    rfl
+  -- chain the contradiction: same derivative, forced to be -1 and 1
+  have hA : (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirS (Fin 2) 0)) (0, 0)
+      (dirS (Fin 2) 1) = -1 := by
+    have h := congrArg (fun k : Spacetime (Fin 2) → ℝ =>
+        fderiv ℝ k (0, 0) (dirS (Fin 2) 1)) he0
+    rwa [key 0 1, d0] at h
+  have hB : (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirS (Fin 2) 1)) (0, 0)
+      (dirS (Fin 2) 0) = 1 := by
+    have h := congrArg (fun k : Spacetime (Fin 2) → ℝ =>
+        fderiv ℝ k (0, 0) (dirS (Fin 2) 0)) he1
+    rwa [key 1 0, d1] at h
+  have hX : fderiv ℝ (fun q => fderiv ℝ W q (dirS (Fin 2) 0)) (0, 0) (dirS (Fin 2) 1)
+      = fderiv ℝ (fun q => fderiv ℝ W q (dirS (Fin 2) 1)) (0, 0) (dirS (Fin 2) 0) :=
+    swap2' hW (0, 0) (dirS (Fin 2) 0) (dirS (Fin 2) 1)
+  have contra : (-1 : ℝ) = 1 :=
+    calc (-1 : ℝ)
+        = (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirS (Fin 2) 0)) (0, 0)
+            (dirS (Fin 2) 1) := hA.symm
+      _ = (-2 * ν) • fderiv ℝ (fun q => fderiv ℝ W q (dirS (Fin 2) 1)) (0, 0)
+            (dirS (Fin 2) 0) := congrArg ((-2 * ν) • ·) hX
+      _ = 1 := hB
+  linarith
