@@ -29,7 +29,10 @@ CLAIM_TIERS = {"SCAFFOLD", "THEOREM", "CONJECTURE", "EXPERIMENT", "FALSIFICATION
 BARRIER_DISPOSITIONS = {"ADDRESSED", "EXPOSED", "BLOCKED", "NOT_APPLICABLE"}
 FORMAL_KINDS = {"DEFINITION", "LEMMA", "THEOREM", "BRIDGE", "PAYLOAD", "ENDPOINT", "CONSTRUCTION"}
 NATIVE_VERIFIER_KINDS = {"LEAN_NATIVE", "Z3_NATIVE"}
-ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound", "native_decide"}
+# Strict kernel envelope, mirroring scripts/AuditAllAxioms.lean.  "native_decide"
+# was removed 2026-09-28: the project has zero live native_decide tactic sites and a
+# LEAN_NATIVE receipt carrying it must fail closed, not be tolerated.
+ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 BASE_LEAN_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 
 REQUIRED_VERIFIERS = {
@@ -55,7 +58,7 @@ REQUIRED_VERIFIERS = {
         "receipt_max_age_seconds": 86400,
         "closes_claim_tiers": ["THEOREM"],
         "requires_axiom_audit": True,
-        "allowed_axioms": ["propext", "Classical.choice", "Quot.sound", "native_decide"],
+        "allowed_axioms": ["propext", "Classical.choice", "Quot.sound"],
     },
     "verifier.experiment.replay": {
         "kind": "EXPERIMENT_REPLAY",
