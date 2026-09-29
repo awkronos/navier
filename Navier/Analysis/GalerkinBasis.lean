@@ -31,8 +31,10 @@ intended supplier `curl_proj_converges` takes two structural properties of the
 norm (`GraphDense`, named below) and uniform `H¹` boundedness of the finite
 projections (`CurlStable`) — and no ordering certified to satisfy them is
 constructed in the repository; the tempting substitute, exact commutation
-`curl ∘ P_m = P_m ∘ curl`, is refuted on `ℝ³` (docstring of
-`curl_proj_sq_le_of_commutes`, registry row NAVIER-01).
+`curl ∘ P_m = P_m ∘ curl`, is refuted on `ℝ³` — mechanized as
+`Navier.Analysis.GalerkinBasis.not_forall_curl_commutes` in
+`GB_CurlEigenfieldObstruction.lean` (see also the docstring of
+`curl_proj_sq_le_of_commutes`, registry row NAVIER-01, ledger F-029).
 
 This file lays that layer over the repo's own objects:
 
@@ -3562,7 +3564,9 @@ If the ordered finite projections commute with curl, their curl part is an
 ordinary `L²` orthogonal projection and hence has contraction constant one.
 
 **VACUOUS on `ℝ³` — the hypothesis `hcurl_commutes` is UNSATISFIABLE
-(argued 2026-09-02, lane NAVIER2; not yet mechanized).**  This theorem is true
+(argued 2026-09-02, lane NAVIER2; mechanized 2026-09-29, lane W30-NGB1 as
+`not_forall_curl_commutes` in `GB_CurlEigenfieldObstruction.lean`; ledger
+F-029).**  This theorem is true
 and kernel-clean; it is true *for the wrong reason*, because no
 `GalerkinBasisFamily` on `ℝ³` satisfies its hypothesis.  Nothing in the
 repository consumes it, and no future Galerkin work may route through
@@ -3595,13 +3599,16 @@ Schwartz).  There are none.  Two independent proofs:
 
 Either way `w₀ = 0`, contradicting `W.orthonormal 0 0 = 1`.
 
-Status of this note: the argument above is complete mathematics, argued and
-checked by hand, and it is **not** mechanized — mechanizing it needs the
-vector-valued Fourier transform of `curl` and of `Δ` on Schwartz fields, or the
-Pohozaev multiplier identity, ~350 LOC either way (registry row NAVIER-01).
-Under `epistemic-rigor.md` it is therefore a CONJECTURE with a complete
-informal proof, not a THEOREM, and it is recorded here rather than as a Lean
-`sorry` because a `sorry` would be a claim the compiler is asked to trust. -/
+Status of this note: the Fourier half of the argument above is now
+MECHANIZED (2026-09-29, lane W30-NGB1): `not_forall_curl_commutes` in
+`GB_CurlEigenfieldObstruction.lean` proves the unsatisfiability outright —
+`eq_zero_of_curl_eq_smul` shows no nonzero divergence-free Schwartz field is a
+`curl` eigenfield (model transport `euclModel`, Schwartz-space symbol
+`SchwartzMap.fourier_lineDerivOp_eq`, sphere-density `mem_closure_norm_ne` +
+continuity, `𝓕⁻𝓕 = id`), covering `λ = 0` uniformly; the Pohozaev variant was
+not needed.  Registry row NAVIER-01 is closed at kernel strength (ledger
+F-029); the relabeled docstring CONJECTURE is withdrawn in favor of the
+theorem. -/
 theorem curl_proj_sq_le_of_commutes (W : GalerkinBasisFamily)
     (hcurl_commutes : ∀ (m : ℕ) (u : SchwartzVelocity),
       curlSchwartzCLM (W.proj m u) = W.proj m (curlSchwartzCLM u))
@@ -3618,8 +3625,9 @@ of `curl phi`.  The latter converges by `proj_tendsto_self`, since curl of a
 Schwartz field is divergence-free.
 
 **VACUOUS on `ℝ³` for the same reason as `curl_proj_sq_le_of_commutes`**: the
-hypothesis `hcurl_commutes` is unsatisfiable, by the argument recorded in that
-theorem's docstring.  The sentence this docstring used to end with — that "a
+hypothesis `hcurl_commutes` is unsatisfiable — mechanized as
+`not_forall_curl_commutes` (`GB_CurlEigenfieldObstruction.lean`, ledger
+F-029).  The sentence this docstring used to end with — that "a
 concrete spectral carrier only has to prove its explicit commutation identity"
 — is FALSE and is withdrawn: no carrier on `ℝ³` can prove it.  Nothing in the
 repository consumes this theorem. -/
@@ -3717,9 +3725,10 @@ that the Galerkin projections are bounded in `H¹` on the divergence-free
 Schwartz class, with one constant for all `m`.  This is the second hypothesis
 of `curl_proj_converges`, named as a construction target.  The tempting
 strengthening — exact commutation `curl ∘ P_m = P_m ∘ curl` — is *refuted* on
-`ℝ³` for any orthonormal divergence-free family (docstring of
-`curl_proj_sq_le_of_commutes`, registry row NAVIER-01): stability, not
-commutation, is the live route. -/
+`ℝ³` for any orthonormal divergence-free family (mechanized as
+`not_forall_curl_commutes`, `GB_CurlEigenfieldObstruction.lean`; docstring of
+`curl_proj_sq_le_of_commutes`, registry row NAVIER-01, ledger F-029):
+stability, not commutation, is the live route. -/
 def CurlStable (W : GalerkinBasisFamily) : Prop :=
   ∃ C : ℝ, 0 ≤ C ∧ ∀ (m : ℕ) (u : SchwartzVelocity),
     ‖toL2 (curlSchwartzCLM (W.proj m u))‖ ≤
