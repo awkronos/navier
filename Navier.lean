@@ -1,3 +1,4 @@
+import Navier.Analysis.AcousticSplats
 import Navier.Analysis.AprioriCriticalControlQuantifiers
 import Navier.Analysis.BKMEnvAxis
 import Navier.Analysis.BKMEnvCut
