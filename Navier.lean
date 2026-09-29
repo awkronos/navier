@@ -139,6 +139,7 @@ import Navier.Analysis.FrequencyMildGlobal
 import Navier.Analysis.GagliardoNirenberg
 import Navier.Analysis.GalerkinBasis
 import Navier.Analysis.GB_CurlEigenfieldObstruction
+import Navier.Analysis.GB_CurlNoncommuteFirstMode
 import Navier.Analysis.GalerkinCurlGraphDensity
 import Navier.Analysis.GalerkinEnergyBudget
 import Navier.Analysis.GalerkinHMinusOne
