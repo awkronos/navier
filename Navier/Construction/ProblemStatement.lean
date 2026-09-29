@@ -9,11 +9,19 @@ import Mathlib.Analysis.Calculus.ContDiff.Comp
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
-# OPEN target: the candidate forced Navier--Stokes construction
+# The candidate forced Navier--Stokes construction — statement module
 
 This module states the primary existential assertion of Candidate Theorem 1.1.
-`candidateStatement` is a proposition, not an axiom or a proved theorem.
-No witness satisfying it is constructed here.
+`candidateStatement` is not an open obligation of the repository: it is
+proved downstream by `ActualCandidateAssembly.selected_candidate` from the
+initialized spine (`ActualInitialization.initial_invariant`); both print the
+strict axiom set `[propext, Classical.choice, Quot.sound]`.  No witness
+satisfying it is constructed HERE.  What remains OPEN by design is
+alternative A, `ProblemStatements.WholeSpaceGlobalRegularity`
+(`Navier/Problem.lean`): for every `nu > 0` and every divergence-free
+Schwartz datum a classical solution exists — the Fefferman-shape endpoint
+this repository does not settle; the native construction inhabits forced
+alternative C instead.
 
 The unit torus is represented by periodic functions on Euclidean three-space.
 Time is the first coordinate in `SpaceTime`. Smoothness at time zero is relative
@@ -120,9 +128,12 @@ structure CandidateProperties (u : VelocityField) (p : PressureField)
     navierStokesResidual u p t x = f (t, x)
   speed_unbounded : SpeedUnboundedAtOne u
 
-/-- OPEN: the primary existential content of Candidate Theorem 1.1.
-There is no proof, witness, or axiom asserting this proposition in this module.
-Maximal lifespan, Sobolev blow-up, and force derivative decay require additional
+/-- The primary existential content of Candidate Theorem 1.1: the forced
+alternative-C construction.  Stated, not proved, in THIS module; the proof is
+`ActualCandidateAssembly.selected_candidate` (see the module header), so this
+proposition is not the repository's open target — the open target is
+alternative A, `ProblemStatements.WholeSpaceGlobalRegularity`.  Maximal
+lifespan, Sobolev blow-up, and force derivative decay require additional
 theorems and are not silently included as proved consequences. -/
 def candidateStatement : Prop :=
   ∃ u : VelocityField, ∃ p : PressureField, ∃ f : VelocityField,
