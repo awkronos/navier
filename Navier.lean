@@ -344,6 +344,7 @@ import Navier.Construction.CS_PotentialSumEnvelope
 import Navier.Analysis.MildHorizonFreeRestartBarrier
 import Navier.Analysis.LinkedBoxX2Carrier
 import Navier.Analysis.LinkedBoxX2HvIndependence
+import Navier.Analysis.LinkedBoxX2ContRepCarrier
 
 /-!
 # Navier
