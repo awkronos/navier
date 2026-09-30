@@ -47,15 +47,18 @@ slice-wise nonzero datum with `0 < preterminalEnergyControl T u`
 (`exists_preterminalEnergyControl_pos`, the countable bump family's first
 element) and a field with `preterminalEnergyControl T u < ⊤`
 (`exists_preterminalEnergyControl_lt_top`).  For the envelope control the
-`< ⊤` exhibit reduces to a *named* open boundary, recorded here rather than
-papered over: `h3EnvelopeBudget v ≤ x` ranges over *all* `Rep v`
-representers, so exhibiting one finite upper bound needs the a.e.-uniqueness
-of the Wiener profile recovered by the repo's pointwise `fourierInv` route
-(`physOf`-injectivity on representers) — no such lemma exists in the repo or
-in a directly applicable Mathlib form (the `𝓕`/`𝓕'` duality routes require
-Schwartz–Schwartz integrals, not the carrier's `L¹` profile integral).  The
-precedent for documenting a control's exhibited-finiteness as a named
-residual is `bkmVorticityControl_nondegenerate`.  Nothing in this module
+`< ⊤` exhibit landed in `Navier/Analysis/EnvelopeFourierUniqueness.lean`:
+`rep_component_ae_eq` is the a.e.-uniqueness (`physOf`-injectivity on
+representers) of the Wiener profile recovered by the repo's pointwise
+`fourierInv` route, via `ae_eq_zero_of_fourierInv_eq_zero` and the carrier's
+own `L¹` pairing `integral_fourierInv_pairing` (the `𝓕`/`𝓕'` duality routes
+were the wrong tool; the `L¹` profile integral is enough).  It feeds
+`h3EnvelopeBudget_eq_iSup` — the budget collapse to any one representer —
+and the concrete transverse bump profile `prof`, witnessed by
+`exists_h3EnvelopeControl_lt_top` and the strengthened sandwich
+`exists_h3EnvelopeControl_pos_lt_top`.  As in the energy case the witness is
+at the FUNCTIONAL level; it is not asserted to be a `SolvesBefore` member.
+Nothing in this module
 claims global regularity unconditionally: the crown theorems here are
 conditional compositions, and the conditional endpoint itself remains open
 in the sense of `docs/reviews/W20_NS1_NOTES.md`.
