@@ -59,6 +59,17 @@ The residuals in this file are the differentiated nonlinear fields in (32).
 In particular, changing the wave covariance and changing a mean velocity are
 not treated as independent black-box state transitions.  Every old/new cross
 term is retained in the displayed residual differences.
+
+## Stable API — correction-step interface
+
+The public names this module exports to its importers are the stable API of
+the correction-step interface, pinned in `Navier/ConditionalAudit.lean`
+(section "Stable API — correction-step interface", 2026-10-01).  Future lanes
+must validate `make conditional-audit` before refactoring anything exported
+here: deleting, renaming, or relocating a pinned name fails that audit before
+downstream consumers break.  This file's proofs are unchanged; this note lives
+in the leading doc block so the vendored-slice drift guard still compares the
+body against the pinned upstream revision.
 -/
 
 noncomputable section
