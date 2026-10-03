@@ -45,6 +45,17 @@ inverse, stream potential, and five-row inverse.  The covariance identity is
 also differentiated as an identity of functions, retaining all derivatives of
 the squared partition.  Quantitative initialization is assembled below from
 the estimates on these same operations.
+
+## Stable API — correction-step interface
+
+The public names this module exports to its importers are part of the stable
+API of the correction-step interface, pinned in `Navier/ConditionalAudit.lean`
+(section "Stable API — correction-step interface", 2026-10-01).  Future lanes
+must validate `make conditional-audit` before refactoring anything exported
+here: deleting, renaming, or relocating a pinned name fails that audit before
+downstream consumers break.  This file's proofs are unchanged; this note lives
+in the leading doc block so the vendored-slice drift guard still compares the
+body against the pinned upstream revision.
 -/
 
 noncomputable section

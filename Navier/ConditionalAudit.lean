@@ -22,6 +22,8 @@ import Navier.Analysis.BKMProfileRateBound
 import Navier.Analysis.BKMProfileEnvelope
 import Navier.Analysis.BKMProfileSelectedEnvelope
 import Navier.Construction.BaseVorticityAxis
+import Navier.Construction.CorrectionStep
+import Navier.Construction.CorrectionInitialization
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
 
@@ -329,3 +331,589 @@ the leaf. All fourteen receipts print the strict axiom set. -/
 #print axioms Navier.Construction.FinalSlowBase.axis_vorticity_origin
 #check Navier.Construction.FinalSlowBase.axis_vorticity_tendsto
 #print axioms Navier.Construction.FinalSlowBase.axis_vorticity_tendsto
+
+/-! ## Stable API — correction-step interface (lane rsi-pv-navier, 2026-10-01)
+
+`Navier/Construction/CorrectionStep.lean` and
+`Navier/Construction/CorrectionInitialization.lean` are load-bearing providers
+(top of the priority stratum; public exports: CorrectionStep 556 named + 233
+field projections, CorrectionInitialization 394 named + 76). The names below are
+the stable API of the correction-step interface: every public name either file
+currently exports that a direct importer references (144 from CorrectionStep
+across 11 direct importers; 138 from CorrectionInitialization across 9).
+
+Deleting, renaming, or relocating a pinned name fails this audit (and every
+`lake env lean Navier.lean` closure) before downstream consumers break; the
+printed types record the pinned signature surface in the build log. Future
+lanes must validate `make conditional-audit` before refactoring either file.
+
+Method note: consumer references were computed by a comment-stripped static
+scan of the direct importers; each pinned name itself resolves from the module
+sources, which the compiler checks here. -/
+/-! ### Navier.Construction.CorrectionStep — 144 names consumed by direct importers -/
+#check Navier.Construction.CorrectionStep.ScalarField
+#print axioms Navier.Construction.CorrectionStep.ScalarField
+#check Navier.Construction.CorrectionStep.Tensor
+#print axioms Navier.Construction.CorrectionStep.Tensor
+#check Navier.Construction.CorrectionStep.axialCovarianceChange
+#print axioms Navier.Construction.CorrectionStep.axialCovarianceChange
+#check Navier.Construction.CorrectionStep.TensorClass
+#print axioms Navier.Construction.CorrectionStep.TensorClass
+#check Navier.Construction.CorrectionStep.thetaCovarianceChange_mem
+#print axioms Navier.Construction.CorrectionStep.thetaCovarianceChange_mem
+#check Navier.Construction.CorrectionStep.axialCovarianceChange_mem
+#print axioms Navier.Construction.CorrectionStep.axialCovarianceChange_mem
+#check Navier.Construction.CorrectionStep.fullGoodResidual
+#print axioms Navier.Construction.CorrectionStep.fullGoodResidual
+#check Navier.Construction.CorrectionStep.angularMeanVector
+#print axioms Navier.Construction.CorrectionStep.angularMeanVector
+#check Navier.Construction.CorrectionStep.AngularContinuous
+#print axioms Navier.Construction.CorrectionStep.AngularContinuous
+#check Navier.Construction.CorrectionStep.covarianceIncrement
+#print axioms Navier.Construction.CorrectionStep.covarianceIncrement
+#check Navier.Construction.CorrectionStep.meanBar
+#print axioms Navier.Construction.CorrectionStep.meanBar
+#check Navier.Construction.CorrectionStep.meanLift
+#print axioms Navier.Construction.CorrectionStep.meanLift
+#check Navier.Construction.CorrectionStep.fullDivergence
+#print axioms Navier.Construction.CorrectionStep.fullDivergence
+#check Navier.Construction.CorrectionStep.fullDivergence_actual_update
+#print axioms Navier.Construction.CorrectionStep.fullDivergence_actual_update
+#check Navier.Construction.CorrectionStep.SameCarrier
+#print axioms Navier.Construction.CorrectionStep.SameCarrier
+#check Navier.Construction.CorrectionStep.SameCarrier.frequency
+#print axioms Navier.Construction.CorrectionStep.SameCarrier.frequency
+#check Navier.Construction.CorrectionStep.SameCarrier.angular
+#print axioms Navier.Construction.CorrectionStep.SameCarrier.angular
+#check Navier.Construction.CorrectionStep.gaugeRefreshPressureAlias
+#print axioms Navier.Construction.CorrectionStep.gaugeRefreshPressureAlias
+#check Navier.Construction.CorrectionStep.zeroTriple
+#print axioms Navier.Construction.CorrectionStep.zeroTriple
+#check Navier.Construction.CorrectionStep.updated_zeroTriple
+#print axioms Navier.Construction.CorrectionStep.updated_zeroTriple
+#check Navier.Construction.CorrectionStep.gaugeWaveStage
+#print axioms Navier.Construction.CorrectionStep.gaugeWaveStage
+#check Navier.Construction.CorrectionStep.gaugeWaveStage_cumulative
+#print axioms Navier.Construction.CorrectionStep.gaugeWaveStage_cumulative
+#check Navier.Construction.CorrectionStep.SignedParameters.Control.covariance
+#print axioms Navier.Construction.CorrectionStep.SignedParameters.Control.covariance
+#check Navier.Construction.CorrectionStep.SignedParameters.Control.normal
+#print axioms Navier.Construction.CorrectionStep.SignedParameters.Control.normal
+#check Navier.Construction.CorrectionStep.SignedParameters.Control.normalMotion
+#print axioms Navier.Construction.CorrectionStep.SignedParameters.Control.normalMotion
+#check Navier.Construction.CorrectionStep.SignedParameters.Control.radius
+#print axioms Navier.Construction.CorrectionStep.SignedParameters.Control.radius
+#check Navier.Construction.CorrectionStep.SignedParameters.Control.cutoff
+#print axioms Navier.Construction.CorrectionStep.SignedParameters.Control.cutoff
+#check Navier.Construction.CorrectionStep.GaugeSupported.zero
+#print axioms Navier.Construction.CorrectionStep.GaugeSupported.zero
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters.directions
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters.directions
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters.matrix
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters.matrix
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters.fundamental
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters.fundamental
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters.cutoff
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters.cutoff
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters.angularFrequency
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters.angularFrequency
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters.copyData
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters.copyData
+#check Navier.Construction.CorrectionStep.PeriodizedSignedParameters.exactBlock
+#print axioms Navier.Construction.CorrectionStep.PeriodizedSignedParameters.exactBlock
+#check Navier.Construction.CorrectionStep.ParticularParameters
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters
+#check Navier.Construction.CorrectionStep.ParticularParameters.geometry
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.geometry
+#check Navier.Construction.CorrectionStep.ParticularParameters.length_pos
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.length_pos
+#check Navier.Construction.CorrectionStep.ParticularParameters.cutoff
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.cutoff
+#check Navier.Construction.CorrectionStep.ParticularParameters.background
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.background
+#check Navier.Construction.CorrectionStep.ParticularParameters.directions
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.directions
+#check Navier.Construction.CorrectionStep.ParticularParameters.copyData
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.copyData
+#check Navier.Construction.CorrectionStep.ParticularParameters.nativeStrip
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.nativeStrip
+#check Navier.Construction.CorrectionStep.ParticularParameters.updateBlock
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.updateBlock
+#check Navier.Construction.CorrectionStep.ParticularParameters.gaussianBlock
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.gaussianBlock
+#check Navier.Construction.CorrectionStep.CyclePoint
+#print axioms Navier.Construction.CorrectionStep.CyclePoint
+#check Navier.Construction.CorrectionStep.CycleSlow
+#print axioms Navier.Construction.CorrectionStep.CycleSlow
+#check Navier.Construction.CorrectionStep.cycleAssoc
+#print axioms Navier.Construction.CorrectionStep.cycleAssoc
+#check Navier.Construction.CorrectionStep.CycleCoefficients
+#print axioms Navier.Construction.CorrectionStep.CycleCoefficients
+#check Navier.Construction.CorrectionStep.CycleCoefficients.labels
+#print axioms Navier.Construction.CorrectionStep.CycleCoefficients.labels
+#check Navier.Construction.CorrectionStep.CycleCoefficients.blocks
+#print axioms Navier.Construction.CorrectionStep.CycleCoefficients.blocks
+#check Navier.Construction.CorrectionStep.CycleCoefficients.gaussian
+#print axioms Navier.Construction.CorrectionStep.CycleCoefficients.gaussian
+#check Navier.Construction.CorrectionStep.CycleCoefficients.aliasCoefficients
+#print axioms Navier.Construction.CorrectionStep.CycleCoefficients.aliasCoefficients
+#check Navier.Construction.CorrectionStep.CycleCoefficients.residualBand
+#print axioms Navier.Construction.CorrectionStep.CycleCoefficients.residualBand
+#check Navier.Construction.CorrectionStep.CycleParameters
+#print axioms Navier.Construction.CorrectionStep.CycleParameters
+#check Navier.Construction.CorrectionStep.CycleParameters.timeExponent
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.timeExponent
+#check Navier.Construction.CorrectionStep.CycleParameters.commonIndex
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.commonIndex
+#check Navier.Construction.CorrectionStep.CycleParameters.particularBlock
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularBlock
+#check Navier.Construction.CorrectionStep.CycleParameters.particularGaussianBlock
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularGaussianBlock
+#check Navier.Construction.CorrectionStep.CycleParameters.particularVelocity
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularVelocity
+#check Navier.Construction.CorrectionStep.CycleParameters.particularPressure
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularPressure
+#check Navier.Construction.CorrectionStep.CycleParameters.particularGaussian
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularGaussian
+#check Navier.Construction.CorrectionStep.CycleParameters.afterParticular
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.afterParticular
+#check Navier.Construction.CorrectionStep.CycleParameters.signedBlock
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedBlock
+#check Navier.Construction.CorrectionStep.CycleParameters.signedGaussianBlock
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedGaussianBlock
+#check Navier.Construction.CorrectionStep.CycleParameters.signedVelocity
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedVelocity
+#check Navier.Construction.CorrectionStep.CycleParameters.signedPressure
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedPressure
+#check Navier.Construction.CorrectionStep.CycleParameters.signedGaussian
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedGaussian
+#check Navier.Construction.CorrectionStep.CycleParameters.afterSigned
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.afterSigned
+#check Navier.Construction.CorrectionStep.CycleParameters.temporalIncrement
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.temporalIncrement
+#check Navier.Construction.CorrectionStep.CycleParameters.afterTemporal
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.afterTemporal
+#check Navier.Construction.CorrectionStep.CycleParameters.rankIncrement
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.rankIncrement
+#check Navier.Construction.CorrectionStep.CycleParameters.finalBlock
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.finalBlock
+#check Navier.Construction.CorrectionStep.CycleParameters.particularBlock_band
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularBlock_band
+#check Navier.Construction.CorrectionStep.CycleParameters.next_oscillatoryPressure
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_oscillatoryPressure
+#check Navier.Construction.CorrectionStep.CycleParameters.next_base_error
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_base_error
+#check Navier.Construction.CorrectionStep.CycleParameters.next_alias_error
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_alias_error
+#check Navier.Construction.CorrectionStep.ParticularParameters.angleStrip_nativeStrip
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.angleStrip_nativeStrip
+#check Navier.Construction.CorrectionStep.AxisymmetricAlias
+#print axioms Navier.Construction.CorrectionStep.AxisymmetricAlias
+#check Navier.Construction.CorrectionStep.coefficientField
+#print axioms Navier.Construction.CorrectionStep.coefficientField
+#check Navier.Construction.CorrectionStep.CycleRepresentation
+#print axioms Navier.Construction.CorrectionStep.CycleRepresentation
+#check Navier.Construction.CorrectionStep.CycleRepresentation.velocity
+#print axioms Navier.Construction.CorrectionStep.CycleRepresentation.velocity
+#check Navier.Construction.CorrectionStep.CycleRepresentation.pressure
+#print axioms Navier.Construction.CorrectionStep.CycleRepresentation.pressure
+#check Navier.Construction.CorrectionStep.CoefficientBands
+#print axioms Navier.Construction.CorrectionStep.CoefficientBands
+#check Navier.Construction.CorrectionStep.CycleParameters.nextAxisymmetricAlias
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.nextAxisymmetricAlias
+#check Navier.Construction.CorrectionStep.CycleParameters.next_representation
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_representation
+#check Navier.Construction.CorrectionStep.CycleParameters.next_coefficient_bands
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_coefficient_bands
+#check Navier.Construction.CorrectionStep.CycleParameters.next_residual_band
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_residual_band
+#check Navier.Construction.CorrectionStep.CycleState
+#print axioms Navier.Construction.CorrectionStep.CycleState
+#check Navier.Construction.CorrectionStep.CycleState.coefficients
+#print axioms Navier.Construction.CorrectionStep.CycleState.coefficients
+#check Navier.Construction.CorrectionStep.CycleState.axisymmetricAlias
+#print axioms Navier.Construction.CorrectionStep.CycleState.axisymmetricAlias
+#check Navier.Construction.CorrectionStep.CycleState.step
+#print axioms Navier.Construction.CorrectionStep.CycleState.step
+#check Navier.Construction.CorrectionStep.CycleState.iterate
+#print axioms Navier.Construction.CorrectionStep.CycleState.iterate
+#check Navier.Construction.CorrectionStep.CycleState.iterate_zero
+#print axioms Navier.Construction.CorrectionStep.CycleState.iterate_zero
+#check Navier.Construction.CorrectionStep.CycleState.iterate_succ
+#print axioms Navier.Construction.CorrectionStep.CycleState.iterate_succ
+#check Navier.Construction.CorrectionStep.assembledCovarianceIncrement_mem
+#print axioms Navier.Construction.CorrectionStep.assembledCovarianceIncrement_mem
+#check Navier.Construction.CorrectionStep.gaugeWaveStage_mean_from_covariance
+#print axioms Navier.Construction.CorrectionStep.gaugeWaveStage_mean_from_covariance
+#check Navier.Construction.CorrectionStep.CycleParameters.beforeSignedBlock
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.beforeSignedBlock
+#check Navier.Construction.CorrectionStep.CycleParameters.signedTangent
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedTangent
+#check Navier.Construction.CorrectionStep.CycleParameters.signedCurl
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedCurl
+#check Navier.Construction.CorrectionStep.CycleParameters.beforeSignedBlock_represents
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.beforeSignedBlock_represents
+#check Navier.Construction.CorrectionStep.CycleParameters.signedVelocity_split
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedVelocity_split
+#check Navier.Construction.CorrectionStep.CycleParameters.signedFamily
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedFamily
+#check Navier.Construction.CorrectionStep.ParticularParameters.common_amplitude
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.common_amplitude
+#check Navier.Construction.CorrectionStep.ParticularParameters.common_pressure
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.common_pressure
+#check Navier.Construction.CorrectionStep.ParticularParameters.fromReference
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.fromReference
+#check Navier.Construction.CorrectionStep.ParticularParameters.fromReference_coherent_amplitude
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.fromReference_coherent_amplitude
+#check Navier.Construction.CorrectionStep.ParticularParameters.fromReference_coherent_pressure
+#print axioms Navier.Construction.CorrectionStep.ParticularParameters.fromReference_coherent_pressure
+#check Navier.Construction.CorrectionStep.meanStages_constructed
+#print axioms Navier.Construction.CorrectionStep.meanStages_constructed
+#check Navier.Construction.CorrectionStep.CycleParameters.finalBlock_uniform_cumulative
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.finalBlock_uniform_cumulative
+#check Navier.Construction.CorrectionStep.CycleParameters.finalBlock_increment_bounds
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.finalBlock_increment_bounds
+#check Navier.Construction.CorrectionStep.CycleParameters.meanStages_residual_gain
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.meanStages_residual_gain
+#check Navier.Construction.CorrectionStep.OscillationPeriodic
+#print axioms Navier.Construction.CorrectionStep.OscillationPeriodic
+#check Navier.Construction.CorrectionStep.covarianceIncrement_moving
+#print axioms Navier.Construction.CorrectionStep.covarianceIncrement_moving
+#check Navier.Construction.CorrectionStep.symmetricCovariance_moving
+#print axioms Navier.Construction.CorrectionStep.symmetricCovariance_moving
+#check Navier.Construction.CorrectionStep.fieldSum_angularMean_zero
+#print axioms Navier.Construction.CorrectionStep.fieldSum_angularMean_zero
+#check Navier.Construction.CorrectionStep.CycleParameters.particularBlock_zero
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularBlock_zero
+#check Navier.Construction.CorrectionStep.CycleParameters.next_gaussian_angularMean
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_gaussian_angularMean
+#check Navier.Construction.CorrectionStep.CycleParameters.next_meanResidualBounds
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_meanResidualBounds
+#check Navier.Construction.CorrectionStep.CycleParameters.ofGeometry
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.ofGeometry
+#check Navier.Construction.CorrectionStep.CycleParameters.next_primitive
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_primitive
+#check Navier.Construction.CorrectionStep.CycleParameters.next_zeroMassesOn
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_zeroMassesOn
+#check Navier.Construction.CorrectionStep.CycleParameters.particularBlock_real
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.particularBlock_real
+#check Navier.Construction.CorrectionStep.CycleParameters.signedBlock_real
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.signedBlock_real
+#check Navier.Construction.CorrectionStep.CycleParameters.next_realCoefficients
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_realCoefficients
+#check Navier.Construction.CorrectionStep.block_velocity_zero_germ_of_inputSupport
+#print axioms Navier.Construction.CorrectionStep.block_velocity_zero_germ_of_inputSupport
+#check Navier.Construction.CorrectionStep.velocity_zero_germ_of_inputSupport
+#print axioms Navier.Construction.CorrectionStep.velocity_zero_germ_of_inputSupport
+#check Navier.Construction.CorrectionStep.CycleAnalyticInvariant
+#print axioms Navier.Construction.CorrectionStep.CycleAnalyticInvariant
+#check Navier.Construction.CorrectionStep.CycleAnalyticInvariant.frequency
+#print axioms Navier.Construction.CorrectionStep.CycleAnalyticInvariant.frequency
+#check Navier.Construction.CorrectionStep.CycleAnalyticInvariant.angular
+#print axioms Navier.Construction.CorrectionStep.CycleAnalyticInvariant.angular
+#check Navier.Construction.CorrectionStep.CycleAnalyticInvariant.pressure
+#print axioms Navier.Construction.CorrectionStep.CycleAnalyticInvariant.pressure
+#check Navier.Construction.CorrectionStep.CycleAnalyticInvariant.aliasCoefficients
+#print axioms Navier.Construction.CorrectionStep.CycleAnalyticInvariant.aliasCoefficients
+#check Navier.Construction.CorrectionStep.CycleParameters.waveStages_residual_gain
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.waveStages_residual_gain
+#check Navier.Construction.CorrectionStep.waveStage_mean_gain
+#print axioms Navier.Construction.CorrectionStep.waveStage_mean_gain
+#check Navier.Construction.CorrectionStep.CycleParameters.next_covariance_mem
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_covariance_mem
+#check Navier.Construction.CorrectionStep.CycleParameters.next_gaussian_mem
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_gaussian_mem
+#check Navier.Construction.CorrectionStep.CycleParameters.next_inputSupport
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_inputSupport
+#check Navier.Construction.CorrectionStep.CycleParameters.next_oscillation_smooth
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_oscillation_smooth
+#check Navier.Construction.CorrectionStep.CycleParameters.next_oscillation_periodic
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_oscillation_periodic
+#check Navier.Construction.CorrectionStep.CycleParameters.next_oscillation_support
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.next_oscillation_support
+#check Navier.Construction.CorrectionStep.CycleParameters.finalBlock_zero
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.finalBlock_zero
+#check Navier.Construction.CorrectionStep.CycleParameters.finalBlock_pressure_zero
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.finalBlock_pressure_zero
+#check Navier.Construction.CorrectionStep.CycleParameters.finalBlock_pressure_cumulative
+#print axioms Navier.Construction.CorrectionStep.CycleParameters.finalBlock_pressure_cumulative
+
+/-! ### Navier.Construction.CorrectionInitialization — 138 names consumed by direct importers -/
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.directions
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.directions
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.coefficients
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.coefficients
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.cutoff
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.cutoff
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.exactCoefficients
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.exactCoefficients
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.velocity
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.velocity
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentVelocity
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentVelocity
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.pressure
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.pressure
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excluded
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excluded
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.linearGood
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.linearGood
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.linearGoodField
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.linearGoodField
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.linearResidual
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.linearResidual
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.velocity_tsupport_subset_tangent
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.velocity_tsupport_subset_tangent
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_frequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_frequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_phase
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_phase
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_angularFrequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_angularFrequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_represents
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excludedBlock_represents
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excluded_angularContinuous
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excluded_angularContinuous
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.excluded_mean_zero
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.excluded_mean_zero
+#check Navier.Construction.CorrectionInitialization.seed
+#print axioms Navier.Construction.CorrectionInitialization.seed
+#check Navier.Construction.CorrectionInitialization.bandSeed
+#print axioms Navier.Construction.CorrectionInitialization.bandSeed
+#check Navier.Construction.CorrectionInitialization.GaugeInitialization.retainPressureAlias
+#print axioms Navier.Construction.CorrectionInitialization.GaugeInitialization.retainPressureAlias
+#check Navier.Construction.CorrectionInitialization.GaugeInitialization.initializedBands
+#print axioms Navier.Construction.CorrectionInitialization.GaugeInitialization.initializedBands
+#check Navier.Construction.CorrectionInitialization.GaugeInitialization.initializedBands_oscillation
+#print axioms Navier.Construction.CorrectionInitialization.GaugeInitialization.initializedBands_oscillation
+#check Navier.Construction.CorrectionInitialization.GaugeInitialization.initializedBands_error_components
+#print axioms Navier.Construction.CorrectionInitialization.GaugeInitialization.initializedBands_error_components
+#check Navier.Construction.CorrectionInitialization.angularMeanVector_fieldSum
+#print axioms Navier.Construction.CorrectionInitialization.angularMeanVector_fieldSum
+#check Navier.Construction.CorrectionInitialization.PrimaryHarmonics.block_band
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryHarmonics.block_band
+#check Navier.Construction.CorrectionInitialization.PrimaryHarmonics.block_velocity_represents
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryHarmonics.block_velocity_represents
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceCoefficients
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceCoefficients
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_frequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_frequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_phase
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_phase
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_angularFrequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_angularFrequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock_frequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock_frequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock_phase
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock_phase
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock_angularFrequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.tangentBlock_angularFrequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_frequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_frequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_phase
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_phase
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_angularFrequency
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_angularFrequency
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_represents
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.harmonicBlock_represents
+#check Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_represents
+#print axioms Navier.Construction.CorrectionInitialization.PrimaryPiece.differenceBlock_represents
+#check Navier.Construction.CorrectionInitialization.MovingInitialization.zeroMean_reconstructed_bounds
+#print axioms Navier.Construction.CorrectionInitialization.MovingInitialization.zeroMean_reconstructed_bounds
+#check Navier.Construction.CorrectionInitialization.AssembledPrimary.covariance_bounds
+#print axioms Navier.Construction.CorrectionInitialization.AssembledPrimary.covariance_bounds
+#check Navier.Construction.CorrectionInitialization.MovingInitialization.PrimaryMeanData
+#print axioms Navier.Construction.CorrectionInitialization.MovingInitialization.PrimaryMeanData
+#check Navier.Construction.CorrectionInitialization.MovingInitialization.TemporalStateBounds
+#print axioms Navier.Construction.CorrectionInitialization.MovingInitialization.TemporalStateBounds
+#check Navier.Construction.CorrectionInitialization.MovingInitialization.InitialRankBounds
+#print axioms Navier.Construction.CorrectionInitialization.MovingInitialization.InitialRankBounds
+#check Navier.Construction.CorrectionInitialization.CommonWindow.levels
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.levels
+#check Navier.Construction.CorrectionInitialization.CommonWindow.distance
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.distance
+#check Navier.Construction.CorrectionInitialization.CommonWindow.index
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.index
+#check Navier.Construction.CorrectionInitialization.CommonWindow.index_le
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.index_le
+#check Navier.Construction.CorrectionInitialization.CommonWindow.index_le_native
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.index_le_native
+#check Navier.Construction.CorrectionInitialization.CommonWindow.gap
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.gap
+#check Navier.Construction.CorrectionInitialization.CommonWindow.native_le_index_add
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.native_le_index_add
+#check Navier.Construction.CorrectionInitialization.CommonWindow.labels
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.labels
+#check Navier.Construction.CorrectionInitialization.CommonWindow.indexBounds
+#print axioms Navier.Construction.CorrectionInitialization.CommonWindow.indexBounds
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.profile
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.profile
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.outgoing
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.outgoing
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.nominal
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.nominal
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.h
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.h
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.certificate
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.certificate
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.modulation
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.modulation
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.radialVector
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.radialVector
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.temporalVector
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.temporalVector
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.vectors_det
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.vectors_det
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.slots
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.slots
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.upper
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.upper
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.choice
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.choice
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.Label
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.Label
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.phases
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.phases
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.covariance
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.covariance
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.prefactor
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.prefactor
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.covariance_eq_integral
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.covariance_eq_integral
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.covariance_bounds
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.covariance_bounds
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.spatialMask
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.spatialMask
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.pulseCoordinates
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.pulseCoordinates
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rawVelocity
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rawVelocity
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.gaussian
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.gaussian
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.phasePoint
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.phasePoint
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.geometry
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.geometry
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.clockWindow
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.clockWindow
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.length_sign
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.length_sign
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.commonContext
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.commonContext
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.commonGauge
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.commonGauge
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.spatialMask_eq
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.spatialMask_eq
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.spatialMask_native_support
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.spatialMask_native_support
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rankInner
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rankInner
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rankOuter
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rankOuter
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rankData
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rankData
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rank_radii_ordered
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rank_radii_ordered
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rankAmplitude_pos
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rankAmplitude_pos
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.active_left_before_rank
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.active_left_before_rank
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rank_before_active_right
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rank_before_active_right
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rankData_parameters
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rankData_parameters
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rank_geometry
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rank_geometry
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.nativeReferenceBounds
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.nativeReferenceBounds
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.toAbsolute
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.toAbsolute
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.toAbsolute_smooth
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.toAbsolute_smooth
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartGeometry
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartGeometry
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartGeometry_coordinates_active
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartGeometry_coordinates_active
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.outerRawVelocity
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.outerRawVelocity
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawVelocity
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawVelocity
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.uncutAmplitude
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.uncutAmplitude
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.periodicGaussian_smooth
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.periodicGaussian_smooth
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rawVelocity_transverse
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rawVelocity_transverse
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.periodicGaussian_eq_on_core
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.periodicGaussian_eq_on_core
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.outerRawPressure
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.outerRawPressure
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawPressure
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawPressure
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.uncutPressure
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.uncutPressure
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.rawPressure_zero_of_velocity_zero
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.rawPressure_zero_of_velocity_zero
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.closedMargins
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.closedMargins
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.bandVelocity_eq
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.bandVelocity_eq
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.bandPressure_eq
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.bandPressure_eq
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.preOuterVelocity_jets
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.preOuterVelocity_jets
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.preOuterPressure_jets
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.preOuterPressure_jets
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawVelocity_core
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawVelocity_core
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawPressure_core
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.attachedRawPressure_core
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.standardRegion
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.standardRegion
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.activeLabels
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.activeLabels
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.FullPoint
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.FullPoint
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.nativeSlow
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.nativeSlow
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.nativeSlow_smooth
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.nativeSlow_smooth
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.absoluteAmplitude
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.absoluteAmplitude
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.absolutePressure
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.absolutePressure
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.absolutePhase
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.absolutePhase
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCutoff
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCutoff
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.piece
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.piece
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_frequency_pos
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_frequency_pos
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_phase
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_phase
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_angular
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_angular
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.nativeSlow_toAbsolute_eq_slowChange
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.nativeSlow_toAbsolute_eq_slowChange
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_phase_view
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_phase_view
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chart_nativePoint
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chart_nativePoint
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_amplitude_copies
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_amplitude_copies
+#check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_pressure_copies
+#print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_pressure_copies
