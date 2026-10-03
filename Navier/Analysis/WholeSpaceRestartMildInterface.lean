@@ -3,6 +3,7 @@ import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinPhysicalVelocity
 import Navier.Analysis.ContinuousLeiLinRecentTailInputs
 import Navier.Analysis.PeriodicRealizationSchwartzObstruction
+import Navier.Analysis.SourceL1X1BoxFalsification
 
 /-!
 # The exact mild-uniqueness interface for a whole-space restart slab
@@ -29,8 +30,15 @@ The existing small-data engine additionally requires the trace radius
 `R ≤ ν/16` through `MildAssemblyLeaves.hRν`; no such smallness follows from a
 general BKM restart budget.  Construction of `MildAssemblyLeaves` is itself
 decomposed in `ContinuousLeiLinMildAssemblyLeaves`: its time leaves still need
-the named `SourceL1X1` input.  The theorems below consume that record; they do
-not silently claim those analytic leaves.
+the named `SourceL1X1` input.  At `(ν,T)=(1,1)` and every positive radius,
+`SourceL1X1BoxFalsification.not_forall_actualLinkedBox_sourceL1X1` proves that
+the universal general-box input is false.  The theorems below therefore remain
+conditional consumers.  The proved scoped replacement
+`LinkedBoxX2Carrier.boxX2_sourceL1X1_of_hv` uses an `ActualLinkedBoxX2`
+record's integrated `X²` budget and an explicit continuity hypothesis on its
+gated representative.  The later `ActualLinkedBoxX2ContRep` carrier packages
+a continuous pinned representative, but its source-bound transport remains
+an explicit residual.
 -/
 
 set_option autoImplicit false
@@ -58,6 +66,7 @@ open Navier.Analysis.FourierMajorant
 open Navier.Analysis.CriticalMildWeightedBanach
 open Navier.Analysis.PeriodicMildClassicalRealization
 open Navier.Analysis.PeriodicRealizationSchwartzObstruction
+open Navier.Analysis.SourceL1X1BoxFalsification
 
 /-- No nonzero whole-space Schwartz datum can be the initial slice of the
 physical realization of any weighted-lattice path.  This refutes the proposed
@@ -208,6 +217,19 @@ Lei--Lin carrier. -/
 def restartRadius (u₀ : SchwartzVelocity) : ℝ :=
   coordinateXm1Mass (fourierDatum u₀)
 
+/-- The exact universal source premise used by `fourierDatumAssemblyLeaves`
+is false at `(ν,T)=(1,1)` whenever the restart radius is positive.  This
+counterexample is a general linked-box trajectory, not a Navier--Stokes
+solution.  It therefore scopes the failed supplier without changing the
+conditional fixed-point theorem or making a claim about actual dynamics. -/
+theorem sourcePremise_false_at_one_of_restartRadius_pos
+    (u₀ : SchwartzVelocity) (hR : 0 < restartRadius u₀) :
+    ¬ ∀ x : ActualLinkedBox 1 1
+        (2 * restartRadius u₀) (2 * restartRadius u₀),
+      SourceL1X1 1 (everywhereRawRepresentative 1 1 x.1) := by
+  exact not_forall_actualLinkedBox_sourceL1X1 (2 * restartRadius u₀)
+    (mul_pos two_pos hR)
+
 /-- At time zero the raw mild image is exactly its Fourier datum, independently
 of the driving trajectory. -/
 theorem fixedPointTrajectory_zero
@@ -237,7 +259,10 @@ restart trace.  All generic datum premises and all polarization leaves are
 discharged.  The two genuine residuals are exposed in the arguments:
 
 * the critical small-data condition on the actual `X⁻¹` radius, and
-* `SourceL1X1` for every representative in the completed common box.
+* `SourceL1X1` for every representative in the completed common box.  The
+  theorem above proves that premise false at `(ν,T)=(1,1)` for positive
+  restart radius; the proved scoped replacement requires the extended X²
+  carrier plus continuity of its gated representative.
 -/
 theorem fourierDatumAssemblyLeaves
     (u₀ : SchwartzVelocity)

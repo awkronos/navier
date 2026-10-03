@@ -10,12 +10,18 @@ supplies the named strengthened input `SourceL1X1` of the mild assembly leaves
 from five velocity-side legs: joint continuity `hv`, per-time `X⁰`
 integrability `hv0`, per-time `X²` integrability `hv2`, a uniform `X⁰` mass
 bound `hbdd`, and time-integrated `X²` moment `hX2`.
-`WholeSpaceRestartMildInterface` leaves the exact restart premise
+`WholeSpaceRestartMildInterface` exposes the exact restart premise
 `H : ∀ x : ActualLinkedBox ν T (2R) (2R),
       SourceL1X1 T (everywhereRawRepresentative ν T x.1)`
-un discharged — `WholeSpaceCarrierReconstruction` records it as obligation 1.
-This module performs the leg-by-leg audit against what a linked-box record
-actually carries and wires the budget through to the two restart consumers.
+as a conditional input.  `SourceL1X1BoxFalsification` now proves that this
+universal premise is false at `(ν,T)=(1,1)` for every positive radius.  This
+module performs the leg-by-leg audit against what a linked-box record actually
+carries and records the old conditional budget wire.  Its universal budget
+premise is therefore also false at those parameters.  The proved scoped
+replacement changes the carrier to `ActualLinkedBoxX2`, whose integrated
+`X²` slot plus an explicit continuity hypothesis on the gated representative
+yield `SourceL1X1`.  `ActualLinkedBoxX2ContRep` later packages a continuous
+pinned representative; transporting the source bound to it remains separate.
 
 ## Leg audit for `v := everywhereRawRepresentative ν T x.1`
 
@@ -56,8 +62,9 @@ four-leg record `SourceX2Budget` plus box membership, the fifth leg
 `WholeSpaceRestartMildInterface`, and the two assembly consumers
 (`fourierDatumAssemblyLeaves`,
 `existsUnique_mildFixedPoint_fourierDatum_of_sourceL1X1`) are re-stated over
-the budget.  These conditional wires verify the routing; they do not claim
-any box satisfies the budget.
+the budget.  These conditional wires verify the implication only.  The
+theorem `not_forall_actualLinkedBox_sourceX2Budget` below shows that their
+general-box universal premise cannot hold at `(1,1)` and positive radius.
 
 ## Exact remaining carrier (RESIDUAL, not assumed anywhere here)
 
@@ -213,6 +220,17 @@ theorem restartSourceL1X1_of_boxBudget
     ∀ x : ActualLinkedBox ν T (2 * R) (2 * R),
       SourceL1X1 T (everywhereRawRepresentative ν T x.1) :=
   fun x => sourceL1X1_of_box_sourceX2Budget ν hν T (2 * R) (2 * R) x (Hb x)
+
+/-- The old universal `SourceX2Budget` repair on the unrestricted linked box
+is itself false at `(ν,T)=(1,1)` for every positive radius: it would imply the
+universal `SourceL1X1` premise refuted by the completed shell cascade.  The
+usable X² route must put the extra budget and representative in the carrier. -/
+theorem not_forall_actualLinkedBox_sourceX2Budget (ρ : ℝ) (hρ : 0 < ρ) :
+    ¬ ∀ x : ActualLinkedBox 1 1 ρ ρ,
+      SourceX2Budget 1 (everywhereRawRepresentative 1 1 x.1) := by
+  intro h
+  exact Navier.Analysis.SourceL1X1BoxFalsification.not_forall_actualLinkedBox_sourceL1X1 ρ hρ
+    (fun x => sourceL1X1_of_box_sourceX2Budget 1 (by norm_num) 1 ρ ρ x (h x))
 
 /-! ## The restart records re-stated over the budget -/
 

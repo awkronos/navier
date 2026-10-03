@@ -26,6 +26,9 @@ import Navier.Construction.CorrectionStep
 import Navier.Construction.CorrectionInitialization
 import Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves
 import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
+import Navier.Analysis.SourceL1X1BoxFalsification
+import Navier.Analysis.LinkedBoxX2Carrier
+import Navier.Analysis.ContRepPinProdAe
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -215,7 +218,14 @@ the every-time field.  Both polarization leaves are CLOSED for every actual
 box element (`mildPolarizationLeaves_actualBox`, lane L6d4).  The every-time
 `hmX1` (2c) and `hmX1Time` (2e) are proved under the named input
 `SourceL1X1` (`mildAssemblyTimeLeaves_of_sourceL1X1`) and are the exact open
-propositions unconditionally. -/
+propositions unconditionally.  The general-box universal supplier is now
+kernel-refuted at `(ν,T)=(1,1)` for every positive radius by
+`not_forall_actualLinkedBox_sourceL1X1`.  The proved scoped supplier is
+`LinkedBoxX2Carrier.boxX2_sourceL1X1_of_hv`, which uses the extended record's
+integrated `X²` budget and still requires continuity of its gated
+representative.  `ContRepPinProdAe` closes the product-a.e. pin for the zero
+and constant `ActualLinkedBoxX2ContRep` suppliers, while its own honest-scope
+note retains source-bound transport as a separate residual. -/
 #check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_aestronglyMeasurable
 #print axioms Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_aestronglyMeasurable
 #check Navier.Analysis.ContinuousLeiLinMildFixedPoint.mildImageIcc_integrableXm1
@@ -236,6 +246,14 @@ propositions unconditionally. -/
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildPolarizationLeaves_actualBox
 #check Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyTimeLeaves_of_sourceL1X1
 #print axioms Navier.Analysis.ContinuousLeiLinMildAssemblyLeaves.mildAssemblyTimeLeaves_of_sourceL1X1
+#check Navier.Analysis.SourceL1X1BoxFalsification.not_forall_actualLinkedBox_sourceL1X1
+#print axioms Navier.Analysis.SourceL1X1BoxFalsification.not_forall_actualLinkedBox_sourceL1X1
+#check Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceL1X1_of_hv
+#print axioms Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceL1X1_of_hv
+#check Navier.Analysis.ContRepPinProdAe.boxX2ZeroContRep_pinProdAe
+#print axioms Navier.Analysis.ContRepPinProdAe.boxX2ZeroContRep_pinProdAe
+#check Navier.Analysis.ContRepPinProdAe.boxX2ConstantContRep_pinProdAe
+#print axioms Navier.Analysis.ContRepPinProdAe.boxX2ConstantContRep_pinProdAe
 
 /-! Grönwall-pair decomposition receipts (landed 2026-09-14, lane L6b2,
 DECOMPOSED): for the constructed forced alternative-C profile the Grönwall

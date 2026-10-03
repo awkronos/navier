@@ -233,6 +233,7 @@ import Navier.Analysis.SeeleySynthesis
 import Navier.Analysis.SingularIntegralPrelims
 import Navier.Analysis.SobolevEmbedding
 import Navier.Analysis.SobolevGNS
+import Navier.Analysis.SourceL1X1BoxFalsification
 import Navier.Analysis.TriadUnitarySymmetry
 import Navier.Analysis.TypedCoordinateEndpoints
 import Navier.Analysis.UniformDecayDominated
