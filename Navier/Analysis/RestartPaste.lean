@@ -41,7 +41,15 @@ Certified here (no `sorry`):
 
 ## What this file deliberately does NOT claim
 
-* It does not construct `HorizonIndependentRestart N` for any `N`.  For the
+* It does not construct the plain `HorizonIndependentRestart N` stated in this
+  module for any `N` — but the two restart levels should be named: the
+  strengthened pre-datum restart `HorizonIndependentRestartR` IS constructed at
+  the envelope control `h3EnvelopeControl` in
+  `Navier/Analysis/HorizonFreeBudgetRestart.lean`
+  (`horizonIndependentRestartR_h3EnvelopeControl`, step
+  `h = 4π²ν/(3·10⁶·(CW·M+1))`, sorry-free, 2026-10-05).  That R-level Prop is
+  distinct from the plain engine certified here, which no theorem inhabits for
+  a concrete control.  For the
   brick (g) candidate `N = bkmVorticityControl` the engine needs (i) slice-norm
   budget propagation under the vorticity-integral bound — the same missing
   `BKMControl` producer brick (g)'s header isolates — and (ii) a restart local
