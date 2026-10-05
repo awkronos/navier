@@ -348,6 +348,10 @@ import Navier.Analysis.LinkedBoxX2Carrier
 import Navier.Analysis.LinkedBoxX2HvIndependence
 import Navier.Analysis.LinkedBoxX2ContRepCarrier
 import Navier.Analysis.ContRepPinProdAe
+import Navier.Analysis.GalerkinProjectedWeak
+import Navier.Analysis.WholeSpaceSolenoidalHeatViscousLimit
+import Navier.Analysis.ContinuationEstimateReference
+import Navier.Analysis.ContinuationEstimateProof
 
 /-!
 # Navier
