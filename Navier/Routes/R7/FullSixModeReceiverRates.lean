@@ -1,5 +1,4 @@
 import Navier.Routes.R7.FullSixModePairClassification
-import Navier.Routes.R7.WeightedShellTransfer
 
 /-!
 # Exhaustive receiver rates on the occupied six-mode support

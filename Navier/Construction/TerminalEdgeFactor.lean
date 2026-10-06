@@ -6,7 +6,6 @@ Changes: native module namespace; further compatibility edits are in Git history
 License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
 import Navier.Construction.TerminalStress
-import Navier.Construction.TransportPrimitive
 import Navier.Construction.HeatProfileExtension
 import Navier.Construction.EdgeWeightJets
 import Navier.Construction.PhysicalHeatCoordinates

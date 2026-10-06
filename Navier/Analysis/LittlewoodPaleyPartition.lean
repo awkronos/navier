@@ -1,5 +1,4 @@
 import Navier.Analysis.WienerGradLog
-import Navier.Analysis.GalerkinSmoothBandCutoff
 import Navier.Analysis.Ladyzhenskaya
 
 set_option autoImplicit false

@@ -1,6 +1,5 @@
 import Navier.Analysis.Vorticity
 import Navier.Analysis.VectorCalculus
-import Navier.Analysis.OfficialABEncoding
 import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.Analysis.Calculus.FDeriv.Pi
 import Mathlib.Analysis.Calculus.FDeriv.Comp

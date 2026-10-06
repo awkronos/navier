@@ -9,7 +9,6 @@ import Navier.Construction.GlobalSlowProfiles
 import Navier.Construction.ParametricRadialExtension
 import Navier.Construction.SlowBorelBase
 import Navier.Construction.ModulatedHistories
-import Navier.Construction.ModulatedCone
 import Navier.Construction.ReservedPatches
 import Navier.Construction.NominalProfile
 import Navier.Construction.ActualSlowAxis

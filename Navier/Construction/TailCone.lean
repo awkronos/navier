@@ -8,7 +8,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 import Navier.Construction.ReleaseMoments
 import Navier.Construction.CorrectedPulseAmplitude
 import Navier.Construction.FuturePressureBounds
-import Navier.Construction.UniformCone
 import Navier.Construction.CoordinateAlgebra
 import Navier.Construction.OutgoingHistories
 import Navier.Construction.CorrectedPressureBounds

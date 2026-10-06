@@ -7,7 +7,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
 import Navier.Construction.ParticularWaveAssembly
 import Navier.Construction.StateReindex
-import Navier.Construction.UniformPrimaryWeights
 import Navier.Construction.HarmonicWaveInteraction
 import Navier.Construction.PeriodizedWaveBounds
 

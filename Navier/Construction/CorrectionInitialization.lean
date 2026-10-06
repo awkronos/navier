@@ -14,7 +14,6 @@ import Navier.Construction.CorrectionStep
 import Navier.Construction.IntegratedMeanBalances
 import Navier.Construction.DefectIncrementBounds
 import Navier.Construction.WaveInteractionBounds
-import Navier.Construction.HarmonicCovariance
 import Navier.Construction.ErrorHarmonics
 import Navier.Construction.PrimaryFieldAssembly
 import Navier.Construction.ParticularWaveBounds

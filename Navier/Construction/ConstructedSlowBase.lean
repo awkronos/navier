@@ -8,7 +8,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 import Navier.Construction.AssembledSlowBase
 import Navier.Construction.GlobalStressSupport
 import Navier.Construction.BasePrefixIdentity
-import Navier.Construction.PreparedOutgoing
 import Navier.Construction.BaseExterior
 import Navier.Construction.TerminalHistoryBridge
 import Navier.Construction.ModulatedProfileAssembly

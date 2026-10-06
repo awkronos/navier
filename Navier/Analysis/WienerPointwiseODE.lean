@@ -1,7 +1,6 @@
 import Navier.Analysis.WienerSmoothPath
 import Navier.Analysis.WienerMoments
 import Navier.Analysis.ContinuousLeiLinFrequencyODE
-import Navier.Analysis.ContinuousLeiLinRepresentativeInvariant
 import Navier.Analysis.ContinuousLeiLinPhysicalCarrier
 
 /-!

@@ -1,4 +1,3 @@
-import Navier.Analysis.AcousticSplats
 import Navier.Analysis.AprioriCriticalControlQuantifiers
 import Navier.Analysis.BKMEnvAxis
 import Navier.Analysis.BKMEnvCut
@@ -19,7 +18,6 @@ import Navier.Analysis.CZNearField
 import Navier.Analysis.ComplexFrequencyHeatLeray
 import Navier.Analysis.ComplexLerayNorm
 import Navier.Analysis.ComplexLerayProjection
-import Navier.Analysis.ComplexPhaseMadelung
 import Navier.Analysis.ConditionalRegularity
 import Navier.Analysis.ContinuationScaleSelfImprovement
 import Navier.Analysis.ClassRestartDecomposition
@@ -213,11 +211,8 @@ import Navier.Analysis.PressureNormalization
 import Navier.Analysis.PressurePoisson
 import Navier.Analysis.MadelungTransportIdentity
 import Navier.Analysis.MadelungDecoderCurlObstruction
-import Navier.Analysis.MadelungResidualPrimitives
-import Navier.Analysis.MadelungSpinorDecoder
 import Navier.Analysis.PressureStressTensor
 import Navier.Analysis.QuantumVortexRegularity
-import Navier.Analysis.QuantumVortexTopologyChange
 import Navier.Analysis.QuantumVortexWinding
 import Navier.Analysis.RieszKolmogorov
 import Navier.Analysis.RestartBKMConsumer
@@ -239,7 +234,6 @@ import Navier.Analysis.SourceL1X1BoxFalsification
 import Navier.Analysis.TriadUnitarySymmetry
 import Navier.Analysis.TypedCoordinateEndpoints
 import Navier.Analysis.UniformDecayDominated
-import Navier.Analysis.UnitVortexZeroSetLift
 import Navier.Analysis.VacuityAudit
 import Navier.Analysis.VectorCalculus
 import Navier.Analysis.ViscosityAdmissibility
@@ -362,10 +356,17 @@ Umbrella module for the official A--D surfaces, parabolic and viscosity
 covariance, viscosity-one endpoint reductions, critical `L3` scaling,
 point-breakdown consumers, vector-calculus and guarded energy-identity leaves,
 algebraic scaling facts, frequencywise heat--Leray infrastructure, the R7
-symmetrized and recursively generated finite Fourier tests, and raw public
-axiom audit.
+symmetrized and recursively generated finite Fourier tests, the envelope-era
+datum seed, and raw public axiom audit.
 The native construction inhabits the forced whole-space breakdown alternative
 C. The unforced global-regularity alternative A remains a distinct open
 proposition in `Navier.Problem`.
+`Navier.Analysis.EnvelopeDatumSeed` lands the datum-level base case of a
+bootstrap for the crown's single remaining premise `APrioriIn RegularOnCompacts
+h3EnvelopeControl`: for every viscosity and every divergence-free Schwartz
+datum the initial-slice envelope budget is finite and equals the datum-profile
+weight.  This import establishes nothing for `t > 0` and does not close the
+premise; the premise remains open, with the propagation rung of the bootstrap
+as what is left crown-wide.
 The mathematical conclusions of this module are the imported theorem types.
 -/

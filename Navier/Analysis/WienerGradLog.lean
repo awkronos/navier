@@ -1,5 +1,4 @@
 import Navier.Analysis.WienerRestartLeaf
-import Navier.Analysis.AprioriCriticalControlQuantifiers
 
 /-!
 # The consumed `‖∇u‖∞` log bound (interface for the Littlewood–Paley lane)

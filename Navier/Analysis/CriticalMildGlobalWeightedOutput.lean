@@ -1,5 +1,4 @@
 import Navier.Analysis.CriticalMildFiberSums
-import Navier.Analysis.CriticalMildGlobalENNRealMajorant
 
 /-!
 # Exact global weighted spectral fibers

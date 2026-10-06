@@ -2,11 +2,9 @@ import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.BKMLogLeaves
 import Navier.Analysis.UniformDecayDominated
 import Navier.Analysis.BiotSavartKernel
-import Navier.Analysis.BiotSavartCore
 import Navier.Analysis.BiotSavartNearBounds
 import Navier.Analysis.CZNearField
 import Navier.Analysis.EnergyNormBridge
-import Navier.Analysis.CurlDerivativeBridge
 import Mathlib.Analysis.SpecialFunctions.Pow.Integral
 
 /-!

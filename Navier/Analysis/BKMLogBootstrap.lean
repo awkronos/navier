@@ -11,7 +11,6 @@ import Navier.Analysis.BiotSavartMorrey
 import Navier.Analysis.CZNearField
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.GronwallAffine
-import Navier.Analysis.KatoPonceLeibniz
 import Navier.Analysis.CurlDerivativeBridge
 import Navier.Analysis.WeightedCommutator
 import Mathlib.Analysis.SpecialFunctions.Pow.Integral

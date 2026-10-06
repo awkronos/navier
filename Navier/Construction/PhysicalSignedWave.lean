@@ -7,7 +7,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
 import Navier.Construction.LocalSignedRequest
 import Navier.Construction.PhysicalParticularWave
-import Navier.Construction.PrimaryFieldAssembly
 import Navier.Construction.PhysicalResidualNaturality
 import Navier.Construction.PeriodicPhaseAssembly
 

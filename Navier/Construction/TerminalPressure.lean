@@ -7,7 +7,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
 import Navier.Construction.TerminalStress
 import Navier.Construction.ParametricHeatTail
-import Navier.Construction.SmoothParameterIntegral
 import Navier.Construction.TailCone
 
 /-!

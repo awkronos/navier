@@ -1,6 +1,5 @@
 import Navier.Analysis.CriticalMildImageObservationContinuity
 import Navier.Analysis.CriticalMildPathContraction
-import Navier.Analysis.CriticalMildHeatCarrierAlgebra
 
 /-!
 # Critical mild path-space fixed-point carrier

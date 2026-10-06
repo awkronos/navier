@@ -7,7 +7,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
 import Navier.Construction.GaugeStateCoherence
 import Navier.Construction.RankStateBounds
-import Navier.Construction.BaseRankPatch
 import Navier.Construction.TemporalStateCoherence
 
 /-!

@@ -1,5 +1,4 @@
 import Navier.Analysis.ConvectionLadyzhenskaya
-import Navier.Analysis.GalerkinWeakConsistency
 
 /-!
 # Certified Galerkin support lemmas

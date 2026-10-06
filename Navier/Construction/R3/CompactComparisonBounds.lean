@@ -5,7 +5,6 @@ Upstream source: NavierStokes/R3/CompactComparisonBounds.lean
 Changes: native module namespace; further compatibility edits are in Git history.
 License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
-import Navier.Construction.R3.ComparisonFiniteEnergy
 import Navier.Construction.R3.CompactTimeIntegral
 import Navier.Construction.R3.ComparisonCutoffs
 

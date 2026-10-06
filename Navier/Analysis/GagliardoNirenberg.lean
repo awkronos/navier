@@ -1,5 +1,4 @@
 import Navier.Analysis.BealeKatoMajda
-import Navier.Analysis.BKMLogBootstrap
 import Navier.Analysis.SobolevEmbedding
 
 /-!

@@ -16,7 +16,6 @@ import Mathlib.Topology.MetricSpace.Bounded
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
-import Navier.Construction.AnalyticCoefficientBounds
 
 /-!
 # Actual analytic Volterra words for the slow axis recursion

@@ -8,7 +8,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 import Navier.Construction.ActualSignedStageControls
 import Navier.Construction.ActualPrimaryCovariance
 import Navier.Construction.ActualInitialization
-import Navier.Construction.BandReindexedSignedMeanGain
 import Navier.Construction.SignedCrossDefectClass
 import Navier.Construction.ActualCycleParameters
 

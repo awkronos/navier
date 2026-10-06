@@ -67,8 +67,12 @@ These cited results are not claimed as formalized in this repository.
 
 ## Catastrophes of the zero set
 
-[QuantumVortexTopologyChange](../Navier/Analysis/QuantumVortexTopologyChange.lean)
-constructs the smooth polynomial field
+The fold-catastrophe exhibit below was formalized in
+`Navier/Analysis/QuantumVortexTopologyChange.lean`, pruned 2026-10-05 as part
+of the Madelung-route surface family kernel-falsified at
+`OPEN_FRONTIER_MAP.md` row 39 (receipt: ledger F-031; the falsifier
+`MadelungDecoderCurlObstruction.no_scalar_madelung_initial_lift_of_rotational_data`
+is retained). The arithmetic itself is elementary and stands here as prose:
 
 ```text
 psi(t,x,y) = (x^2-t) + i*y.

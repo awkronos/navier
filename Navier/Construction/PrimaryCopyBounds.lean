@@ -6,7 +6,6 @@ Changes: native module namespace; further compatibility edits are in Git history
 License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
 import Navier.Construction.PrimaryTargetBounds
-import Navier.Construction.UniformPrimaryWeights
 import Navier.Construction.PeriodizedWaveBounds
 
 /-!

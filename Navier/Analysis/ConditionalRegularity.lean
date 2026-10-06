@@ -1,4 +1,3 @@
-import Navier.Analysis.BealeKatoMajda
 import Navier.Analysis.EnergyNormBridge
 import Navier.Analysis.ParabolicCaccioppoli
 import Navier.Scaling

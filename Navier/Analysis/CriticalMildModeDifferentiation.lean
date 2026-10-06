@@ -1,5 +1,4 @@
 import Navier.Analysis.PeriodicMildClassicalRealization
-import Navier.Analysis.CriticalMildFullPositiveTimeRegularity
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 /-!

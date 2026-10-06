@@ -1,7 +1,6 @@
 import Navier.Analysis.WienerPiece
 import Navier.Analysis.WienerSobolevL1
 import Navier.Analysis.StripOfPiece
-import Navier.Analysis.WienerLocalClassical
 
 /-!
 # The R-restart leaf from a uniform Fourier `H³` bound (piece-restart chain)

@@ -6,7 +6,6 @@ Changes: native module namespace; further compatibility edits are in Git history
 License: references/licenses/OpenAI-Apache-2.0.txt.
 -/
 import Navier.Construction.R3.ComparisonCutoffs
-import Navier.Construction.R3.ComparisonFiniteEnergy
 import Navier.Construction.R3.ComparisonGronwall
 import Navier.Construction.R3.LocalizedDifferenceEnergy
 import Mathlib.MeasureTheory.Integral.DominatedConvergence

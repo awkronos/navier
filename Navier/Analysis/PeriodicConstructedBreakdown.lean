@@ -1,7 +1,6 @@
 import Navier.Analysis.EuclideanPDETransport
 import Navier.Analysis.ViscosityEndpoints
 import Navier.Construction.ActualCandidateAssembly
-import Navier.Construction.CandidateConsequences
 
 /-!
 # The constructed periodic breakdown endpoint

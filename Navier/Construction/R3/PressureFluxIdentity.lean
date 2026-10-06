@@ -8,7 +8,6 @@ License: references/licenses/OpenAI-Apache-2.0.txt.
 import Navier.Construction.R3.PressureRecoveryHelpers
 import Navier.Construction.R3.LocalizedTransport
 import Navier.Construction.R3.PressureFunctionals
-import Navier.Construction.R3.RieszLinearityDecay
 
 /-!
 # From scalar pressure-gradient identification to the cutoff pressure flux
