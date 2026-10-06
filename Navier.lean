@@ -124,6 +124,7 @@ import Navier.Analysis.EnstrophyLimit
 import Navier.Analysis.EnstrophyPointwise
 import Navier.Analysis.EnvelopeDatumSeed
 import Navier.Analysis.EnvelopeFourierUniqueness
+import Navier.Analysis.EnvelopePropagation
 import Navier.Analysis.FloatExpCrossover
 import Navier.Analysis.ForceCoordinateBridge
 import Navier.Analysis.ForceCoordinateDecayBridge
