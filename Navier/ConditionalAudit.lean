@@ -29,6 +29,8 @@ import Navier.Analysis.ContinuousLeiLinMildFixedPointPressure
 import Navier.Analysis.SourceL1X1BoxFalsification
 import Navier.Analysis.LinkedBoxX2Carrier
 import Navier.Analysis.ContRepPinProdAe
+import Navier.Analysis.EnvelopeDatumSeed
+import Navier.Analysis.HorizonFreeBudgetRestart
 
 /-! Selected consumer-facing conditions and the constructed alternative-C
 endpoint; not a project-wide census.
@@ -935,3 +937,19 @@ sources, which the compiler checks here. -/
 #print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_amplitude_copies
 #check Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_pressure_copies
 #print axioms Navier.Construction.CorrectionInitialization.ActualPrimary.chartCoefficients_pressure_copies
+
+/-! Envelope-crown receipts (card DC-6).  The curated consumer-facing audit
+emitted BKM-envelope receipts but not the envelope crown: today the single
+live-premise reduction of statement A,
+`HorizonFreeBudgetRestart.crown_from_envelopeApriori`
+(HorizonFreeBudgetRestart.lean:250 — its only carried premise is
+`APrioriIn RegularOnCompacts h3EnvelopeControl`, the F-026 propagation rung),
+and its landed base-case seeds `EnvelopeDatumSeed.h3F_lt_top_of_schwartz`
+(EnvelopeDatumSeed.lean:80) and `EnvelopeDatumSeed.envelopeBudget_datumSeed`
+(:138). -/
+#check Navier.Analysis.HorizonFreeBudgetRestart.crown_from_envelopeApriori
+#print axioms Navier.Analysis.HorizonFreeBudgetRestart.crown_from_envelopeApriori
+#check @Navier.Analysis.EnvelopeDatumSeed.h3F_lt_top_of_schwartz
+#print axioms Navier.Analysis.EnvelopeDatumSeed.h3F_lt_top_of_schwartz
+#check @Navier.Analysis.EnvelopeDatumSeed.envelopeBudget_datumSeed
+#print axioms Navier.Analysis.EnvelopeDatumSeed.envelopeBudget_datumSeed

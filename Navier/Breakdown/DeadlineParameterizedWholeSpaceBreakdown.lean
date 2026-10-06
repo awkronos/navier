@@ -5,6 +5,7 @@ import Navier.Analysis.ViscosityAdmissibility
 import Navier.Analysis.EuclideanPDETransport
 import Navier.Analysis.SelectedCandidateEnergy
 import Navier.Analysis.ConstructedFiniteTimeObstruction
+import Navier.Analysis.ZeroDataGlobal
 import Navier.Construction.R3FiniteEnergyComparison
 import Navier.OfficialProblem
 
@@ -618,5 +619,68 @@ theorem wholeSpaceBreakdown_deadlineT (nu T : ℝ)
 #print axioms forcedDataRapidDecay_parabolicScaled
 #print axioms isClassicalSolution_parabolicScaled
 #print axioms wholeSpaceBreakdown_deadlineT
+
+/-! ## Feeding the official surface (card DC-3)
+
+`wholeSpaceBreakdown_deadlineT` previously had no math consumer — only the
+audit `#print axioms` receipts above.  The row below instantiates it at the
+unit deadline `T = 1` and witnesses the outer `∃ u₀` of official C with the
+zero Schwartz datum (`divergenceFreeInitial_zero`, `Navier/Problem.lean:285`),
+making the deadline family feed the official all-positive-viscosity
+alternative directly.  No re-construction happens here: the force, its
+admissibility, and the nonexistence conjunct are exactly the deadlineT
+output. -/
+
+/-- THEOREM (deadlineT feeds official C).  The deadline-parameterized family
+inhabits the official whole-space breakdown alternative: at every `nu > 0`,
+instantiate the unit deadline `T = 1`, take the zero Schwartz datum
+(divergence-free by `ProblemStatements.divergenceFreeInitial_zero`), and hand
+over the deadlineT force and nonexistence conjunct verbatim. -/
+theorem wholeSpaceBreakdown_of_deadlineT : ProblemStatements.WholeSpaceBreakdown := by
+  intro nu hnu
+  obtain ⟨f, _T₀, _hT₀, hdecay, _hvanish, _hnonzero, hnonexist⟩ :=
+    wholeSpaceBreakdown_deadlineT nu 1 hnu zero_lt_one
+  exact ⟨0, ProblemStatements.divergenceFreeInitial_zero, f, hdecay, hnonexist⟩
+
+/-! ### The boundary pin: the zero datum is decided by the force alone
+
+The same datum `(0 : SchwartzVelocity)` sits on both sides of the solvability
+divide.  With the zero force it is solvable unconditionally
+(`Navier.Analysis.ZeroDataGlobal.zeroData_wholeSpace_classical_solution` —
+cited, not reproved); with the deadline force constructed from the selected
+compact candidate it is not.  This pins the breakdown content of alternative
+C exactly to force-dependence: no datum-selection argument can trade the zero
+datum for a solvability failure without a nonzero admissible force. -/
+
+/-- BOUNDARY PIN (solvable pole).  The zero datum with the zero force admits a
+global classical solution at every positive viscosity — the statement of the
+solvability side of the pin, discharged by citation of `ZeroDataGlobal`
+(`Navier/Analysis/ZeroDataGlobal.lean:24`), which is itself the same content
+as the statement-A endpoint body at the zero datum
+(`Navier/Problem.lean:317`). -/
+theorem zeroDatum_zeroForce_solvable (ν : ℝ) (hν : 0 < ν) :
+    ∃ (u : VelocityEvolution) (p : PressureEvolution),
+      IsClassicalSolution ν zeroForce (0 : SchwartzVelocity) u p :=
+  Navier.Analysis.ZeroDataGlobal.zeroData_wholeSpace_classical_solution ν hν
+
+/-- BOUNDARY PIN (unsolvable pole).  The zero datum with the unit-deadline
+force admits NO global classical solution at every positive viscosity.  This
+is the nonexistence conjunct of `wholeSpaceBreakdown_deadlineT` — the existing
+constructed breakdown (selected compact candidate via
+`ComparatorBridge.compact_candidate_excludes_global_solution`) — re-extracted,
+not reproved.  Together with `zeroDatum_zeroForce_solvable` it pins C to
+force-dependence: same datum, force alone decides. -/
+theorem zeroDatum_deadlineForce_unsolvable (ν : ℝ) (hν : 0 < ν) :
+    ∃ f : ForceField,
+      ForcedDataRapidDecay f ∧
+        ¬ ∃ (u : VelocityEvolution) (p : PressureEvolution),
+          IsClassicalSolution ν f (0 : SchwartzVelocity) u p := by
+  obtain ⟨f, _T₀, _hT₀, hdecay, _hvanish, _hnonzero, hnonexist⟩ :=
+    wholeSpaceBreakdown_deadlineT ν 1 hν zero_lt_one
+  exact ⟨f, hdecay, hnonexist⟩
+
+#print axioms wholeSpaceBreakdown_of_deadlineT
+#print axioms zeroDatum_zeroForce_solvable
+#print axioms zeroDatum_deadlineForce_unsolvable
 
 end Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown

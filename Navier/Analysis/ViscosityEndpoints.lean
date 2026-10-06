@@ -248,4 +248,175 @@ theorem periodicBreakdown_of_zeroForceAtViscosityOne
   rw [viscosityScaledDatum_inv nu hnu.ne' u₀] at hback
   simpa using hback
 
+/-! ## DC-1: the zero-force breakdown surfaces are exactly the negations of
+the viscosity-one existence surfaces (de Morgan pairs)
+
+`WholeSpaceBreakdownZeroForceAtViscosityOne` says some admissible datum has no
+unforced viscosity-one solution; `WholeSpaceGlobalRegularityAtViscosityOne`
+says every admissible datum has one.  The two are literal quantifier
+negations of each other over the same contract, so each pair is an `iff` and
+the proofs below are pure quantifier logic — no analysis, no transport.
+These edges turn the two orphan `¬`-surfaces into web nodes. -/
+
+/-- **Zero-force whole-space breakdown is exactly the failure of the
+viscosity-one existence surface A₁.**  Both sides are defined in this module
+(`:75` and `:40`); the proof is de Morgan over the shared `∀`/`∃` shape. -/
+theorem wholeSpaceBreakdownZeroForce_iff_not_wholeSpaceGlobalRegularityAtViscosityOne :
+    WholeSpaceBreakdownZeroForceAtViscosityOne ↔
+      ¬ WholeSpaceGlobalRegularityAtViscosityOne := by
+  constructor
+  · rintro ⟨u₀, hu₀, hbad⟩ hA
+    exact hbad (hA u₀ hu₀)
+  · intro h
+    by_contra hneg
+    exact h fun u₀ hu₀ => Classical.byContradiction
+      fun hno => hneg ⟨u₀, hu₀, hno⟩
+
+/-- **Zero-force periodic breakdown is exactly the failure of the viscosity-one
+periodic existence surface B₁.**  The periodic twin of the pair above, over
+`:87` and `:47`. -/
+theorem periodicBreakdownZeroForce_iff_not_periodicGlobalRegularityAtViscosityOne :
+    PeriodicBreakdownZeroForceAtViscosityOne ↔
+      ¬ PeriodicGlobalRegularityAtViscosityOne := by
+  constructor
+  · rintro ⟨u₀, hu₀, hbad⟩ hB
+    exact hbad (hB u₀ hu₀)
+  · intro h
+    by_contra hneg
+    exact h fun u₀ hu₀ => Classical.byContradiction
+      fun hno => hneg ⟨u₀, hu₀, hno⟩
+
+/-! ## DC-2: negation-transport corollaries off the endpoint `iff`s
+
+The viscosity-one endpoints `A ↔ A₁` (`:94`) and `B ↔ B₁` (`:115`) transport
+negations between the official all-viscosity surfaces and the viscosity-one
+surfaces, and the DC-1 pairs then place each official existence statement in
+direct contradiction with its zero-force breakdown surface. -/
+
+/-- **¬A₁ ⇒ ¬A.**  Failure of the viscosity-one whole-space existence surface
+contradicts the official statement A through
+`wholeSpaceGlobalRegularity_iff_atViscosityOne`. -/
+theorem not_wholeSpaceGlobalRegularity_of_notAtViscosityOne
+    (h : ¬ WholeSpaceGlobalRegularityAtViscosityOne) :
+    ¬ ProblemStatements.WholeSpaceGlobalRegularity := by
+  rintro hA
+  exact h (wholeSpaceGlobalRegularity_iff_atViscosityOne.mp hA)
+
+/-- **A ⇒ ¬(zero-force breakdown at viscosity one).**  If A holds then its
+viscosity-one transport gives a solution for every admissible datum, so no
+datum can witness `WholeSpaceBreakdownZeroForceAtViscosityOne`. -/
+theorem not_wholeSpaceBreakdownZeroForce_of_wholeSpaceGlobalRegularity
+    (h : ProblemStatements.WholeSpaceGlobalRegularity) :
+    ¬ WholeSpaceBreakdownZeroForceAtViscosityOne := by
+  rintro ⟨u₀, hu₀, hbad⟩
+  exact hbad (wholeSpaceGlobalRegularity_iff_atViscosityOne.mp h u₀ hu₀)
+
+/-- **¬B₁ ⇒ ¬B.**  The periodic twin. -/
+theorem not_periodicGlobalRegularity_of_notAtViscosityOne
+    (h : ¬ PeriodicGlobalRegularityAtViscosityOne) :
+    ¬ ProblemStatements.PeriodicGlobalRegularity := by
+  rintro hB
+  exact h (periodicGlobalRegularity_iff_atViscosityOne.mp hB)
+
+/-- **B ⇒ ¬(zero-force periodic breakdown at viscosity one).**  The periodic
+twin. -/
+theorem not_periodicBreakdownZeroForce_of_periodicGlobalRegularity
+    (h : ProblemStatements.PeriodicGlobalRegularity) :
+    ¬ PeriodicBreakdownZeroForceAtViscosityOne := by
+  rintro ⟨u₀, hu₀, hbad⟩
+  exact hbad (periodicGlobalRegularity_iff_atViscosityOne.mp h u₀ hu₀)
+
+/-! ## DC-4: the forced regularity surface and the ¬C ⇒ A contrapositive edge
+
+Alternative A fixes the force to `zeroForce`; official C existentially
+quantifies an admissible force.  The surface between them is regularity for
+*every* admissible force: `ForcedWholeSpaceGlobalRegularity`.  Its negation
+side is exact: `¬C` says the breakdown witness fails to exist at *some*
+viscosity; the viscosity-one normalization `wholeSpaceBreakdown_iff_atViscosityOne`
+then leaves no admissible datum/force pair without a viscosity-one solution
+(otherwise that pair would itself be a C₁ witness), and the existing
+transport lemmas lift every pair to every positive viscosity.
+
+A and official C are separated EXACTLY by force-dependence: the reverse edge
+`A ⇒ ¬C` is honestly absent (a world where every *unforced* datum is globally
+regular can still host a forced breakdown — this is recorded for the
+zero-force surface in the docstring at `:206`), and nothing here claims it. -/
+
+/-- The all-viscosity, all-datum, all-admissible-force existence surface:
+every positive viscosity, every divergence-free Schwartz datum, and every
+rapid-decay admissible force jointly admit a classical solution pair.  This is
+the force-quantified strengthening of A whose specialization to `zeroForce`
+recovers A exactly. -/
+def ForcedWholeSpaceGlobalRegularity : Prop :=
+  ∀ ν : ℝ, 0 < ν → ∀ u₀ : SchwartzVelocity, DivergenceFreeInitial u₀ →
+    ∀ f : ForceField, ForcedDataRapidDecay f →
+      ∃ (u : VelocityEvolution) (p : PressureEvolution),
+        IsClassicalSolution ν f u₀ u p
+
+/-- **¬C ⇒ ForcedWholeSpaceGlobalRegularity.**  If the official breakdown
+alternative C fails, then its viscosity-one twin C₁ fails too
+(`wholeSpaceBreakdown_iff_atViscosityOne`), so at viscosity one no admissible
+datum/force pair can lack a solution — any such pair would itself be a C₁
+witness.  For a general `nu > 0`, the inverse viscosity scaling
+(`ViscosityTransport`) moves any datum/force pair to viscosity one preserving
+admissibility (`forcedDataRapidDecay_viscosityScaled`); a viscosity-one
+solution transports forward by `isClassicalSolution_one_to_viscosity` and the
+round-trip identities `viscosityScaledForce_inv` /
+`viscosityScaledSchwartzDatum_inv` return it at `nu`.  Failure of solvability
+at `(nu, u₀, f)` would therefore manufacture a C₁ witness, hence an official
+C witness, contradicting `¬C`. -/
+theorem forcedWholeSpaceGlobalRegularity_of_not_wholeSpaceBreakdown
+    (h : ¬ ProblemStatements.WholeSpaceBreakdown) :
+    ForcedWholeSpaceGlobalRegularity := by
+  intro nu hnu u₀ hu₀ f hf
+  by_contra hno
+  refine absurd ?_ h
+  apply wholeSpaceBreakdown_iff_atViscosityOne.mpr
+  refine ⟨viscosityScaledSchwartzDatum nu⁻¹ u₀,
+    divergenceFreeInitial_viscosityScaledSchwartzDatum nu⁻¹ u₀ hu₀,
+    viscosityScaledForce nu⁻¹ f,
+    forcedDataRapidDecay_viscosityScaled nu⁻¹ (inv_pos.mpr hnu) f hf, ?_⟩
+  rintro ⟨u, p, hsol⟩
+  have hup :=
+    isClassicalSolution_one_to_viscosity nu hnu (viscosityScaledForce nu⁻¹ f)
+      (viscosityScaledSchwartzDatum nu⁻¹ u₀) u p hsol
+  have hforce : viscosityScaledForce nu (viscosityScaledForce nu⁻¹ f) = f := by
+    simpa using viscosityScaledForce_inv nu⁻¹ (inv_ne_zero hnu.ne') f
+  have hdatum :
+      viscosityScaledSchwartzDatum nu (viscosityScaledSchwartzDatum nu⁻¹ u₀) = u₀ := by
+    simpa using viscosityScaledSchwartzDatum_inv nu⁻¹ (inv_ne_zero hnu.ne') u₀
+  rw [hforce, hdatum] at hup
+  exact hno ⟨viscosityScaledVelocity nu u, viscosityScaledPressure nu p, hup⟩
+
+/-- **ForcedWholeSpaceGlobalRegularity ⇒ A.**  Specializing the forced surface
+to the admissible zero force (`forcedDataRapidDecay_zeroForce`) recovers the
+official statement A verbatim. -/
+theorem wholeSpaceGlobalRegularity_of_forcedWholeSpaceGlobalRegularity
+    (h : ForcedWholeSpaceGlobalRegularity) :
+    ProblemStatements.WholeSpaceGlobalRegularity := by
+  intro nu hnu u₀ hu₀
+  exact h nu hnu u₀ hu₀ zeroForce forcedDataRapidDecay_zeroForce
+
+/-- **The contrapositive edge ¬C ⇒ A**, composing the two rows above: if the
+forced breakdown alternative C fails, then the unforced alternative A holds.
+This closes the C/A edge of the equivalence web; it says nothing about the
+truth values of A or C themselves, both of which remain at their registered
+statuses (A OPEN, C PROVED for the forced contract). -/
+theorem wholeSpaceGlobalRegularity_of_not_wholeSpaceBreakdown
+    (h : ¬ ProblemStatements.WholeSpaceBreakdown) :
+    ProblemStatements.WholeSpaceGlobalRegularity :=
+  wholeSpaceGlobalRegularity_of_forcedWholeSpaceGlobalRegularity
+    (forcedWholeSpaceGlobalRegularity_of_not_wholeSpaceBreakdown h)
+
 end Navier.Analysis.ViscosityEndpoints
+
+#print axioms Navier.Analysis.ViscosityEndpoints.wholeSpaceBreakdownZeroForce_iff_not_wholeSpaceGlobalRegularityAtViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.periodicBreakdownZeroForce_iff_not_periodicGlobalRegularityAtViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.not_wholeSpaceGlobalRegularity_of_notAtViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.not_wholeSpaceBreakdownZeroForce_of_wholeSpaceGlobalRegularity
+#print axioms Navier.Analysis.ViscosityEndpoints.not_periodicGlobalRegularity_of_notAtViscosityOne
+#print axioms Navier.Analysis.ViscosityEndpoints.not_periodicBreakdownZeroForce_of_periodicGlobalRegularity
+#print axioms Navier.Analysis.ViscosityEndpoints.ForcedWholeSpaceGlobalRegularity
+#print axioms Navier.Analysis.ViscosityEndpoints.forcedWholeSpaceGlobalRegularity_of_not_wholeSpaceBreakdown
+#print axioms Navier.Analysis.ViscosityEndpoints.wholeSpaceGlobalRegularity_of_forcedWholeSpaceGlobalRegularity
+#print axioms Navier.Analysis.ViscosityEndpoints.wholeSpaceGlobalRegularity_of_not_wholeSpaceBreakdown

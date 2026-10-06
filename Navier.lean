@@ -197,6 +197,7 @@ import Navier.Analysis.PeriodicNonlinearFourierReconstruction
 import Navier.Analysis.PeriodicPressureEllipticGain
 import Navier.Analysis.PeriodicQuotientBridge
 import Navier.Analysis.PeriodicRealizationSchwartzObstruction
+import Navier.Analysis.PeriodicSurfaceGuards
 import Navier.Analysis.PhysicalLocalEvolution
 import Navier.Analysis.PhysicalPeriodicCoerciveShellControl
 import Navier.Analysis.PhysicalPeriodicCriticalGoodTime
