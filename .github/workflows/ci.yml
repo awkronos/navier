@@ -61,7 +61,8 @@ jobs:
           # actions/setup-python-style tool-cache writes fail on these hosts
           # ("mkdir: /Users/runner: Permission denied"); the per-run $HOME
           # install is the polya-proven route. --default-toolchain none lets
-          # the repo's lean-toolchain (v4.34.0-rc2) pick the version.
+          # the repo's lean-toolchain file pick the version (era-independent:
+          # this comment named a toolchain and went stale at the rc4 cutover).
           curl --fail --silent --show-error --location \
             https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             --output elan-init.sh

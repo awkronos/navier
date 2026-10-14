@@ -2,10 +2,10 @@
 
 ## Pinned environment
 
-- Lean: `leanprover/lean4:v4.34.0-rc2` (`lean-toolchain`)
-- mathlib input tag: `v4.34.0-rc2`
+- Lean: `leanprover/lean4:v4.35.0-rc4` (`lean-toolchain`)
+- mathlib input tag: `v4.35.0-rc4`
 - mathlib resolved revision:
-  `85e3a25e006c35636f0e53b0e9296caca2685bc0` (`lake-manifest.json`)
+  `1f414401f69059aa7eead47b53ee40bd38455eeb` (`lake-manifest.json`)
 
 The reference manifest records the primary-source URLs and the date on which
 they were checked. Source availability and bibliographic metadata are not
