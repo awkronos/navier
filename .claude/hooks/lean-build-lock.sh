@@ -1,42 +1,23 @@
 #!/bin/bash
-# Reality project Lean build lock — STRICTER than global reform.
+# Repo forwarder for the estate Lean build lock.
 #
-# Root cause (2026-08-08): global lock treats `lake env lean` as lock-free, but
-# missing oleans make `lake env lean` WRITE into `.lake/build`. Swarm agents
-# then race-compile the same deps (e.g. G2SplitDerivations) → oleans never
-# stabilize → LSP "imports out of date" / missing olean storms.
+# Single source of truth: ~/.claude/hooks/lean-build-lock.sh. That owner holds
+# the whole policy: the output-keyed full-build lock (path dependencies
+# included), the satellite full-build cap, the memory refusals, numeric-or-not
+# timeout parsing, and the .lake/packages symlink preflight that keeps a lake
+# re-resolution from deleting the shared Mathlib cache. This file only forwards,
+# so repo-relative callers (`bash .claude/hooks/lean-build-lock.sh 300 lake ...`)
+# keep working. Never add policy here; change the owner.
 #
-# Lock key bug (2026-08-23): this script is also the absolute symlink target for
-# Fermat and Tao. Its fixed Reality lock therefore serialized three unrelated
-# output roots. Keep the stricter single-file policy, but key that lock to the
-# invoking repository. Full builds delegate to the canonical output-set wrapper
-# so path dependencies also serialize on every directory they can write.
-TIMEOUT=${1:-300}
-shift
-CMD="$*"
-
-if [[ "$CMD" == *"lake build"* || "$CMD" == make\ proof* ]]; then
-  exec "${HOME}/.claude/hooks/lean-build-lock.sh" "$TIMEOUT" "$@"
+# STOR1012-SSOT-M (2026-10-12): this forwarder replaced per-repo copies that had
+# drifted into eight variants. Copies of the old Reality single-file lock ran
+# `lake env lean` without the symlink preflight, and copies of the flat lock ran
+# `lake build` without the build cap or memory refusals. Every repo that ships
+# this forwarder ships these exact bytes.
+OWNER="${HOME}/.claude/hooks/lean-build-lock.sh"
+if [ -f "$OWNER" ]; then
+  exec bash "$OWNER" "$@"
 fi
-
-if [[ "$CMD" == lake\ * || "$CMD" == *" lake "* ]]; then
-  ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
-  if [[ -z "$ROOT" ]]; then
-    echo "ERROR: cannot resolve project root for Lean build lock" >&2
-    exit 1
-  fi
-  KEY=$(printf '%s' "$ROOT" | shasum | cut -c1-12)
-  LOCKFILE="/tmp/lean-build-${KEY}.lock"
-  exec 200>"$LOCKFILE"
-  if ! flock -w "$TIMEOUT" 200; then
-    echo "ERROR: project Lean lock busy after ${TIMEOUT}s (${LOCKFILE})" >&2
-    echo "ERROR: another lake/env-lean holds .lake/build — wait or kill thrashers" >&2
-    exit 1
-  fi
-  echo "[lean-build-lock] acquired ${LOCKFILE} for: $CMD" >&2
-  "$@"
-  rc=$?
-  echo "[lean-build-lock] released ${LOCKFILE} rc=${rc}" >&2
-  exit $rc
-fi
+echo "lean-build-lock: owner ${OWNER} is missing on $(hostname -s); running without the estate lock" >&2
+if [[ "${1:-}" =~ ^[0-9]+$ ]]; then shift; fi
 exec "$@"
