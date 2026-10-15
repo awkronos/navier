@@ -48,7 +48,7 @@ def coordinateL1 (u : ES → ComplexSpace) (ξ : ES) : FourierCoordinateL1 :=
     (hu : ∀ i : Fin 3, AEStronglyMeasurable (fun ξ => u ξ i) volume) :
     AEStronglyMeasurable (coordinateL1 u) volume := by
   apply (PiLp.continuous_toLp 1 (fun _ : Fin 3 => ℂ)).aestronglyMeasurable.comp_aemeasurable
-  exact (aemeasurable_pi_lambda _ fun i => (hu i).aemeasurable)
+  exact (AEMeasurable.of_eval fun i => (hu i).aemeasurable)
 
  theorem xm1Density_toReal_ae :
     ∀ᵐ ξ : ES ∂volume, (xm1Density ξ).toReal = ‖ξ‖⁻¹ := by

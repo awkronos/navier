@@ -248,7 +248,7 @@ theorem aN_abs_le (N k : ℕ) (hk : k ≤ N) :
         = ∏ j ∈ Finset.range k, (|(1:ℝ) + 2^j| / |(2:ℝ)^j - 2^k|) :=
           Finset.prod_congr rfl fun j _ => abs_div _ _
       _ ≤ ∏ j ∈ Finset.range k, 4 * (1 / 2) ^ (k - j) :=
-          Finset.prod_le_prod (fun j _ => by positivity)
+          Finset.prod_le_prod₀ (fun j _ => by positivity)
             (fun j hj => aN_factor_lt_bound (Finset.mem_range.mp hj))
       _ ≤ 4 ^ k / 2 ^ triSum k := partA_prod_le k
   have partB : ∏ j ∈ Finset.Ioc k N,
@@ -262,7 +262,7 @@ theorem aN_abs_le (N k : ℕ) (hk : k ≤ N) :
         = ∏ j ∈ Finset.Ioc k N, (|(1:ℝ) + 2^j| / |(2:ℝ)^j - 2^k|) :=
           Finset.prod_congr rfl fun j _ => abs_div _ _
       _ ≤ ∏ j ∈ Finset.Ioc k N, (1 + 4 * (1 / 2) ^ (j - k)) :=
-          Finset.prod_le_prod (fun j _ => by positivity)
+          Finset.prod_le_prod₀ (fun j _ => by positivity)
             (fun j hj => aN_factor_gt_bound (Finset.mem_Ioc.mp hj).1)
       _ ≤ Real.exp (∑ j ∈ Finset.Ioc k N, 4 * (1 / 2) ^ (j - k)) :=
           prod_one_add_le_exp _ _ fun j _ => by positivity
