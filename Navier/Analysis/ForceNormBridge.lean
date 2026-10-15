@@ -174,7 +174,7 @@ theorem spacetimeBundleBound_sqrt_three_mul_opNorm {n : ℕ} (N : SlotNorm)
     SpacetimeBundleBound N L (Real.sqrt 3 * ‖L‖) := by
   intro v
   have hprod : (∏ i : Fin n, ‖v i‖) ≤ ∏ i : Fin n, N (v i) :=
-    Finset.prod_le_prod (fun i _ => norm_nonneg (v i)) (fun i _ => N.norm_le (v i))
+    Finset.prod_le_prod₀ (fun i _ => norm_nonneg (v i)) (fun i _ => N.norm_le (v i))
   refine (officialEuclideanNorm_apply_le_sqrt_three_mul_opNorm L v).trans ?_
   exact mul_le_mul_of_nonneg_left hprod
     (mul_nonneg (Real.sqrt_nonneg 3) (norm_nonneg L))
@@ -189,7 +189,7 @@ theorem opNorm_le_of_spacetimeBundleBound {n : ℕ} (N : SlotNorm)
   refine ContinuousMultilinearMap.opNorm_le_bound
     (mul_nonneg (pow_nonneg (Real.sqrt_nonneg 3) n) hC) fun v => ?_
   have hstep : (∏ i : Fin n, N (v i)) ≤ Real.sqrt 3 ^ n * ∏ i : Fin n, ‖v i‖ := by
-    refine (Finset.prod_le_prod (fun i _ => N.nonneg (v i))
+    refine (Finset.prod_le_prod₀ (fun i _ => N.nonneg (v i))
       (fun i _ => N.le_sqrt_three_mul (v i))).trans_eq ?_
     rw [Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ,
       Fintype.card_fin]

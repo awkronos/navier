@@ -32,7 +32,7 @@ theorem sum_inner_sq_le_integralOn
     (hsupport : ∀ i, ∀ᵐ x ∂μ, x ∉ B → w i x = 0) :
     (∑ i, ‖inner ℝ ((hw i).toLp (w i)) (hf.toLp f)‖ ^ 2) ≤
       ∫ x in B, ‖f x‖ ^ 2 ∂μ := by
-  have hcut : MemLp (B.indicator f) 2 μ := hf.indicator hB
+  have hcut : MemLp (B.indicator f) 2 μ := hf.indicator hB.nullMeasurableSet
   have hinner : ∀ i,
       inner ℝ ((hw i).toLp (w i)) (hf.toLp f) =
         inner ℝ ((hw i).toLp (w i)) (hcut.toLp (B.indicator f)) := by

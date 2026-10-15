@@ -188,7 +188,7 @@ theorem cutoff_iteratedFDeriv_le {R : ℝ} (hR : 0 < R) (n : ℕ) (x : Space) :
       apply mul_le_mul_of_nonneg_left _ (norm_nonneg _)
       calc
         ∏ _ : Fin n, ‖dilation R‖ ≤ ∏ _ : Fin n, R⁻¹ :=
-          Finset.prod_le_prod (fun _ _ => norm_nonneg _) (fun _ _ => norm_dilation_le hR)
+          Finset.prod_le_prod₀ (fun _ _ => norm_nonneg _) (fun _ _ => norm_dilation_le hR)
         _ = (R⁻¹) ^ n := by simp
     _ ≤ derivativeConstant n * (R⁻¹) ^ n :=
       mul_le_mul_of_nonneg_right (baseCutoff_iteratedFDeriv_le n _) (by positivity)
