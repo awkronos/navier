@@ -697,7 +697,7 @@ theorem continuousNavierBilinear_aestronglyMeasurable (u v : ES → ComplexSpace
     exact (integrable_norm_iff (hu j)).mp (hu0 j) |>.integrable_convolution
       (ContinuousLinearMap.mul ℂ ℂ) ((integrable_norm_iff (hv i)).mp (hv0 i))
   have hraw : AEStronglyMeasurable (rawNavierConvection u v) := by
-    apply (aemeasurable_pi_lambda _ ?_).aestronglyMeasurable
+    apply (AEMeasurable.of_eval ?_).aestronglyMeasurable
     intro i
     change AEMeasurable (fun ξ : ES => ∑ j : Fin 3, (ξ j : ℂ) *
       ((fun η => u η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
