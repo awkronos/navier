@@ -155,7 +155,7 @@ theorem uniformFiniteEnergy_of_compact_slab {T : ℝ} {u : VelocityField}
   have hLp : MemLp (fun x : Space => u (t, x)) 2 volume :=
     (CompactTimeIntegral.continuous_slice hu.continuousOn ht).memLp_of_hasCompactSupport
       (hasCompactSupport_slice hK hsupp ht)
-  refine ⟨(memLp_two_iff_integrable_sq_norm hLp.1).1 hLp, ?_⟩
+  refine ⟨(memLp_two_iff_integrable_sq_norm hLp.aestronglyMeasurable).1 hLp, ?_⟩
   have hbound : (∫ x : Space, ‖u (t, x)‖ ^ 2) ≤ max C 0 :=
     (le_abs_self _).trans ((hC t ht).trans (le_max_left _ _))
   exact mul_le_mul_of_nonneg_left hbound (by norm_num : (0 : ℝ) ≤ 1 / 2)

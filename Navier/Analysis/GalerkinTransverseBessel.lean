@@ -40,7 +40,7 @@ theorem memLp_transverseProjection (f : ES → CS)
     continuous_frequencyVector.aestronglyMeasurable
   have hm : AEStronglyMeasurable (fun ξ => transverseProjection ξ (f ξ)) volume := by
     simp_rw [transverseProjection_eq]
-    exact hf.1.sub (((hξ.inner hf.1).div₀
+    exact hf.aestronglyMeasurable.sub (((hξ.inner hf.aestronglyMeasurable).div₀
       (Complex.continuous_ofReal.comp_aestronglyMeasurable (hξ.norm.pow 2))).smul hξ)
   exact hf.mono hm (Filter.Eventually.of_forall fun ξ =>
     transverseProjection_norm_le ξ (f ξ))
@@ -90,10 +90,10 @@ theorem lowerRadius_sq_mul_sum_inner_sq_le_curlSymbolIntegral
   let g := fun ξ => transverseProjection ξ (f ξ)
   have hg := memLp_transverseProjection f hf
   have hgint : Integrable (fun ξ => ‖g ξ‖ ^ 2) (volume : Measure ES) :=
-    (memLp_two_iff_integrable_sq_norm hg.1).mp hg
+    (memLp_two_iff_integrable_sq_norm hg.aestronglyMeasurable).mp hg
   have hm : AEStronglyMeasurable (fun ξ => ‖ξ‖ ^ 2 * ‖g ξ‖ ^ 2)
       (volume : Measure ES) :=
-    (continuous_id.norm.pow 2).aestronglyMeasurable.mul (hg.1.norm.pow 2)
+    (continuous_id.norm.pow 2).aestronglyMeasurable.mul (hg.aestronglyMeasurable.norm.pow 2)
   have hweighted : IntegrableOn (fun ξ => ‖ξ‖ ^ 2 * ‖g ξ‖ ^ 2) B := by
     refine (hgint.restrict.const_mul (b ^ 2)).mono' hm.restrict ?_
     filter_upwards [ae_restrict_mem hB] with ξ hξ
