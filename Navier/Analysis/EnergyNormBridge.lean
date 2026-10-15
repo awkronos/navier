@@ -379,7 +379,7 @@ theorem euclideanBundleBound_sqrt_three_mul_opNorm {n : ℕ}
     EuclideanBundleBound L (Real.sqrt 3 * ‖L‖) := by
   intro v
   have hprod : (∏ i : Fin n, ‖v i‖) ≤ ∏ i : Fin n, officialEuclideanNorm (v i) :=
-    Finset.prod_le_prod (fun i _ => norm_nonneg (v i))
+    Finset.prod_le_prod₀ (fun i _ => norm_nonneg (v i))
       (fun i _ => norm_le_officialEuclideanNorm (v i))
   refine (officialEuclideanNorm_apply_le_sqrt_three_mul_opNorm L v).trans ?_
   exact mul_le_mul_of_nonneg_left hprod
@@ -396,7 +396,7 @@ theorem opNorm_le_of_euclideanBundleBound {n : ℕ}
     (mul_nonneg (pow_nonneg (Real.sqrt_nonneg 3) n) hC) fun v => ?_
   have hstep : (∏ i : Fin n, officialEuclideanNorm (v i)) ≤
       Real.sqrt 3 ^ n * ∏ i : Fin n, ‖v i‖ := by
-    refine (Finset.prod_le_prod
+    refine (Finset.prod_le_prod₀
       (fun i _ => officialEuclideanNorm_nonneg (v i))
       (fun i _ => officialEuclideanNorm_le (v i))).trans_eq ?_
     rw [Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ,
