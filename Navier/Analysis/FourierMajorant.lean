@@ -528,7 +528,7 @@ theorem norm_iteratedFDeriv_euclidComponent_le
         ((scalarComponent u i).smooth ⊤) y (mod_cast le_top)]
     refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
     have hp : ∏ _k : Fin n, ‖spaceProj‖ ≤ 1 :=
-      Finset.prod_le_one (fun _ _ => norm_nonneg _) (fun _ _ => norm_spaceProj_le_one)
+      Finset.prod_le_one₀ (fun _ _ => norm_nonneg _) (fun _ _ => norm_spaceProj_le_one)
     nlinarith [norm_nonneg (iteratedFDeriv ℝ n (⇑(scalarComponent u i)) (spaceProj y)),
       Finset.prod_nonneg (fun (_ : Fin n) (_ : _ ∈ Finset.univ) => norm_nonneg spaceProj)]
   refine hstep1.trans ?_
@@ -566,7 +566,7 @@ theorem norm_iteratedLineDeriv_le {n : ℕ} (m : Fin n → ES) (hm : ∀ k, ‖m
     ‖(∂^{m} f) x‖ ≤ ‖iteratedFDeriv ℝ n (⇑f) x‖ := by
   rw [SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv]
   refine (ContinuousMultilinearMap.le_opNorm _ _).trans ?_
-  have hp : ∏ k, ‖m k‖ ≤ 1 := Finset.prod_le_one (fun k _ => norm_nonneg _) (fun k _ => hm k)
+  have hp : ∏ k, ‖m k‖ ≤ 1 := Finset.prod_le_one₀ (fun k _ => norm_nonneg _) (fun k _ => hm k)
   nlinarith [norm_nonneg (iteratedFDeriv ℝ n (⇑f) x),
     Finset.prod_nonneg (fun k (_ : k ∈ Finset.univ) => norm_nonneg (m k))]
 
