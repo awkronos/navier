@@ -120,9 +120,11 @@ theorem memLp_three_criticalL3SpatialScale_iff
       MemLp f 3 volume := by
   constructor
   · intro hscaled
+    -- mathlib drift (pin 1f414401): `MeasureTheory.MemLp` no longer exposes its
+    -- measurability conjunct as a `.1` projection; use `MemLp.aestronglyMeasurable`.
     have hmeas : AEStronglyMeasurable f volume :=
       (aestronglyMeasurable_criticalL3SpatialScale_iff
-        lambda hLambda f).mp hscaled.1
+        lambda hLambda f).mp hscaled.aestronglyMeasurable
     apply (memLp_three_iff_integrable_norm_cube hmeas).mpr
     exact
       (integrable_norm_cube_criticalL3SpatialScale_iff
@@ -131,7 +133,7 @@ theorem memLp_three_criticalL3SpatialScale_iff
     have hmeas :
         AEStronglyMeasurable (criticalL3SpatialScale lambda f) volume :=
       (aestronglyMeasurable_criticalL3SpatialScale_iff
-        lambda hLambda f).mpr hf.1
+        lambda hLambda f).mpr hf.aestronglyMeasurable
     apply (memLp_three_iff_integrable_norm_cube hmeas).mpr
     exact
       (integrable_norm_cube_criticalL3SpatialScale_iff
@@ -162,9 +164,11 @@ theorem lpNorm_three_criticalL3SpatialScale
     (hf : MemLp f 3 volume) :
     lpNorm (criticalL3SpatialScale lambda f) 3 volume =
       lpNorm f 3 volume := by
-  have hscaled : MemLp (criticalL3SpatialScale lambda f) 3 volume :=
-    (memLp_three_criticalL3SpatialScale_iff lambda hLambda f).mpr hf
-  rw [← toReal_eLpNorm hscaled.1, ← toReal_eLpNorm hf.1]
+  -- mathlib drift (pin 1f414401): `MeasureTheory.toReal_eLpNorm` is now
+  -- argument-free (`rfl`); the scaled side's membership witness, previously
+  -- needed for that argument, is unused here. Each `rw` instantiates its own
+  -- metavariables, so both `lpNorm` sides are converted in separate steps.
+  rw [← toReal_eLpNorm, ← toReal_eLpNorm]
   rw [eLpNorm_three_criticalL3SpatialScale lambda hLambda f hf]
 
 /-- Slice-level bridge from genuine `L^3` membership to the earlier

@@ -36,8 +36,17 @@ theorem lpNorm_congr_ae {p : ℝ≥0∞} {f g : Space → E}
 
 theorem lpNorm_mono_of_norm_le_ae {p : ℝ≥0∞} {f : Space → E} {g : Space → F}
     (hg : MemLp g p volume) (hfg : ∀ᵐ x ∂volume, ‖f x‖ ≤ ‖g x‖) :
-    comparisonLpNorm p f ≤ comparisonLpNorm p g :=
-  ENNReal.toReal_mono hg.eLpNorm_lt_top.ne (eLpNorm_mono_ae hfg)
+    comparisonLpNorm p f ≤ comparisonLpNorm p g := by
+  -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_mono_ae` gained a leading
+  -- `hf : AEStronglyMeasurable f μ`. No measurability is available for `f` here, so
+  -- split on it: the measurable branch is the original argument, and the
+  -- non-measurable branch is vacuous since `MeasureTheory.eLpNorm_of_not_aestronglyMeasurable`
+  -- makes the seminorm `∞`, whose `ENNReal.toReal` is `0`.
+  by_cases hfm : AEStronglyMeasurable f volume
+  · rw [comparisonLpNorm]
+    exact ENNReal.toReal_mono hg.eLpNorm_lt_top.ne (eLpNorm_mono_ae hfm hfg)
+  · rw [comparisonLpNorm, eLpNorm_of_not_aestronglyMeasurable hfm, ENNReal.toReal_top]
+    exact ENNReal.toReal_nonneg
 
 theorem lpNorm_mono_of_norm_le {p : ℝ≥0∞} {f : Space → E} {g : Space → F}
     (hg : MemLp g p volume) (hfg : ∀ x, ‖f x‖ ≤ ‖g x‖) :
@@ -52,7 +61,11 @@ theorem lpNorm_add_le {p : ℝ≥0∞} (hp1 : 1 ≤ p) {f g : Space → E}
         (eLpNorm f p volume + eLpNorm g p volume).toReal :=
       ENNReal.toReal_mono
         (ENNReal.add_ne_top.mpr ⟨hf.eLpNorm_lt_top.ne, hg.eLpNorm_lt_top.ne⟩)
-        (eLpNorm_add_le hf.aestronglyMeasurable hg.aestronglyMeasurable hp1)
+        -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_add_le`
+        -- (LpSeminorm/TriangleInequality.lean) now takes only `hp1 : 1 ≤ p`; it
+        -- discharges both `AEStronglyMeasurable` arguments internally, so the
+        -- two leading measurability arguments are dropped.
+        (eLpNorm_add_le hp1)
     _ = comparisonLpNorm p f + comparisonLpNorm p g :=
       ENNReal.toReal_add hf.eLpNorm_lt_top.ne hg.eLpNorm_lt_top.ne
 
@@ -64,7 +77,9 @@ theorem lpNorm_const_smul {𝕜 : Type*} [NormedField 𝕜] [NormedSpace 𝕜 E]
 
 theorem lpNorm_one_eq_integral_norm {f : Space → E} (hf : Integrable f volume) :
     comparisonLpNorm 1 f = ∫ x : Space, ‖f x‖ := by
-  rw [comparisonLpNorm, eLpNorm_one_eq_lintegral_enorm,
+  -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_one_eq_lintegral_enorm`
+  -- (LpSeminorm/Defs.lean) now takes `hf : AEStronglyMeasurable f μ`.
+  rw [comparisonLpNorm, eLpNorm_one_eq_lintegral_enorm hf.aestronglyMeasurable,
     integral_norm_eq_lintegral_enorm hf.aestronglyMeasurable]
 
 theorem lpNorm_two_sq_eq_l2Sq [InnerProductSpace ℝ E] {f : Space → E}

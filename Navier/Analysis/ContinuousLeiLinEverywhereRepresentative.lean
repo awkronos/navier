@@ -47,8 +47,7 @@ theorem xm1TimeSlot_norm_ae
     (Lp.memLp (x.1.fst : Xm1TimeSlot T))
   have hnorm : lpNorm (fun t => (x.1.fst : Xm1TimeSlot T) t) ∞
       (leiLinTimeMeasure T) = ‖(x.1.fst : Xm1TimeSlot T)‖ := by
-    rw [← toReal_eLpNorm (Lp.aestronglyMeasurable (x.1.fst : Xm1TimeSlot T)),
-      ← Lp.norm_def]
+    rw [← toReal_eLpNorm, ← Lp.norm_def]
   simpa only [hnorm] using h
 
 /-- The linked quotient is good at almost every horizon time. -/

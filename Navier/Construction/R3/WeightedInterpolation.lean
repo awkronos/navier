@@ -38,6 +38,14 @@ theorem eLpNorm_le_rpow_mul
     {p q r : ℝ≥0∞} {a b : ℝ}
     (hf : AEStronglyMeasurable f volume)
     (hg : AEStronglyMeasurable g volume)
+    -- mathlib drift (pin 1f414401): `h`'s measurability is now REQUIRED, not
+    -- optional. `MeasureTheory.eLpNorm_of_not_aestronglyMeasurable` makes the
+    -- seminorm of a non-measurable function `∞` (the opposite of the rc2
+    -- convention, where it was `0`), so without `hhm` the conclusion below reads
+    -- `∞ ≤ (finite right side)` and the statement is false as written. Adding the
+    -- hypothesis strengthens the assumptions to keep the theorem true; it is
+    -- available at the sole call site in this file.
+    (hhm : AEStronglyMeasurable h volume)
     (hp : 0 < p.toReal) (hq : 0 < q.toReal) (hr : 0 < r.toReal)
     (ha : 0 < a) (hb : 0 < b)
     (hra : r.toReal < p.toReal / a)
@@ -47,9 +55,11 @@ theorem eLpNorm_le_rpow_mul
   obtain ⟨hp0, hpt⟩ := ENNReal.toReal_pos_iff.mp hp
   obtain ⟨hq0, hqt⟩ := ENNReal.toReal_pos_iff.mp hq
   obtain ⟨hr0, hrt⟩ := ENNReal.toReal_pos_iff.mp hr
-  rw [eLpNorm_eq_eLpNorm' hr0.ne' hrt.ne,
-    eLpNorm_eq_eLpNorm' hp0.ne' hpt.ne,
-    eLpNorm_eq_eLpNorm' hq0.ne' hqt.ne]
+  -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_eq_eLpNorm'` gained
+  -- `hf : AEStronglyMeasurable f μ`.
+  rw [eLpNorm_eq_eLpNorm' hr0.ne' hrt.ne hhm,
+    eLpNorm_eq_eLpNorm' hp0.ne' hpt.ne hf,
+    eLpNorm_eq_eLpNorm' hq0.ne' hqt.ne hg]
   calc
     eLpNorm' h r.toReal volume ≤
         eLpNorm' (fun x => ‖f x‖ ^ a * ‖g x‖ ^ b) r.toReal volume := by
@@ -60,12 +70,18 @@ theorem eLpNorm_le_rpow_mul
           (Real.rpow_nonneg (norm_nonneg _) _))] using hx
     _ ≤ eLpNorm' (fun x => ‖f x‖ ^ a) (p.toReal / a) volume *
         eLpNorm' (fun x => ‖g x‖ ^ b) (q.toReal / b) volume := by
+      -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm'_le_eLpNorm'_mul_eLpNorm'`
+      -- (LpSeminorm/CompareExp.lean) now leads with the operation `b` and the constant
+      -- `c`, takes the two measurability proofs after them, and folds the former
+      -- exponent-side-conditions into a single `Real.HolderTriple` structure — built
+      -- here from `hab` (its `inv` field, read through `inv_eq_one_div`) and the
+      -- positivity hypotheses already in scope.
       simpa using eLpNorm'_le_eLpNorm'_mul_eLpNorm'
-        (hf.norm.aemeasurable.pow_const a).aestronglyMeasurable
-        (hg.norm.aemeasurable.pow_const b).aestronglyMeasurable
         (fun x y : ℝ => x * y) 1
+        ((hf.norm.aemeasurable.pow_const a).aestronglyMeasurable)
+        ((hg.norm.aemeasurable.pow_const b).aestronglyMeasurable)
         (Filter.Eventually.of_forall fun x => by simp [nnnorm_mul])
-        hr hra hab
+        ⟨by simpa only [inv_eq_one_div] using hab.symm, div_pos hp ha, div_pos hq hb⟩
     _ = eLpNorm' f p.toReal volume ^ a * eLpNorm' g q.toReal volume ^ b := by
       rw [eLpNorm'_norm_rpow _ _ _ ha, eLpNorm'_norm_rpow _ _ _ hb,
         div_mul_cancel₀ _ ha.ne', div_mul_cancel₀ _ hb.ne']
@@ -83,12 +99,16 @@ theorem memLp_and_lpNorm_le_rpow_mul
     (hab : 1 / r.toReal = 1 / (p.toReal / a) + 1 / (q.toReal / b))
     (hh : ∀ᵐ x ∂volume, ‖h x‖ ≤ ‖f x‖ ^ a * ‖g x‖ ^ b) :
     MemLp h r volume ∧ comparisonLpNorm r h ≤ comparisonLpNorm p f ^ a * comparisonLpNorm q g ^ b := by
-  have hbound := eLpNorm_le_rpow_mul hf.1 hg.1 hp hq hr ha hb hra hab hh
+  -- mathlib drift (pin 1f414401): `MeasureTheory.MemLp` lost its `.1` measurability
+  -- projection; recover it with `MemLp.aestronglyMeasurable`.
+  have hbound := eLpNorm_le_rpow_mul hf.aestronglyMeasurable hg.aestronglyMeasurable
+    hhm hp hq hr ha hb hra hab hh
   have hfinite : eLpNorm f p volume ^ a * eLpNorm g q volume ^ b < ∞ :=
     ENNReal.mul_lt_top
       (ENNReal.rpow_lt_top_of_nonneg ha.le hf.eLpNorm_ne_top)
       (ENNReal.rpow_lt_top_of_nonneg hb.le hg.eLpNorm_ne_top)
-  refine ⟨⟨hhm, hbound.trans_lt hfinite⟩, ?_⟩
+  -- `MemLp` is now `eLpNorm h r μ < ∞`, so the inner pair collapses.
+  refine ⟨hbound.trans_lt hfinite, ?_⟩
   simpa only [comparisonLpNorm, ENNReal.toReal_mul, ENNReal.toReal_rpow] using
     ENNReal.toReal_mono hfinite.ne hbound
 
@@ -147,7 +167,8 @@ theorem cutoff_interpolation
       comparisonLpNorm r (fun x => (φ x ^ k) • w x) ≤
         comparisonLpNorm 2 w ^ (1 - (k : ℝ) / 4) *
           comparisonLpNorm 6 (fun x => (φ x ^ 4) • w x) ^ ((k : ℝ) / 4) := by
-  apply memLp_and_lpNorm_le_rpow_mul hw hweighted ((hφm.pow k).smul hw.1)
+  apply memLp_and_lpNorm_le_rpow_mul hw hweighted
+      ((hφm.pow k).smul hw.aestronglyMeasurable)
       (by norm_num) (by norm_num) hr ha hb
   · simpa using hra
   · simpa using hab

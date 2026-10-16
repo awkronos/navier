@@ -158,7 +158,14 @@ theorem integral_norm_iteratedFDeriv_bilinear_mul_le
     have h2 : MemLp (fun x => ‖iteratedFDeriv ℝ n h x‖) 2 μ := hh2.norm
     have hmul : MemLp
         (fun x => ‖iteratedFDeriv ℝ (n - i) g x‖ * ‖iteratedFDeriv ℝ n h x‖) 1 μ :=
-      h2.mul' h1
+      -- mathlib drift (pin 1f414401): `MemLp.mul'` is now a deprecated alias of
+      -- `MeasureTheory.MemLp.fun_mul` (`@[to_fun]` on `MemLp.mul`), which puts its
+      -- FIRST argument on the LEFT of the pointwise product. The two factors are
+      -- both `L²`, so swapping the arguments gives the displayed factor order and
+      -- `ENNReal.instTwoTwo : HolderConjugate 2 2` (an abbrev for
+      -- `HolderTriple 2 2 1`) fixes the exponent at `1` — no commutativity rewrite
+      -- is needed.
+      h1.fun_mul h2
     exact (memLp_one_iff_integrable.mp hmul).const_mul _
   have hsumint : Integrable (fun x => ∑ i ∈ Finset.range (n + 1),
       (‖B‖ * ((n.choose i : ℝ) * A i)) *

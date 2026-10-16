@@ -158,7 +158,10 @@ theorem norm_mulL_le (m : LinfC) : ‖mulL m‖ ≤ ‖m‖ :=
 /-- An `L∞` class with an a.e. bound `M ≥ 0` has norm at most `M`. -/
 theorem linf_norm_le_of_ae_bound (f : LinfC) {M : ℝ} (hM0 : 0 ≤ M)
     (h : ∀ᵐ ξ ∂(volume : Measure ES), ‖f ξ‖ ≤ M) : ‖f‖ ≤ M := by
-  rw [Lp.norm_def, eLpNorm_exponent_top]
+  -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_exponent_top` gained a
+  -- leading `hf : AEStronglyMeasurable f μ`; an `Lp` class supplies its own via
+  -- `MeasureTheory.Lp.aestronglyMeasurable`.
+  rw [Lp.norm_def, eLpNorm_exponent_top (Lp.aestronglyMeasurable f)]
   exact ENNReal.toReal_le_of_le_ofReal hM0 (eLpNormEssSup_le_of_ae_bound h)
 
 /-- A bounded a.e.-strongly-measurable symbol as an `L∞` class. -/

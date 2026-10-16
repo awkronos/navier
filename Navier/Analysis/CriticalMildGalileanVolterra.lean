@@ -109,8 +109,10 @@ theorem hasDerivAt_scalarHeatVolterra {E : Type*} [NormedAddCommGroup E]
       (intervalIntegral.integral_hasDerivAt_right hint
         hg.stronglyMeasurable.stronglyMeasurableAtFilter hg.continuousAt)
     convert h using 1
-    · funext q
-      rfl
+    -- mathlib drift (pin 1f414401): `convert ... using 1` now unifies the function
+    -- argument directly (`HasDerivAt.add`'s pointwise sum is defeq here), so the
+    -- only remaining mismatch is the derivative value `g t = 0 + g t`, closed by
+    -- `simp`; the old `funext q; rfl` bullet had no goal to act on.
     · simp
   have hproduct := (hasDerivAt_exponentialPhase (-a) t).smul hprimitive
   have heq : scalarHeatVolterra a x₀ f = fun q =>
@@ -123,8 +125,8 @@ theorem hasDerivAt_scalarHeatVolterra {E : Type*} [NormedAddCommGroup E]
         (exponentialPhase (-a) t * (-a : ℂ)) •
           (x₀ + ∫ s in (0 : ℝ)..t, g s)) t := by
     convert hproduct using 1
-    funext q
-    rfl
+    -- mathlib drift (pin 1f414401): this `convert ... using 1` now closes every
+    -- mismatch, so the old `funext q; rfl` continuation had no goal to act on.
   rw [heq]
   convert hp using 1
   dsimp [g]
@@ -159,8 +161,8 @@ theorem eq_scalarHeatVolterra_of_hasDerivAt
         (exponentialPhase a s • ((-a : ℂ) • y s + g s) +
           (exponentialPhase a s * (a : ℂ)) • y s) s := by
       convert hproduct using 1
-      funext q
-      rfl
+      -- mathlib drift (pin 1f414401): this `convert ... using 1` now closes every
+      -- mismatch, so the old `funext q; rfl` continuation had no goal to act on.
     convert hp using 1
     simp only [smul_add, smul_smul]
     module
@@ -215,8 +217,8 @@ theorem exponentialPhase_smul_scalarHeatVolterra
         (exponentialPhase r s • ((-a : ℂ) • x s + f s) +
           (exponentialPhase r s * r) • x s) s := by
       convert hproduct using 1
-      funext q
-      rfl
+      -- mathlib drift (pin 1f414401): this `convert ... using 1` now closes every
+      -- mismatch, so the old `funext q; rfl` continuation had no goal to act on.
     convert hp using 1
     simp only [smul_add, smul_smul]
     module

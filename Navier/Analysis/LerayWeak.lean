@@ -1929,8 +1929,14 @@ private theorem winQ_mono {m n : ℕ} (h : m ≤ n) : winQ m ⊆ winQ n := by
 
 private theorem eLpNorm_two_lt_of_lintegral_lt {α : Type*} [MeasurableSpace α]
     {ν : Measure α} (F : α → Space) (c : ℝ≥0∞)
+    (hF : AEStronglyMeasurable F ν)
     (h : ∫⁻ z, ‖F z‖ₑ ^ 2 ∂ν < c ^ 2) : eLpNorm F 2 ν < c := by
-  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num)]
+  -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_eq_lintegral_rpow_enorm_toReal`
+  -- gained `hf : AEStronglyMeasurable f μ`. Under the new `MeasureTheory.eLpNorm`
+  -- convention a non-measurable function has seminorm `∞`
+  -- (`MeasureTheory.eLpNorm_of_not_aestronglyMeasurable`), so without `hF` the
+  -- conclusion would read `∞ < c`; the hypothesis is now part of the statement.
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num) hF]
   have h2 : (2 : ℝ≥0∞).toReal = 2 := by norm_num
   rw [h2]
   have hz : ∀ z, ‖F z‖ₑ ^ (2:ℝ) = ‖F z‖ₑ ^ (2:ℕ) := by
@@ -3985,7 +3991,8 @@ theorem exists_limit_of_forall_windowCauchy
         eLpNorm ((fun z => g (j + n) z) - (fun z => g (k + n) z)) 2
           ((volume.prod volume).restrict (winQ n)) < ((2:ℝ≥0∞)⁻¹) ^ N := by
       intro N j k hj hk
-      refine eLpNorm_two_lt_of_lintegral_lt _ _ ?_
+      refine eLpNorm_two_lt_of_lintegral_lt _ _
+        ((hgmeas (j + n)).sub (hgmeas (k + n))).aestronglyMeasurable ?_
       have hstep1 : ∫⁻ z, ‖((fun z => g (j + n) z) - (fun z => g (k + n) z)) z‖ₑ ^ 2
             ∂((volume.prod volume).restrict (winQ n))
           ≤ ∫⁻ z in winQ (N + n),
@@ -5978,7 +5985,7 @@ theorem exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral
     intro k
     have hsub : (g k - fun _ : ℝ => (0 : ℝ)) = g k := by
       funext t; simp
-    rw [hsub, eLpNorm_one_eq_lintegral_enorm]
+    rw [hsub, eLpNorm_one_eq_lintegral_enorm (hmeas k)]
     have hcongr : ∫⁻ x : ℝ, ‖g k x‖ₑ ∂μ = ∫⁻ x : ℝ, ENNReal.ofReal (g k x) ∂μ :=
       lintegral_congr_ae (Filter.Eventually.of_forall fun t =>
         Real.enorm_eq_ofReal (hg0 k t))
@@ -5990,9 +5997,11 @@ theorem exists_subseq_ae_tendsto_zero_of_tendsto_setIntegral
     have := (ENNReal.continuous_ofReal.tendsto 0).comp hg
     simp only [ENNReal.ofReal_zero] at this
     exact this.congr fun k => (hrw k).symm
-  have hTIM : TendstoInMeasure μ g Filter.atTop (fun _ : ℝ => (0 : ℝ)) :=
-    tendstoInMeasure_of_tendsto_eLpNorm one_ne_zero hmeas
-      aestronglyMeasurable_const hL1
+  have hTIM : TendstoInMeasure μ g Filter.atTop (fun _ : ℝ => (0 : ℝ)) := by
+    -- mathlib drift (pin 1f414401): `MeasureTheory.tendstoInMeasure_of_tendsto_eLpNorm`
+    -- now takes only `hp_ne_zero` and the `eLpNorm`-convergence proof; it
+    -- discharges both measurability arguments internally.
+    exact tendstoInMeasure_of_tendsto_eLpNorm one_ne_zero hL1
   obtain ⟨ns, hns, hae⟩ := hTIM.exists_seq_tendsto_ae
   exact ⟨ns, hns, hae⟩
 
