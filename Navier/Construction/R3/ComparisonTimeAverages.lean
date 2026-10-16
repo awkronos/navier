@@ -208,7 +208,7 @@ theorem l2Sq_timeIntegral_le {E : Type*} [NormedAddCommGroup E]
       ((volume : Measure ℝ).restrict (Icc 0 T)).real univ *
         ∫ t in Icc 0 T, ∫ x : Space, ‖f (t, x)‖ ^ 2 := by
   have hAvg := memLp_two_timeIntegral hf hsq
-  have hAvgSq := (memLp_two_iff_integrable_sq_norm hAvg.1).1 hAvg
+  have hAvgSq := (memLp_two_iff_integrable_sq_norm hAvg.aestronglyMeasurable).1 hAvg
   calc
     l2Sq (fun x : Space => ∫ t in Icc 0 T, f (t, x)) ≤
         ∫ x : Space, ((volume : Measure ℝ).restrict (Icc 0 T)).real univ *
@@ -317,7 +317,7 @@ theorem uniformFiniteEnergy_component_l2Sq_bound {T : ℝ} {u : VelocityField}
     (EuclideanSpace.proj k : Space →L[ℝ] ℝ).continuous.comp_aestronglyMeasurable humeas
   have hscalar := huLp.of_le hscalarmeas
     (Filter.Eventually.of_forall (fun x : Space => PiLp.norm_apply_le (u (t, x)) k))
-  have hscalarSq := (memLp_two_iff_integrable_sq_norm hscalar.1).1 hscalar
+  have hscalarSq := (memLp_two_iff_integrable_sq_norm hscalar.aestronglyMeasurable).1 hscalar
   refine ⟨hscalarSq, ?_⟩
   apply le_trans (integral_mono hscalarSq (hM t ht).1 ?_) (hM t ht).2
   intro x
@@ -382,12 +382,14 @@ theorem l2_inner_integrable_and_norm_integral_le {E : Type*} [NormedAddCommGroup
     (hg : MemLp g 2 volume) :
     Integrable (fun x => ⟪f x, g x⟫_ℝ) ∧
       (∫ x : Space, ‖⟪f x, g x⟫_ℝ‖) ≤ l2Sq f + l2Sq g := by
-  have hf_sq := (memLp_two_iff_integrable_sq_norm hf.1).1 hf
-  have hg_sq := (memLp_two_iff_integrable_sq_norm hg.1).1 hg
+  have hf_sq := (memLp_two_iff_integrable_sq_norm hf.aestronglyMeasurable).1 hf
+  have hg_sq := (memLp_two_iff_integrable_sq_norm hg.aestronglyMeasurable).1 hg
   have hpoint (x : Space) : ‖⟪f x, g x⟫_ℝ‖ ≤ ‖f x‖ ^ 2 + ‖g x‖ ^ 2 := by
     apply (norm_inner_le_norm (f x) (g x)).trans
     nlinarith [sq_nonneg (‖f x‖ - ‖g x‖), mul_nonneg (norm_nonneg (f x)) (norm_nonneg (g x))]
-  have hint := (hf_sq.add hg_sq).mono' (hf.1.inner hg.1) (Filter.Eventually.of_forall hpoint)
+  have hint := (hf_sq.add hg_sq).mono'
+    (hf.aestronglyMeasurable.inner hg.aestronglyMeasurable)
+    (Filter.Eventually.of_forall hpoint)
   refine ⟨hint, ?_⟩
   calc
     (∫ x : Space, ‖⟪f x, g x⟫_ℝ‖) ≤ ∫ x : Space, ‖f x‖ ^ 2 + ‖g x‖ ^ 2 :=
@@ -499,12 +501,13 @@ theorem l2_complex_mul_integrable_and_norm_integral_le {f : Space → ℝ} {ψ :
     (hf : MemLp f 2 volume) (hψ : MemLp ψ 2 volume) :
     Integrable (fun x : Space => (f x : ℂ) * ψ x) ∧
       (∫ x : Space, ‖(f x : ℂ) * ψ x‖) ≤ l2Sq f + l2Sq ψ := by
-  have hf_sq := (memLp_two_iff_integrable_sq_norm hf.1).1 hf
-  have hψ_sq := (memLp_two_iff_integrable_sq_norm hψ.1).1 hψ
+  have hf_sq := (memLp_two_iff_integrable_sq_norm hf.aestronglyMeasurable).1 hf
+  have hψ_sq := (memLp_two_iff_integrable_sq_norm hψ.aestronglyMeasurable).1 hψ
   have hpoint (x : Space) : ‖(f x : ℂ) * ψ x‖ ≤ ‖f x‖ ^ 2 + ‖ψ x‖ ^ 2 := by
     rw [norm_mul, Complex.norm_real]
     nlinarith [sq_nonneg (‖f x‖ - ‖ψ x‖), mul_nonneg (norm_nonneg (f x)) (norm_nonneg (ψ x))]
-  have hmeas := (Complex.continuous_ofReal.comp_aestronglyMeasurable hf.1).mul hψ.1
+  have hmeas := (Complex.continuous_ofReal.comp_aestronglyMeasurable
+    hf.aestronglyMeasurable).mul hψ.aestronglyMeasurable
   have hint := (hf_sq.add hψ_sq).mono' hmeas (Filter.Eventually.of_forall hpoint)
   refine ⟨hint, ?_⟩
   calc
