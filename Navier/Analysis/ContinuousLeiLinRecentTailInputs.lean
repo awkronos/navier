@@ -51,7 +51,7 @@ theorem continuousNavierSource_joint_aestronglyMeasurable_of_continuous
       (fun s η => u s η j) (fun s η => v s η i) μ (hu j) (hv i)
   have hraw : AEStronglyMeasurable (fun p : ES × ℝ =>
       rawNavierConvection (u p.2) (v p.2) p.1) μ := by
-    apply (aemeasurable_pi_lambda _ ?_).aestronglyMeasurable
+    apply (AEMeasurable.of_eval ?_).aestronglyMeasurable
     intro i
     change AEMeasurable (fun p : ES × ℝ => ∑ j : Fin 3, (p.1 j : ℂ) *
       ((fun η : ES => u p.2 η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
