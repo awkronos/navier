@@ -117,7 +117,7 @@ theorem continuousMultilinearMap_opNorm_le_coordinateBound
       have hcoeff : |∏ j, spacetimeCoordinateCoefficient (v j) (axes j)| ≤
           ∏ j, ‖v j‖ := by
         simp only [Finset.abs_prod]
-        exact Finset.prod_le_prod (fun _ _ => abs_nonneg _)
+        exact Finset.prod_le_prod₀ (fun _ _ => abs_nonneg _)
           (fun j _ =>
             abs_spacetimeCoordinateCoefficient_le_norm (v j) (axes j))
       have hvalue : ‖L (fun j => spacetimeCoordinateDirection (axes j))‖ ≤ C := by
