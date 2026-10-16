@@ -504,7 +504,7 @@ theorem x2TimeSlot_norm_ae
   have h := ae_le_lpNorm_exponent_top (Lp.memLp (b.1.2 : X2TimeSlot T))
   have hnorm : lpNorm (fun t => (b.1.2 : X2TimeSlot T) t) ∞
       (leiLinTimeMeasure T) = ‖(b.1.2 : X2TimeSlot T)‖ := by
-    rw [← toReal_eLpNorm (Lp.aestronglyMeasurable (b.1.2 : X2TimeSlot T)),
+    rw [← toReal_eLpNorm,
       ← Lp.norm_def]
   simpa only [hnorm] using h
 

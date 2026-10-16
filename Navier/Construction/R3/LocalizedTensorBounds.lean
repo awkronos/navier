@@ -39,11 +39,11 @@ theorem scalar_product_bound {p q r : ℝ≥0∞} [ENNReal.HolderTriple p q r]
     {f g : Space → ℝ} (hf : MemLp f p volume) (hg : MemLp g q volume) :
     MemLp (fun x => f x * g x) r volume ∧
       comparisonLpNorm r (fun x => f x * g x) ≤ comparisonLpNorm p f * comparisonLpNorm q g := by
-  have hprod : MemLp (fun x => f x * g x) r volume := hg.mul' hf
+  have hprod : MemLp (fun x => f x * g x) r volume := hf.fun_mul hg
   have hb : eLpNorm (fun x => f x * g x) r volume ≤
       eLpNorm f p volume * eLpNorm g q volume := by
-    simpa using eLpNorm_le_eLpNorm_mul_eLpNorm'_of_norm hf.1 hg.1
-      (fun a b : ℝ => a * b) 1
+    simpa using eLpNorm_le_eLpNorm_mul_eLpNorm_of_norm (fun a b : ℝ => a * b) 1
+      continuous_mul hf.aestronglyMeasurable hg.aestronglyMeasurable
       (Eventually.of_forall fun x => by simp [norm_mul])
   refine ⟨hprod, ?_⟩
   simpa only [comparisonLpNorm, ENNReal.toReal_mul] using
@@ -59,7 +59,8 @@ theorem cross_norm_bound {u w : Space → Space}
       (ENNReal.inv_ne_top.mpr six_fifths_ne_zero)).mp
     rw [ENNReal.toReal_add (by finiteness) (by finiteness)]
     norm_num⟩
-  simpa only [comparisonLpNorm, eLpNorm_norm] using scalar_product_bound (r := 6 / 5) hu.norm hw.norm
+  simpa only [comparisonLpNorm, eLpNorm_norm u hu.aestronglyMeasurable,
+    eLpNorm_norm w hw.aestronglyMeasurable] using scalar_product_bound (r := 6 / 5) hu.norm hw.norm
 
 /-- The quadratic weighted difference has the endpoint interpolation bound. -/
 theorem quadratic_cutoff_bound {φ : Space → ℝ} {w : Space → Space}
@@ -83,7 +84,8 @@ theorem quadratic_cutoff_bound {φ : Space → ℝ} {w : Space → Space}
     simpa only [pow_two] using hprod
   have hQb : comparisonLpNorm (6 / 5) (fun x => ‖φ x • w x‖ ^ 2) ≤
       comparisonLpNorm (12 / 5) (fun x => φ x • w x) ^ 2 := by
-    simpa only [pow_two, comparisonLpNorm, eLpNorm_norm] using hprodb
+    simpa only [pow_two, comparisonLpNorm,
+      eLpNorm_norm (fun x => φ x • w x) hmem.aestronglyMeasurable] using hprodb
   have hA := LpNormTools.lpNorm_nonneg (12 / 5) (fun x => φ x • w x)
   have hM := LpNormTools.lpNorm_nonneg 2 w
   have hB := LpNormTools.lpNorm_nonneg 6 (fun x => φ x ^ 4 • w x)

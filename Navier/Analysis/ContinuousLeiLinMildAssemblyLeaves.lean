@@ -154,25 +154,29 @@ theorem exists_stronglyMeasurable_jointVersion (μf : Measure ES) (μt : Measure
     simpa [hjs_point n t] using hξ
   have hsec_norm (n : ℕ) (t : ℝ) :
       ∫⁻ ξ : ES, ‖js n (t, ξ)‖ₑ ∂μf = ‖⇑(s n) t‖ₑ := by
-    rw [← eLpNorm_one_eq_lintegral_enorm, eLpNorm_congr_ae (hjs_sec n t), Lp.enorm_def]
+    rw [← eLpNorm_one_eq_lintegral_enorm
+      ((Lp.aestronglyMeasurable (s n t)).congr (hjs_sec n t).symm),
+      eLpNorm_congr_ae (hjs_sec n t), Lp.enorm_def]
   have hsec_diff (m n : ℕ) (t : ℝ) :
       ∫⁻ ξ : ES, ‖js m (t, ξ) - js n (t, ξ)‖ₑ ∂μf = ‖⇑(s m) t - ⇑(s n) t‖ₑ := by
     have h : (fun ξ : ES => js m (t, ξ) - js n (t, ξ)) =ᵐ[μf]
         ⇑(⇑(s m) t - ⇑(s n) t) := by
       filter_upwards [hjs_sec m t, hjs_sec n t, Lp.coeFn_sub (s m t) (s n t)] with ξ h1 h2 h3
       rw [h1, h2, h3, ← Pi.sub_apply]
-    rw [← eLpNorm_one_eq_lintegral_enorm, eLpNorm_congr_ae h, Lp.enorm_def]
+    rw [← eLpNorm_one_eq_lintegral_enorm
+      ((Lp.aestronglyMeasurable (s m t - s n t)).congr h.symm), eLpNorm_congr_ae h, Lp.enorm_def]
   --  ### The joint lift preserves the slot norm (t-outer Tonelli, no swap).
   have hjs_eLp (n : ℕ) : eLpNorm (js n) 1 μp = eLpNorm (⇑(s n)) 1 μt := by
     have h1 : AEMeasurable (fun p : ℝ × ES => ‖js n p‖ₑ) μp := by
       have h2 := (hjs_aes n).aemeasurable
       fun_prop
-    rw [eLpNorm_one_eq_lintegral_enorm, eLpNorm_one_eq_lintegral_enorm, hμp,
+    rw [eLpNorm_one_eq_lintegral_enorm (hjs_aes n),
+      eLpNorm_one_eq_lintegral_enorm (s n).aestronglyMeasurable, hμp,
       lintegral_prod (f := fun p : ℝ × ES => ‖js n p‖ₑ) h1]
     exact lintegral_congr fun t => hsec_norm n t
   --  ### Completeness in the joint product space.
   have hjs_mem (n : ℕ) : MemLp (js n) 1 μp :=
-    ⟨hjs_aes n, by rw [hjs_eLp]; exact (hsM n).2⟩
+    show eLpNorm (js n) 1 μp < ∞ by rw [hjs_eLp]; exact hsM n
   let hL : ℕ → Lp FourierCoordinateL1 1 μp := fun n => (hjs_mem n).toLp (js n)
   have hL_coe (n : ℕ) : ⇑(hL n) =ᵐ[μp] js n := MemLp.coeFn_toLp (hjs_mem n)
   -- pointwise enorm triangle on the spatial slot (ENNReal norm of an L¹ class)
@@ -199,7 +203,10 @@ theorem exists_stronglyMeasurable_jointVersion (μf : Measure ES) (μt : Measure
       have h1 : AEMeasurable (fun p : ℝ × ES => ‖js j p - js n p‖ₑ) μp := by
         have h2 := (hjs_aes j).sub (hjs_aes n)
         fun_prop
-      rw [eLpNorm_one_eq_lintegral_enorm, eLpNorm_one_eq_lintegral_enorm, hμp,
+      rw [eLpNorm_one_eq_lintegral_enorm (f := fun p : ℝ × ES => js j p - js n p)
+          ((hjs_aes j).sub (hjs_aes n)),
+        eLpNorm_one_eq_lintegral_enorm (f := fun t : ℝ => ⇑(s j) t - ⇑(s n) t)
+          ((s j).aestronglyMeasurable.sub (s n).aestronglyMeasurable), hμp,
         lintegral_prod (f := fun p : ℝ × ES => ‖js j p - js n p‖ₑ) h1]
       exact lintegral_congr fun t => hsec_diff j n t
     have hjt : eLpNorm (fun t : ℝ => ⇑(s j) t - ⇑F t) 1 μt <
@@ -212,16 +219,16 @@ theorem exists_stronglyMeasurable_jointVersion (μf : Measure ES) (μt : Measure
     have hslot : eLpNorm (fun t : ℝ => ⇑(s j) t - ⇑(s n) t) 1 μt <
         ENNReal.ofReal ((↑j + 1 : ℝ)⁻¹) + ENNReal.ofReal ((↑n + 1 : ℝ)⁻¹) := by
       have haj : AEStronglyMeasurable (fun t : ℝ => ⇑(s j) t - ⇑F t) μt :=
-        (hsM j).1.sub (Lp.aestronglyMeasurable F)
+        (s j).aestronglyMeasurable.sub (Lp.aestronglyMeasurable F)
       have hbi : AEStronglyMeasurable (fun t : ℝ => ⇑F t - ⇑(s n) t) μt :=
-        (Lp.aestronglyMeasurable F).sub (hsM n).1
+        (Lp.aestronglyMeasurable F).sub (s n).aestronglyMeasurable
       have hdeq : (fun t : ℝ => ⇑(s j) t - ⇑(s n) t) =
           (fun t : ℝ => ⇑(s j) t - ⇑F t) + (fun t : ℝ => ⇑F t - ⇑(s n) t) := by
         funext t
         show ⇑(s j) t - ⇑(s n) t = (⇑(s j) t - ⇑F t) + (⇑F t - ⇑(s n) t)
         abel
       rw [hdeq]
-      refine (eLpNorm_add_le haj hbi le_rfl).trans_lt ?_
+      refine (eLpNorm_add_le le_rfl).trans_lt ?_
       exact ENNReal.add_lt_add hjt hnt
     have hsum : ENNReal.ofReal ((↑j + 1 : ℝ)⁻¹) + ENNReal.ofReal ((↑n + 1 : ℝ)⁻¹) ≠ ∞ :=
       ENNReal.add_ne_top.mpr ⟨by finiteness, by finiteness⟩
@@ -274,7 +281,7 @@ theorem exists_stronglyMeasurable_jointVersion (μf : Measure ES) (μt : Measure
         = ∫⁻ p : ℝ × ES, ‖u' p - js n p‖ₑ ∂μp := by
           rw [hμp, lintegral_prod (f := fun p : ℝ × ES => ‖u' p - js n p‖ₑ) h1]
       _ = eLpNorm (fun p : ℝ × ES => u' p - js n p) 1 μp :=
-          (eLpNorm_one_eq_lintegral_enorm).symm
+          (eLpNorm_one_eq_lintegral_enorm (hu'_SM.aestronglyMeasurable.sub (hjs_aes n))).symm
       _ = ‖U - hL n‖ₑ := by rw [← eLpNorm_congr_ae (hUe n), ← Lp.enorm_def]
   have hδ_meas (n : ℕ) : AEMeasurable (δ n) μt := by
     -- sectionwise integrand is a.e. measurable; push through the product
@@ -328,14 +335,15 @@ theorem exists_stronglyMeasurable_jointVersion (μf : Measure ES) (μt : Measure
   set θ : ℕ → ℝ → ENNReal := fun n t => ‖⇑F t - ⇑(s n) t‖ₑ
   have hθ_meas (n : ℕ) : AEMeasurable (θ n) μt := by
     have h : AEStronglyMeasurable (fun t : ℝ => ⇑F t - ⇑(s n) t) μt :=
-      (Lp.aestronglyMeasurable F).sub (hsM n).1
+      (Lp.aestronglyMeasurable F).sub (s n).aestronglyMeasurable
     exact h.enorm
   have hθ_int (n : ℕ) : ∫⁻ t : ℝ, θ n t ∂μt = eLpNorm (⇑F - ⇑(s n)) 1 μt := by
     rw [show θ n = fun t : ℝ => ‖(⇑F - ⇑(s n)) t‖ₑ from by
       funext t
       show ‖⇑F t - ⇑(s n) t‖ₑ = ‖(⇑F - ⇑(s n)) t‖ₑ
       rw [Pi.sub_apply]]
-    exact (eLpNorm_one_eq_lintegral_enorm (f := ⇑F - ⇑(s n))).symm
+    exact (eLpNorm_one_eq_lintegral_enorm (f := ⇑F - ⇑(s n))
+      ((Lp.aestronglyMeasurable F).sub (s n).aestronglyMeasurable)).symm
   have hk_theta (k : ℕ) : ∫⁻ t : ℝ, θ (nsub k) t ∂μt ≤ ((2 : ℝ≥0∞)⁻¹) ^ (k + 1) := by
     rw [hθ_int]
     have hle : ((nsub k : ℝ) + 1)⁻¹ ≤ ((2 : ℝ) ^ (k + 1))⁻¹ :=
@@ -410,9 +418,10 @@ theorem exists_stronglyMeasurable_jointVersion (μf : Measure ES) (μt : Measure
         show js n (t, ξ) - u' (t, ξ) = -(u' (t, ξ) - js n (t, ξ))
         rw [neg_sub]
       rw [eLpNorm_congr_ae hw, hneg, eLpNorm_neg]
-      exact eLpNorm_one_eq_lintegral_enorm
+      exact eLpNorm_one_eq_lintegral_enorm ((hu'_sec t).sub
+        ((Lp.aestronglyMeasurable (s n t)).congr (hjs_sec n t).symm))
     rw [hdeq]
-    exact (eLpNorm_add_le ha1 ha2 le_rfl).trans (add_le_add e1.le e2.le)
+    exact (eLpNorm_add_le le_rfl).trans (add_le_add e1.le e2.le)
   --  ### Squeeze: the discrepancy is ≥ 0 and tends to 0 along the subsequence,
   --  ### hence 0 a.e.; `eLpNorm_eq_zero_iff` converts this into the section
   --  ### almost-everywhere equality, and the coordinate swap transports it.
@@ -434,7 +443,6 @@ theorem exists_stronglyMeasurable_jointVersion (μf : Measure ES) (μt : Measure
     filter_upwards [heq_zero] with t ht
     have h0 : (fun ξ : ES => ⇑(F t) ξ - u' (t, ξ)) =ᵐ[μf] 0 :=
       (eLpNorm_eq_zero_iff (f := fun ξ : ES => ⇑(F t) ξ - u' (t, ξ)) (p := 1) (μ := μf)
-        ((Lp.aestronglyMeasurable (F t)).sub (hu'_sec t))
         (by norm_num : (1 : ℝ≥0∞) ≠ 0)).mp ht
     filter_upwards [h0] with ξ h
     exact (sub_eq_zero.mp h).symm
@@ -495,7 +503,7 @@ theorem continuousNavierSource_joint_aestronglyMeasurable_of_coordSM (T : ℝ)
       (hu j) (hv i)
   have hraw : AEStronglyMeasurable (fun p : ES × ℝ =>
       rawNavierConvection (u p.2) (v p.2) p.1) μ := by
-    apply (aemeasurable_pi_lambda _ ?_).aestronglyMeasurable
+    apply (AEMeasurable.of_eval ?_).aestronglyMeasurable
     intro i
     change AEMeasurable (fun p : ES × ℝ => ∑ j : Fin 3, (p.1 j : ℂ) *
       ((fun η : ES => u p.2 η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
@@ -1811,7 +1819,6 @@ theorem mildTimeLeaf_hmXm1Time (ν : ℝ≥0) (hν : 0 < ν) (T : ℝ)
                   (ae_of_all volume fun ξ =>
                     congrArg (fun y : ℂ => ‖ξ‖⁻¹ * ‖y‖) (congrFun (congrFun hdecomp ξ) i)))
               using 1
-              · rfl
           _ = ∑ i : Fin 3, (normXm1 (fun ξ : ES =>
                   heatVec (ν : ℝ) s a ξ i - heatVec (ν : ℝ) t₀ a ξ i) +
                 normXm1 (fun ξ : ES =>

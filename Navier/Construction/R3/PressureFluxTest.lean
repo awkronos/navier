@@ -271,7 +271,8 @@ theorem memLp_and_lpNorm_fderiv_r_two_le {φ : Space → ℝ} {w : Space → Spa
       have hGeq := WeightedSobolev.lpNorm_cutoffGradientAmplitude hφ.continuous hs hw1
       change comparisonLpNorm 2 G = _ at hGeq
       rw [hGeq]
-      simp [comparisonLpNorm, eLpNorm_norm, Real.norm_eq_abs, abs_of_nonneg hL0, abs_of_nonneg hc]
+      simp [comparisonLpNorm, eLpNorm_norm w hw2.aestronglyMeasurable, Real.norm_eq_abs,
+        abs_of_nonneg hL0, abs_of_nonneg hc]
 
 theorem lpNorm_fderiv_r_two_le {φ : Space → ℝ} {w : Space → Space}
     (hφ : ContDiff ℝ ∞ φ) (hs : HasCompactSupport φ) (hw : ContDiff ℝ ∞ w)

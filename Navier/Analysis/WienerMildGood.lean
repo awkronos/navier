@@ -51,7 +51,7 @@ theorem stronglyMeasurable_source {v : ℝ → ES → ComplexSpace}
     rw [heq]
     exact hf.integral_prod_right'
   have hraw : Measurable (fun p : ℝ × ES => Complex.I • rawNavierConvection (v p.1) (v p.1) p.2) := by
-    refine (measurable_pi_lambda _ fun i => ?_).const_smul Complex.I
+    refine (Measurable.of_eval fun i => ?_).const_smul Complex.I
     unfold rawNavierConvection
     refine Finset.measurable_sum _ fun j _ => ?_
     have hc : Measurable fun c : ℝ × ES => ((c.2 j : ℝ) : ℂ) :=
@@ -101,12 +101,12 @@ variable {ν T : ℝ} {v : ℝ → ES → ComplexSpace}
 include hvm
 
 theorem measurable_slice (s : ℝ) : Measurable (v s) :=
-  measurable_pi_lambda _ fun i =>
+  Measurable.of_eval fun i =>
     ((hvm i).comp_measurable (measurable_id.prodMk measurable_const)).measurable
 
 theorem measurable_continuousDuhamel (t : ℝ) :
     Measurable (fun ξ => continuousDuhamel ν v v t ξ) := by
-  refine measurable_pi_lambda _ fun i => ?_
+  refine Measurable.of_eval fun i => ?_
   have hS := stronglyMeasurable_source hvm
   have hf : StronglyMeasurable (fun p : ℝ × ES =>
       heatMode ν (t - p.1) (fun ζ : ES => continuousNavierSource v v p.1 ζ i) p.2) := by

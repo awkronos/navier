@@ -215,9 +215,6 @@ theorem hasDerivAt_physicalVelocity_of_dominated
       (Complex.reCLM.hasStrictFDerivAt.hasFDerivAt.comp _ h.hasFDerivAt).hasDerivAt
       using 1
     · rfl
-    · rfl
-    · funext s
-      exact (Complex.reCLM_apply (physicalCoord (w s) i (euclidPoint x))).symm
     · rw [ContinuousLinearMap.comp_apply,
         ContinuousLinearMap.toSpanSingleton_apply_one, Complex.reCLM_apply]
   exact hre

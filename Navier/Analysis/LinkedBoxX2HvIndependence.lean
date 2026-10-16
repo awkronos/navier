@@ -167,7 +167,7 @@ theorem eval_toLp_const {E α : Type*} [MeasurableSpace α] [NormedAddCommGroup 
   subst hf
   classical
   have hex : ∃ b : E,
-      (AEEqFun.mk (fun _ : α => c) hm.1 : α →ₘ[μ] E) =
+      (AEEqFun.mk (fun _ : α => c) hm.aestronglyMeasurable : α →ₘ[μ] E) =
         AEEqFun.mk (const α b) aestronglyMeasurable_const :=
     ⟨c, AEEqFun.mk_eq_mk.mpr (ae_of_all _ fun _ => rfl)⟩
   have hchoose : Classical.choose hex = c := by
@@ -180,7 +180,7 @@ theorem eval_toLp_const {E α : Type*} [MeasurableSpace α] [NormedAddCommGroup 
       have hm2 := MeasureTheory.ae_iff.mp hae
       rwa [hset] at hm2
     exact hμ (Measure.measure_univ_eq_zero.mp h0)
-  show (AEEqFun.cast (AEEqFun.mk (fun _ : α => c) hm.1) : α → E) a = c
+  show (AEEqFun.cast (AEEqFun.mk (fun _ : α => c) hm.aestronglyMeasurable) : α → E) a = c
   simp only [AEEqFun.cast]
   rw [dif_pos hex]
   simpa using hchoose

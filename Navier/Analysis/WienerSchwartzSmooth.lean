@@ -41,7 +41,7 @@ open Navier.Analysis.WienerMildGood
 
 theorem measurable_fourierDatum (u₀ : Navier.SchwartzVelocity) :
     Measurable (fourierDatum u₀) :=
-  measurable_pi_lambda _ fun i =>
+  Measurable.of_eval fun i =>
     ((𝓕 (euclidComponent u₀ i) : SchwartzMap ES ℂ).continuous).measurable
 
 theorem lintegral_weight_le_sum (n : ℕ) (f : ES → ComplexSpace) (hf : Measurable f) :

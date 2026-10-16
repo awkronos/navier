@@ -34,7 +34,15 @@ open ProblemStatement Comparison
 theorem lpNorm_ofReal (p : ℝ≥0∞) (f : Space → ℝ) :
     comparisonLpNorm p (fun x => (f x : ℂ)) = comparisonLpNorm p f := by
   apply congrArg ENNReal.toReal
-  exact eLpNorm_congr_norm_ae (Eventually.of_forall fun x => Complex.norm_real (f x))
+  -- mathlib drift (pin 1f414401): `eLpNorm_congr_norm_ae` now takes both
+  -- measurability witnesses; a non-measurable function has `eLpNorm = ∞`
+  -- (`eLpNorm_of_not_aestronglyMeasurable`), so split on measurability.
+  by_cases hf : AEStronglyMeasurable f volume
+  · exact eLpNorm_congr_norm_ae (Complex.continuous_ofReal.comp_aestronglyMeasurable hf) hf
+      (Eventually.of_forall fun x => Complex.norm_real (f x))
+  · have hc : ¬ AEStronglyMeasurable (fun x => (f x : ℂ)) volume := fun h =>
+      hf (by simpa using Complex.continuous_re.comp_aestronglyMeasurable h)
+    rw [eLpNorm_of_not_aestronglyMeasurable hf, eLpNorm_of_not_aestronglyMeasurable hc]
 
 theorem norm_fderiv_ofReal {f : Space → ℝ} {x : Space}
     (hf : DifferentiableAt ℝ f x) :
@@ -58,7 +66,8 @@ theorem lpNorm_fderiv_realTest (p : ℝ≥0∞) (f : Space → ℝ)
     comparisonLpNorm p (fderiv ℝ (fun x => PressureRecovery.realTest f hf hc x)) =
       comparisonLpNorm p (fderiv ℝ f) := by
   apply congrArg ENNReal.toReal
-  apply eLpNorm_congr_norm_ae
+  apply eLpNorm_congr_norm_ae (measurable_fderiv ℝ _).aestronglyMeasurable
+    (measurable_fderiv ℝ _).aestronglyMeasurable
   exact Eventually.of_forall fun x =>
     norm_fderiv_ofReal ((contDiff_infty.1 hf 1).differentiable (by simp) x)
 
@@ -94,8 +103,8 @@ theorem norm_holder_pair_le {f : Space → ℝ} {g : Space → ℂ}
   have he : eLpNorm (fun x => (f x : ℂ) * g x) 1 volume ≤
       eLpNorm (fun x => (f x : ℂ)) (6 / 5) volume * eLpNorm g 6 volume := by
     simpa only [ENNReal.coe_one, one_mul] using
-      eLpNorm_le_eLpNorm_mul_eLpNorm_of_nnnorm hfc.1 hg.1
-        (fun a b : ℂ => a * b) 1
+      eLpNorm_le_eLpNorm_mul_eLpNorm (fun a b : ℂ => a * b) 1 continuous_mul
+        hfc.aestronglyMeasurable hg.aestronglyMeasurable
         (Eventually.of_forall fun x => by simp [nnnorm_mul])
   have ht := ENNReal.toReal_mono (ENNReal.mul_ne_top hfc.eLpNorm_ne_top hg.eLpNorm_ne_top) he
   change comparisonLpNorm 1 (fun x => (f x : ℂ) * g x) ≤

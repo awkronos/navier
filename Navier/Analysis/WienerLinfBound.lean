@@ -40,8 +40,7 @@ theorem isClosed_Zb (R : ℝ) : IsClosed (Zb R) := by
   refine isClosed_of_closure_subset fun f hf => ?_
   obtain ⟨u, hu, hlim⟩ := mem_closure_iff_seq_limit.mp hf
   have hmeas : TendstoInMeasure (volume : Measure ES) (fun n => ⇑(u n)) atTop ⇑f := by
-    refine tendstoInMeasure_of_tendsto_eLpNorm one_ne_zero
-      (fun n => Lp.aestronglyMeasurable _) (Lp.aestronglyMeasurable _) ?_
+    refine tendstoInMeasure_of_tendsto_eLpNorm one_ne_zero ?_
     exact (Lp.tendsto_Lp_iff_tendsto_eLpNorm' _ _).mp hlim
   obtain ⟨ns, -, hns⟩ := hmeas.exists_seq_tendsto_ae
   have hall : ∀ᵐ ξ ∂(volume : Measure ES), ∀ n, ‖u (ns n) ξ‖ ≤ R :=
