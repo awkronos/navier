@@ -71,9 +71,9 @@ energies. -/
 theorem l2Sq_sub_le {E : Type*} [NormedAddCommGroup E] {f g : Space → E}
     (hf : MemLp f 2 volume) (hg : MemLp g 2 volume) :
     l2Sq (fun x => f x - g x) ≤ 2 * (l2Sq f + l2Sq g) := by
-  have hf_sq := (memLp_two_iff_integrable_sq_norm hf.1).1 hf
-  have hg_sq := (memLp_two_iff_integrable_sq_norm hg.1).1 hg
-  have hfg_sq := (memLp_two_iff_integrable_sq_norm (hf.sub hg).1).1 (hf.sub hg)
+  have hf_sq := (memLp_two_iff_integrable_sq_norm hf.aestronglyMeasurable).1 hf
+  have hg_sq := (memLp_two_iff_integrable_sq_norm hg.aestronglyMeasurable).1 hg
+  have hfg_sq := (memLp_two_iff_integrable_sq_norm (hf.sub hg).aestronglyMeasurable).1 (hf.sub hg)
   calc
     l2Sq (fun x => f x - g x) ≤
         ∫ x : Space, 2 * (‖f x‖ ^ 2 + ‖g x‖ ^ 2) :=
@@ -158,9 +158,9 @@ theorem tensorDiff_integrable {u v : VelocityField} {t : ℝ}
     (hu : MemLp (fun x : Space => u (t, x)) 2 volume)
     (hv : MemLp (fun x : Space => v (t, x)) 2 volume) (i j : Fin 3) :
     Integrable (tensorDiff u v t i j) volume := by
-  have hu_sq := (memLp_two_iff_integrable_sq_norm hu.1).1 hu
-  have hv_sq := (memLp_two_iff_integrable_sq_norm hv.1).1 hv
-  exact (hu_sq.add hv_sq).mono' (tensorDiff_aestronglyMeasurable hu.1 hv.1 i j)
+  have hu_sq := (memLp_two_iff_integrable_sq_norm hu.aestronglyMeasurable).1 hu
+  have hv_sq := (memLp_two_iff_integrable_sq_norm hv.aestronglyMeasurable).1 hv
+  exact (hu_sq.add hv_sq).mono' (tensorDiff_aestronglyMeasurable hu.aestronglyMeasurable hv.aestronglyMeasurable i j)
     (ae_of_all _ (tensorDiff_norm_le u v t i j))
 
 /-- Its `L¹` norm is bounded using only the two ordinary energies. -/
@@ -169,8 +169,8 @@ theorem tensorDiff_norm_integral_le {u v : VelocityField} {t : ℝ}
     (hv : MemLp (fun x : Space => v (t, x)) 2 volume) (i j : Fin 3) :
     (∫ x : Space, ‖tensorDiff u v t i j x‖) ≤
       l2Sq (fun x => u (t, x)) + l2Sq (fun x => v (t, x)) := by
-  have hu_sq := (memLp_two_iff_integrable_sq_norm hu.1).1 hu
-  have hv_sq := (memLp_two_iff_integrable_sq_norm hv.1).1 hv
+  have hu_sq := (memLp_two_iff_integrable_sq_norm hu.aestronglyMeasurable).1 hu
+  have hv_sq := (memLp_two_iff_integrable_sq_norm hv.aestronglyMeasurable).1 hv
   calc
     (∫ x : Space, ‖tensorDiff u v t i j x‖) ≤
         ∫ x : Space, ‖u (t, x)‖ ^ 2 + ‖v (t, x)‖ ^ 2 :=

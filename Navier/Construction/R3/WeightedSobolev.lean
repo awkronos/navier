@@ -211,7 +211,11 @@ theorem lpNorm_fderiv_cutoff_four_le {φ : Space → ℝ} {w : Space → Space}
       have hGeq := lpNorm_cutoffGradientAmplitude hφ.continuous hs hw
       change comparisonLpNorm 2 G = _ at hGeq
       rw [hGeq]
-      simp [comparisonLpNorm, eLpNorm_norm, Real.norm_eq_abs, abs_of_nonneg hL0]
+      -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_norm` now takes the
+      -- function explicitly plus `hf`, so the bare name no longer simplifies; pass
+      -- the instance for `w`, whose measurability `hw2 : MemLp w 2 volume` carries.
+      simp [comparisonLpNorm, eLpNorm_norm w hw2.aestronglyMeasurable, Real.norm_eq_abs,
+        abs_of_nonneg hL0]
 
 /-- A positive, fixed constant for the cutoff Sobolev estimate. -/
 def weightedSobolevConstant : ℝ := 4 * sobolevConstant + 1

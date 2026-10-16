@@ -78,9 +78,17 @@ theorem fourierInv_toLp_ae_eq {f : ES → ℂ} (hf1 : Integrable f) (hf2 : MemLp
   rw [e1, e2]
   exact key G
 
-theorem eLpNorm_toLp_eq_lintegral {f : ES → ℂ} :
+theorem eLpNorm_toLp_eq_lintegral {f : ES → ℂ}
+    (hf : AEStronglyMeasurable f volume) :
     eLpNorm f 2 volume = (∫⁻ x, ‖f x‖ₑ ^ (2 : ℝ)) ^ (1 / (2 : ℝ)) := by
-  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num)]
+  -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_eq_lintegral_rpow_enorm_toReal`
+  -- gained `hf : AEStronglyMeasurable f μ`. The hypothesis is added to this
+  -- statement rather than case-split away, because under the new convention a
+  -- non-measurable function has `eLpNorm = ∞`
+  -- (`MeasureTheory.eLpNorm_of_not_aestronglyMeasurable`), so the equality below
+  -- would be false without it. Both use sites are measurable: an `Lp` coercion,
+  -- and `𝓕⁻` of an integrable function, which is continuous.
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num) hf]
   norm_num
 
 /-- **Plancherel's identity for the integral transform on `L¹ ∩ L²`.** -/
@@ -93,7 +101,10 @@ theorem lintegral_sq_fourierInv_eq {f : ES → ℂ} (hf1 : Integrable f) (hf2 : 
     rw [Lp.norm_def, Lp.norm_def] at hnorm
     exact (ENNReal.toReal_eq_toReal_iff' (Lp.eLpNorm_ne_top _) (Lp.eLpNorm_ne_top _)).mp hnorm
   rw [eLpNorm_congr_ae (fourierInv_toLp_ae_eq hf1 hf2),
-    eLpNorm_congr_ae hf2.coeFn_toLp, eLpNorm_toLp_eq_lintegral, eLpNorm_toLp_eq_lintegral] at hE
+    eLpNorm_congr_ae hf2.coeFn_toLp,
+    eLpNorm_toLp_eq_lintegral
+      (Navier.Analysis.WienerSmoothPath.continuous_fourierInv hf1).aestronglyMeasurable,
+    eLpNorm_toLp_eq_lintegral hf2.aestronglyMeasurable] at hE
   have hinj := ENNReal.rpow_left_injective (x := 1 / (2 : ℝ)) (by norm_num) hE
   simp only [ENNReal.rpow_two] at hinj
   exact hinj

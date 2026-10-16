@@ -209,6 +209,6 @@ theorem eLpNorm_three_criticalProfileAction
         lambda hLambda (criticalProfileTranslate (lambda • center) f)
           htranslated
     _ = eLpNorm f 3 volume :=
-      eLpNorm_criticalProfileTranslate 3 (lambda • center) f hf.1
+      eLpNorm_criticalProfileTranslate 3 (lambda • center) f hf.aestronglyMeasurable
 
 end Navier.Analysis.CriticalProfileAction

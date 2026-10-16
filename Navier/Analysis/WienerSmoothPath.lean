@@ -451,7 +451,7 @@ def deg (α : Fin 3 → ℕ) : ℕ := ∑ j : Fin 3, α j
 theorem norm_mono_le (α : Fin 3 → ℕ) (ξ : ES) : ‖mono α ξ‖ ≤ ‖ξ‖ ^ deg α := by
   unfold mono deg
   rw [norm_prod, ← Finset.prod_pow_eq_pow_sum]
-  refine Finset.prod_le_prod (fun _ _ => norm_nonneg _) fun j _ => ?_
+  refine Finset.prod_le_prod₀ (fun _ _ => norm_nonneg _) fun j _ => ?_
   rw [norm_pow, Complex.norm_real]
   exact pow_le_pow_left₀ (norm_nonneg _) (PiLp.norm_apply_le ξ j) _
 

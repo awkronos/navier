@@ -174,9 +174,15 @@ theorem memLp_of_nonneg_integrable_rpow {f : ℝ → ℝ} (hf_meas : Measurable 
     (hf_nonneg : ∀ x, 0 ≤ f x) {p : ℝ} (hp : 0 < p) {s : Set ℝ}
     (hf_int : IntegrableOn (fun x => f x ^ p) s volume) :
     MemLp f (ENNReal.ofReal p) (volume.restrict s) := by
-  refine ⟨hf_meas.aestronglyMeasurable, ?_⟩
+  -- mathlib drift (pin 1f414401): `MeasureTheory.MemLp` is now the bare definition
+  -- `eLpNorm f p μ < ∞`, so the paired anonymous constructor collapses to its
+  -- finiteness component (the measurability it used to carry is no longer a field),
+  -- and `MeasureTheory.eLpNorm_eq_lintegral_rpow_enorm_toReal` now requires that
+  -- measurability explicitly — still available from `hf_meas`.
+  have hmeas : AEStronglyMeasurable f (volume.restrict s) := hf_meas.aestronglyMeasurable
+  refine memLp_iff.mpr ?_
   rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (ENNReal.ofReal_pos.mpr hp).ne'
-    ENNReal.ofReal_ne_top]
+    ENNReal.ofReal_ne_top hmeas]
   have htoReal : (ENNReal.ofReal p).toReal = p := ENNReal.toReal_ofReal hp.le
   rw [htoReal]
   have hintegrand : ∀ x : ℝ, ‖f x‖ₑ ^ p = ENNReal.ofReal (f x ^ p) := by

@@ -114,7 +114,7 @@ theorem measurable_continuousLeray :
       (((Navier.Analysis.FourierMajorant.spaceProj p.1) ⬝ᵥ
         (Navier.Analysis.FourierMajorant.spaceProj p.1) : ℝ) : ℂ)) :=
     (Complex.continuous_ofReal.comp (Continuous.dotProduct hq hq)).measurable
-  exact measurable_pi_lambda _ fun i => (hz i).sub
+  exact Measurable.of_eval fun i => (hz i).sub
     (((Finset.measurable_sum _ fun l _ => (hc l).mul (hz l)).div hden).mul (hc i))
 
 theorem stronglyMeasurable_conv_coord {u v : ES → ComplexSpace} (hu : StronglyMeasurable u)
@@ -134,7 +134,7 @@ theorem stronglyMeasurable_conv_coord {u v : ES → ComplexSpace} (hu : Strongly
 theorem stronglyMeasurable_bilinear {u v : ES → ComplexSpace} (hu : StronglyMeasurable u)
     (hv : StronglyMeasurable v) : StronglyMeasurable (continuousNavierBilinear u v) := by
   have hraw : Measurable (fun ξ => Complex.I • rawNavierConvection u v ξ) := by
-    refine (measurable_pi_lambda _ fun i => ?_).const_smul Complex.I
+    refine (Measurable.of_eval fun i => ?_).const_smul Complex.I
     unfold rawNavierConvection
     exact Finset.measurable_sum _ fun j _ =>
       (Complex.continuous_ofReal.comp (PiLp.continuous_apply 2 _ j)).measurable.mul

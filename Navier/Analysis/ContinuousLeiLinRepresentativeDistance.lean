@@ -129,7 +129,7 @@ theorem coordinateXm1Mass_everywhere_sub_le_dist_ae
   have htop := ae_le_lpNorm_exponent_top (Lp.memLp (xs - ys))
   have hnorm : lpNorm (fun t => (xs - ys) t) ∞ (leiLinTimeMeasure T) =
       ‖xs - ys‖ := by
-    rw [← toReal_eLpNorm (Lp.aestronglyMeasurable (xs - ys)), ← Lp.norm_def]
+    rw [← toReal_eLpNorm, ← Lp.norm_def]
   filter_upwards [htop, Lp.coeFn_sub xs ys,
     everywhereXm1Section_eq_ae ν hν T x,
     everywhereXm1Section_eq_ae ν hν T y] with t ht hsub hx hy

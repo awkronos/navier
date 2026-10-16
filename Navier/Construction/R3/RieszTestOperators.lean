@@ -214,7 +214,14 @@ theorem lpNorm_two_fderiv_rieszTest_le (i j : Fin 3) (ψ : ComplexTest) :
         ‖Comparison.partialD k (rieszTest i j ψ) x‖) :=
       lpNorm_two_fin3_sum_le _ (fun k => (memLp_partial_rieszTest i j ψ k).norm)
     _ = ∑ k : Fin 3, comparisonLpNorm 2 (Comparison.partialD k (rieszTest i j ψ)) := by
-      simp only [comparisonLpNorm, eLpNorm_norm]
+      -- mathlib drift (pin 1f414401): `MeasureTheory.eLpNorm_norm` now takes the
+      -- function explicitly plus `hf : AEStronglyMeasurable f μ`, so the bare name
+      -- is no longer a usable simp rule; apply it summand-wise, with measurability
+      -- supplied by `memLp_partial_rieszTest`.
+      simp only [comparisonLpNorm]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      rw [eLpNorm_norm (Comparison.partialD k (rieszTest i j ψ))
+        (memLp_partial_rieszTest i j ψ k).aestronglyMeasurable]
     _ ≤ ∑ k : Fin 3, comparisonLpNorm 2 (Comparison.partialD k (fun y => ψ y)) := by
       exact Finset.sum_le_sum fun k _ => lpNorm_two_partial_rieszTest_le i j ψ k
     _ ≤ ∑ _k : Fin 3, comparisonLpNorm 2 (fderiv ℝ (fun y => ψ y)) := by
