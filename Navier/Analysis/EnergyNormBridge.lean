@@ -501,3 +501,9 @@ theorem schwartzmap_satisfies_fullyEuclidean_rapidDecay
     (Navier.ConventionBridges.schwartzmap_satisfies_fefferman_rapid_decay s)
 
 end Navier.Analysis.EnergyNormBridge
+
+-- rc4 era-heal receipts (heal-navier-1017): `Finset.prod_le_prod` now needs
+-- `MulLeftMono`, which `ℝ` does not have; the `₀` variant takes the nonneg bound
+-- explicitly, with the same argument order.
+#print axioms Navier.Analysis.EnergyNormBridge.euclideanBundleBound_sqrt_three_mul_opNorm
+#print axioms Navier.Analysis.EnergyNormBridge.opNorm_le_of_euclideanBundleBound
