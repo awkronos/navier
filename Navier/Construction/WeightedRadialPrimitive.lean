@@ -1110,3 +1110,6 @@ theorem supported_meanClass_canonical_transport
 end LogStrip
 
 end Navier.Construction.WeightedRadialPrimitive
+
+-- rc4 era-heal receipt (heal-navier-1017): `Finset.prod_le_one` → `prod_le_one₀`.
+#print axioms Navier.Construction.WeightedRadialPrimitive.cutoff_finiteJet_bound
