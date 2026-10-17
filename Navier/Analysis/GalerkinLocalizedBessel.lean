@@ -32,6 +32,7 @@ theorem sum_inner_sq_le_integralOn
     (hsupport : ∀ i, ∀ᵐ x ∂μ, x ∉ B → w i x = 0) :
     (∑ i, ‖inner ℝ ((hw i).toLp (w i)) (hf.toLp f)‖ ^ 2) ≤
       ∫ x in B, ‖f x‖ ^ 2 ∂μ := by
+  -- rc4 `MemLp.indicator` asks for a `NullMeasurableSet`, not a `MeasurableSet`.
   have hcut : MemLp (B.indicator f) 2 μ := hf.indicator hB.nullMeasurableSet
   have hinner : ∀ i,
       inner ℝ ((hw i).toLp (w i)) (hf.toLp f) =
@@ -57,3 +58,6 @@ theorem sum_inner_sq_le_integralOn
   by_cases hx : x ∈ B <;> simp [hx]
 
 end Navier.Analysis.GalerkinLocalizedBessel
+
+-- rc4 era-heal receipt (heal-navier-1017): `MemLp.indicator` needs `NullMeasurableSet`.
+#print axioms Navier.Analysis.GalerkinLocalizedBessel.sum_inner_sq_le_integralOn
