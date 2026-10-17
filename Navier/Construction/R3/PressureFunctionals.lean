@@ -294,3 +294,6 @@ theorem averagedPressureDifference_bound {W0 W1 : Space → ℝ}
     averagedPressureDifferenceValue_bound hW0 hW1 hG k
 
 end Navier.ConstructionR3.PressureFunctionals
+
+-- rc4 era-heal receipt (heal-navier-1017): the theorem whose proof changed.
+#print axioms Navier.ConstructionR3.PressureFunctionals.integrable_l2_pair
