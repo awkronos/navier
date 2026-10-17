@@ -32,7 +32,12 @@ variable {E F G : Type*}
 
 /-- Hölder interpolation for a function dominated by a product of powers.
 The arithmetic assumptions are on real exponents, so rational specializations
-can be discharged by `norm_num`. -/
+can be discharged by `norm_num`.
+
+rc4 era-heal (heal-navier-1017): `eLpNorm` is now `⊤` off the
+`AEStronglyMeasurable` locus, so `eLpNorm_eq_eLpNorm'` demands the bound
+explicitly and the conclusion is false without it; `hhm` is therefore a
+required hypothesis rather than a convenience. -/
 theorem eLpNorm_le_rpow_mul
     {f : Space → E} {g : Space → F} {h : Space → G}
     {p q r : ℝ≥0∞} {a b : ℝ}
@@ -256,3 +261,8 @@ theorem cutoff_transport_bound
       norm_num
 
 end Navier.ConstructionR3.WeightedInterpolation
+
+-- rc4 era-heal receipts (heal-navier-1017): theorems whose statements or proofs changed.
+#print axioms Navier.ConstructionR3.WeightedInterpolation.eLpNorm_le_rpow_mul
+#print axioms Navier.ConstructionR3.WeightedInterpolation.memLp_and_lpNorm_le_rpow_mul
+#print axioms Navier.ConstructionR3.WeightedInterpolation.cutoff_interpolation
