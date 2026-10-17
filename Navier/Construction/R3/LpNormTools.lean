@@ -99,3 +99,8 @@ theorem lpNorm_two_eq_sqrt_l2Sq [InnerProductSpace ℝ E] {f : Space → E}
   rw [← lpNorm_two_sq_eq_l2Sq hf, Real.sqrt_sq (lpNorm_nonneg 2 f)]
 
 end Navier.ConstructionR3.LpNormTools
+
+-- rc4 era-heal receipts (heal-navier-1017): the three theorems whose proofs changed.
+#print axioms Navier.ConstructionR3.LpNormTools.lpNorm_mono_of_norm_le_ae
+#print axioms Navier.ConstructionR3.LpNormTools.lpNorm_add_le
+#print axioms Navier.ConstructionR3.LpNormTools.lpNorm_one_eq_integral_norm
