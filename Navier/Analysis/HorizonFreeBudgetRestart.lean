@@ -286,6 +286,24 @@ theorem budgetPropagationDatumFree_preterminalEnergy :
         le_iSup₂_of_le t ⟨h1, h2⟩ le_rfl
     _ ≤ (M : ℝ≥0∞) := hN
 
+/-- **Pre-datum propagation for the envelope control (the census leaf).**
+`restart_of_budget` instantiates at `N := h3EnvelopeControl` with the envelope's
+own slice budget `B := h3EnvelopeBudget`: the missing `hprop` argument.  `K := M`
+works because the slice budget is one term of the very supremum that bounds
+`N T u` — the propagation is datum-free by construction, matching the `∀ M`
+before `∀ u₀` order that the plain engine requires.  With this leaf the envelope
+route to the PLAIN (non-R) engine `HorizonIndependentRestart h3EnvelopeControl`
+has exactly two remaining named inputs, `BudgetLocalExistenceIn trivialClass
+h3EnvelopeBudget` and `RestartUniquenessIn trivialClass`. -/
+theorem budgetPropagationDatumFree_h3EnvelopeControl :
+    BudgetPropagationDatumFree trivialClass h3EnvelopeBudget h3EnvelopeControl := by
+  intro ν hν M
+  refine ⟨M, fun u₀ hu₀ T hT u p hinit hsol hmem hN t h1 h2 => ?_⟩
+  show h3EnvelopeBudget (u t) ≤ (M : ℝ≥0∞)
+  calc h3EnvelopeBudget (u t)
+      ≤ ⨆ s ∈ Ico (0 : ℝ) T, h3EnvelopeBudget (u s) := le_iSup₂_of_le t ⟨h1, h2⟩ le_rfl
+    _ ≤ (M : ℝ≥0∞) := hN
+
 /-- Pressure agreement at the restart time itself.  On the open window the
 interior lemma identifies the pressures; at `T₀` both slice maps are the
 evaluation of jointly smooth fields at points of their strips, so the two
@@ -478,6 +496,7 @@ end Navier.Analysis.HorizonFreeBudgetRestart
 #check Navier.Analysis.HorizonFreeBudgetRestart.HorizonIndependentRestartR
 #check Navier.Analysis.HorizonFreeBudgetRestart.BudgetPropagationDatumFree
 #check Navier.Analysis.HorizonFreeBudgetRestart.sliceEnergyBudget
+#check Navier.Analysis.HorizonFreeBudgetRestart.budgetPropagationDatumFree_h3EnvelopeControl
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.h3F_component_le_budget
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.h3EnvelopeBudget_le_iff
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.exists_rep_of_budget_lt_top
@@ -486,6 +505,7 @@ end Navier.Analysis.HorizonFreeBudgetRestart
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.horizonIndependentRestartR_h3EnvelopeControl
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.crown_from_envelopeApriori
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.budgetPropagationDatumFree_preterminalEnergy
+#print axioms Navier.Analysis.HorizonFreeBudgetRestart.budgetPropagationDatumFree_h3EnvelopeControl
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.restart_of_budget
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.exists_preterminalEnergyControl_pos
 #print axioms Navier.Analysis.HorizonFreeBudgetRestart.exists_preterminalEnergyControl_lt_top
