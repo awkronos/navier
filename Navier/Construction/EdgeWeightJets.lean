@@ -532,3 +532,8 @@ theorem weighted_pow_iteratedFDeriv_bound {c : ℝ} (hc : 0 < c) (j : ℕ)
 end Products
 
 end Navier.Construction.EdgeWeightJets
+
+-- rc4 era-heal receipts (heal-navier-1017): `Finset.prod_le_one` → `prod_le_one₀`
+-- (the plain name now requires `MulLeftMono`, unavailable for `ℝ`).
+#print axioms Navier.Construction.EdgeWeightJets.norm_iteratedFDeriv_snd_le
+#print axioms Navier.Construction.EdgeWeightJets.norm_iteratedFDeriv_comp_linear_le
