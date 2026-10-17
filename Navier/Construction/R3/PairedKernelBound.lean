@@ -313,3 +313,9 @@ theorem abs_convolution_pairing_le
     norm_convolution_pairing_le hkm hk hr hg
 
 end Navier.ConstructionR3.PairedKernelBound
+
+-- rc4 era-heal receipts (heal-navier-1017): theorems whose proofs changed.
+#print axioms Navier.ConstructionR3.PairedKernelBound.lpNorm_one_eq_integral_norm
+#print axioms Navier.ConstructionR3.PairedKernelBound.integrable_smul_and_integral_norm_le
+#print axioms Navier.ConstructionR3.PairedKernelBound.dominated_section_memLp_and_lpNorm_le
+#print axioms Navier.ConstructionR3.PairedKernelBound.norm_convolution_pairing_le
