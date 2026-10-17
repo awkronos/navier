@@ -277,3 +277,6 @@ theorem cutoff_tendsto_one (x : Space) :
   exact hR.symm
 
 end Navier.ConstructionR3.ComparisonCutoffs
+
+-- rc4 era-heal receipt (heal-navier-1017): the theorem whose proof changed.
+#print axioms Navier.ConstructionR3.ComparisonCutoffs.cutoff_iteratedFDeriv_le
