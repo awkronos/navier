@@ -45,11 +45,25 @@ pressure and pressure-gradient feeds. No transversality transport is claimed:
 `WeightedLatticeBanach` carries no divergence-free field to transport (its
 elements are plain `lp (fun _ => ComplexE3) 1` summable coefficient fields).
 
-Honest boundary: the full mild self-map spacetime integrability (peer time
-leaves `hmX1`, `ContinuousLeiLinMildAssemblyLeaves`, Fourier-lattice row of
-`docs/OPEN_FRONTIER_MAP.md`) is NOT proved here — it is declared as the open
-obligation `MildSelfMapTransport` and nothing above depends on it. Peer-owned
-continuous files are untouched; this is the first owner of `Navier/Transfer/`.
+Honest boundary: the full mild self-map spacetime integrability (heat PLUS the
+Duhamel nonlinear source; peer time leaves `hmX1`,
+`ContinuousLeiLinMildAssemblyLeaves`, Fourier-lattice row of
+`docs/OPEN_FRONTIER_MAP.md`) is NOT proved here.  The narrower obligation that
+was declared here, `MildSelfMapTransport` — time integrability of the FREE-heat
+`X¹` feed — was discharged 2026-10-20 (wave REAPER-1021, lane NS-B-SELFMAP) in
+`Navier/Transfer/MildSelfMapTransport.lean`; the remaining content of the full
+mild image is the per-time `X¹` of the nonlinear source, which costs one degree
+of frequency moment on this carrier.  That cost is measured, not assumed: at the
+`X⁻¹`/`X⁰` weight this file transports, the convolution-vs-extension overlap
+correction is EXACTLY zero (`sum_convolution_eq_coordinateX0Mass_mul`
+factorizes), and at the `X¹` weight it is the one-degree allocation budget
+`2 · Σᵢⱼ (M₂ M₀ + M₀ M₂)` of
+`Navier/Transfer/MildSelfMapDefectBudget.lean`, whose instantiated form carries
+`M₂` of the two extensions as an explicit named feed (`LatticePolynomialMoment 2`
+is the repository's supplier) rather than as a hidden premise.  Nothing diverges
+at budget level, so no falsification of budget transport is triggered.
+Peer-owned continuous files are untouched; this is the first owner of
+`Navier/Transfer/`.
 -/
 
 noncomputable section
@@ -1131,17 +1145,25 @@ theorem integral_norm_sq_latticeExtensionCoord_le (u : WeightedLatticeBanach) (j
 
 /-! ## Honest boundary: the mild self-map time obligation -/
 
-/-- OPEN obligation, declared and never assumed: the spacetime `X¹` feed of
-the mild assembly on the transported datum — integrability in time of
+/-- CLOSED 2026-10-20 (REAPER-1021 · NS-B-SELFMAP), previously declared and never
+assumed: the spacetime `X¹` feed of the mild assembly on the transported datum —
+integrability in time of
 `t ↦ coordinateX1Mass (heatVec ν t (latticeExtension u))` on every finite
 interval, the input shape consumed by the peer time leaves (`hmX1`,
 `ContinuousLeiLinMildAssemblyLeaves`, and via
 `normXm1_continuousDuhamel_le` the Duhamel assembly). The spatial budgets
 this obligation needs are proved in this file (`X⁰`, `X¹`, `X⁻¹` masses,
 heat, pressure, pressure-gradient and bilinear convolution majorants); the
-remaining content is the time-direction integrability of the heat flow of
-the extension, which is peer mild-assembly machinery, not a defect of this
-transport. Nothing in this file depends on this declaration. -/
+remaining content was the time-direction integrability of the heat flow of
+the extension, which the peer output-side heat leaf
+`integrable_coordinateX1Mass_heatVec_on_Icc` supplies once fed the coordinate
+`X¹` integrability proved in this file
+(`integrable_normE_latticeExtensionCoord`): the producer is
+`Navier.Transfer.LatticeExtensionTransport.mildSelfMapTransport`
+(`Navier/Transfer/MildSelfMapTransport.lean`). What is still NOT supplied is
+the FULL mild image (heat plus Duhamel source): the source's per-time `X¹`
+costs the quadratic frequency moment, which this carrier does not bound.
+Nothing in this file depends on this declaration. -/
 def MildSelfMapTransport (u : WeightedLatticeBanach) : Prop :=
   ∀ (ν : ℝ) (_hν : 0 < ν) (T : ℝ),
     Integrable (fun t : ℝ => coordinateX1Mass (heatVec ν t (latticeExtension u)))
