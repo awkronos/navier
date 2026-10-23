@@ -1,0 +1,63 @@
+test_cli_freshly_writes_the_declared_replay_artifact (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_cli_freshly_writes_the_declared_replay_artifact) ... ok
+test_cli_is_explicitly_falsification_only (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_cli_is_explicitly_falsification_only) ... ok
+test_constructive_polarizations_are_nonzero_and_divergence_free (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_constructive_polarizations_are_nonzero_and_divergence_free) ... ok
+test_known_witnesses_are_exact_divergence_free_triads (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_known_witnesses_are_exact_divergence_free_triads) ... ok
+test_non_divergence_free_tuple_is_rejected (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_non_divergence_free_tuple_is_rejected) ... ok
+test_old_selected_output_cancels_after_symmetrization (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_old_selected_output_cancels_after_symmetrization) ... ok
+test_scan_is_deterministic_and_finds_unequal_shell_transfer (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_scan_is_deterministic_and_finds_unequal_shell_transfer) ... ok
+test_six_mode_table_is_conjugate_and_leaks_exactly (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_six_mode_table_is_conjugate_and_leaks_exactly) ... ok
+test_unequal_radius_witness_has_exact_weighted_transfer (test_exact_symmetrized_triad_scan.ExactSymmetrizedTriadTests.test_unequal_radius_witness_has_exact_weighted_transfer) ... ok
+test_adaptive_refinement_consumer (test_navier_adaptive_bench.AnalyticForcingTest.test_adaptive_refinement_consumer) ... ok
+test_continuum_forcing_fourth_order (test_navier_adaptive_bench.AnalyticForcingTest.test_continuum_forcing_fourth_order) ... ok
+test_grid_validation (test_navier_adaptive_bench.AnalyticForcingTest.test_grid_validation) ... ok
+test_corrupt_balance_and_resolution_flag_fail_closed (test_navier_diagnostic_score.DiagnosticScoreTest.test_corrupt_balance_and_resolution_flag_fail_closed) ... ok
+test_exact_shear_defect_converges_at_trapezoid_order (test_navier_diagnostic_score.DiagnosticScoreTest.test_exact_shear_defect_converges_at_trapezoid_order) ... ok
+test_exact_viscous_shear_obeys_analytic_trapezoid_bound (test_navier_diagnostic_score.DiagnosticScoreTest.test_exact_viscous_shear_obeys_analytic_trapezoid_bound) ... ok
+test_forced_or_other_inapplicable_budget_fails_closed (test_navier_diagnostic_score.DiagnosticScoreTest.test_forced_or_other_inapplicable_budget_fails_closed) ... ok
+test_missing_or_nonfinite_diagnostics_fail_without_nan_output (test_navier_diagnostic_score.DiagnosticScoreTest.test_missing_or_nonfinite_diagnostics_fail_without_nan_output) ... ok
+test_negative_divergence_or_physical_time_fails_closed (test_navier_diagnostic_score.DiagnosticScoreTest.test_negative_divergence_or_physical_time_fails_closed) ... ok
+test_nonuniform_cadence_cannot_claim_uniform_order (test_navier_diagnostic_score.DiagnosticScoreTest.test_nonuniform_cadence_cannot_claim_uniform_order) ... ok
+test_raw_cpu_legacy_aliases_are_normalized_but_conflicts_fail (test_navier_diagnostic_score.DiagnosticScoreTest.test_raw_cpu_legacy_aliases_are_normalized_but_conflicts_fail) ... ok
+test_reset_seed_is_one_observation_and_zero_trapezoids (test_navier_diagnostic_score.DiagnosticScoreTest.test_reset_seed_is_one_observation_and_zero_trapezoids) ... ok
+test_accelerated_path_is_bit_identical (test_navier_solver_equivalence.AcceleratorTest.test_accelerated_path_is_bit_identical)
+Same bytes out of the fast path and the numpy reference. ... skipped 'accelerator inactive: ok'
+test_self_check_passes_or_accelerator_is_disabled (test_navier_solver_equivalence.AcceleratorTest.test_self_check_passes_or_accelerator_is_disabled)
+A live accelerator must have verified itself against numpy. ... ok
+test_conservation_floors (test_navier_solver_equivalence.MetricContractTest.test_conservation_floors) ... ok
+test_exactly_one_instance_reports_a_throughput (test_navier_solver_equivalence.MetricContractTest.test_exactly_one_instance_reports_a_throughput)
+Regression guard for a bug that silently voided the headline. ... ok
+test_integrator_realises_design_order_four (test_navier_solver_equivalence.MetricContractTest.test_integrator_realises_design_order_four) ... FAIL
+test_manufactured_solution_error (test_navier_solver_equivalence.MetricContractTest.test_manufactured_solution_error) ... ok
+test_nonlinearity_is_not_saturated (test_navier_solver_equivalence.MetricContractTest.test_nonlinearity_is_not_saturated) ... ok
+test_thread_caps_are_pinned_before_numpy_loads (test_navier_solver_equivalence.MetricContractTest.test_thread_caps_are_pinned_before_numpy_loads) ... ok
+test_timing_is_stamped_with_its_clock_and_thread_invariant (test_navier_solver_equivalence.MetricContractTest.test_timing_is_stamped_with_its_clock_and_thread_invariant) ... ok
+test_axiom_parser_exposes_nonstandard_dependencies (test_verify_construction.VerifyConstructionTests.test_axiom_parser_exposes_nonstandard_dependencies) ... ok
+test_changed_compiled_dependency_invalidates_consumers (test_verify_construction.VerifyConstructionTests.test_changed_compiled_dependency_invalidates_consumers) ... ok
+test_endpoint_audit_rejects_object_only_provider (test_verify_construction.VerifyConstructionTests.test_endpoint_audit_rejects_object_only_provider) ... ok
+test_endpoint_audit_source_distinguishes_prop_conditional_and_witness (test_verify_construction.VerifyConstructionTests.test_endpoint_audit_source_distinguishes_prop_conditional_and_witness) ... ok
+test_endpoint_prerequisite_is_never_classified_as_a_witness (test_verify_construction.VerifyConstructionTests.test_endpoint_prerequisite_is_never_classified_as_a_witness) ... ok
+test_endpoint_status_requires_fresh_dependency_receipts (test_verify_construction.VerifyConstructionTests.test_endpoint_status_requires_fresh_dependency_receipts) ... ok
+test_endpoint_witness_parser_is_explicit_and_rejects_bad_labels (test_verify_construction.VerifyConstructionTests.test_endpoint_witness_parser_is_explicit_and_rejects_bad_labels) ... ok
+test_leaf_change_invalidates_every_transitive_dependent (test_verify_construction.VerifyConstructionTests.test_leaf_change_invalidates_every_transitive_dependent) ... ok
+test_local_closure_is_dependency_ordered_and_ignores_comments (test_verify_construction.VerifyConstructionTests.test_local_closure_is_dependency_ordered_and_ignores_comments) ... ok
+test_periodic_acceptance_limit_records_physical_normalization (test_verify_construction.VerifyConstructionTests.test_periodic_acceptance_limit_records_physical_normalization) ... ok
+test_receipts_require_matching_fingerprint_and_output (test_verify_construction.VerifyConstructionTests.test_receipts_require_matching_fingerprint_and_output) ... ok
+test_complete_build_and_tampered_wasm (test_web_provenance.WebProvenanceTests.test_complete_build_and_tampered_wasm) ... ok
+test_empty_or_outside_artifact_inventory_cannot_pass (test_web_provenance.WebProvenanceTests.test_empty_or_outside_artifact_inventory_cannot_pass) ... ok
+test_future_shader_is_automatically_included_and_bound (test_web_provenance.WebProvenanceTests.test_future_shader_is_automatically_included_and_bound) ... ok
+test_incomplete_sources_and_false_certification_cannot_pass (test_web_provenance.WebProvenanceTests.test_incomplete_sources_and_false_certification_cannot_pass) ... ok
+test_local_absolute_path_marker_cannot_pass_or_leak_path (test_web_provenance.WebProvenanceTests.test_local_absolute_path_marker_cannot_pass_or_leak_path) ... ok
+test_missing_reproducibility_policy_cannot_pass (test_web_provenance.WebProvenanceTests.test_missing_reproducibility_policy_cannot_pass) ... ok
+
+======================================================================
+FAIL: test_integrator_realises_design_order_four (test_navier_solver_equivalence.MetricContractTest.test_integrator_realises_design_order_four)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/schizodactyl/navier/tests/test_navier_solver_equivalence.py", line 140, in test_integrator_realises_design_order_four
+    self.assertAlmostEqual(
+AssertionError: 4.019322768300311 != 4.01932276900925 within 1e-12 delta (7.089386855341218e-10 difference)
+
+----------------------------------------------------------------------
+Ran 47 tests in 30.002s
+
+FAILED (failures=1, skipped=1)
