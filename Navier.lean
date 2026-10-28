@@ -340,6 +340,7 @@ import Navier.Routes.R7.Triad
 import Navier.Routes.R7.WeightedShellTransfer
 import Navier.Scaling
 import Navier.Transfer.LatticeExtensionTransport
+import Navier.Transfer.ScaledPeriodicObstruction
 import Navier.Construction.CS_PotentialSumEnvelope
 import Navier.Analysis.MildHorizonFreeRestartBarrier
 import Navier.Analysis.LinkedBoxX2Carrier
