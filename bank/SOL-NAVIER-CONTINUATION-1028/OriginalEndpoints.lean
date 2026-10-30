@@ -1,0 +1,11 @@
+import Navier.OfficialProblem
+
+#check @Navier.ProblemStatements.WholeSpaceGlobalRegularity
+#check @Navier.ProblemStatements.PeriodicGlobalRegularity
+#check @Navier.ProblemStatements.PeriodicBreakdown
+#print Navier.ProblemStatements.WholeSpaceGlobalRegularity
+#print Navier.ProblemStatements.PeriodicGlobalRegularity
+#print Navier.ProblemStatements.PeriodicBreakdown
+#print axioms Navier.ProblemStatements.WholeSpaceGlobalRegularity
+#print axioms Navier.ProblemStatements.PeriodicGlobalRegularity
+#print axioms Navier.ProblemStatements.PeriodicBreakdown
