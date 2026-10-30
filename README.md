@@ -96,6 +96,10 @@ needed for B. The [result map](docs/RESULT_MAP.md) records that boundary.
 [open-obligation map](docs/OPEN_FRONTIER_MAP.md), and the
 [falsification ledger](docs/FALSIFICATION_LEDGER.md) preserve the distinction
 between completed endpoints, conditional estimates, and rejected approaches.
+[CONTENT-STRATEGY.md](CONTENT-STRATEGY.md) maps this repository's two public
+faces (the GitHub repo and the live companion), the link discipline for
+`docs/`, and why the Polya relationship stays a Lean-identifier citation,
+never a hyperlink.
 
 ## Reproduce the proof
 
