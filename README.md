@@ -74,6 +74,70 @@ identities, and local smoothing estimates. It still lacks the arbitrary-data,
 horizon-independent critical bound and all-order joint spacetime reconstruction
 needed for B. The [result map](docs/RESULT_MAP.md) records that boundary.
 
+## How to cite
+
+If you use this repository, cite it as the project below; if you use a
+specific result, cite that result's entry in
+[docs/CITATIONS.md](docs/CITATIONS.md), which carries the exact Lean
+declaration name, its quantifiers, and what it does and does not claim.
+`CITATION.cff` is the machine-readable form of the project citation.
+
+```bibtex
+@software{navier2026,
+  title  = {Navier: Lean formalization of forced Navier-Stokes breakdown,
+            unforced regularity frontiers, and a Rust spectral fluid solver},
+  author = {Jacoby, Tim and Awkronos},
+  year   = {2026},
+  license = {MIT},
+  url    = {https://github.com/awkronos/navier}
+}
+```
+
+**Upstream attribution.** The analytical construction is OpenAI's: the
+adapted modules under `Navier/Construction` come from
+[`openai/NavierStokesAndEuler`](https://github.com/openai/NavierStokesAndEuler)
+at pinned revision `8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538` (Apache-2.0;
+per-file upstream notices are preserved), released with the paper *Finite time
+blowup for Navier–Stokes* (2026-09-08,
+[cdn.openai.com](https://cdn.openai.com/pdf/32d9f210-8b73-45e0-91bc-82a30aef8a9a/navier-stokes.pdf)).
+The count is stated twice rather than smoothed: this repository's provenance note
+prints 577, while `git ls-tree` at the pinned trunk counts 579 tracked `.lean` files
+under `Navier/Construction/`; `docs/CITATIONS.md` carries both measurements.
+See [construction provenance](docs/OPENAI_CONSTRUCTION_PROVENANCE.md) for the
+adaptation boundary. Awkronos contributes the transport into the original
+native PDE carrier, the additional force-derivative comparisons, the solver
+work, and the interactive explanation.
+
+**Prior work, by identifier.** The full bibliography with DOIs and URLs is
+[`references/manifest.json`](references/manifest.json) (17 sources). The
+load-bearing ones: Fefferman, *Existence and Smoothness of the Navier-Stokes
+Equation* (2000, [Clay](https://www.claymath.org/wp-content/uploads/2022/06/navierstokes.pdf))
+for alternatives A–D; Leray (1934, [doi:10.1007/BF02547354](https://doi.org/10.1007/BF02547354))
+for the weak-solution boundary; Tao (2016, [doi:10.1090/jams/838](https://doi.org/10.1090/jams/838))
+for the averaged-equation barrier that gates every positive route here;
+Buckmaster–Vicol (2019, [doi:10.4007/annals.2019.189.1.3](https://doi.org/10.4007/annals.2019.189.1.3))
+and Albritton–Brué–Colombo (2022, [doi:10.4007/annals.2022.196.1.3](https://doi.org/10.4007/annals.2022.196.1.3))
+for non-uniqueness context. The hydrodynamic-comparison notes cite
+Carles–Danchin–Saut (2012, [arXiv:1111.4670](https://arxiv.org/abs/1111.4670)),
+Wallström (1994, [doi:10.1103/PhysRevA.49.1613](https://doi.org/10.1103/PhysRevA.49.1613)),
+Meng–Yang (2024, [doi:10.1103/PhysRevResearch.6.043130](https://doi.org/10.1103/PhysRevResearch.6.043130)),
+Khesin–Misiołek–Modin ([arXiv:1711.00321](https://arxiv.org/abs/1711.00321)),
+and Ding–Chung–Illingworth ([doi:10.1017/jfm.2024.1193](https://doi.org/10.1017/jfm.2024.1193)).
+Each of those identifiers is already present in the linked documents;
+titles and full author lists are carried in the documents that cite them, and
+`docs/CITATIONS.md` marks where the repository does not state them.
+Its entry ids are the identifier itself, lower-cased because the carrier's
+`citation_id` pattern requires lowercase (`doi:10.1103/physreva.49.1613`,
+`arxiv:1711.00321`); works the repository's own bibliography carries are id'd by
+that row instead (`navier.manifest.leray1934`, `navier.manifest.tao2016`,
+`navier.manifest.buckmaster_vicol2019`). Each entry's `stable_link` keeps the
+publisher's own capitalisation, so no identifier is rewritten to satisfy the id
+pattern — the id is lowercased, the link is not.
+
+**Toolchain.** Lean `leanprover/lean4:v4.35.0-rc4` with Mathlib at
+`1f414401f69059aa7eead47b53ee40bd38455eeb` (both pinned in `lean-toolchain`
+and `lake-manifest.json`); cite those pins, not a moving branch.
+
 ## Mathematics
 
 | Entry point | Content |

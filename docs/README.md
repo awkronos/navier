@@ -10,6 +10,7 @@ native compiler receipts.
 | Document | Purpose |
 | --- | --- |
 | [Result and frontier map](RESULT_MAP.md) | Authoritative claim-to-declaration map, exact premises, trust boundary, and current open/closed status |
+| [Structured citations](CITATIONS.md) | Per-result citation entries (id, kind, authors, status, stable link, cites/cited-by), upstream attribution, the verification receipt for this file, and the typed-absence register for works repo prose cites without an identifier |
 | [Native breakdown mathematics and adaptive simulation](NATIVE_BREAKDOWN_AND_SOLVER.md) | Detailed guide to the constructed forced endpoint, useful conditional results, and solver validation |
 | [Breakdown, uniqueness, and concentration](DYNAMICS_AND_CONCENTRATION.md) | Focused account of the pre-singular flow, slab uniqueness, terminal obstruction, and concentration scales |
 | [Exact constructed force and the regularity obstruction](EXACT_FORCE_AND_REGULARITY.md) | The selected force formula, properties proved for that same force, and the exact competing classes excluded |
