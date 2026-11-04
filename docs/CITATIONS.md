@@ -2152,8 +2152,14 @@ asserted here:
    entry against the root `citation_entry` schema.
 3. `cite_validate.py` — the carrier's `x-cross-field` rules that JSON Schema cannot state: unique
    ids, the `citation_id` pattern (lowercase; uppercase ids are rejected), the
-   `x-stable-link-shapes` test on every `stable_link` (branch-anchored URLs are rejected),
-   referential integrity of `cites`/`cited_by` in both directions, the org-author explanation
+   `x-stable-link-shapes` test on every `stable_link` (branch-anchored URLs are rejected), and a
+   whole-carrier pin test that scans every GitHub `blob` or `tree` URL in `CITATION.cff`, `README.md`
+   and this file and requires its revision segment to be 40 hex characters. That second leg exists
+   because a negative control aimed at the first textual occurrence of a pinned URL landed on the
+   `structured-list` field of the `how_to_cite` block — a field the `stable_link` rule does not grade —
+   and the validator passed it: a branch-anchored self-pointer was being refused nowhere. The pin
+   census and every other leg count come from the harness output, never from this document.
+   Referential integrity of `cites`/`cited_by` in both directions, the org-author explanation
    requirement, and rule 6 agreement between `CITATION.cff`, this `how_to_cite` block and the
    README BibTeX on title, authors and `repository-code`. A harness crash exits 2, never 0, so an
    instrument fault cannot read as a green leg.
