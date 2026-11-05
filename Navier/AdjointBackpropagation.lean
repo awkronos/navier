@@ -318,3 +318,23 @@ theorem gradient_sample :
     ring
 
 end Navier
+
+/-!
+## Axiom census (measured, NAVIER lane seat, Lean v4.35.0-rc4, mathlib 1f414401f690)
+
+This module was committed unwired, so the closure audit never reached it.
+Raw `#print axioms` output for every declaration it carries:
+
+'Navier.obsMisfit_remainder' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.hasGradientAt_obsMisfit' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.fderiv_obsMisfit' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.gradient_obsMisfit' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.mulVecLM_adjunct' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.adjoint_mulVecLM' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.adjoint_mulVecCLM' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.gradient_mulVec' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.sampleA_symm' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.sample_forward' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.sample_forward_z' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Navier.gradient_sample' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
