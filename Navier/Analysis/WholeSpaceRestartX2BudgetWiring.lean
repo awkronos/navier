@@ -79,9 +79,10 @@ together with the joint-continuity and uniform-`X⁰` legs.  This is the
 `X⁰·X²` allocation gap, the nonlinear sibling of the `s^{−1/2}` wall
 recorded in `ContinuousLeiLinMildAssemblyLeaves`.
 
-## Provider-scope audit (grails `Warp/HeatCarrierRegularity`)
+## Provider-scope audit (`WholeSpaceCarrierReconstruction`)
 
-The named provider constructs Schwartz membership of Gaussian-multiplier
+The Navier provider, also exported for compatibility by grails
+`Warp/HeatCarrierRegularity`, constructs Schwartz membership of Gaussian-multiplier
 slices (`heatGaussianHasTemperateGrowth`, `freeHeatCoordSchwartz`), i.e.
 per-time all-moment regularity of the **free heat** carrier
 `freeHeatTraj ν u₀ = fun t => heatVec ν t (fourierDatum u₀)`.  That scope is
@@ -294,7 +295,7 @@ Schwartz restart trace satisfies the full `X⁰·X²` budget: joint continuity
 from Schwartz continuity, uniform `X⁰` mass by the constant `X⁰` mass, and
 per-time `X²` integrability from the degree-two Schwartz moment — the same
 `SchwartzMap.integrable_pow_mul` API whose HTG-multiplier extension the
-grails `Warp/HeatCarrierRegularity` provider uses for the heat flow.  The
+Navier `WholeSpaceCarrierReconstruction` provider uses for the heat flow. The
 `hX2` leg is then the constant function of an `L¹` number, integrable on
 `[0, T]`.  Scope note: this discharges the budget for the constant
 trajectory, not for box representatives (a box representative need not be a

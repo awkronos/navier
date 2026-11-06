@@ -64,14 +64,11 @@ directly by `ENNReal.ofReal (...)`, making the consumer strict without any
 finitess guard.
 
 **Other named primitives recorded by this census (not closed here).**
-* Gaussian carrier for `hs` (Rung A):
-  `freeHeatPhysical_finiteEnergy_of_schwartz`
-  (WholeSpaceCarrierReconstruction) needs exactly
-  `∀ i, ∃ g : SchwartzMap ES ℂ, physicalCoord (freeHeatTraj ν u₀ t) i = ⇑g`.
-  Measured at this revision: `Function.HasTemperateGrowth` and the bilinear
-  Schwartz-pairing CLMs exist, but there is NO Gaussian-as-`SchwartzMap`
-  API and the iterated-Fréchet-derivative bounds are real work — the "one
-  Mathlib entry away" comment there is too optimistic and is not repeated.
+* Gaussian carrier for `hs` (Rung A): `WholeSpaceCarrierReconstruction`
+  constructs the Gaussian temperate-growth and Schwartz-coordinate witnesses.
+  Its `freeHeatPhysical_finiteEnergy` supplies free-carrier finite energy for
+  nonnegative viscosity and time. This free evolution does not supply the
+  nonlinear fixed-point carrier's energy or the horizon-uniform crown premise.
 * Datum anchor: finiteness of `h3EnvelopeBudget ⇑u₀` requires
   uniqueness-up-to-a.e. of `Rep` representers of a Schwartz slice (the
   envelope is a `⨆` over ALL representers); `exists_rep_of_lt_top` gives

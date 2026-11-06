@@ -43,19 +43,15 @@ Free heat carrier (`warm-continue slice, same lane`):
 * `integral_normSq_freeHeatCoord_le`, `sum_integral_normSq_freeHeat_le_initial` —
   the free carrier's frequency-side L²-mass per coordinate and in total is
   dominated by the initial datum's energy for EVERY `t ≥ 0`.
-* `freeHeatPhysical_finiteEnergy_of_schwartz` — the crown-form physical-space
-  integrability `Integrable (fun z => ‖physicalVelocity (freeHeatTraj ν u₀) t z‖²)`
-  at every `t ≥ 0`, conditional on exactly one named input: Schwartz-space
-  membership of the Gaussian multiplier slices. That membership is equivalent
-  (via `SchwartzMap.bilinLeftCLM` with `Complex.mulL`) to
-  `Function.HasTemperateGrowth (fun ξ : ES => (Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℂ))`,
-  which this Mathlib rev does NOT carry (measured by source grep: the
-  Gaussian files are contour-integral only; `SchwartzSpace` has no
-  `Mul`/`gaussian`/`exp`-membership API; the repo proves heat-kernel spatial
-  derivatives only up to order two, in physical space, in
-  `HeatSemigroupSmoothing`). The free side is therefore ONE Mathlib-level API
-  entry away from unconditional crown-form energy at every `t ≥ 0`; the
-  Duhamel (nonlinear) addition remains the wall.
+* `freeHeatPhysical_finiteEnergy_of_schwartz` — the conditional criterion
+  transporting Schwartz physical coordinates to crown-form finite energy.
+* `heatGaussianHasTemperateGrowth`, `freeHeatCoordSchwartz`, and
+  `physicalCoord_freeHeatCoord_eq` — construct those coordinates for every
+  nonnegative viscosity and time, using Mathlib's temperate-growth composition
+  and Schwartz Fourier inversion APIs.
+* `freeHeatPhysical_finiteEnergy` — consumes that witness for the actual
+  free carrier, removing the Schwartz-coordinate premise. The nonlinear
+  fixed-point carrier still requires the trajectory-specific inputs below.
 
 Exact remaining obligations after this slice (types as measured at this base,
 see trailing `#check` output):
@@ -263,17 +259,11 @@ private theorem integrable_euclid_sq (s : SchwartzMap ES ℂ) :
     (MeasurableEquiv.toLp 2 (Fin 3 → ℝ)).measurableEmbedding).2
     ((s.memLp 2 volume).integrable_norm_pow (by norm_num))
 
-/-- **Crown-form finite energy of the free carrier at every `t ≥ 0`,**
-conditional on exactly one named input: each physical coordinate
-`physicalCoord (freeHeatTraj ν u₀ t) i` is (the function underlying) a
-`SchwartzMap ES ℂ`.  Supplying that witness is a single Mathlib-level API
-step: it needs `Function.HasTemperateGrowth` for the Gaussian multiplier
-`fun ξ : ES => (Real.exp (-(ν * ‖ξ‖ ^ 2 * t) : ℝ) : ℂ)` so that
-`SchwartzMap.smulLeftCLM`/`bilinLeftCLM` can multiply it into the Schwartz
-datum slice `̂u₀ᵢ`, after which `FourierTransformInv` maps SchwartzMaps to
-SchwartzMaps.  The claimed absence was FALSE at the shared pin: `Function.HasTemperateGrowth` for the Gaussian multiplier is constructible at mathlib 85e3a25e (measured 2026-09-26 by lane g1b: grails `Warp/HeatCarrierRegularity.lean` supplies the `hs` witness for all admissible parameters and instantiates this criterion unconditionally). Given `hs`, the proof is mechanical: `L²`-integrability of each Schwartz
-coordinate, Euclidean transport along `euclidPoint`, and the
-`norm_sq_le_sum_sq` bridge. -/
+/-- Crown-form finite energy of the free carrier from Schwartz physical
+coordinates. The Gaussian multiplier's temperate growth and Schwartz Fourier
+inversion construct this witness below; `freeHeatPhysical_finiteEnergy`
+instantiates this criterion for nonnegative viscosity and time. The criterion
+uses coordinate integrability, Euclidean transport, and `norm_sq_le_sum_sq`. -/
 theorem freeHeatPhysical_finiteEnergy_of_schwartz (ν : ℝ) (_hν : 0 ≤ ν) (t : ℝ) (_ht : 0 ≤ t)
     (u₀ : SchwartzVelocity)
     (hs : ∀ i : Fin 3, ∃ g : SchwartzMap ES ℂ,
@@ -318,6 +308,111 @@ theorem freeHeatPhysical_finiteEnergy_of_schwartz (ν : ℝ) (_hν : 0 ≤ ν) (
   rw [Fin.sum_univ_three (fun i => (physicalVelocity (freeHeatTraj ν u₀) t z i) ^ 2)]
   exact add_le_add (add_le_add (key 0 g₀ hg₀ z) (key 1 g₁ hg₁ z)) (key 2 g₂ hg₂ z)
 
+/-! Gaussian and Schwartz-coordinate providers relocated from Grails
+`Warp/HeatCarrierRegularity.lean` (source SHA256
+`d45395f421de7b6fb551f468a7b2809c5b1d7108da554d80a2ef6518e15af552`).
+The construction uses Mathlib temperate-growth composition and Schwartz Fourier
+inversion. It supplies the free carrier; the nonlinear fixed-point obligations
+listed above retain their original hypotheses. -/
+
+open scoped BigOperators FourierTransform
+open MeasureTheory Set Function
+open Navier (Space SchwartzVelocity)
+open Navier.Analysis.ContinuousLeiLinSpace (ES)
+open Navier.Analysis.ContinuousLeiLinPhysicalCarrier (fourierDatum physicalCoord)
+open Navier.Analysis.ContinuousLeiLinPhysicalVelocity (physicalVelocity)
+open Navier.Analysis.FourierMajorant (euclidComponent)
+
+variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
+
+/-- The real Gaussian `x ↦ exp(-c‖x‖²)` has temperate growth for `0 ≤ c`.
+Transport: `HasTemperateGrowth.comp'` with the range-enclosing set `Iic 0`. -/
+theorem hasTemperateGrowth_exp_neg_smul_norm_sq (c : ℝ) (hc : 0 ≤ c) :
+    (fun x : H => Real.exp (-c * ‖x‖ ^ 2)).HasTemperateGrowth := by
+  have hq : (fun x : H => -c * ‖x‖ ^ 2).HasTemperateGrowth := by
+    show ((fun _ : H => (-c : ℝ)) • (fun x : H => ‖x‖ ^ 2)).HasTemperateGrowth
+    exact (HasTemperateGrowth.const _).smul (hasTemperateGrowth_norm_sq H)
+  refine HasTemperateGrowth.comp' (t := Iic (0 : ℝ))
+    (f := fun x : H => -c * ‖x‖ ^ 2) (g := Real.exp) ?_ ?_ ?_ ?_ hq
+  · rintro _ ⟨x, rfl⟩
+    exact mul_nonpos_of_nonpos_of_nonneg (neg_nonpos.mpr hc) (sq_nonneg _)
+  · exact uniqueDiffOn_Iic 0
+  · exact Real.contDiff_exp.contDiffOn
+  · intro N
+    use 0, 1, one_pos.le
+    intro n hn y hy
+    have hcf : ContDiffAt ℝ n Real.exp y := Real.contDiff_exp.contDiffAt
+    rw [norm_iteratedFDerivWithin_eq_norm_iteratedDerivWithin,
+      iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Iic (0 : ℝ)) hcf hy,
+      iteratedDeriv_eq_iterate, Real.iter_deriv_exp, Real.norm_eq_abs,
+      abs_of_nonneg (Real.exp_nonneg y), pow_zero, mul_one]
+    exact Real.exp_le_one_iff.mpr (mem_Iic.mp hy)
+
+/-- navier's free-heat multiplier as a plain `ES → ℂ` function. -/
+noncomputable def heatMult (ν t : ℝ) : ES → ℂ :=
+  fun ξ : ES => (Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℂ)
+
+/-- The ℂ-valued heat multiplier has temperate growth for `0 ≤ ν`, `0 ≤ t`. -/
+theorem heatGaussianHasTemperateGrowth (ν t : ℝ) (hν : 0 ≤ ν) (ht : 0 ≤ t) :
+    (heatMult ν t).HasTemperateGrowth := by
+  unfold heatMult
+  have hfun : (fun ξ : ES => (Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℂ)) =
+      (fun ξ : ES => (Real.exp ((-(ν * t)) * ‖ξ‖ ^ 2) : ℂ)) := by
+    funext ξ
+    exact congrArg (fun y : ℝ => (y : ℂ)) (congrArg Real.exp (by ring))
+  rw [hfun]
+  exact Complex.hasTemperateGrowth_ofReal.comp
+    (hasTemperateGrowth_exp_neg_smul_norm_sq (ν * t) (mul_nonneg hν ht))
+
+/-- The Schwartz witness for the free-carrier coordinate `i`: inverse-Fourier
+of the multiplier-smoothed Fourier datum. -/
+noncomputable def freeHeatCoordSchwartz (ν t : ℝ)
+    (u₀ : SchwartzVelocity) (i : Fin 3) : SchwartzMap ES ℂ :=
+  𝓕⁻ (SchwartzMap.smulLeftCLM (F := ℂ) (heatMult ν t)
+    (SchwartzMap.fourierTransformCLM ℂ (euclidComponent u₀ i)))
+
+private theorem coe_smulHeatCoord (ν t : ℝ) (hν : 0 ≤ ν) (ht : 0 ≤ t)
+    (u₀ : SchwartzVelocity) (i : Fin 3) :
+    ⇑(SchwartzMap.smulLeftCLM (F := ℂ) (heatMult ν t)
+        (SchwartzMap.fourierTransformCLM ℂ (euclidComponent u₀ i))) =
+      fun ξ : ES => freeHeatTraj ν u₀ t ξ i := by
+  rw [SchwartzMap.smulLeftCLM_apply (heatGaussianHasTemperateGrowth ν t hν ht)]
+  funext ξ
+  have hc : ⇑(SchwartzMap.fourierTransformCLM ℂ (euclidComponent u₀ i)) =
+      fun η : ES => fourierDatum u₀ η i := by
+    funext η
+    show ⇑(SchwartzMap.fourierTransformCLM ℂ (euclidComponent u₀ i)) η = _
+    rw [SchwartzMap.fourierTransformCLM_apply]
+    rfl
+  rw [hc]
+  show heatMult ν t ξ • fourierDatum u₀ ξ i = freeHeatTraj ν u₀ t ξ i
+  have hsmul : heatMult ν t ξ • fourierDatum u₀ ξ i =
+      (Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℂ) * fourierDatum u₀ ξ i := by
+    show (Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℂ) • fourierDatum u₀ ξ i = _
+    rfl
+  rw [hsmul, ← freeHeatCoord_eq]
+  rfl
+
+/-- **The `hs` bridge lemma.**  Each physical-space coordinate of the free
+heat carrier is the underlying function of a `SchwartzMap ES ℂ`. -/
+theorem physicalCoord_freeHeatCoord_eq (ν t : ℝ) (hν : 0 ≤ ν) (ht : 0 ≤ t)
+    (u₀ : SchwartzVelocity) (i : Fin 3) :
+    physicalCoord (freeHeatTraj ν u₀ t) i = ⇑(freeHeatCoordSchwartz ν t u₀ i) := by
+  show 𝓕⁻ (fun ξ : ES => freeHeatTraj ν u₀ t ξ i) = _
+  rw [← coe_smulHeatCoord ν t hν ht u₀ i, ← SchwartzMap.fourierInv_coe]
+  rfl
+
+/-- Physical-space crown-form finite energy of the free heat carrier for
+nonnegative viscosity and time, using its constructed Schwartz coordinates. -/
+theorem freeHeatPhysical_finiteEnergy (ν t : ℝ) (hν : 0 ≤ ν) (ht : 0 ≤ t)
+    (u₀ : SchwartzVelocity) :
+    Integrable (fun z : Space => ‖physicalVelocity (freeHeatTraj ν u₀) t z‖ ^ 2)
+      volume :=
+  freeHeatPhysical_finiteEnergy_of_schwartz ν hν t ht u₀
+    (fun i => ⟨freeHeatCoordSchwartz ν t u₀ i,
+      physicalCoord_freeHeatCoord_eq ν t hν ht u₀ i⟩)
+
+
 end Navier.Analysis.WholeSpaceCarrierReconstruction
 
 #print axioms Navier.Analysis.WholeSpaceCarrierReconstruction.initialSlice_finiteEnergy
@@ -341,3 +436,11 @@ set_option pp.fullNames true in
 #check @Navier.Analysis.WholeSpaceCarrierReconstruction.sum_integral_normSq_freeHeat_le_initial
 set_option pp.fullNames true in
 #check @Navier.Analysis.WholeSpaceCarrierReconstruction.freeHeatPhysical_finiteEnergy_of_schwartz
+
+#print axioms Navier.Analysis.WholeSpaceCarrierReconstruction.hasTemperateGrowth_exp_neg_smul_norm_sq
+
+#print axioms Navier.Analysis.WholeSpaceCarrierReconstruction.heatGaussianHasTemperateGrowth
+
+#print axioms Navier.Analysis.WholeSpaceCarrierReconstruction.physicalCoord_freeHeatCoord_eq
+
+#print axioms Navier.Analysis.WholeSpaceCarrierReconstruction.freeHeatPhysical_finiteEnergy
