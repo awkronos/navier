@@ -156,28 +156,27 @@ impl WebGpuSpectralSolver {
             } else {
                 wgpu::Backends::PRIMARY
             },
-            ..Default::default()
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: None,
                 force_fallback_adapter: false,
+                ..Default::default()
             })
             .await
-            .ok_or("WebGPU has no high-performance adapter")?;
+            .map_err(|error| format!("WebGPU has no high-performance adapter: {error}"))?;
         let info = adapter.get_info();
         let required_limits = wgpu::Limits::downlevel_defaults().using_resolution(adapter.limits());
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("Navier WebGPU spectral solver"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits,
-                    memory_hints: wgpu::MemoryHints::Performance,
-                },
-                None,
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("Navier WebGPU spectral solver"),
+                required_features: wgpu::Features::empty(),
+                required_limits,
+                memory_hints: wgpu::MemoryHints::Performance,
+                ..Default::default()
+            })
             .await
             .map_err(|error| format!("WebGPU device request failed: {error}"))?;
         let device_lost = Arc::new(AtomicBool::new(false));
@@ -186,7 +185,7 @@ impl WebGpuSpectralSolver {
             lost_flag.store(true, Ordering::Release);
         });
 
-        device.push_error_scope(wgpu::ErrorFilter::Validation);
+        let validation_scope = device.push_error_scope(wgpu::ErrorFilter::Validation);
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Navier spectral operators"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/spectral.wgsl").into()),
@@ -211,8 +210,8 @@ impl WebGpuSpectralSolver {
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Navier spectral pipeline layout"),
-            bind_group_layouts: &[&layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&layout)],
+            immediate_size: 0,
         });
         let make_pipeline = |entry_point: &str| {
             device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
@@ -270,8 +269,8 @@ impl WebGpuSpectralSolver {
         let max_speed_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Navier maximum-speed pipeline layout"),
-                bind_group_layouts: &[&max_speed_layout],
-                push_constant_ranges: &[],
+                bind_group_layouts: &[Some(&max_speed_layout)],
+                immediate_size: 0,
             });
         let max_speed_pipeline = MaxSpeedPipeline {
             layout: max_speed_layout,
@@ -284,7 +283,7 @@ impl WebGpuSpectralSolver {
                 cache: None,
             }),
         };
-        if let Some(error) = device.pop_error_scope().await {
+        if let Some(error) = validation_scope.pop().await {
             return Err(format!("WebGPU rejected the spectral kernels: {error}"));
         }
 
@@ -1040,12 +1039,19 @@ impl WebGpuSpectralSolver {
             let _ = sender.send(result);
         });
         #[cfg(not(target_arch = "wasm32"))]
-        self.device.poll(wgpu::Maintain::Wait);
+        self.device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: None,
+            })
+            .map_err(|error| format!("GPU readback poll failed: {error}"))?;
         let map_result = receiver
             .await
             .map_err(|_| "GPU readback callback was dropped".to_string())?;
         map_result.map_err(|error| format!("GPU readback map failed: {error}"))?;
-        let mapped = slice.get_mapped_range();
+        let mapped = slice
+            .get_mapped_range()
+            .map_err(|error| format!("GPU mapped range unavailable: {error}"))?;
         let values = bytemuck::cast_slice::<u8, [f32; 2]>(&mapped).to_vec();
         drop(mapped);
         staging.unmap();
@@ -1072,12 +1078,19 @@ impl WebGpuSpectralSolver {
             let _ = sender.send(result);
         });
         #[cfg(not(target_arch = "wasm32"))]
-        self.device.poll(wgpu::Maintain::Wait);
+        self.device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: None,
+            })
+            .map_err(|error| format!("GPU readback poll failed: {error}"))?;
         receiver
             .await
             .map_err(|_| "GPU scalar readback callback was dropped".to_string())?
             .map_err(|error| format!("GPU scalar readback map failed: {error}"))?;
-        let mapped = slice.get_mapped_range();
+        let mapped = slice
+            .get_mapped_range()
+            .map_err(|error| format!("GPU mapped range unavailable: {error}"))?;
         let values = *bytemuck::from_bytes::<[u32; 2]>(&mapped);
         drop(mapped);
         staging.unmap();

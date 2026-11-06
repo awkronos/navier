@@ -57,6 +57,23 @@ jobs:
           echo "OR23-Q8 selected: ${n:-0} tests"
           test "${n:-0}" -ge 1
 
+  cargo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: solver
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust with the browser target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Test the locked native solver
+        run: cargo test --locked --all-targets
+      - name: Check the locked browser solver
+        run: cargo check --locked --target wasm32-unknown-unknown --lib
+
   lean:
     runs-on: [self-hosted, lean]
     timeout-minutes: 180
