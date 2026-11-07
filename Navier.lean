@@ -351,6 +351,13 @@ import Navier.Analysis.GalerkinProjectedWeak
 import Navier.Analysis.WholeSpaceSolenoidalHeatViscousLimit
 import Navier.Analysis.ContinuationEstimateReference
 import Navier.Analysis.ContinuationEstimateProof
+import Navier.Analysis.H3RestartSlice
+import Navier.Analysis.RestartAgreementOpen
+import Navier.Analysis.WienerH3DampedProducer
+import Navier.Analysis.MildTimeLeafX1CascadeFalsification
+import Navier.Transfer.MildSelfMapDefectBudget
+import Navier.Transfer.MildSelfMapTransport
+import Navier.AdjointBackpropagation
 
 /-!
 # Navier
@@ -371,5 +378,18 @@ datum the initial-slice envelope budget is finite and equals the datum-profile
 weight.  This import establishes nothing for `t > 0` and does not close the
 premise; the premise remains open, with the propagation rung of the bootstrap
 as what is left crown-wide.
+The seven modules wired above (`H3RestartSlice`, `RestartAgreementOpen`,
+`WienerH3DampedProducer`, `MildTimeLeafX1CascadeFalsification`,
+`MildSelfMapDefectBudget`, `MildSelfMapTransport`, `AdjointBackpropagation`)
+were committed by their own lanes but never entered this closure, so they were
+invisible to `scripts/AuditAllAxioms.lean` and to Mathlib-cache reuse until
+this import block reached them. They are interface, producer, falsification and
+transport leaves — each states or discharges the piece its header names, and
+none of them closes the crown premise.
+`Navier.Analysis.CrownBridgeReduction` is deliberately NOT imported here: it
+carries three code-position `sorry`s, and `sorryAx` is outside the allowed
+transitive axiom set, so importing it would fail the axiom census rather than
+report it. It is left as an open `tools/module-closure-check.py` finding, not
+listed as an intentional leaf.
 The mathematical conclusions of this module are the imported theorem types.
 -/
