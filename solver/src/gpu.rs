@@ -150,6 +150,14 @@ impl WebGpuSpectralSolver {
             return Err("viscosity must be finite, nonnegative, and representable as f32".into());
         }
         let len = n.checked_pow(3).ok_or("grid allocation overflow")?;
+        // `wgpu::Instance::new` panics outright when no backend feature
+        // implemented for this platform is enabled (wgpu-30.0.1
+        // src/api/instance.rs:65). Answer in the constructor's Result
+        // channel instead, so headless or unsupported hosts reach the
+        // caller's no-adapter path rather than aborting the test binary.
+        if wgpu::Instance::enabled_backend_features().is_empty() {
+            return Err("WebGPU has no high-performance adapter: no wgpu backend feature is enabled for this platform".into());
+        }
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: if cfg!(target_arch = "wasm32") {
                 wgpu::Backends::BROWSER_WEBGPU
@@ -1185,7 +1193,7 @@ mod tests {
         let solver = match pollster::block_on(WebGpuSpectralSolver::new(n, viscosity)) {
             Ok(solver) => solver,
             Err(error)
-                if error == NO_ADAPTER
+                if error.starts_with(NO_ADAPTER)
                     && std::env::var("NAVIER_REQUIRE_GPU").as_deref() != Ok("1") =>
             {
                 eprintln!("SKIPPED: no WebGPU adapter: {error}");

@@ -17,7 +17,7 @@ serde = { version = "1", features = ["derive"] }
 serde-wasm-bindgen = "0.6"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-wgpu = { version = "=30.0.1", default-features = false, features = ["wgsl", "webgpu", "metal"] }
+wgpu = { version = "=30.0.1", default-features = false, features = ["wgsl", "webgpu", "metal", "vulkan", "gles"] }
 
 [dev-dependencies]
 pollster = "1.0"
