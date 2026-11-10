@@ -165,7 +165,7 @@ fn webgpu_metadata_uses_the_shared_convention() {
     let gpu = match pollster::block_on(WebGpuSpectralSolver::new(8, requested_viscosity)) {
         Ok(gpu) => gpu,
         Err(error)
-            if error == "WebGPU has no high-performance adapter"
+            if error.starts_with("WebGPU has no high-performance adapter")
                 && std::env::var("NAVIER_REQUIRE_GPU").as_deref() != Ok("1") =>
         {
             eprintln!("SKIPPED: no WebGPU adapter: {error}");
