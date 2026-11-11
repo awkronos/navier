@@ -1,0 +1,13 @@
+{
+ "doc": "Branches removed from refs/heads and preserved under refs/archive/<name>. Restore with: git fetch origin refs/archive/<name>:refs/heads/<name>",
+ "refs": [
+  {
+   "name": "lane/LOCAL-SALVAGE-navier-recovery-navier-snapshot-1106",
+   "tip": "ba85b791f987661d6bc02e419d5b4eddaa6e34ca",
+   "archived": "2026-11-10",
+   "reason": "content already on main",
+   "class": "NO-NEW-CONTENT",
+   "main_at_archive": "2c8572dbf5b3433c42836ff4319e4d846b1a8924"
+  }
+ ]
+}
