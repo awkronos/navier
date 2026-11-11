@@ -127,25 +127,26 @@ theorem monotone_osgExt_majExt {ω : ℝ → ℝ} (hωc : ContinuousOn ω (Ici 0
     rw [deriv_osgExt_majExt hωc hωpos]
     exact inv_nonneg.mpr (le_of_lt (majExt.pos hωpos v))
 
-/-- **Uniform horizon-local Osgood bound.**  For the family of unknowns `y`
-that are continuous on `[0,T]`, nonnegative there, and satisfy the integral
-barrier with the SAME datum `b₀` and the SAME majorant `ω`, the barrier values
-`b₀ + ∫₀ᵗ ω(y s) ds` are bounded by one real constant depending on `b₀`, `T`
-and `ω` only — not on `y`.  This uniformity is what
-`HorizonLocalCriticalControl`'s `∃ M, ∀ u p` shape needs; the per-solution bound
-of `exists_le_of_osgoodMajorant` cannot serve it. -/
-theorem exists_nnreal_bound_of_osgoodBarrier {y : ℝ → ℝ} {b₀ T : ℝ} {ω : ℝ → ℝ}
+/-- **Uniform horizon-local Osgood bound.**  For a fixed datum `b₀`, horizon `T`
+and majorant `ω`, ONE constant `M : ℝ≥0` bounds the barrier
+`b₀ + ∫₀ᵗ ω(y s) ds` on `(0,T)` for EVERY unknown `y` that is continuous and
+nonnegative on `[0,T]`, monotone there, and satisfies the integral barrier with
+that `b₀` and `ω`.  `M` is produced before `y` is introduced, which is exactly
+the shape `HorizonLocalCriticalControl` needs: its `∃ M : ℝ≥0` sits BEFORE
+`∀ u p`, so a per-solution existence statement (the §3 leaf
+`exists_le_of_osgoodMajorant`, closed at `2c8572d`, whose witness is literally
+`y T`) cannot discharge it. -/
+theorem exists_nnreal_bound_of_osgoodBarrier {b₀ T : ℝ} {ω : ℝ → ℝ}
     (hb₀ : 0 ≤ b₀) (hT : 0 < T)
-    (hyc : ContinuousOn y (Icc 0 T))
-    (hynn : ∀ t ∈ Icc 0 T, 0 ≤ y t)
-    (hymon : MonotoneOn y (Icc 0 T))
     (hωc : ContinuousOn ω (Ici 0))
     (hωmono : MonotoneOn ω (Ici 0))
     (hωpos : ∀ x ∈ Ici (0 : ℝ), 0 < ω x)
-    (hGtop : Tendsto (osgExt (majExt ω)) atTop atTop)
-    (hmaj : ∀ t ∈ Ioo 0 T, y t ≤ b₀ + ∫ s in (0)..t, ω (y s)) :
-    ∃ M : NNReal, ∀ t ∈ Ioo 0 T, b₀ + ∫ s in (0)..t, ω (y s) ≤ ↑M := by
-  -- clamp the unknown to the horizon: continuous, nonnegative, monotone on ℝ
+    (hGtop : Tendsto (osgExt (majExt ω)) atTop atTop) :
+    ∃ M : NNReal, ∀ y : ℝ → ℝ, ContinuousOn y (Icc 0 T) →
+      (∀ t ∈ Icc (0:ℝ) T, 0 ≤ y t) → MonotoneOn y (Icc 0 T) →
+      (∀ t ∈ Ioo 0 T, y t ≤ b₀ + ∫ s in (0)..t, ω (y s)) →
+      ∀ t ∈ Ioo 0 T, b₀ + ∫ s in (0)..t, ω (y s) ≤ ↑M := by
+  -- the clamp depends on the horizon only
   set e : ℝ → ℝ := fun s => max (min s T) 0 with he_def
   have he_cont : Continuous e := (continuous_id.min continuous_const).max continuous_const
   have he_mono : Monotone e := fun a b hab => max_le_max (min_le_min hab le_rfl) le_rfl
@@ -153,13 +154,19 @@ theorem exists_nnreal_bound_of_osgoodBarrier {y : ℝ → ℝ} {b₀ T : ℝ} {�
     ⟨le_max_right (min s T) 0, max_le (min_le_right s T) hT.le⟩
   have he_id : ∀ t ∈ Icc (0:ℝ) T, e t = t := fun t ht =>
     (max_eq_left (le_min ht.1 (le_trans ht.1 ht.2))).trans (min_eq_left ht.2)
+  -- the cap: one level above the datum-and-horizon bound of the transform
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp
+    (hGtop.eventually (eventually_gt_atTop (osgExt (majExt ω) b₀ + T)))
+  refine ⟨⟨max (N : ℝ) 0, le_max_right N 0⟩, ?_⟩
+  -- now let y be ANY admissible unknown
+  intro y hyc hynn hymon hmaj t ht
+  have hIcc : t ∈ Icc (0:ℝ) T := ⟨ht.1.le, ht.2.le⟩
   set yb : ℝ → ℝ := fun s => y (e s) with yb_def
   have hyb_cont : Continuous yb :=
     continuousOn_univ.mp (hyc.comp he_cont.continuousOn (fun s _ => he_mem s))
   have hyb_nonneg : ∀ s, 0 ≤ yb s := fun s => hynn _ (he_mem s)
   have hyb_mono : Monotone yb := fun a b hab => hymon (he_mem a) (he_mem b) (he_mono hab)
   have hyb_eq : ∀ t ∈ Icc (0:ℝ) T, yb t = y t := fun t ht => congr_arg y (he_id t ht)
-  -- the barrier integrand: continuous, positive and nondecreasing on all of ℝ
   set f : ℝ → ℝ := fun s => majExt ω (yb s) with f_def
   have hf_eq : ∀ t ∈ Icc (0:ℝ) T, f t = ω (y t) := fun t ht => by
     show majExt ω (yb t) = ω (y t)
@@ -167,63 +174,55 @@ theorem exists_nnreal_bound_of_osgoodBarrier {y : ℝ → ℝ} {b₀ T : ℝ} {�
   have hf_cont : Continuous f := (majExt.continuous hωc).comp hyb_cont
   have hf_pos : ∀ s, 0 < f s := fun s => majExt.pos hωpos (yb s)
   have hf_mono : Monotone f := majExt.monotone hωmono |>.comp hyb_mono
-  -- barrier primitive
-  set V : ℝ → ℝ := fun t => b₀ + ∫ s in (0)..t, f s with V_def
+  set V : ℝ → ℝ := fun tt => b₀ + ∫ s in (0)..tt, f s with V_def
   have hV_diff : Differentiable ℝ V :=
     (differentiable_const b₀).add (differentiable_integral_of_continuous hf_cont)
-  have hV_has : ∀ t, HasDerivAt V (f t) t := fun t => by
-    change HasDerivAt (fun u : ℝ => b₀ + ∫ s in (0)..u, f s) (f t) t
-    convert ((hasDerivAt_const t b₀).add (integral_hasDerivAt_right
-      (hf_cont.intervalIntegrable 0 t) (hf_cont.aestronglyMeasurable.stronglyMeasurableAtFilter)
+  have hV_has : ∀ tt, HasDerivAt V (f tt) tt := fun tt => by
+    change HasDerivAt (fun u : ℝ => b₀ + ∫ s in (0)..u, f s) (f tt) tt
+    convert ((hasDerivAt_const tt b₀).add (integral_hasDerivAt_right
+      (hf_cont.intervalIntegrable 0 tt) (hf_cont.aestronglyMeasurable.stronglyMeasurableAtFilter)
       hf_cont.continuousAt)) using 1
     · ring
-  have hV_deriv : ∀ t, deriv V t = f t := fun t => (hV_has t).deriv
-  have hyV : ∀ t ∈ Ioo (0:ℝ) T, yb t ≤ V t := by
-    intro t ht
-    have hIcc : t ∈ Icc (0:ℝ) T := ⟨ht.1.le, ht.2.le⟩
-    have hfg : ∫ s in (0)..t, ω (y s) = ∫ s in (0)..t, f s := by
+  have hV_deriv : ∀ tt, deriv V tt = f tt := fun tt => (hV_has tt).deriv
+  have hyV : ∀ tt ∈ Ioo (0:ℝ) T, yb tt ≤ V tt := by
+    intro tt htt
+    have hIcct : tt ∈ Icc (0:ℝ) T := ⟨htt.1.le, htt.2.le⟩
+    have hfg : ∫ s in (0)..tt, ω (y s) = ∫ s in (0)..tt, f s := by
       refine intervalIntegral.integral_congr (fun s hs => ?_)
-      have hms : 0 ≤ s ∧ s ≤ t := by
+      have hms : 0 ≤ s ∧ s ≤ tt := by
         rcases Set.mem_uIcc.mp hs with ⟨ha, hb⟩ | ⟨ha, hb⟩
         · exact ⟨ha, hb⟩
-        · have hle : t ≤ (0:ℝ) := le_trans ha hb
-          linarith [(Set.mem_Ioo.mp ht).1]
-      exact (hf_eq s ⟨hms.1, hms.2.trans ht.2.le⟩).symm
-    calc yb t = y t := hyb_eq t hIcc
-      _ ≤ b₀ + ∫ s in (0)..t, ω (y s) := hmaj t ht
-      _ = b₀ + ∫ s in (0)..t, f s := congr_arg (b₀ + ·) hfg
-      _ = V t := rfl
-  -- the comparison function is monotone on the closed horizon
-  have hGcomp_diff : Differentiable ℝ (fun t => osgExt (majExt ω) (V t)) :=
+        · have hle : tt ≤ (0:ℝ) := le_trans ha hb
+          linarith [(Set.mem_Ioo.mp htt).1]
+      exact (hf_eq s ⟨hms.1, hms.2.trans hIcct.2⟩).symm
+    calc yb tt = y tt := hyb_eq tt hIcct
+      _ ≤ b₀ + ∫ s in (0)..tt, ω (y s) := hmaj tt htt
+      _ = b₀ + ∫ s in (0)..tt, f s := congr_arg (b₀ + ·) hfg
+      _ = V tt := rfl
+  have hGcomp_diff : Differentiable ℝ (fun tt => osgExt (majExt ω) (V tt)) :=
     (diff_osgExt_majExt hωc hωpos).comp hV_diff
-  have hderiv_le : ∀ t ∈ Ioo (0:ℝ) T,
-      0 ≤ deriv (fun x => x - osgExt (majExt ω) (V x)) t := by
-    intro t ht
-    have hpos : 0 < majExt ω (V t) := majExt.pos hωpos _
+  have hderiv_le : ∀ tt ∈ Ioo (0:ℝ) T,
+      0 ≤ deriv (fun x => x - osgExt (majExt ω) (V x)) tt := by
+    intro tt htt
+    have hpos : 0 < majExt ω (V tt) := majExt.pos hωpos _
     have hd : HasDerivAt (fun x : ℝ => x - osgExt (majExt ω) (V x))
-        (1 - (majExt ω (V t))⁻¹ * f t) t :=
-      (hasDerivAt_id t).sub ((hasDerivAt_osgExt_majExt hωc hωpos (V t)).comp t (hV_has t))
+        (1 - (majExt ω (V tt))⁻¹ * f tt) tt :=
+      (hasDerivAt_id tt).sub ((hasDerivAt_osgExt_majExt hωc hωpos (V tt)).comp tt (hV_has tt))
     rw [hd.deriv, sub_nonneg, inv_mul_le_iff₀ hpos, mul_one]
-    exact majExt.monotone hωmono (hyV t ht)
-  have hmono : MonotoneOn (fun t => t - osgExt (majExt ω) (V t)) (Icc (0:ℝ) T) :=
+    exact majExt.monotone hωmono (hyV tt htt)
+  have hmono : MonotoneOn (fun tt => tt - osgExt (majExt ω) (V tt)) (Icc (0:ℝ) T) :=
     monotoneOn_of_deriv_nonneg (convex_Icc (0:ℝ) T)
       ((differentiable_id.sub hGcomp_diff).continuous.continuousOn)
       ((differentiable_id.sub hGcomp_diff).differentiableOn)
-      (fun t ht => hderiv_le t (by rw [interior_Icc] at ht; exact ht))
-  -- anchored at t = 0, where V 0 = b₀
+      (fun tt htt => hderiv_le tt (by rw [interior_Icc] at htt; exact htt))
   have hV0 : V 0 = b₀ := by simp [V_def]
-  have hkey : ∀ t ∈ Icc (0:ℝ) T, osgExt (majExt ω) (V t) ≤ osgExt (majExt ω) b₀ + t := by
-    intro t ht
-    have hle := hmono ⟨le_refl 0, hT.le⟩ ht ht.1
+  have hkey : ∀ tt ∈ Icc (0:ℝ) T, osgExt (majExt ω) (V tt) ≤ osgExt (majExt ω) b₀ + tt := by
+    intro tt htt
+    have hle := hmono ⟨le_refl 0, hT.le⟩ htt htt.1
     dsimp only at hle
     rw [hV0, zero_sub] at hle
     linarith
-  -- one level above the cap exists, since the transform is unbounded
-  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp
-    (hGtop.eventually (eventually_gt_atTop (osgExt (majExt ω) b₀ + T)))
   have hGN : osgExt (majExt ω) b₀ + T < osgExt (majExt ω) N := hN N (le_refl N)
-  refine ⟨⟨max (N : ℝ) 0, le_max_right N 0⟩, fun t ht => ?_⟩
-  have hIcc : t ∈ Icc (0:ℝ) T := ⟨ht.1.le, ht.2.le⟩
   have hcap : osgExt (majExt ω) (V t) ≤ osgExt (majExt ω) b₀ + T :=
     (hkey t hIcc).trans (add_le_add_right ht.2.le _)
   have hVt : V t ≤ N := by
@@ -236,7 +235,7 @@ theorem exists_nnreal_bound_of_osgoodBarrier {y : ℝ → ℝ} {b₀ T : ℝ} {�
       rcases Set.mem_uIcc.mp hs with ⟨ha, hb⟩ | ⟨ha, hb⟩
       · exact ⟨ha, hb⟩
       · have hle : t ≤ (0:ℝ) := le_trans ha hb
-        linarith [(Set.mem_Ioo.mp ht).1]
+        linarith [ht.1]
     exact (hf_eq s ⟨hms.1, hms.2.trans ht.2.le⟩).symm
   calc b₀ + ∫ s in (0)..t, ω (y s) = b₀ + ∫ s in (0)..t, f s := congr_arg (b₀ + ·) hfg
     _ = V t := rfl
