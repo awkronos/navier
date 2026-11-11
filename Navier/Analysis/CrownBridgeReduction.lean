@@ -301,8 +301,26 @@ theorem trap_rung_refuted :
 /-- The trap majorant is genuinely Osgood-divergent at the level `1`.
 Recorded strict fact about the §2 witness (not consumed above). -/
 theorem lintegral_trapMajorant_inv :
-    (∫⁻ x in Ioc (0:ℝ) 1, ENNReal.ofReal ((trapMajorant x)⁻¹)) = ⊤ :=
-  by sorry
+    (∫⁻ x in Ioc (0:ℝ) 1, ENNReal.ofReal ((trapMajorant x)⁻¹)) = ⊤ := by
+  by_contra hne
+  have hg : ¬ IntervalIntegrable (fun x : ℝ => (x - 1)⁻¹) volume 0 1 :=
+    not_intervalIntegrable_of_sub_inv_isBigO_punctured (Asymptotics.isBigO_refl _ _)
+      zero_ne_one (by simp)
+  apply hg
+  rw [intervalIntegrable_iff_integrableOn_Ioc_of_le zero_le_one]
+  have hmeas : Measurable fun x : ℝ => (trapMajorant x)⁻¹ := by
+    unfold trapMajorant; fun_prop
+  have hf : IntegrableOn (fun x => (trapMajorant x)⁻¹) (Ioc 0 1) := by
+    refine ⟨hmeas.aestronglyMeasurable, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ fun x => by
+      simp only [Pi.zero_apply, inv_nonneg, trapMajorant]; exact le_max_left _ _)]
+    exact lt_top_iff_ne_top.mpr hne
+  have heq : EqOn (fun x : ℝ => (x - 1)⁻¹) (fun x => -(trapMajorant x)⁻¹) (Ioc 0 1) := by
+    intro x hx
+    have h1 : 0 ≤ 1 - x := by linarith [hx.2]
+    simp only [trapMajorant, max_eq_right h1]
+    rw [← inv_neg]; congr 1; ring
+  exact hf.neg.congr_fun heq.symm measurableSet_Ioc
 
 /-! ## 3. The scalar Osgood ladder: boundedness on a fixed horizon -/
 
@@ -416,5 +434,6 @@ theorem h3EnvelopeBudget_le_h3EnvelopeControl {u : VelocityEvolution} {t : ℝ}
 #print axioms Navier.Analysis.CrownBridgeReduction.trapWitness_leftCont
 #print axioms Navier.Analysis.CrownBridgeReduction.trapWitness_majorant
 #print axioms Navier.Analysis.CrownBridgeReduction.trap_rung_refuted
+#print axioms Navier.Analysis.CrownBridgeReduction.lintegral_trapMajorant_inv
 #print axioms Navier.Analysis.CrownBridgeReduction.h3EnvelopeControl_mono
 #print axioms Navier.Analysis.CrownBridgeReduction.h3EnvelopeBudget_le_h3EnvelopeControl
