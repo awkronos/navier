@@ -1,5 +1,6 @@
 import Mathlib
 import Navier.Analysis.HorizonFreeBudgetRestart
+import Navier.Analysis.EnvelopePropagation
 
 /-!
 # The two envelope legs `CrownBridgeReduction` §4 consumes, and an obstruction
@@ -17,7 +18,8 @@ conclusion is at `t = T`.  Because `h3EnvelopeControl T u` is a supremum over th
 HALF-OPEN strip `Ico 0 T`, every slice `a ∈ Ico 0 T` is carried by the strictly
 later interior time `a' = (a+T)/2`, so an interior bound closes the horizon with
 no limit argument and no `toReal` round trip.  That is
-`h3EnvelopeBudget_le_control_of_mem` and `h3EnvelopeControl_le_coe_of_interior`.
+`h3EnvelopeControl_le_coe_of_interior`, on the existing slice-carry leaf
+`EnvelopePropagation.h3EnvelopeBudget_le_control`.
 
 **The other leg** — turning the crown's divergence hypothesis into the uniform
 `∃ M` cap — is certified in `Navier/Analysis/OsgoodDivergenceBridge.lean`
@@ -63,15 +65,6 @@ theorem h3EnvelopeControl_zero (u : VelocityEvolution) : h3EnvelopeControl 0 u =
   rw [Ico_self]
   simp
 
-/-- **Slice carry.**  The budget of the slice at `a` is carried by the envelope
-control at any horizon `b` with `a ∈ Ico 0 b`: the half-open strip already
-contains `a`.  This is what lets an interior bound reach the horizon. -/
-theorem h3EnvelopeBudget_le_control_of_mem {u : VelocityEvolution} {a b : ℝ}
-    (hab : a ∈ Ico (0 : ℝ) b) : h3EnvelopeBudget (u a) ≤ h3EnvelopeControl b u := by
-  unfold h3EnvelopeControl
-  exact le_trans (le_iSup (fun _ : a ∈ Ico (0 : ℝ) b => h3EnvelopeBudget (u a)) hab)
-    (le_iSup (fun k => ⨆ _ : k ∈ Ico (0 : ℝ) b, h3EnvelopeBudget (u k)) a)
-
 /-- **The horizon transfer.**  An interior bound of the envelope control by
 `ENNReal.ofReal` of a value capped at `M : NNReal` extends to the horizon `T`
 itself as `h3EnvelopeControl T u ≤ (M : ℝ≥0∞)` — the conclusion shape
@@ -92,7 +85,7 @@ theorem h3EnvelopeControl_le_coe_of_interior {u : VelocityEvolution} {T : ℝ} {
     rw [ha'def]
     exact ⟨ha.1, by linarith [ha.2]⟩
   calc h3EnvelopeBudget (u a) ≤ h3EnvelopeControl a' u :=
-      h3EnvelopeBudget_le_control_of_mem ham
+      EnvelopePropagation.h3EnvelopeBudget_le_control u ham
     _ ≤ ENNReal.ofReal (↑M) := hint a' ha'
     _ = (M : ℝ≥0∞) := ENNReal.ofReal_coe_nnreal
 
@@ -101,7 +94,7 @@ horizon (the control-side form of rung P0) and the datum carries a positive
 envelope budget, then `t ↦ (h3EnvelopeControl t u).toReal` is NOT continuous on
 `[0, T]`: it is `0` at `t = 0` (`h3EnvelopeControl_zero`) and at least the datum
 budget at every strictly positive time
-(`h3EnvelopeBudget_le_control_of_mem` at `0 ∈ Ico 0 t`), so it jumps at the left
+(`EnvelopePropagation.h3EnvelopeBudget_le_control` at `0 ∈ Ico 0 t`), so it jumps at the left
 endpoint of the interval on which `OsgoodEnvelopeMajorant` asks for continuity.
 This is measured with a sequence inside `(0,T)` decreasing to `0`, so it uses no
 `toReal` continuity and no finiteness beyond P0. -/
@@ -124,7 +117,8 @@ theorem not_continuousOn_envelopeControl_toReal_of_positive_budget
       (h3EnvelopeBudget (u 0)).toReal ≤ (h3EnvelopeControl t u).toReal := by
     intro t ht
     refine (ENNReal.toReal_le_toReal hne (ne_of_lt (hfin t ht))).mpr ?_
-    exact h3EnvelopeBudget_le_control_of_mem (Set.mem_Ico.mpr ⟨le_refl 0, ht.1⟩)
+    exact EnvelopePropagation.h3EnvelopeBudget_le_control u
+      (Set.mem_Ico.mpr ⟨le_refl 0, ht.1⟩)
   -- a sequence inside `(0,T)` decreasing to the left endpoint
   have hden : ∀ k : ℕ, (0 : ℝ) < (k : ℝ) + 2 := fun k => by
     have hk : (0 : ℝ) ≤ (k : ℝ) := Nat.cast_nonneg k
@@ -160,6 +154,5 @@ theorem not_continuousOn_envelopeControl_toReal_of_positive_budget
 end Navier.Analysis.OsgoodEnvelopeTransfer
 
 #print axioms Navier.Analysis.OsgoodEnvelopeTransfer.h3EnvelopeControl_zero
-#print axioms Navier.Analysis.OsgoodEnvelopeTransfer.h3EnvelopeBudget_le_control_of_mem
 #print axioms Navier.Analysis.OsgoodEnvelopeTransfer.h3EnvelopeControl_le_coe_of_interior
 #print axioms Navier.Analysis.OsgoodEnvelopeTransfer.not_continuousOn_envelopeControl_toReal_of_positive_budget
