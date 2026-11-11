@@ -107,8 +107,10 @@ finitess guard.
   merely unproofed, it is refuted at the left endpoint (see the §4 repair above),
   so the producer obligation is now stated on `(0, T]`.  The scalar comparison in
   §4 does not consume it either way: the unknown it feeds is the barrier function,
-  whose continuity on `[0, T]` is a primitive-of-monotone-rate fact, so the
-  remaining genuine producer obligation is only the crown's own barrier estimate.
+  whose continuity on `[0, T]` is a primitive-of-monotone-rate fact, so the producer
+  obligations that remain are the bundle's own clauses — the crown's barrier estimate,
+  and the `(0, T]` envelope continuity through rung P1 `EnvelopeBudgetContinuousOn`
+  (open, with `envelopeBudget_continuousOn_of_repFamily` as its named route).
 * `SourceL1X1` (linked-box time leaves) and the physical→frequency bridge
   for classical solutions remain statement-A-side primitives (see
   `ContinuousLeiLinPhysicalVelocity`, `ContinuousLeiLinODEDominationSupply`
@@ -431,11 +433,21 @@ hypothesis because the strict theorem settles it — §4's proof below reads
 at `t = 0` was never part of the intended content, and `(0, T]` is the faithful
 reading.  Of the two repairs the coordinator named, `Ioc 0 T` is kept over a
 right-continuity form because it is the STRONGER regularity, so the premise stays as
-close as the refutation allows to the original text, and because it is the form the
-named producer `EnvelopePropagation.EnvelopeBudgetContinuousOn` (rung P1) delivers:
-the running supremum over `Ico 0 t` of a rate continuous on `[0, T]` is continuous at
-every `t > 0` (the left limit matches because the closed endpoint is carried by
-continuity of the rate, the right limit because the added strip shrinks to `{t}`).
+close as the refutation allows to the original text, and because it is the surface the
+named OPEN obligation `EnvelopePropagation.EnvelopeBudgetContinuousOn` (rung P1) states:
+P1 asks `ContinuousOn (fun t => h3EnvelopeBudget (u t)) (Ico 0 T)` — continuity of the
+budget map on `[0, T)`, with `envelopeBudget_continuousOn_of_repFamily` as its named
+route and a continuous representer family as that module's own remaining rung.  From
+that, the envelope control (the running supremum of the budget over `Ico 0 t`) is
+continuous at every `t ∈ (0, T)`: continuity from the LEFT is free, because the strip
+grows through `t` so the supremum converges by monotonicity; continuity from the RIGHT
+is exactly where P1's continuity at `t` is spent, because `t` itself is excluded from
+the strip and is approached by strictly earlier slices, so the slice `t` adds nothing
+to the supremum; and left-continuity at `T` itself is free by monotone convergence of
+the supremum (P1 does not even speak at `T`).  The `toReal` layer then needs exactly the
+finiteness the barrier supplies.  Rung P1 is an obligation, not a proved producer, and
+this lane does not close it: the point is that `(0, T]` names a goal a producer can
+reach, whereas `Icc 0 T` is proved unreachable.
 Recorded honestly: §4's closure does NOT consume this clause (see the next bullet),
 so its only role is to keep the crown's documented bundle intact.
 
@@ -455,10 +467,11 @@ and monotone on each horizon").  The provenance agrees: the module's introducing
 commit `9bc2227` records §4 as "consumer: `OsgoodEnvelopeMajorant` ->
 `HorizonLocalCriticalControl h3EnvelopeControl`, the literature order", and the clause
 this repair dropped — "all travelling hypotheses have producers named in the header" —
-names the producers of exactly these two clauses (rung P1
-`EnvelopePropagation.EnvelopeBudgetContinuousOn` for the continuity, and the
+points at exactly the two surfaces these clauses live on: rung P1
+`EnvelopePropagation.EnvelopeBudgetContinuousOn`, the named OPEN obligation with the
+`envelopeBudget_continuousOn_of_repFamily` route, for the continuity; and the
 unconditional `h3EnvelopeControl_mono` together with the barrier's own finiteness for
-the monotonicity), so they were always meant to be delivered by the estimate, not
+the monotonicity.  So they were always meant to be delivered by the estimate, not
 demanded back from its consumer.
 No circularity is created by the move: neither clause
 bounds anything — a continuous monotone map can still be unbounded, which is exactly
