@@ -351,6 +351,7 @@ import Navier.Analysis.GalerkinProjectedWeak
 import Navier.Analysis.WholeSpaceSolenoidalHeatViscousLimit
 import Navier.Analysis.ContinuationEstimateReference
 import Navier.Analysis.ContinuationEstimateProof
+import Navier.Analysis.OsgoodUniformBound
 
 /-!
 # Navier
