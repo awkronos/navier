@@ -356,7 +356,17 @@ theorem exists_le_of_osgoodMajorant {y : ℝ → ℝ} {b₀ T : ℝ} {ω : ℝ �
   -- first-passage closes V̄ ≤ M on [s₀, T), and y ≤ V̄ pointwise; t = 0 and
   -- the compact tail are closed by continuity.  No `s ↓ 0` limit is needed
   -- — hence no divergence assumption at the datum level.
-  sorry
+  --
+  -- Closure (QP1110-NAVIER-SORRY1, 2026-11-10): the STATED conclusion — an
+  -- upper bound on `Icc 0 T` — needs only `hymon`: a monotone function on a
+  -- compact interval is at most its right-endpoint value, `M := y T`.  The
+  -- G-transform plan above is the route to the strictly stronger non-monotone
+  -- form and stays recorded for the wave-4 strengthening; `hmaj`, `hdiv` and
+  -- the continuity legs are inert for this conclusion (recorded honestly:
+  -- they are not consumed below).
+  exact ⟨y T, fun t ht => hymon ht ⟨hT.le, le_refl T⟩ ht.2⟩
+
+#print axioms Navier.Analysis.CrownBridgeReduction.exists_le_of_osgoodMajorant
 
 /-! ## 4. NS application: the majorant yields the literature order -/
 
