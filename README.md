@@ -1,8 +1,23 @@
-# Navier
+# Navier: forced whole-space alternative C (`wholeSpaceBreakdown`) is proved
 
-A native Lean reconstruction of OpenAI’s forced three-dimensional Navier–Stokes
-breakdown construction, with analytical continuation criteria and reproducible
-spectral fluid solvers.
+**The claimed proved object of this repository is forced whole-space alternative
+C**, inhabited by the checked Lean theorem
+`Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown`. **The Clay
+Millennium problem — unforced three-dimensional Navier–Stokes existence and
+smoothness, alternatives A and B at zero force — is `OPEN`**, in this repository
+and in the literature. No theorem, solver result, or picture here proves any
+part of it, and nothing on this page should be read as claiming that it does.
+
+Manifest counts, recomputed from [`formalization.yaml`](formalization.yaml) at
+this head: 6 `THEOREM`, 4 `OPEN`, 5 `CONDITIONAL_THEOREM`, 15 rows total. The
+status summary below states the same claim in table form, and
+[`scripts/test_readme_scope_truth.py`](scripts/test_readme_scope_truth.py)
+recomputes those counts from the manifest and fails this page if the headline,
+either summary, or those numbers drift.
+
+Alongside the proof, the repository is a native Lean reconstruction of OpenAI’s
+forced three-dimensional Navier–Stokes breakdown construction, with analytical
+continuation criteria and reproducible spectral fluid solvers.
 
 The checked theorem
 [`Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown`](Navier/Breakdown/ConstructedBreakdown.lean)
@@ -43,7 +58,9 @@ There is no OpenAI Lake dependency.
 Awkronos contributes the transport into the original native PDE carrier,
 additional force-derivative comparisons, solver work, and interactive explanation.
 
-The separate **unforced global regularity statements A and B remain open here**.
+The separate **unforced global regularity statements A and B remain `OPEN`
+here**, and together they are the Clay Millennium problem named above: the
+forced construction does not settle either of them.
 Comparison before the singular time does not assert uniqueness of a weak
 continuation after it. The numerical tools include a finite analytic-axis stage
 of the construction and a separate periodic spectral solver. Their computed
@@ -53,7 +70,7 @@ fields and residuals are numerical evidence, not the continuum proof. See the
 The logical shape is easiest to see as two different paths:
 
 ```text
-FORCED CONSTRUCTION (proved)
+FORCED CONSTRUCTION (proved: whole-space alternative C)
 selected compact (u, p, f)
   -> smooth, rapidly decaying force
   -> classical solution on 0 <= t < 1 with uniformly bounded energy
@@ -62,7 +79,7 @@ selected compact (u, p, f)
   -> no same-force continuation that is smooth before t = 1, continuous through it,
      and finite-energy on every closed pre-singular slab
 
-UNFORCED REGULARITY (open)
+UNFORCED REGULARITY (OPEN: the Clay Millennium problem, alternatives A and B)
 every admissible u0, with f = 0
   -> local classical solution                                  [native input required]
   -> continuation controlled by one critical quantity           [native input required]
@@ -87,6 +104,33 @@ pointwise Fourier balance, classical velocity uniqueness, energy and enstrophy
 identities, and local smoothing estimates. It still lacks the arbitrary-data,
 horizon-independent critical bound and all-order joint spacetime reconstruction
 needed for B. The [result map](docs/RESULT_MAP.md) records that boundary.
+
+## Status summary
+
+| Object | Status claimed by this repository | Manifest row and evidence |
+| --- | --- | --- |
+| Forced whole-space alternative C, `Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown` | **proved** — this is the claimed object named in the headline | `crown_C_whole_space_forced`, status `THEOREM`, transitive axioms `propext`, `Classical.choice`, `Quot.sound` |
+| Forced periodic alternative D, `Navier.Analysis.PeriodicConstructedBreakdown.periodicBreakdown` | proved | `crown_D_periodic_forced`, status `THEOREM` |
+| Clay unforced three-dimensional Navier–Stokes Millennium problem: alternatives A (`ProblemStatements.WholeSpaceGlobalRegularity`) and B (`ProblemStatements.PeriodicGlobalRegularity`) at zero force | **`OPEN`** — neither proved nor claimed here | `open_A_whole_space_unforced`, `open_B_periodic_unforced`, status `OPEN` |
+
+Manifest counts recomputed from [`formalization.yaml`](formalization.yaml) at this
+head: 6 `THEOREM`, 4 `OPEN`, 5 `CONDITIONAL_THEOREM`, 15 rows total. The structure
+behind those numbers is validated by
+
+```bash
+python3 scripts/check_formalization.py --check --manifest formalization.yaml --root .
+```
+
+and the claim-to-declaration mapping by [`scripts/test_readme_scope_truth.py`](scripts/test_readme_scope_truth.py),
+which recomputes the counts and fails if this page stops naming forced
+whole-space alternative C (`wholeSpaceBreakdown`) as the proved object, stops
+stating that the Clay unforced Navier–Stokes Millennium problem is `OPEN`, or
+drifts from the manifest. The `OPEN` rows are the two unforced Millennium
+alternatives A and B, the vorticity-rate residual inside the forced
+construction (`open_bkm_vorticity_integral_divergence_residual`), and the
+mild-assembly time-leaf instantiation (`open_mild_assembly_leaves_instantiation`);
+only the first two concern the Clay problem, and the conditional rows are
+obligations inside the forced route, not the unforced statement.
 
 ## How to cite
 
