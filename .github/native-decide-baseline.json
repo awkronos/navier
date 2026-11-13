@@ -1,0 +1,6 @@
+{
+ "law": "undisclosed_sites may not rise; lower it when sites are disclosed or replaced by kernel proofs",
+ "live_native_trust_sites": 0,
+ "schema": "native-decide-ratchet/1",
+ "undisclosed_sites": 0
+}

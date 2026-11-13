@@ -79,6 +79,35 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4  # v7 injects credentials via includeIf.gitdir, which git matches against the REAL path; this runner checks out through a symlink onto the NAS (see kagami docs/ops/RUNNERS_ON_NAS.md), so v7 fetches with no credentials
+      - name: Native-trust census ratchet (undisclosed native_decide sites may not rise)
+        # Counts LIVE tactic sites of the tokens that mint a `_native.*` witness
+        # axiom (native_decide, decide +native, bv_decide, Lean.ofReduceBool), with
+        # comments and strings masked by Lean's grammar, and compares the number
+        # that carry no disclosure against .github/native-decide-baseline.json. A native_decide result is
+        # compiler-trusted, not kernel-checked; this leg keeps new ones from
+        # arriving unlabelled. Text scan, no Lean, seconds.
+        #
+        # The estate keeps ONE census, in awkronos/reality
+        # (scripts/native_decide_census.py); it is read from the runner's reality
+        # object store, never copied into this repository. rc 1 = the count rose.
+        # rc 2 = UNMEASURED (control did not fire, unreadable file or baseline) and
+        # fails. A runner with no reality checkout cannot measure: that is reported
+        # as a warning naming the absence, never as a pass on a count of zero.
+        shell: bash
+        run: |
+          set -u
+          R="${REALITY_CHECKOUT:-$HOME/reality}"
+          CENSUS="${RUNNER_TEMP:-/tmp}/native_decide_census.py"
+          git -C "$R" fetch -q origin main 2>/dev/null || true
+          if git -C "$R" show origin/main:scripts/native_decide_census.py > "$CENSUS" 2>/dev/null \
+              && grep -q -- '--ratchet' "$CENSUS"; then
+            python3 "$CENSUS" --self-test
+            python3 "$CENSUS" --root "$GITHUB_WORKSPACE" --ratchet "$GITHUB_WORKSPACE/.github/native-decide-baseline.json" --summary | tail -n 3
+            exit "${PIPESTATUS[0]}"
+          else
+            echo "::warning::native-trust census UNMEASURED on this runner: no reality checkout at $R carrying scripts/native_decide_census.py with --ratchet; the ratchet did not run here"
+          fi
+
       - name: Install the pinned Lean toolchain
         shell: bash
         run: |
