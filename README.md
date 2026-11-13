@@ -13,6 +13,20 @@ exists. The proof supplies the constructed candidate and derives comparison
 with every hypothetical global competitor. Its transitive axioms are exactly
 `propext`, `Classical.choice`, and `Quot.sound`.
 
+Measured today: verified against `f521f79` on 2026-11-13 (source census:
+rg over `.lean` outside `.lake`; the central `navier` row is UNMEASURED —
+no compiler run at report time): 30002 theorem/lemma declarations, 120
+`sorry` token occurrences and 0 sorry sites in tactic/term position across
+the library; the two headline files
+(`Navier/Breakdown/ConstructedBreakdown.lean`,
+`Navier/Analysis/PeriodicConstructedBreakdown.lean`) carry no `sorry`.
+The exact-axioms statements above are carried compiler receipts: a fresh
+`#print axioms` probe at this date could not run against this checkout
+(module olean absent; full `lake build` required), so as of 2026-11-13
+the axiom sets of `wholeSpaceBreakdown` and `periodicBreakdown` are
+UNCHECKED-at-date — carried, not contradicted. Unforced global regularity
+(A, B) remains open, as stated below.
+
 The native **periodic alternative D** is also inhabited by
 [`PeriodicConstructedBreakdown.periodicBreakdown`](Navier/Analysis/PeriodicConstructedBreakdown.lean).
 For every positive viscosity, the selected periodic construction supplies
