@@ -625,6 +625,358 @@ theorem normXm1_continuousDuhamel_self_le_coordinateXm1X1
   exact integral_normXm1_continuousNavierSource_self_le_coordinateXm1X1
       u (Icc (0 : ℝ) t) hu hu0 hum1 hu1 isClosed_Icc.measurableSet hi h0sq hmixed
 
+/-!
+## Time-dependent Bochner representative: the mass bridge
+-/
+
+/-- The coordinate identification `EuclideanSpace ℝ (Fin 3) → (Fin 3 → ℝ)` is
+volume preserving: `Mathlib`'s `PiLp.volume_preserving_ofLp`, specialized to the
+estate carrier.  It is the transport that moves the `ℝ³` Sobolev weight of
+`WeightIntegrability` onto the `ES` frequency carrier used by every
+`normXm1`/`coordinateX0Mass` statement in this family. -/
+private theorem measurePreserving_ofLp :
+    MeasurePreserving (@WithLp.ofLp 2 (Fin 3 → ℝ))
+      (volume : Measure ES) (volume : Measure (Fin 3 → ℝ)) :=
+  PiLp.volume_preserving_ofLp (Fin 3)
+
+private theorem sobWeight_es_integrable :
+    Integrable (fun ξ : ES => Navier.Analysis.WeightIntegrability.sobWeight ξ) :=
+  MeasurePreserving.integrable_comp_of_integrable measurePreserving_ofLp
+    Navier.Analysis.WeightIntegrability.sobWeight_integrable
+
+private theorem sobWeight_es_aesm :
+    AEStronglyMeasurable (fun ξ : ES => Navier.Analysis.WeightIntegrability.sobWeight ξ) :=
+  sobWeight_es_integrable.aestronglyMeasurable
+
+/-- The `ES`-carrier mass of the Sobolev weight equals the estate constant
+`weightConst`, which is its `Fin 3 → ℝ` value. -/
+private theorem integral_sobWeight_es :
+    (∫ ξ : ES, Navier.Analysis.WeightIntegrability.sobWeight ξ) =
+      Navier.Analysis.FourierMajorant.weightConst := by
+  have hme : AEMeasurable (@WithLp.ofLp 2 (Fin 3 → ℝ)) (volume : Measure ES) :=
+    measurePreserving_ofLp.measurable.aemeasurable
+  have hag : AEStronglyMeasurable Navier.Analysis.WeightIntegrability.sobWeight
+      (Measure.map (@WithLp.ofLp 2 (Fin 3 → ℝ)) (volume : Measure ES)) := by
+    rw [measurePreserving_ofLp.map_eq]
+    exact Navier.Analysis.WeightIntegrability.sobWeight_integrable.aestronglyMeasurable
+  calc (∫ ξ : ES, Navier.Analysis.WeightIntegrability.sobWeight ξ)
+      = ∫ x, Navier.Analysis.WeightIntegrability.sobWeight x
+          ∂(Measure.map (@WithLp.ofLp 2 (Fin 3 → ℝ)) (volume : Measure ES)) :=
+        (integral_map hme hag).symm
+    _ = ∫ x : Fin 3 → ℝ, Navier.Analysis.WeightIntegrability.sobWeight x := by
+        rw [measurePreserving_ofLp.map_eq]
+    _ = Navier.Analysis.FourierMajorant.weightConst := rfl
+
+/-- **The time-dependent Bochner mass bridge.**  For the Duhamel representative
+`ξ ↦ continuousDuhamel ν u v t ξ i` of the continuous Lei--Lin carrier, the
+`X⁻¹` mass is bounded by the time integral of the product of the two coordinate
+`X⁰` masses.  The inputs are joint (spacetime) rather than per-time-point:
+
+* `hsrc` — a.e. strong measurability of the vector source
+  `complexEuclideanPoint (continuousNavierSource u v s ξ)` on `ES ×ˢ Icc 0 t`;
+* `hjoint` — integrability of its weighted vector norm
+  `(ξ, s) ↦ ‖ξ‖⁻¹ · complexEuclideanNorm (continuousNavierSource u v s ξ)`, the
+  spacetime analogue of `ContinuousLeiLinSpace`'s fixed-time `hout`;
+* `hprod` — time integrability of
+  `s ↦ coordinateX0Mass (u s) * coordinateX0Mass (v s)`.
+
+The mathematical step is the causal-strip Fubini argument: the weighted heat
+integrand `L (ξ, s) = ‖ξ‖⁻¹ • heatMode ν (t - s) (source s i) ξ` is dominated
+a.e. on `ES ×ˢ Icc 0 t` by that weighted joint norm, because the multiplier
+`exp (-ν ‖ξ‖² (t - s))` is `≤ 1` exactly where `s ∈ Icc 0 t`, and a coordinate
+norm never exceeds the vector norm.  `integral_prod_symm` then identifies the
+joint integral of `‖L‖` with the time integral of the per-time `X⁻¹` masses,
+and `normXm1_continuousNavierSource_le_coordinateX0Mass` bounds each of them by
+the coordinate-mass product.  Finally `normXm1_setIntegral_le` moves the mass
+outside the Bochner time integral, consuming the joint integrability that
+`normXm1_continuousDuhamel_le` otherwise assumes outright. -/
+theorem normXm1_continuousDuhamel_mass_le_of_jointIntegrable
+    (u v : ℝ → ES → ComplexSpace) (ν t : ℝ) (i : Fin 3) (hν : 0 < ν)
+    (hsrc : AEStronglyMeasurable (fun p : ES × ℝ =>
+        complexEuclideanPoint (continuousNavierSource u v p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hjoint : Integrable (fun p : ES × ℝ => ‖p.1‖⁻¹ *
+        complexEuclideanNorm (continuousNavierSource u v p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hu : ∀ s j, AEStronglyMeasurable (fun η : ES => u s η j))
+    (hv : ∀ s j, AEStronglyMeasurable (fun η : ES => v s η j))
+    (hu0 : ∀ s j, Integrable (fun η : ES => ‖u s η j‖))
+    (hv0 : ∀ s j, Integrable (fun η : ES => ‖v s η j‖))
+    (hprod : Integrable (fun s : ℝ =>
+        coordinateX0Mass (u s) * coordinateX0Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t))) :
+    normXm1 (fun ξ : ES => continuousDuhamel ν u v t ξ i) ≤
+      ∫ s in Icc (0 : ℝ) t, coordinateX0Mass (u s) * coordinateX0Mass (v s) := by
+  set μ : Measure ℝ := volume.restrict (Icc (0 : ℝ) t)
+  have hμ : μ = volume.restrict (Icc (0 : ℝ) t) := rfl
+  have hm1 : MeasurableSet (Icc (0 : ℝ) t) := isClosed_Icc.measurableSet
+  set L : ES × ℝ → ℂ := fun p =>
+    (‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+      (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1 with hLdef
+  set J : ES × ℝ → ℝ := fun p =>
+    ‖p.1‖⁻¹ * complexEuclideanNorm (continuousNavierSource u v p.2 p.1) with hJdef
+  have hJ : Integrable J (volume.prod μ) := hjoint
+  have hcoord : AEStronglyMeasurable (fun p : ES × ℝ =>
+      (continuousNavierSource u v p.2 p.1) i) (volume.prod μ) := by
+    have heq : (fun p : ES × ℝ => (complexEuclideanPoint (continuousNavierSource u v p.2 p.1)) i)
+        = fun p => (continuousNavierSource u v p.2 p.1) i := by
+      funext p
+      exact complexEuclideanPoint_apply _ i
+    rw [← heq]
+    exact (PiLp.continuous_apply 2 (fun _ : Fin 3 => ℂ) i).comp_aestronglyMeasurable hsrc
+  have hw : AEStronglyMeasurable (fun p : ES × ℝ => ‖p.1‖⁻¹) (volume.prod μ) := by
+    rw [hμ]
+    fun_prop
+  have hexp : AEStronglyMeasurable (fun p : ES × ℝ =>
+      Real.exp (-(ν * ‖p.1‖ ^ 2 * (t - p.2)))) (volume.prod μ) := by
+    rw [hμ]
+    fun_prop
+  have heqH : (fun p : ES × ℝ =>
+      heatMode ν (t - p.2) (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1)
+      = fun p => ((Real.exp (-(ν * ‖p.1‖ ^ 2 * (t - p.2))) : ℝ) : ℂ) *
+        (continuousNavierSource u v p.2 p.1) i := by
+    funext p
+    rfl
+  have hH : AEStronglyMeasurable (fun p : ES × ℝ =>
+      heatMode ν (t - p.2) (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1)
+      (volume.prod μ) := by
+    rw [heqH]
+    exact (Complex.continuous_ofReal.comp_aestronglyMeasurable hexp).mul hcoord
+  have hLmeas : AEStronglyMeasurable L (volume.prod μ) := by
+    show AEStronglyMeasurable (fun p : ES × ℝ =>
+        (‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+          (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1) (volume.prod μ)
+    exact hw.smul hH
+  have hcausal : ∀ᵐ p : ES × ℝ ∂(volume.prod μ), p.2 ∈ Icc (0 : ℝ) t := by
+    have hst : volume.prod μ
+        = (volume.prod volume).restrict ((Set.univ : Set ES) ×ˢ Icc (0 : ℝ) t) := by
+      rw [← Measure.prod_restrict (Set.univ : Set ES) (Icc (0 : ℝ) t), hμ]
+      rw [Measure.restrict_univ]
+    rw [hst]
+    filter_upwards [ae_restrict_mem (MeasurableSet.prod MeasurableSet.univ hm1)] with p hp
+    exact hp.2
+  have hbound : ∀ᵐ p : ES × ℝ ∂(volume.prod μ), ‖L p‖ ≤ J p := by
+    filter_upwards [hcausal] with p hp
+    have hτ : 0 ≤ t - p.2 := sub_nonneg.mpr hp.2
+    show ‖(‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+        (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1‖ ≤
+      ‖p.1‖⁻¹ * complexEuclideanNorm (continuousNavierSource u v p.2 p.1)
+    rw [show ‖(‖p.1‖⁻¹ : ℝ) • heatMode ν (t - p.2)
+          (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1‖
+        = ‖p.1‖⁻¹ * ‖heatMode ν (t - p.2) (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1‖
+        from by rw [norm_smul, Real.norm_of_nonneg (weight_nonneg p.1)],
+      heat_integrand ν (t - p.2) (fun ζ : ES => continuousNavierSource u v p.2 ζ i) p.1]
+    refine le_trans (mul_le_mul_of_nonneg_right
+        (exp_le_one_heat ν (t - p.2) ‖p.1‖ hν hτ)
+        (mul_nonneg (weight_nonneg p.1) (norm_nonneg _))) ?_
+    rw [one_mul]
+    refine mul_le_mul_of_nonneg_left ?_ (weight_nonneg p.1)
+    show ‖(continuousNavierSource u v p.2 p.1) i‖ ≤
+      complexEuclideanNorm (continuousNavierSource u v p.2 p.1)
+    refine le_of_eq_of_le (congrArg (fun y : ℂ => ‖y‖)
+      ((complexEuclideanPoint_apply (continuousNavierSource u v p.2 p.1) i).symm)) ?_
+    exact PiLp.norm_apply_le _ i
+  have hbL : Integrable L (volume.prod μ) := hJ.mono' hLmeas hbound
+  have hsec (s : ℝ) :
+      (∫ ξ : ES, ‖L (ξ, s)‖ ∂volume)
+        = normXm1 (heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u v s ζ i)) := by
+    show (∫ ξ : ES, ‖(‖ξ‖⁻¹ : ℝ) • heatMode ν (t - s)
+        (fun ζ : ES => continuousNavierSource u v s ζ i) ξ‖ ∂volume) = _
+    rw [integral_congr_ae (Eventually.of_forall fun ξ => by
+      rw [norm_smul, Real.norm_of_nonneg (weight_nonneg ξ)])]
+    rfl
+  have hA : (∫ s in Icc (0 : ℝ) t,
+        normXm1 (heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u v s ζ i)))
+      = ∫ p : ES × ℝ, ‖L p‖ ∂(volume.prod μ) := by
+    refine Eq.trans (integral_congr_ae (Eventually.of_forall fun s => (hsec s).symm)) ?_
+    exact (integral_prod_symm (fun p : ES × ℝ => ‖L p‖) hbL.norm).symm
+  have hmass : Integrable (fun s : ℝ => ∫ ξ : ES, J (ξ, s) ∂volume) μ := by
+    rw [hμ]
+    exact hJ.integral_prod_right
+  have hmain : (∫ s in Icc (0 : ℝ) t,
+        normXm1 (heatMode ν (t - s) (fun ζ : ES => continuousNavierSource u v s ζ i))) ≤
+      ∫ s in Icc (0 : ℝ) t, coordinateX0Mass (u s) * coordinateX0Mass (v s) := by
+    rw [hA]
+    refine le_trans (integral_mono_ae hbL.norm hJ hbound) ?_
+    rw [integral_prod_symm (fun p : ES × ℝ => J p) hJ]
+    refine integral_mono_ae hmass hprod (Eventually.of_forall fun s => ?_)
+    show (∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierSource u v s ξ) ∂volume) ≤ _
+    exact normXm1_continuousNavierSource_le_coordinateX0Mass u v s hu hv hu0 hv0
+  refine le_trans (normXm1_setIntegral_le
+    (fun s : ℝ => fun ζ : ES => continuousNavierSource u v s ζ i) ν t hbL) hmain
+
+/-- The non-vacuity profile for the Duhamel mass bridge: the estate Sobolev
+weight carried to `ES`, taken in every velocity coordinate. -/
+noncomputable def duhamelMassWitness (ξ : ES) : ComplexSpace :=
+  fun _ => (Navier.Analysis.WeightIntegrability.sobWeight ξ : ℂ)
+
+theorem duhamelMassWitness_coord_aesm (j : Fin 3) :
+    AEStronglyMeasurable (fun ξ : ES => duhamelMassWitness ξ j) :=
+  Complex.continuous_ofReal.comp_aestronglyMeasurable sobWeight_es_aesm
+
+theorem duhamelMassWitness_norm_apply (ξ : ES) (j : Fin 3) :
+    ‖duhamelMassWitness ξ j‖ = Navier.Analysis.WeightIntegrability.sobWeight ξ := by
+  simp [duhamelMassWitness, Navier.Analysis.WeightIntegrability.sobWeight_nonneg]
+
+theorem duhamelMassWitness_coord_integrable (j : Fin 3) :
+    Integrable (fun ξ : ES => ‖duhamelMassWitness ξ j‖) := by
+  have hpt : (fun ξ : ES => ‖duhamelMassWitness ξ j‖)
+      = fun ξ : ES => Navier.Analysis.WeightIntegrability.sobWeight ξ := by
+    funext ξ
+    exact duhamelMassWitness_norm_apply ξ j
+  rw [hpt]
+  exact sobWeight_es_integrable
+
+/-- The coordinate `X⁰` mass of the witness profile is strictly positive: each
+of the three coordinates carries the whole Sobolev mass `weightConst`, which is
+positive. -/
+theorem coordinateX0Mass_duhamelMassWitness_pos :
+    0 < coordinateX0Mass duhamelMassWitness := by
+  have hsum : (fun i : Fin 3 => ∫ ξ : ES, ‖duhamelMassWitness ξ i‖)
+      = fun _ : Fin 3 => Navier.Analysis.FourierMajorant.weightConst := by
+    funext i
+    refine Eq.trans (integral_congr_ae
+      (Eventually.of_forall fun ξ => duhamelMassWitness_norm_apply ξ i)) integral_sobWeight_es
+  rw [coordinateX0Mass, hsum, Finset.sum_const, Finset.card_fin, nsmul_eq_mul]
+  refine mul_pos (by norm_num : (0 : ℝ) < 3) ?_
+  exact Navier.Analysis.FourierMajorant.weightConst_pos
+
+/-- **The bridge at concrete non-degenerate data.**  Instantiated at `ν = 1`,
+`t = 1`, coordinate `0` and the profile trajectory `fun _ => duhamelMassWitness`:
+the joint measurability input comes from
+`ContinuousLeiLinSpace.continuousNavierBilinear_aestronglyMeasurable`, the joint
+weighted integrability from
+`ContinuousLeiLinSpace.integrable_normXm1_continuousNavierBilinear`, and the
+mass-product time integrability is constant in time.  `coordinateX0Mass_duhamelMassWitness_pos`
+and `duhamelMassWindow_volume_pos` show neither side of the estimate degenerates. -/
+theorem normXm1_continuousDuhamel_mass_le_duhamelMassWitness :
+    normXm1 (fun ξ : ES =>
+        continuousDuhamel (1 : ℝ) (fun _ : ℝ => duhamelMassWitness)
+          (fun _ : ℝ => duhamelMassWitness) (1 : ℝ) ξ 0) ≤
+      ∫ _s in Icc (0 : ℝ) (1 : ℝ),
+        coordinateX0Mass duhamelMassWitness * coordinateX0Mass duhamelMassWitness := by
+  have hsm : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => duhamelMassWitness η j) :=
+    duhamelMassWitness_coord_aesm
+  have hs0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖duhamelMassWitness η j‖) :=
+    duhamelMassWitness_coord_integrable
+  refine normXm1_continuousDuhamel_mass_le_of_jointIntegrable
+    (fun _ : ℝ => duhamelMassWitness) (fun _ : ℝ => duhamelMassWitness) (1 : ℝ) (1 : ℝ)
+      (0 : Fin 3) zero_lt_one ?_ ?_ (fun _ j => hsm j) (fun _ j => hsm j)
+      (fun _ j => hs0 j) (fun _ j => hs0 j) ?_
+  · have hpt : AEStronglyMeasurable (fun ξ : ES =>
+        complexEuclideanPoint (continuousNavierBilinear duhamelMassWitness duhamelMassWitness ξ)) :=
+      continuousNavierBilinear_aestronglyMeasurable duhamelMassWitness duhamelMassWitness
+        hsm hsm hs0 hs0
+    simpa [continuousNavierSource] using hpt.comp_fst
+  · have hint : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * complexEuclideanNorm
+        (continuousNavierBilinear duhamelMassWitness duhamelMassWitness ξ)) :=
+      integrable_normXm1_continuousNavierBilinear duhamelMassWitness duhamelMassWitness
+        hsm hsm hs0 hs0
+    simpa [continuousNavierSource] using hint.comp_fst
+      (volume.restrict (Icc (0 : ℝ) (1 : ℝ)))
+  · exact integrable_const _
+
+/-- The Duhamel time window `[0, 1]` of the instantiated bridge has positive
+Lebesgue measure, so its set integral is not an empty-window integral. -/
+theorem duhamelMassWindow_volume_pos : 0 < volume (Icc (0 : ℝ) (1 : ℝ)) := by
+  rw [Real.volume_Icc, ENNReal.ofReal_pos]
+  norm_num
+
+/-- The product of two coordinate `X⁰` masses is the double sum of coordinate
+integral products: this is the majorant shape of
+`ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable`,
+written as a product of sums. -/
+theorem coordinateX0Mass_mul_eq_sum (u v : ES → ComplexSpace) :
+    coordinateX0Mass u * coordinateX0Mass v
+      = ∑ k : Fin 3, ∑ l : Fin 3,
+          (∫ η : ES, ‖u η k‖) * (∫ η : ES, ‖v η l‖) := by
+  show (∑ i : Fin 3, ∫ ξ : ES, ‖u ξ i‖) * ∑ i : Fin 3, ∫ ξ : ES, ‖v ξ i‖ = _
+  rw [Finset.sum_mul]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Finset.mul_sum]
+
+/-- **Compatibility of the bridge with the named Space estimate.**  For profiles
+held fixed in time, the joint mass integrand the bridge consumes is majorized by
+the window measure times the double sum produced by
+`ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable`,
+which this theorem cites by name.  The bridge's per-time input and the
+fixed-time Space estimate therefore agree on the same majorant. -/
+theorem integral_normXm1_continuousNavierSource_le_windowMulSum
+    (u v : ES → ComplexSpace) (t : ℝ)
+    (hu : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => u η j))
+    (hv : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => v η j))
+    (hu0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖u η j‖))
+    (hv0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖v η j‖)) :
+    (∫ s in Icc (0 : ℝ) t, ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm
+        (continuousNavierSource (fun _ : ℝ => u) (fun _ : ℝ => v) s ξ)) ≤
+      ((volume.restrict (Icc (0 : ℝ) t)).real univ) *
+        (∑ k : Fin 3, ∑ l : Fin 3,
+          (∫ η : ES, ‖u η k‖) * (∫ η : ES, ‖v η l‖)) := by
+  have hc : (fun s : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm
+      (continuousNavierSource (fun _ : ℝ => u) (fun _ : ℝ => v) s ξ))
+      = fun _ : ℝ => ∫ ξ : ES, ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierBilinear u v ξ) := by
+    funext s
+    simp only [continuousNavierSource]
+  have hsum : (∑ i : Fin 3, ∑ j : Fin 3, (∫ η : ES, ‖u η j‖) * (∫ η : ES, ‖v η i‖))
+      = ∑ k : Fin 3, ∑ l : Fin 3, (∫ η : ES, ‖u η k‖) * (∫ η : ES, ‖v η l‖) := Finset.sum_comm
+  have hvol : 0 ≤ ((volume.restrict (Icc (0 : ℝ) t)).real univ) := by
+    unfold Measure.real
+    exact ENNReal.toReal_nonneg
+  rw [hc, integral_const, smul_eq_mul]
+  refine mul_le_mul_of_nonneg_left ?_ hvol
+  rw [← hsum]
+  exact normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable u v hu hv hu0 hv0
+
+/-- **The bridge at time-independent data.**  For profiles `u v : ES →
+ComplexSpace` held fixed in time, the `X⁻¹` mass of the time-dependent Bochner
+representative is bounded by the window measure times the same double sum that
+`ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable`
+gives for the fixed-time bilinear source: the `ContinuousLeiLinSpace` Duhamel
+leaf now inherits that majorant through
+`normXm1_continuousDuhamel_mass_le_of_jointIntegrable`. -/
+theorem normXm1_continuousDuhamel_mass_le_of_aestronglyMeasurable
+    (u v : ES → ComplexSpace) (ν t : ℝ) (i : Fin 3) (hν : 0 < ν)
+    (hu : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => u η j))
+    (hv : ∀ j : Fin 3, AEStronglyMeasurable (fun η : ES => v η j))
+    (hu0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖u η j‖))
+    (hv0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖v η j‖)) :
+    normXm1 (fun ξ : ES =>
+        continuousDuhamel ν (fun _ : ℝ => u) (fun _ : ℝ => v) t ξ i) ≤
+      ((volume.restrict (Icc (0 : ℝ) t)).real univ) *
+        (∑ k : Fin 3, ∑ l : Fin 3,
+          (∫ η : ES, ‖u η k‖) * (∫ η : ES, ‖v η l‖)) := by
+  refine le_trans
+    (normXm1_continuousDuhamel_mass_le_of_jointIntegrable (fun _ : ℝ => u) (fun _ : ℝ => v)
+      ν t i hν ?_ ?_ (fun _ j => hu j) (fun _ j => hv j) (fun _ j => hu0 j) (fun _ j => hv0 j) ?_)
+    ?_
+  · have hpt : AEStronglyMeasurable (fun ξ : ES =>
+        complexEuclideanPoint (continuousNavierBilinear u v ξ)) :=
+      continuousNavierBilinear_aestronglyMeasurable u v hu hv hu0 hv0
+    simpa [continuousNavierSource] using hpt.comp_fst
+  · have hint : Integrable (fun ξ : ES => ‖ξ‖⁻¹ * complexEuclideanNorm
+        (continuousNavierBilinear u v ξ)) :=
+      integrable_normXm1_continuousNavierBilinear u v hu hv hu0 hv0
+    simpa [continuousNavierSource] using hint.comp_fst (volume.restrict (Icc (0 : ℝ) t))
+  · exact integrable_const _
+  · rw [integral_const, smul_eq_mul, coordinateX0Mass_mul_eq_sum u v]
+
+/-- The window corollary at the witness profile: `ν = 1`, `t = 1`, coordinate
+`0`, the Sobolev-weight trajectory.  The window factor is the measure of
+`Icc 0 1` and the double sum is `weightConst ^ 2` by
+`coordinateX0Mass_duhamelMassWitness_pos`. -/
+theorem normXm1_continuousDuhamel_window_mass_le_duhamelMassWitness :
+    normXm1 (fun ξ : ES =>
+        continuousDuhamel (1 : ℝ) (fun _ : ℝ => duhamelMassWitness)
+          (fun _ : ℝ => duhamelMassWitness) (1 : ℝ) ξ 0) ≤
+      ((volume.restrict (Icc (0 : ℝ) (1 : ℝ))).real univ) *
+        (∑ k : Fin 3, ∑ l : Fin 3,
+          (∫ η : ES, ‖duhamelMassWitness η k‖) *
+            (∫ η : ES, ‖duhamelMassWitness η l‖)) :=
+  normXm1_continuousDuhamel_mass_le_of_aestronglyMeasurable duhamelMassWitness
+    duhamelMassWitness (1 : ℝ) (1 : ℝ) (0 : Fin 3) zero_lt_one
+    duhamelMassWitness_coord_aesm duhamelMassWitness_coord_aesm
+    duhamelMassWitness_coord_integrable duhamelMassWitness_coord_integrable
+
 end Navier.Analysis.ContinuousLeiLinDissipation
 
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.heatVec
@@ -637,3 +989,14 @@ end Navier.Analysis.ContinuousLeiLinDissipation
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_le
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_self_le_source
 #print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_self_le_coordinateXm1X1
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_mass_le_of_jointIntegrable
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.duhamelMassWitness_coord_aesm
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.duhamelMassWitness_norm_apply
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.duhamelMassWitness_coord_integrable
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.coordinateX0Mass_duhamelMassWitness_pos
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_mass_le_duhamelMassWitness
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.duhamelMassWindow_volume_pos
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.coordinateX0Mass_mul_eq_sum
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.integral_normXm1_continuousNavierSource_le_windowMulSum
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_mass_le_of_aestronglyMeasurable
+#print axioms Navier.Analysis.ContinuousLeiLinDissipation.normXm1_continuousDuhamel_window_mass_le_duhamelMassWitness

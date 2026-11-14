@@ -787,8 +787,17 @@ theorem fourier_schwartz_coordinate_aestronglyMeasurable
   ((𝓕 (f i) : SchwartzMap ES ℂ).continuous).aestronglyMeasurable
 
 /-- The integrated continuous vector bilinear estimate.  `hout` is stated
-explicitly because this module proves the symbol estimate; constructing the
-time-dependent Bochner representative is the next Duhamel leaf. -/
+explicitly because this module proves the symbol estimate.  The time-dependent
+Bochner representative is constructed downstream:
+`Navier.Analysis.ContinuousLeiLinDissipation` now owns it —
+`normXm1_continuousDuhamel_mass_le_of_jointIntegrable` bounds
+`normXm1 (fun ξ => continuousDuhamel ν u v t ξ i)` by the time integral of the
+coordinate-mass product, consuming this family's
+`normXm1_continuousNavierSource_le_coordinateX0Mass`
+(`ContinuousLeiLinTimeDuhamel`) at each time, and
+`normXm1_continuousDuhamel_mass_le_of_aestronglyMeasurable` carries the same
+double-sum majorant to profiles held fixed in time, citing
+`normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable` below. -/
 theorem normXm1_continuousNavierBilinear_mass_le
     (u v : ES → ComplexSpace)
     (hu0 : ∀ j : Fin 3, Integrable (fun η : ES => ‖u η j‖))

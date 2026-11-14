@@ -281,6 +281,44 @@ theorem hasDerivWithinAt_zero_continuousMildImage (ν : ℝ) (hν : 0 < ν)
   ext i
   simp only [Pi.smul_apply, Pi.add_apply]
 
+/-- **The mass bridge in this module's interval-integral form.**  Transporting
+`ContinuousLeiLinDissipation.normXm1_continuousDuhamel_mass_le_of_jointIntegrable`
+through the pull-out identity `continuousDuhamel_coord_eq` gives the same
+`X⁻¹` majorant for `ξ ↦ exp (-ν‖ξ‖²t) · ∫ s in (0)..t, weightedSource ν u v ξ i s`
+— the representation whose time derivative this file proves.  For `t ≥ 0` the
+`X⁻¹` mass of that curve is bounded by the time integral of the coordinate-mass
+product, so every consumer of the interval form inherits the bridge. -/
+theorem normXm1_weightedSourceIntegral_le_of_jointIntegrable
+    (u v : ℝ → ES → ComplexSpace) (ν t : ℝ) (hν : 0 < ν) (ht : 0 ≤ t) (i : Fin 3)
+    (hsrc : AEStronglyMeasurable (fun p : ES × ℝ =>
+        Navier.Analysis.ComplexLerayNorm.complexEuclideanPoint
+          (continuousNavierSource u v p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hjoint : Integrable (fun p : ES × ℝ => ‖p.1‖⁻¹ *
+        Navier.Analysis.ComplexLerayNorm.complexEuclideanNorm
+          (continuousNavierSource u v p.2 p.1))
+        (volume.prod (volume.restrict (Icc (0 : ℝ) t))))
+    (hu : ∀ s j, AEStronglyMeasurable (fun η : ES => u s η j))
+    (hv : ∀ s j, AEStronglyMeasurable (fun η : ES => v s η j))
+    (hu0 : ∀ s j, Integrable (fun η : ES => ‖u s η j‖))
+    (hv0 : ∀ s j, Integrable (fun η : ES => ‖v s η j‖))
+    (hprod : Integrable (fun s : ℝ =>
+        coordinateX0Mass (u s) * coordinateX0Mass (v s))
+        (volume.restrict (Icc (0 : ℝ) t))) :
+    normXm1 (fun ξ : ES =>
+        ((Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) *
+          ∫ s in (0 : ℝ)..t, weightedSource ν u v ξ i s) ≤
+      ∫ s in Icc (0 : ℝ) t, coordinateX0Mass (u s) * coordinateX0Mass (v s) := by
+  have heqfn : (fun ξ : ES =>
+        ((Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) *
+          ∫ s in (0 : ℝ)..t, weightedSource ν u v ξ i s)
+      = fun ξ : ES => continuousDuhamel ν u v t ξ i := by
+    funext ξ
+    exact (continuousDuhamel_coord_eq ν u v t ht ξ i).symm
+  rw [heqfn]
+  exact normXm1_continuousDuhamel_mass_le_of_jointIntegrable
+    u v ν t i hν hsrc hjoint hu hv hu0 hv0 hprod
+
 end Navier.Analysis.ContinuousLeiLinFrequencyODE
 
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivAt_coe_exp_neg
@@ -294,3 +332,4 @@ end Navier.Analysis.ContinuousLeiLinFrequencyODE
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivWithinAt_zero_continuousDuhamel_coord
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivWithinAt_zero_continuousMildImage_coord
 #print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.hasDerivWithinAt_zero_continuousMildImage
+#print axioms Navier.Analysis.ContinuousLeiLinFrequencyODE.normXm1_weightedSourceIntegral_le_of_jointIntegrable
