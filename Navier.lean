@@ -354,6 +354,8 @@ import Navier.Analysis.ContinuationEstimateProof
 import Navier.Analysis.OsgoodUniformBound
 import Navier.Analysis.OsgoodDivergenceBridge
 import Navier.Analysis.OsgoodEnvelopeTransfer
+import Navier.Construction.BoundedScheduleWitness
+import Navier.Analysis.BKMEnvBoundedSchedule
 
 /-!
 # Navier
