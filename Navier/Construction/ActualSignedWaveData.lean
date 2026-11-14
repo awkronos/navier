@@ -15,6 +15,7 @@ import Navier.Construction.ActualSignedFamilySupport
 import Navier.Construction.ActualSignedNativeRegularity
 import Navier.Construction.ActualSignedNativeBounds
 import Navier.Construction.GluedStageEstimates
+open Navier.Construction.ActualSignedFamilySupport
 
 /-!
 # Physical wave data for the actual signed cycle fields
@@ -203,49 +204,39 @@ noncomputable def originalPressureCarrier :
       exact hc.elim
     exact hj
 
-/-- The actual assembled copies, extended by zero outside positive lift
-time. Their fields agree with the original signed fields before t=1. -/
-noncomputable def potentialCopies (i : Fin 3) : CopyFamily 1 TorusInverse.Frequency :=
-  PositiveTimeCopyFamily.gate
-    ((ActualSignedExterior.family s).potentialCopies slots outgoing.data.h_pos.le i)
-
-noncomputable def pressureCopies : CopyFamily 1 TorusInverse.Frequency :=
-  PositiveTimeCopyFamily.gate
-    ((ActualSignedExterior.family s).pressureCopies slots outgoing.data.h_pos.le)
-
-noncomputable def potentialCells (i : Fin 3) : SupportCells (potentialCopies s i) :=
+noncomputable def potentialCells (i : Fin 3) : SupportCells (Navier.Construction.ActualSignedFamilySupport.potentialCopies s i) :=
   PositiveTimeCopyFamily.gateCells (originalPotentialCells s i)
 
-noncomputable def pressureCells : SupportCells (pressureCopies s) :=
+noncomputable def pressureCells : SupportCells (Navier.Construction.ActualSignedFamilySupport.pressureCopies s) :=
   PositiveTimeCopyFamily.gateCells (originalPressureCells s)
 
 noncomputable def potentialCarrier (i : Fin 3) :
-    CarrierBounds (potentialCopies s i) (potentialCells s i)
+    CarrierBounds (Navier.Construction.ActualSignedFamilySupport.potentialCopies s i) (potentialCells s i)
       ActualPolarCoverage.inner ActualPolarCoverage.outer h slots.radius :=
   PositiveTimeCopyFamily.gateCarrier (originalPotentialCells s i) (originalPotentialCarrier s i)
 
 noncomputable def pressureCarrier :
-    CarrierBounds (pressureCopies s) (pressureCells s)
+    CarrierBounds (Navier.Construction.ActualSignedFamilySupport.pressureCopies s) (pressureCells s)
       ActualPolarCoverage.inner ActualPolarCoverage.outer h slots.radius :=
   PositiveTimeCopyFamily.gateCarrier (originalPressureCells s) (originalPressureCarrier s)
 
 theorem potential_field_eq {w : SpaceTime} (hw : w ∈ preterminal) :
-    vectorSum (potentialCopies s) ActualPolarCoverage.inner h slots.radius w =
+    vectorSum (Navier.Construction.ActualSignedFamilySupport.potentialCopies s) ActualPolarCoverage.inner h slots.radius w =
       ActualSignedExterior.potential s w :=
   PositiveTimeCopyFamily.vectorSum_eq _ _ _ _ hw
 
 theorem pressure_field_eq {w : SpaceTime} (hw : w ∈ preterminal) :
-    ((pressureCopies s).sum ActualPolarCoverage.inner h slots.radius w).re =
+    ((Navier.Construction.ActualSignedFamilySupport.pressureCopies s).sum ActualPolarCoverage.inner h slots.radius w).re =
       ActualSignedExterior.pressure s w :=
   congrArg Complex.re (PositiveTimeCopyFamily.sum_eq _ _ _ _ hw)
 
 theorem potential_field_germ {w : SpaceTime} (hw : w ∈ preterminal) :
-    vectorSum (potentialCopies s) ActualPolarCoverage.inner h slots.radius =ᶠ[𝓝 w]
+    vectorSum (Navier.Construction.ActualSignedFamilySupport.potentialCopies s) ActualPolarCoverage.inner h slots.radius =ᶠ[𝓝 w]
       ActualSignedExterior.potential s :=
   PositiveTimeCopyFamily.vectorSum_germ _ _ _ _ hw
 
 theorem pressure_field_germ {w : SpaceTime} (hw : w ∈ preterminal) :
-    (fun w => ((pressureCopies s).sum ActualPolarCoverage.inner h slots.radius w).re) =ᶠ[𝓝 w]
+    (fun w => ((Navier.Construction.ActualSignedFamilySupport.pressureCopies s).sum ActualPolarCoverage.inner h slots.radius w).re) =ᶠ[𝓝 w]
       ActualSignedExterior.pressure s := by
   filter_upwards [PositiveTimeCopyFamily.sum_germ
     ((ActualSignedExterior.family s).pressureCopies slots outgoing.data.h_pos.le)
@@ -273,11 +264,11 @@ theorem singleton_frequencies_of_states
     ((ActualSignedExterior.actualLabel L).2, (ActualSignedExterior.actualLabel L).1)
 
 theorem potential_frequencies (i : Fin 3) (k : TorusInverse.Frequency) (L : BandLabel) :
-    |((potentialCopies s i).carrier k L).angular| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
-    |((potentialCopies s i).carrier k L).axial| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
-    |((potentialCopies s i).carrier k L).radial| ≤ ActualPhaseJetBounds.phaseSize B N0 := by
+    |((Navier.Construction.ActualSignedFamilySupport.potentialCopies s i).carrier k L).angular| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
+    |((Navier.Construction.ActualSignedFamilySupport.potentialCopies s i).carrier k L).axial| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
+    |((Navier.Construction.ActualSignedFamilySupport.potentialCopies s i).carrier k L).radial| ≤ ActualPhaseJetBounds.phaseSize B N0 := by
   classical
-  have he : (potentialCopies s i).carrier k L =
+  have he : (Navier.Construction.ActualSignedFamilySupport.potentialCopies s i).carrier k L =
       ((ActualSignedExterior.family s).copyAt
         (fun M => ActualSignedPhysicalData.potentialFamily slots outgoing.data.h_pos.le
           ((ActualSignedExterior.family s).singleton M) i) L).carrier k L := rfl
@@ -296,11 +287,11 @@ theorem potential_frequencies (i : Fin 3) (k : TorusInverse.Frequency) (L : Band
       by simpa [DependentSignedPhysicalFamily.zeroCopies] using hP⟩
 
 theorem pressure_frequencies (k : TorusInverse.Frequency) (L : BandLabel) :
-    |((pressureCopies s).carrier k L).angular| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
-    |((pressureCopies s).carrier k L).axial| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
-    |((pressureCopies s).carrier k L).radial| ≤ ActualPhaseJetBounds.phaseSize B N0 := by
+    |((Navier.Construction.ActualSignedFamilySupport.pressureCopies s).carrier k L).angular| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
+    |((Navier.Construction.ActualSignedFamilySupport.pressureCopies s).carrier k L).axial| ≤ ActualPhaseJetBounds.phaseSize B N0 ∧
+    |((Navier.Construction.ActualSignedFamilySupport.pressureCopies s).carrier k L).radial| ≤ ActualPhaseJetBounds.phaseSize B N0 := by
   classical
-  have he : (pressureCopies s).carrier k L =
+  have he : (Navier.Construction.ActualSignedFamilySupport.pressureCopies s).carrier k L =
       ((ActualSignedExterior.family s).copyAt
         (fun M => ActualSignedPhysicalData.pressureFamily slots outgoing.data.h_pos.le
           ((ActualSignedExterior.family s).singleton M)) L).carrier k L := rfl
@@ -413,7 +404,7 @@ noncomputable def potentialOfNative
   weight := potentialWeight
   source := potentialSource s
   source_bounds := potential_source_bounds s hs
-  copies := potentialCopies s
+  copies := Navier.Construction.ActualSignedFamilySupport.potentialCopies s
   cells := potentialCells s
   chart i := PositiveTimeSignedData.identitySourceChart _ (originalPotentialCells s i)
     ActualPolarCoverage.inner_pos (ActualSignedFamilySupport.potential_support s hgeo i)
@@ -450,7 +441,7 @@ noncomputable def pressureOfNative
   weight := sourceWeight
   source := pressureSource s
   source_bounds := pressure_source_bounds s hs
-  copies _ := pressureCopies s
+  copies _ := Navier.Construction.ActualSignedFamilySupport.pressureCopies s
   cells _ := pressureCells s
   chart _ := PositiveTimeSignedData.identitySourceChart _ (originalPressureCells s)
     ActualPolarCoverage.inner_pos (ActualSignedFamilySupport.pressure_support s hgeo)

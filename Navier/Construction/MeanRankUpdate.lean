@@ -1134,16 +1134,6 @@ end FinalClass
 
 section ShapedPatch
 
-theorem square_half_power (lam R : ℝ) (hR : 0 < R) :
-    (R ^ 2 / 2) ^ (-(1 / 2 + lam)) =
-      (2 : ℝ) ^ (1 / 2 + lam) * R ^ (-1 - 2 * lam) := by
-  have hX : 0 < R ^ 2 / 2 := by positivity
-  rw [Real.rpow_def_of_pos hX, Real.rpow_def_of_pos (by norm_num : (0 : ℝ) < 2),
-    Real.rpow_def_of_pos hR, ← Real.exp_add,
-    Real.log_div (pow_ne_zero 2 hR.ne') (by norm_num), Real.log_pow]
-  congr 1
-  ring
-
 /-- The physical radial profile is the manuscript's `X^(-1/2-λ)` profile,
 where `X = r²/(2q)`, including the factor of two in its amplitude. -/
 theorem background_eq_shaped_profile {q r : ℝ} (hq : 0 < q) (hr : 0 < r)
@@ -1153,7 +1143,7 @@ theorem background_eq_shaped_profile {q r : ℝ} (hq : 0 < q) (hr : 0 < r)
   have hX : r ^ 2 / (2 * q) = (r / Real.sqrt q) ^ 2 / 2 := by
     rw [div_pow, Real.sq_sqrt hq.le]
     ring
-  rw [hX, square_half_power lam _ (div_pos hr (Real.sqrt_pos.mpr hq))]
+  rw [hX, Navier.Construction.ReservedPatches.square_half_power lam _ (div_pos hr (Real.sqrt_pos.mpr hq))]
   unfold background scaleField FiveRowRank.background
   ring
 

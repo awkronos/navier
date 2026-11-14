@@ -144,10 +144,6 @@ theorem exact_pressure_angle (l : Index B N0) :
     ((ActualPrimary.chartCoefficients_angular l.2 l.1).corrected_pressure
       (BaseContextAssembly.nativeStrip ActualPrimary.nominal ActualPrimary.standardRegion) (ActualPrimary.commonContext B) n) x theta
 
-theorem tangent_amplitude_angle (l : Index B N0) :
-    ErrorHarmonics.AngleIndependent
-      ((primaryPiece l).coefficients.withCutoff (primaryPiece l).cutoff).amplitude := fun _ _ _ => rfl
-
 theorem primaryBlock_represents (l : Index B N0) :
     (primaryBlock l).oscillation = (primaryPiece l).velocity ∧
       (primaryBlock l).oscillatoryPressure = (primaryPiece l).pressure :=
@@ -159,26 +155,16 @@ theorem tangentBlock_represents (l : Index B N0) :
   funext n x i
   exact PrimaryHarmonics.block_velocity_represents
     ((primaryPiece l).coefficients.withCutoff (primaryPiece l).cutoff)
-    (phase l) (angularMode l) (tangent_amplitude_angle l) (phase_split l) n x i
+    (phase l) (angularMode l) (Navier.Construction.ActualInitialMean.tangent_amplitude_angle l) (phase_split l) n x i
 
 theorem curlBlock_represents (l : Index B N0) :
     (curlBlock l).oscillation = (primaryPiece l).velocity - (primaryPiece l).tangentVelocity :=
   (primaryPiece l).differenceBlock_represents (phase l) (angularMode l)
-    (exact_amplitude_angle l) (tangent_amplitude_angle l) (phase_split l)
+    (exact_amplitude_angle l) (Navier.Construction.ActualInitialMean.tangent_amplitude_angle l) (phase_split l)
 
 theorem gaussianBlock_represents (l : Index B N0) :
     (gaussianBlock l).oscillation = (primaryPiece l).excluded :=
   (primaryPiece l).excludedBlock_represents (phase l) (angularMode l)
-    (cutoff_smooth l) (cutoff_angle l) (amplitude_angle l) (phase_split l)
-
-theorem gaussian_mean_zero (l : Index B N0) :
-    CorrectionStep.angularMeanVector (primaryPiece l).excluded = 0 :=
-  (primaryPiece l).excluded_mean_zero (phase l) (angularMode l) (angularMode_ne_zero l)
-    (cutoff_smooth l) (cutoff_angle l) (amplitude_angle l) (phase_split l)
-
-theorem gaussian_angularContinuous (l : Index B N0) :
-    CorrectionStep.AngularContinuous (primaryPiece l).excluded :=
-  (primaryPiece l).excluded_angularContinuous (phase l) (angularMode l)
     (cutoff_smooth l) (cutoff_angle l) (amplitude_angle l) (phase_split l)
 
 theorem primaryBlock_band (l : Index B N0) : (primaryBlock l).BandLimited 1 :=

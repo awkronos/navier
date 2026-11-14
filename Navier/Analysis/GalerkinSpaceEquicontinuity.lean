@@ -138,25 +138,11 @@ theorem schwartz_norm_sq_decay {F : Type*} [NormedAddCommGroup F] [NormedSpace �
         add_le_add (pow_le_pow_left₀ (norm_nonneg _) (h0 x) 2)
           (mul_le_mul (h4 x) (h0 x) (norm_nonneg _) hC4pos.le)
 
-/-- The quadratic Bessel weight is integrable on `Space = ℝ³` (dimension 3 <
-4).  Self-contained copy of the short `BKMLogBootstrap` proof, inlined to
-decouple this file's build from that module. -/
-theorem integrable_inv_one_add_normSq_sq :
-    Integrable (fun ξ : Space => (((1 : ℝ) + ‖ξ‖ ^ 2) ^ 2)⁻¹) := by
-  have hr : (Module.finrank ℝ Space : ℝ) < 4 := by
-    have h3 : Module.finrank ℝ Space = 3 := by simp
-    rw [h3]; norm_num
-  refine (integrable_rpow_neg_one_add_norm_sq (E := Space) (μ := volume)
-    (r := 4) hr).congr ?_
-  filter_upwards with ξ
-  rw [show (-4 : ℝ) / 2 = -(2 : ℕ) by norm_num, Real.rpow_neg (by positivity),
-    Real.rpow_natCast]
-
 /-- The quartic Bessel weight is integrable on `Space = ℝ³`:
 `(1 + ‖x‖⁴)⁻¹ ≤ 2·(1 + ‖x‖²)⁻²` since `(1 + t²)² ≤ 2(1 + t⁴)`. -/
 theorem integrable_inv_one_add_norm_four :
     Integrable (fun x : Space => ((1 : ℝ) + ‖x‖ ^ 4)⁻¹) := by
-  refine (integrable_inv_one_add_normSq_sq.const_mul 2).mono'
+  refine (Navier.Analysis.BealeKatoMajda.integrable_inv_one_add_normSq_sq.const_mul 2).mono'
     (((Continuous.const_add (continuous_norm.pow 4) (1 : ℝ)).inv₀
       (fun x => ne_of_gt (by positivity : (0 : ℝ) < 1 + ‖x‖ ^ 4))).aestronglyMeasurable)
     (Filter.Eventually.of_forall fun x => ?_)

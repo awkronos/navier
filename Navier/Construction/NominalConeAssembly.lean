@@ -531,14 +531,6 @@ theorem scaled_affine_quotient {R : ℝ} (hR : R ≠ 0) (a b u v x : ℝ) :
   rw [show a * (R * u) - b * (R * v) = R * (a * u - b * v) by ring,
     mul_div_mul_left _ _ hR]
 
-theorem shear_dilation_cancel {r z f : ℝ} (hr : r ≠ 0) (hz : z ≠ 0) (hf : f ≠ 0)
-    (X df : ℝ) :
-    -2 * X * df / f = 1 - 2 * (r * (z * (1 / 2)) * f + r * z * (df * X)) / (r * z * f) := by
-  rw [show (2 : ℝ) * (r * (z * (1 / 2)) * f + r * z * (df * X)) =
-    (r * z) * (f + 2 * df * X) by ring,
-    mul_div_mul_left _ _ (mul_ne_zero hr hz)]
-  field_simp [hf] ; ring
-
 /-- The logarithmic radial chart changes actual derivatives, not independent
 formal jets. This statement is also valid for the matching profile before
 the heat splice. -/
@@ -563,7 +555,7 @@ theorem physical_log_shears {D : RadialDomain} (P : Profiles D) {R : ℝ}
     change -2 * (R * Real.exp p.1) * radialPartial P.f (chart R p) / P.f (chart R p) = _
     rw [show P.E (chart R p) = (Real.sqrt (2 * R) * Real.exp (p.1 / 2)) * P.f (chart R p) from
       congrArg (fun t => t * P.f (chart R p)) (sqrt_chart hR p.1)]
-    exact shear_dilation_cancel (Real.sqrt_pos.2 (by positivity)).ne'
+    exact Navier.Construction.RepairConeBounds.shear_dilation_cancel (Real.sqrt_pos.2 (by positivity)).ne'
       (Real.exp_ne_zero _) hf _ _
   · rw [hud.deriv]
     unfold ActivationContinuation.shearB
@@ -757,7 +749,7 @@ theorem log_shears {p : Point} (hp : W.controls.heatJoin < (chart W.controls.rad
   · rw [HeatSwitchCone.radialA, hEder.deriv, heq.eq_of_nhds]
     unfold ActivationContinuation.shearA
     simp only [chart, id_eq, Function.comp_apply]
-    exact shear_dilation_cancel hr (Real.exp_ne_zero _) hf.ne' _ _
+    exact Navier.Construction.RepairConeBounds.shear_dilation_cancel hr (Real.exp_ne_zero _) hf.ne' _ _
   · rw [HeatSwitchCone.radialB, OutgoingHistories.dY_eq_deriv F.logU_contDiff, hUder.deriv]
     unfold ActivationContinuation.shearB
     rw [(log_fields W hp heta).2.1]

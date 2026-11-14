@@ -149,10 +149,6 @@ noncomputable def copyAmplitude (l : SignedLabel B N0) (k : Frequency) (n : ℕ)
     (x : Point) : ComplexVector :=
   copied (CoordinateAlgebra.A ActualPrimary.h) cutNativeVelocity l n k (nativeOfFull x)
 
-noncomputable def copyPressureCoefficient (l : SignedLabel B N0) (k : Frequency) (n : ℕ)
-    (x : Point) : ℂ :=
-  copied (2 * CoordinateAlgebra.A ActualPrimary.h) cutNativePressure l n k (nativeOfFull x)
-
 noncomputable def copyPotentialCoefficient (l : SignedLabel B N0) (k : Frequency) (n : ℕ)
     (x : Point) : ComplexVector :=
   CurlClassBounds.inverseCarrier ((cutCoefficients l).frequency n) •
@@ -191,7 +187,7 @@ theorem copyPotential_zero_germ (l : SignedLabel B N0) (k : Frequency) (n : ℕ)
 
 theorem copyPressure_germ (l : SignedLabel B N0) (k : Frequency) (n : ℕ) {x : Point}
     (hx : x ∈ fullStrip.domain) (hk : nativeOfFull x ∈ (copyCells l).carrier n k) :
-    copyPressureCoefficient l k n =ᶠ[𝓝 x] (cutCoefficients l).pressure n := by
+    Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k n =ᶠ[𝓝 x] (cutCoefficients l).pressure n := by
   have he := (PeriodizedWaveBounds.copySum_germ (copyCells l) n
     (copied (2 * CoordinateAlgebra.A ActualPrimary.h) cutNativePressure l n)
     (copied_support _ _ cut_native_pressure_support l n) hk).comp_tendsto
@@ -200,7 +196,7 @@ theorem copyPressure_germ (l : SignedLabel B N0) (k : Frequency) (n : ℕ) {x : 
 
 theorem copyPressure_zero_germ (l : SignedLabel B N0) (k : Frequency) (n : ℕ) {x : Point}
     (hk : nativeOfFull x ∉ (copyCells l).carrier n k) :
-    copyPressureCoefficient l k n =ᶠ[𝓝 x] fun _ => 0 :=
+    Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k n =ᶠ[𝓝 x] fun _ => 0 :=
   (PeriodizedWaveBounds.zero_germ_of_support ((copyCells l).closed n k)
     (copied_support _ _ cut_native_pressure_support l n k) hk).comp_tendsto
       nativeOfFull.continuous.continuousAt
@@ -218,7 +214,7 @@ theorem copyPotential_uniform :
 theorem copyPressure_uniform :
     LabelSumBounds.UniformWaveClass fullStrip
       (fun i : SignedLabel B N0 × Frequency => fullEnvelope i.1) 1
-      (fun i => copyPressureCoefficient i.1 i.2) := by
+      (fun i => Navier.Construction.InitialNativeRegularity.copyPressureCoefficient i.1 i.2) := by
   apply uniform_of_germ_or_zero (chart_cut_pressure_uniform.reindex Prod.fst)
   intro i n x hx
   by_cases hk : nativeOfFull x ∈ (copyCells i.1).carrier n i.2
@@ -348,7 +344,7 @@ noncomputable def nativePotentialSource (B N0 : ℕ) : SourceIndex → ℕ → L
   sourceFamily (fun (l : SignedLabel B N0 × Frequency) n x => copyPotentialCoefficient l.1 l.2 n (x, 0))
 
 noncomputable def nativePressureSource (B N0 : ℕ) : SourceIndex → ℕ → LocalSignedRequest.Point → ℂ :=
-  sourceFamily (fun (l : SignedLabel B N0 × Frequency) n x => copyPressureCoefficient l.1 l.2 n (x, 0))
+  sourceFamily (fun (l : SignedLabel B N0 × Frequency) n x => Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l.1 l.2 n (x, 0))
 
 theorem nativePotentialSource_uniform :
     LabelSumBounds.UniformClass strip (fun (_ : SourceIndex) _ x => Real.sqrt (strip.zeta x)) 1
@@ -534,9 +530,9 @@ theorem copyAmplitude_nativeAt (l : SignedLabel B N0) (k : Frequency) (x : LiftP
   rfl
 
 theorem copyPressure_nativeAt (l : SignedLabel B N0) (k : Frequency) (x : LiftPoint) :
-    copyPressureCoefficient l k (BaseChartJets.cellBand l.2) (PhysicalClassBounds.cylindricalMap x, 0) =
+    Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2) (PhysicalClassBounds.cylindricalMap x, 0) =
       cutNativePressure l (nativeAt (bandLabel l) k x) := by
-  rw [copyPressureCoefficient, copied_self]
+  rw [Navier.Construction.InitialNativeRegularity.copyPressureCoefficient, copied_self]
   rfl
 
 theorem sourceFamily_nonzero {E : Type} [Zero E]
@@ -1396,7 +1392,7 @@ theorem cut_amplitude_self (l : SignedLabel B N0) (x : Point) :
 
 theorem cut_pressure_self (l : SignedLabel B N0) (x : Point) :
     (cutCoefficients l).pressure (BaseChartJets.cellBand l.2) x =
-      ∑' k, copyPressureCoefficient l k (BaseChartJets.cellBand l.2) x := by
+      ∑' k, Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2) x := by
   let m := BaseChartJets.cellBand l.2
   have hn : near l m := near_self l
   have hu : periodized (2 * CoordinateAlgebra.A ActualPrimary.h)
@@ -1432,7 +1428,7 @@ theorem nativePotentialSource_active (l : SignedLabel B N0) (k : Frequency) :
 
 theorem nativePressureSource_active (l : SignedLabel B N0) (k : Frequency) :
     nativePressureSource B N0 (positiveIndex l, k) (BaseChartJets.cellBand l.2) =
-      fun x => copyPressureCoefficient l k (BaseChartJets.cellBand l.2) (x, 0) := by
+      fun x => Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2) (x, 0) := by
   have hl : bandLabel l ∈ active (B := B) (N0 := N0) := ⟨l, rfl⟩
   apply sourceFamily_eq_some _ _ _ rfl (l, k)
   simp only [sourceChoice, positiveIndex, ActualSignedPhysicalData.positiveIndex,
@@ -1500,7 +1496,7 @@ theorem copyPotential_fast (l : SignedLabel B N0) (k : Frequency) {x : Point}
   exact hc
 
 theorem copyPressure_fast (l : SignedLabel B N0) (k : Frequency) {x : Point}
-    (hx : copyPressureCoefficient l k (BaseChartJets.cellBand l.2) x ≠ 0) :
+    (hx : Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2) x ≠ 0) :
     (geometry (bandLabel l)).coordinates k x.1.2.2 ∈ (ActualPrimary.clockWindow l.2).core := by
   have hc : nativeOfFull x ∈ (copyCells l).carrier (BaseChartJets.cellBand l.2) k := by
     by_contra hc
@@ -1528,7 +1524,7 @@ theorem pressure_amplitude_active (l : SignedLabel B N0) (k : Frequency)
     (x : LiftPoint) (ht : 0 < x.1.1) :
     (pressureFamily B N0).amplitude k (positiveIndex l) x =
       ChartScales.Q (BaseChartJets.cellBand l.2) ^ (-(2 * CoordinateAlgebra.A ActualPrimary.h)) •
-        copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
+        Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
           (PhysicalClassBounds.cylindricalMap x, 0) := by
   simp only [pressureFamily, if_pos ht, positiveIndex_band, nativePressureSource_active]
 
@@ -1599,7 +1595,7 @@ theorem pressure_commonWave (l : SignedLabel B N0) (k : Frequency)
       (gap (bandLabel l)) ActualPrimary.slots.radius ((selectedCarrier l k).withChart j)
       ((pressureFamily B N0).amplitude k (positiveIndex l)) 1 w =
       (ChartScales.Q (BaseChartJets.cellBand l.2) ^ (-(2 * CoordinateAlgebra.A ActualPrimary.h)) •
-        copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
+        Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
           (PhysicalMeanJetBounds.graph ActualPrimary.h (BaseChartJets.cellBand l.2) (gap (bandLabel l)) w, 0)) *
       HarmonicCalculus.carrier ((cutCoefficients l).frequency (BaseChartJets.cellBand l.2))
         ((cutCoefficients l).phase (BaseChartJets.cellBand l.2))
@@ -1609,7 +1605,7 @@ theorem pressure_commonWave (l : SignedLabel B N0) (k : Frequency)
     pressure_amplitude_active l k _ (PhysicalMeanJetBounds.graph_time_pos ActualPrimary.h
       (BaseChartJets.cellBand l.2) (gap (bandLabel l)) hw)]
   simp only [Int.cast_one, mul_one]
-  by_cases hz : copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
+  by_cases hz : Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
       (PhysicalMeanJetBounds.graph ActualPrimary.h (BaseChartJets.cellBand l.2) (gap (bandLabel l)) w, 0) = 0
   · simp only [show PhysicalClassBounds.cylindricalMap
         (PhysicalWaveSum.commonLift ActualPrimary.h (BaseChartJets.cellBand l.2) (gap (bandLabel l)) w) =
@@ -2314,7 +2310,7 @@ theorem pressureCoefficient_zero_off_annulus (l : SignedLabel B N0)
   by_contra hk
   have he := copyPressure_nativeAt l k
     (PhysicalWaveSum.commonLift ActualPrimary.h (BaseChartJets.cellBand l.2) (gap (bandLabel l)) w)
-  change copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
+  change Navier.Construction.InitialNativeRegularity.copyPressureCoefficient l k (BaseChartJets.cellBand l.2)
     (PhysicalMeanJetBounds.graph ActualPrimary.h (BaseChartJets.cellBand l.2) (gap (bandLabel l)) w, 0) = _ at he
   rw [he] at hk
   have h := cut_pair_annulus l (bandLabel l) k _

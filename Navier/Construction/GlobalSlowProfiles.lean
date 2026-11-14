@@ -114,10 +114,6 @@ noncomputable def inverse {S : Set ℝ} (f : EvenProfile S)
     (hf : ∀ w ∈ region S, f w ≠ 0) : EvenProfile S :=
   ⟨fun w => (f w)⁻¹, ⟨f.smooth.inv hf, fun _ heta R => congrArg Inv.inv (f.even heta R)⟩⟩
 
-theorem smooth_de {S : Set ℝ} (hS : IsOpen S) {f : Field} (hf : Smooth S f) :
-    Smooth S (de f) :=
-  ProfileHistories.parameterPartial_smooth (PositiveOrderMoments.parameterDomain S hS) hf
-
 theorem parameter_derivative {S : Set ℝ} (hS : IsOpen S) {f : Field} (hf : Smooth S f)
     {eta : ℝ} (heta : eta ∈ S) (R : ℝ) :
     HasDerivAt (fun t => f (R, t)) (de f (R, eta)) eta :=
@@ -126,7 +122,7 @@ theorem parameter_derivative {S : Set ℝ} (hS : IsOpen S) {f : Field} (hf : Smo
 
 noncomputable def etaDerivative {S : Set ℝ} (hS : IsOpen S) (f : EvenProfile S) :
     EvenProfile S := by
-  refine ⟨de f, ⟨smooth_de hS f.smooth, ?_⟩⟩
+  refine ⟨de f, ⟨Navier.Construction.SlowStressSupport.smooth_de hS f.smooth, ?_⟩⟩
   intro eta heta R
   have he : (fun t => f (-R, t)) =ᶠ[𝓝 eta] fun t => f (R, t) := by
     filter_upwards [hS.mem_nhds heta] with t ht using f.even ht R
