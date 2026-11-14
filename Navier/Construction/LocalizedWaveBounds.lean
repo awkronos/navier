@@ -46,44 +46,6 @@ abbrev LocalWave (s : StripData D) (K : ℕ → I → Set D)
 abbrev LocalUnweighted (s : StripData D) (K : ℕ → I → Set D)
     (α : ℝ) (f : ℕ → I → D → E) : Prop := LocalClass s K (fun _ _ _ => 1) α f
 
-private theorem finite_le_infty (m : ℕ) : (m : WithTop ℕ∞) ≤ ∞ :=
-  WithTop.coe_le_coe.mpr le_top
-
-private theorem bilinear_jet_at (L : E →L[ℝ] F →L[ℝ] G)
-    {u : D → E} {v : D → F} {x : D} (hu : ContDiffAt ℝ ∞ u x)
-    (hv : ContDiffAt ℝ ∞ v x) {A B : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B)
-    {m j : ℕ} (hj : j ≤ m)
-    (hbu : ∀ k ≤ m, ‖iteratedFDeriv ℝ k u x‖ ≤ A)
-    (hbv : ∀ k ≤ m, ‖iteratedFDeriv ℝ k v x‖ ≤ B) :
-    ‖iteratedFDeriv ℝ j (fun y => L (u y) (v y)) x‖ ≤ ‖L‖ * (2 : ℝ) ^ m * A * B := by
-  obtain ⟨U, hU, huU⟩ := hu.contDiffOn (finite_le_infty j) (by simp)
-  obtain ⟨V, hV, hvV⟩ := hv.contDiffOn (finite_le_infty j) (by simp)
-  obtain ⟨O, hOsub, hO, hxO⟩ := mem_nhds_iff.mp (inter_mem hU hV)
-  have hle := JetBounds.norm_iteratedFDeriv_bilinear_le_on L hO
-    (huU.mono (hOsub.trans inter_subset_left))
-    (hvV.mono (hOsub.trans inter_subset_right)) hxO (le_refl (j : WithTop ℕ∞))
-  have hsum : (∑ k ∈ Finset.range (j + 1), (j.choose k : ℝ) *
-      ‖iteratedFDeriv ℝ k u x‖ * ‖iteratedFDeriv ℝ (j - k) v x‖) ≤ (2 : ℝ) ^ m * A * B := by
-    calc
-      _ ≤ ∑ k ∈ Finset.range (j + 1), (j.choose k : ℝ) * A * B := by
-        apply Finset.sum_le_sum
-        intro k hk
-        have hkj : k ≤ j := Nat.le_of_lt_succ (Finset.mem_range.mp hk)
-        exact mul_le_mul (mul_le_mul_of_nonneg_left (hbu k (hkj.trans hj)) (Nat.cast_nonneg _))
-          (hbv (j - k) ((Nat.sub_le _ _).trans hj)) (norm_nonneg _)
-          (mul_nonneg (Nat.cast_nonneg _) hA)
-      _ = (2 : ℝ) ^ j * A * B := by
-        rw [← Finset.sum_mul, ← Finset.sum_mul]
-        have hchoose : (∑ k ∈ Finset.range (j + 1), (j.choose k : ℝ)) = (2 : ℝ) ^ j := by
-          exact_mod_cast Nat.sum_range_choose j
-        rw [hchoose]
-      _ ≤ _ := mul_le_mul_of_nonneg_right
-        (mul_le_mul_of_nonneg_right (pow_le_pow_right₀ (by norm_num) hj) hA) hB
-  exact hle.trans (by
-    calc
-      _ ≤ ‖L‖ * ((2 : ℝ) ^ m * A * B) := mul_le_mul_of_nonneg_left hsum (norm_nonneg L)
-      _ = _ := by ring)
-
 namespace LocalClass
 
 variable {s : StripData D} {K : ℕ → I → Set D} {w v : ℕ → I → D → ℝ}
@@ -150,7 +112,7 @@ theorem map (hf : LocalClass s K w α f) (L : E →L[ℝ] F) :
   obtain ⟨C, hC, p, hb⟩ := hf.bounds m
   refine ⟨‖L‖ * C, mul_nonneg (norm_nonneg _) hC, p, fun n i x hx hi j hj => ?_⟩
   change ‖iteratedFDeriv ℝ j (L ∘ f n i) x‖ ≤ _
-  rw [L.iteratedFDeriv_comp_left ((hf.smooth n i x hx hi).of_le (finite_le_infty j)) le_rfl]
+  rw [L.iteratedFDeriv_comp_left ((hf.smooth n i x hx hi).of_le (PeriodizedWaveBounds.finite_le_infty j)) le_rfl]
   calc
     _ ≤ ‖L‖ * ‖iteratedFDeriv ℝ j (f n i) x‖ := L.norm_compContinuousMultilinearMap_le _
     _ ≤ ‖L‖ * majorant s (fun n x => w n i x) α C p n x :=
@@ -185,8 +147,8 @@ theorem add (hf : LocalClass s K w α f) (hg : LocalClass s K w α g) :
   obtain ⟨A, hA, p, ha⟩ := hf.bounds m
   obtain ⟨B, hB, q, hb⟩ := hg.bounds m
   refine ⟨A + B, add_nonneg hA hB, p + q, fun n i x hx hi j hj => ?_⟩
-  rw [fun_iteratedFDeriv_add_apply ((hf.smooth n i x hx hi).of_le (finite_le_infty j))
-    ((hg.smooth n i x hx hi).of_le (finite_le_infty j))]
+  rw [fun_iteratedFDeriv_add_apply ((hf.smooth n i x hx hi).of_le (PeriodizedWaveBounds.finite_le_infty j))
+    ((hg.smooth n i x hx hi).of_le (PeriodizedWaveBounds.finite_le_infty j))]
   calc
     _ ≤ ‖iteratedFDeriv ℝ j (f n i) x‖ + ‖iteratedFDeriv ℝ j (g n i) x‖ := norm_add_le _ _
     _ ≤ majorant s (fun n x => w n i x) α A p n x +
@@ -238,7 +200,7 @@ theorem bilinear {u : ℕ → I → D → F} (hf : LocalClass s K w α f)
   calc
     _ ≤ ‖L‖ * (2 : ℝ) ^ m * majorant s (fun n x => w n i x) α A p n x *
         majorant s (fun n x => v n i x) β B q n x :=
-      bilinear_jet_at L (hf.smooth n i x hx hi) (hu.smooth n i x hx hi)
+      PeriodizedWaveBounds.bilinear_jet_at L (hf.smooth n i x hx hi) (hu.smooth n i x hx hi)
         (majorant_nonneg s _ α hA p n x (hf.weight_nonneg n i x hx))
         (majorant_nonneg s _ β hB q n x (hu.weight_nonneg n i x hx)) hj
         (fun k hk => ha n i x hx hi k hk) (fun k hk => hb n i x hx hi k hk)
@@ -413,13 +375,13 @@ theorem compact_comp {f : ℕ → I → D → E} (hf : LocalUnweighted s K 0 f)
     have hb := ha n i x hx hi k hk
     simp only [majorant, Real.rpow_zero, mul_one] at hb
     exact hb.trans (mul_le_mul_of_nonneg_right hAB (pow_nonneg (s.growth_nonneg n x) p))
-  obtain ⟨V, hV, hfV⟩ := (hf.smooth n i x hx hi).contDiffOn (finite_le_infty j) (by simp)
+  obtain ⟨V, hV, hfV⟩ := (hf.smooth n i x hx hi).contDiffOn (PeriodizedWaveBounds.finite_le_infty j) (by simp)
   have hfu : ∀ᶠ y in 𝓝 x, f n i y ∈ U :=
     (hf.smooth n i x hx hi).continuousAt.eventually (hU.mem_nhds (hCU (hmap n i x hx hi)))
   obtain ⟨O, hOsub, hO, hxO⟩ := mem_nhds_iff.mp (inter_mem hV hfu)
   have hfO := hfV.mono (hOsub.trans inter_subset_left)
   have hmapO : MapsTo (f n i) O U := fun _ hy => (hOsub hy).2
-  have hb := norm_iteratedFDerivWithin_comp_le (hg.of_le (finite_le_infty j)) hfO
+  have hb := norm_iteratedFDerivWithin_comp_le (hg.of_le (PeriodizedWaveBounds.finite_le_infty j)) hfO
     (le_refl (j : WithTop ℕ∞)) hU.uniqueDiffOn hO.uniqueDiffOn hmapO hxO
     (C := C) (D := B * s.growth n x ^ p) (fun k hk => ?_) (fun k hk hkj => ?_)
   · rw [iteratedFDerivWithin_of_isOpen j hO hxO] at hb

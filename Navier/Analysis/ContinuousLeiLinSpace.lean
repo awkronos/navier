@@ -462,16 +462,17 @@ theorem ae_frequency_weighted_convolution_pointwise (f g : ES → ℝ)
   filter_upwards [h0ae, hlae, hrae] with ξ h0ξ hlξ hrξ
   exact frequency_weighted_convolution_pointwise f g hfn hgn ξ h0ξ hlξ hrξ
 
-/-- Global continuous weighted convolution bound obtained by integrating the
-a.e. frequency allocation and using the two Tonelli factorizations. -/
-theorem weighted_convolution_mass_le (f g : ES → ℝ)
+/-- The weighted `X¹` density of a convolution of two nonnegative profiles is
+integrable.  The a.e. allocation `ae_frequency_weighted_convolution_pointwise`
+by itself does not produce an integrable majorant for this density, so the
+majorization step is named here for the consumers that need the integrability
+itself rather than only the mass inequality. -/
+theorem integrable_weighted_convolution (f g : ES → ℝ)
     (hf0 : Integrable f) (hg0 : Integrable g)
     (hf1 : Integrable (fun η => ‖η‖ * f η))
     (hg1 : Integrable (fun η => ‖η‖ * g η))
     (hfn : ∀ η, 0 ≤ f η) (hgn : ∀ η, 0 ≤ g η) :
-    (∫ ξ : ES, ‖ξ‖ * convolution f g ξ) ≤
-      (∫ η : ES, ‖η‖ * f η) * (∫ η : ES, g η) +
-        (∫ η : ES, f η) * (∫ η : ES, ‖η‖ * g η) := by
+    Integrable (fun ξ : ES => ‖ξ‖ * convolution f g ξ) := by
   have hconv := integrable_scalar_convolution f g hf0 hg0
   have hlconv := integrable_scalar_convolution (fun η => ‖η‖ * f η) g hf1 hg0
   have hrconv := integrable_scalar_convolution f (fun η => ‖η‖ * g η) hf0 hg1
@@ -493,8 +494,26 @@ theorem weighted_convolution_mass_le (f g : ES → ℝ)
     rw [Real.norm_eq_abs, abs_of_nonneg
       (mul_nonneg (norm_nonneg ξ) (hconv_nonneg ξ))]
     exact hξ
+  exact hrhs.mono' (continuous_norm.aestronglyMeasurable.mul hconv.aestronglyMeasurable) hnorm
+
+/-- Global continuous weighted convolution bound obtained by integrating the
+a.e. frequency allocation and using the two Tonelli factorizations. -/
+theorem weighted_convolution_mass_le (f g : ES → ℝ)
+    (hf0 : Integrable f) (hg0 : Integrable g)
+    (hf1 : Integrable (fun η => ‖η‖ * f η))
+    (hg1 : Integrable (fun η => ‖η‖ * g η))
+    (hfn : ∀ η, 0 ≤ f η) (hgn : ∀ η, 0 ≤ g η) :
+    (∫ ξ : ES, ‖ξ‖ * convolution f g ξ) ≤
+      (∫ η : ES, ‖η‖ * f η) * (∫ η : ES, g η) +
+        (∫ η : ES, f η) * (∫ η : ES, ‖η‖ * g η) := by
+  have hlconv := integrable_scalar_convolution (fun η => ‖η‖ * f η) g hf1 hg0
+  have hrconv := integrable_scalar_convolution f (fun η => ‖η‖ * g η) hf0 hg1
+  have hrhs : Integrable (fun ξ : ES =>
+      convolution (fun η => ‖η‖ * f η) g ξ +
+        convolution f (fun η => ‖η‖ * g η) ξ) := hlconv.add hrconv
+  have hae := ae_frequency_weighted_convolution_pointwise f g hf0 hg0 hf1 hg1 hfn hgn
   have hlhs : Integrable (fun ξ : ES => ‖ξ‖ * convolution f g ξ) :=
-    hrhs.mono' (continuous_norm.aestronglyMeasurable.mul hconv.aestronglyMeasurable) hnorm
+    integrable_weighted_convolution f g hf0 hg0 hf1 hg1 hfn hgn
   calc
     (∫ ξ : ES, ‖ξ‖ * convolution f g ξ) ≤
         ∫ ξ : ES, convolution (fun η => ‖η‖ * f η) g ξ +
@@ -849,6 +868,7 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_right_frequency_kernel
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_scalar_convolution
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.ae_frequency_weighted_convolution_pointwise
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_weighted_convolution
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.weighted_convolution_mass_le
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_weighted_continuousLerayE
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.weighted_continuousLerayE_mass_le

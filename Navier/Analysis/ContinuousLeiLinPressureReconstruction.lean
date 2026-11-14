@@ -269,32 +269,6 @@ theorem integrable_norm_continuousPressureFourier (u : ES → ComplexSpace)
 ## The `X⁰` and `X¹` budgets of the pressure density
 -/
 
-/-- The weighted norm of a convolution of nonnegative profiles is integrable;
-this packages the internal majorization step of
-`weighted_convolution_mass_le` for reuse. -/
-private theorem integrable_norm_weighted_convolution (f g : ES → ℝ)
-    (hf0 : Integrable f) (hg0 : Integrable g)
-    (hf1 : Integrable (fun η : ES => ‖η‖ * f η))
-    (hg1 : Integrable (fun η : ES => ‖η‖ * g η))
-    (hfn : ∀ η, 0 ≤ f η) (hgn : ∀ η, 0 ≤ g η) :
-    Integrable (fun ξ : ES => ‖ξ‖ * convolution f g ξ) := by
-  have hae := ae_frequency_weighted_convolution_pointwise f g hf0 hg0 hf1 hg1 hfn hgn
-  have hconv := integrable_scalar_convolution f g hf0 hg0
-  have hrhs : Integrable (fun ξ : ES => convolution (fun η : ES => ‖η‖ * f η) g ξ +
-      convolution f (fun η : ES => ‖η‖ * g η) ξ) :=
-    (integrable_scalar_convolution (fun η : ES => ‖η‖ * f η) g hf1 hg0).add
-      (integrable_scalar_convolution f (fun η : ES => ‖η‖ * g η) hf0 hg1)
-  have hconv_nonneg : ∀ ξ : ES, 0 ≤ convolution f g ξ := by
-    intro ξ
-    change 0 ≤ ∫ η : ES, f η * g (ξ - η)
-    exact integral_nonneg fun η => mul_nonneg (hfn η) (hgn (ξ - η))
-  refine hrhs.mono'
-    (continuous_norm.aestronglyMeasurable.mul hconv.aestronglyMeasurable) ?_
-  filter_upwards [hae] with ξ hξ
-  rw [Real.norm_eq_abs,
-    abs_of_nonneg (mul_nonneg (norm_nonneg ξ) (hconv_nonneg ξ))]
-  exact hξ
-
 /-- The finite double-sum expansion of a square: `(∑ a)² = ∑ᵢ ∑ⱼ aᵢaⱼ`. -/
 private theorem sq_eq_sum_double (a : Fin 3 → ℝ) :
     (∑ i : Fin 3, a i) ^ 2 = ∑ i : Fin 3, ∑ j : Fin 3, a i * a j := by
@@ -359,7 +333,7 @@ theorem integrable_normX1_continuousPressureFourier (u : ES → ComplexSpace)
       ‖ξ‖ * convolution (fun η : ES => ‖u η i‖) (fun η : ES => ‖u η j‖) ξ) :=
     integrable_finsetSum Finset.univ fun i _ =>
       integrable_finsetSum Finset.univ fun j _ =>
-        integrable_norm_weighted_convolution (fun η : ES => ‖u η i‖)
+        integrable_weighted_convolution (fun η : ES => ‖u η i‖)
           (fun η : ES => ‖u η j‖) (hu0 i) (hu0 j) (hu1 i) (hu1 j)
           (fun η => norm_nonneg _) (fun η => norm_nonneg _)
   refine hsum.mono'
@@ -386,7 +360,7 @@ theorem normX1_continuousPressureFourier_le (u : ES → ComplexSpace)
   have hconv : ∀ i j : Fin 3, Integrable (fun ξ : ES =>
       ‖ξ‖ * convolution (fun η : ES => ‖u η i‖) (fun η : ES => ‖u η j‖) ξ) := by
     intro i j
-    exact integrable_norm_weighted_convolution (fun η : ES => ‖u η i‖)
+    exact integrable_weighted_convolution (fun η : ES => ‖u η i‖)
       (fun η : ES => ‖u η j‖) (hu0 i) (hu0 j) (hu1 i) (hu1 j)
       (fun η => norm_nonneg _) (fun η => norm_nonneg _)
   have hsum : Integrable (fun ξ : ES => ∑ i : Fin 3, ∑ j : Fin 3,

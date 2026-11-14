@@ -382,10 +382,15 @@ variable {D E F G : Type*} [NormedAddCommGroup D] [NormedSpace ℝ D]
   [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   [NormedAddCommGroup G] [NormedSpace ℝ G] {I : Type*}
 
-private theorem finite_le_infty (m : ℕ) : (m : WithTop ℕ∞) ≤ ∞ :=
+/-- A natural jet order is below `⊤` in `WithTop ℕ∞`.  Public because the
+sibling jet calculus in `LocalizedWaveBounds` needs the same coercion bound. -/
+theorem finite_le_infty (m : ℕ) : (m : WithTop ℕ∞) ≤ ∞ :=
   WithTop.coe_le_coe.mpr le_top
 
-private theorem bilinear_jet_at (L : E →L[ℝ] F →L[ℝ] G)
+/-- The all-jet bound for a bilinear expression at a point, with the bounds
+supplied only up to the output order `m`.  Public so that the localised jet
+calculus consumes this estimate instead of re-proving it. -/
+theorem bilinear_jet_at (L : E →L[ℝ] F →L[ℝ] G)
     {u : D → E} {v : D → F} {x : D} (hu : ContDiffAt ℝ ∞ u x)
     (hv : ContDiffAt ℝ ∞ v x) {A B : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B)
     {m j : ℕ} (hj : j ≤ m)
@@ -1687,3 +1692,6 @@ theorem particularData_commonCorrected (r : Reference P) (charts : BandCharts P)
 end ActualParticularData
 
 end Navier.Construction.PeriodizedWaveBounds
+
+#print axioms Navier.Construction.PeriodizedWaveBounds.finite_le_infty
+#print axioms Navier.Construction.PeriodizedWaveBounds.bilinear_jet_at
