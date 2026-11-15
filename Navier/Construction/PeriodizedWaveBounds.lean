@@ -273,6 +273,25 @@ theorem UniformLocalJets.each {s : StripData D} {w : L → ℕ → D → ℝ} {�
   obtain ⟨C, hC, p, hb⟩ := hf.bounds m
   exact ⟨C, hC, p, hb l⟩
 
+omit [NormedSpace ℝ D] [NormedSpace ℝ E] in
+/-- The labelled cover asked for by `uniformClass_of_local_germs`, assembled
+once from the active-copy germ and the complement germ.  Whole-lift copy sums
+obtain the same disjunction from `copySum_germ_cover`; a coefficient built from
+per-copy germs rather than a literal copy sum needs the case split without the
+support hypothesis, and its complement step is the same
+`not_exists`/`classical` argument at every label. -/
+theorem uniform_germ_cover {K : L → ℕ → I → Set D} {f : L → ℕ → I → D → E}
+    {F : L → ℕ → D → E}
+    (hactive : ∀ l n i x, x ∈ K l n i → F l n =ᶠ[𝓝 x] f l n i)
+    (hinactive : ∀ l n x, (∀ i, x ∉ K l n i) → F l n =ᶠ[𝓝 x] fun _ => 0)
+    (l : L) (n : ℕ) (x : D) :
+    (∃ i, x ∈ K l n i ∧ F l n =ᶠ[𝓝 x] f l n i) ∨ F l n =ᶠ[𝓝 x] fun _ => 0 := by
+  classical
+  by_cases hi : ∃ i, x ∈ K l n i
+  · obtain ⟨i, hxi⟩ := hi
+    exact Or.inl ⟨i, hxi, hactive l n i x hxi⟩
+  · exact Or.inr (hinactive l n x (not_exists.mp hi))
+
 theorem uniformClass_of_local_germs {s : StripData D} {w : L → ℕ → D → ℝ} {α : ℝ}
     {K : L → ℕ → I → Set D} {f : L → ℕ → I → D → E} {F : L → ℕ → D → E}
     (hw : ∀ l n x, x ∈ s.domain → 0 ≤ w l n x) (hj : UniformLocalJets s w α K f)
@@ -1695,3 +1714,4 @@ end Navier.Construction.PeriodizedWaveBounds
 
 #print axioms Navier.Construction.PeriodizedWaveBounds.finite_le_infty
 #print axioms Navier.Construction.PeriodizedWaveBounds.bilinear_jet_at
+#print axioms Navier.Construction.PeriodizedWaveBounds.uniform_germ_cover

@@ -1140,22 +1140,16 @@ theorem uniform_common_bounds_from_native_local (K : L → PeriodizedWaveBounds.
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact PeriodizedWaveBounds.copySum_uniformClass K hw
       (fun l => (a l).localized_amplitude_support (K l) (hs l)) haj
-  · apply PeriodizedWaveBounds.uniformClass_of_local_germs hw hcorj
-    intro l n x hx
-    classical
-    by_cases hi : ∃ i, x ∈ (K l).carrier n i
-    · obtain ⟨i, hi⟩ := hi
-      exact Or.inl ⟨i, hi, (a l).commonCorrected_amplitude_germ (K l) (hs l) s d n hi⟩
-    · exact Or.inr ((a l).commonCorrected_zero_germ (K l) (hs l) s d (not_exists.mp hi))
+  · refine PeriodizedWaveBounds.uniformClass_of_local_germs hw hcorj ?_
+    exact fun l n x _ => PeriodizedWaveBounds.uniform_germ_cover
+      (fun l n i x hx => (a l).commonCorrected_amplitude_germ (K l) (hs l) s d n hx)
+      (fun l n x hx => (a l).commonCorrected_zero_germ (K l) (hs l) s d hx) l n x
   · exact PeriodizedWaveBounds.copySum_uniformClass K hw
       (fun l => (a l).localized_pressure_support (K l) (hs l)) hpj
-  · apply PeriodizedWaveBounds.uniformClass_of_local_germs hw hcj
-    intro l n x hx
-    classical
-    by_cases hi : ∃ i, x ∈ (K l).carrier n i
-    · obtain ⟨i, hi⟩ := hi
-      exact Or.inl ⟨i, hi, common_curl_germ (a l) (K l) (hs l) s d hi⟩
-    · exact Or.inr (common_curl_zero_germ (a l) (K l) (hs l) s d (not_exists.mp hi))
+  · refine PeriodizedWaveBounds.uniformClass_of_local_germs hw hcj ?_
+    exact fun l n x _ => PeriodizedWaveBounds.uniform_germ_cover
+      (fun l n i x hx => common_curl_germ (a l) (K l) (hs l) s d hx)
+      (fun l n x hx => common_curl_zero_germ (a l) (K l) (hs l) s d hx) l n x
   · exact PeriodizedWaveBounds.copySum_uniformClass K hw
       (fun l => (a l).localGood_support (K l) (hs l) s d) hgj
 
@@ -1214,22 +1208,16 @@ theorem uniform_common_bounds_from_supported_native (K : L → PeriodizedWaveBou
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact PeriodizedWaveBounds.copySum_uniformClass K hw
       (fun l => (a l).localized_amplitude_support (K l) (hs l)) haj
-  · apply PeriodizedWaveBounds.uniformClass_of_local_germs hw hcorj
-    intro l n x hx
-    classical
-    by_cases hi : ∃ i, x ∈ (K l).carrier n i
-    · obtain ⟨i, hi⟩ := hi
-      exact Or.inl ⟨i, hi, (a l).commonCorrected_amplitude_germ (K l) (hs l) s d n hi⟩
-    · exact Or.inr ((a l).commonCorrected_zero_germ (K l) (hs l) s d (not_exists.mp hi))
+  · refine PeriodizedWaveBounds.uniformClass_of_local_germs hw hcorj ?_
+    exact fun l n x _ => PeriodizedWaveBounds.uniform_germ_cover
+      (fun l n i x hx => (a l).commonCorrected_amplitude_germ (K l) (hs l) s d n hx)
+      (fun l n x hx => (a l).commonCorrected_zero_germ (K l) (hs l) s d hx) l n x
   · exact PeriodizedWaveBounds.copySum_uniformClass K hw
       (fun l => (a l).localized_pressure_support (K l) (hs l)) hpj
-  · apply PeriodizedWaveBounds.uniformClass_of_local_germs hw hcj
-    intro l n x hx
-    classical
-    by_cases hi : ∃ i, x ∈ (K l).carrier n i
-    · obtain ⟨i, hi⟩ := hi
-      exact Or.inl ⟨i, hi, common_curl_germ (a l) (K l) (hs l) s d hi⟩
-    · exact Or.inr (common_curl_zero_germ (a l) (K l) (hs l) s d (not_exists.mp hi))
+  · refine PeriodizedWaveBounds.uniformClass_of_local_germs hw hcj ?_
+    exact fun l n x _ => PeriodizedWaveBounds.uniform_germ_cover
+      (fun l n i x hx => common_curl_germ (a l) (K l) (hs l) s d hx)
+      (fun l n x hx => common_curl_zero_germ (a l) (K l) (hs l) s d hx) l n x
   · exact PeriodizedWaveBounds.copySum_uniformClass K hw
       (fun l => (a l).localGood_support (K l) (hs l) s d) hgj
 
