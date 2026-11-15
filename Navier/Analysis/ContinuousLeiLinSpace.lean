@@ -954,6 +954,68 @@ example (u v : Fin 3 → SchwartzMap ES ℂ) :
     (fun i => fourier_schwartz_coordinate_aestronglyMeasurable v i)
     (fun j => (𝓕 (u j)).integrable.norm) (fun i => (𝓕 (v i)).integrable.norm)
 
+/-- The literal complex Fourier convolution of two Schwartz Fourier profiles is
+Bochner integrable, consumed at exactly the data the continuous Navier symbol
+needs: the `L¹` convolution carrier has no hypothesis left to supply. -/
+example (f g : SchwartzMap ES ℂ) :
+    Integrable (((𝓕 f : SchwartzMap ES ℂ) : ES → ℂ) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
+      ((𝓕 g : SchwartzMap ES ℂ) : ES → ℂ)) :=
+  fourier_schwartz_convolution_integrable f g
+
+/-- The first Tonelli factorization evaluated at Schwartz Fourier data: the
+product-kernel integral splits into the `X¹` mass of the first profile and the
+`X⁰` mass of the second, both supplied by this module's Schwartz lemmas. -/
+example (f g : SchwartzMap ES ℂ) :
+    (∫ p : ES × ES, (‖p.2‖ * ‖(𝓕 f) p.2‖) * ‖(𝓕 g) (p.1 - p.2)‖ ∂(volume.prod volume)) =
+      (∫ η : ES, ‖η‖ * ‖(𝓕 f) η‖) * normX0 (fun η => ‖(𝓕 g) η‖) :=
+  integral_left_frequency_kernel (fun η => ‖(𝓕 f) η‖) (fun η => ‖(𝓕 g) η‖)
+    (fourier_schwartz_integrable_X1 f) ((𝓕 g).integrable.norm)
+
+/-- The symmetric Tonelli factorization at the same data: here the `X⁰` mass
+sits on the left factor. -/
+example (f g : SchwartzMap ES ℂ) :
+    (∫ p : ES × ES, ‖(𝓕 f) p.2‖ * (‖p.1 - p.2‖ * ‖(𝓕 g) (p.1 - p.2)‖) ∂(volume.prod volume)) =
+      normX0 (fun η => ‖(𝓕 f) η‖) * (∫ η : ES, ‖η‖ * ‖(𝓕 g) η‖) :=
+  integral_right_frequency_kernel (fun η => ‖(𝓕 f) η‖) (fun η => ‖(𝓕 g) η‖)
+    ((𝓕 f).integrable.norm) (fourier_schwartz_integrable_X1 g)
+
+/-- The derivative-allocation split is sharp at zero input frequency: the first
+summand carries nothing, so the bound reads as a rearrangement of one product. -/
+example (f g : ES → ℂ) (ξ : ES) :
+    ‖ξ‖ * (‖f 0‖ * ‖g ξ‖) ≤ ‖f 0‖ * (‖ξ‖ * ‖g ξ‖) := by
+  simpa using frequency_weighted_norm_product_split f g ξ 0
+
+/-- The pointwise Leray contraction consumed at the output-frequency weight
+itself, which is the weight the `X¹` estimates carry. -/
+example (ξ : ES) (z : ComplexSpace) :
+    ‖ξ‖ * complexEuclideanNorm (continuousLeray ξ z) ≤ ‖ξ‖ * complexEuclideanNorm z :=
+  continuousLeray_weighted_norm_le (fun _ => ‖ξ‖) ξ z (norm_nonneg ξ)
+
+/-- Bochner integrability of the projected Hermitian profile at a Schwartz
+profile on the Hermitian carrier itself: the multiplier consumes nothing but
+the profile's own integrability. -/
+example (h : SchwartzMap ES ComplexE3) :
+    Integrable (fun ξ : ES => continuousLerayE ξ (h ξ)) :=
+  integrable_continuousLerayE _ h.integrable
+
+/-- The weighted continuous Leray contraction as an integral estimate at the
+same carrier: its hypothesis is exactly the `X¹` weighted integrability of a
+Schwartz Hermitian profile. -/
+example (h : SchwartzMap ES ComplexE3) :
+    (∫ ξ : ES, ‖ξ‖ * ‖continuousLerayE ξ (h ξ)‖) ≤ ∫ ξ : ES, ‖ξ‖ * ‖h ξ‖ := by
+  refine weighted_continuousLerayE_mass_le _ h.continuous.aestronglyMeasurable ?_
+  simpa using h.integrable_pow_mul volume 1
+
+/-- The real frequency carrier's two Borel instance paths coincide with the
+Borel σ-algebra, so PiLp coordinates and the volume integrals of this module
+share one measurable structure. -/
+example : esPiMeasurableSpace = borel ES :=
+  es_measurableSpace_coherent.trans esEuclideanMeasurableSpace_eq_borel
+
+/-- The Hermitian carrier's two Borel instance paths likewise coincide. -/
+example : complexE3PiMeasurableSpace = borel ComplexE3 :=
+  complexE3_measurableSpace_coherent.trans complexE3EuclideanMeasurableSpace_eq_borel
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
