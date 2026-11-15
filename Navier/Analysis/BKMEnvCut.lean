@@ -665,6 +665,101 @@ theorem vorticityRateBound_sel_of_rawJets
     exact cutPotential_cylSup_le_rawJets ⟨(show (0 : ℝ) ≤ 3 / 4 by norm_num).trans (ht₀.1.trans ht.1), ht.2⟩
       (hBs t ht) hc (hjetB t ht)
 
+/-- Restricting an `n`-linear form on a product space to the spatial inclusion
+`ContinuousLinearMap.inr ℝ ℝ X` does not increase its operator norm: `‖inr‖ ≤ 1`,
+so the `n`-fold product of its norm in
+`ContinuousMultilinearMap.norm_compContinuousLinearMap_le` is at most `1`. -/
+theorem norm_compContinuousLinearMap_inr_le
+    {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+    {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W]
+    (n : ℕ) (φ : ContinuousMultilinearMap ℝ (fun _ : Fin n => ℝ × X) W) :
+    ‖φ.compContinuousLinearMap (fun _ : Fin n => ContinuousLinearMap.inr ℝ ℝ X)‖ ≤ ‖φ‖ := by
+  classical
+  have hprod : ∏ _ : Fin n, ‖ContinuousLinearMap.inr ℝ ℝ X‖ ≤ (1 : ℝ) := by
+    rw [Fin.prod_const n ‖ContinuousLinearMap.inr ℝ ℝ X‖]
+    exact pow_le_one₀ (norm_nonneg _)
+      (ContinuousLinearMap.norm_inr_le_one ℝ ℝ X)
+  calc ‖φ.compContinuousLinearMap (fun _ : Fin n => ContinuousLinearMap.inr ℝ ℝ X)‖
+      ≤ ‖φ‖ * ∏ _ : Fin n, ‖ContinuousLinearMap.inr ℝ ℝ X‖ :=
+          ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+    _ ≤ ‖φ‖ * 1 := mul_le_mul_of_nonneg_left hprod (norm_nonneg _)
+    _ = ‖φ‖ := mul_one _
+
+open scoped Pointwise in
+/-- **(Spacetime jets bound spatial slice jets.)** The raw slice-jet hypotheses
+`hjetA`, `hjetB` of `cutVelocity_cylSup_le_rawJets` and
+`cutPotential_cylSup_le_rawJets` ask for the iterated derivative of a TIME SLICE
+`fun x => f (t, x)`, while the Construction-side summation
+`CS_PotentialSumEnvelope.potentialSum_negPower_envelope` bounds the SPACETIME
+jet `iteratedFDeriv ℝ n f (t, x)`. This is the bridge between the two formats:
+the slice's `n`-jet is the spacetime `n`-jet restricted to the spatial
+inclusion `ContinuousLinearMap.inr ℝ ℝ X`, which is norm-nonincreasing
+(`norm_compContinuousLinearMap_inr_le`), so the restriction cannot increase the
+operator norm.
+
+Smoothness is needed only on an open set `s` that contains the whole slice
+`{p | p.1 = t}` — the shape the Construction side actually records, where the
+potential sums are smooth on `PhysicalWaveSum.preterminal` and never on all of
+spacetime. The identity factors the slice as
+`f ∘ ((t, 0) + ·) ∘ inr` and combines
+`ContinuousLinearMap.iteratedFDerivWithin_comp_right` with the translation
+invariance `iteratedFDerivWithin_comp_add_left`, then drops the restriction with
+`iteratedFDerivWithin_of_isOpen`, exactly as
+`BKMLogBootstrap.iteratedFDeriv_slice_eq_within_compContinuousLinearMap` does
+for the joint half-space smoothness of a sliced solution. No PDE input. -/
+theorem norm_iteratedFDeriv_slice_le {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+    {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W]
+    (f : ℝ × X → W) {s : Set (ℝ × X)} (hs : IsOpen s) (hf : ContDiffOn ℝ ∞ f s)
+    (t : ℝ) (ht : ∀ y : X, (t, y) ∈ s) (x : X) (n : ℕ) :
+    ‖iteratedFDeriv ℝ n (fun y : X => f (t, y)) x‖ ≤ ‖iteratedFDeriv ℝ n f (t, x)‖ := by
+  classical
+  set a : ℝ × X := (t, 0) with hadef
+  set σ : Set (ℝ × X) := (fun z : ℝ × X => a + z) ⁻¹' s with hσdef
+  have hinr : ∀ y : X, a + ContinuousLinearMap.inr ℝ ℝ X y = (t, y) := by
+    intro y
+    rw [hadef, ContinuousLinearMap.inr_apply, Prod.mk_add_mk]
+    simp
+  have hmem : ∀ y : X, ContinuousLinearMap.inr ℝ ℝ X y ∈ σ := by
+    intro y
+    rw [hσdef, Set.mem_preimage]
+    rw [hinr y]
+    exact ht y
+  have hpre : (ContinuousLinearMap.inr ℝ ℝ X) ⁻¹' σ = Set.univ := eq_univ_of_forall hmem
+  have hσo : IsOpen σ := IsOpen.preimage (continuous_const.add continuous_id) hs
+  have hfun : ((fun z : ℝ × X => f (a + z)) ∘ ContinuousLinearMap.inr ℝ ℝ X) =
+      fun y : X => f (t, y) := by
+    funext y
+    exact congrArg f (hinr y)
+  have hshift : iteratedFDerivWithin ℝ n (fun z : ℝ × X => f (a + z)) σ
+      (ContinuousLinearMap.inr ℝ ℝ X x)
+      = iteratedFDerivWithin ℝ n f (a +ᵥ σ) (a + ContinuousLinearMap.inr ℝ ℝ X x) := by
+    simpa [Function.comp_def] using
+      (iteratedFDerivWithin_comp_add_left (𝕜 := ℝ) (f := f) (s := σ) n a
+        (ContinuousLinearMap.inr ℝ ℝ X x))
+  have hσs : a +ᵥ σ = s := by
+    rw [hσdef]
+    ext z
+    constructor
+    · intro hz
+      rcases Set.mem_vadd_set.mp hz with ⟨w, hw, rfl⟩
+      exact hw
+    · intro hz
+      exact ⟨z - a, by simpa using hz, by simp [vadd_eq_add]⟩
+  have hsmoothσ : ContDiffOn ℝ ∞ (fun z : ℝ × X => f (a + z)) σ :=
+    hf.comp (contDiffOn_const.add contDiffOn_id)
+      (fun z hz => by rw [hσdef, Set.mem_preimage] at hz; exact hz)
+  have hcomp := (ContinuousLinearMap.inr ℝ ℝ X).iteratedFDerivWithin_comp_right
+    hsmoothσ hσo.uniqueDiffOn (by rw [hpre]; exact uniqueDiffOn_univ) (hmem x)
+      (show n ≤ ∞ from mod_cast le_top)
+  rw [hpre, iteratedFDerivWithin_univ, hfun, hshift, hσs, hinr] at hcomp
+  have hplain : iteratedFDerivWithin ℝ n f s (t, x) = iteratedFDeriv ℝ n f (t, x) :=
+    iteratedFDerivWithin_of_isOpen (𝕜 := ℝ) (f := f) (s := s) n hs (ht x)
+  rw [hplain] at hcomp
+  calc ‖iteratedFDeriv ℝ n (fun y : X => f (t, y)) x‖
+      = ‖(iteratedFDeriv ℝ n f (t, x)).compContinuousLinearMap
+          (fun _ : Fin n => ContinuousLinearMap.inr ℝ ℝ X)‖ := by rw [hcomp]
+    _ ≤ ‖iteratedFDeriv ℝ n f (t, x)‖ := norm_compContinuousLinearMap_inr_le n _
+
 end Navier.Analysis.BKMEnvCut
 
 #check @Navier.Analysis.BKMEnvCut.slice_eq_late
@@ -685,3 +780,7 @@ end Navier.Analysis.BKMEnvCut
 #print axioms Navier.Analysis.BKMEnvCut.cutPotential_cylSup_le_rawJets
 #check @Navier.Analysis.BKMEnvCut.vorticityRateBound_sel_of_rawJets
 #print axioms Navier.Analysis.BKMEnvCut.vorticityRateBound_sel_of_rawJets
+#check @Navier.Analysis.BKMEnvCut.norm_compContinuousLinearMap_inr_le
+#print axioms Navier.Analysis.BKMEnvCut.norm_compContinuousLinearMap_inr_le
+#check @Navier.Analysis.BKMEnvCut.norm_iteratedFDeriv_slice_le
+#print axioms Navier.Analysis.BKMEnvCut.norm_iteratedFDeriv_slice_le

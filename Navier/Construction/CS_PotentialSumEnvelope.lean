@@ -417,11 +417,122 @@ theorem potentialSum_negPower_envelope_physical
     (fun w hw => PhysicalWaveSum.physicalQ_pos hh hh1 (hS hw))
     hA hg hgtop hgpos hb M K hK
 
+/-- The explicit low-stage table of `potentialSum_negPower_envelope`: stage `0`
+of `CutStageEstimates.positiveStages` contributes `0`, every other stage
+contributes its own geometric prefactor `(1/2) ^ j`. -/
+def lowStageTable : ℕ → ℕ → ℝ := fun j _ => if j = 0 then (0 : ℝ) else (1 / 2 : ℝ) ^ j
+
+/-- **(T1's low-stage table `hK`, produced.)** The hypothesis
+`potentialSum_negPower_envelope` has never had a supplier: it asks, for the
+finitely many stages `j < M` at the ceiling orders `m ≤ M`, for bounds by
+constants rather than by the geometric rate. They follow from the geometric
+bounds themselves, because every stage is supported where `q < 1 / a j`. Indeed
+fix `1 ≤ j` and `m ≤ j + 2`; off `{q < 1 / a j}` the cutoff
+`SmoothCutoffs.scaledCutoff (a j) (q ·)` vanishes on a whole neighborhood of the
+point (`scaledCutoff_zero_of_inv_le`), so the jet there is exactly `0`, while on
+it `q ≤ 1 / a j ≤ 1`, so the exponent `g j - L m` is nonnegative by `hnum` and
+`q ^ (g j - L m) ≤ q ^ 0 = 1` turns the rate into the constant `(1/2) ^ j`. The
+`j = 0` row is free: `CutStageEstimates.positiveStages A 0 = 0`.
+
+Two side conditions are carried by name and NOT discharged here: the coverage
+`hcov` (`m ≤ j + 2` for every ceiling row, automatic at the consumer's `M = 2`,
+whose only nonzero row is `j = 1`, which reaches order `3`) and the numerical
+gain-against-loss inequality `hnum` at the concrete gain and loss of the
+schedule. `M ≤ 2` is exactly where `hb` reaches the ceiling: at `M ≥ 3` the row
+`j = 1, m = 3` is outside `CutStageBounds` and the table is genuine extra input.
+-/
+theorem lowStageTable_le
+    {a : ℕ → ℝ} (ha : ∀ j, (1 : ℝ) ≤ a j)
+    {q : E → ℝ} {U S : Set E} (hU : IsOpen U) (hSU : S ⊆ U)
+    (hq : ContDiffOn ℝ ∞ q U) (hqpos : ∀ x ∈ S, 0 < q x)
+    {A : ℕ → E → V} {g L : ℕ → ℝ}
+    (hb : DiagonalJetBounds.CutStageBounds a q
+      (CutStageEstimates.positiveStages A) g L S)
+    (M : ℕ) (hcov : ∀ j, 1 ≤ j → j < M → M ≤ j + 2)
+    (hnum : ∀ j m, 1 ≤ j → j < M → m ≤ M → (0 : ℝ) ≤ g j - L m)
+    (j m : ℕ) (hjm : j < M) (hm : m ≤ M) (x : E) (hx : x ∈ S) :
+    ‖iteratedFDeriv ℝ m
+        (SolenoidalDiagonal.cutStage a q (CutStageEstimates.positiveStages A) j) x‖ ≤
+      lowStageTable j m := by
+  classical
+  let A' : ℕ → E → V := CutStageEstimates.positiveStages A
+  have hxU : x ∈ U := hSU hx
+  have hqx : 0 < q x := hqpos x hx
+  by_cases hj0 : j = 0
+  · subst hj0
+    have hzero : SolenoidalDiagonal.cutStage a q A' 0 = fun _ => (0 : V) := by
+      funext y
+      show SmoothCutoffs.scaledCutoff (a 0) (q y) • A' 0 y = 0
+      have hstage : A' 0 = 0 := CutStageEstimates.positiveStages_zero A
+      rw [hstage]
+      simp
+    rw [hzero, iteratedFDeriv_fun_zero, Pi.zero_apply, norm_zero]
+    simp [lowStageTable]
+  · have hj1 : 1 ≤ j := by omega
+    have haj : (0 : ℝ) < a j := by linarith [ha j]
+    have htab : lowStageTable j m = (1 / 2 : ℝ) ^ j := by simp [lowStageTable, hj0]
+    rw [htab]
+    by_cases hgt : (1 : ℝ) / a j < q x
+    · -- Outside the stage's support: the cutoff vanishes on a neighbourhood of `x`.
+      have hqAt : ContDiffAt ℝ ∞ q x := hq.contDiffAt (hU.mem_nhds hxU)
+      have heq : (SolenoidalDiagonal.cutStage a q A' j) =ᶠ[𝓝 x] (fun _ => (0 : V)) := by
+        filter_upwards [hqAt.continuousAt (IsOpen.mem_nhds isOpen_Ioi hgt)] with y hy
+        show SmoothCutoffs.scaledCutoff (a j) (q y) • A' j y = 0
+        rw [SmoothCutoffs.scaledCutoff_zero_of_inv_le haj hy.le]
+        simp
+      have hjet : iteratedFDeriv ℝ m (SolenoidalDiagonal.cutStage a q A' j) x =
+          iteratedFDeriv ℝ m (fun _ => (0 : V)) x :=
+        (SolenoidalDiagonal.iteratedFDeriv_eventuallyEq heq m).self_of_nhds
+      rw [hjet, iteratedFDeriv_fun_zero, Pi.zero_apply, norm_zero]
+      exact pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2) j
+    · -- Inside the support: `q ≤ 1 / a j ≤ 1`, so a nonnegative exponent only shrinks.
+      have hq1 : q x ≤ 1 :=
+        (le_of_not_gt hgt).trans
+          ((one_div_le_one_div_of_le (by norm_num : (0 : ℝ) < 1) (ha j)).trans
+            (le_of_eq (div_one 1)))
+      have hm2 : m ≤ j + 2 := hm.trans (hcov j hj1 hjm)
+      have hexp : (0 : ℝ) ≤ g j - L m := hnum j m hj1 hjm hm
+      have hrpow : q x ^ (g j - L m) ≤ 1 := by
+        rw [← Real.rpow_zero (q x)]
+        exact Real.rpow_le_rpow_of_exponent_ge hqx hq1 hexp
+      calc ‖iteratedFDeriv ℝ m (SolenoidalDiagonal.cutStage a q A' j) x‖
+          ≤ (1 / 2 : ℝ) ^ j * q x ^ (g j - L m) := hb j hj1 m hm2 x hx
+        _ ≤ (1 / 2 : ℝ) ^ j * 1 :=
+            mul_le_mul_of_nonneg_left hrpow
+              (pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2) j)
+        _ = (1 / 2 : ℝ) ^ j := by ring
+
+/-- **(T1, with the low-stage table supplied.)** The summation transport of this
+module applied to its own table: the hypothesis `hK` of
+`potentialSum_negPower_envelope` is discharged by `lowStageTable` from the
+geometric stage bounds, so the negative-power envelope of the diagonal sum
+follows from `CutStageBounds` plus the two named side conditions `hcov`, `hnum`.
+-/
+theorem potentialSum_negPower_envelope_of_cutBounds
+    {a : ℕ → ℝ} (ha : Tendsto a atTop atTop) (ha1 : ∀ j, (1 : ℝ) ≤ a j)
+    {q : E → ℝ} {U S : Set E} (hU : IsOpen U) (hSU : S ⊆ U)
+    (hq : ContDiffOn ℝ ∞ q U) (hqpos : ∀ x ∈ S, 0 < q x)
+    {A : ℕ → E → V} (hA : ∀ j, 1 ≤ j → ContDiffOn ℝ ∞ (A j) U)
+    {g L : ℕ → ℝ} (hg : Monotone g) (hgtop : Tendsto g atTop atTop)
+    (hgpos : ∀ j, 1 ≤ j → 0 ≤ g j)
+    (hb : DiagonalJetBounds.CutStageBounds a q
+      (CutStageEstimates.positiveStages A) g L S)
+    (M : ℕ) (hcov : ∀ j, 1 ≤ j → j < M → M ≤ j + 2)
+    (hnum : ∀ j m, 1 ≤ j → j < M → m ≤ M → (0 : ℝ) ≤ g j - L m) :
+    ∃ C β : ℝ, 0 < C ∧ 0 ≤ β ∧ ∀ m ≤ M, ∀ x ∈ S,
+      ‖iteratedFDeriv ℝ m
+        (SolenoidalDiagonal.potentialSum a q (CutStageEstimates.positiveStages A)) x‖ ≤
+        C * q x ^ (-β) :=
+  potentialSum_negPower_envelope ha ha1 hU hSU hq hqpos hA hg hgtop hgpos hb M lowStageTable
+    fun j m hjm hm x hx => lowStageTable_le ha1 hU hSU hq hqpos hb M hcov hnum j m hjm hm x hx
+
 #print axioms Navier.Construction.CSPotentialSumEnvelope.finite_sum_jet
 #print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_tail_jet_sub
 #print axioms Navier.Construction.CSPotentialSumEnvelope.partialPotential_prefix_sum_sub
 #print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_large_scale_vanishing_sub
 #print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_negPower_envelope
 #print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_negPower_envelope_physical
+#print axioms Navier.Construction.CSPotentialSumEnvelope.lowStageTable_le
+#print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds
 
 end Navier.Construction.CSPotentialSumEnvelope
