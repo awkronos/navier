@@ -41,6 +41,23 @@ from the positive-stage envelope and the stage-zero term, using
 reduction, not a discharge: the two inputs it names are hypotheses here, the
 positive-stage one itself carrying `CS_PotentialSumEnvelope`'s undischarged
 side condition `hnum`, and `VorticityRateBound (uSel aB)` remains unproved.
+
+Lane MSW-NAVIER-P1-1114 (2026-11-15) closes the regularity gap that made that
+reduction the last one available.  `StageEstimates.potential_smooth` /
+`direct_smooth` plus `aB_selected`'s scale gap feed
+`CutStageEstimates.cut_product_smooth_of_sublevel`, so each `aB` cut stage
+extends smoothly by zero to all of `PhysicalWaveSum.preterminal`
+(`cutStage_aB_contDiffOn`), and local finiteness sums that to
+`positiveSum_aB_contDiffOn` — the preterminal smoothness of the positive-stage
+sums, which the repository did not have for any fixed schedule before.  Both
+summands of the initial split are now smooth, so `iteratedFDeriv_add` runs on
+them (`iteratedFDeriv_potentialSum_aB_split`) and the carrier's raw envelope can
+be assembled from one bound per summand
+(`rawJetsASum_of_splitJets`, `rawJetsBSum_of_splitJets`,
+`vorticityRateBound_aB_of_splitJets`).  Still a reduction: `VorticityRateBound
+(uSel aB)` is discharged by no row here, and the four pointwise slice-jet bounds
+`rawJetsSplit_aB_of_twoSliceJets` asks for are exactly what transports T1 (with
+`hnum`) and T2 must supply.
 -/
 import Navier.Analysis.BKMEnvCut
 import Navier.Construction.BoundedScheduleWitness
@@ -393,6 +410,368 @@ theorem vorticityRateBound_aB_of_spaceJets
     (rawJetsASum_of_spaceJets hjetA)
     (rawJetsBSum_of_spaceJets hjetB)
 
+/-! ## PRIORITY 1 — preterminal smoothness of the positive-stage sums
+
+`MixedCandidateAssembly.StageEstimates.potential_smooth` / `direct_smooth` say
+the selected stages are smooth on the *open* sublevel
+`CutStageEstimates.physicalSublevel h qbigSel`, and `aB_selected` records the
+diagonal scale gap `∀ j, 1 / (aB j : ℝ) < qbigSel`.  Those are exactly the two
+hypotheses `CutStageEstimates.cut_product_smooth_of_sublevel` consumes, so every
+cut product `SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (physicalQ h) A j`
+extends smoothly by zero across all of `PhysicalWaveSum.preterminal`;
+`SolenoidalDiagonal.eventually_zero_tail` then makes the diagonal sum a finite
+sum on a neighbourhood of each preterminal point, and
+`DiagonalJetBounds.tsum_jet_identity` transfers that to the sum itself.
+
+This is the input the split was missing.  With BOTH summands smooth,
+`iteratedFDeriv_add_apply` applies, so `rawJetsASum_of_splitJets` /
+`rawJetsBSum_of_splitJets` ask the remaining transports for one envelope per
+summand (the positive-stage sum from `CSPotentialSumEnvelope`, the initial stage
+from transport T2) instead of one envelope on the displayed sum, and
+`vorticityRateBound_aB_of_splitJets` discharges `VorticityRateBound (uSel aB)`
+from those four pointwise slice-jet bounds.  Nothing here proves those bounds. -/
+
+private theorem nat_le_infty (m : ℕ) : (m : WithTop ℕ∞) ≤ ∞ :=
+  ENat.natCast_le_of_coe_top_le_withTop le_rfl m
+
+/-- The selected potential stages are smooth on the open physical sublevel
+region: the `potential_smooth` field of the selected `StageEstimates` record. -/
+theorem selectedPotentialStages_smooth_physicalSublevel (j : ℕ) :
+    ContDiffOn ℝ ∞ (ActualCandidateAssembly.selectedPotentialStages j)
+      (CutStageEstimates.physicalSublevel h qbigSel) :=
+  (ActualCandidateAssembly.estimates ActualCandidateConstruction.selectedBudget
+    ActualCandidateConstruction.selectedThreshold
+    ActualCandidateConstruction.selectedThreshold_geometry).potential_smooth j
+
+/-- The same region fact for the selected direct stages (`direct_smooth`). -/
+theorem selectedDirectStages_smooth_physicalSublevel (j : ℕ) :
+    ContDiffOn ℝ ∞ (ActualCandidateAssembly.selectedDirectStages j)
+      (CutStageEstimates.physicalSublevel h qbigSel) :=
+  (ActualCandidateAssembly.estimates ActualCandidateConstruction.selectedBudget
+    ActualCandidateConstruction.selectedThreshold
+    ActualCandidateConstruction.selectedThreshold_geometry).direct_smooth j
+
+/-- Fourth field of `aB_selected`. -/
+private theorem aB_strictMono : StrictMono aB := by
+  obtain ⟨_, _, _, ham, _, _, _, _⟩ := aB_selected
+  exact ham
+
+/-- Fifth field of `aB_selected`: the realisation of the schedule diverges. -/
+private theorem aB_tendsto_real : Tendsto (fun j => (aB j : ℝ)) atTop atTop := by
+  obtain ⟨_, _, _, _, hat, _, _, _⟩ := aB_selected
+  exact hat
+
+private theorem aB_pos_real (j : ℕ) : (0 : ℝ) < (aB j : ℝ) := by
+  obtain ⟨_, hap, _, _, _, _, _, _⟩ := aB_selected
+  exact_mod_cast hap j
+
+/-- Sixth field of `aB_selected`: every scale reciprocal lies below `qbigSel`. -/
+private theorem aB_scale_gap (j : ℕ) : 1 / (aB j : ℝ) < qbigSel := by
+  obtain ⟨_, _, _, _, _, hgap, _, _⟩ := aB_selected
+  exact hgap j
+
+/-- The scale gap in the multiplicative form the zero-extension lemma wants. -/
+private theorem aB_gap_mul (j : ℕ) : 1 < (aB j : ℝ) * qbigSel := by
+  have hp := aB_pos_real j
+  simpa only [mul_comm] using (div_lt_iff₀ hp).mp (aB_scale_gap j)
+
+private theorem physicalQ_contDiffOn_preterminal :
+    ContDiffOn ℝ ∞ (PhysicalWaveSum.physicalQ h) PhysicalWaveSum.preterminal :=
+  fun _w hw => (PhysicalWaveSum.physicalQ_smoothAt outgoing.data.h_pos
+    outgoing.data.h_lt_half hw).contDiffWithinAt
+
+/-- **Every cut stage, extended by zero to all preterminal spacetime.**  The
+sublevel smoothness of the stage plus the scale gap `1 < (aB j : ℝ) * qbigSel`
+give the zero extension; no regularity of the stage outside the sublevel is
+charged. -/
+theorem cutStage_aB_contDiffOn {A : ℕ → ProblemStatement.VelocityField}
+    (hA : ∀ j, ContDiffOn ℝ ∞ (A j) (CutStageEstimates.physicalSublevel h qbigSel))
+    (j : ℕ) :
+    ContDiffOn ℝ ∞ (SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) A j) PhysicalWaveSum.preterminal := by
+  refine CutStageEstimates.cut_product_smooth_of_sublevel PhysicalWaveSum.preterminal_open
+    physicalQ_contDiffOn_preterminal ?_ (aB_pos_real j) (aB_gap_mul j)
+  exact hA j
+
+/-- The positive-stage sum is smooth at one preterminal point: local finiteness
+(`eventually_zero_tail`) reduces it to a finite sum of the previous lemma. -/
+theorem positiveSum_aB_contDiffAt {A : ℕ → ProblemStatement.VelocityField}
+    (hA : ∀ j, ContDiffOn ℝ ∞ (A j) (CutStageEstimates.physicalSublevel h qbigSel))
+    {w : ProblemStatement.SpaceTime} (hw : w ∈ PhysicalWaveSum.preterminal) :
+    ContDiffAt ℝ ∞ (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) w := by
+  refine (DiagonalJetBounds.tsum_jet_identity
+    (SolenoidalDiagonal.eventually_zero_tail aB_tendsto_real
+      ((PhysicalWaveSum.physicalQ_smoothAt outgoing.data.h_pos
+        outgoing.data.h_lt_half hw).continuousAt)
+      (PhysicalWaveSum.physicalQ_pos outgoing.data.h_pos outgoing.data.h_lt_half hw)
+      (CutStageEstimates.positiveStages A)) ?_).1
+  intro j
+  exact (cutStage_aB_contDiffOn
+    (CutStageEstimates.positiveStages_smooth (fun i _ => hA i)) j).contDiffAt
+    (PhysicalWaveSum.preterminal_open.mem_nhds hw)
+
+/-- The summation half of **PRIORITY 1**, parametric in the stage sequence. -/
+theorem positiveSum_aB_contDiffOn {A : ℕ → ProblemStatement.VelocityField}
+    (hA : ∀ j, ContDiffOn ℝ ∞ (A j) (CutStageEstimates.physicalSublevel h qbigSel)) :
+    ContDiffOn ℝ ∞ (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A))
+      PhysicalWaveSum.preterminal :=
+  fun _w hw => (positiveSum_aB_contDiffAt hA hw).contDiffWithinAt
+
+/-- **PRIORITY 1 (potential).** The positive-stage sum of the selected potential
+stages on the bounded schedule `aB` is smooth on the whole preterminal region. -/
+theorem positivePotentialSum_aB_contDiffOn :
+    ContDiffOn ℝ ∞ (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h)
+      (CutStageEstimates.positiveStages ActualCandidateAssembly.selectedPotentialStages))
+      PhysicalWaveSum.preterminal :=
+  positiveSum_aB_contDiffOn (A := ActualCandidateAssembly.selectedPotentialStages)
+    selectedPotentialStages_smooth_physicalSublevel
+
+/-- **PRIORITY 1 (direct).** The same row for the selected direct stages. -/
+theorem positiveDirectSum_aB_contDiffOn :
+    ContDiffOn ℝ ∞ (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h)
+      (CutStageEstimates.positiveStages ActualCandidateAssembly.selectedDirectStages))
+      PhysicalWaveSum.preterminal :=
+  positiveSum_aB_contDiffOn (A := ActualCandidateAssembly.selectedDirectStages)
+    selectedDirectStages_smooth_physicalSublevel
+
+/-- **The `iteratedFDeriv_add` split the carrier could not run.**  At a
+preterminal point the `k`-jet of the raw selected sum is the sum of the
+initial-stage jet and the positive-stage jet.  `MixedDiagonalSchedule.
+physical_initial_split_jets` alone only rewrites the jet of the raw sum into the
+jet of the *displayed* sum; splitting that jet needs both summands smooth, which
+is the content of `cutStage_aB_contDiffOn` and `positiveSum_aB_contDiffOn`. -/
+theorem iteratedFDeriv_potentialSum_aB_split {A : ℕ → ProblemStatement.VelocityField}
+    (hA : ∀ j, ContDiffOn ℝ ∞ (A j) (CutStageEstimates.physicalSublevel h qbigSel))
+    (k : ℕ) {w : ProblemStatement.SpaceTime} (hw : w ∈ PhysicalWaveSum.preterminal) :
+    iteratedFDeriv ℝ k (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) A) w =
+      iteratedFDeriv ℝ k (SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h) A 0) w
+    + iteratedFDeriv ℝ k (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) w := by
+  have hsplit : iteratedFDeriv ℝ k (SolenoidalDiagonal.potentialSum
+      (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h) A) w =
+      iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h) A 0 z +
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages A) z) w :=
+    MixedDiagonalSchedule.physical_initial_split_jets (hh := outgoing.data.h_pos)
+      (hh1 := outgoing.data.h_lt_half) (ha := aB_strictMono) (A := A) (w := w) hw k
+  rw [hsplit]
+  refine iteratedFDeriv_add_apply
+    (f := fun z : ProblemStatement.SpaceTime => SolenoidalDiagonal.cutStage
+      (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h) A 0 z)
+    (g := fun z : ProblemStatement.SpaceTime => SolenoidalDiagonal.potentialSum
+      (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+        (CutStageEstimates.positiveStages A) z) ?_ ?_
+  · exact ((cutStage_aB_contDiffOn hA 0).contDiffAt
+      (PhysicalWaveSum.preterminal_open.mem_nhds hw)).of_le (nat_le_infty k)
+  · exact (positiveSum_aB_contDiffAt hA hw).of_le (nat_le_infty k)
+
+/-- The potential row of the split, at the retained raw sum `ASum aB`. -/
+theorem iteratedFDeriv_ASum_aB_split (k : ℕ) {w : ProblemStatement.SpaceTime}
+    (hw : w ∈ PhysicalWaveSum.preterminal) :
+    iteratedFDeriv ℝ k (ASum aB) w =
+      iteratedFDeriv ℝ k (SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h) ActualCandidateAssembly.selectedPotentialStages 0) w
+    + iteratedFDeriv ℝ k (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h)
+        (CutStageEstimates.positiveStages ActualCandidateAssembly.selectedPotentialStages)) w :=
+  iteratedFDeriv_potentialSum_aB_split (A := ActualCandidateAssembly.selectedPotentialStages)
+    selectedPotentialStages_smooth_physicalSublevel k hw
+
+/-- The direct row of the split, at the retained raw sum `BSum aB`. -/
+theorem iteratedFDeriv_BSum_aB_split (k : ℕ) {w : ProblemStatement.SpaceTime}
+    (hw : w ∈ PhysicalWaveSum.preterminal) :
+    iteratedFDeriv ℝ k (BSum aB) w =
+      iteratedFDeriv ℝ k (SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h) ActualCandidateAssembly.selectedDirectStages 0) w
+    + iteratedFDeriv ℝ k (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h)
+        (CutStageEstimates.positiveStages ActualCandidateAssembly.selectedDirectStages)) w :=
+  iteratedFDeriv_potentialSum_aB_split (A := ActualCandidateAssembly.selectedDirectStages)
+    selectedDirectStages_smooth_physicalSublevel k hw
+
+/-- Two summand envelopes add to one envelope of the raw selected sum at a
+preterminal point. -/
+theorem norm_potentialSum_aB_le_split {A : ℕ → ProblemStatement.VelocityField}
+    (hA : ∀ j, ContDiffOn ℝ ∞ (A j) (CutStageEstimates.physicalSublevel h qbigSel))
+    {k : ℕ} {w : ProblemStatement.SpaceTime} (hw : w ∈ PhysicalWaveSum.preterminal)
+    {B₀ B₁ : ℝ}
+    (h0 : ‖iteratedFDeriv ℝ k (SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) A 0) w‖ ≤ B₀)
+    (h1 : ‖iteratedFDeriv ℝ k (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) w‖ ≤ B₁) :
+    ‖iteratedFDeriv ℝ k (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) A) w‖ ≤ B₀ + B₁ := by
+  rw [iteratedFDeriv_potentialSum_aB_split hA k hw]
+  exact (norm_add_le _ _).trans (add_le_add h0 h1)
+
+/-- **Two envelopes, one per summand, give the carrier's raw slice-jet
+envelope.**  Where `rawJetsASum_of_spaceJets` assumes one bound on the displayed
+"initial stage + positive-stage sum", this row assumes a bound on each summand's
+slice jet separately — which is what `CSPotentialSumEnvelope` emits for the
+positive summand and transport T2 emits for the initial stage — and derives the
+cylinder-sup row `hjetA` of `vorticityRateBound_aB_of_rawJets` at the summed
+constant.  The slice jets split because both summands are smooth on preterminal
+(`iteratedFDeriv_potentialSum_aB_split`, transported to the slice by composing
+with `fun x => (t, x)`); the pointwise-to-cylinder step is `cylBSup_le`. -/
+theorem rawJetsSplit_aB_of_twoSliceJets {A : ℕ → ProblemStatement.VelocityField}
+    (hA : ∀ j, ContDiffOn ℝ ∞ (A j) (CutStageEstimates.physicalSublevel h qbigSel))
+    {β : ℝ} {c₀ c₁ : ℝ} {t₀ : ℝ}
+    (hjet0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            A 0 (t, x)) x‖ ≤ c₀ * (1 - t) ^ (-β))
+    (hjet1 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages A) (t, x)) x‖ ≤ c₁ * (1 - t) ^ (-β)) :
+    ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2,
+      ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space),
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            A (t, x)) x‖ ≤ (c₀ + c₁) * (1 - t) ^ (-β) := by
+  intro t ht k hk
+  have hmap : ∀ y : ProblemStatement.Space, (t, y) ∈ PhysicalWaveSum.preterminal :=
+    fun _ => ht.2
+  have hs0 : ContDiffOn ℝ ∞ (fun x : ProblemStatement.Space => SolenoidalDiagonal.cutStage
+      (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h) A 0 (t, x)) univ :=
+    (cutStage_aB_contDiffOn hA 0).comp (contDiff_prodMk_right t).contDiffOn fun x _ => hmap x
+  have hs1 : ContDiffOn ℝ ∞ (fun x : ProblemStatement.Space => SolenoidalDiagonal.potentialSum
+      (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+      (CutStageEstimates.positiveStages A) (t, x)) univ :=
+    (positiveSum_aB_contDiffOn hA).comp (contDiff_prodMk_right t).contDiffOn fun x _ => hmap x
+  have hpt : ∀ y : ProblemStatement.Space,
+      ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            A (t, x)) y‖ ≤ (c₀ + c₁) * (1 - t) ^ (-β) := by
+    intro y
+    have hgerm : (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h) A) =ᶠ[𝓝 (t, y)]
+        (fun z : ProblemStatement.SpaceTime =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h) A 0 z +
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages A) z) :=
+      MixedDiagonalSchedule.physical_initial_split_germ (hh := outgoing.data.h_pos)
+        (hh1 := outgoing.data.h_lt_half) (ha := aB_strictMono) (A := A) (hmap y)
+    have hslice := SolenoidalDiagonal.iteratedFDeriv_eventuallyEq
+      (hgerm.comp_tendsto (continuous_const.prodMk continuous_id).continuousAt) k
+    have heq : iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            A (t, x)) y =
+        iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => SolenoidalDiagonal.cutStage
+          (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h) A 0 (t, x)) y +
+          iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+            SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              (CutStageEstimates.positiveStages A) (t, x)) y :=
+      hslice.self_of_nhds.trans
+        (iteratedFDeriv_add_apply (f := fun x : ProblemStatement.Space => SolenoidalDiagonal.cutStage
+            (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h) A 0 (t, x))
+          (g := fun x : ProblemStatement.Space => SolenoidalDiagonal.potentialSum
+            (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              (CutStageEstimates.positiveStages A) (t, x))
+          ((hs0.contDiffAt univ_mem).of_le (nat_le_infty k))
+          ((hs1.contDiffAt univ_mem).of_le (nat_le_infty k)))
+    rw [heq]
+    exact (norm_add_le _ _).trans
+      ((add_le_add (hjet0 t ht k hk y) (hjet1 t ht k hk y)).trans
+        (le_of_eq ((add_mul c₀ c₁ ((1 - t) ^ (-β))).symm)))
+  refine cylBSup_le (fun _ => norm_nonneg _) hpt ?_
+  refine ⟨(c₀ + c₁) * (1 - t) ^ (-β), fun y hy => ?_⟩
+  rcases hy with ⟨a, rfl⟩
+  exact hpt a.1
+
+/-- The potential row of the two-summand packaging at `ASum aB`. -/
+theorem rawJetsASum_of_splitJets {β : ℝ} {c₀ c₁ : ℝ} {t₀ : ℝ}
+    (hjet0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedPotentialStages 0 (t, x)) x‖ ≤
+              c₀ * (1 - t) ^ (-β))
+    (hjet1 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedPotentialStages) (t, x)) x‖ ≤
+              c₁ * (1 - t) ^ (-β)) :
+    ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2,
+      ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space),
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => ASum aB (t, x)) x‖ ≤
+          (c₀ + c₁) * (1 - t) ^ (-β) :=
+  rawJetsSplit_aB_of_twoSliceJets selectedPotentialStages_smooth_physicalSublevel
+    hjet0 hjet1
+
+/-- The direct row of the two-summand packaging at `BSum aB`. -/
+theorem rawJetsBSum_of_splitJets {β : ℝ} {c₀ c₁ : ℝ} {t₀ : ℝ}
+    (hjet0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedDirectStages 0 (t, x)) x‖ ≤
+              c₀ * (1 - t) ^ (-β))
+    (hjet1 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedDirectStages) (t, x)) x‖ ≤
+              c₁ * (1 - t) ^ (-β)) :
+    ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2,
+      ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space),
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => BSum aB (t, x)) x‖ ≤
+          (c₀ + c₁) * (1 - t) ^ (-β) :=
+  rawJetsSplit_aB_of_twoSliceJets selectedDirectStages_smooth_physicalSublevel
+    hjet0 hjet1
+
+/-- **The rate bound from four summand envelopes.**  Feeding the two rows above
+into `vorticityRateBound_aB_of_rawJets`, at the common constant
+`c₀ + c₁ + d₀ + d₁`.  This is the first row on the frontier whose hypotheses are
+one-sided per stage block: the initial stage and the positive-stage sum are
+bounded separately, which is the format `CSPotentialSumEnvelope` and transport
+T2 emit.  It discharges no hypothesis of its own — `VorticityRateBound (uSel aB)`
+still rests on those four pointwise slice-jet bounds. -/
+theorem vorticityRateBound_aB_of_splitJets
+    {β : ℝ} {c₀ c₁ d₀ d₁ : ℝ} (hc₀ : 0 ≤ c₀) (hc₁ : 0 ≤ c₁) (hd₀ : 0 ≤ d₀) (hd₁ : 0 ≤ d₁)
+    {t₀ : ℝ} (ht₀ : t₀ ∈ Ico (3 / 4 : ℝ) (1 : ℝ))
+    (hA0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedPotentialStages 0 (t, x)) x‖ ≤
+              c₀ * (1 - t) ^ (-β))
+    (hA1 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedPotentialStages) (t, x)) x‖ ≤
+              c₁ * (1 - t) ^ (-β))
+    (hB0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedDirectStages 0 (t, x)) x‖ ≤
+              d₀ * (1 - t) ^ (-β))
+    (hB1 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedDirectStages) (t, x)) x‖ ≤
+              d₁ * (1 - t) ^ (-β)) :
+    VorticityRateBound (uSel aB) := by
+  have hc : 0 ≤ c₀ + c₁ + d₀ + d₁ := by linarith
+  refine vorticityRateBound_aB_of_rawJets (β := β) hc ht₀ ?_ ?_
+  · have h := rawJetsASum_of_splitJets hA0 hA1
+    intro t ht k hk
+    have hrp : 0 ≤ (1 - t) ^ (-β) :=
+      Real.rpow_nonneg (by linarith [ht.1, ht.2] : (0 : ℝ) ≤ 1 - t) (-β)
+    exact ((h t ht k hk).trans (mul_le_mul_of_nonneg_right (by linarith) hrp))
+  · have h := rawJetsBSum_of_splitJets hB0 hB1
+    intro t ht k hk
+    have hrp : 0 ≤ (1 - t) ^ (-β) :=
+      Real.rpow_nonneg (by linarith [ht.1, ht.2] : (0 : ℝ) ≤ 1 - t) (-β)
+    exact ((h t ht k hk).trans (mul_le_mul_of_nonneg_right (by linarith) hrp))
+
 end Navier.Analysis.BKMEnvBoundedSchedule
 
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_selected
@@ -409,3 +788,25 @@ end Navier.Analysis.BKMEnvBoundedSchedule
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsASum_of_spaceJets
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsBSum_of_spaceJets
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_spaceJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.nat_le_infty
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.selectedPotentialStages_smooth_physicalSublevel
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.selectedDirectStages_smooth_physicalSublevel
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_strictMono
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_tendsto_real
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_pos_real
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_scale_gap
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_gap_mul
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.physicalQ_contDiffOn_preterminal
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.cutStage_aB_contDiffOn
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.positiveSum_aB_contDiffAt
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.positiveSum_aB_contDiffOn
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.positivePotentialSum_aB_contDiffOn
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.positiveDirectSum_aB_contDiffOn
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.iteratedFDeriv_potentialSum_aB_split
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.iteratedFDeriv_ASum_aB_split
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.iteratedFDeriv_BSum_aB_split
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.norm_potentialSum_aB_le_split
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsSplit_aB_of_twoSliceJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsASum_of_splitJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsBSum_of_splitJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_splitJets
