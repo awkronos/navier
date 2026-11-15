@@ -772,6 +772,133 @@ theorem vorticityRateBound_aB_of_splitJets
       Real.rpow_nonneg (by linarith [ht.1, ht.2] : (0 : ℝ) ≤ 1 - t) (-β)
     exact ((h t ht k hk).trans (mul_le_mul_of_nonneg_right (by linarith) hrp))
 
+/-! ## THE COMPOSER — two `CSPotentialSumEnvelope` envelopes give the rate bound
+
+`vorticityRateBound_aB_of_splitJets` is the frontier's terminal row, but the two
+positive-stage hypotheses `hA1`, `hB1` it asks for are *slice* estimates: jets of
+`fun x => F (t, x)` on `{t} × Space`.  No producer in the repository proves a
+slice estimate.  `CSPotentialSumEnvelope.potentialSum_negPower_envelope_physical`
+and `potentialSum_negPower_envelope_of_cutBounds` emit the jets of the spacetime
+function `F` itself, at spacetime points, in the negative-power form
+`C · physicalQ h w ^ (-β)`.  The two rows below are the exact bridge: the base
+converts from `physicalQ` to the remaining time by
+`BKMProfileEnvelope.one_sub_le_physicalQ`, and the slice leg is
+`BKMEnvCut.norm_iteratedFDeriv_slice_le` at the smoothness the P1 lane supplied
+(`positivePotentialSum_aB_contDiffOn`, `positiveDirectSum_aB_contDiffOn`).  The
+composer then asks transport T1 for two envelopes in the producer's own format
+and transport T2 for the two stage-zero slice rows, and nothing else. -/
+
+/-- **From spacetime jets to slice jets, strip-uniformly.**  Packaging
+`BKMEnvCut.norm_iteratedFDeriv_slice_le` in the format both raw-envelope
+consumers ask for: a pointwise bound on the jets of a spacetime function `F` on
+the time strip `{t} × Space`, `t ∈ Ico t₀ 1`, transfers to the same bound on the
+jets of the slices `fun x => F (t, x)`, with no change of constant or rate.  The
+only input beyond the bound is `ContDiffOn ℝ ∞ F preterminal`. -/
+private theorem sliceJetBound_of_spacetimeJetBound
+    {F : ProblemStatement.SpaceTime → ProblemStatement.Space}
+    (hF : ContDiffOn ℝ ∞ F PhysicalWaveSum.preterminal)
+    {β : ℝ} {c : ℝ} {t₀ : ℝ}
+    (h : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k F (t, x)‖ ≤ c * (1 - t) ^ (-β)) :
+    ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => F (t, x)) x‖ ≤
+          c * (1 - t) ^ (-β) := by
+  intro t ht k hk x
+  exact (BKMEnvCut.norm_iteratedFDeriv_slice_le (f := F) PhysicalWaveSum.preterminal_open hF
+    t (fun y => ht.2) x k).trans (h t ht k hk x)
+
+/-- **Base transfer: a `physicalQ` envelope is a remaining-time envelope.**
+`CSPotentialSumEnvelope`'s output is `C · physicalQ h w ^ (-β)` at spacetime
+points `w`.  Since the similarity coordinate dominates the remaining time
+(`BKMProfileEnvelope.one_sub_le_physicalQ: 1 - t ≤ physicalQ h (t, x)`, uniform
+in `x`) and `r · ↦ r ^ (-β)` is antitone for `0 ≤ β`, every such envelope is
+verbatim an envelope at the base `(1 - t) ^ (-β)` that the whole `BKMEnv*` chain
+consumes, at the same constant and the same rate. -/
+theorem negPowerEnvelope_to_stripJetBound
+    {F : ProblemStatement.SpaceTime → ProblemStatement.Space}
+    {β : ℝ} (hβ : 0 ≤ β) {C : ℝ} (hC : 0 ≤ C) {t₀ : ℝ}
+    (henv : ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m F w‖ ≤ C * PhysicalWaveSum.physicalQ h w ^ (-β)) :
+    ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k F (t, x)‖ ≤ C * (1 - t) ^ (-β) := by
+  intro t ht k hk x
+  refine (henv k hk (t, x) ht.2).trans (mul_le_mul_of_nonneg_left ?_ hC)
+  refine Real.rpow_le_rpow_of_nonpos (by linarith [ht.2] : (0 : ℝ) < 1 - t) ?_
+    (by linarith)
+  exact Navier.Analysis.BKMProfileEnvelope.one_sub_le_physicalQ
+    outgoing.data.h_pos outgoing.data.h_lt_half ht.2 x
+
+/-- **The composer: two spacetime envelopes and two stage-zero rows give the
+rate bound.**  Its two positive-stage hypotheses `henvA`, `henvB` are stated in
+exactly the conclusion format of
+`CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds` /
+`…_physical` at the ceiling `M = 2` over `S = PhysicalWaveSum.preterminal` — one
+for the selected potential stages, one for the selected direct stages — so that
+carrier needs no further packaging to feed this row; `BKMProfileEnvelope`'s
+coordinate comparison converts the base and
+`BKMEnvCut.norm_iteratedFDeriv_slice_le` converts spacetime jets to slice jets,
+both at the same constant and rate.  The two remaining hypotheses are the
+stage-zero slice rows `hjet0` of `rawJetsASum_of_splitJets` /
+`rawJetsBSum_of_splitJets` in the format transport T2 emits them.  So
+`VorticityRateBound (uSel aB)` now rests on exactly two named analytic inputs:
+T1's positive-stage envelope with its side condition `hnum`, and T2's stage-zero
+bound.  This row discharges neither. -/
+theorem vorticityRateBound_aB_of_negPowerEnvelopes
+    {β : ℝ} (hβ : 0 ≤ β)
+    {c₀ c₁ d₀ d₁ : ℝ} (hc₀ : 0 ≤ c₀) (hc₁ : 0 ≤ c₁) (hd₀ : 0 ≤ d₀) (hd₁ : 0 ≤ d₁)
+    {t₀ : ℝ} (ht₀ : t₀ ∈ Ico (3 / 4 : ℝ) (1 : ℝ))
+    (hA0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedPotentialStages 0 (t, x)) x‖ ≤
+              c₀ * (1 - t) ^ (-β))
+    (hB0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedDirectStages 0 (t, x)) x‖ ≤
+              d₀ * (1 - t) ^ (-β))
+    (henvA : ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m
+          (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+            (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedPotentialStages)) w‖ ≤
+              c₁ * PhysicalWaveSum.physicalQ h w ^ (-β))
+    (henvB : ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m
+          (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+            (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedDirectStages)) w‖ ≤
+              d₁ * PhysicalWaveSum.physicalQ h w ^ (-β)) :
+    VorticityRateBound (uSel aB) :=
+  vorticityRateBound_aB_of_splitJets hc₀ hc₁ hd₀ hd₁ ht₀ hA0
+    (sliceJetBound_of_spacetimeJetBound
+      (F := SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h)
+        (CutStageEstimates.positiveStages
+          ActualCandidateAssembly.selectedPotentialStages))
+      positivePotentialSum_aB_contDiffOn
+      (negPowerEnvelope_to_stripJetBound
+        (F := SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+          (PhysicalWaveSum.physicalQ h)
+          (CutStageEstimates.positiveStages
+            ActualCandidateAssembly.selectedPotentialStages))
+        (t₀ := t₀) hβ hc₁ henvA))
+    hB0
+    (sliceJetBound_of_spacetimeJetBound
+      (F := SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h)
+        (CutStageEstimates.positiveStages
+          ActualCandidateAssembly.selectedDirectStages))
+      positiveDirectSum_aB_contDiffOn
+      (negPowerEnvelope_to_stripJetBound
+        (F := SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+          (PhysicalWaveSum.physicalQ h)
+          (CutStageEstimates.positiveStages
+            ActualCandidateAssembly.selectedDirectStages))
+        (t₀ := t₀) hβ hd₁ henvB))
+
 end Navier.Analysis.BKMEnvBoundedSchedule
 
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_selected
@@ -810,3 +937,6 @@ end Navier.Analysis.BKMEnvBoundedSchedule
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsASum_of_splitJets
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsBSum_of_splitJets
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_splitJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.sliceJetBound_of_spacetimeJetBound
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.negPowerEnvelope_to_stripJetBound
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_negPowerEnvelopes
