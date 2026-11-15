@@ -23,6 +23,13 @@ candidate properties, and keeps the three cut-stage bounds.  For `uSel aB`:
 
 Status: conditional.  The two cylinder-sup bounds `hA`, `hB` remain open; this
 module does not prove them and does not prove `VorticityRateBound (uSel aB)`.
+Lane MSW-NAVIER-VRTY-1114 (2026-11-14) added `vorticityRateBound_aB_of_rawJets`:
+the same rate bound under ONE named hypothesis — a raw slice-jet envelope of
+the two sums at orders `≤ 2` — by way of transport T3 in `BKMEnvCut`.  That raw
+envelope is itself still open (it is transport T1's missing low-stage table
+`hK`, whose output format `CS_PotentialSumEnvelope` emits), so nothing here
+discharges `VorticityRateBound (uSel aB)` and the `hA`/`hB` bounds above remain
+unproved.
 -/
 import Navier.Analysis.BKMEnvCut
 import Navier.Construction.BoundedScheduleWitness
@@ -33,7 +40,7 @@ noncomputable section
 open Set Filter Topology
 open scoped ContDiff
 open Navier Navier.Analysis.BKMVorticityIntegralDivergence
-open Navier.Analysis.BKMProfileRateBound
+open Navier.Analysis.BKMProfileGronwallPair Navier.Analysis.BKMProfileRateBound
 open Navier.Analysis.BKMProfileSelectedEnvelope
 open Navier.Construction ProblemStatement SpatialCurl
 open Navier.Construction.CorrectionInitialization
@@ -147,6 +154,44 @@ theorem vorticityRateBound_aB_of_cylSums
     ⟨(show (0 : ℝ) ≤ 3 / 4 by norm_num).trans ht₀.1, ht₀.2⟩
     (polyUpper_aB_of_cylSums hc₁ hc₂ ht₀ hA hB)
 
+/-- **Transport T3 on the bounded schedule.** A single named hypothesis — a
+raw slice-jet envelope of the two sums on `aB`, at orders `≤ 2` and one rate
+`β` — gives `VorticityRateBound (uSel aB)`.  The two cylinder-sup power bounds
+`hA`, `hB` of `vorticityRateBound_aB_of_cylSums` are discharged here from the
+raw jets through `BKMEnvCut.cutVelocity_cylSup_le_rawJets` and
+`BKMEnvCut.cutPotential_cylSup_le_rawJets`, at the explicit constants
+`4 · ‖curlLinear‖² · cutJetBound · c` and `2 · ‖curlLinear‖ · cutJetBound · c`.
+The residual obligation is now the raw envelope itself: transport T1's missing
+low-stage table `hK`.  Satisfiable: a spatially constant slice satisfies it at
+rate `β = 0`. -/
+theorem vorticityRateBound_aB_of_rawJets
+    {β : ℝ} {c : ℝ} (hc : 0 ≤ c)
+    {t₀ : ℝ} (ht₀ : t₀ ∈ Ico (3 / 4 : ℝ) (1 : ℝ))
+    (hjetA : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2,
+        ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space),
+          ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => ASum aB (t, x)) x‖ ≤
+            c * (1 - t) ^ (-β))
+    (hjetB : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2,
+        ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space),
+          ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => BSum aB (t, x)) x‖ ≤
+            c * (1 - t) ^ (-β)) :
+    VorticityRateBound (uSel aB) := by
+  have hcA : 0 ≤ (4 : ℝ) * ‖curlLinear‖ ^ 2 * BKMEnvCut.cutJetBound * c :=
+    mul_nonneg (mul_nonneg (mul_nonneg (by norm_num : (0 : ℝ) ≤ 4)
+      (by positivity : 0 ≤ ‖curlLinear‖ ^ 2)) BKMEnvCut.cutJetBound_nonneg) hc
+  have hcB : 0 ≤ (2 : ℝ) * ‖curlLinear‖ * BKMEnvCut.cutJetBound * c :=
+    mul_nonneg (mul_nonneg (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2)
+      (by positivity : 0 ≤ ‖curlLinear‖)) BKMEnvCut.cutJetBound_nonneg) hc
+  refine vorticityRateBound_aB_of_cylSums (β := β) hcA hcB ht₀ ?_ ?_
+  · intro t ht
+    exact BKMEnvCut.cutVelocity_cylSup_le_rawJets
+      ⟨(show (0 : ℝ) ≤ 3 / 4 by norm_num).trans (ht₀.1.trans ht.1), ht.2⟩
+      (ASum_aB_slice_smooth ht.2) hc (hjetA t ht)
+  · intro t ht
+    exact BKMEnvCut.cutPotential_cylSup_le_rawJets
+      ⟨(show (0 : ℝ) ≤ 3 / 4 by norm_num).trans (ht₀.1.trans ht.1), ht.2⟩
+      (BSum_aB_slice_smooth ht.2) hc (hjetB t ht)
+
 end Navier.Analysis.BKMEnvBoundedSchedule
 
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_selected
@@ -157,3 +202,4 @@ end Navier.Analysis.BKMEnvBoundedSchedule
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.BSum_aB_slice_smooth
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.polyUpper_aB_of_cylSums
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_cylSums
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_rawJets
