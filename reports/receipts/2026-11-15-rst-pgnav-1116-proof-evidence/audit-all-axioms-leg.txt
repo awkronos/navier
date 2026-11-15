@@ -1,0 +1,6 @@
+=== rc=0 wall=19.3s started=Sun Nov 15 12:41:13 2026 ===
+--- STDOUT ---
+All imported Navier declarations use only the permitted axioms.
+
+--- STDERR ---
+
