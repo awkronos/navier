@@ -1,0 +1,42 @@
+import Navier
+import Navier.AdjointBackpropagation
+import Navier.Analysis.CrownBridgeReduction
+import Navier.Analysis.H3RestartSlice
+import Navier.Analysis.MildTimeLeafX1CascadeFalsification
+import Navier.Analysis.RestartAgreementOpen
+import Navier.Analysis.WienerH3DampedProducer
+import Navier.Transfer.MildSelfMapDefectBudget
+import Navier.Transfer.MildSelfMapTransport
+import Lean.Util.CollectAxioms
+
+/-!
+RST-PGNAV-1116: transitive axiom census over EVERY Navier-owned declaration
+reachable from the declared library surface. `scripts/AuditAllAxioms.lean`
+imports only `Navier`, which reaches 1061 of 1069 modules; the 8 named below
+`tools/module-closure-check.py` are built by the lakefile `globs` but sit
+outside the aggregator's import closure, so they are added here explicitly.
+Same predicate as `Navier/AxiomAudit.lean` and CI's census: the permitted set
+is {propext, Classical.choice, Quot.sound}; sorryAx is not permitted.
+-/
+
+open Lean Elab Command in
+run_cmd do
+  let env ← getEnv
+  let mut failed := false
+  let mut audited : Nat := 0
+  for (name, _) in env.constants.toList do
+    let some idx := env.getModuleIdxFor? name | continue
+    let owner := env.header.modules[idx.toNat]!.module
+    if !(`Navier).isPrefixOf owner then continue
+    audited := audited + 1
+    let axioms ← liftCoreM (collectAxioms name)
+    let unexpected := axioms.filter fun ax =>
+      ax != `propext && ax != `Classical.choice && ax != `Quot.sound
+    if !unexpected.isEmpty then
+      logError m!"{name} (from {owner}) depends on disallowed axioms: {unexpected}"
+      failed := true
+  logInfo m!"DECLARATIONS_AUDITED: {audited}"
+  if failed then
+    throwError "Full-closure Navier axiom census FAILED."
+  else
+    logInfo "CENSUS_COMPLETE: all Navier-owned declarations use only {propext, Classical.choice, Quot.sound}"

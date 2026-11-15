@@ -1,0 +1,7 @@
+=== rc=0 wall=20.7s started=Sun Nov 15 12:46:47 2026 cwd=/Users/schizodactyl/navier (clean at 49abd651) ===
+--- STDOUT ---
+DECLARATIONS_AUDITED: 66234
+CENSUS_COMPLETE: all Navier-owned declarations use only {propext, Classical.choice, Quot.sound}
+
+--- STDERR ---
+

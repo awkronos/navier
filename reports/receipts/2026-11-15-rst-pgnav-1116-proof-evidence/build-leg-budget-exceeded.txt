@@ -1,0 +1,41 @@
+=== lake_build_Navier :: rc=TIMEOUT wall=600.1s ===
+--- STDOUT ---
+thlib`, which is designed for use with the module system; consider adding `module` to the start of this file
+warning: Navier/Analysis/ContinuousLeiLinActualSlots.lean: imports `Mathlib.MeasureTheory.Measure.WithDensity` from package `mathlib`, which is designed for use with the module system; consider adding `module` to the start of this file
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:336:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.commonFrequencyMeasure_le_xm1' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:337:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.volume_absolutelyContinuous_commonFrequencyMeasure' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:338:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.norm_lpTopToLpOneLinear_le' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:339:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.realizeXm1Trajectory_injective' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:340:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.realizeViscousX1Trajectory_injective' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:341:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.actualLinkedCarrier_complete' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:342:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.actualLinkedBox_complete' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+info: Navier/Analysis/ContinuousLeiLinActualSlots.lean:343:0: 'Navier.Analysis.ContinuousLeiLinActualSlots.actual_existsUnique_fixedPoint_of_coordinate_sum' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+✔ [9943/10089] Built Navier.Construction.ActualParticularCoherence (23s)
+⚠ [9944/10089] Built Navier.Construction.ActualCyclePeriodicity (12s)
+warning: Navier/Construction/ActualCyclePeriodicity.lean:82:25: `AddMonoidAlgebra.coeff_single_apply` has been deprecated: Use `Finsupp.single_apply` instead
+
+Note: The updated constant has a different type:
+  ∀ {α : Type u_1} {M : Type u_4} [inst : Zero M] {a a' : α} {b : M} [inst_1 : Decidable (a = a')],
+    (Finsupp.single a b) a' = if a = a' then b else 0
+instead of
+  ∀ {R : Type u_1} {M : Type u_4} [inst : Semiring R] {a a' : M} {b : R} [inst_1 : Decidable (a = a')],
+    (AddMonoidAlgebra.single a b).coeff a' = if a = a' then b else 0
+
+Note: The updated constant is in a different namespace. Dot notation may need to be changed (e.g., from `x.coeff_single_apply` to `Finsupp.single_apply x`).
+warning: Navier/Construction/ActualCyclePeriodicity.lean:88:8: `if_pos` has been deprecated: Use `it

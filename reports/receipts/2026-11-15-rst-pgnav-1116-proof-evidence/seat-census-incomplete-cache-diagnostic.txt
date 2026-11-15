@@ -1,0 +1,6 @@
+=== rc=1 wall=23.5s started=Sun Nov 15 12:43:54 2026 cwd=SEAT ===
+--- STDOUT ---
+/tmp/rstpgnav1116/FullClosureAxiomCensus.lean:1:0: error: object file '/Users/schizodactyl/seats/omni1116/RST-PGNAV-1116/.lake/build/lib/lean/Navier/Construction/ActualSignedGeometry.olean' of module Navier.Construction.ActualSignedGeometry does not exist
+
+--- STDERR ---
+
