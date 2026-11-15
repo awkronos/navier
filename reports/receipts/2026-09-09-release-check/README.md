@@ -32,3 +32,14 @@ The browser WASM SHA-256 is
 Compiled source digest remains
 `sha256-0e1821db4a7bb0a52adbda940128aa5e0dd1f50deac13feeca834b763c7c07ac`.
 These numerical checks do not constitute a continuum theorem.
+
+---
+
+## Duplicate-receipt disposition (appended 2026-11-15, no content above changed)
+
+An RSI `duplicate_group` row flagged the raw axiom audit in this directory
+because it shares bytes with receipts elsewhere in this tree. Nothing was
+rewritten, collapsed into a pointer, or deleted: the byte-identity is the
+reproduction evidence of a second verifier run. See
+[`../DUPLICATE_GROUP_AXIOMS_2026-11-15.md`](../DUPLICATE_GROUP_AXIOMS_2026-11-15.md)
+for the member table, blob hashes and the reason each duplicate exists.

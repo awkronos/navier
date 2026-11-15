@@ -78,3 +78,14 @@ and deteriorate as its endpoint tends to one.
 No declaration in this receipt proves
 `Navier.ProblemStatements.WholeSpaceGlobalRegularity`. That unforced all-data
 statement A remains open. The periodic alternative D also remains open here.
+
+---
+
+## Duplicate-receipt disposition (appended 2026-11-15, no content above changed)
+
+An RSI `duplicate_group` row flagged the raw axiom audit in this directory
+because it shares bytes with receipts elsewhere in this tree. Nothing was
+rewritten, collapsed into a pointer, or deleted: the byte-identity is the
+reproduction evidence of a second verifier run. See
+[`../DUPLICATE_GROUP_AXIOMS_2026-11-15.md`](../DUPLICATE_GROUP_AXIOMS_2026-11-15.md)
+for the member table, blob hashes and the reason each duplicate exists.
