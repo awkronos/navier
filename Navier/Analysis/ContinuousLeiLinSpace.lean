@@ -852,6 +852,108 @@ theorem normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable
   normXm1_continuousNavierBilinear_mass_le u v hu0 hv0
     (integrable_normXm1_continuousNavierBilinear u v hu hv hu0 hv0)
 
+/-! ### Surface tests
+
+Consumer-side checks on the exported names of this module: each example states
+a property of a public operator or instantiates a public estimate at concrete
+data.  They declare no new API surface and restate no mathlib lemma. -/
+
+/-- The Hermitian-carrier multiplier is the identity at the zero frequency: the
+same totalization that `continuousLeray_zero` records on the coordinate
+carrier. -/
+example (z : ComplexE3) : continuousLerayE 0 z = z := by
+  simp [continuousLerayE, spaceProj]
+
+/-- The continuous multiplier kills the zero vector at every frequency. -/
+example (ξ : ES) : continuousLeray ξ 0 = 0 := by
+  simp [continuousLeray]
+
+/-- Idempotence of the continuous multiplier, transported from the underlying
+linear projection. -/
+example (ξ : ES) (z : ComplexSpace) :
+    continuousLeray ξ (continuousLeray ξ z) = continuousLeray ξ z := by
+  simp [continuousLeray, complexLeray_idempotent]
+
+/-- The Fourier heat mode is the identity at zero time. -/
+example (ν : ℝ) (f : ES → ℂ) (ξ : ES) : heatMode ν 0 f ξ = f ξ := by
+  simp [heatMode]
+
+/-- The Fourier heat mode is the identity at zero viscosity. -/
+example (t : ℝ) (f : ES → ℂ) (ξ : ES) : heatMode 0 t f ξ = f ξ := by
+  simp [heatMode]
+
+/-- The homogeneous `X⁻¹` quantity is unchanged by the zero-time heat mode. -/
+example (ν : ℝ) (f : ES → ℂ) : normXm1 (heatMode ν 0 f) = normXm1 f := by
+  unfold normXm1
+  congr
+  funext ξ
+  simp [heatMode]
+
+/-- Convolving a profile with the zero profile gives the zero profile. -/
+example (f : ES → ℝ) : convolution f 0 = 0 := by
+  funext ξ
+  simp [convolution]
+
+/-- The continuous `X⁰` mass of the zero profile is zero. -/
+example : normX0 (0 : ES → ℝ) = 0 := by simp [normX0]
+
+/-- The continuous `X⁻¹` quantity of the zero profile is zero. -/
+example : normXm1 (0 : ES → ℂ) = 0 := by simp [normXm1]
+
+/-- The continuous `X¹` quantity of the zero profile is zero. -/
+example : normX1 (0 : ES → ℂ) = 0 := by simp [normX1]
+
+/-- The Lei--Lin interpolation inequality consumes exactly the two endpoint
+integrabilities that the Schwartz lemmas supply. -/
+example (f : SchwartzMap ES ℂ) :
+    (∫ ξ : ES, ‖((𝓕 f : SchwartzMap ES ℂ) : ES → ℂ) ξ‖) ^ 2 ≤
+      normXm1 (𝓕 f : SchwartzMap ES ℂ) * normX1 (𝓕 f : SchwartzMap ES ℂ) :=
+  normX0_sq_le_normXm1_mul_normX1 (𝓕 f : SchwartzMap ES ℂ)
+    (fourier_schwartz_integrable_Xm1 f) (fourier_schwartz_integrable_X1 f)
+
+/-- Free heat evolution contracts the critical `X⁻¹` norm of Schwartz Fourier
+data. -/
+example (f : SchwartzMap ES ℂ) (ν t : ℝ) (hν : 0 ≤ ν) (ht : 0 ≤ t) :
+    normXm1 (heatMode ν t (𝓕 f : SchwartzMap ES ℂ)) ≤
+      normXm1 (𝓕 f : SchwartzMap ES ℂ) :=
+  heat_contracts_Xm1 hν ht _ (fourier_schwartz_integrable_Xm1 f)
+
+/-- The continuous Navier symbol vanishes when its advecting argument is zero. -/
+example (u : ES → ComplexSpace) : continuousNavierBilinear u 0 = 0 := by
+  have hraw : rawNavierConvection u 0 = 0 := by
+    funext ξ i
+    show (∑ j : Fin 3, (ξ j : ℂ) *
+        ((fun η => u η j) ⋆[ContinuousLinearMap.mul ℂ ℂ, volume]
+          (fun η => (0 : ComplexSpace) i)) ξ) = 0
+    refine Finset.sum_eq_zero (fun j _ => mul_eq_zero.2 (Or.inr ?_))
+    simp [MeasureTheory.convolution]
+  funext ξ
+  show continuousLeray ξ (Complex.I • rawNavierConvection u 0 ξ) = 0
+  rw [hraw]
+  simp [continuousLeray]
+
+/-- The pointwise `X⁻¹` majorant forces the symbol density at zero data to
+vanish. -/
+example (ξ : ES) :
+    ‖ξ‖⁻¹ * complexEuclideanNorm (continuousNavierBilinear 0 0 ξ) ≤ 0 := by
+  refine le_trans (normXm1_continuousNavierBilinear_pointwise 0 0 ξ) ?_
+  simp [convolution, MeasureTheory.convolution]
+
+/-- The unconditional bilinear estimate consumes the Schwartz coordinate
+measurability and `L¹` masses exactly as they are stated. -/
+example (u v : Fin 3 → SchwartzMap ES ℂ) :
+    (∫ ξ : ES, ‖ξ‖⁻¹ *
+        complexEuclideanNorm (continuousNavierBilinear
+          (fun η j => (𝓕 (u j) : SchwartzMap ES ℂ) η)
+          (fun η i => (𝓕 (v i) : SchwartzMap ES ℂ) η) ξ)) ≤
+      ∑ i : Fin 3, ∑ j : Fin 3,
+        (∫ η : ES, ‖(𝓕 (u j) : SchwartzMap ES ℂ) η‖) *
+          (∫ η : ES, ‖(𝓕 (v i) : SchwartzMap ES ℂ) η‖) :=
+  normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable _ _
+    (fun j => fourier_schwartz_coordinate_aestronglyMeasurable u j)
+    (fun i => fourier_schwartz_coordinate_aestronglyMeasurable v i)
+    (fun j => (𝓕 (u j)).integrable.norm) (fun i => (𝓕 (v i)).integrable.norm)
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -890,3 +992,16 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_coordinate_aestronglyMeasurable
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuous_complexFrequency
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_zero
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLerayE_norm_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.integrable_continuousLerayE_of_aestronglyMeasurable
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_X1
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.complexE3PiMeasurableSpace_eq_borel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.complexE3EuclideanMeasurableSpace_eq_borel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.esPiMeasurableSpace_eq_borel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.esEuclideanMeasurableSpace_eq_borel
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.es_measurableSpace_coherent
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.euclidean_norm_le_coordinate_sum
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.navier_frequency_factor_le
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.inv_mul_derivative_le
