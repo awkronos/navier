@@ -30,6 +30,17 @@ envelope is itself still open (it is transport T1's missing low-stage table
 `hK`, whose output format `CS_PotentialSumEnvelope` emits), so nothing here
 discharges `VorticityRateBound (uSel aB)` and the `hA`/`hB` bounds above remain
 unproved.
+
+Lane MSW-NAVIER-HK-1114 (2026-11-15) supplies the missing `hK` table in
+`CS_PotentialSumEnvelope` (`lowStageTable`, `lowStageTable_le`,
+`potentialSum_negPower_envelope_of_cutBounds`) and the spacetime-to-slice jet
+leg in `BKMEnvCut` (`norm_iteratedFDeriv_slice_le`), and adds below
+`rawJets_aB_of_posAndInitial`: the carrier's raw slice-jet envelope follows
+from the positive-stage envelope and the stage-zero term, using
+`MixedDiagonalSchedule.physical_initial_split_jets`.  This is still a
+reduction, not a discharge: the two inputs it names are hypotheses here, the
+positive-stage one itself carrying `CS_PotentialSumEnvelope`'s undischarged
+side condition `hnum`, and `VorticityRateBound (uSel aB)` remains unproved.
 -/
 import Navier.Analysis.BKMEnvCut
 import Navier.Construction.BoundedScheduleWitness
@@ -192,6 +203,196 @@ theorem vorticityRateBound_aB_of_rawJets
       ⟨(show (0 : ℝ) ≤ 3 / 4 by norm_num).trans (ht₀.1.trans ht.1), ht.2⟩
       (BSum_aB_slice_smooth ht.2) hc (hjetB t ht)
 
+/-! ## Transport T2 made explicit
+
+The raw sums `ASum aB` / `BSum aB` keep their stage-zero term, while the
+positive-stage object that `CS_PotentialSumEnvelope` bounds does not.
+`MixedDiagonalSchedule.physical_initial_split_jets` is the exact bridge: at every
+preterminal spacetime point the jet of the raw sum is the jet of the single
+function "stage zero plus the positive-stage sum".  Together with the slice leg
+`BKMEnvCut.norm_iteratedFDeriv_slice_le` this turns the carrier's raw slice-jet
+envelope into a spacetime-jet envelope of that displayed sum, which is the
+format the two remaining transports emit: `CSPotentialSumEnvelope` for the
+positive-stage summand, transport T2 for the initial stage. -/
+
+/-- The origin lies in the spatial support cylinder. -/
+private theorem zero_mem_cylB :
+    (0 : ProblemStatement.Space) ∈ (SpatialLocalization.supportCylinder :
+      Set ProblemStatement.Space) := by
+  simp [SpatialLocalization.supportCylinder, SpatialLocalization.radialSquare]
+
+/-- **Cylinder-sup packaging.** A pointwise bound and a pointwise lower bound
+transfer to the iterated cylinder supremum: `cbiSup_eq_ciSup_subtype` rewrites
+the iterated sup to a sup over the subtype (its two side conditions are the
+boundedness the pointwise bound itself supplies, and the empty-case default
+`sSup ∅ = 0 ≤ sup`), then `ciSup_le` finishes.  No compactness is used. -/
+private theorem cylBSup_le {g : ProblemStatement.Space → ℝ} {c : ℝ}
+    (hgnn : ∀ x : ProblemStatement.Space, 0 ≤ g x)
+    (h : ∀ x : ProblemStatement.Space, g x ≤ c)
+    (hbdd : BddAbove (Set.range (fun a : { x // x ∈ (SpatialLocalization.supportCylinder :
+        Set ProblemStatement.Space) } => g a.1))) :
+    ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space), g x ≤ c := by
+  haveI : Nonempty { x : ProblemStatement.Space //
+      x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space) } :=
+    ⟨⟨0, zero_mem_cylB⟩⟩
+  rw [cbiSup_eq_ciSup_subtype (p := fun x : ProblemStatement.Space =>
+        x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space))
+    (f := fun (x : ProblemStatement.Space)
+      (_ : x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space)) => g x)
+    hbdd (by rw [Real.sSup_empty]; exact (hgnn 0).trans (le_ciSup hbdd ⟨0, zero_mem_cylB⟩))]
+  exact ciSup_le fun a => h a.1
+
+/-- **The carrier's raw slice-jet envelope, reduced (potential sum).** If the
+spacetime jets at orders `≤ 2` of the displayed sum "initial stage of
+`selectedPotentialStages` plus the positive-stage potential sum" are bounded on
+`{t} × Space` by `c · (1 - t) ^ (-β)`, then the slice-jet envelope `hjetA` of
+`vorticityRateBound_aB_of_rawJets` holds with the same constant.  Mechanism: the
+slice jet is at most the spacetime jet (`BKMEnvCut.norm_iteratedFDeriv_slice_le`,
+whose smoothness input is `aB_selected`'s preterminal
+`ThreeSmoothSums.potential`), and the spacetime jet of `ASum aB` is exactly the
+spacetime jet of that displayed sum (`physical_initial_split_jets`).  Reduction,
+not discharge: the hypothesis is a named input, and it is the two remaining
+transports (T1's positive-stage envelope with its side condition `hnum`, and T2
+for the initial stage) that would have to supply it. -/
+theorem rawJetsASum_of_spaceJets
+    {β : ℝ} {c : ℝ} {t₀ : ℝ}
+    (hjet : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+            SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              ActualCandidateAssembly.selectedPotentialStages 0 z +
+              SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+                (PhysicalWaveSum.physicalQ h)
+                (CutStageEstimates.positiveStages
+                  ActualCandidateAssembly.selectedPotentialStages) z) (t, x)‖ ≤
+          c * (1 - t) ^ (-β)) :
+    ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2,
+      ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space),
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => ASum aB (t, x)) x‖ ≤
+          c * (1 - t) ^ (-β) := by
+  obtain ⟨_, _, _, ham, _, _, hs, _⟩ := aB_selected
+  intro t ht k hk
+  have hmem : ∀ y : ProblemStatement.Space, (t, y) ∈ PhysicalWaveSum.preterminal := fun _ => ht.2
+  have hpt : ∀ y : ProblemStatement.Space,
+      ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => ASum aB (t, x)) y‖ ≤
+        c * (1 - t) ^ (-β) := by
+    intro y
+    have hsplit : iteratedFDeriv ℝ k (ASum aB) (t, y) =
+        iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+            SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              ActualCandidateAssembly.selectedPotentialStages 0 z +
+            SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              (CutStageEstimates.positiveStages
+                ActualCandidateAssembly.selectedPotentialStages) z) (t, y) :=
+      MixedDiagonalSchedule.physical_initial_split_jets (hh := outgoing.data.h_pos)
+        (hh1 := outgoing.data.h_lt_half) (ha := ham)
+        (A := ActualCandidateAssembly.selectedPotentialStages) (w := (t, y)) (hmem y) k
+    calc ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => ASum aB (t, x)) y‖
+        ≤ ‖iteratedFDeriv ℝ k (ASum aB) (t, y)‖ :=
+              BKMEnvCut.norm_iteratedFDeriv_slice_le (f := ASum aB)
+                PhysicalWaveSum.preterminal_open hs.potential t hmem y k
+        _ = ‖iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+                SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+                  ActualCandidateAssembly.selectedPotentialStages 0 z +
+                  SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+                    (PhysicalWaveSum.physicalQ h)
+                    (CutStageEstimates.positiveStages
+                      ActualCandidateAssembly.selectedPotentialStages) z) (t, y)‖ :=
+              congrArg (fun v => ‖v‖) hsplit
+        _ ≤ c * (1 - t) ^ (-β) := hjet t ht k hk y
+  refine cylBSup_le (fun _ => norm_nonneg _) hpt ?_
+  refine ⟨c * (1 - t) ^ (-β), fun y hy => ?_⟩
+  rcases hy with ⟨a, rfl⟩
+  exact hpt a.1
+
+/-- **The carrier's raw slice-jet envelope, reduced (direct sum).** The same
+reduction for `BSum aB`, reading smoothness from `aB_selected`'s
+`ThreeSmoothSums.direct` and splitting at the initial stage of
+`ActualCandidateAssembly.selectedDirectStages`. -/
+theorem rawJetsBSum_of_spaceJets
+    {β : ℝ} {c : ℝ} {t₀ : ℝ}
+    (hjet : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+            SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              ActualCandidateAssembly.selectedDirectStages 0 z +
+              SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+                (PhysicalWaveSum.physicalQ h)
+                (CutStageEstimates.positiveStages
+                  ActualCandidateAssembly.selectedDirectStages) z) (t, x)‖ ≤
+          c * (1 - t) ^ (-β)) :
+    ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2,
+      ⨆ x ∈ (SpatialLocalization.supportCylinder : Set ProblemStatement.Space),
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => BSum aB (t, x)) x‖ ≤
+          c * (1 - t) ^ (-β) := by
+  obtain ⟨_, _, _, ham, _, _, hs, _⟩ := aB_selected
+  intro t ht k hk
+  have hmem : ∀ y : ProblemStatement.Space, (t, y) ∈ PhysicalWaveSum.preterminal := fun _ => ht.2
+  have hpt : ∀ y : ProblemStatement.Space,
+      ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => BSum aB (t, x)) y‖ ≤
+        c * (1 - t) ^ (-β) := by
+    intro y
+    have hsplit : iteratedFDeriv ℝ k (BSum aB) (t, y) =
+        iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+            SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              ActualCandidateAssembly.selectedDirectStages 0 z +
+            SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              (CutStageEstimates.positiveStages
+                ActualCandidateAssembly.selectedDirectStages) z) (t, y) :=
+      MixedDiagonalSchedule.physical_initial_split_jets (hh := outgoing.data.h_pos)
+        (hh1 := outgoing.data.h_lt_half) (ha := ham)
+        (A := ActualCandidateAssembly.selectedDirectStages) (w := (t, y)) (hmem y) k
+    calc ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space => BSum aB (t, x)) y‖
+        ≤ ‖iteratedFDeriv ℝ k (BSum aB) (t, y)‖ :=
+              BKMEnvCut.norm_iteratedFDeriv_slice_le (f := BSum aB)
+                PhysicalWaveSum.preterminal_open hs.direct t hmem y k
+        _ = ‖iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+                SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+                  ActualCandidateAssembly.selectedDirectStages 0 z +
+                  SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+                    (PhysicalWaveSum.physicalQ h)
+                    (CutStageEstimates.positiveStages
+                      ActualCandidateAssembly.selectedDirectStages) z) (t, y)‖ :=
+              congrArg (fun v => ‖v‖) hsplit
+        _ ≤ c * (1 - t) ^ (-β) := hjet t ht k hk y
+  refine cylBSup_le (fun _ => norm_nonneg _) hpt ?_
+  refine ⟨c * (1 - t) ^ (-β), fun y hy => ?_⟩
+  rcases hy with ⟨a, rfl⟩
+  exact hpt a.1
+
+/-- **The spacetime-jet envelope gives the rate bound.** Feeding the two
+reductions above into `vorticityRateBound_aB_of_rawJets`.  Named hypotheses, no
+discharge: `hjetA`/`hjetB` ask for spacetime jets (not slice jets) of the
+displayed "initial stage + positive-stage sum" functions, which is what
+`CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds` would have
+to reach for the positive summand (with its undischarged side condition `hnum`
+at `M = 2`, and the region and per-stage smoothness inputs it asks for) together
+with transport T2 for the initial stage.  Nothing here proves
+`VorticityRateBound (uSel aB)`. -/
+theorem vorticityRateBound_aB_of_spaceJets
+    {β : ℝ} {c : ℝ} (hc : 0 ≤ c)
+    {t₀ : ℝ} (ht₀ : t₀ ∈ Ico (3 / 4 : ℝ) (1 : ℝ))
+    (hjetA : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+            SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              ActualCandidateAssembly.selectedPotentialStages 0 z +
+              SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+                (PhysicalWaveSum.physicalQ h)
+                (CutStageEstimates.positiveStages
+                  ActualCandidateAssembly.selectedPotentialStages) z) (t, x)‖ ≤
+          c * (1 - t) ^ (-β))
+    (hjetB : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun z : ProblemStatement.SpaceTime =>
+            SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+              ActualCandidateAssembly.selectedDirectStages 0 z +
+              SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+                (PhysicalWaveSum.physicalQ h)
+                (CutStageEstimates.positiveStages
+                  ActualCandidateAssembly.selectedDirectStages) z) (t, x)‖ ≤
+          c * (1 - t) ^ (-β)) :
+    VorticityRateBound (uSel aB) :=
+  vorticityRateBound_aB_of_rawJets hc ht₀
+    (rawJetsASum_of_spaceJets hjetA)
+    (rawJetsBSum_of_spaceJets hjetB)
+
 end Navier.Analysis.BKMEnvBoundedSchedule
 
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_selected
@@ -203,3 +404,8 @@ end Navier.Analysis.BKMEnvBoundedSchedule
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.polyUpper_aB_of_cylSums
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_cylSums
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_rawJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.zero_mem_cylB
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.cylBSup_le
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsASum_of_spaceJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.rawJetsBSum_of_spaceJets
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_spaceJets
