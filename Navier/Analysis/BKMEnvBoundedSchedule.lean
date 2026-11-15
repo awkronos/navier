@@ -58,8 +58,24 @@ be assembled from one bound per summand
 (uSel aB)` is discharged by no row here, and the four pointwise slice-jet bounds
 `rawJetsSplit_aB_of_twoSliceJets` asks for are exactly what transports T1 (with
 `hnum`) and T2 must supply.
+
+Lane MSW-NAVIER-INST-1114 (2026-11-15) instantiates BOTH composer envelopes at
+the actual schedule `aB` (`negPowerEnvelope_aB_potential`,
+`negPowerEnvelope_aB_direct`) by running
+`CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds` on the
+open sublevel `CutStageEstimates.physicalSublevel h qbigSel`, where its
+per-stage hypothesis is the trunk record field, and extending the conclusion
+pointwise to all of `PhysicalWaveSum.preterminal` through the germ-zero rows
+(`cut_product_eventually_zero` at the scale gap `aB_gap_mul` plus
+`eventually_zero_tail`).  The composer's raw-stage smoothness gap is thereby
+closed without new analysis.  The near-terminal row
+`vorticityRateBound_aB_of_hnum_and_stageZero` leaves `VorticityRateBound
+(uSel aB)` conditional on exactly `hnum`'s three inequalities and the two
+transport-T2 stage-zero slice rows.
 -/
+import Mathlib.Order.Filter.Finite
 import Navier.Analysis.BKMEnvCut
+import Navier.Construction.CS_PotentialSumEnvelope
 import Navier.Construction.BoundedScheduleWitness
 
 set_option autoImplicit false
@@ -899,6 +915,307 @@ theorem vorticityRateBound_aB_of_negPowerEnvelopes
             ActualCandidateAssembly.selectedDirectStages))
         (t₀ := t₀) hβ hd₁ henvB))
 
+/-! ## Transport T1 instantiated at the actual schedule `aB`
+
+Both envelope hypotheses of `vorticityRateBound_aB_of_negPowerEnvelopes` are
+now produced at `aB`.  The `CSPotentialSumEnvelope` producer runs at
+`U = S = CutStageEstimates.physicalSublevel h qbigSel`: there its per-stage
+smoothness hypothesis `hA` is exactly the estimates record field
+(`selectedPotentialStages_smooth_physicalSublevel` /
+`selectedDirectStages_smooth_physicalSublevel`), its `CutStageBounds` input is
+`aB_cutBounds` restricted to the sublevel, and its gain/loss functions are the
+`aB_cutBounds` pair `(fun j => gainSel j / 2, lossSel)`.  The composer's
+raw-stage smoothness gap on the envelope domain is closed not by new analysis
+but by extending the conclusion pointwise from the open sublevel to ALL of
+`PhysicalWaveSum.preterminal`: at a preterminal point `w` with
+`qbigSel ≤ physicalQ h w` every cut stage has a zero germ
+(`CutStageEstimates.cut_product_eventually_zero` fed by the scale gap
+`aB_gap_mul`), all late stages vanish on a common neighbourhood
+(`SolenoidalDiagonal.eventually_zero_tail`), so the diagonal `tsum` has a zero
+germ and every jet at `w` is exactly `0`.  The only undischarged input is
+`hnum`, the three gain-against-loss inequalities
+`∀ m ≤ 2, 0 ≤ gainSel 1 / 2 - lossSel m`; no numerals exist behind
+`Classical.choose`, so `hnum` is carried by name, never discharged here. -/
+
+open scoped BigOperators
+
+/-- The schedule `aB` starts at `1` and grows, so every scale realisation is
+`1 ≤ (aB j : ℝ)`: the admissibility input of the
+`CSPotentialSumEnvelope` large-scale vanishing row. -/
+private theorem aB_ge_one (j : ℕ) : (1 : ℝ) ≤ (aB j : ℝ) := by
+  obtain ⟨hlower, _, _, ham, _, _, _, _⟩ := aB_selected
+  exact_mod_cast hlower.trans (ham.monotone (Nat.zero_le j))
+
+/-- The selected estimates gain is monotone (record field). -/
+private theorem gainSel_mono : Monotone gainSel :=
+  (ActualCandidateAssembly.estimates ActualCandidateConstruction.selectedBudget
+    ActualCandidateConstruction.selectedThreshold
+    ActualCandidateConstruction.selectedThreshold_geometry).gain_mono
+
+/-- The selected estimates gain tends to infinity (record field). -/
+private theorem gainSel_top : Tendsto gainSel atTop atTop :=
+  (ActualCandidateAssembly.estimates ActualCandidateConstruction.selectedBudget
+    ActualCandidateConstruction.selectedThreshold
+    ActualCandidateConstruction.selectedThreshold_geometry).gain_top
+
+/-- The selected estimates gain is strictly positive from stage one
+(record field). -/
+private theorem gainSel_pos (j : ℕ) (hj : 1 ≤ j) : (0 : ℝ) < gainSel j :=
+  (ActualCandidateAssembly.estimates ActualCandidateConstruction.selectedBudget
+    ActualCandidateConstruction.selectedThreshold
+    ActualCandidateConstruction.selectedThreshold_geometry).gain_pos j hj
+
+/-- The `aB_cutBounds` gain function `fun j => gainSel j / 2` is monotone. -/
+private theorem gainSel_half_mono : Monotone fun j => gainSel j / 2 := by
+  intro i j hij
+  show gainSel i * (2 : ℝ)⁻¹ ≤ gainSel j * (2 : ℝ)⁻¹
+  exact mul_le_mul_of_nonneg_right (gainSel_mono hij)
+    (inv_nonneg.mpr (by norm_num : (0 : ℝ) ≤ 2))
+
+/-- The `aB_cutBounds` gain function tends to infinity. -/
+private theorem gainSel_half_top : Tendsto (fun j => gainSel j / 2) atTop atTop := by
+  refine tendsto_atTop_atTop.mpr fun b => ?_
+  obtain ⟨i, hi⟩ := tendsto_atTop_atTop.mp gainSel_top (2 * b)
+  exact ⟨i, fun a hai => (le_div_iff₀ (by norm_num : (0 : ℝ) < (2 : ℝ))).mpr
+    (by linarith [hi a hai])⟩
+
+/-- The `aB_cutBounds` gain function is nonnegative from stage one. -/
+private theorem gainSel_half_pos (j : ℕ) (hj : 1 ≤ j) : (0 : ℝ) ≤ gainSel j / 2 :=
+  div_nonneg (gainSel_pos j hj).le (by norm_num : (0 : ℝ) ≤ 2)
+
+/-- **The envelope instantiation at the selected schedule, per stage sequence.**
+`CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds` at
+`a := fun j => (aB j : ℝ)`, `q := physicalQ h`,
+`U = S := physicalSublevel h qbigSel` (open by `physicalSublevel_open`),
+ceiling `M = 2`, gain/loss `aB_cutBounds`'s own pair — then the pointwise
+extension of its conclusion from the sublevel to all of `preterminal` through
+the germ-zero rows, verbatim the mechanism of
+`CutStageEstimates.exists_physical_local_diagonal_cut_bounds` at a point
+outside the sublevel.  At the ceiling `M = 2` the producer's `hnum` ranges
+over the single stage `j = 1` and orders `m ≤ 2`, so the concrete three-line
+`hnum` hypothesis feeds it. -/
+private theorem negPowerEnvelope_aB_preterminal
+    {A : ℕ → ProblemStatement.VelocityField}
+    (hAsub : ∀ j, ContDiffOn ℝ ∞ (A j) (CutStageEstimates.physicalSublevel h qbigSel))
+    (hBsub : DiagonalJetBounds.CutStageBounds (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) A (fun j => gainSel j / 2) lossSel
+      (CutStageEstimates.physicalSublevel h qbigSel))
+    (hnum : ∀ m ≤ 2, (0 : ℝ) ≤ gainSel 1 / 2 - lossSel m) :
+    ∃ C β : ℝ, 0 < C ∧ 0 ≤ β ∧ ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m
+          (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+            (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) w‖ ≤
+            C * PhysicalWaveSum.physicalQ h w ^ (-β) := by
+  obtain ⟨C, β, hC, hβ, hsub⟩ :=
+    CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds
+      (a := fun j => (aB j : ℝ))
+      aB_tendsto_real (fun j => aB_ge_one j)
+      (q := PhysicalWaveSum.physicalQ h)
+      (U := CutStageEstimates.physicalSublevel h qbigSel)
+      (S := CutStageEstimates.physicalSublevel h qbigSel)
+      (CutStageEstimates.physicalSublevel_open outgoing.data.h_pos
+        outgoing.data.h_lt_half qbigSel)
+      (Subset.refl _)
+      (physicalQ_contDiffOn_preterminal.mono Set.inter_subset_left)
+      (fun _x hx => PhysicalWaveSum.physicalQ_pos outgoing.data.h_pos
+        outgoing.data.h_lt_half hx.1)
+      (fun _j _hj => hAsub _j)
+      (g := fun j => gainSel j / 2) (L := lossSel)
+      gainSel_half_mono gainSel_half_top gainSel_half_pos
+      (CutStageEstimates.positiveStages_cut_bounds hBsub)
+      2
+      (fun _j _hj _hjm => by omega)
+      (fun j m hj1 hjm hm => by
+        have hj1' : j = 1 := by omega
+        subst hj1'
+        show (0 : ℝ) ≤ gainSel 1 / 2 - lossSel m
+        exact hnum m hm)
+  refine ⟨C, β, hC, hβ, ?_⟩
+  intro m hm w hw
+  by_cases hu : w ∈ CutStageEstimates.physicalSublevel h qbigSel
+  · exact hsub m hm w hu
+  · have hlarge : qbigSel ≤ PhysicalWaveSum.physicalQ h w :=
+      le_of_not_gt fun hs => hu ⟨hw, hs⟩
+    obtain ⟨N, hzero⟩ :=
+      SolenoidalDiagonal.eventually_zero_tail aB_tendsto_real
+        (PhysicalWaveSum.physicalQ_smoothAt outgoing.data.h_pos
+          outgoing.data.h_lt_half hw).continuousAt
+        (PhysicalWaveSum.physicalQ_pos outgoing.data.h_pos outgoing.data.h_lt_half hw)
+        (CutStageEstimates.positiveStages A)
+    have hsmall : ∀ᶠ y in 𝓝 w,
+        ∀ j ∈ Finset.range N,
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages A) j y = 0 := by
+      refine (eventually_all_finset (I := Finset.range N)).mpr fun j _hj => ?_
+      exact CutStageEstimates.cut_product_eventually_zero
+        (PhysicalWaveSum.physicalQ_smoothAt outgoing.data.h_pos
+          outgoing.data.h_lt_half hw).continuousAt
+        (CutStageEstimates.positiveStages A j) (aB j)
+        ((aB_gap_mul j).trans_le
+          (mul_le_mul_of_nonneg_left hlarge (aB_pos_real j).le))
+    have hgerms : (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) =ᶠ[𝓝 w]
+        (fun _ : ProblemStatement.SpaceTime => (0 : ProblemStatement.Space)) := by
+      filter_upwards [hsmall, hzero] with y hy1 hy2
+      show (∑' j : ℕ, SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ))
+          (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A) j y) = 0
+      have hterm : ∀ j : ℕ,
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages A) j y = 0 := by
+        intro j
+        rcases Nat.lt_or_ge j N with hj | hj
+        · exact hy1 j (Finset.mem_range.mpr hj)
+        · exact hy2 j hj
+      rw [tsum_congr hterm, tsum_zero]
+    have hjet : iteratedFDeriv ℝ m (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) w =
+        iteratedFDeriv ℝ m (fun _ : ProblemStatement.SpaceTime =>
+          (0 : ProblemStatement.Space)) w :=
+      (SolenoidalDiagonal.iteratedFDeriv_eventuallyEq hgerms m).self_of_nhds
+    rw [hjet, iteratedFDeriv_fun_zero, Pi.zero_apply, norm_zero]
+    exact mul_nonneg (le_of_lt hC)
+      (Real.rpow_nonneg (PhysicalWaveSum.physicalQ_pos outgoing.data.h_pos
+        outgoing.data.h_lt_half hw).le _)
+
+/-- **Transport T1 instantiated (selected potential stages).**  The composer's
+hypothesis `henvA` at the actual schedule: there are constants `0 < c₁` and
+`0 ≤ β` such that the spacetime negative-power envelope holds over ALL of
+`PhysicalWaveSum.preterminal` for the selected potential positive-stage sum.
+Its conclusion is stated in
+`vorticityRateBound_aB_of_negPowerEnvelopes`'s own hypothesis format. -/
+theorem negPowerEnvelope_aB_potential
+    (hnum : ∀ m ≤ 2, (0 : ℝ) ≤ gainSel 1 / 2 - lossSel m) :
+    ∃ c₁ β : ℝ, 0 < c₁ ∧ 0 ≤ β ∧ ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m
+          (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+            (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedPotentialStages)) w‖ ≤
+              c₁ * PhysicalWaveSum.physicalQ h w ^ (-β) :=
+  negPowerEnvelope_aB_preterminal selectedPotentialStages_smooth_physicalSublevel
+    (fun j hj m hm x hx => (aB_cutBounds).potential j hj m hm x hx.1)
+    hnum
+
+/-- **Transport T1 instantiated (selected direct stages).**  The composer's
+hypothesis `henvB` at the actual schedule, by the same leg at the selected
+direct stages. -/
+theorem negPowerEnvelope_aB_direct
+    (hnum : ∀ m ≤ 2, (0 : ℝ) ≤ gainSel 1 / 2 - lossSel m) :
+    ∃ d₁ β : ℝ, 0 < d₁ ∧ 0 ≤ β ∧ ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m
+          (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+            (PhysicalWaveSum.physicalQ h)
+            (CutStageEstimates.positiveStages
+              ActualCandidateAssembly.selectedDirectStages)) w‖ ≤
+              d₁ * PhysicalWaveSum.physicalQ h w ^ (-β) :=
+  negPowerEnvelope_aB_preterminal selectedDirectStages_smooth_physicalSublevel
+    (fun j hj m hm x hx => (aB_cutBounds).direct j hj m hm x hx.1)
+    hnum
+
+/-- Off the sublevel `physicalQ h > 1` every `aB` diagonal sum has a zero
+germ: the jets are exactly `0`, at every order, uniformly in the stage
+sequence.  This is what lets a `physicalQ` envelope be repointed to a larger
+rate without changing its constant. -/
+private theorem aB_potentialSum_vanishing {A : ℕ → ProblemStatement.VelocityField}
+    (m : ℕ) {w : ProblemStatement.SpaceTime} (hw : w ∈ PhysicalWaveSum.preterminal)
+    (hgt : (1 : ℝ) < PhysicalWaveSum.physicalQ h w) :
+    iteratedFDeriv ℝ m (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+      (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) w = 0 :=
+  CSPotentialSumEnvelope.potentialSum_large_scale_vanishing_sub
+    (a := fun j => (aB j : ℝ)) aB_ge_one
+    (q := PhysicalWaveSum.physicalQ h)
+    (U := PhysicalWaveSum.preterminal) (S := PhysicalWaveSum.preterminal)
+    PhysicalWaveSum.preterminal_open (Subset.refl _)
+    (fun _x hx => (PhysicalWaveSum.physicalQ_smoothAt outgoing.data.h_pos
+      outgoing.data.h_lt_half hx).contDiffWithinAt)
+    w hw hgt m
+
+/-- **Raising the rate never breaks a spacetime negative-power envelope for
+the diagonal sum.**  On `physicalQ h ≤ 1` the antitone power comparison turns
+`C · q ^ (-β)` into `C · q ^ (-β')` for `β ≤ β'`; above `1` the jets vanish by
+`aB_potentialSum_vanishing` and the inequality is free.  Same constant. -/
+private theorem negPowerEnvelope_exponent_le
+    {F : ProblemStatement.SpaceTime → ProblemStatement.Space} {C : ℝ} (hC : 0 ≤ C)
+    {β β' : ℝ} (hββ : β ≤ β')
+    (hvan : ∀ m : ℕ, ∀ w ∈ PhysicalWaveSum.preterminal,
+        (1 : ℝ) < PhysicalWaveSum.physicalQ h w → iteratedFDeriv ℝ m F w = 0)
+    (henv : ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m F w‖ ≤ C * PhysicalWaveSum.physicalQ h w ^ (-β)) :
+    ∀ m ≤ 2, ∀ w ∈ PhysicalWaveSum.preterminal,
+        ‖iteratedFDeriv ℝ m F w‖ ≤ C * PhysicalWaveSum.physicalQ h w ^ (-β') := by
+  intro m hm w hw
+  by_cases hgt : (1 : ℝ) < PhysicalWaveSum.physicalQ h w
+  · rw [hvan m w hw hgt, norm_zero]
+    exact mul_nonneg hC
+      (Real.rpow_nonneg (PhysicalWaveSum.physicalQ_pos outgoing.data.h_pos
+        outgoing.data.h_lt_half hw).le _)
+  · have hq1 : PhysicalWaveSum.physicalQ h w ≤ 1 := le_of_not_gt hgt
+    exact (henv m hm w hw).trans (mul_le_mul_of_nonneg_left
+      (Real.rpow_le_rpow_of_exponent_ge
+        (PhysicalWaveSum.physicalQ_pos outgoing.data.h_pos outgoing.data.h_lt_half hw)
+        hq1 (by linarith [hββ] : (-β' : ℝ) ≤ -β)) hC)
+
+/-- Raising the rate never breaks the remaining-time base on the strip:
+`0 < 1 - t ≤ 1` for `t ∈ Ico t₀ 1 ⊆ Ico (3/4) 1`. -/
+private theorem sliceBase_exponent_le {c : ℝ} (hc : 0 ≤ c)
+    {t₀ : ℝ} (ht₀ : t₀ ∈ Ico (3 / 4 : ℝ) (1 : ℝ))
+    {β β' : ℝ} (hββ : β ≤ β') {t : ℝ} (ht : t ∈ Ico t₀ (1 : ℝ)) :
+    c * (1 - t) ^ (-β) ≤ c * (1 - t) ^ (-β') :=
+  mul_le_mul_of_nonneg_left
+    (Real.rpow_le_rpow_of_exponent_ge (by linarith [ht.2] : (0 : ℝ) < 1 - t)
+      (by linarith [ht.1, ht₀.1] : 1 - t ≤ 1) (by linarith [hββ] : (-β' : ℝ) ≤ -β)) hc
+
+/-- **Near-terminal assembly at the actual schedule.**  `VorticityRateBound
+(uSel aB)` from `hnum`'s three inequalities and the two transport-T2
+stage-zero slice rows alone: both composer envelopes are produced by
+`negPowerEnvelope_aB_potential` / `negPowerEnvelope_aB_direct`, the two
+spacetime envelopes and the two slice rows are repointed to the common rate
+`max β₀ (max βA βB)` at their own constants (enlarging the rate is free where
+the jets vanish and monotone where `physicalQ h ≤ 1`, `1 - t ≤ 1`), and the
+composer finishes.  `hnum` is carried by name — no numerals exist behind
+`Classical.choose`, so it is stated as a plain hypothesis and discharged by
+nothing here; the two stage-zero rows are the transport-T2 residual. -/
+theorem vorticityRateBound_aB_of_hnum_and_stageZero
+    {β₀ : ℝ} {c₀ d₀ : ℝ} (hc₀ : 0 ≤ c₀) (hd₀ : 0 ≤ d₀)
+    {t₀ : ℝ} (ht₀ : t₀ ∈ Ico (3 / 4 : ℝ) (1 : ℝ))
+    (hnum : ∀ m ≤ 2, (0 : ℝ) ≤ gainSel 1 / 2 - lossSel m)
+    (hA0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedPotentialStages 0 (t, x)) x‖ ≤
+              c₀ * (1 - t) ^ (-β₀))
+    (hB0 : ∀ t ∈ Ico t₀ (1 : ℝ), ∀ k ≤ 2, ∀ x : ProblemStatement.Space,
+        ‖iteratedFDeriv ℝ k (fun x : ProblemStatement.Space =>
+          SolenoidalDiagonal.cutStage (fun j => (aB j : ℝ)) (PhysicalWaveSum.physicalQ h)
+            ActualCandidateAssembly.selectedDirectStages 0 (t, x)) x‖ ≤
+              d₀ * (1 - t) ^ (-β₀)) :
+    VorticityRateBound (uSel aB) := by
+  obtain ⟨c₁, βA, hc₁, hβA, henvA⟩ := negPowerEnvelope_aB_potential hnum
+  obtain ⟨d₁, βB, hd₁, hβB, henvB⟩ := negPowerEnvelope_aB_direct hnum
+  let β := max β₀ (max βA βB)
+  have hβ : (0 : ℝ) ≤ β :=
+    hβA.trans ((le_max_left βA βB).trans (le_max_right β₀ (max βA βB)))
+  refine vorticityRateBound_aB_of_negPowerEnvelopes (β := β) hβ (hc₀ := hc₀)
+    (hc₁ := le_of_lt hc₁) (hd₀ := hd₀) (hd₁ := le_of_lt hd₁) (ht₀ := ht₀)
+    (fun t ht k hk x => (hA0 t ht k hk x).trans
+      (sliceBase_exponent_le hc₀ ht₀ (le_max_left β₀ (max βA βB)) ht))
+    (fun t ht k hk x => (hB0 t ht k hk x).trans
+      (sliceBase_exponent_le hd₀ ht₀ (le_max_left β₀ (max βA βB)) ht))
+    (negPowerEnvelope_exponent_le
+      (F := SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h)
+        (CutStageEstimates.positiveStages
+          ActualCandidateAssembly.selectedPotentialStages))
+      (le_of_lt hc₁) ((le_max_left βA βB).trans (le_max_right β₀ (max βA βB)))
+      (fun m _w hw hgt => aB_potentialSum_vanishing m hw hgt) henvA)
+    (negPowerEnvelope_exponent_le
+      (F := SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
+        (PhysicalWaveSum.physicalQ h)
+        (CutStageEstimates.positiveStages
+          ActualCandidateAssembly.selectedDirectStages))
+      (le_of_lt hd₁) ((le_max_right βA βB).trans (le_max_right β₀ (max βA βB)))
+      (fun m _w hw hgt => aB_potentialSum_vanishing m hw hgt) henvB)
+
 end Navier.Analysis.BKMEnvBoundedSchedule
 
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_selected
@@ -940,3 +1257,17 @@ end Navier.Analysis.BKMEnvBoundedSchedule
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.sliceJetBound_of_spacetimeJetBound
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.negPowerEnvelope_to_stripJetBound
 #print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_negPowerEnvelopes
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_ge_one
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.gainSel_mono
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.gainSel_top
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.gainSel_pos
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.gainSel_half_mono
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.gainSel_half_top
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.gainSel_half_pos
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.negPowerEnvelope_aB_preterminal
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.negPowerEnvelope_aB_potential
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.negPowerEnvelope_aB_direct
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.aB_potentialSum_vanishing
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.negPowerEnvelope_exponent_le
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.sliceBase_exponent_le
+#print axioms Navier.Analysis.BKMEnvBoundedSchedule.vorticityRateBound_aB_of_hnum_and_stageZero
