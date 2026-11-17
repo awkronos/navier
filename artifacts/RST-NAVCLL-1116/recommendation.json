@@ -1,0 +1,7 @@
+[
+ "Row closed for its own scope: the T0 priority row asked for tests before changes, and eight previously un-tested, un-consumed public names now have compiler-checked examples on trunk at 49abd65.",
+ "Next by value: pin fourier_schwartz_integrable_left_frequency_kernel and fourier_schwartz_integrable_right_frequency_kernel at `f g : SchwartzMap ES ℂ` the same way this lane pinned the two integral factorizations, so the whole Tonelli block is consumer-tested end to end.",
+ "Route further proof budget to Navier/Analysis/ContinuousLeiLinDissipation.lean (normXm1_continuousDuhamel_mass_le_of_jointIntegrable), which owns the time-dependent Bochner representative this file's docstrings point at; do not re-open this module's API.",
+ "Add one line to the next navier lane brief: do not build Hermitian-carrier examples on `(1 : EuclideanSpace ℂ (Fin 3))` (no One/OfNat instance in this mathlib); use a `SchwartzMap ES ComplexE3` profile or complexEuclideanPoint on the coordinate carrier.",
+ "Substrate residual worth fixing before the next dispatch: on this campaign the board-publish leg refuses (carrier_union_loss + a peer ledger-append.py path absent on this host) and the fold legs report not_run_instrument_absent, so landing proof reaches the git plane but not the board plane."
+]
