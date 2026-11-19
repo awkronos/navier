@@ -1016,6 +1016,187 @@ example : esPiMeasurableSpace = borel ES :=
 example : complexE3PiMeasurableSpace = borel ComplexE3 :=
   complexE3_measurableSpace_coherent.trans complexE3EuclideanMeasurableSpace_eq_borel
 
+/-- The `X⁻¹` weight is homogeneous of degree `-1`, so a dilation by `a > 0`
+trades a factor `a` against the change of variables. -/
+private theorem weight_dilation (f : ES → ℂ) (a : ℝ) (ha : 0 < a) (ξ : ES) :
+    ‖ξ‖⁻¹ * ‖f (a • ξ)‖ = a * (fun x : ES => ‖x‖⁻¹ * ‖f x‖) (a • ξ) := by
+  show ‖ξ‖⁻¹ * ‖f (a • ξ)‖ = a * (‖a • ξ‖⁻¹ * ‖f (a • ξ)‖)
+  rw [norm_smul, Real.norm_eq_abs, abs_of_pos ha, mul_inv_rev]
+  field_simp
+
+/-- The `X¹` weight is homogeneous of degree `+1`, the dual trade to
+`weight_dilation`. -/
+private theorem weight_dilation' (f : ES → ℂ) (a : ℝ) (ha : 0 < a) (ξ : ES) :
+    ‖ξ‖ * ‖f (a • ξ)‖ = a⁻¹ * (fun x : ES => ‖x‖ * ‖f x‖) (a • ξ) := by
+  show ‖ξ‖ * ‖f (a • ξ)‖ = a⁻¹ * (‖a • ξ‖ * ‖f (a • ξ)‖)
+  rw [norm_smul, Real.norm_eq_abs, abs_of_pos ha]
+  field_simp
+
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.weight_dilation
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.weight_dilation'
+
+/-- Exact dilation law for the continuous critical `X⁻¹` quantity on `R³`.
+The three-dimensional Jacobian `|(a³)⁻¹|` multiplies the weight `a⁻¹` of the
+singular factor, so `X⁻¹` carries degree `-2` in the dilation: `c` enters as
+`|c|` because `X⁻¹` is a norm, and no integrability hypothesis is needed since
+the Bochner integral is zero exactly when the integrand is not integrable. -/
+theorem normXm1_comp_smul (f : ES → ℂ) (c a : ℝ) (ha : 0 < a) :
+    normXm1 (fun ξ => c • f (a • ξ)) = |c| * (a ^ 2)⁻¹ * normXm1 f := by
+  have hpoint : (fun ξ : ES => ‖ξ‖⁻¹ * ‖c • f (a • ξ)‖) =
+      fun ξ : ES => |c| * (a * (fun x : ES => ‖x‖⁻¹ * ‖f x‖) (a • ξ)) := by
+    funext ξ
+    rw [norm_smul, Real.norm_eq_abs, ← weight_dilation f a ha ξ]
+    simp [mul_comm, mul_assoc]
+  have hdim : Module.finrank ℝ ES = 3 := finrank_euclideanSpace
+  calc normXm1 (fun ξ => c • f (a • ξ))
+      = ∫ ξ : ES, ‖ξ‖⁻¹ * ‖c • f (a • ξ)‖ := rfl
+    _ = ∫ ξ : ES, |c| * (a * (fun x : ES => ‖x‖⁻¹ * ‖f x‖) (a • ξ)) :=
+        integral_congr_ae (by filter_upwards with ξ; exact congrFun hpoint ξ)
+    _ = |c| * (a * ∫ ξ : ES, (fun x : ES => ‖x‖⁻¹ * ‖f x‖) (a • ξ)) := by
+          rw [integral_const_mul, integral_const_mul]
+    _ = |c| * (a * |(a ^ 3)⁻¹| * normXm1 f) := by
+          rw [MeasureTheory.Measure.integral_comp_smul (μ := volume)
+              (f := fun x : ES => ‖x‖⁻¹ * ‖f x‖) a, hdim]
+          simp only [smul_eq_mul, normXm1, mul_comm, mul_assoc, mul_left_comm]
+    _ = |c| * (a ^ 2)⁻¹ * normXm1 f := by
+          have h1 : 0 < a ^ 3 := by positivity
+          rw [abs_of_pos (inv_pos.mpr h1)]
+          have h2 : a * (a ^ 3)⁻¹ = (a ^ 2)⁻¹ := by field_simp
+          rw [h2, mul_assoc]
+
+/-- Exact dilation law for the continuous `X¹` quantity: the weight `a`
+divides against the Jacobian `|(a³)⁻¹|`, so `X¹` carries degree `+4` and is
+the dual of `normXm1_comp_smul`'s degree `-2`. -/
+theorem normX1_comp_smul (f : ES → ℂ) (c a : ℝ) (ha : 0 < a) :
+    normX1 (fun ξ => c • f (a • ξ)) = |c| * (a ^ 4)⁻¹ * normX1 f := by
+  have hpoint : (fun ξ : ES => ‖ξ‖ * ‖c • f (a • ξ)‖) =
+      fun ξ : ES => |c| * (a⁻¹ * (fun x : ES => ‖x‖ * ‖f x‖) (a • ξ)) := by
+    funext ξ
+    rw [norm_smul, Real.norm_eq_abs, ← weight_dilation' f a ha ξ]
+    simp [mul_comm, mul_assoc]
+  have hdim : Module.finrank ℝ ES = 3 := finrank_euclideanSpace
+  calc normX1 (fun ξ => c • f (a • ξ))
+      = ∫ ξ : ES, ‖ξ‖ * ‖c • f (a • ξ)‖ := rfl
+    _ = ∫ ξ : ES, |c| * (a⁻¹ * (fun x : ES => ‖x‖ * ‖f x‖) (a • ξ)) :=
+        integral_congr_ae (by filter_upwards with ξ; exact congrFun hpoint ξ)
+    _ = |c| * (a⁻¹ * ∫ ξ : ES, (fun x : ES => ‖x‖ * ‖f x‖) (a • ξ)) := by
+          rw [integral_const_mul, integral_const_mul]
+    _ = |c| * (a⁻¹ * |(a ^ 3)⁻¹| * normX1 f) := by
+          rw [MeasureTheory.Measure.integral_comp_smul (μ := volume)
+              (f := fun x : ES => ‖x‖ * ‖f x‖) a, hdim]
+          simp only [smul_eq_mul, normX1, mul_comm, mul_assoc]
+    _ = |c| * (a ^ 4)⁻¹ * normX1 f := by
+          have h1 : 0 < a ^ 3 := by positivity
+          rw [abs_of_pos (inv_pos.mpr h1)]
+          rw [show a⁻¹ * (a ^ 3)⁻¹ = (a ^ 4)⁻¹ from by field_simp, mul_assoc]
+
+/-- Exact dilation law for the continuous `X⁰` (Wiener) mass of a real density:
+only the three-dimensional Jacobian acts, so `X⁰` carries degree `+3` minus
+the amplitude, i.e. it is `c`-linear rather than `|c|`-linear. -/
+theorem normX0_comp_smul (f : ES → ℝ) (c a : ℝ) (ha : 0 < a) :
+    normX0 (fun ξ => c • f (a • ξ)) = c * (a ^ 3)⁻¹ * normX0 f := by
+  have hdim : Module.finrank ℝ ES = 3 := finrank_euclideanSpace
+  calc normX0 (fun ξ => c • f (a • ξ))
+      = ∫ ξ : ES, c * f (a • ξ) := rfl
+    _ = c * ∫ ξ : ES, f (a • ξ) := by rw [integral_const_mul]
+    _ = c * |(a ^ 3)⁻¹| * normX0 f := by
+          rw [MeasureTheory.Measure.integral_comp_smul (μ := volume) (f := f) a, hdim]
+          simp only [smul_eq_mul, normX0, mul_assoc]
+    _ = c * (a ^ 3)⁻¹ * normX0 f := by
+          have h1 : 0 < a ^ 3 := by positivity
+          rw [abs_of_pos (inv_pos.mpr h1)]
+
+/-- Frequency-side parabolic rescaling: the Fourier image, at fixed time, of
+the repository's critical Navier--Stokes rescaling
+`parabolicScaledVelocity lambda u = fun t x ↦ lambda • u (lambda ^ 2 * t) (lambda • x)`
+of `Navier/Analysis/Covariance.lean`.  The velocity amplitude `lambda` together
+with the three-dimensional Jacobian `lambda⁻³` leave the frequency profile
+multiplied by `(lambda²)⁻¹`, which is exactly the factor that makes `X⁻¹`
+invariant below. -/
+noncomputable def parabolicRescale (lambda : ℝ) (m : ES → ℂ) : ES → ℂ :=
+  fun ξ ↦ (lambda ^ 2)⁻¹ • m (lambda⁻¹ • ξ)
+
+/-- The continuous critical `X⁻¹` quantity is exactly invariant under the
+parabolic frequency rescaling: the NS-critical ladder's bottom rung does not
+move. -/
+theorem normXm1_parabolicRescale (m : ES → ℂ) (lambda : ℝ) (hl : 0 < lambda) :
+    normXm1 (parabolicRescale lambda m) = normXm1 m := by
+  have h := normXm1_comp_smul m ((lambda ^ 2)⁻¹) (lambda⁻¹) (inv_pos.mpr hl)
+  unfold parabolicRescale
+  rw [h]
+  have h2 : 0 < lambda ^ 2 := by positivity
+  rw [abs_of_pos (inv_pos.mpr h2)]
+  field_simp
+
+/-- `X⁰` scales by the single power `lambda`: the continuous Wiener mass is the
+critical quantity of degree `+1` on this ladder. -/
+theorem normX0_parabolicRescale (m : ES → ℝ) (lambda : ℝ) (hl : 0 < lambda) :
+    normX0 (fun ξ => (lambda ^ 2)⁻¹ • m (lambda⁻¹ • ξ)) = lambda * normX0 m := by
+  have h := normX0_comp_smul m ((lambda ^ 2)⁻¹) (lambda⁻¹) (inv_pos.mpr hl)
+  rw [h]
+  rw [show (lambda⁻¹ ^ 3)⁻¹ = lambda ^ 3 from by simp [inv_pow, inv_inv],
+    show (lambda ^ 2)⁻¹ * lambda ^ 3 = lambda from by field_simp]
+
+/-- `X¹` scales by `lambda²`: the top rung of the ladder is the quantity the
+admissible-lever dissipation term `nu * X¹` must be paired with, matching the
+viscosity's own `lambda⁻²` transport below. -/
+theorem normX1_parabolicRescale (m : ES → ℂ) (lambda : ℝ) (hl : 0 < lambda) :
+    normX1 (parabolicRescale lambda m) = lambda ^ 2 * normX1 m := by
+  have h := normX1_comp_smul m ((lambda ^ 2)⁻¹) (lambda⁻¹) (inv_pos.mpr hl)
+  unfold parabolicRescale
+  have h2 : 0 < lambda ^ 2 := by positivity
+  rw [h, abs_of_pos (inv_pos.mpr h2)]
+  rw [show (lambda⁻¹ ^ 4)⁻¹ = lambda ^ 4 from by simp [inv_pow, inv_inv],
+    show (lambda ^ 2)⁻¹ * lambda ^ 4 = lambda ^ 2 from by field_simp]
+
+/-- The admissible critical levers are exactly preserved by the parabolic
+rescaling once the viscosity is transported with them: rescaling by `lambda`
+sends `nu` to `(lambda²)⁻¹ * nu` and leaves `X⁻¹ + nu * X¹` fixed.  This is the
+continuous-carrier statement of NS criticality for the pair of levers used by
+`ContinuousLeiLinDissipation` and `LittlewoodPaleyPartition`. -/
+theorem admissible_parabolicRescale (m : ES → ℂ) (nu lambda : ℝ) (hl : 0 < lambda) :
+    normXm1 (parabolicRescale lambda m) + (lambda ^ 2)⁻¹ * nu *
+        normX1 (parabolicRescale lambda m) =
+      normXm1 m + nu * normX1 m := by
+  rw [normXm1_parabolicRescale m lambda hl, normX1_parabolicRescale m lambda hl]
+  field_simp
+
+/-- The parabolic rescaling intertwines the continuous Fourier heat modes,
+transporting the viscosity by the critical factor `(lambda²)⁻¹`.  This is the
+exact frequency-side companion of the heat/NS-scaling commutation the mild
+assembly needs; no smallness, integrability or time restriction appears. -/
+theorem parabolicRescale_heatMode (m : ES → ℂ) (nu t lambda : ℝ) (hl : 0 < lambda) :
+    parabolicRescale lambda (heatMode nu t m) =
+      heatMode ((lambda ^ 2)⁻¹ * nu) t (parabolicRescale lambda m) := by
+  funext ξ
+  unfold parabolicRescale heatMode
+  simp only []
+  have hsq : ‖lambda⁻¹ • (ξ : ES)‖ ^ 2 = (lambda ^ 2)⁻¹ * ‖ξ‖ ^ 2 := by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (inv_pos.mpr hl), mul_pow, ← inv_pow]
+  have hexp : Real.exp (-(nu * ((lambda ^ 2)⁻¹ * ‖ξ‖ ^ 2) * t)) =
+      Real.exp (-(((lambda ^ 2)⁻¹ * nu) * ‖ξ‖ ^ 2 * t)) := by
+    rw [show nu * ((lambda ^ 2)⁻¹ * ‖ξ‖ ^ 2) * t = ((lambda ^ 2)⁻¹ * nu) * ‖ξ‖ ^ 2 * t
+      from by ring]
+  rw [hsq, hexp, Algebra.mul_smul_comm]
+
+/-- The `X⁻¹` mass of a heat-evolved profile is invariant under the parabolic
+rescaling with the transported viscosity: the critical quantity the mild
+assembly bounds does not see the dilation. -/
+theorem normXm1_heatMode_parabolicRescale (m : ES → ℂ) (nu t lambda : ℝ) (hl : 0 < lambda) :
+    normXm1 (heatMode ((lambda ^ 2)⁻¹ * nu) t (parabolicRescale lambda m)) =
+      normXm1 (heatMode nu t m) := by
+  rw [← parabolicRescale_heatMode m nu t lambda hl, normXm1_parabolicRescale _ _ hl]
+
+/-- Surface tests: the rescaling is the identity at `lambda = 1`, and the
+invariance and the scaling ladder evaluate at the concrete dilation `2`. -/
+example (m : ES → ℂ) : parabolicRescale 1 m = m := by
+  funext ξ
+  simp [parabolicRescale]
+
+example (m : ES → ℂ) (nu : ℝ) :
+    normXm1 (parabolicRescale 2 (heatMode nu 1 m)) = normXm1 (heatMode nu 1 m) :=
+  normXm1_parabolicRescale _ _ zero_lt_two
+
 end Navier.Analysis.ContinuousLeiLinSpace
 
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.schwartz_integrable_norm_inv_mul
@@ -1023,6 +1204,15 @@ end Navier.Analysis.ContinuousLeiLinSpace
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_integrable_X1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_sq_le_normXm1_mul_normX1
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.heat_contracts_Xm1
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_comp_smul
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normX1_comp_smul
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_comp_smul
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_parabolicRescale
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_parabolicRescale
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normX1_parabolicRescale
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.admissible_parabolicRescale
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.parabolicRescale_heatMode
+#print axioms Navier.Analysis.ContinuousLeiLinSpace.normXm1_heatMode_parabolicRescale
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.normX0_convolution_eq
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_convolution_integrable
 #print axioms Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_norm_le
