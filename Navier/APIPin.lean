@@ -35,7 +35,7 @@ set_option linter.unusedVariables false
 
 noncomputable section
 
--- Navier.Analysis.ContinuousLeiLinSpace: 69 exported declarations (57 theorems/lemmas, 12 other)
+-- Navier.Analysis.ContinuousLeiLinSpace: 75 source-declared exported names (compiler env under this prefix: 82)
 -- ======  #check pins --
 #check @Navier.Analysis.ContinuousLeiLinSpace.ES
 #check @Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace
@@ -107,8 +107,13 @@ noncomputable section
 #check @Navier.Analysis.ContinuousLeiLinSpace.admissible_parabolicRescale
 #check @Navier.Analysis.ContinuousLeiLinSpace.parabolicRescale_heatMode
 #check @Navier.Analysis.ContinuousLeiLinSpace.normXm1_heatMode_parabolicRescale
+#check @Navier.Analysis.ContinuousLeiLinSpace.complexE3EuclideanMeasurableSpace
+#check @Navier.Analysis.ContinuousLeiLinSpace.complexE3PiMeasurableSpace
+#check @Navier.Analysis.ContinuousLeiLinSpace.continuousLeray_zero
+#check @Navier.Analysis.ContinuousLeiLinSpace.esEuclideanMeasurableSpace
+#check @Navier.Analysis.ContinuousLeiLinSpace.esPiMeasurableSpace
 
--- Navier.Construction.PeriodizedWaveBounds: 108 exported declarations (103 theorems/lemmas, 5 other)
+-- Navier.Construction.PeriodizedWaveBounds: 138 source-declared exported names (compiler env under this prefix: 193)
 -- ======  #check pins --
 #check @Navier.Construction.PeriodizedWaveBounds.Cells
 #check @Navier.Construction.PeriodizedWaveBounds.LocalJets
@@ -218,6 +223,36 @@ noncomputable section
 #check @Navier.Construction.PeriodizedWaveBounds.particularData_cutoff_support
 #check @Navier.Construction.PeriodizedWaveBounds.particularData_common
 #check @Navier.Construction.PeriodizedWaveBounds.particularData_commonCorrected
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.backgroundOnly
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.common
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.commonCorrected
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.corrected
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.cutoffSum
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.differentialGood
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.globalGaussian
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.globalGood
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.globalTail
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localGaussian
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localGood
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localTail
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localized
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.raw
+#check @Navier.Construction.PeriodizedWaveBounds.along_zero
+#check @Navier.Construction.PeriodizedWaveBounds.coefficient_zero
+#check @Navier.Construction.PeriodizedWaveBounds.complexCopyData
+#check @Navier.Construction.PeriodizedWaveBounds.copySum
+#check @Navier.Construction.PeriodizedWaveBounds.curlRemainder_zero
+#check @Navier.Construction.PeriodizedWaveBounds.cylindricalCurl_zero
+#check @Navier.Construction.PeriodizedWaveBounds.cylindricalDivergence_zero
+#check @Navier.Construction.PeriodizedWaveBounds.linearResidual_zero
+#check @Navier.Construction.PeriodizedWaveBounds.nativeCell
+#check @Navier.Construction.PeriodizedWaveBounds.nativeCells
+#check @Navier.Construction.PeriodizedWaveBounds.normalCoefficient_zero
+#check @Navier.Construction.PeriodizedWaveBounds.particularData
+#check @Navier.Construction.PeriodizedWaveBounds.principal_zero
+#check @Navier.Construction.PeriodizedWaveBounds.realizedCoefficient_zero
+#check @Navier.Construction.PeriodizedWaveBounds.remainder_zero
+#check @Navier.Construction.PeriodizedWaveBounds.vectorPotential_zero
 
 -- Exact-type pins. Section contexts copied from the declaring file so the
 -- pinned type resolves in the same scope that states it.
@@ -338,13 +373,16 @@ example : ∀ {s : StripData D} {w : ℕ → D → ℝ} {α : ℝ} {K : ℕ → 
 
 end Navier.Construction.PeriodizedWaveBounds
 
--- Coverage guard: the counts above are this file's contract. The generating census is
---   grep -cE '^\s*(theorem|lemma|def|abbrev|instance|structure|class|inductive)\b' <module>
--- with comments masked; 69 + 108 = 177 names, 24 of them type-pinned.
--- Known blind spot of that pattern (measured, not repaired here): it does not match
--- `noncomputable def`, which is 1 line in ContinuousLeiLinSpace (`parabolicRescale`) and
--- 19 lines in PeriodizedWaveBounds, so the counts above are the theorem/lemma surface, not
--- the whole exported surface; a name-by-name comparison against the compiler's own
--- declaration environment is the way to close that gap.  Nested `namespace` blocks also mean
--- a flat grep of a module's declaration lines is not the same set as the fully qualified
--- names, which is why this file's pins are written per name rather than generated from it.
+-- Coverage guard: this contract is machine-checked, name by name, against the
+-- compiler's own declaration environment: `make api-pin-census`
+-- (scripts/api_pin_census.py) runs scripts/ApiEnvCensus.lean, takes every
+-- non-internal environment name under the two module prefixes, keeps those the
+-- two modules' sources declare (private names are not pinnable), and fails if
+-- the `#check` pins above are not exactly that set. Compiler-measured at the
+-- commit that closed the grep-census blind spot (measured on leanprover/lean4:v4.35.0-rc4,
+-- origin main a72c19b): 213 source-declared names,
+-- 213 pinned here — every name pinned, 24 also type-pinned.
+-- The previous census `grep -cE '^\s*(theorem|lemma|def|abbrev|instance|structure|class|inductive)\b'`
+-- could not match declaration lines whose keyword is preceded by modifiers or
+-- attributes (`noncomputable def parabolicRescale`, `@[simp] theorem along_zero`,
+-- `@[reducible] def esPiMeasurableSpace`); the compiler census sees them all.
