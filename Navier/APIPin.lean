@@ -294,6 +294,57 @@ end Navier.Analysis.ContinuousLeiLinSpace
 -- whole file's header would make this module depend on the module's internals, which is
 -- the opposite of an API test. Wiring `Navier.APIPin` into `Navier.lean` and adding those
 -- section-scoped type pins is left as the named follow-up; the name pins cover all 108.
+/-! ## Type pins for the `Navier.Construction.PeriodizedWaveBounds` half
+
+The name pins above already cover all 108 exported declarations of that module.
+The pins below discharge the section-scoped type pins that this file previously
+declined as a named follow-up: the `open` lines and the `variable` block are
+copied verbatim from the head of that module and from its `LocalGluing` section,
+so the type written here is the type the source states it — a re-declared context
+with a different binder order would state a different type.  No proof, statement
+or existing pin was edited; every line below only references an existing
+declaration. -/
+
+namespace Navier.Construction.PeriodizedWaveBounds
+
+open Set Function Filter WeightedClasses
+open scoped Topology ContDiff BigOperators
+
+variable {D E : Type*} [NormedAddCommGroup D] [NormedSpace ℝ D]
+  [NormedAddCommGroup E] [NormedSpace ℝ E] {I : Type*}
+
+/- pin: finite_le_infty -/
+example : ∀ (m : ℕ), (m : WithTop ℕ∞) ≤ ∞ := finite_le_infty
+
+/- pin: jets_eq_of_germ -/
+example : ∀ {f g : D → E} {x : D}, f =ᶠ[𝓝 x] g → ∀ (m : ℕ),
+    iteratedFDeriv ℝ m f x = iteratedFDeriv ℝ m g x := jets_eq_of_germ
+
+/- pin: zero_germ_of_support -/
+example : ∀ {K : Set D}, IsClosed K → ∀ {f : D → E}, support f ⊆ K →
+    ∀ {x : D}, x ∉ K → f =ᶠ[𝓝 x] fun _ => 0 := zero_germ_of_support
+
+/- pin: copySum_germ -/
+example : ∀ (K : Cells D I) (n : ℕ) (f : I → D → E),
+    (∀ i, support (f i) ⊆ K.carrier n i) → ∀ {i : I} {x : D},
+      x ∈ K.carrier n i → copySum f =ᶠ[𝓝 x] f i := copySum_germ
+
+/- pin: memClass_of_local_germs -/
+example : ∀ {s : StripData D} {w : ℕ → D → ℝ} {α : ℝ} {K : ℕ → I → Set D}
+    {f : ℕ → I → D → E} {F : ℕ → D → E}, (∀ n x, x ∈ s.domain → 0 ≤ w n x) →
+    LocalJets s w α K f → (∀ n x, x ∈ s.domain →
+      (∃ i, x ∈ K n i ∧ F n =ᶠ[𝓝 x] f n i) ∨ F n =ᶠ[𝓝 x] fun _ => 0) →
+    MemClass s w α F := memClass_of_local_germs
+
+end Navier.Construction.PeriodizedWaveBounds
+
 -- Coverage guard: the counts above are this file's contract. The generating census is
 --   grep -cE '^\s*(theorem|lemma|def|abbrev|instance|structure|class|inductive)\b' <module>
--- with comments masked; 69 + 108 = 177 names, 19 of them type-pinned.
+-- with comments masked; 69 + 108 = 177 names, 24 of them type-pinned.
+-- Known blind spot of that pattern (measured, not repaired here): it does not match
+-- `noncomputable def`, which is 1 line in ContinuousLeiLinSpace (`parabolicRescale`) and
+-- 19 lines in PeriodizedWaveBounds, so the counts above are the theorem/lemma surface, not
+-- the whole exported surface; a name-by-name comparison against the compiler's own
+-- declaration environment is the way to close that gap.  Nested `namespace` blocks also mean
+-- a flat grep of a module's declaration lines is not the same set as the fully qualified
+-- names, which is why this file's pins are written per name rather than generated from it.
