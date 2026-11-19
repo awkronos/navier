@@ -22,3 +22,15 @@ the time-dependent phase through the complete Bochner/Volterra fixed-point
 identity before claiming that an entire `CriticalMildPathBall` is transported
 to another mild solution.  Arbitrary-data global control of the remaining
 nonzero modes is also open.
+
+## Duplicate-group pointer (added 2026-11-19)
+
+`source-snapshot.lean.txt` in this directory is byte-identical (blob
+`0415973b968e5d0540ac540ff8461d352128c32d`) to the live module
+`Navier/Analysis/CriticalMildMeanDriftRemoval.lean` at current main. That
+identity is a dispositioned `duplicate_group` row, not redundancy: this
+snapshot is the frozen capture pinned by the SHA-256 above, while the live
+module is the carrier of all later edits. See
+`reports/receipts/DUPLICATE_GROUP_MEAN_DRIFT_SNAPSHOT_2026-11-19.md` for the
+measured member table and the refused collapse alternatives. (Lane
+`RST-NAVCMD-1116`, RSI generation `93fa7be454194153a23d95d38f5a69cf`.)
