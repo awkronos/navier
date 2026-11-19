@@ -35,7 +35,7 @@ set_option linter.unusedVariables false
 
 noncomputable section
 
--- Navier.Analysis.ContinuousLeiLinSpace: 60 exported declarations (48 theorems/lemmas, 12 other)
+-- Navier.Analysis.ContinuousLeiLinSpace: 69 exported declarations (57 theorems/lemmas, 12 other)
 -- ======  #check pins --
 #check @Navier.Analysis.ContinuousLeiLinSpace.ES
 #check @Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace
@@ -97,6 +97,16 @@ noncomputable section
 #check @Navier.Analysis.ContinuousLeiLinSpace.fourier_schwartz_coordinate_aestronglyMeasurable
 #check @Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le
 #check @Navier.Analysis.ContinuousLeiLinSpace.normXm1_continuousNavierBilinear_mass_le_of_aestronglyMeasurable
+#check @Navier.Analysis.ContinuousLeiLinSpace.normXm1_comp_smul
+#check @Navier.Analysis.ContinuousLeiLinSpace.normX1_comp_smul
+#check @Navier.Analysis.ContinuousLeiLinSpace.normX0_comp_smul
+#check @Navier.Analysis.ContinuousLeiLinSpace.parabolicRescale
+#check @Navier.Analysis.ContinuousLeiLinSpace.normXm1_parabolicRescale
+#check @Navier.Analysis.ContinuousLeiLinSpace.normX0_parabolicRescale
+#check @Navier.Analysis.ContinuousLeiLinSpace.normX1_parabolicRescale
+#check @Navier.Analysis.ContinuousLeiLinSpace.admissible_parabolicRescale
+#check @Navier.Analysis.ContinuousLeiLinSpace.parabolicRescale_heatMode
+#check @Navier.Analysis.ContinuousLeiLinSpace.normXm1_heatMode_parabolicRescale
 
 -- Navier.Construction.PeriodizedWaveBounds: 108 exported declarations (103 theorems/lemmas, 5 other)
 -- ======  #check pins --
@@ -267,6 +277,12 @@ example : ∀ {ν t : ℝ}, 0 ≤ ν → 0 ≤ t → (f : ES → ℂ) → Integr
 
 /- pin: continuousNavierBilinear_majorant -/
 example : ∀ (u v : ES → ComplexSpace) (ξ : ES), complexEuclideanNorm (continuousNavierBilinear u v ξ) ≤ ∑ i : Fin 3, ∑ j : Fin 3, ‖ξ‖ * convolution (fun η => ‖u η j‖) (fun η => ‖v η i‖) ξ := continuousNavierBilinear_majorant
+example : ∀ (f : ES → ℂ) (c a : ℝ), 0 < a →
+    normXm1 (fun ξ => c • f (a • ξ)) = |c| * (a ^ 2)⁻¹ * normXm1 f := normXm1_comp_smul
+example : ∀ (lambda : ℝ) (m : ES → ℂ), ES → ℂ := parabolicRescale
+example : ∀ (m : ES → ℂ) (nu t lambda : ℝ), 0 < lambda →
+    parabolicRescale lambda (heatMode nu t m) =
+      heatMode ((lambda ^ 2)⁻¹ * nu) t (parabolicRescale lambda m) := parabolicRescale_heatMode
 
 end Navier.Analysis.ContinuousLeiLinSpace
 
@@ -280,4 +296,4 @@ end Navier.Analysis.ContinuousLeiLinSpace
 -- section-scoped type pins is left as the named follow-up; the name pins cover all 108.
 -- Coverage guard: the counts above are this file's contract. The generating census is
 --   grep -cE '^\s*(theorem|lemma|def|abbrev|instance|structure|class|inductive)\b' <module>
--- with comments masked; 60 + 108 = 168 names, 16 of them type-pinned.
+-- with comments masked; 69 + 108 = 177 names, 19 of them type-pinned.
