@@ -133,6 +133,13 @@ jobs:
       # open-ended queue.
       - name: Build the project
         run: lake build
+      # The API pin census diffs Navier/APIPin.lean's `#check` pins against the
+      # compiler's own declaration environment (scripts/ApiEnvCensus.lean) and
+      # the source-declared names, name by name. rc 1 on a missing or stale pin:
+      # the exported surface of the two code-map T0 modules cannot drift away
+      # from its test silently again.
+      - name: API pins match the compiler declaration environment
+        run: python3 scripts/api_pin_census.py
       - name: Emit public axiom audit
         run: lake env lean Navier/AxiomAudit.lean
       # Strict transitive census over every Navier declaration via

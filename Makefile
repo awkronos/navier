@@ -1,7 +1,7 @@
 PYTHON ?= python3
 
 .NOTPARALLEL:
-.PHONY: check proof test lean axioms adaptive-bench conditional-audit closure
+.PHONY: check proof test lean axioms adaptive-bench conditional-audit closure api-pin-census
 
 check: closure test lean axioms
 
@@ -29,3 +29,8 @@ lean:
 axioms:
 	lake env lean Navier/AxiomAudit.lean
 	lake env lean scripts/AuditAllAxioms.lean
+
+# Name-by-name comparison of Navier/APIPin's pins against the compiler's own
+# declaration environment (scripts/ApiEnvCensus.lean), not a grep census.
+api-pin-census:
+	$(PYTHON) scripts/api_pin_census.py
