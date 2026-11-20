@@ -1069,8 +1069,7 @@ private theorem negPowerEnvelope_aB_preterminal
         ‖iteratedFDeriv ℝ m
           (SolenoidalDiagonal.potentialSum (fun j => (aB j : ℝ))
             (PhysicalWaveSum.physicalQ h) (CutStageEstimates.positiveStages A)) w‖ ≤
-            C * PhysicalWaveSum.physicalQ h w ^ (-β) := by
- :=
+            C * PhysicalWaveSum.physicalQ h w ^ (-β) :=
   negPowerEnvelope_aB_extend (by
   obtain ⟨C, β, hC, hβ, hsub⟩ :=
     CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds
