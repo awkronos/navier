@@ -343,6 +343,7 @@ import Navier.Scaling
 import Navier.Transfer.LatticeExtensionTransport
 import Navier.Transfer.ScaledPeriodicObstruction
 import Navier.Construction.CS_PotentialSumEnvelope
+import Navier.Construction.CS_PotentialSumEnvelopeGrowth
 import Navier.Analysis.MildHorizonFreeRestartBarrier
 import Navier.Analysis.LinkedBoxX2Carrier
 import Navier.Analysis.LinkedBoxX2HvIndependence
