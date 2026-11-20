@@ -356,6 +356,7 @@ import Navier.Analysis.OsgoodUniformBound
 import Navier.Analysis.OsgoodDivergenceBridge
 import Navier.Analysis.OsgoodEnvelopeTransfer
 import Navier.Construction.BoundedScheduleWitness
+import Navier.Construction.HnumFalsification
 import Navier.Analysis.BKMEnvBoundedSchedule
 
 /-!
