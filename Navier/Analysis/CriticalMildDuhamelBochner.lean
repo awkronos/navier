@@ -59,6 +59,43 @@ theorem LatticeDivergenceFree.sub {u v : WeightedLatticeBanach}
     rfl
   rw [hpoint, inner_sub_right, hu m, hv m, sub_self]
 
+/-- The Euclidean coordinate transport sends the coordinate zero to the
+Hermitian Euclidean zero. -/
+theorem complexEuclideanPoint_zero :
+    complexEuclideanPoint (0 : ComplexSpace) = 0 := by
+  ext i
+  simp [complexEuclideanPoint_apply]
+
+/-- The Euclidean coordinate transport is additive.  The `sub` theorem above
+builds the subtraction case inline; the transport is additive, so the addition
+case is the same one-line transport step. -/
+theorem complexEuclideanPoint_add (a b : ComplexSpace) :
+    complexEuclideanPoint (a + b) =
+      complexEuclideanPoint a + complexEuclideanPoint b := by
+  ext i
+  simp [complexEuclideanPoint_apply]
+
+/-- The physical divergence-free subspace contains the zero carrier. -/
+theorem LatticeDivergenceFree.zero :
+    LatticeDivergenceFree (0 : WeightedLatticeBanach) := by
+  intro m
+  simp [weightedLatticeCoefficient, complexEuclideanPoint_zero]
+
+/-- The physical divergence-free subspace is closed under addition.  The
+zero, subtraction and addition rows are the subspace structure the later
+Duhamel consumers currently re-derive by hand (see the
+`simpa only [sub_add_cancel]` witness built inside
+`norm_positiveTimeHeatRegularizedSpectralOutput_sub_le`). -/
+theorem LatticeDivergenceFree.add {u v : WeightedLatticeBanach}
+    (hu : LatticeDivergenceFree u) (hv : LatticeDivergenceFree v) :
+    LatticeDivergenceFree (u + v) := by
+  intro m
+  have hcoefficient : weightedLatticeCoefficient (u + v) m =
+      weightedLatticeCoefficient u m + weightedLatticeCoefficient v m := by
+    simp [weightedLatticeCoefficient, smul_add]
+  rw [hcoefficient, complexEuclideanPoint_add, inner_add_right, hu m, hv m,
+    zero_add]
+
 /-- The complex frequency embedding respects lattice addition. -/
 theorem complexFrequency_latticeFrequency_add (i j : LatticeMode) :
     complexFrequency (latticeFrequency (i + j)) =
@@ -431,6 +468,35 @@ theorem heatRegularizedSpectralOutput_apply (ν τ : ℝ) (hν : 0 < ν) (hτ : 
   exact constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
     ν τ hν hτ u v hu k
 
+/-- The completed output-frequency heat-regularized nonlinear carrier is
+itself Hermitian-transverse mode by mode: at every lattice mode the decoded
+coefficient is the one-frequency heat--Leray multiplier applied to the
+literal convolution coefficient, and that multiplier is transverse by
+`complexFrequencyHeatLeray_hermitian_transverse` (totally, hence including at
+the zero mode).  The carrier previously carried only additivity and norm
+rows, so no producer turned
+`LatticeDivergenceFree u` into `LatticeDivergenceFree` of the Duhamel output;
+this is the lattice counterpart of the continuous-profile row
+`Navier.Analysis.ContinuousLeiLinReality.profileDivergenceFree_heatVec`. -/
+theorem heatRegularizedSpectralOutput_divergenceFree
+    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    LatticeDivergenceFree (heatRegularizedSpectralOutput ν τ hν hτ u v hu) := by
+  intro k
+  have hw : latticeModeWeight k ≠ 0 :=
+    ne_of_gt (lt_of_lt_of_le zero_lt_one (one_le_latticeModeWeight k))
+  have hcoef : weightedLatticeCoefficient
+      (heatRegularizedSpectralOutput ν τ hν hτ u v hu) k =
+      complexFrequencyHeatLeray ν τ (latticeFrequency k)
+        (spectralOutputCoefficient k u v) := by
+    show WithLp.ofLp ((latticeModeWeight k)⁻¹ •
+        (heatRegularizedSpectralOutput ν τ hν hτ u v hu) k) = _
+    rw [heatRegularizedSpectralOutput_apply, heatRegularizedSpectralOutputFiber]
+    rw [smul_smul, inv_mul_cancel₀ hw, one_smul]
+    rfl
+  rw [hcoef]
+  exact complexFrequencyHeatLeray_hermitian_transverse ν τ (latticeFrequency k) _
+
 /-- The completed output-heat carrier is additive in the transported input.
 This is an exact identity of the actual global `ℓ¹` output, not merely a
 majorant estimate. -/
@@ -645,6 +711,21 @@ theorem positiveTimeHeatRegularizedSpectralOutput_of_pos (ν : ℝ) (hν : 0 < �
       heatRegularizedSpectralOutput ν τ hν hτ u v hu := by
   simp [positiveTimeHeatRegularizedSpectralOutput, hτ]
 
+/-- The zero-extended positive-time nonlinear integrand is transverse at every
+elapsed time, positive or not: the positive branch is
+`heatRegularizedSpectralOutput_divergenceFree` and the nonpositive branch is
+the zero carrier, closed by `LatticeDivergenceFree.zero`.  This pointwise row
+is what the Bochner-integral row below feeds on. -/
+theorem positiveTimeHeatRegularizedSpectralOutput_divergenceFree
+    (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
+    (hu : LatticeDivergenceFree u) (τ : ℝ) :
+    LatticeDivergenceFree (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ) := by
+  by_cases hτ : 0 < τ
+  · rw [positiveTimeHeatRegularizedSpectralOutput_of_pos ν hν u v hu hτ]
+    exact heatRegularizedSpectralOutput_divergenceFree ν τ hν hτ u v hu
+  · simp [positiveTimeHeatRegularizedSpectralOutput, hτ]
+    exact LatticeDivergenceFree.zero
+
 /-- The zero-extended positive-time nonlinear integrand remains exactly
 additive in its transported input. -/
 theorem positiveTimeHeatRegularizedSpectralOutput_add_right
@@ -737,8 +818,7 @@ theorem norm_positiveTimeHeatRegularizedSpectralOutput_sub_le
           positiveTimeHeatRegularizedSpectralOutput ν hν u' v' hu' τ =
         positiveTimeHeatRegularizedSpectralOutput ν hν
           (u - u') v' (hu.sub hu') τ := by
-    have hsum : LatticeDivergenceFree (u - u' + u') := by
-      simpa only [sub_add_cancel] using hu
+    have hsum : LatticeDivergenceFree (u - u' + u') := (hu.sub hu').add hu'
     have hadd := congrFun
       (positiveTimeHeatRegularizedSpectralOutput_add_left
         ν hν (u - u') u' v' (hu.sub hu') hu' hsum) τ
@@ -954,6 +1034,44 @@ def positiveTimeHeatRegularizedSpectralOutputIntegral
     (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
     WeightedLatticeBanach :=
   ∫ τ in Ioc 0 T, positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ
+
+/-- The genuine nonlinear Duhamel Bochner integral of the completed heat
+output remains in the physical divergence-free subspace.  At each lattice
+mode the Hermitian divergence functional is the composition of a scalar
+weighted evaluation with `innerSL ℂ`, hence continuous linear, so it commutes
+with the Bochner integral over the integrable `Ioc 0 T` restriction; the
+integrand is then pointwise transverse by
+`positiveTimeHeatRegularizedSpectralOutput_divergenceFree` and the integral of
+the zero function is zero.  This is the lattice counterpart of the
+continuous-profile mild-image row
+`Navier.Analysis.ContinuousLeiLinReality.profileDivergenceFree_continuousMildImage`;
+the fixed-input integral previously had additivity and norm rows but no
+transversality producer, so `LatticeDivergenceFree` was not known to survive
+the time integration. -/
+theorem positiveTimeHeatRegularizedSpectralOutputIntegral_divergenceFree
+    (ν T : ℝ) (hν : 0 < ν) (hT : 0 ≤ T)
+    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
+    LatticeDivergenceFree
+      (positiveTimeHeatRegularizedSpectralOutputIntegral ν T hν hT u v hu) := by
+  intro m
+  have hint :=
+    integrableOn_positiveTimeHeatRegularizedSpectralOutput ν T hν hT u v hu
+  set Φ : WeightedLatticeBanach →L[ℂ] ℂ :=
+    (innerSL ℂ (complexFrequency (latticeFrequency m))).comp
+      (↑((latticeModeWeight m)⁻¹) •
+        lp.evalCLM ℂ (fun _ : LatticeMode => ComplexE3) 1 m)
+  have hΦ : ∀ w : WeightedLatticeBanach, Φ w =
+      inner ℂ (complexFrequency (latticeFrequency m))
+        (complexEuclideanPoint (weightedLatticeCoefficient w m)) :=
+    fun _ => rfl
+  change Φ (∫ τ in Ioc 0 T,
+    positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ) = 0
+  rw [← Φ.integral_comp_comm hint]
+  have hz : (fun τ => Φ (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ)) =
+      fun _ => 0 := by
+    funext τ
+    exact positiveTimeHeatRegularizedSpectralOutput_divergenceFree ν hν u v hu τ m
+  rw [hz, integral_zero]
 
 /-- Bochner integration preserves the exact right-input additivity of the
 completed nonlinear heat output. -/
