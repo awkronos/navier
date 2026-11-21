@@ -76,10 +76,16 @@ was absent from the record; now membership in the extended box carries it.
   sibling of the `s^{−1/2}` wall in `ContinuousLeiLinMildAssemblyLeaves`).
   It does NOT touch the smallness field `restartRadius u₀ ≤ ν / 16`.
 * `boxX2RawRepresentative` and the crown's `everywhereRawRepresentative`
-  agree at almost every time (`boxX2RawRepresentative_eq_everywhere_ae`);
-  transferring `SourceL1X1` across that time-null set needs a.e.-stability
-  of the convolution source, which is NOT proved here — the statement is
-  given at the gated field itself.
+  agree at almost every time (`boxX2RawRepresentative_eq_everywhere_ae`).
+  `boxX2_sourceL1X1_everywhere` now transfers `SourceL1X1` across that
+  time-null set, via the representative-level a.e.-stability of the
+  convolution source
+  (`ContinuousLeiLinMildAssemblyLeaves.sourceL1X1_congr_ae_time`, proved
+  in this shard: agreement as functions `ES → ComplexSpace` at a.e. time is
+  enough because the source reads each field only at the time).  The
+  class-level reading — agreement only `volume`-a.e. *in* `ξ`, the shape
+  `ContRepPinProdAe.pinProdAe` would feed, since convolution fibers depend
+  on whole frequency slices — is still NOT proved here.
 * The whole-space global regularity crown stays OPEN.  Nothing in this file
   closes a crown.
 -/
@@ -786,6 +792,33 @@ theorem boxX2_sourceL1X1_of_hv (ν : ℝ≥0) (hν : 0 < ν) (T B1 B2 B3 : ℝ)
     (boxX2RawRepresentative ν T B1 B2 B3 b) U0 hv'
     (boxX2_hv0 ν hν T B1 B2 B3 b) hv2 hbdd hX2
 
+/-- **The transfer this module's honest scope named, now proved.**  The
+`X¹` source budget of the gated field `boxX2RawRepresentative` transfers
+across the time-null set of
+`boxX2RawRepresentative_eq_everywhere_ae` to the crown's
+`everywhereRawRepresentative` — the representative the mild-assembly leaves
+actually consume (`mildTimeLeaf_hmX1_of_sourceL1X1_actualBox`,
+`mildTimeLeaf_hmX1Time_of_sourceL1X1_actualBox` and
+`mildAssemblyTimeLeaves_of_sourceL1X1` all take
+`SourceL1X1 T (everywhereRawRepresentative ν T x.1)` as their named input
+`H`).  The transfer primitive is
+`ContinuousLeiLinMildAssemblyLeaves.sourceL1X1_congr_ae_time`; the
+hypothesis shape is unchanged from `boxX2_sourceL1X1_of_hv` (the same joint
+continuity `hv` of the gated field), so nothing new is assumed about the
+box.  What remains open is exactly what was open before: the `hv` leg
+itself, and the class-level (a.e.-in-`ξ`) reading of the transfer, which
+`ContRepPinProdAe.pinProdAe` would feed. -/
+theorem boxX2_sourceL1X1_everywhere (ν : ℝ≥0) (hν : 0 < ν) (T B1 B2 B3 : ℝ)
+    (b : ActualLinkedBoxX2 ν T B1 B2 B3)
+    (hv : ∀ j : Fin 3,
+      Continuous (fun p : ES × ℝ =>
+        boxX2RawRepresentative ν T B1 B2 B3 b p.2 p.1 j)) :
+    SourceL1X1 T (everywhereRawRepresentative ν T b.1.1) :=
+  (sourceL1X1_congr_ae_time T (boxX2RawRepresentative ν T B1 B2 B3 b)
+    (everywhereRawRepresentative ν T b.1.1)
+    (boxX2RawRepresentative_eq_everywhere_ae ν hν T B1 B2 B3 b))
+    (boxX2_sourceL1X1_of_hv ν hν T B1 B2 B3 b hv)
+
 /-! ## Slot construction and suppliers -/
 
 /-- The exact spatial `X²` representative of a raw time-frequency field
@@ -1089,6 +1122,7 @@ set_option pp.fullNames true in
 #check @Navier.Analysis.LinkedBoxX2Carrier.boxX2_hX2
 #check @Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceX2Budget_of_hv
 #check @Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceL1X1_of_hv
+#check @Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceL1X1_everywhere
 #check @Navier.Analysis.LinkedBoxX2Carrier.x2Section
 #check @Navier.Analysis.LinkedBoxX2Carrier.toX2TimeSlot
 #check @Navier.Analysis.LinkedBoxX2Carrier.spatial_x2_realizations_eq
@@ -1107,6 +1141,7 @@ set_option pp.fullNames true in
 #print axioms Navier.Analysis.LinkedBoxX2Carrier.boxX2_hX2
 #print axioms Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceX2Budget_of_hv
 #print axioms Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceL1X1_of_hv
+#print axioms Navier.Analysis.LinkedBoxX2Carrier.boxX2_sourceL1X1_everywhere
 #print axioms Navier.Analysis.LinkedBoxX2Carrier.spatial_x2_realizations_eq
 #print axioms Navier.Analysis.LinkedBoxX2Carrier.realized_x2_time_slots_eq_of_raw
 #print axioms Navier.Analysis.LinkedBoxX2Carrier.x2_linked_spatial_representatives_ae
