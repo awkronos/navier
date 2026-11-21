@@ -502,30 +502,6 @@ theorem lowStageTable_le
               (pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2) j)
         _ = (1 / 2 : ℝ) ^ j := by ring
 
-/-- **(T1, with the low-stage table supplied.)** The summation transport of this
-module applied to its own table: the hypothesis `hK` of
-`potentialSum_negPower_envelope` is discharged by `lowStageTable` from the
-geometric stage bounds, so the negative-power envelope of the diagonal sum
-follows from `CutStageBounds` plus the two named side conditions `hcov`, `hnum`.
--/
-theorem potentialSum_negPower_envelope_of_cutBounds
-    {a : ℕ → ℝ} (ha : Tendsto a atTop atTop) (ha1 : ∀ j, (1 : ℝ) ≤ a j)
-    {q : E → ℝ} {U S : Set E} (hU : IsOpen U) (hSU : S ⊆ U)
-    (hq : ContDiffOn ℝ ∞ q U) (hqpos : ∀ x ∈ S, 0 < q x)
-    {A : ℕ → E → V} (hA : ∀ j, 1 ≤ j → ContDiffOn ℝ ∞ (A j) U)
-    {g L : ℕ → ℝ} (hg : Monotone g) (hgtop : Tendsto g atTop atTop)
-    (hgpos : ∀ j, 1 ≤ j → 0 ≤ g j)
-    (hb : DiagonalJetBounds.CutStageBounds a q
-      (CutStageEstimates.positiveStages A) g L S)
-    (M : ℕ) (hcov : ∀ j, 1 ≤ j → j < M → M ≤ j + 2)
-    (hnum : ∀ j m, 1 ≤ j → j < M → m ≤ M → (0 : ℝ) ≤ g j - L m) :
-    ∃ C β : ℝ, 0 < C ∧ 0 ≤ β ∧ ∀ m ≤ M, ∀ x ∈ S,
-      ‖iteratedFDeriv ℝ m
-        (SolenoidalDiagonal.potentialSum a q (CutStageEstimates.positiveStages A)) x‖ ≤
-        C * q x ^ (-β) :=
-  potentialSum_negPower_envelope ha ha1 hU hSU hq hqpos hA hg hgtop hgpos hb M lowStageTable
-    fun j m hjm hm x hx => lowStageTable_le ha1 hU hSU hq hqpos hb M hcov hnum j m hjm hm x hx
-
 #print axioms Navier.Construction.CSPotentialSumEnvelope.finite_sum_jet
 #print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_tail_jet_sub
 #print axioms Navier.Construction.CSPotentialSumEnvelope.partialPotential_prefix_sum_sub
@@ -533,6 +509,5 @@ theorem potentialSum_negPower_envelope_of_cutBounds
 #print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_negPower_envelope
 #print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_negPower_envelope_physical
 #print axioms Navier.Construction.CSPotentialSumEnvelope.lowStageTable_le
-#print axioms Navier.Construction.CSPotentialSumEnvelope.potentialSum_negPower_envelope_of_cutBounds
 
 end Navier.Construction.CSPotentialSumEnvelope
