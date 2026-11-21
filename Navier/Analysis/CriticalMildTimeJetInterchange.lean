@@ -27,6 +27,7 @@ open Navier.Analysis.CriticalMildHeatSmoothing
 open Navier.Analysis.CriticalMildSeries
 open Navier.Analysis.CriticalMildWeightedSpace
 open Navier.Analysis.CriticalMildWeightedBanach
+open Navier.Analysis.CriticalMildHeatFlow
 open Navier.Analysis.CriticalMildHeatFlowLinear
 open Navier.Analysis.CriticalMildSelfMap
 open Navier.Analysis.CriticalMildDuhamelBochner
@@ -608,7 +609,101 @@ theorem exists_hasDerivAt_mildPath_in_weightedCarrier
   exact exists_hasDerivAt_mildPath_in_weightedCarrier_of_uniform_nine
     μ hμ u₀ A hAc hdiv hR ha ht hbound hmild hhigh
 
+/-! ## The carrier base case of the polynomial-moment ladder
+
+`Navier/Analysis/CriticalMildHigherUniformMoments.lean` develops the rung
+`latticePolynomialMoment_weightedHeatFlow_add_threeHalves`, which turns a finite
+order-`s` moment into a finite order-`s + 3/2` moment at positive heat time, and
+every `exists_uniform_*` reserve downstream is chained from it.  Measured over
+`git grep -n 'LatticePolynomialMoment' -- '*.lean'` before this section, the
+rung was entered only from a hypothesis supplied by a HIGHER moment
+(`latticePolynomialMoment_mono`), so the ladder had no entry point that uses
+carrier membership alone.  At order one the moment density is the weighted
+amplitude whose sum is exactly the `ℓ¹` norm, so the base case is an identity
+rather than an assumption; combined with the rung it makes the quadratic moment
+demanded by the carrier-boundary note in
+`Navier/Transfer/MildSelfMapTransport.lean` ("`WeightedLatticeBanach` is plain
+`ℓ¹` after the weight division and bounds no quadratic moment") unconditional
+at every positive heat time. -/
+
+/-- At the carrier's own order the moment density is the weighted amplitude of
+the decoded coefficient sequence: the weight is raised to `1`. -/
+theorem polynomialMomentAmplitude_one (u : WeightedLatticeBanach)
+    (k : LatticeMode) :
+    polynomialMomentAmplitude 1 u k =
+      latticeWeightedAmplitude (weightedLatticeCoefficient u) k := by
+  unfold polynomialMomentAmplitude latticeWeightedAmplitude
+  rw [Real.rpow_one]
+
+/-- **Base case of the moment ladder.** Every element of the completed `ℓ¹`
+carrier has a finite order-one polynomial moment; only carrier membership is
+used. -/
+theorem latticePolynomialMoment_one (u : WeightedLatticeBanach) :
+    LatticePolynomialMoment 1 u := by
+  show Summable (polynomialMomentAmplitude 1 u)
+  refine (latticeWeightedL1_coefficient u :
+    Summable (latticeWeightedAmplitude (weightedLatticeCoefficient u))).congr ?_
+  intro k
+  exact (polynomialMomentAmplitude_one u k).symm
+
+/-- The order-one moment is exactly the carrier norm, so the ladder starts
+from the budget the space already carries. -/
+theorem polynomialMoment_one_eq_norm (u : WeightedLatticeBanach) :
+    polynomialMoment 1 u = ‖u‖ := by
+  unfold polynomialMoment
+  simp only [polynomialMomentAmplitude_one]
+  exact tsum_latticeWeightedAmplitude_coefficient u
+
+/-- Positive-time smoothing raises the carrier order unconditionally: the heat
+flow of ANY carrier element has the order-`5/2` moment. -/
+theorem latticePolynomialMoment_fiveHalves_weightedHeatFlow
+    (ν r : ℝ) (hν : 0 < ν) (hr : 0 < r) (u : WeightedLatticeBanach) :
+    LatticePolynomialMoment (5 / 2)
+      (weightedHeatFlow ν r hν.le hr.le u) := by
+  have hkey : (5 : ℝ) / 2 = 1 + 3 / 2 := by ring
+  rw [hkey]
+  exact latticePolynomialMoment_weightedHeatFlow_add_threeHalves
+    1 ν r hν hr u (latticePolynomialMoment_one u)
+
+/-- Its quantitative form, with the carrier norm as the budget. -/
+theorem polynomialMoment_fiveHalves_weightedHeatFlow_le
+    (ν r : ℝ) (hν : 0 < ν) (hr : 0 < r) (u : WeightedLatticeBanach) :
+    polynomialMoment (5 / 2) (weightedHeatFlow ν r hν.le hr.le u) ≤
+      inhomogeneousThreeHalfHeatGain (ν * r) * ‖u‖ := by
+  have hkey : (5 : ℝ) / 2 = 1 + 3 / 2 := by ring
+  rw [hkey]
+  have h := polynomialMoment_weightedHeatFlow_add_threeHalves_le
+    1 ν r hν hr u (latticePolynomialMoment_one u)
+  rw [polynomialMoment_one_eq_norm u] at h
+  exact h
+
+/-- **The quadratic moment of the plain-`ℓ¹` carrier.** At any positive heat
+time the flow of any carrier element has the finite order-two moment that the
+transport majorant asks for, by monotonicity from order `5/2`. -/
+theorem latticePolynomialMoment_two_weightedHeatFlow
+    (ν r : ℝ) (hν : 0 < ν) (hr : 0 < r) (u : WeightedLatticeBanach) :
+    LatticePolynomialMoment 2 (weightedHeatFlow ν r hν.le hr.le u) :=
+  latticePolynomialMoment_mono (show (2 : ℝ) ≤ 5 / 2 by norm_num) _
+    (latticePolynomialMoment_fiveHalves_weightedHeatFlow ν r hν hr u)
+
+/-- The same bound stated for the order-two moment itself. -/
+theorem polynomialMoment_two_weightedHeatFlow_le
+    (ν r : ℝ) (hν : 0 < ν) (hr : 0 < r) (u : WeightedLatticeBanach) :
+    polynomialMoment 2 (weightedHeatFlow ν r hν.le hr.le u) ≤
+      inhomogeneousThreeHalfHeatGain (ν * r) * ‖u‖ :=
+  (polynomialMoment_mono (show (2 : ℝ) ≤ 5 / 2 by norm_num) _
+    (latticePolynomialMoment_fiveHalves_weightedHeatFlow ν r hν hr u)).trans
+    (polynomialMoment_fiveHalves_weightedHeatFlow_le ν r hν hr u)
+
 end Navier.Analysis.CriticalMildTimeJetInterchange
+
+#print axioms Navier.Analysis.CriticalMildTimeJetInterchange.polynomialMomentAmplitude_one
+#print axioms Navier.Analysis.CriticalMildTimeJetInterchange.latticePolynomialMoment_one
+#print axioms Navier.Analysis.CriticalMildTimeJetInterchange.polynomialMoment_one_eq_norm
+#print axioms Navier.Analysis.CriticalMildTimeJetInterchange.latticePolynomialMoment_fiveHalves_weightedHeatFlow
+#print axioms Navier.Analysis.CriticalMildTimeJetInterchange.polynomialMoment_fiveHalves_weightedHeatFlow_le
+#print axioms Navier.Analysis.CriticalMildTimeJetInterchange.latticePolynomialMoment_two_weightedHeatFlow
+#print axioms Navier.Analysis.CriticalMildTimeJetInterchange.polynomialMoment_two_weightedHeatFlow_le
 
 #print axioms Navier.Analysis.CriticalMildTimeJetInterchange.timeDerivativePolynomialMoment_mildRaw_le
 #print axioms Navier.Analysis.CriticalMildTimeJetInterchange.weightedLatticeCoefficient_weightedTimeDerivativeCarrier
