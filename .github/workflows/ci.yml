@@ -32,7 +32,9 @@ permissions:
 # timeout instead of an open-ended queue.
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # CI-CANCEL-1120: only a PR run is superseded by a newer push; a main run finishes
+  # (a newer push queues behind it and GitHub coalesces older pending runs).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   python:
