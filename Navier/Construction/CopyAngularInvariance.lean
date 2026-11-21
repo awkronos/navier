@@ -93,6 +93,28 @@ theorem directional_zero (hf : Invariant θ f) (x : D) : fderiv ℝ f x θ = 0 :
 theorem along_zero (hf : Invariant θ f) (x : D) :
     HarmonicCalculus.along (fun _ => θ) f x = 0 := hf.directional_zero x
 
+/-- **The angular-invariance test: the converse of `directional_zero`.** If a `C¹`
+field has zero derivative along `θ` at every point, then it is `Invariant θ`: along the
+line `s ↦ x + s • θ` the derivative is `fderiv ℝ f (x + s • θ) θ`, which vanishes by
+hypothesis, and the one-variable mean-value lemma `is_const_of_deriv_eq_zero` makes the
+restriction constant, giving `f (x + t • θ) = f x`.
+
+This is the direction that *supplies* the `Invariant` hypothesis asked by the conditional
+consumers of this module from differential data. What it does not supply is the
+differential identity itself: for a concrete field one still has to prove
+`∀ x, fderiv ℝ f x θ = 0`. -/
+theorem of_directional_zero {f : D → E} (hf : ContDiff ℝ 1 f)
+    (h : ∀ x, fderiv ℝ f x θ = 0) : Invariant θ f := by
+  intro x t
+  have hD : Differentiable ℝ f := hf.differentiable (by norm_num : (1 : WithTop ℕ∞) ≠ 0)
+  have hi (s : ℝ) : HasDerivAt (fun q : ℝ => x + q • θ) θ s := by
+    simpa using ((hasDerivAt_id s).smul_const θ).const_add x
+  have hφ (s : ℝ) : HasDerivAt (fun q : ℝ => f (x + q • θ)) (fderiv ℝ f (x + s • θ) θ) s :=
+    ((hD (x + s • θ)).hasFDerivAt.comp_hasDerivAt s (hi s))
+  have hc : ∀ s : ℝ, deriv (fun q : ℝ => f (x + q • θ)) s = 0 := fun s => by
+    rw [(hφ s).deriv, h]
+  simpa using (is_const_of_deriv_eq_zero (fun s => (hφ s).differentiableAt) hc 0 t).symm
+
 end Invariant
 
 namespace AffinePhase
@@ -120,6 +142,36 @@ theorem directional_eq (hΦ : AffinePhase θ m Φ) {x : D} (hd : DifferentiableA
   have href : HasDerivAt (fun t : ℝ => Φ x + m * t) m 0 := by
     simpa only [mul_one, id_eq] using ((hasDerivAt_id (0 : ℝ)).const_mul m).const_add (Φ x)
   exact hline.unique href
+
+/-- **The affine-phase test: the converse of `directional_eq`.** If a `C¹` phase has the
+constant derivative `m` along `θ` at every point, then it is an `AffinePhase θ m`: along
+`s ↦ x + s • θ` the derivative of `Φ` is `m`, so the derivative of
+`q ↦ Φ (x + q • θ) - m * q` vanishes everywhere and `is_const_of_deriv_eq_zero` makes it
+constant, which is `Φ (x + t • θ) = Φ x + m * t`.
+
+Together with `Invariant.of_directional_zero` this turns the angular *differential*
+identities of a constructed phase into the `AffinePhase` carrier that
+`PhysicalCurlCovariance.vectorPotential_fullTurn` and the `ExactConditions` consumers ask
+for. The differential identity itself — `∀ x, fderiv ℝ Φ x θ = m` for the concrete phase —
+is what remains to be supplied. -/
+theorem of_directional_eq (hf : ContDiff ℝ 1 Φ) (h : ∀ x, fderiv ℝ Φ x θ = m) :
+    AffinePhase θ m Φ := by
+  intro x t
+  have hD : Differentiable ℝ Φ := hf.differentiable (by norm_num : (1 : WithTop ℕ∞) ≠ 0)
+  have hi (s : ℝ) : HasDerivAt (fun q : ℝ => x + q • θ) θ s := by
+    simpa using ((hasDerivAt_id s).smul_const θ).const_add x
+  have hφ (s : ℝ) : HasDerivAt (fun q : ℝ => Φ (x + q • θ)) (fderiv ℝ Φ (x + s • θ) θ) s :=
+    ((hD (x + s • θ)).hasFDerivAt.comp_hasDerivAt s (hi s))
+  have hm (s : ℝ) : HasDerivAt (fun q : ℝ => m * q) m s := by
+    simpa using (hasDerivAt_id s).const_mul m
+  have hψ (s : ℝ) : HasDerivAt (fun q : ℝ => Φ (x + q • θ) - m * q)
+      (fderiv ℝ Φ (x + s • θ) θ - m) s :=
+    (hφ s).sub (hm s)
+  have hc : ∀ s : ℝ, deriv (fun q : ℝ => Φ (x + q • θ) - m * q) s = 0 := fun s => by
+    rw [(hψ s).deriv, h, sub_self]
+  have hconst := is_const_of_deriv_eq_zero (fun s => (hψ s).differentiableAt) hc 0 t
+  simp at hconst
+  linarith
 
 end AffinePhase
 
