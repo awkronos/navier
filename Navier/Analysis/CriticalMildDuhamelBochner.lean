@@ -85,7 +85,19 @@ theorem LatticeDivergenceFree.zero :
 zero, subtraction and addition rows are the subspace structure the later
 Duhamel consumers currently re-derive by hand (see the
 `simpa only [sub_add_cancel]` witness built inside
-`norm_positiveTimeHeatRegularizedSpectralOutput_sub_le`). -/
+`norm_positiveTimeHeatRegularizedSpectralOutput_sub_le`).
+
+This is the single public `add` row: it sits in the namespace that defines
+`LatticeDivergenceFree`, beside its `zero` and `sub` siblings.  A second row of
+the same name, dot-extended onto the same parent from `CriticalMildSelfMap`
+(`c065664`, 2026-07-30), made the bare term ambiguous for every consumer that
+opens both namespaces, and trunk head refused at
+`Navier.Analysis.PhysicalPeriodicCoerciveShellControl.lean:234:8` (`lake build`
+rc 1, the only failing target).  That alien copy is deleted and the one
+declaration naming it in full, `CriticalMildInteriorTimeModulus.lean:206`, now
+names this row.  `ed32cd8` cured the sibling duplicate
+`heatRegularizedSpectralOutput_divergenceFree` from the same landing and left
+this one. -/
 theorem LatticeDivergenceFree.add {u v : WeightedLatticeBanach}
     (hu : LatticeDivergenceFree u) (hv : LatticeDivergenceFree v) :
     LatticeDivergenceFree (u + v) := by

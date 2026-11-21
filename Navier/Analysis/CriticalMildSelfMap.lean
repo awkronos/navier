@@ -25,20 +25,16 @@ open Navier.Analysis.CriticalMildDuhamelBochner
 open Navier.Analysis.CriticalMildHeatFlow
 open Navier.Analysis.CriticalMildPathIntegrand
 
-/-- Divergence freedom is stable under addition in the completed carrier. -/
-theorem LatticeDivergenceFree.add {u v : WeightedLatticeBanach}
-    (hu : LatticeDivergenceFree u) (hv : LatticeDivergenceFree v) :
-    LatticeDivergenceFree (u + v) := by
-  intro m
-  rw [show weightedLatticeCoefficient (u + v) m =
-      weightedLatticeCoefficient u m + weightedLatticeCoefficient v m by
-    exact congrFun (weightedLatticeCoefficient_add u v) m]
-  have hpoint (a b : ComplexSpace) :
-      complexEuclideanPoint (a + b) =
-        complexEuclideanPoint a + complexEuclideanPoint b := by
-    ext j
-    rfl
-  rw [hpoint, inner_add_right, hu m, hv m, add_zero]
+/-! Divergence freedom is stable under addition: that row is
+`Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree.add`, in the
+namespace that defines `LatticeDivergenceFree`, beside its `zero` and `sub`
+siblings.  This namespace used to carry a second `add` row dot-extended onto the
+same parent, which made the bare term `LatticeDivergenceFree.add` ambiguous for
+every consumer opening both namespaces -- trunk head refused at
+`Navier.Analysis.PhysicalPeriodicCoerciveShellControl.lean:234:8` (`lake build`
+rc 1, the only failing target).  The duplicate is deleted, its proof living once
+with the parent; `criticalMildImage_divergenceFree` below and
+`CriticalMildInteriorTimeModulus.lean:206` both resolve to the surviving row. -/
 
 /-- The completed critical mild image at a nonnegative observation time:
 linear heat--Leray evolution plus the actual evolving-path Duhamel integral. -/

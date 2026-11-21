@@ -203,7 +203,7 @@ theorem resolvedMildHistory_divergenceFree
       (criticalMildPathIntegrand ν hν u hu t) (Ioc 0 a) volume :=
     (integrableOn_criticalMildPathIntegrand
       ν hν u huc hu hR ht huR).mono_set (Ioc_subset_Ioc_right ha)
-  apply Navier.Analysis.CriticalMildSelfMap.LatticeDivergenceFree.add
+  apply Navier.Analysis.CriticalMildDuhamelBochner.LatticeDivergenceFree.add
   · exact weightedHeatFlow_divergenceFree ν t hν.le ht u₀
   · intro m
     change latticeDivergenceCLM m

@@ -360,6 +360,26 @@ import Navier.Construction.BoundedScheduleWitness
 import Navier.Construction.HnumFalsification
 import Navier.Analysis.BKMEnvBoundedSchedule
 
+-- Import-closure repair (lane NAVIER-RED-1122, measured at trunk ed32cd8).
+-- These ten modules had landed sorry-free with no import leg, so
+-- `scripts/AuditAllAxioms.lean` -- which starts from `import Navier` and walks
+-- the imported environment -- never censused their declarations, and neither
+-- did the raw traces in `Navier/AxiomAudit.lean`.  `tools/module-closure-check.py`
+-- reported exactly this set and exited 1; it is now pinned by
+-- `tests/test_module_closure_gate.py` inside the battery CI runs.
+-- `Navier.Analysis.ContinuousLeiLinFourierEndpointTrace` is reachable through
+-- its consumer `ContinuousLeiLinFourierEndpointBarrier` and needs no root leg.
+import Navier.AdjointBackpropagation
+import Navier.Analysis.ContinuousLeiLinFourierEndpointBarrier
+import Navier.Analysis.CrownBridgeReduction
+import Navier.Analysis.H3RestartSlice
+import Navier.Analysis.MildTimeLeafX1CascadeFalsification
+import Navier.Analysis.RestartAgreementOpen
+import Navier.Analysis.SourceX1HeatKernelBound
+import Navier.Analysis.WienerH3DampedProducer
+import Navier.Transfer.MildSelfMapDefectBudget
+import Navier.Transfer.MildSelfMapTransport
+
 /-!
 # Navier
 
@@ -379,5 +399,13 @@ datum the initial-slice envelope budget is finite and equals the datum-profile
 weight.  This import establishes nothing for `t > 0` and does not close the
 premise; the premise remains open, with the propagation rung of the bootstrap
 as what is left crown-wide.
+The import legs added above close the audit blind spot measured at trunk
+`ed32cd8`: the adjoint-gradient identities, the Fourier-endpoint barrier and its
+trace, the crown-bridge reduction, the `H³` restart-slice interface, the
+`X¹`-cascade falsification, the restart-agreement opening, the `X¹`-weight
+heat-kernel leaf, the damped Wiener `H³` producer and the mild self-map
+transport with its defect budget had all landed without an import leg, so this
+umbrella -- and with it both axiom auditors -- did not reach their
+declarations.
 The mathematical conclusions of this module are the imported theorem types.
 -/
