@@ -1889,6 +1889,54 @@ def SourceL1X1 (T : ℝ) (v : ℝ → ES → ComplexSpace) : Prop :=
       ‖continuousNavierSource v v p.2 p.1 i‖)
       (volume.prod (volume.restrict (Icc (0 : ℝ) T)))
 
+/-- **`SourceL1X1` does not depend on the chosen time representative.**  Two
+fields that agree at `leiLinTimeMeasure T`-almost every time — and agree as
+functions `ES → ComplexSpace`, i.e. at **every** frequency — have the same
+`X¹` source budget.
+
+This is the primitive the honest scope of `LinkedBoxX2Carrier` names as
+missing (`LinkedBoxX2Carrier.lean`, "transferring `SourceL1X1` across that
+time-null set needs a.e.-stability of the convolution source, which is NOT
+proved here"), and the same gap `ContRepPinProdAe` records as "its own
+estimate, not a measurability lemma".  Proof at the representative level:
+the time-null set pulls back along the second projection of
+`volume.prod (vol|Icc 0 T)` through `Measure.quasiMeasurePreserving_snd`
+(no Fubini, no joint measurability, no `AEMeasurable` — the agreement is
+pointwise in `ξ`), and `continuousNavierSource` reads each of its two field
+arguments only through that argument's value at the time
+(`continuousNavierSource u v t = continuousNavierBilinear (u t) (v t)`,
+`ContinuousLeiLinTimeDuhamel.lean:29`), so at a good time the two weighted
+product integrands are *literally* equal and `Integrable.congr` finishes.
+
+**What is still NOT proved here.**  The class-level sibling — stability
+under agreement only `volume`-a.e. *in* `ξ` at each good time, i.e. an `L¹`
+input rather than a representative input — does not follow from this
+argument and is not claimed: the convolution fiber
+`∫ η, u η j * v (ξ - η) i` depends on whole frequency slices, so lifting an
+`η`-null exceptional set through the reflection `η ↦ ξ - η` under the
+integral (and the measurability of the two slice fields) is its own
+estimate.  `ContRepPinProdAe.pinProdAe` supplies product-a.e. agreement, so
+*that* is the input the class-level reading needs, and it stays open. -/
+theorem sourceL1X1_congr_ae_time (T : ℝ) (v w : ℝ → ES → ComplexSpace)
+    (h : ∀ᵐ s ∂leiLinTimeMeasure T, v s = w s) :
+    SourceL1X1 T v → SourceL1X1 T w := by
+  intro hv i
+  have h1 : ∀ᵐ s ∂volume.restrict (Icc (0 : ℝ) T), ∀ ξ : ES,
+      ‖ξ‖ * ‖continuousNavierSource v v s ξ i‖ =
+        ‖ξ‖ * ‖continuousNavierSource w w s ξ i‖ := by
+    filter_upwards [h] with s hs ξ
+    have heq : continuousNavierSource v v s = continuousNavierSource w w s := by
+      change continuousNavierBilinear (v s) (v s) = continuousNavierBilinear (w s) (w s)
+      rw [hs]
+    rw [heq]
+  have hp : ∀ᵐ p : ES × ℝ ∂(volume.prod (volume.restrict (Icc (0 : ℝ) T))),
+      (fun q : ES × ℝ => ‖q.1‖ * ‖continuousNavierSource v v q.2 q.1 i‖) p =
+        (fun q : ES × ℝ => ‖q.1‖ * ‖continuousNavierSource w w q.2 q.1 i‖) p := by
+    filter_upwards [(Measure.quasiMeasurePreserving_snd
+      (μ := (volume : Measure ES)) (ν := volume.restrict (Icc (0 : ℝ) T))).ae h1] with p hp
+    exact hp p.1
+  exact (hv i).congr hp
+
 /-- `X¹`-weighted difference integrability, coordinatewise: the analogue of
 `xm1_integrable_diff` at the raised weight. -/
 private theorem x1_integrable_diff (f g : ES → ComplexSpace)
@@ -3887,6 +3935,8 @@ theorem mildPolarizationLeaves_actualBox (ν : ℝ≥0) (hν : 0 < ν) (T R : �
 #check @mildPolarizationLeaves_actualBox
 #print axioms mildPolarizationLeaves_actualBox
 #check @SourceL1X1
+#check @sourceL1X1_congr_ae_time
+#print axioms sourceL1X1_congr_ae_time
 #check @mildTimeLeaf_hmX1_of_sourceL1X1
 #print axioms mildTimeLeaf_hmX1_of_sourceL1X1
 #check @mildTimeLeaf_hmX1_of_sourceL1X1_actualBox
