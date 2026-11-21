@@ -468,34 +468,14 @@ theorem heatRegularizedSpectralOutput_apply (ν τ : ℝ) (hν : 0 < ν) (hτ : 
   exact constrainedHeatRegularizedFiber_eq_heatRegularizedSpectralOutputFiber
     ν τ hν hτ u v hu k
 
-/-- The completed output-frequency heat-regularized nonlinear carrier is
-itself Hermitian-transverse mode by mode: at every lattice mode the decoded
-coefficient is the one-frequency heat--Leray multiplier applied to the
-literal convolution coefficient, and that multiplier is transverse by
-`complexFrequencyHeatLeray_hermitian_transverse` (totally, hence including at
-the zero mode).  The carrier previously carried only additivity and norm
-rows, so no producer turned
-`LatticeDivergenceFree u` into `LatticeDivergenceFree` of the Duhamel output;
-this is the lattice counterpart of the continuous-profile row
-`Navier.Analysis.ContinuousLeiLinReality.profileDivergenceFree_heatVec`. -/
-theorem heatRegularizedSpectralOutput_divergenceFree
-    (ν τ : ℝ) (hν : 0 < ν) (hτ : 0 < τ)
-    (u v : WeightedLatticeBanach) (hu : LatticeDivergenceFree u) :
-    LatticeDivergenceFree (heatRegularizedSpectralOutput ν τ hν hτ u v hu) := by
-  intro k
-  have hw : latticeModeWeight k ≠ 0 :=
-    ne_of_gt (lt_of_lt_of_le zero_lt_one (one_le_latticeModeWeight k))
-  have hcoef : weightedLatticeCoefficient
-      (heatRegularizedSpectralOutput ν τ hν hτ u v hu) k =
-      complexFrequencyHeatLeray ν τ (latticeFrequency k)
-        (spectralOutputCoefficient k u v) := by
-    show WithLp.ofLp ((latticeModeWeight k)⁻¹ •
-        (heatRegularizedSpectralOutput ν τ hν hτ u v hu) k) = _
-    rw [heatRegularizedSpectralOutput_apply, heatRegularizedSpectralOutputFiber]
-    rw [smul_smul, inv_mul_cancel₀ hw, one_smul]
-    rfl
-  rw [hcoef]
-  exact complexFrequencyHeatLeray_hermitian_transverse ν τ (latticeFrequency k) _
+/-! The completed output-frequency heat-regularized nonlinear carrier is
+Hermitian-transverse mode by mode.  That producer already exists as
+`Navier.Analysis.CriticalMildPathIntegrand.heatRegularizedSpectralOutput_divergenceFree`
+(landed earlier by `791f89f`), and every consumer opens BOTH namespaces, so a
+second row under the same name here made the bare term ambiguous and refused
+`Navier.Analysis.CriticalMildHeatFlowLinear`; the local proof now lives inside
+`positiveTimeHeatRegularizedSpectralOutput_divergenceFree`, the only place in
+this file that needs it. -/
 
 /-- The completed output-heat carrier is additive in the transported input.
 This is an exact identity of the actual global `ℓ¹` output, not merely a
@@ -712,17 +692,33 @@ theorem positiveTimeHeatRegularizedSpectralOutput_of_pos (ν : ℝ) (hν : 0 < �
   simp [positiveTimeHeatRegularizedSpectralOutput, hτ]
 
 /-- The zero-extended positive-time nonlinear integrand is transverse at every
-elapsed time, positive or not: the positive branch is
-`heatRegularizedSpectralOutput_divergenceFree` and the nonpositive branch is
-the zero carrier, closed by `LatticeDivergenceFree.zero`.  This pointwise row
-is what the Bochner-integral row below feeds on. -/
+elapsed time, positive or not: the positive branch reduces to the completed
+Duhamel output, whose decoded coefficient is the one-frequency heat--Leray
+multiplier applied to the literal convolution coefficient, transverse by
+`complexFrequencyHeatLeray_hermitian_transverse` (totally, hence including at
+the zero mode); the nonpositive branch is the zero carrier, closed by
+`LatticeDivergenceFree.zero`.  This pointwise row is what the Bochner-integral
+row below feeds on. -/
 theorem positiveTimeHeatRegularizedSpectralOutput_divergenceFree
     (ν : ℝ) (hν : 0 < ν) (u v : WeightedLatticeBanach)
     (hu : LatticeDivergenceFree u) (τ : ℝ) :
     LatticeDivergenceFree (positiveTimeHeatRegularizedSpectralOutput ν hν u v hu τ) := by
   by_cases hτ : 0 < τ
   · rw [positiveTimeHeatRegularizedSpectralOutput_of_pos ν hν u v hu hτ]
-    exact heatRegularizedSpectralOutput_divergenceFree ν τ hν hτ u v hu
+    intro k
+    have hw : latticeModeWeight k ≠ 0 :=
+      ne_of_gt (lt_of_lt_of_le zero_lt_one (one_le_latticeModeWeight k))
+    have hcoef : weightedLatticeCoefficient
+        (heatRegularizedSpectralOutput ν τ hν hτ u v hu) k =
+        complexFrequencyHeatLeray ν τ (latticeFrequency k)
+          (spectralOutputCoefficient k u v) := by
+      show WithLp.ofLp ((latticeModeWeight k)⁻¹ •
+          (heatRegularizedSpectralOutput ν τ hν hτ u v hu) k) = _
+      rw [heatRegularizedSpectralOutput_apply, heatRegularizedSpectralOutputFiber]
+      rw [smul_smul, inv_mul_cancel₀ hw, one_smul]
+      rfl
+    rw [hcoef]
+    exact complexFrequencyHeatLeray_hermitian_transverse ν τ (latticeFrequency k) _
   · simp [positiveTimeHeatRegularizedSpectralOutput, hτ]
     exact LatticeDivergenceFree.zero
 
