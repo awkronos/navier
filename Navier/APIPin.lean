@@ -35,7 +35,9 @@ set_option linter.unusedVariables false
 
 noncomputable section
 
--- Navier.Analysis.ContinuousLeiLinSpace: 69 exported declarations (57 theorems/lemmas, 12 other)
+-- Navier.Analysis.ContinuousLeiLinSpace: 70 exported declarations (57 theorems/lemmas,
+-- 3 abbrev, 9 def, 1 noncomputable def); the 2 private `weight_dilation` theorems are not
+-- exported and not pinned. All 70 exported names are pinned below.
 -- ======  #check pins --
 #check @Navier.Analysis.ContinuousLeiLinSpace.ES
 #check @Navier.Analysis.ContinuousLeiLinSpace.ComplexSpace
@@ -108,7 +110,8 @@ noncomputable section
 #check @Navier.Analysis.ContinuousLeiLinSpace.parabolicRescale_heatMode
 #check @Navier.Analysis.ContinuousLeiLinSpace.normXm1_heatMode_parabolicRescale
 
--- Navier.Construction.PeriodizedWaveBounds: 108 exported declarations (103 theorems/lemmas, 5 other)
+-- Navier.Construction.PeriodizedWaveBounds: 127 exported declarations (103 theorems/lemmas,
+-- 5 structures, 19 noncomputable defs); all 127 names pinned.
 -- ======  #check pins --
 #check @Navier.Construction.PeriodizedWaveBounds.Cells
 #check @Navier.Construction.PeriodizedWaveBounds.LocalJets
@@ -219,6 +222,28 @@ noncomputable section
 #check @Navier.Construction.PeriodizedWaveBounds.particularData_common
 #check @Navier.Construction.PeriodizedWaveBounds.particularData_commonCorrected
 
+-- The 19 exported `noncomputable def`s of this module, omitted from the list above by
+-- the grep census this file's footer documents as a blind spot, pinned now.
+#check @Navier.Construction.PeriodizedWaveBounds.copySum
+#check @Navier.Construction.PeriodizedWaveBounds.nativeCell
+#check @Navier.Construction.PeriodizedWaveBounds.nativeCells
+#check @Navier.Construction.PeriodizedWaveBounds.complexCopyData
+#check @Navier.Construction.PeriodizedWaveBounds.particularData
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.raw
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localized
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.corrected
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.common
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localGood
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localTail
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.localGaussian
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.commonCorrected
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.globalGood
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.cutoffSum
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.globalTail
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.globalGaussian
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.backgroundOnly
+#check @Navier.Construction.PeriodizedWaveBounds.CopyData.differentialGood
+
 -- Exact-type pins. Section contexts copied from the declaring file so the
 -- pinned type resolves in the same scope that states it.
 
@@ -293,10 +318,12 @@ end Navier.Analysis.ContinuousLeiLinSpace
 -- re-declared context that differs in binder order is a *different* type. Copying the
 -- whole file's header would make this module depend on the module's internals, which is
 -- the opposite of an API test. Wiring `Navier.APIPin` into `Navier.lean` and adding those
--- section-scoped type pins is left as the named follow-up; the name pins cover all 108.
+-- section-scoped type pins is left as the named follow-up; the name pins cover all 127.
 /-! ## Type pins for the `Navier.Construction.PeriodizedWaveBounds` half
 
-The name pins above already cover all 108 exported declarations of that module.
+The name pins above already cover all 127 exported declarations of that module (108 from the
+original grep census plus the 19 `noncomputable def` names that census omitted; see the
+coverage guard at the end of this file).
 The pins below discharge the section-scoped type pins that this file previously
 declined as a named follow-up: the `open` lines and the `variable` block are
 copied verbatim from the head of that module and from its `LocalGluing` section,
@@ -338,13 +365,19 @@ example : ∀ {s : StripData D} {w : ℕ → D → ℝ} {α : ℝ} {K : ℕ → 
 
 end Navier.Construction.PeriodizedWaveBounds
 
--- Coverage guard: the counts above are this file's contract. The generating census is
+-- Coverage guard (gap closed at this commit): every exported name of both modules is
+-- #check-pinned above -- ContinuousLeiLinSpace 70/70, PeriodizedWaveBounds 127/127;
+-- 24 of the pins are type pins. The original generating census was
 --   grep -cE '^\s*(theorem|lemma|def|abbrev|instance|structure|class|inductive)\b' <module>
--- with comments masked; 69 + 108 = 177 names, 24 of them type-pinned.
--- Known blind spot of that pattern (measured, not repaired here): it does not match
--- `noncomputable def`, which is 1 line in ContinuousLeiLinSpace (`parabolicRescale`) and
--- 19 lines in PeriodizedWaveBounds, so the counts above are the theorem/lemma surface, not
--- the whole exported surface; a name-by-name comparison against the compiler's own
--- declaration environment is the way to close that gap.  Nested `namespace` blocks also mean
--- a flat grep of a module's declaration lines is not the same set as the fully qualified
--- names, which is why this file's pins are written per name rather than generated from it.
+-- with comments masked; it does not match `noncomputable def`, which is 1 export in
+-- ContinuousLeiLinSpace (`parabolicRescale`, already pinned by hand) and 19 in
+-- PeriodizedWaveBounds -- exactly the 19 names added to the pin list above.
+-- The closure measurement is a lexer-masked census (/-- -/ and `--` comments stripped,
+-- `noncomputable`/`private`/`protected` prefixes tracked, `namespace`/`end` tracked so
+-- `CopyData.*` pins carry their namespace while section-scoped names stay bare as the
+-- environment sees them) run name-by-name against the fully qualified references in this
+-- file; at 23419d6 it reports 70/70 and 127/127 with zero pinned-not-declared.
+-- Residual limitation, disclosed: the census reads source text, not the compiler
+-- environment, so it cannot see macro-generated declarations. `lake build` remains the
+-- authoritative direction (a renamed, deleted or arity-changed pin fails CI here); the
+-- census guards the other direction (an export that has no pin).
