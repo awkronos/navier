@@ -318,6 +318,7 @@ import Navier.Breakdown.Restriction
 import Navier.ConditionalAudit
 import Navier.ConventionBridges
 import Navier.EnergyObstruction
+import Navier.MixedNormScaling
 import Navier.OfficialProblem
 import Navier.OfficialSurfaceSignatures
 import Navier.Problem
