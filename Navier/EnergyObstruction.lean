@@ -100,8 +100,10 @@ theorem energy_not_scale_coercive
 `c > 0`). The `p = 2` and `p = 3` cases above are special cases.
 
 This theorem does not construct an `L^p` norm or take its `p`-th root. In
-particular, it is one ingredient of a future mixed-norm theorem, not a theorem
-about `L_t^q L_x^p` itself. -/
+particular, it is one ingredient of the mixed-norm theorem
+`Navier.MixedNormScaling.mixedNormPowerIntegral_parabolicRescale`, not itself a
+theorem about `L_t^q L_x^p`; that module composes it with
+`time_dilation_scaling` below. -/
 theorem lp_dilation_scaling (c p : ℝ) (hc : 0 < c) (u : Space → Space) :
     ∫ x, ‖c • u (c • x)‖^p ∂volume = c^(p - 3) • ∫ x, ‖u x‖^p ∂volume := by
   have hc0 : 0 ≤ c := le_of_lt hc
@@ -121,8 +123,10 @@ theorem lp_dilation_scaling (c p : ℝ) (hc : 0 < c) (u : Space → Space) :
 
 The observable `h` is an arbitrary real-valued function. This statement does
 not define the outer `L^q` norm, connect `h` to a spatial `L^p` norm, or compose
-the two layers. Those steps remain necessary for the actual mixed-norm
-exponent theorem. -/
+the two layers.  Those steps are taken in `Navier.MixedNormScaling`, whose
+`mixedNormPowerIntegral_parabolicRescale` is the mixed-norm exponent theorem
+named here; the `p = 2` and `p = 3` spatial slices of that composition are the
+cases used above. -/
 theorem time_dilation_scaling (a : ℝ) (ha : 0 < a) (h : ℝ → ℝ) :
     ∫ t, h (a • t) ∂volume = a⁻¹ • ∫ t, h t ∂volume := by
   rw [MeasureTheory.Measure.integral_comp_smul volume h a]
