@@ -45,23 +45,31 @@ force. The selected velocity is classical before its singular deadline and
 cannot be continued as a global smooth bounded-energy solution. “Global smooth
 velocity” would describe A or B and must not be inferred from C.
 
-## Structural certification (measured 2026-09-16 at `3ed567cd`)
+## Structural certification (measured 2026-11-22 in lane NAVIER-RED-1122-CONT)
 
-`scripts/proof_graph.py` over this tree: 978 modules, 2,728 local
-import edges, **0 cycles**, longest path 68, crown import closures 616 (C) /
-538 (D) / 611 (deadline-C); umbrella coverage excludes only `Main` (the mild
-fixed-point assembly and the pressure-reconstruction primitive are wired into
-the build-time receipt pipeline through `Navier/ConditionalAudit.lean`). 619
-modules are consumed by at least one crown; 358 are intermediate-unconsumed
+`scripts/proof_graph.py` over this tree: **1076 modules**, 3,018 local
+import edges (plus 880 edges the scan does not resolve inside `--dirs Navier`),
+**0 cycles**, longest path 77, crown import closures 616 (C) /
+538 (D) / 613 (deadline-C); the `Main` umbrella reaches all 1076 scanned
+modules with 0 coverage holes, and the repository's own gate
+`tools/module-closure-check.py` agrees at exit 0 ("every Navier module is
+reachable from Navier.lean") — the blind spot measured at `ed32cd8` is closed.
+621 modules are consumed by at least one crown; 454 are intermediate-unconsumed
 research infrastructure feeding future endpoints. (Receipt:
 `python3 scripts/proof_graph.py --root . --dirs Navier --crown
 Navier.Breakdown.ConstructedBreakdown --crown
 Navier.Breakdown.DeadlineParameterizedWholeSpaceBreakdown --crown
-Navier.Analysis.PeriodicConstructedBreakdown --umbrella Main`, exit 0,
-lane NS6-DOCS worktree at `3ed567cd`; corroborated by NS5-CENSUS.
-The 2026-09-13 measurement — 966 modules / 2,665 edges / longest path 65 /
-346 intermediate-unconsumed — is superseded; crown closures 616/538/611 and
-the consumed count 619 are unchanged at re-measurement.)
+Navier.Analysis.PeriodicConstructedBreakdown --umbrella Main`, exit 0, on the
+lane seat tree = trunk `ec9b6fe` plus this lane's deletion of the duplicate
+`Navier/Analysis/WholeSpaceSolenoidalHeatViscousLimit.lean`. Denominators at
+that tree: 1,074 tracked `Navier/**/*.lean` + `Navier.lean` + `Main.lean` + the
+two `scripts/` audit leaves = 1,078 tracked `*.lean`.
+The 2026-09-16 measurement at `3ed567cd` — 978 modules / 2,728 edges /
+longest path 68 / crown closures 616·538·611 / 619 consumed / 358
+intermediate-unconsumed — is superseded: it predates the eleven modules wired
+into the aggregator by `586262a`. The 2026-09-13 measurement — 966 modules /
+2,665 edges / longest path 65 / 346 intermediate-unconsumed — was already
+superseded by it.)
 `formalization.yaml` is the machine-readable mirror of the table above;
 `scripts/check_formalization.py --check` validates it fail-closed and
 `--probe` prints the raw-axiom command sequence without asserting results.

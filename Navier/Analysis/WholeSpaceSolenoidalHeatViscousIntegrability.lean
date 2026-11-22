@@ -206,3 +206,10 @@ theorem SolvesBefore.integrable_secondDirectional_backwardHeatCurlField_mul_velo
     ring
 
 end Navier.Analysis.WholeSpaceSolenoidalHeatViscousIntegrability
+
+-- Single public home of `SolvesBefore.integrable_secondDirectional_backwardHeatCurlField_mul_velocity`.
+-- `WholeSpaceSolenoidalHeatViscousLimit.lean` (salvage copy `9860d00`, 2026-09-10) dot-extended the same
+-- row onto the same parent owned by `CriticalControlDecomposition`, which makes the bare dotted term
+-- ambiguous for any consumer that opens both namespaces; that file was byte-identical here except for its
+-- `maxHeartbeats` option, so it is deleted and its `#print axioms` trace moved onto the surviving row.
+#print axioms Navier.Analysis.WholeSpaceSolenoidalHeatViscousIntegrability.SolvesBefore.integrable_secondDirectional_backwardHeatCurlField_mul_velocity

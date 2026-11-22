@@ -10,13 +10,17 @@ version = "git#v4.35.0-rc4"
 [[lean_lib]]
 name = "Navier"
 # Reachability declared on the library, not inferred from an import edit in the
-# aggregator. Measured on f9009ff: 1066 tracked *.lean (1054 under Navier/, plus
-# Navier.lean and Main.lean), and tools/module-closure-check.py reports 8 modules
-# outside the import closure of Navier.lean. With no `globs` entry Lake builds only
-# what the root module reaches, so those 8 are never elaborated, never cache-shared
-# and never axiom-censused -- and the only route that reaches them today is staging
-# the aggregator, which estate law (Decree 8.8 item 2 / K11-1017) refuses fail-closed.
-# This entry makes the closure a buildable, declared surface instead.
+# aggregator. Measured 2026-11-22 in lane NAVIER-RED-1122-CONT (tree = trunk
+# ec9b6fe plus this lane's deletion of a duplicate module): 1078 tracked *.lean
+# -- 1074 under Navier/, plus Navier.lean, Main.lean and the two scripts/ audit
+# leaves -- and tools/module-closure-check.py reports 0 modules outside the
+# import closure of Navier.lean; the eleven unwired ones measured at ed32cd8
+# landed in 586262a. With no `globs` entry Lake builds only what the root module
+# reaches, so a module whose import leg is missing is silently never elaborated,
+# never cache-shared and never axiom-censused -- that is exactly how those eleven
+# went unseen, and the only other route that reaches them is staging the
+# aggregator, which estate law (Decree 8.8 item 2 / K11-1017) refuses
+# fail-closed. This entry keeps the closure a buildable, declared surface.
 globs = ["Navier", "Navier.**"]
 
 [[lean_exe]]

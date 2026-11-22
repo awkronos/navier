@@ -30,9 +30,10 @@ hand, which is the redundancy this ratchet exists to prevent.
 Only rows whose parent constant has exactly one owner in the tree can go
 ambiguously duplicate this way, so the census is restricted to those; a row name
 reused under two separately-defined parents is ordinary namespacing, not a
-hazard.  `BASELINE` records the one site this lane measured and did not clear, so
-the ratchet cannot be satisfied by forgetting it -- lowering the baseline is the
-honest direction, and adding to it fails.
+hazard.  `BASELINE` was the ledger of sites lane NAVIER-RED-1122 measured and did
+not clear.  Lane NAVIER-RED-1122-CONT closed the last of them, so the ratchet now
+runs at its floor: an empty baseline, a stated-once duplicate fails the battery
+instead of being added to a list.
 """
 
 from __future__ import annotations
@@ -65,23 +66,49 @@ _PARENT_RE = re.compile(
     r"(?:" + "|".join(_PARENT_KEYWORDS) + r")[ \t]+" + _NAME
 )
 
-#: Rows dot-extended onto a single-owner parent from MORE THAN ONE file, measured
-#: by lane NAVIER-RED-1122 after its own repair -- the shape that went ambiguous
-#: on trunk.  Clearing one means stating the fact once, then deleting its entry
-#: here.  The census deliberately does NOT demand that a row live in its parent's
-#: own file: measured at this commit, 69 rows extend another namespace's parent
-#: from a consumer file, which is ordinary Lean practice and not a hazard.  Only
-#: a name declared twice is ambiguous.
-BASELINE: dict[str, tuple[str, ...]] = {
-    "SolvesBefore.integrable_secondDirectional_backwardHeatCurlField_mul_velocity": (
-        "Navier/Analysis/WholeSpaceSolenoidalHeatViscousIntegrability.lean",
-        "Navier/Analysis/WholeSpaceSolenoidalHeatViscousLimit.lean",
-    ),
-}
+#: Rows dot-extended onto a single-owner parent from MORE THAN ONE file -- the
+#: shape that went ambiguous on trunk (see this module's docstring).  The census
+#: deliberately does NOT demand that a row live in its parent's own file:
+#: measured at this commit, 69 rows extend another namespace's parent from a
+#: consumer file, which is ordinary Lean practice and not a hazard.  Only a name
+#: declared twice is ambiguous, so an entry may only ever be DELETED here: state
+#: the fact once, retarget the consumers that named the other copy, and drop the
+#: entry.  It is empty because lane NAVIER-RED-1122-CONT cleared the last site
+#: lane NAVIER-RED-1122 had recorded -- see
+#: `test_baseline_is_empty_and_the_cleared_row_has_one_home`.
+BASELINE: dict[str, tuple[str, ...]] = {}
 
 #: The row whose duplicate copy made the trunk build refuse (lane NAVIER-RED-1122).
 FIXED_ROW = "LatticeDivergenceFree.add"
 FIXED_ROW_HOME = "Navier/Analysis/CriticalMildDuhamelBochner.lean"
+
+#: The last site `BASELINE` ever held, closed by lane NAVIER-RED-1122-CONT.  Its
+#: parent `SolvesBefore` is owned by `CriticalControlDecomposition.lean`; two files
+#: dot-extended the row onto it -- `WholeSpaceSolenoidalHeatViscousIntegrability.lean`
+#: (`17df966`, 2026-09-09) and the byte-identical salvage copy
+#: `WholeSpaceSolenoidalHeatViscousLimit.lean` (`9860d00`, 2026-09-10), which nothing
+#: imported but the aggregator.  Every full-name proof consumer already named the
+#: surviving home, so no proof term moved: the copy is deleted and its lone
+#: file-local `#print axioms` trace moved onto the surviving declaration.
+CLEARED_ROW = (
+    "SolvesBefore.integrable_secondDirectional_backwardHeatCurlField_mul_velocity"
+)
+CLEARED_ROW_HOME = "Navier/Analysis/WholeSpaceSolenoidalHeatViscousIntegrability.lean"
+#: The surviving declaration as a consumer writes it in full, and as the moved
+#: `#print axioms` trace names it.
+CLEARED_ROW_QUALIFIED = (
+    "Navier.Analysis.WholeSpaceSolenoidalHeatViscousIntegrability." + CLEARED_ROW
+)
+CLEARED_DUPLICATE = "Navier/Analysis/WholeSpaceSolenoidalHeatViscousLimit.lean"
+CLEARED_PARENT = "SolvesBefore"
+CLEARED_PARENT_OWNER = "Navier/Analysis/CriticalControlDecomposition.lean"
+#: The three full-name proof consumers measured at this commit; each must still name
+#: the surviving home, and none may name the deleted copy.
+CLEARED_ROW_CONSUMERS = (
+    "Navier/Analysis/WholeSpaceSolenoidalHeatViscousCutoffLimit.lean",
+    "Navier/Analysis/WholeSpaceSolenoidalHeatViscousProductLimit.lean",
+    "Navier/Analysis/WholeSpaceSolenoidalHeatViscousDomination.lean",
+)
 
 _CENSUS: tuple[dict[str, set[str]], dict[str, str]] | None = None
 
@@ -166,8 +193,66 @@ class NamespaceRowUniqueness(unittest.TestCase):
             msg="the divergence-free parent moved; this pin names its owner",
         )
 
+    def test_baseline_is_empty_and_the_cleared_row_has_one_home(self) -> None:
+        """The ratchet sits at its floor, and the last closed site stayed closed."""
+        self.assertEqual(
+            BASELINE,
+            {},
+            msg="BASELINE may only shrink; an entry here records a duplicate that "
+            "makes the bare dotted term ambiguous for every consumer opening both "
+            "namespaces",
+        )
+        self.assertEqual(
+            declaring_files(CLEARED_ROW),
+            {CLEARED_ROW_HOME},
+            msg=(
+                f"{CLEARED_ROW} declared in {sorted(declaring_files(CLEARED_ROW))}; "
+                "lane NAVIER-RED-1122-CONT left exactly one home for it"
+            ),
+        )
+        self.assertEqual(
+            single_owner_parents().get(CLEARED_PARENT),
+            CLEARED_PARENT_OWNER,
+            msg="the `SolvesBefore` parent moved; this pin names its owner",
+        )
+        self.assertFalse(
+            (REPO / CLEARED_DUPLICATE).exists(),
+            msg=(
+                "the byte-identical salvage copy is deleted; a file that returns "
+                "and dot-extends `SolvesBefore` with this row name re-opens the "
+                "trunk-ambiguous term this ratchet was written for"
+            ),
+        )
+        aggregator = (REPO / "Navier.lean").read_text(encoding="utf-8")
+        self.assertNotIn(
+            "import Navier.Analysis.WholeSpaceSolenoidalHeatViscousLimit",
+            aggregator,
+            msg="the aggregator imports a module that no longer exists; `lake build` refuses",
+        )
+        for consumer in CLEARED_ROW_CONSUMERS:
+            text = (REPO / consumer).read_text(encoding="utf-8")
+            self.assertIn(
+                CLEARED_ROW,
+                text,
+                msg=f"{consumer} no longer consumes the viscous integrability row",
+            )
+            self.assertNotIn(
+                "WholeSpaceSolenoidalHeatViscousLimit." + CLEARED_ROW,
+                text,
+                msg=f"{consumer} names the deleted copy; it will not elaborate",
+            )
+        self.assertIn(
+            "#print axioms " + CLEARED_ROW_QUALIFIED,
+            (REPO / CLEARED_ROW_HOME).read_text(encoding="utf-8"),
+            msg=(
+                "the duplicate file's raw `#print axioms` trace moved onto the "
+                "surviving declaration, so deleting the file did not shrink the "
+                "audit surface"
+            ),
+        )
+
     def test_duplicate_row_census_matches_the_recorded_baseline(self) -> None:
-        """No new cross-namespace duplicate row; the known one may only shrink."""
+        """No cross-namespace duplicate row anywhere: `BASELINE` is now empty."""
         found = duplicate_rows()
         self.assertEqual(
             found,
@@ -177,7 +262,9 @@ class NamespaceRowUniqueness(unittest.TestCase):
                 f"{ {k: v for k, v in found.items() if BASELINE.get(k) != v} }. "
                 "A second row onto the same parent makes the bare dotted term "
                 "ambiguous and the trunk build refuses (see this module's "
-                "docstring). State the fact once and lower BASELINE in this file."
+                "docstring). State the fact once and retarget the consumer that "
+                "named the other copy; BASELINE is empty and is only ever left "
+                "empty."
             ),
         )
 
