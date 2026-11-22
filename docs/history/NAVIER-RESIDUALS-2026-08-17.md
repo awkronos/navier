@@ -529,3 +529,5 @@ copies and their downstream wrappers).
 
 `#print axioms spaceEquicontinuous_of_dissipation_bound` → `{propext, Classical.choice, Quot.sound}`.
 No custom axioms, no `sorryAx`.  THEOREM-tier closed work remains sound.
+
+Historical record; not maintained as current claims.

@@ -10,6 +10,7 @@ native compiler receipts.
 | Document | Purpose |
 | --- | --- |
 | [Result and frontier map](RESULT_MAP.md) | Authoritative claim-to-declaration map, exact premises, trust boundary, and current open/closed status |
+| [Position statement](POSITION.md) | The standing Awkronos position: claims, non-claims, barriers, falsifiers, and relation to external formalizations |
 | [Structured citations](CITATIONS.md) | Per-result citation entries (id, kind, authors, status, stable link, cites/cited-by), upstream attribution, the verification receipt for this file, and the typed-absence register for works repo prose cites without an identifier |
 | [Native breakdown mathematics and adaptive simulation](NATIVE_BREAKDOWN_AND_SOLVER.md) | Detailed guide to the constructed forced endpoint, useful conditional results, and solver validation |
 | [Breakdown, uniqueness, and concentration](DYNAMICS_AND_CONCENTRATION.md) | Focused account of the pre-singular flow, slab uniqueness, terminal obstruction, and concentration scales |
@@ -19,7 +20,7 @@ native compiler receipts.
 | [OpenAI construction provenance](OPENAI_CONSTRUCTION_PROVENANCE.md) | Pinned upstream revision, adaptation boundary, licensing, and source verification |
 | [Reproducibility](../REPRODUCIBILITY.md) | Pinned toolchain, focused compiler commands, receipt semantics, and solver checks |
 
-The [prepublication review](PREPUBLICATION_REVIEW.md) is a dated release record.
+The [prepublication review](history/PREPUBLICATION_REVIEW.md) is a dated release record.
 It supplements the files above and does not define mathematical status.
 
 ## Open mathematical frontier
@@ -53,7 +54,10 @@ labels are historical and are superseded by `RESULT_MAP.md` for current claims.
 | --- | --- |
 | [Attack blueprint](ATTACK.md) | Original route architecture and proposed proof program |
 | [Polya strategy map](POLYA_MAP.md) | Match between an earlier Polya catalogue snapshot and Navier proof shapes |
-| [Residual ledger 2026-08-17](../NAVIER-RESIDUALS-2026-08-17.md) | Dated sorry-count and wave reconciliation; its 2026-09-16 census note (zero sorries at `3ed567cd`) supersedes the earlier counts in the same file |
+| [Residual ledger 2026-08-17](history/NAVIER-RESIDUALS-2026-08-17.md) | Dated sorry-count and wave reconciliation; its 2026-09-16 census note (zero sorries at `3ed567cd`) supersedes the earlier counts in the same file |
+| [Measurement snapshot 2026-11-13](history/MEASUREMENT-2026-11-13.md) | Source census, sorry audit, carried axiom receipts, and the construction file-count erratum removed from the position README |
+
+The [history index](history/README.md) lists what each snapshot freezes.
 
 Deterministic numerical artifacts have their own scope note in
 [`artifacts/README.md`](../artifacts/README.md). Raw compiler and axiom evidence

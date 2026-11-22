@@ -2,10 +2,13 @@
 # Modeled on upstream openai/NavierStokesAndEuler formalization.yaml concept.
 # Statuses and wording copied from /tmp/navier-crown/docs/OPEN_FRONTIER_MAP.md
 # as of 2026-09-13. `evidence: unknown` means unmeasured, never a verdict.
+# 2026-11-22: the top-level `toolchain` row was updated to the repository's
+# current lean-toolchain pin; row-level `evidence` strings stay dated at the
+# revision each raw receipt was taken on.
 version: 1
 generated: "2026-09-13"
 source_commit: "6e9c2ec"
-toolchain: "leanprover/lean4:v4.34.0-rc2"
+toolchain: "leanprover/lean4:v4.35.0-rc4"
 rows:
   - id: "crown_C_whole_space_forced"
     declaration: "Navier.Breakdown.ConstructedBreakdown.wholeSpaceBreakdown"

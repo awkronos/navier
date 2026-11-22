@@ -104,7 +104,7 @@ revision `8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538` (Apache-2.0; each adapted fi
 the upstream source, pinned revision and license in its header) and accompany the OpenAI
 release *Finite time blowup for Navier–Stokes*. The count is disclosed rather than smoothed:
 this repository's provenance note prints docs/OPENAI_CONSTRUCTION_PROVENANCE.md:8, span verbatim — "577".  The same figure is repeated at
-`docs/NATIVE_BREAKDOWN_AND_SOLVER.md:12` and `docs/PREPUBLICATION_REVIEW.md:35`, while
+`docs/NATIVE_BREAKDOWN_AND_SOLVER.md:12` and `docs/history/PREPUBLICATION_REVIEW.md:35`, while
 `git ls-tree` at this pin measures **579** tracked `.lean` files under
 `Navier/Construction/`. Both numbers are printed because they differ; reconciling them is a
 repository-owner act, not something a citation lane quietly picks a favourite of. Full boundary and verification detail:

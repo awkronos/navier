@@ -63,3 +63,5 @@ The release approval was required to identify the reviewed research source,
 compiler evidence, website source, solver artifact provenance, and intended
 public ref set. The private pushes that existed at this snapshot did not grant
 that approval.
+
+Historical record; not maintained as current claims.

@@ -13,20 +13,26 @@
 # recorded as identifier-bearing entries in docs/CITATIONS.md instead of being invented here.
 #
 # `title` = the README's H1 ("# Navier") + the repository description measured from gh api.
-# `license` = the GitHub-detected SPDX id. The license is MIXED and the repository records
-# that itself: the adapted construction modules preserve upstream Apache-2.0 notices
-# (docs/OPENAI_CONSTRUCTION_PROVENANCE.md) while original material is MIT
-# (docs/PREPUBLICATION_REVIEW.md); "MIT AND Apache-2.0" is the measured-accurate alternative
-# if the schema carrier lane prefers an SPDX expression over a single id.
+# `license` = the dual provenance the repository itself records: the adapted
+# construction modules are distributed under the upstream Apache-2.0
+# (docs/OPENAI_CONSTRUCTION_PROVENANCE.md Â§License, notices preserved per file)
+# while original material is MIT (LICENSE, Tim Jacoby 2026; the same split was
+# measured in docs/history/PREPUBLICATION_REVIEW.md). "MIT AND Apache-2.0" is the
+# SPDX expression for that measured truth; GitHub's single-id detection of MIT
+# reports only the LICENSE file.
 # `year`/`date-released`: created_at == 2026-07-14T21:47:32Z with visibility == public, and
 # the first tracked commit is 2026-07-14 09:58:52 -0700. gh api exposes no
 # visibility-transition history, so the first-public year is INFERRED, not measured.
-# `authors`: [A-CONFIRM] law item 3 forbids a bare org as sole author where persons
-# authored. Measured basis (git-log author census on origin/main): 1246 "Chronos Bot",
-# 8 "Tim Jacoby <timothyjacoby@gmail.com>", 2 "awkronos-bot". Bot identities carry no
-# personal name, so Tim Jacoby is the only human identity in the repository's own metadata;
-# confirm the attribution with Tim, and add `version:`/`commit-revision:` when a release
-# tag exists. ORCID is omitted rather than guessed.
+# `date-released` is CFF schema metadata, not a claim: the repository's position
+# page (README.md, docs/POSITION.md) carries no release stamp and is maintained.
+# `authors`: resolved 2026-11-22 from the repository's own evidence, replacing the
+# earlier [A-CONFIRM] flag. Measured basis (git-log author census on origin/main):
+# 1246 "Chronos Bot", 8 "Tim Jacoby <timothyjacoby@gmail.com>", 2 "awkronos-bot".
+# Bot identities carry no personal name, so Tim Jacoby is the only human identity in
+# the repository's own metadata; the project citation (README bibtex) already names
+# "Jacoby, Tim and Awkronos", and this file mirrors it. ORCID is omitted rather than
+# guessed. `version` and `commit-revision` stay OMITTED: git tag at this head holds
+# only bank/relay/backup internal tags, no release tag; neither field is invented.
 cff-version: 1.2.0
 message: If you use this repository, please cite it as below. The theorem-level, per-result citations
   (exact Lean declaration names, and what each one does and does not claim) are in docs/CITATIONS.md;
@@ -46,7 +52,7 @@ abstract: A native Lean 4 reconstruction of the forced three-dimensional Navierâ
   inhabits the periodic alternative D. The unforced global regularity statements A and B remain
   open in this repository; the solver fields and residuals are numerical evidence, not the continuum
   proof.
-license: MIT
+license: MIT AND Apache-2.0
 # measured 2026-11-03 against the CFF 1.2.0 schema itself (gh api
 #   repos/citation-file-format/citation-file-format/contents/schema.json?ref=1.2.0,
 #   root cff-version pattern ^1\.2\.0$): there is NO root-level 'year' key and no
