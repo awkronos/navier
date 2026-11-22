@@ -182,16 +182,48 @@ compiler-checked at its pinned head with transitive axioms exactly
 `propext`, `Classical.choice`, and `Quot.sound`, and an upstream patch
 cannot un-check these bytes. The object this repository proves is its own:
 a native reconstruction of OpenAI's forced construction at `8937a8f4`, in
-the whole-space carrier of `Navier/Problem.lean`. Whether the Alpöge–Buckmaster
-program, rebuilt, covers the same official surface is a live identity
-question under separate measurement; it does not move this position in either
-direction until measured.
+the whole-space carrier of `Navier/Problem.lean`. The identity question is
+answered on the lineage evidence, measured over their published package: no
+line of their paper or of their 2,271 `.lean` files mentions OpenAI's
+construction. It is a convergent-mechanism program with an independent
+lineage, not a formalization of the construction this repository adapted.
+Their statements are conditional on self-similar-profile, certificate, or
+cell-system data, and no declaration in their package concludes breakdown
+from an empty context; `wholeSpaceBreakdown` here is unconditional at its
+pinned head and remains the only receipted path in this repository for the
+adapted construction. The two programs are neighbors on the same problem
+with different architectures.
 
-<!-- BACKFOAM slot: measured integration numbers for the Alpoege-Buckmaster
-package (file census, build receipts at a rebuilt head, identity diff against
-this repository's construction) land as a follow-up commit from the
-integration audit. Until then this section quotes only their README and
-NOTICE text. -->
+The exposure of their 20 November patch to this repository is measured and
+zero. The pre-patch weight form appears nowhere in our sources, and none of
+the patched constructs exists here: our only mode weight,
+`Navier.Analysis.CriticalMildWeightedSpace.latticeModeWeight`, is
+inhomogeneous in a frequency magnitude and is not a function of the
+azimuthal integer the patch touched. On the declaration-name census, our
+breakdown-endpoint files share zero names with their statement files; the
+fifty-four near-miss matches found in the broad adapted-construction tree
+are recorded only to refute any import, and nothing rides our manifest on a
+name. This repository was not aware of the patch when its adaptation
+currency stamp was taken, and the stamp does not claim to cover it; the
+patch bears on identity wording, not on any verdict here. Their own README
+is what marks their artifact as awaiting verification, and our receipted
+bytes are unchanged by that.
+
+Their posture at the published head, measured from their files: 24 `sorry`
+holes in 10 root statement files (14,646 lines); zero holes in the
+601,385-line `Breakdown/` library and its `Solution.lean` (27 theorems);
+`sorryAx`, `admit`, local axioms, `implemented_by`, `macro`, `opaque`,
+`unsafe`, and `partial` appear nowhere. The comparator files that would gate
+the top-level statements are inert data in the published clone: no CI
+invokes them and `PrintAxioms.lean` is not a lakefile target, and 12 of the
+31 root and `Solution` theorems their NOTICE names are gated by nothing,
+including four that NOTICE itself never reconciles. Read with their own
+admission that the patched package was not rebuilt, no machine-checked path
+exists from their head as published. That is a fact about their posture,
+not a verdict on their mathematics, and none of it reaches this
+repository's claims. The full census, the enforcement detail, their
+hygiene defects, and the paper anchors are in
+[docs/POSITION.md](docs/POSITION.md).
 
 ## Status summary
 

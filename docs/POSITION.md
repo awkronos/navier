@@ -187,15 +187,103 @@ here reaches it in either direction. The symmetry we insist on is this: the
 object proved in this repository, `wholeSpaceBreakdown`, was compiler-checked
 at its pinned head with transitive axioms exactly `propext`,
 `Classical.choice`, and `Quot.sound`; an upstream patch, ours or theirs,
-cannot un-check these bytes. Whether the rebuilt Alpöge–Buckmaster program
-covers the same official surface as our whole-space alternative C is a live
-identity question, under separate measurement.
+cannot un-check these bytes. Whether the Alpöge–Buckmaster program covers
+the same official surface is now measured, not assumed: the answer is no,
+it is a different construction (see the lineage paragraph below).
 
-<!-- BACKFOAM slot: measured integration numbers (file census of their
-package, rebuild/verification receipts if and when published, the identity
-diff of their statements against Navier/Problem.lean clause surfaces) land
-here as a follow-up commit. Until then this section quotes only their own
-README and NOTICE text. -->
+### The measured audit of their published package
+
+A read-only census over their clone (static text measurements; no compile,
+no kernel receipt) fixes the relationship. These are facts about their
+posture at the published head, not verdicts on their mathematics.
+
+Their package, measured: 24 `sorry` holes in 10 root statement files
+(14,646 lines, 79 theorem declarations). The `Breakdown/` library
+(601,385 lines) and `Solution.lean` (27 theorems, 362 lines) carry zero
+holes. `sorryAx`, `admit`, local `axiom`, `implemented_by`, `macro`,
+`opaque`, `unsafe`, and `partial` appear nowhere in the 2,271 `.lean` files.
+Six of the 24 holes restate three theorems: the cell-layer trio is stated
+twice and only the `CellLayerTheorems` copy is comparator-gated.
+
+The enforcement gap: their comparator JSONs are inert data in the published
+clone. There is no CI config, no script that invokes them, and
+`PrintAxioms.lean` (27 prints, one per `Solution` theorem) is not a
+lakefile target, so `lake build` never runs the package's only axiom
+printer. 19 of the 24 sorry declarations are named in a comparator; over
+the NOTICE-named root and `Solution` theorems, 12 of 31 are gated by
+nothing: the five auxiliary facts and three `Solution` consequences NOTICE
+admits, plus four more that NOTICE itself flags as proofs-in-place relying
+on open theorems (`isAdmissibleWeak_of_isAdmissible`,
+`pieceBlockWith_secondDerivField`, `pieceEpsBlockWith_secondDerivField`,
+`vortGradSup_secondDerivField`). Read with their own admission that the
+patched package was not rebuilt, there is at this moment no machine-checked
+path from their head as published.
+
+The lineage, which settles the identity question: zero lines of their PDF
+and zero lines of their 2,271 `.lean` files mention OpenAI, Korotkin,
+Mrowka, or Pavlović. Their paper states at section 1.6 (p.10): "We used
+Anthropic models (Claude) throughout this work, and no others." The
+direction of derivation is the reverse of the usual: the Lean proof came
+first, and their section 1.5 records that the formal theorems match an
+earlier version of the paper. Conclusion: a convergent-mechanism
+construction with an independent lineage, not a formalization of the pinned
+OpenAI program. Same problem, different architectures: everything in their
+package is conditional (self-similar profile, certificate, or cell-system
+data) and no declaration concludes `BreakdownOnSpace` or `BreakdownOnTorus`
+from an empty context, while this repository's `wholeSpaceBreakdown` is
+unconditional at its pinned rev and remains the estate's only receipted
+path for the adapted OpenAI construction.
+
+Hygiene defects the census recorded, each one line:
+`comparator-certificate.json` mis-points `challenge_module` for 8 of its 9
+names; there is no LICENSE file and zero license or copyright text in the
+2,285 tracked files; the certificate and the interval verification are not
+in the repository; and `fractional_breakdown_of_cell_system` hardcodes
+α = 501/500.
+
+Paper anchors, for citation: Theorem 1.1 at p.3, Theorem 7.1 and Corollary
+7.2 at p.35, Appendix B at p.49 (79-page paper of 20 November 2026).
+
+### Patch exposure, measured zero
+
+Their 20 November patch changed three things: one bound's weight becomes
+`(|m| + 1/2)²` in place of `m² + 1/4`, one constant of a cell may be zero,
+and the set of model harmonics in a cell is restricted to those that do not
+vanish there. Against this repository the blast radius is zero modules.
+The pre-patch form `m² + 1/4`, in any spelling, has zero hits across the
+estate's tracked sources (build and cache trees excluded), and the patched
+constructs (`modeWeight`, `CellBox`, `CellLayerData`, `CellSystemCondition`,
+`orderSet`, `BreakdownOnSpace`, `BreakdownOnTorus`, `typeOne_vanish`,
+`axialRot`) occur here zero times. The reason is structural, not lucky: the
+only mode weight in this repository is
+`Navier.Analysis.CriticalMildWeightedSpace.latticeModeWeight`, defined as
+`1 + ‖complexFrequency (latticeFrequency m)‖`, inhomogeneous in a frequency
+magnitude and not a function of the azimuthal integer their patch retunes;
+theirs is `modeWeight k := |k| + 1/2`. A construction that never carried
+the earlier form cannot have inherited its repair.
+
+On the declaration-name census: their statement files (1,403 names) share
+zero names with our `Navier/Breakdown` endpoint files (95 names); against
+the broad adapted `Navier/Construction` tree (27,485 names) the diff found
+54 near-miss matches, listed in the audit's exposure table for refutation
+of any import claim: they are semantic collisions of vocabulary (selector
+versus coefficient, single extent versus annulus pair, constant reciprocal
+versus mode weight), and nothing rides this repository's manifest on a
+name.
+
+One wording guardrail, kept here so readers cannot mispair the two: our
+prose speaks of a "decoded spatial order `2 + 1/4`" in the moment-bootstrap
+modules, meaning a derivative count (`‖ξ‖²` times `‖ξ‖^(1/4)`), and it is
+not a cell weight and not their superseded bound. It appears where it means
+regularity bookkeeping, never beside the patch discussion.
+
+The posture line, stated exactly: this repository's adaptation currency
+stamp predates the patch by nearly three months and does not claim to
+cover it; the estate was unaware of the patch and no estate note asserted
+otherwise. Per the identity-versus-soundness rule this is identity wording
+only: no verdict here changes, and nothing here is stale-red because of
+their patch. Their README is what marks their package as unverified at
+assembly, not ours.
 
 ## Maintenance law
 
