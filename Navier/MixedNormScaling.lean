@@ -8,14 +8,14 @@ Two modules each carry one half of the same missing step, and both name it.
 
 * `Navier.Scaling` defines the algebraic homogeneity exponent
   `mixedNormExponent p q = 1 - 3/p - 2/q` and the Serrin critical line, and
-  states that it "does **not** assert that any Bochner, Lorentz, weak, endpoint,
-  or mixed Lebesgue norm has been constructed or proved to scale by this
-  exponent; that analytic statement requires separate measure-theoretic work".
+  states that the file asserts no analytic norm statement — that no Bochner,
+  Lorentz, weak, endpoint or mixed Lebesgue norm is shown there to scale by
+  this exponent, that separate measure-theoretic work being required.
 * `Navier.EnergyObstruction` supplies the two layers separately — the spatial
   `lp_dilation_scaling` (factor `c ^ (p - 3)`) and the scalar
   `time_dilation_scaling` (factor `a⁻¹`) — and records of the second that it
-  does not "connect `h` to a spatial `L^p` norm, or compose the two layers.
-  Those steps remain necessary for the actual mixed-norm exponent theorem".
+  leaves the outer `L^q` norm undefined, does not connect `h` to a spatial
+  `L^p` norm, and does not compose the two layers.
 
 This module performs those steps.  For the Navier--Stokes parabolic rescaling
 
@@ -49,6 +49,17 @@ a-priori bounds can ever be scale-coercive:
   `EnergyObstruction.energy_not_scale_coercive`, whose `(p,q) = (2,·)`/`(3,·)`
   spatial slices are exactly the `p = 2` and `p = 3` special cases of the layer
   composed here.
+
+Naming.  The Navier--Stokes rescaling of a velocity field already has a name in
+the analysis cone, `Navier.Analysis.Covariance.parabolicScaledVelocity`, which
+spells the time homothety as `λ ^ 2 * t` with a natural-number power.  This file
+serves the same map with the real power `λ ^ (2 : ℝ) • t`, because the two
+layers compose in one `Real.rpow` exponent arithmetic; the spellings are proved
+identical pointwise by `timeHomothety_eq_parabolic` below, so a consumer in the
+analysis cone can transfer any statement here to the standard name in one
+congruence step.  This module deliberately imports only the two parents it
+composes (`Navier.Problem` reaches it through both), so that it stays in the
+leaf cone where `Navier.EnergyObstruction` lives.
 
 Scope.  Nothing in this file asserts existence, uniqueness, smoothness or
 regularity of any Navier--Stokes solution, and no hypothesis of the Fefferman
@@ -86,6 +97,26 @@ layers compose in one exponent arithmetic (`Real.rpow_add`). -/
 def parabolicRescale (lambda : ℝ) (u : VelocityEvolution) : VelocityEvolution :=
   fun t x => lambda • u (lambda ^ (2 : ℝ) • t) (lambda • x)
 
+/-- **The two spellings of the parabolic time homothety agree.**  For every
+`λ : ℝ`, `fun t => λ ^ (2 : ℝ) • t` is `fun t => λ ^ 2 * t`, the spelling used by
+`Navier.Analysis.Covariance.parabolicScaledVelocity`.  No positivity hypothesis
+is needed: `Real.rpow_two` holds unconditionally.  Consequently
+`parabolicRescale λ u` and `parabolicScaledVelocity λ u` are the same function
+of `(t, x)`, and the rescaling whose norm is computed here is the one the CKN
+and continuation-scaling files already move solutions by. -/
+theorem timeHomothety_eq_parabolic (lambda : ℝ) :
+    (fun t : ℝ => lambda ^ (2 : ℝ) • t) = (fun t : ℝ => lambda ^ 2 * t) := by
+  funext t
+  simp only [Real.rpow_two, pow_two, smul_eq_mul]
+
+/-- Pointwise form of `timeHomothety_eq_parabolic` at the level of the rescaled
+evolution: a `parabolicRescale` application reads with the analysis cone's
+`λ ^ 2 * t` spelling. -/
+theorem parabolicRescale_apply_eq (lambda : ℝ) (u : VelocityEvolution) (t : ℝ) (x : Space) :
+    parabolicRescale lambda u t x = lambda • u (lambda ^ 2 * t) (lambda • x) :=
+  congrArg (fun s : ℝ => lambda • u s (lambda • x))
+    (congrFun (timeHomothety_eq_parabolic lambda) t)
+
 /-- The mixed-norm `q`-power integral of a velocity evolution: the spatial
 `L^p`-power integral of each time slice, raised to `q/p`, integrated in time.
 This is the `q`-th power of the mixed norm below, written without any `L^p`
@@ -107,8 +138,8 @@ needs a measurability hypothesis, because `MeasureTheory.integral_nonneg` holds
 for the Bochner integral as defined (a non-measurable integrand gives `0`). -/
 theorem mixedNormPowerIntegral_nonneg (u : VelocityEvolution) (p q : ℝ) :
     0 ≤ mixedNormPowerIntegral u p q :=
-  integral_nonneg fun t =>
-    Real.rpow_nonneg (integral_nonneg fun x => Real.rpow_nonneg (norm_nonneg _) p) _
+  integral_nonneg fun _ =>
+    Real.rpow_nonneg (integral_nonneg fun _ => Real.rpow_nonneg (norm_nonneg _) p) _
 
 /-- The mixed norm is nonnegative. -/
 theorem mixedNorm_nonneg (u : VelocityEvolution) (p q : ℝ) :
@@ -267,7 +298,9 @@ private lemma rpow_neg_inv (x : ℝ) (hx : 0 < x) (y : ℝ) : x ^ y = (x ^ (-y))
 
 /-- A fixed strictly negative real power is strictly decreasing on the positive
 reals: this is `Real.rpow_lt_rpow` at the negated exponent, read back through
-`rpow_neg_inv`. -/
+`rpow_neg_inv`.  The final step inverts the two powers; this Mathlib revision
+has no `inv_lt_inv` for the real line, so the inversion is cleared by
+`field_simp`, which reduces it to the already-proved comparison at `-γ`. -/
 private lemma rpow_lt_rpow_of_neg {x y γ : ℝ} (hx : 0 < x) (hxy : x < y) (hγ : γ < 0) :
     y ^ γ < x ^ γ := by
   have hn : 0 < -γ := by linarith
@@ -276,7 +309,8 @@ private lemma rpow_lt_rpow_of_neg {x y γ : ℝ} (hx : 0 < x) (hxy : x < y) (hγ
   have hxA : 0 < x ^ (-γ) := Real.rpow_pos_of_pos hx (-γ)
   have hyA : 0 < y ^ (-γ) := Real.rpow_pos_of_pos hpos (-γ)
   rw [rpow_neg_inv y hpos γ, rpow_neg_inv x hx γ]
-  exact (inv_lt_inv hyA hxA).mpr hA
+  field_simp
+  linarith
 
 /-- **A supercritical mixed norm can be driven below any budget by a rescaling
 that does not move the datum off the positive cone.** For `0 < p`, `0 < q` and
@@ -306,7 +340,7 @@ theorem exists_ge_one_and_mixedNorm_lt (p q : ℝ) (hp : 0 < p) (hq : 0 < q)
   by_cases hCz : C = 0
   · rw [hCz, mul_zero]
     exact hε
-  · have hCp : 0 < C := lt_of_le_of_ne hC0 hCz
+  · have hCp : 0 < C := lt_of_le_of_ne hC0 fun h => hCz h.symm
     have hb : 0 < C + 1 := by positivity
     calc (a + 1) ^ γ * C < ε / (C + 1) * C := mul_lt_mul_of_pos_right hdec hCp
       _ = ε * C / (C + 1) := by field_simp

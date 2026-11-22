@@ -8,10 +8,15 @@ exponent
 
 `1 - 3 / p - 2 / q`
 
-and its critical line `2 / q + 3 / p = 1`.  It does **not** assert that any
-Bochner, Lorentz, weak, endpoint, or mixed Lebesgue norm has been constructed
-or proved to scale by this exponent; that analytic statement requires separate
-measure-theoretic work.
+and its critical line `2 / q + 3 / p = 1`.  This file asserts **no** analytic
+norm statement: nothing here claims that a Bochner, Lorentz, weak, endpoint or
+mixed Lebesgue norm has been constructed or proved to scale by this exponent.
+That separate measure-theoretic work is `Navier.MixedNormScaling`, which builds
+the mixed `L^q_t L^p_x` `q`-power integral of a velocity evolution and proves
+it scales by `λ ^ (q * mixedNormExponent p q)` under the parabolic rescaling
+(`Navier.MixedNormScaling.mixedNormPowerIntegral_parabolicRescale`, and its
+`q`-rooted form `mixedNorm_parabolicRescale`).  The exponent defined below is
+therefore the measured homogeneity degree of that norm, not a scalar guess.
 -/
 
 set_option autoImplicit false
