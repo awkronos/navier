@@ -379,6 +379,15 @@ import Navier.Analysis.SourceX1HeatKernelBound
 import Navier.Analysis.WienerH3DampedProducer
 import Navier.Transfer.MildSelfMapDefectBudget
 import Navier.Transfer.MildSelfMapTransport
+-- Import leg for the carrier-time-continuity obstruction
+-- (`Navier/Analysis/CarrierTimeContinuityObstruction.lean`, lane
+-- ORC4-EMBER-NAVIER-OPENMATH-1123, 2026-11-23).  It mechanizes the witness cited only in prose
+-- at `Analysis.ClassRestartDecomposition` bullet 2, `Analysis.RestartAgreementOpen`'s "why the
+-- cheap routes fail (measured, not assumed)" bullet 2 and `Analysis.EnvelopePropagation` §3 rung
+-- P1, against ledger `F-026`/`F-027`: a jointly `C^∞`, incompressible, uniformly finite-energy,
+-- pointwise right-continuous-at-start evolution whose slices do NOT converge to the initial slice
+-- in `L²`.  `tools/module-closure-check.py` refuses a module with no leg into this root.
+import Navier.Analysis.CarrierTimeContinuityObstruction
 
 /-!
 # Navier
