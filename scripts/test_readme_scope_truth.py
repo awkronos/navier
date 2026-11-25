@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """README scope-truth regression test — files only, zero Lean CPU.
 
-Runs with stock Python 3 (stdlib; no PyYAML, no lake, no network):
+Runs with stock Python 3 (stdlib; no PyYAML, no lake, no network), on every
+scheduled battery run: ``make test`` discovers it (``Makefile:TEST_ROOTS`` is the
+root list, the CI python job calls ``make test``, and
+``tests/test_battery_schedule.py`` ratchets both). To run this gate alone:
 
     python3 -m unittest discover -s scripts -p 'test_readme_scope_truth.py' -v
 
@@ -34,7 +37,6 @@ from __future__ import annotations
 
 import importlib.util
 import re
-import sys
 import unittest
 from collections import Counter
 from pathlib import Path

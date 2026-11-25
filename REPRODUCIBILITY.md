@@ -34,11 +34,16 @@ Once the required artifacts are available,
 run the focused checks:
 
 ```bash
-python3 -m unittest discover -s tests -v
+make test
 lake env lean Navier.lean
 lake env lean Navier/AxiomAudit.lean
 lake env lean scripts/AuditAllAxioms.lean
 ```
+
+`make test` discovers every scheduled root (`Makefile:TEST_ROOTS`), which is what
+the CI python job runs; a bare `discover -s tests` skips
+`scripts/test_readme_scope_truth.py`, the gate `README.md` cites for its own
+counts.
 
 After dependencies are present, `make check` runs the focused Python, Lean,
 and axiom commands in that serial order.

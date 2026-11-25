@@ -39,11 +39,14 @@ a replay RED, not permission to execute on the host tree.
 Run the focused checks serially:
 
 ```bash
-python3 -m unittest discover -s tests -v
+make test
 lake env lean Navier.lean
 lake env lean Navier/AxiomAudit.lean
 lake env lean scripts/AuditAllAxioms.lean
 ```
+
+`make test` is the whole scheduled battery: it discovers every root in
+`Makefile:TEST_ROOTS`, the same command the CI python job runs.
 
 The checks establish repository integrity; they do not establish either
 global regularity or finite-time breakdown.
