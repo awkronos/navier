@@ -23,8 +23,30 @@ Vector = tuple[int, int, int]
 ZERO_VECTOR: Vector = (0, 0, 0)
 
 
+def _zip_strict(*sequences: Iterable) -> Iterator:
+    """``zip(..., strict=True)`` for every interpreter this repo supports.
+
+    ``strict=`` landed in Python 3.10 (bpo-43685) -- on 3.9 a bare
+    ``zip(left, right, strict=True)`` raises ``TypeError: zip() takes no
+    keyword arguments`` at the call site, not a length error, so every case
+    using it silently became an import-time crash on the macOS system
+    interpreter (9 errors, ``tests/test_exact_symmetrized_triad_scan.py``)
+    rather than a portable length guard.  This helper is the same guard:
+    stop at the shortest sequence, then check nothing was left over.
+    """
+    missing = object()
+    iterators = [iter(sequence) for sequence in sequences]
+    while True:
+        values = [next(iterator, missing) for iterator in iterators]
+        if all(value is missing for value in values):
+            return
+        if any(value is missing for value in values):
+            raise ValueError("zip() has arguments of different lengths")
+        yield tuple(values)
+
+
 def add(left: Vector, right: Vector) -> Vector:
-    return tuple(x + y for x, y in zip(left, right, strict=True))  # type: ignore[return-value]
+    return tuple(x + y for x, y in _zip_strict(left, right))  # type: ignore[return-value]
 
 
 def negate(vector: Vector) -> Vector:
@@ -32,7 +54,7 @@ def negate(vector: Vector) -> Vector:
 
 
 def dot(left: Vector, right: Vector) -> int:
-    return sum(x * y for x, y in zip(left, right, strict=True))
+    return sum(x * y for x, y in _zip_strict(left, right))
 
 
 def squared_norm(vector: Vector) -> int:
@@ -86,9 +108,9 @@ def validate_configuration(configuration: TriadConfiguration) -> None:
         raise ValueError("wavevectors must be nonzero")
     if add(add(configuration.k, configuration.l), configuration.m) != ZERO_VECTOR:
         raise ValueError("wavevectors do not form a triad")
-    for label, wave, polarization in zip(
+    for label, wave, polarization in _zip_strict(
         ("a", "b", "c"), waves,
-        (configuration.a, configuration.b, configuration.c), strict=True,
+        (configuration.a, configuration.b, configuration.c),
     ):
         if polarization == ZERO_VECTOR:
             raise ValueError(f"polarization {label} must be nonzero")
@@ -117,9 +139,9 @@ def squared_frequency_weighted_sum(
     rates = rates or symmetrized_receiver_rates(configuration)
     return sum(
         squared_norm(wave) * rate
-        for wave, rate in zip(
+        for wave, rate in _zip_strict(
             (configuration.k, configuration.l, configuration.m),
-            rates.as_tuple(), strict=True,
+            rates.as_tuple(),
         )
     )
 
@@ -273,12 +295,12 @@ def six_mode_coefficients(configuration: TriadConfiguration) -> dict[Vector, Gau
 
 
 def _add_gaussian_vectors(left: GaussianVector, right: GaussianVector) -> GaussianVector:
-    return tuple(x + y for x, y in zip(left, right, strict=True))  # type: ignore[return-value]
+    return tuple(x + y for x, y in _zip_strict(left, right))  # type: ignore[return-value]
 
 
 def _gaussian_dot_real(vector: GaussianVector, wave: Vector) -> GaussianRational:
     total = GAUSSIAN_ZERO
-    for coefficient, entry in zip(vector, wave, strict=True):
+    for coefficient, entry in _zip_strict(vector, wave):
         total = total + coefficient.scale(entry)
     return total
 
@@ -290,7 +312,7 @@ def _normalized_leray(output: Vector, vector: GaussianVector) -> GaussianVector:
     radial = _gaussian_dot_real(vector, output)
     return tuple(
         entry - radial.scale(Fraction(component, denominator))
-        for entry, component in zip(vector, output, strict=True)
+        for entry, component in _zip_strict(vector, output)
     )  # type: ignore[return-value]
 
 

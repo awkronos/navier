@@ -52,6 +52,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install the scientific stack the solver tests need
+        # Before this step the python job had no numpy/scipy at all, so
+        # tests/test_navier_solver_equivalence.py's own `except ImportError:
+        # raise unittest.SkipTest(...)` fired on every push and MetricContractTest
+        # -- the numerical convergence / Richardson O(dt^4) contract this repo
+        # exists to guard -- never ran on CI, while still printing "OK" as if it
+        # had. Wheels only, no build isolation churn, and no pyfftw: the fast
+        # path no longer requires it (navier_spectral_core._Plans bridges to
+        # scipy.fft/numpy.fft when pyFFTW is absent), and a pyfftw wheel pulls
+        # in an FFTW system library this runner does not need installed to
+        # prove the bridge's bit-identity.
+        run: python -m pip install --disable-pip-version-check numpy scipy
       - name: Run Python checks
         run: |
           set -eo pipefail
@@ -70,6 +82,51 @@ jobs:
           n=$(grep -oE '^Ran [0-9]+ test' "${RUNNER_TEMP:-/tmp}/or23-unittest.log" | awk '{ total += $2 } END { print total + 0 }')
           echo "OR23-Q8 selected: ${n:-0} tests"
           test "${n:-0}" -ge 1
+      - name: Assert MetricContractTest actually ran
+        # numpy is installed now, so the module-level SkipTest above cannot
+        # fire for that reason anymore -- the only remaining way it skips is
+        # the unification shims' hard dependency on ~/reality/solvers/navier,
+        # which is a separate private repository this job does not check out
+        # (a cross-repo read would need its own credential, which is not this
+        # lane's to mint). Same honesty rule the native-trust census below
+        # already follows: an unmeasurable leg names its absence as a warning,
+        # it never reports a pass on a count of zero.
+        shell: bash
+        run: |
+          set -uo pipefail
+          probe=$(python - <<'PY'
+          import os
+          path = os.path.expanduser("~/reality/solvers/navier/navier_spectral_core.py")
+          print("present" if os.path.isfile(path) else "absent", path)
+          PY
+          )
+          if [[ "$probe" == absent* ]]; then
+            echo "::warning::MetricContractTest UNMEASURED on this runner: $probe is not checked out here, and awkronos/reality is a private repository this workflow has no cross-repo read credential for. This is not a pass -- the solver contract ran nowhere on this CI, only on hosts that carry both checkouts side by side (the dev host, and any future runner configured to fetch reality)."
+            exit 0
+          fi
+          # "set -e" alone is not enough to catch a crash reliably here: a
+          # module-level unittest.SkipTest raised outside of discovery (which
+          # is exactly what a genuinely-broken import would do) exits the
+          # interpreter with a traceback rather than a "skipped" line, and the
+          # redirect below already swallows stdout+stderr into the log. Take
+          # the exit code explicitly.
+          python -m unittest -v tests.test_navier_solver_equivalence.MetricContractTest \
+            > "${RUNNER_TEMP:-/tmp}/metric-contract.log" 2>&1
+          rc=$?
+          cat "${RUNNER_TEMP:-/tmp}/metric-contract.log"
+          if [[ "$rc" -ne 0 ]]; then
+            echo "::error::MetricContractTest crashed or failed (rc $rc) with numpy installed and reality reachable: $(tail -5 "${RUNNER_TEMP:-/tmp}/metric-contract.log")"
+            exit 1
+          fi
+          if grep -qE '^test_.*skipped' "${RUNNER_TEMP:-/tmp}/metric-contract.log"; then
+            echo "::error::MetricContractTest skipped despite numpy being installed and reality being reachable: $(grep -E 'skipped' "${RUNNER_TEMP:-/tmp}/metric-contract.log" | head -3)"
+            exit 1
+          fi
+          if ! grep -qE '^OK$' "${RUNNER_TEMP:-/tmp}/metric-contract.log"; then
+            echo "::error::MetricContractTest did not report OK"
+            exit 1
+          fi
+          echo "MetricContractTest ran and passed on this runner"
 
   cargo:
     runs-on: ubuntu-latest

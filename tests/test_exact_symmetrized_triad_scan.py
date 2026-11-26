@@ -21,6 +21,7 @@ from exact_symmetrized_triad_scan import (  # noqa: E402
     UNEQUAL_RADIUS_WITNESS,
     GaussianRational,
     TriadConfiguration,
+    _zip_strict,
     divergence_free_polarizations,
     dot,
     scan_exact_triads,
@@ -122,8 +123,8 @@ class ExactSymmetrizedTriadTests(unittest.TestCase):
             self.assertEqual(
                 sum(
                     Fraction(component) * entry.real
-                    for component, entry in zip(
-                        item.output, item.coefficient, strict=True
+                    for component, entry in _zip_strict(
+                        item.output, item.coefficient
                     )
                 ),
                 0,
@@ -131,8 +132,8 @@ class ExactSymmetrizedTriadTests(unittest.TestCase):
             self.assertEqual(
                 sum(
                     Fraction(component) * entry.imag
-                    for component, entry in zip(
-                        item.output, item.coefficient, strict=True
+                    for component, entry in _zip_strict(
+                        item.output, item.coefficient
                     )
                 ),
                 0,
