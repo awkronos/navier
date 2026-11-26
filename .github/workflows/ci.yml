@@ -38,17 +38,25 @@ concurrency:
   # governed by cancel-in-progress — `cancel-in-progress: false` protects only the
   # run already executing. So `group: ...-${{ github.ref }}` put every main push in
   # one group, and a burst of fleet pushes to main buried a verdict whose build had
-  # not started yet. Measured on this repo at
-  # 5c847fb035efb5f4504018ec32029e8bf155efef: two consecutive main Verify runs
-  # recorded conclusion=cancelled with nothing wrong in either tree. The loss is
-  # asymmetric — the commit stays landed and the only surviving evidence for it is a
-  # cancellation, which proves nothing about the tree it ran.
+  # not started yet. Measured on this repo while main was at
+  # 5c847fb035efb5f4504018ec32029e8bf155efef: the two preceding main Verify runs,
+  # 22f9cfd3b20f (queued 15:40Z) and e226dca18a12 (queued 17:10Z), both ended
+  # conclusion=cancelled with nothing wrong in either tree — each was the oldest
+  # pending run when the next main push arrived. The loss is asymmetric — the commit
+  # stays landed and the only surviving evidence for it is a cancellation, which
+  # proves nothing about the tree it ran.
   #
   # The estate cure (pending-eviction-sha-group-cure-1123) keys push runs on the
   # commit, so each main push owns its group. It can still QUEUE behind a sibling —
   # waiting is honest, and timeout-minutes turns a stall into a failure receipt — but
   # it can no longer be cancelled to free a slot for a later commit, because no later
   # commit shares its key.
+  #
+  # Confirmed on the first push under this keying: d180a2ab75db queued at 21:18:54Z
+  # while 5c847fb035ef's run — the OLDEST pending one, exactly the run the ref key
+  # would have evicted — was still pending. Two main pushes, two groups, no
+  # cancellation. Re-measure with
+  # `gh run list --repo awkronos/navier --branch main --json headSha,status,conclusion`.
   #
   # Non-push events keep the ref key: PR updates still collapse to the newest run per
   # branch (the behaviour that made this topology survivable at all), and
