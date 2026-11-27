@@ -92,15 +92,6 @@ open Navier.Analysis.ContinuousLeiLinRecentTailMoment
 open Navier.Analysis.ContinuousLeiLinPhysicalVelocity
 open Navier.Analysis.ContinuousLeiLinSelfMap
 
-/-- The heat multiplier evaluated pointwise on the complex carrier.
-Reproduces the private `Dissipation.norm_heatMode` at this use site. -/
-private theorem norm_heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) :
-    ‖heatMode ν t f ξ‖ = Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * ‖f ξ‖ := by
-  show ‖((Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) * f ξ‖ = _
-  rw [Complex.norm_mul, Complex.norm_real]
-  exact congrArg (fun e : ℝ => e * ‖f ξ‖)
-    (Real.norm_of_nonneg (Real.exp_pos _).le)
-
 /-- The Fourier kernel is a unit multiplier on `ℂ`. -/
 private theorem norm_smul_fourierChar (t : ℝ) (z : ℂ) : ‖𝐞 t • z‖ = ‖z‖ := by
   simp

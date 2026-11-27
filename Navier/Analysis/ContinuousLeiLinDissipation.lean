@@ -78,13 +78,13 @@ open Navier.Analysis.ComplexLerayNorm
 ## Scalar interval identities for the heat multiplier
 -/
 
-private theorem exp_pos_heat (a : ℝ) : 0 < Real.exp (-a) := by
+theorem exp_pos_heat (a : ℝ) : 0 < Real.exp (-a) := by
   rw [Real.exp_neg]
   exact inv_pos.mpr (Real.exp_pos _)
 
 /-- `∫₀ᵗ exp(-c s) = (1 - exp(-c t)) / c` for `c > 0`, `0 ≤ t`, as a set
 integral over `Icc`. -/
-private theorem integral_exp_neg_Icc (c t : ℝ) (hc : 0 < c) (ht : 0 ≤ t) :
+theorem integral_exp_neg_Icc (c t : ℝ) (hc : 0 < c) (ht : 0 ≤ t) :
     (∫ s in Icc (0 : ℝ) t, Real.exp (-(c * s))) = c⁻¹ * (1 - Real.exp (-(c * t))) := by
   rw [integral_Icc_eq_integral_Ioc, ← intervalIntegral.integral_of_le ht]
   rw [show (fun s : ℝ => Real.exp (-(c * s))) = fun s => Real.exp ((-c) * s) by
@@ -105,7 +105,7 @@ private theorem one_sub_exp_eq (c t : ℝ) (hc : 0 < c) (ht : 0 ≤ t) :
 -/
 
 /-- The heat multiplier evaluated pointwise on the complex carrier. -/
-private theorem norm_heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) :
+theorem norm_heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) :
     ‖heatMode ν t f ξ‖ = Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * ‖f ξ‖ := by
   show ‖((Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) * f ξ‖ = _
   rw [Complex.norm_mul, Complex.norm_real]
@@ -219,7 +219,7 @@ theorem tendsto_normXm1_heatMode (g : ES → ℂ)
 
 /-- Scalar algebra step of the budget: for `r > 0`,
 `r * q * ((ν r²)⁻¹ * (1 - exp (-(ν r² t)))) ≤ ν⁻¹ * (r⁻¹ * q)`. -/
-private theorem heat_budget_pointwise (ν r q t : ℝ) (hν : 0 < ν) (_ht : 0 ≤ t)
+theorem heat_budget_pointwise (ν r q t : ℝ) (hν : 0 < ν) (_ht : 0 ≤ t)
     (hr : 0 < r) (hq : 0 ≤ q) :
     r * q * ((ν * r ^ 2)⁻¹ * (1 - Real.exp (-(ν * r ^ 2 * t)))) ≤ ν⁻¹ * (r⁻¹ * q) := by
   have e1 : 1 - Real.exp (-(ν * r ^ 2 * t)) ≤ 1 := by nlinarith [exp_pos_heat (ν * r ^ 2 * t)]

@@ -22,42 +22,6 @@ open Navier.Analysis.ContinuousLeiLinBoxB1Joint
 
 namespace Navier.Analysis.ContinuousLeiLinBoxD3Maximal
 
-private theorem exp_pos_heat (a : ℝ) : 0 < Real.exp (-a) := by
-  rw [Real.exp_neg]
-  exact inv_pos.mpr (Real.exp_pos _)
-
-private theorem integral_exp_neg_Icc (c t : ℝ) (hc : 0 < c) (ht : 0 ≤ t) :
-    (∫ s in Icc (0 : ℝ) t, Real.exp (-(c * s))) =
-      c⁻¹ * (1 - Real.exp (-(c * t))) := by
-  rw [integral_Icc_eq_integral_Ioc, ← intervalIntegral.integral_of_le ht]
-  rw [show (fun s : ℝ => Real.exp (-(c * s))) = fun s => Real.exp ((-c) * s) by
-    ext s; rw [neg_mul]]
-  rw [intervalIntegral.integral_comp_mul_left (hc := neg_ne_zero.mpr hc.ne')]
-  rw [integral_exp]
-  simp only [neg_mul, mul_zero, smul_eq_mul, Real.exp_zero, inv_neg]
-  ring
-
-private theorem heat_budget_pointwise (ν r q t : ℝ) (hν : 0 < ν) (_ht : 0 ≤ t)
-    (hr : 0 < r) (hq : 0 ≤ q) :
-    r * q * ((ν * r ^ 2)⁻¹ * (1 - Real.exp (-(ν * r ^ 2 * t)))) ≤
-      ν⁻¹ * (r⁻¹ * q) := by
-  have e1 : 1 - Real.exp (-(ν * r ^ 2 * t)) ≤ 1 := by
-    nlinarith [exp_pos_heat (ν * r ^ 2 * t)]
-  have hc : 0 < ν * r ^ 2 := mul_pos hν (pow_pos hr 2)
-  have hA : 0 ≤ r * q := mul_nonneg hr.le hq
-  calc r * q * ((ν * r ^ 2)⁻¹ * (1 - Real.exp (-(ν * r ^ 2 * t))))
-      ≤ r * q * ((ν * r ^ 2)⁻¹ * 1) :=
-        mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left e1 (inv_nonneg.mpr hc.le)) hA
-    _ = r * q * (ν * r ^ 2)⁻¹ := by ring
-    _ = ν⁻¹ * (r⁻¹ * q) := by field_simp [hν.ne', hr.ne']
-
-private theorem norm_heatMode (ν t : ℝ) (f : ES → ℂ) (ξ : ES) :
-    ‖heatMode ν t f ξ‖ = Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * ‖f ξ‖ := by
-  show ‖((Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) : ℝ) : ℂ) * f ξ‖ = _
-  rw [Complex.norm_mul, Complex.norm_real]
-  exact congrArg (fun e : ℝ => e * ‖f ξ‖)
-    (Real.norm_of_nonneg (exp_pos_heat _).le)
-
 private theorem ofReal_integral_le_lintegral_ofReal {α : Type*} [MeasurableSpace α]
     (μ : Measure α) (f : α → ℝ) (hf : 0 ≤ᵐ[μ] f) :
     ENNReal.ofReal (∫ x, f x ∂μ) ≤ ∫⁻ x, ENNReal.ofReal (f x) ∂μ := by

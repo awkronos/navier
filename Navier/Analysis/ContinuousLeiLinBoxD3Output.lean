@@ -27,13 +27,6 @@ open Navier.Analysis.ContinuousLeiLinBoxD3Joint
 
 namespace Navier.Analysis.ContinuousLeiLinBoxD3Output
 
-/-- Exact norm of the continuous heat multiplier. -/
-theorem norm_heatMode_eq
-    (ν t : ℝ) (g : ES → ℂ) (ξ : ES) :
-    ‖heatMode ν t g ξ‖ = Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * ‖g ξ‖ := by
-  rw [heatMode, Complex.norm_mul, Complex.norm_real,
-    Real.norm_of_nonneg (Real.exp_pos _).le]
-
 /-- A fixed heat section preserves coordinate `X¹` integrability. -/
 theorem integrable_weighted_heatMode_of_X1
     (g : ES → ℂ) (hg : Integrable (fun ξ : ES => ‖ξ‖ * ‖g ξ‖))
@@ -43,7 +36,7 @@ theorem integrable_weighted_heatMode_of_X1
       (fun ξ : ES => Real.exp (-(ν * ‖ξ‖ ^ 2 * t))) := by fun_prop
   have heq (ξ : ES) : ‖ξ‖ * ‖heatMode ν t g ξ‖ =
       Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) * (‖ξ‖ * ‖g ξ‖) := by
-    rw [norm_heatMode_eq]
+    rw [norm_heatMode]
     ring
   apply (hg.mono' (hfactor.mul hg.aestronglyMeasurable) ?_).congr
     (Eventually.of_forall fun ξ => (heq ξ).symm)
@@ -67,7 +60,7 @@ theorem normX1_heatMode_le_of_X1
   apply integral_mono (integrable_weighted_heatMode_of_X1 g hg ν t hν ht) hg
   intro ξ
   change ‖ξ‖ * ‖heatMode ν t g ξ‖ ≤ ‖ξ‖ * ‖g ξ‖
-  rw [norm_heatMode_eq]
+  rw [norm_heatMode]
   have hexp_nonneg : 0 ≤ Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) := (Real.exp_pos _).le
   have hexp_le : Real.exp (-(ν * ‖ξ‖ ^ 2 * t)) ≤ 1 := by
     rw [Real.exp_le_one_iff]
@@ -105,7 +98,7 @@ theorem integrable_normX1_heatMode_on_Icc_of_X1
     apply integral_congr_ae
     filter_upwards with ξ
     simp only [J, Prod.swap_prod_mk]
-    rw [norm_heatMode_eq]
+    rw [norm_heatMode]
     ring
   have hconst : Integrable (fun _ : ℝ => normX1 g) μ := by
     exact continuous_const.integrableOn_Icc

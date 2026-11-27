@@ -818,7 +818,7 @@ theorem mildTimeLeaf_hmXm1 (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ)
     have hform (ξ : ES) : ‖ξ‖⁻¹ * ‖heatVec (ν : ℝ) t a ξ i‖ =
         Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * t)) * (‖ξ‖⁻¹ * ‖a ξ i‖) := by
       show ‖ξ‖⁻¹ * ‖heatMode (ν : ℝ) t (fun ζ : ES => a ζ i) ξ‖ = _
-      rw [norm_heatMode_eq]
+      rw [norm_heatMode]
       ring
     have hfactor : AEStronglyMeasurable
         (fun ξ : ES => Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * t))) volume := by fun_prop
@@ -847,7 +847,7 @@ theorem mildTimeLeaf_hmXm1 (ν : ℝ≥0) (hν : 0 < ν) (T R : ℝ)
       (ae_of_all _ fun s => mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _))
       hξ (by
         filter_upwards [ae_restrict_mem isClosed_Icc.measurableSet] with s hs
-        rw [norm_heatMode_eq]
+        rw [norm_heatMode]
         refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr (norm_nonneg ξ))
         have hexp : Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * (t - s))) ≤ 1 :=
           Real.exp_le_one_iff.mpr (neg_nonpos.mpr (mul_nonneg
@@ -3481,7 +3481,7 @@ private theorem l6d4_duhamelXm1Fiber (ν : ℝ≥0) (hν : 0 < ν)
       (ae_of_all _ fun s => mul_nonneg (inv_nonneg.mpr (norm_nonneg ξ)) (norm_nonneg _))
       hξ (by
         filter_upwards [ae_restrict_mem isClosed_Icc.measurableSet] with s hs
-        rw [norm_heatMode_eq]
+        rw [norm_heatMode]
         refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr (norm_nonneg ξ))
         have hexp : Real.exp (-((ν : ℝ) * ‖ξ‖ ^ 2 * (t - s))) ≤ 1 :=
           Real.exp_le_one_iff.mpr (neg_nonpos.mpr (mul_nonneg

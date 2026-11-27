@@ -35,6 +35,7 @@ open Navier.Analysis.WholeSpaceSolenoidalHeatViscousCutoffLimit
 open Navier.Analysis.WholeSpaceSolenoidalHeatConvectionIntegrability
 open Navier.Analysis.HeatSemigroupSmoothing
 open Navier.Analysis.OfficialABEncoding
+open Navier.Analysis.WholeSpaceHeatThirdDerivative
 
 /-- A positive-time Gaussian translate times the norm of an actual
 finite-energy velocity slice is integrable. -/
@@ -269,66 +270,6 @@ theorem SolvesBefore.integrable_secondHeatKernel_translate_mul_velocity
           (mul_nonneg hB.le (heatKernel_nonneg hκ hτ _)))
     _ = A * (heatKernel κ (4 * τ) (x₀ - y) * ‖u s y‖) +
         B * (heatKernel κ τ (x₀ - y) * ‖u s y‖) := by ring
-
-private theorem backwardHeatCurlField_component_zero
-    (κ τ : ℝ) (x₀ a : Space) :
-    (fun y : Space => backwardHeatCurlField κ τ x₀ a y 0) =
-      fun y : Space =>
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y
-            (basisVector 1) * a 2 -
-          fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y
-            (basisVector 2) * a 1 := by
-  funext y
-  rw [Navier.Analysis.WholeSpaceHeatThirdDerivative.backwardHeatCurlField_eq_gradient_cross]
-  simp [staticGradient, cross_apply, basisVector]
-
-private theorem backwardHeatCurlField_component_one
-    (κ τ : ℝ) (x₀ a : Space) :
-    (fun y : Space => backwardHeatCurlField κ τ x₀ a y 1) =
-      fun y : Space =>
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y
-            (basisVector 2) * a 0 -
-          fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y
-            (basisVector 0) * a 2 := by
-  funext y
-  rw [Navier.Analysis.WholeSpaceHeatThirdDerivative.backwardHeatCurlField_eq_gradient_cross]
-  simp [staticGradient, cross_apply, basisVector]
-
-private theorem backwardHeatCurlField_component_two
-    (κ τ : ℝ) (x₀ a : Space) :
-    (fun y : Space => backwardHeatCurlField κ τ x₀ a y 2) =
-      fun y : Space =>
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y
-            (basisVector 0) * a 1 -
-          fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y
-            (basisVector 1) * a 0 := by
-  funext y
-  rw [Navier.Analysis.WholeSpaceHeatThirdDerivative.backwardHeatCurlField_eq_gradient_cross]
-  simp [staticGradient, cross_apply, basisVector]
-
-private theorem directional_constLinearCombination
-    {F H : Space → ℝ} (hF : ContDiff ℝ ∞ F) (hH : ContDiff ℝ ∞ H)
-    (c d : ℝ) (direction : Fin 3) (x : Space) :
-    fderiv ℝ (fun y : Space => F y * c - H y * d) x
-        (basisVector direction) =
-      fderiv ℝ F x (basisVector direction) * c -
-        fderiv ℝ H x (basisVector direction) * d := by
-  rw [fderiv_fun_sub]
-  · change (fderiv ℝ (F * fun _ : Space => c) x -
-      fderiv ℝ (H * fun _ : Space => d) x) (basisVector direction) = _
-    rw [fderiv_mul
-        ((hF.differentiable (by norm_num)).differentiableAt)
-        (differentiableAt_const c),
-      fderiv_mul
-        ((hH.differentiable (by norm_num)).differentiableAt)
-        (differentiableAt_const d)]
-    simp only [sub_apply, add_apply, smul_apply, fderiv_const_apply,
-      zero_apply, mul_zero, smul_eq_mul]
-    ring
-  · exact ((hF.mul contDiff_const).differentiable
-      (by norm_num)).differentiableAt
-  · exact ((hH.mul contDiff_const).differentiable
-      (by norm_num)).differentiableAt
 
 /-- The first derivative of the uncut backward-heat curl is integrable against
 every velocity component on an actual finite-energy slice. -/

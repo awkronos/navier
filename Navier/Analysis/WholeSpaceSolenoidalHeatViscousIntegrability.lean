@@ -25,36 +25,6 @@ open Navier.Analysis.WholeSpaceSolenoidalHeatApproximation
 open Navier.Analysis.WholeSpaceSolenoidalHeatMixedDomination
 open Navier.Analysis.WholeSpaceHeatThirdDerivative
 
-private theorem backwardHeatCurlField_component_zero
-    (κ τ : ℝ) (x₀ a : Space) :
-    (fun y : Space => backwardHeatCurlField κ τ x₀ a y 0) =
-      fun y : Space =>
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y (basisVector 1) * a 2 -
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y (basisVector 2) * a 1 := by
-  funext y
-  rw [backwardHeatCurlField_eq_gradient_cross]
-  simp [staticGradient, cross_apply, basisVector]
-
-private theorem backwardHeatCurlField_component_one
-    (κ τ : ℝ) (x₀ a : Space) :
-    (fun y : Space => backwardHeatCurlField κ τ x₀ a y 1) =
-      fun y : Space =>
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y (basisVector 2) * a 0 -
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y (basisVector 0) * a 2 := by
-  funext y
-  rw [backwardHeatCurlField_eq_gradient_cross]
-  simp [staticGradient, cross_apply, basisVector]
-
-private theorem backwardHeatCurlField_component_two
-    (κ τ : ℝ) (x₀ a : Space) :
-    (fun y : Space => backwardHeatCurlField κ τ x₀ a y 2) =
-      fun y : Space =>
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y (basisVector 0) * a 1 -
-        fderiv ℝ (fun z : Space => heatKernel κ τ (x₀ - z)) y (basisVector 1) * a 0 := by
-  funext y
-  rw [backwardHeatCurlField_eq_gradient_cross]
-  simp [staticGradient, cross_apply, basisVector]
-
 /-- Two directional derivatives commute with a fixed scalar linear
 combination.  This is the exact product-free algebra left after expanding the
 curl of the constant-polarized Gaussian potential. -/
