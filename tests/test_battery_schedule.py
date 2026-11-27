@@ -17,7 +17,7 @@ nothing, and README/``formalization.yaml`` drift would have been caught by no
 scheduled check at all.
 
 The fix is one battery definition (``Makefile:TEST_ROOTS``, which ``make test``
-loops and CI calls) plus this ratchet, which binds three ways:
+loops and CI calls) plus this ratchet, which binds four ways:
 
 1. CI's python job runs ``make test`` and spells no discovery root of its own,
    so the workflow cannot drift behind the Makefile again;
@@ -27,7 +27,9 @@ loops and CI calls) plus this ratchet, which binds three ways:
 3. CI's ``OR23-Q8`` selected-count leg is executed here against a synthetic
    two-root log, so a multi-root battery cannot be gated on one line again
    (``awk '{print $2}'`` over two ``Ran N tests`` lines yields ``58 8`` and
-   ``test "58 8" -ge 1`` is a bash arithmetic error, not a pass).
+   ``test "58 8" -ge 1`` is a bash arithmetic error, not a pass);
+4. every repository script the python job names exists, so a step cannot be
+   enrolled against a carrier that a rename removed.
 
 Nothing here compiles Lean; it reads files and runs one ``awk``.
 
@@ -37,6 +39,7 @@ Usage:
 
 from __future__ import annotations
 
+import importlib.abc
 import os
 import pathlib
 import re
@@ -46,6 +49,7 @@ import tempfile
 import textwrap
 import unittest
 from importlib import util as _importlib_util
+from typing import cast
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 MAKEFILE = REPO / "Makefile"
@@ -117,7 +121,40 @@ def ci_python_job() -> str:
     return match.group(1)
 
 
+def ci_job_text(job: str) -> str:
+    """The raw YAML text owned by ``jobs.<job>``, up to the next job key."""
+    lines = CI.read_text(encoding="utf-8").splitlines()
+    start = next(
+        (i for i, line in enumerate(lines) if line.strip() == f"{job}:"),
+        None,
+    )
+    if start is None:
+        raise AssertionError(f"ci.yml has no `{job}` job")
+    end = next(
+        (i for i in range(start + 1, len(lines)) if re.match(r"^  \S[^:]*:\s*(#.*)?$", lines[i])),
+        len(lines),
+    )
+    return "\n".join(lines[start:end])
+
+
 class BatterySchedule(unittest.TestCase):
+    def test_every_named_carrier_exists(self) -> None:
+        """A step that names ``scripts/x.py`` or ``tests/x.py`` names a real file.
+
+        The file-existence half of this ratchet's own law. ``test_ci_runs_the_makefile_battery``
+        binds *how* the battery is invoked; nothing bound *what* the other steps
+        invoke, so a step left behind by a rename would keep reading as an
+        enrolled leg to whoever scanned the workflow, and `|| true`-tolerant steps
+        would not even go red. Measured at f277dce649850b0cfedf0e48f2ba2520d7010b0b:
+        all five paths named in the python job are in the tree, one of them the
+        WorldSense CLI leg added on this lane.
+        """
+        job = ci_job_text("python")
+        named = sorted(set(re.findall(r"\b(?:scripts|tests)/[A-Za-z0-9_./-]+\.py", job)))
+        self.assertTrue(named, "the python job names no repository script at all")
+        missing = [rel for rel in named if not (REPO / rel).is_file()]
+        self.assertEqual(missing, [], f"CI python job invokes files that are not in the tree: {missing}")
+
     def test_ci_runs_the_makefile_battery(self) -> None:
         """CI calls ``make test`` and owns no discovery root of its own."""
         job = ci_python_job()
@@ -134,7 +171,7 @@ class BatterySchedule(unittest.TestCase):
     def test_every_unittest_test_file_is_scheduled(self) -> None:
         """No stdlib-unittest test lives outside ``TEST_ROOTS``."""
         roots = makefile_test_roots()
-        unscheduled = []
+        unscheduled: list[str] = []
         for path in repo_test_files():
             rel = path.relative_to(REPO).as_posix()
             if rel in NON_UNITTEST_TESTS:
@@ -177,10 +214,19 @@ class BatterySchedule(unittest.TestCase):
         self.assertIn("scripts", makefile_test_roots(), "README's scope gate root unscheduled")
         spec = _importlib_util.spec_from_file_location("test_readme_scope_truth", gate)
         assert spec and spec.loader
+        # ``spec.loader`` is typed as the base ``Loader``, which has no
+        # ``exec_module``; the mixin that does is ``importlib.abc.ExecutionLoader``
+        # (NOT ``importlib.machinery``, which is the other half of the usual
+        # confusion). A spec built from a file location always carries a
+        # SourceFileLoader, so this narrowing states a fact about the spec rather
+        # than hoping for one — and without it the call below is an
+        # attribute-access error under strict Pyright, which is how a green
+        # untyped run hides a broken loader.
+        loader = cast(importlib.abc.ExecutionLoader, spec.loader)
         module = _importlib_util.module_from_spec(spec)
         sys.path.insert(0, str(gate.parent))
         try:
-            spec.loader.exec_module(module)
+            loader.exec_module(module)
             suite = unittest.TestLoader().loadTestsFromModule(module)
         finally:
             sys.path.pop(0)

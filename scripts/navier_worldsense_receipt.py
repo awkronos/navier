@@ -59,12 +59,43 @@ self-contained numpy Fourier-Galerkin engine and names the one it used:
     present; where it is absent that leg reports itself UNMEASURED instead of
     asserting agreement it did not observe.
 
+The agreement is ALGEBRAIC, not bitwise, and the difference matters. Each engine
+takes its transforms through whatever backend it resolves — ``transform_backend``
+in the provenance block says which — and two FFT libraries on two builds round a
+3-D inverse transform differently in the last bit. Measured 2026-11-26: on
+``/usr/bin/python3`` (numpy 2.0.2 / scipy 1.13.1) the engines agreed to the bit,
+and on ``/opt/homebrew/bin/python3.14`` (numpy 2.5.0 / scipy 1.17.1) the same two
+engines on the same commit differed by 1 ULP in ``energy_final``. A test that
+asserted bit-identity was therefore green on one interpreter and red on another,
+which is a claim about library versions wearing the clothes of a claim about the
+solver. ``ENGINE_AGREEMENT_RTOL`` states the tolerance the agreement IS tested at;
+bit-exactness is asserted only when both engines name the SAME backend, where
+differing would be a real divergence rather than a rounding one.
+
+Digest
+------
+Two fields carry the same measurement digest: ``receipt_sha256`` at the top level
+and ``z8_meter.digest_sha256`` inside the meter block. The top-level spelling is
+not redundancy for its own sake — the owner that ingests this row,
+``kagami.core.omni.worldsense_scientific_flow.verify_scientific_receipt_envelope``
+(``origin/main`` ``e9c73add653530ed86d95684644928c71eb4cce9``), scans digests by
+name at the row's top level and inside its ``probably`` block
+(:data:`_DIGEST_FIELDS`, :func:`_digest_fields`) and REFUSES a scientific receipt
+it finds none of, with ``no_digest_on_a_scientific_receipt``. Before 2026-11-26
+this receipt nested its digest one level deeper, in a block that reader never
+opens, so a fully self-verifying receipt arrived unattributable-by-digest. The two
+fields hold ONE value; :func:`self_test` re-derives it and fails loudly if they
+disagree.
+
 Usage::
 
     python3 scripts/navier_worldsense_receipt.py --json
     python3 scripts/navier_worldsense_receipt.py --out /tmp/navier_receipt.json
     python3 scripts/navier_worldsense_receipt.py --grid 20 --dt 0.02 --steps 40 \
         --viscosities 0.05 0.1 --ic taylor_green
+    python3 scripts/navier_worldsense_receipt.py --self-test
+    python3 scripts/navier_worldsense_receipt.py --out r.json && \
+        python3 scripts/navier_worldsense_receipt.py --check-file r.json
 """
 
 from __future__ import annotations
@@ -77,6 +108,7 @@ import math
 import os
 import platform
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -118,6 +150,22 @@ try:
     from scipy import fft as _scipy_fft  # type: ignore[import-not-found]
 except Exception:  # noqa: BLE001 - scipy absent on a minimal runner is supported
     _scipy_fft = None
+
+
+def _fft_backend_version() -> Optional[str]:
+    """Version of the scipy that supplied :data:`_scipy_fft`, or ``None``.
+
+    Read out of ``sys.modules`` rather than by a fresh ``import scipy``: the
+    ``from scipy import fft`` above already loaded the parent, so the lookup adds no
+    import cost and cannot raise on a host where scipy is missing. ``scipy.fft`` has
+    no ``__version__`` of its own, so the parent's is the number that identifies which
+    library rounded this run.
+    """
+    if _scipy_fft is None:
+        return None
+    parent = sys.modules.get("scipy")
+    version = getattr(parent, "__version__", None) if parent is not None else None
+    return str(version) if version else None
 
 if TYPE_CHECKING:  # static-only aliases; annotations are never evaluated at runtime
     ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
@@ -181,7 +229,60 @@ PROOF_TIER_WORDS = frozenset(
 )
 
 #: The fields an ingest side is allowed to treat as a tier assertion.
-TIER_FIELDS = ("tier", "scientific_tier", "claim", "verdict", "status", "epistemic_tier", "layer")
+#:
+#: This is the owner's ``_TIER_FIELDS`` plus ``layer``, which this repository pins to
+#: ``"Probably`` in the gate below and so polices a name the consumer does not.
+#: ``claim_tier`` joined on 2026-11-26 because the landed owner reads nine names
+#: (``kagami.core.omni.worldsense_scientific_flow._TIER_FIELDS`` at ``origin/main``
+#: ``e9c73add653530ed86d95684644928c71eb4cce9``) and this copy had eight: a receipt
+#: could have written ``claim_tier: "THEOREM"`` and passed THIS gate while its
+#: consumer quarantined the same row. A producer that polices a smaller surface than
+#: its consumer is a gate that reports green for a reason it cannot see; the sibling
+#: ``epistemic_tier`` arrived the same way earlier. The drift is watched by
+#: :class:`WorldSenseConsumerContractTest`, which re-reads the owner's tuple from its
+#: landed ref and fails when either side moves.
+TIER_FIELDS = (
+    "tier",
+    "scientific_tier",
+    "epistemic_tier",
+    "claim_tier",
+    "claim",
+    "verdict",
+    "status",
+    "evidence",
+    "strength",
+    "layer",
+)
+
+#: The names the ingest side accepts as a digest of the row it is reading
+#: (``_DIGEST_FIELDS`` in the same owner module), plus the suffix rules
+#: ``*_sha256``/``*_digest`` it applies on top. This receipt answers the first name.
+OWNER_DIGEST_FIELDS = (
+    "receipt_sha256",
+    "replay_sha256",
+    "canonical_input_sha256",
+    "digest_sha256",
+    "payload_sha256",
+    "notary_digest",
+)
+
+#: Agreement the two solver engines are tested at, as ``|a-b| <= ATOL + RTOL*max(|a|,|b|)``.
+#:
+#: See the Engines section: 1 ULP on ``energy_final`` was measured between backends on
+#: numpy 2.5.0 / scipy 1.17.1, so any relative tolerance below double precision's own
+#: epsilon (2.22e-16) would be a claim about FFT libraries rather than about the solver.
+#:
+#: The ABSOLUTE term is not decoration. Several fields in a run are residuals whose true
+#: value is zero -- ``divergence_linf_max``, the ``convective_skew`` entries, the two
+#: ``energy_balance_*_residual`` numbers -- and a quantity at machine noise has no
+#: relative gap to compare: measured on 2026-11-26 the engines put ``divergence_linf_max``
+#: at 8.73e-17 and 9.75e-18, which are 1 ULP of each other and a RELATIVE GAP OF 0.89.
+#: A relative-only tolerance therefore refuses two engines that agree as closely as
+#: doubles allow, on exactly the fields whose smallness IS the finding. Both gaps are
+#: reported by :class:`EngineAgreementTest` so the numbers behind these constants stay
+#: visible instead of being absorbed into a magic threshold.
+ENGINE_AGREEMENT_RTOL = 1e-14
+ENGINE_AGREEMENT_ATOL = 1e-15
 
 #: Absolute tolerances, in the nondimensional units of the periodic box.
 DIV_TOLERANCE = 1e-12
@@ -208,6 +309,12 @@ __all__ = [
     "stable_view",
     "payload_sha256",
     "write_receipt",
+    "check_receipt_file",
+    "self_test",
+    "SELF_TEST_GRIDS",
+    "ENGINE_AGREEMENT_RTOL",
+    "OWNER_DIGEST_FIELDS",
+    "TIER_FIELDS",
     "main",
 ]
 
@@ -513,6 +620,11 @@ class Engine:
             "note": self.note,
             "transform_backend": self.transform_backend,
             "numpy_version": np.__version__,
+            # Which library actually rounded this run's transforms. The two engines can
+            # name DIFFERENT backends on one host (the core brings its own), and a 1 ULP
+            # gap between them is that difference, not a solver disagreement — so the
+            # attribution belongs in the receipt rather than only in a developer's memory.
+            "scipy_version": _fft_backend_version(),
             "scipy_fft_available": _scipy_fft is not None,
             "initial_conditions": sorted(self.initial_field),
         }
@@ -1263,6 +1375,13 @@ def build_receipt(
         },
     }
     payload["z8_meter"]["digest_sha256"] = payload_sha256(payload)
+    # The same digest, at the height the consumer looks. `verify_scientific_receipt_envelope`
+    # scans _DIGEST_FIELDS on the row it is handed and on its `probably` block only, so a
+    # digest that lives at `z8_meter.digest_sha256` is invisible to it and the whole receipt
+    # comes back refused (no_digest_on_a_scientific_receipt) despite being self-verifying.
+    # Assigned AFTER the digest so it cannot feed itself, and named in _VOLATILE_KEYS so
+    # stable_view drops it for exactly the same self-reference reason it drops the other.
+    payload["receipt_sha256"] = payload["z8_meter"]["digest_sha256"]
     validate_navier_receipt_epistemics(payload)
     return payload
 
@@ -1458,9 +1577,12 @@ def validate_navier_receipt_epistemics(receipt: Any) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 #: Excluded from the measurement digest so a replay reproduces it on any host.
-#: ``digest_sha256`` is excluded for self-reference: the digest of a receipt that
-#: already carries one must equal the one it carries.
-_VOLATILE_KEYS = frozenset({"generated_utc", "provenance", "wall_ms", "digest_sha256"})
+#: ``digest_sha256`` and ``receipt_sha256`` are excluded for self-reference: the digest
+#: of a receipt that already carries one must equal the one it carries. Both spellings
+#: of the same value drop, so the digest stays fixed whichever name a reader arrived by.
+_VOLATILE_KEYS = frozenset(
+    {"generated_utc", "provenance", "wall_ms", "digest_sha256", "receipt_sha256"}
+)
 
 
 def stable_view(payload: Any) -> Any:
@@ -1505,6 +1627,214 @@ def write_receipt(receipt: Dict[str, Any], output: Path) -> Dict[str, Any]:
     return {"output": str(output), "payload_sha256": digest, "bytes": output.stat().st_size}
 
 
+#: The shape ``hashlib.sha256().hexdigest()`` prints. Checked by hand rather than with
+#: ``re`` because this module keeps its dependency surface at numpy plus the stdlib by
+#: choice (see :func:`_looks_like_schema_id`).
+_HEX64 = frozenset("0123456789abcdef")
+
+
+def _is_sha256_hex(value: Any) -> bool:
+    """Whether ``value`` is 64 lowercase hex characters, as every producer prints it."""
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in _HEX64 for character in value)
+    )
+
+
+def _as_object(value: object, label: str) -> Dict[str, Any]:
+    """Narrow a parsed JSON value to a string-keyed object, or refuse by name.
+
+    ``json.loads`` is typed ``Any``, and under strict Pyright an ``isinstance``
+    narrowing of an ``Any`` yields ``dict[Unknown, Unknown]`` -- so every ``.get``
+    downstream reports a partially-unknown type and the real diagnostics hide in
+    that noise. Rebuilding the mapping through an annotated comprehension returns
+    the type this helper actually guarantees, which is ``Dict[str, Any]``.
+    """
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} holds a {type(value).__name__}, not an object")
+    return {str(key): item for key, item in cast("Dict[Any, Any]", value).items()}
+
+
+def check_receipt_file(path: Path) -> Dict[str, Any]:
+    """Re-verify a written receipt from disk, without the writer's live payload.
+
+    This is the read-back leg: it proves the file a consumer would ingest is the file
+    the digest was taken over, which no in-process assertion can show. Three
+    independently-derived numbers must agree —
+
+      * the wrapper's ``payload_sha256`` over the canonical text of ``payload``;
+      * ``payload["receipt_sha256"]``, the field the ingest side scans;
+      * :func:`payload_sha256` recomputed here from the stable view.
+
+    Raises :class:`ValueError` naming the first refusal; returns the checks on success.
+    """
+    source = Path(path)
+    text = source.read_text(encoding="utf-8")
+    try:
+        parsed: object = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not JSON: {exc}") from exc
+    wrapped = _as_object(parsed, str(path))
+    for key in ("payload_sha256", "payload"):
+        if key not in wrapped:
+            raise ValueError(f"{path}: wrapper is missing {key!r}")
+    payload = _as_object(wrapped["payload"], f"{path}: 'payload'")
+
+    body = canonical_json(payload)
+    recomputed = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    stamped = str(wrapped["payload_sha256"])
+    if recomputed != stamped:
+        raise ValueError(
+            f"{path}: payload was edited after it was written — recomputed "
+            f"payload_sha256 {recomputed[:16]}... != stamped {stamped[:16]}..."
+        )
+
+    stated = payload.get("receipt_sha256")
+    if not _is_sha256_hex(stated):
+        raise ValueError(
+            f"{path}: receipt_sha256 is {stated!r}, not 64 lowercase hex; the ingest "
+            "side refuses the row as digest_not_sha256 or with no digest at all"
+        )
+    meter: Dict[str, Any] = {}
+    if isinstance(payload.get("z8_meter"), dict):
+        meter = _as_object(payload["z8_meter"], f"{path}: 'z8_meter'")
+    nested = meter.get("digest_sha256")
+    if nested != stated:
+        raise ValueError(
+            f"{path}: receipt_sha256 and z8_meter.digest_sha256 disagree "
+            f"({str(stated)[:16]}... vs {str(nested)[:16]}...)"
+        )
+    reproduced = payload_sha256(payload)
+    if reproduced != stated:
+        raise ValueError(
+            f"{path}: receipt_sha256 does not reproduce from this file's stable view; "
+            "a replay cannot re-derive the number the receipt claims"
+        )
+
+    validate_navier_receipt_epistemics(payload)
+    return {
+        "output": str(path),
+        "payload_sha256": recomputed,
+        "receipt_sha256": str(stated),
+        "stable_view_digest": reproduced,
+        "tier": payload.get("tier"),
+        "domain": payload.get("domain"),
+    }
+
+
+#: The configuration :func:`self_test` runs twice. Deliberately the smallest grid the
+#: guards accept, so the leg costs CI seconds; the numbers it compares are digests, and
+#: a digest of a small run is as good a determinism proof as a digest of a large one.
+#: tests/test_navier_worldsense_receipt_1126.py imports these rather than restating them.
+SELF_TEST_GRIDS: Tuple[int, ...] = (8,)
+SELF_TEST_DT = 0.05
+SELF_TEST_STEPS = 4
+SELF_TEST_CONVERGENCE_GRIDS: Tuple[int, int] = (6, 8)
+SELF_TEST_VISCOSITIES: Tuple[float, ...] = (0.1,)
+
+
+def self_test(engine_preference: str = "builtin") -> Dict[str, Any]:
+    """Prove the receipt reproduces itself, end to end, on THIS host.
+
+    Six legs, all lake-free:
+
+      1. two independent builds of the same configuration yield the same measurement
+         digest — the volatile fields (clock, platform, head, wall time) differ between
+         them and the digest must not;
+      2. the digest is 64 lowercase hex;
+      3. ``receipt_sha256`` and ``z8_meter.digest_sha256`` carry one value, and both are
+         what the ingest side's ``_DIGEST_FIELDS`` looks for at the row's top level;
+      4. :func:`write_receipt` round-trips: :func:`check_receipt_file` re-derives every
+         stamped number from the bytes on disk;
+      5. a mutated payload is caught — flipping one measured float changes the stable
+         view, so the digest stops matching. Without this leg the "determinism" check
+         only proves the digest was computed over a constant;
+      6. the epistemic gate runs on the payload that came back off disk, not the one
+         that went in.
+
+    Raises :class:`ValueError` naming the failed leg. Returns the leg report.
+    """
+    engine = resolve_engine(engine_preference)
+    common: Dict[str, Any] = dict(
+        grids=SELF_TEST_GRIDS,
+        dt=SELF_TEST_DT,
+        steps=SELF_TEST_STEPS,
+        convergence_grids=SELF_TEST_CONVERGENCE_GRIDS,
+        viscosities=SELF_TEST_VISCOSITIES,
+        engine=engine,
+    )
+    first = build_receipt(**common)
+    second = build_receipt(**common)
+    if first["receipt_sha256"] != second["receipt_sha256"]:
+        raise ValueError(
+            f"self_test: the same configuration produced two digests "
+            f"({first['receipt_sha256'][:16]}... vs {second['receipt_sha256'][:16]}...) "
+            f"on engine {engine.name}"
+        )
+    if first["generated_utc"] == second["generated_utc"]:
+        # `generated_utc` has SECOND resolution, so on a fast configuration both builds
+        # legitimately land in the same second. That does not weaken leg 1 — it moves it
+        # onto the field that does vary: `wall_ms` is a float off perf_counter, and if two
+        # builds of the same run report it identically then the second build never happened.
+        if first["z8_meter"]["wall_ms"] == second["z8_meter"]["wall_ms"]:
+            raise ValueError(
+                "self_test: both builds report the same generated_utc AND the same "
+                "wall_ms, so leg 1 measured nothing — nothing volatile varied between "
+                "them and digest equality proves only that the digest was constant"
+            )
+    if not _is_sha256_hex(first["receipt_sha256"]):
+        raise ValueError("self_test: receipt_sha256 is not 64 lowercase hex")
+    if first["receipt_sha256"] != first["z8_meter"]["digest_sha256"]:
+        raise ValueError("self_test: the two digest spellings disagree")
+    if "receipt_sha256" not in OWNER_DIGEST_FIELDS:
+        raise ValueError("self_test: receipt_sha256 is not a name the ingest side scans")
+
+    with tempfile.TemporaryDirectory(prefix="navier-selftest-") as tmp:
+        written = Path(tmp, "receipt.json")
+        write_receipt(first, written)
+        readback = check_receipt_file(written)
+        tampered = json.loads(written.read_text(encoding="utf-8"))
+        runs = tampered["payload"].get("runs")
+        if not isinstance(runs, list) or not runs:
+            raise ValueError("self_test: the written payload carries no runs to tamper")
+        victim = cast(Dict[str, Any], runs[0])
+        victim["energy_final"] = float(victim["energy_final"]) + 1e-9
+        tampered_path = Path(tmp, "tampered.json")
+        tampered_body = canonical_json(tampered["payload"])
+        tampered_path.write_text(
+            json.dumps(
+                {
+                    "payload_sha256": hashlib.sha256(
+                        tampered_body.encode("utf-8")
+                    ).hexdigest(),
+                    "payload": json.loads(tampered_body),
+                },
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        try:
+            check_receipt_file(tampered_path)
+        except ValueError as exc:
+            mutation_caught = str(exc)
+        else:
+            raise ValueError(
+                "self_test: a payload with one measured float nudged by 1e-9 still "
+                "verified — the digest does not cover the measurement it claims to"
+            )
+
+    return {
+        "engine": engine.name,
+        "transform_backend": engine.transform_backend,
+        "digest": first["receipt_sha256"],
+        "digests_match": True,
+        "readback": readback,
+        "mutation_caught": mutation_caught,
+        "legs": 6,
+    }
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -1547,6 +1877,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--include-series", action="store_true",
                         help="keep the per-step time series inside each run")
     parser.add_argument("--json", action="store_true", help="print the receipt as JSON on stdout")
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="run the determinism/read-back/mutation legs on this host and exit "
+        "(rc 0 = every leg passed); needs no reality checkout",
+    )
+    parser.add_argument(
+        "--check-file",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="re-verify a receipt written by --out from disk, without rebuilding it",
+    )
     parser.add_argument("--out", type=Path, default=None,
                         help="write {payload_sha256, payload} to this path")
     parser.add_argument("--summary", action="store_true", help="print one line, not the payload")
@@ -1555,6 +1898,34 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.self_test and args.check_file is not None:
+        print(
+            "--self-test runs its own configuration and --check-file reads an existing "
+            "one; passing both asks for two different receipts from one invocation",
+            file=sys.stderr,
+        )
+        return 2
+    if args.check_file is not None:
+        # Read-back only: no build, so this leg costs nothing and runs on a runner that
+        # never produced the file it is checking.
+        try:
+            print(json.dumps(check_receipt_file(Path(args.check_file)), indent=2))
+        except (ValueError, OSError) as exc:
+            print(f"check-file REFUSED: {exc}", file=sys.stderr)
+            return 1
+        return 0
+    if args.self_test:
+        try:
+            report = self_test(args.engine if args.engine != "auto" else "builtin")
+        except (ValueError, RuntimeError) as exc:
+            print(f"self-test FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(
+            "navier worldsense self-test OK "
+            f"engine={report['engine']} backend={report['transform_backend']} "
+            f"digest={report['digest'][:16]} legs={report['legs']}"
+        )
+        return 0
     if args.dt <= 0.0 or not math.isfinite(args.dt):
         print("dt must be finite and positive", file=sys.stderr)
         return 2
@@ -1584,7 +1955,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             f"div={invariants['solenoidal_constraint']['max_abs_divergence_linf']:.3g} "
             f"skew={invariants['triad_cancellation']['relative_max']:.3g} "
             f"BKM={invariants['beale_kato_majda']['integral_max']:.6g} "
-            f"digest={receipt['z8_meter']['digest_sha256'][:16]}"
+            f"digest={receipt['receipt_sha256'][:16]}"
         )
     else:
         print(

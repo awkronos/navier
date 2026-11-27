@@ -159,6 +159,47 @@ jobs:
           fi
           echo "MetricContractTest ran and passed on this runner"
 
+      - name: Navier WorldSense receipt — CLI roundtrip and digest determinism
+        # Lake-free, and until now the missing kind of leg here: the battery
+        # (tests/test_navier_worldsense_receipt_1126.py) reaches this producer
+        # by `import`, so every CI verdict on it came from the module's import
+        # surface. Nothing scheduled ever ran the three paths a consumer
+        # actually uses — `--self-test`, the `--out` -> `--check-file`
+        # roundtrip, and two runs of `--json` agreeing on `receipt_sha256`.
+        # A verification command no run executes verifies nothing; that is the
+        # same law that put scripts/ into Makefile TEST_ROOTS and that wrote
+        # tests/test_battery_schedule.py.
+        #
+        # The leg is re-executed VERBATIM from this file by
+        # CiWorldSenseEnrollmentTest in that battery (same trick
+        # test_battery_schedule.test_ci_selected_count_leg_sums_the_roots uses
+        # for the OR23-Q8 count), on whatever host runs the tests, with
+        # $PYTHON bound to that interpreter. So this step cannot rot into a
+        # carrier that names a script, a flag or a digest field that no longer
+        # exists: the day one of them goes, the battery goes red here instead
+        # of quietly green in a workflow nobody reads.
+        shell: bash
+        run: |
+          set -euo pipefail
+          PY="${PYTHON:-python}"
+          WS="${RUNNER_TEMP:-/tmp}/navier-worldsense"
+          rm -rf "$WS"
+          mkdir -p "$WS"
+          $PY scripts/navier_worldsense_receipt.py --self-test
+          $PY scripts/navier_worldsense_receipt.py --out "$WS/receipt.json"
+          $PY scripts/navier_worldsense_receipt.py --check-file "$WS/receipt.json"
+          measurement_digest() {
+            $PY scripts/navier_worldsense_receipt.py --json \
+              | $PY -c 'import json,sys; print(json.load(sys.stdin)["receipt_sha256"])'
+          }
+          first=$(measurement_digest)
+          second=$(measurement_digest)
+          if [[ -z "$first" || "$first" != "$second" ]]; then
+            echo "::error::measurement digest is not reproducible across two runs: '${first}' vs '${second}'"
+            exit 1
+          fi
+          echo "measurement digest stable across runs: $first"
+
   cargo:
     runs-on: ubuntu-latest
     timeout-minutes: 20

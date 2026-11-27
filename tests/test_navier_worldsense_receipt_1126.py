@@ -26,6 +26,21 @@ Two deliverables land together on this lane, so two contracts are pinned here.
     statement about continuum regularity, and ``EpistemicInflationRefusalTest``
     is the gate that keeps the two apart.
 
+``WorldSenseConsumerContractTest``
+    This repository's mirror of Kagami's landed ``_DOMAIN_MARKERS``,
+    ``_TIER_FIELDS``, ``_NESTED_GRADE_BLOCKS``, ``_DIGEST_FIELDS`` and schema
+    text, re-pinned against ``origin/main`` read with ``git show`` — never
+    against a sibling lane seat's working tree, which is how the mirror went
+    quietly wrong while still printing OK.
+
+``CiWorldSenseEnrollmentTest``
+    The producer's CLI surface — ``--self-test``, the ``--out`` ->
+    ``--check-file`` roundtrip, and two runs agreeing on ``receipt_sha256`` — is
+    a lake-free step in ``ci.yml``'s python job, and its literal shell text is
+    executed here, then executed once with a sabotaged flag, so enrollment
+    cannot decay into a carrier that prints success regardless of what the
+    script did.
+
 Runs on the 3.9 interpreter with no third-party dependency beyond numpy; the
 optional PyYAML leg skips when PyYAML is absent, exactly as the solver tests
 skip when the reality checkout is absent.
@@ -37,6 +52,7 @@ import copy
 import hashlib
 import importlib.abc
 import importlib.util
+import inspect
 import json
 import math
 import os
@@ -44,6 +60,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
@@ -848,8 +865,23 @@ class EngineAgreementTest(unittest.TestCase):
 
     The brief permits a self-contained integrator for hosted runners that carry
     no reality checkout. A fallback that merely exists is an assumption; one that
-    is bit-identical to the canonical engine makes the CI number the same number
-    the dev host reports. That is what this leg pins.
+    reproduces the canonical measurement makes the CI number the same number the
+    dev host reports.
+
+    What that claim IS, measured rather than asserted. Bit-identity between the
+    two engines was the original pin and it is not a property of the solver: each
+    engine takes its transforms through the backend it resolves --
+    ``provenance.engine.transform_backend`` says which, and the core brings its own
+    -- and two FFT builds round a 3-D inverse differently in the last bit. On
+    2026-11-26 this leg passed on ``/usr/bin/python3`` (numpy 2.0.2 / scipy 1.13.1)
+    and FAILED on ``/opt/homebrew/bin/python3.14`` (numpy 2.5.0 / scipy 1.17.1) at
+    ``energy_final`` 0.11084867265661255 vs 0.11084867265661254: one unit in the
+    last place, the same run, the same commit. A green that depends on which
+    interpreter started it is not a contract, so the budget is stated
+    (:data:`receipt.ENGINE_AGREEMENT_ATOL` and :data:`receipt.ENGINE_AGREEMENT_RTOL`,
+    as ``|a-b| <= ATOL + RTOL*max(|a|,|b|)``) and bit-exactness is asserted only
+    where the two engines name the SAME backend, which is the only condition under
+    which a differing bit means a differing algorithm.
     """
 
     def _payload(self, preference: str) -> Optional[Dict[str, Any]]:
@@ -866,7 +898,19 @@ class EngineAgreementTest(unittest.TestCase):
             engine=engine,
         )
 
-    def test_builtin_and_canonical_agree_to_the_bit(self) -> None:
+    @staticmethod
+    def _epsilon_multiples(gap: float) -> float:
+        """How large a gap is against machine epsilon at UNIT scale.
+
+        Not ULPs of the operands: the fields that disagree most in relative terms
+        here are residuals whose true value is zero, and the ULP of 4.2e-6 is
+        ~8.5e-22, so 2.9e-16 of disagreement between two engines that agree as
+        closely as doubles allow prints as 344064 ULP. Measured against epsilon
+        itself the same gap reads 1.3 -- one bit of rounding, which is what it is.
+        """
+        return gap / sys.float_info.epsilon
+
+    def test_builtin_and_canonical_agree_within_the_stated_tolerance(self) -> None:
         canonical = self._payload("canonical")
         if canonical is None:
             self.skipTest("no reality checkout on this host: the shim cannot be imported")
@@ -874,11 +918,106 @@ class EngineAgreementTest(unittest.TestCase):
         builtin = self._payload("builtin")
         self.assertIsNotNone(builtin)
         assert builtin is not None and canonical is not None
+        worst_scaled = 0.0
+        worst_abs = 0.0
+        worst_rel = 0.0
+        worst_eps = 0.0
+        worst_field = ""
+        for mine, theirs in zip(canonical["runs"], builtin["runs"]):
+            self.assertEqual(sorted(mine), sorted(theirs), "the engines report different fields")
+            pairs: List[Tuple[str, Any, Any]] = [
+                (key, value, theirs.get(key)) for key, value in mine.items()
+            ]
+            skew = mine.get("convective_skew")
+            if isinstance(skew, dict):
+                # Cast, not inference: narrowing an ``Any`` with ``isinstance``
+                # leaves pyright with ``dict[Unknown, Unknown]``, and the loop below
+                # then reports an unknown key and value for every skew field it
+                # walks. These are JSON objects read back from a payload this module
+                # built, so ``Dict[str, Any]`` is the fact being asserted.
+                skew_fields = cast(Dict[str, Any], skew)
+                other_raw: object = theirs.get("convective_skew")
+                other_skew: Dict[str, Any] = (
+                    cast(Dict[str, Any], other_raw) if isinstance(other_raw, dict) else {}
+                )
+                pairs += [
+                    (f"convective_skew.{key}", value, other_skew.get(key))
+                    for key, value in skew_fields.items()
+                ]
+            for key, value, other in pairs:
+                if not isinstance(value, float) or not isinstance(other, float):
+                    continue
+                if not (math.isfinite(value) and math.isfinite(other)):
+                    self.assertEqual(value, other, f"{key}: one engine reports a non-finite")
+                    continue
+                gap = abs(value - other)
+                budget = receipt.ENGINE_AGREEMENT_ATOL + receipt.ENGINE_AGREEMENT_RTOL * max(
+                    abs(value), abs(other)
+                )
+                scaled = gap / budget if budget else 0.0
+                if scaled > worst_scaled:
+                    worst_scaled = scaled
+                    worst_field = key
+                    worst_abs = gap
+                    worst_rel = gap / max(abs(value), abs(other), 1e-300)
+                    worst_eps = self._epsilon_multiples(gap)
+                self.assertLessEqual(
+                    gap,
+                    budget,
+                    f"engine disagreement at {key}: {value!r} vs {other!r} "
+                    f"(|gap| {gap:.3e} > budget {budget:.3e})",
+                )
+        # Reported, not asserted: the budget is the contract, these numbers say how
+        # far from it this host sits, which is what a future upgrade needs to read.
+        print(
+            f"[engine agreement] worst {worst_field}: |gap| {worst_abs:.3e} "
+            f"= {worst_eps:.1f} machine epsilons (relative {worst_rel:.3e}), "
+            f"{worst_scaled * 100:.1f}% of budget; backends "
+            f"{canonical['provenance']['engine']['transform_backend']} vs "
+            f"{builtin['provenance']['engine']['transform_backend']}"
+        )
+
+    def test_bitwise_agreement_is_required_only_between_the_same_backend(self) -> None:
+        """Where both engines round through one library, they must print one number.
+
+        This is the strong leg kept alive in the only condition where it means
+        what it says: same backend, same bits. Different backends are allowed to
+        differ by the tolerance above, and this leg says so out loud instead of
+        going red on a library upgrade.
+        """
+        canonical = self._payload("canonical")
+        if canonical is None:
+            self.skipTest("no reality checkout on this host: the shim cannot be imported")
+        builtin = self._payload("builtin")
+        assert builtin is not None
+        canonical_backend = canonical["provenance"]["engine"]["transform_backend"]
+        builtin_backend = builtin["provenance"]["engine"]["transform_backend"]
+        if canonical_backend != builtin_backend:
+            self.skipTest(
+                f"backends differ ({canonical_backend} vs {builtin_backend}): bit-exactness "
+                "across two FFT libraries measures the libraries, not the solver; the "
+                "tolerance leg above is the contract here"
+            )
+            return
         self.assertEqual(canonical["runs"], builtin["runs"])
         self.assertEqual(
             canonical["z8_meter"]["digest_sha256"], builtin["z8_meter"]["digest_sha256"]
         )
-        self.assertNotEqual(canonical["provenance"]["engine"], builtin["provenance"]["engine"])
+
+    def test_the_engines_name_the_backends_that_explain_any_gap(self) -> None:
+        """A disagreement must be attributable, or the tolerance leg is unfalsifiable.
+
+        ``transform_backend`` and the library versions are what turn "the engines
+        differ by 1e-16" into "the core rounds through pyfftw and the fallback
+        through scipy". Without them a ULP gap is a mystery that a future reader
+        can only pin by deleting the test.
+        """
+        builtin = self._payload("builtin")
+        assert builtin is not None
+        engine = builtin["provenance"]["engine"]
+        for key in ("name", "transform_backend", "numpy_version", "scipy_version"):
+            self.assertIn(key, engine, f"provenance does not report {key!r}")
+        self.assertIsInstance(engine["scipy_version"], (str, type(None)))
 
     def test_engine_names_reach_the_provenance(self) -> None:
         builtin = self._payload("builtin")
@@ -1131,12 +1270,28 @@ class WorldSenseConsumerContractTest(unittest.TestCase):
 
     The consumer lives in awkronos/kagami and is not a dependency of this
     repository, so its tables are mirrored here as data with their source
-    location, and re-checked against the real file whenever a kagami checkout is
-    reachable on this host.
+    location, and re-checked against the owner's LANDED ref whenever a kagami
+    repository is reachable on this host.
+
+    Re-pinned 2026-11-26 against ``origin/main``
+    ``e9c73add653530ed86d95684644928c71eb4cce9``. All three mirrored tuples had
+    drifted, and the ratchet that exists to catch that had been answering
+    ``ok`` while doing so — see
+    :meth:`test_the_owner_probe_reads_a_landed_ref_not_a_lane_seat`.
     """
 
-    #: kagami.core.omni.worldsense_scientific_flow._DOMAIN_MARKERS, in order
-    #: (most specific first; the first substring hit wins).
+    #: The landed owner ref this mirror was cut against, so a future reader can
+    #: diff the mirror against an object rather than against somebody's memory.
+    OWNER_REF = "e9c73add653530ed86d95684644928c71eb4cce9"
+    OWNER_MODULE = "packages/kagami/core/omni/worldsense_scientific_flow.py"
+    #: The sibling owner module that mints the proof-word vocabulary this gate
+    #: refuses against. Named rather than spelled inline so the ``git show`` ref and
+    #: the path cannot drift apart between the two probes.
+    OWNER_WEAVE_MODULE = "packages/kagami/core/omni/closed_loop_research_weave.py"
+
+    #: ``kagami.core.omni.worldsense_scientific_flow._DOMAIN_MARKERS``, in order
+    #: (most specific first; the first substring hit wins). 53 pairs at the ref
+    #: above, up from the 16 this mirror carried.
     DOMAIN_MARKERS: Tuple[Tuple[str, str], ...] = (
         ("provably-notary", "lean_kernel_notary"),
         ("provably.notary", "lean_kernel_notary"),
@@ -1144,8 +1299,48 @@ class WorldSenseConsumerContractTest(unittest.TestCase):
         ("z8.meter", "z8_meter"),
         ("omni.quantum-reactor", "quantum_reactor"),
         ("z8.probably", "z8_probably"),
+        # The two pairs this repository mirrors by name. The owner's own comment
+        # says why navier stays behind the producer's word: rows that carry a
+        # ``domain`` field never reach this scan, so this leg serves BARE rows only.
         ("navier", "navier_ifrk4"),
         ("ifrk4", "navier_ifrk4"),
+        ("zke8", "zke8"),
+        ("kagami_prover", "kagami_prover"),
+        ("kagami-prover", "kagami_prover"),
+        ("waterfill", "kagami_prover"),
+        ("hodge_kahler", "hodge_kahler_geometry"),
+        ("lefschetz", "hodge_kahler_geometry"),
+        ("mathematical_economics", "mathematical_economics"),
+        ("active_inference", "active_inference_fep"),
+        ("reimann", "reimann"),
+        ("riemann", "reimann"),
+        ("zeta", "reimann"),
+        ("imo2026", "imo2026"),
+        ("antichain", "imo2026"),
+        ("selfapproach", "selfapproach"),
+        ("self-approach", "selfapproach"),
+        ("banach", "selfapproach"),
+        ("durable_execution", "durable_execution"),
+        ("huddle", "durable_execution"),
+        ("medverify", "medverify.clinical_audit"),
+        ("frey_modular", "frey_modular_numbers"),
+        ("fermat", "frey_modular_numbers"),
+        ("bsd_elliptic", "bsd_elliptic_curves"),
+        ("bsd", "bsd_elliptic_curves"),
+        ("hft", "hft"),
+        ("yang_mills", "yang_mills_lattice"),
+        ("yang-mills", "yang_mills_lattice"),
+        ("chess_vision", "chess_vision"),
+        ("chess-vision", "chess_vision"),
+        ("held_karp", "tsp_held_karp"),
+        ("heldkarp", "tsp_held_karp"),
+        ("rime_deterministic_simulation", "rime_deterministic_simulation"),
+        ("detsim", "rime_deterministic_simulation"),
+        ("knowledge_provenance", "knowledge_provenance"),
+        ("tome_provenance", "knowledge_provenance"),
+        ("tome", "knowledge_provenance"),
+        ("hermes", "hermes"),
+        ("corpus_compression", "hermes"),
         ("transfer_matrix", "reality_ym_transfer_matrix"),
         ("ym-transfer", "reality_ym_transfer_matrix"),
         ("protein", "protein_reactor_dag"),
@@ -1155,7 +1350,11 @@ class WorldSenseConsumerContractTest(unittest.TestCase):
         ("benchmark", "benchmark_ratio"),
         ("ratio", "benchmark_ratio"),
     )
-    #: The six fields ``_receipt_schema_text`` concatenates, in its order.
+    #: The eight fields ``_receipt_schema_text`` concatenates, in its order. Six
+    #: here until 2026-11-26; the owner added ``receipt_schema`` and
+    #: ``artifact_kind`` because that is the name the landed producers write. The
+    #: navier receipt stamps ``receipt_schema`` ITSELF, so a six-field mirror reads
+    #: a field the consumer reads and calls it the whole surface.
     SCHEMA_FIELDS: Tuple[str, ...] = (
         "schema",
         "kind",
@@ -1163,16 +1362,39 @@ class WorldSenseConsumerContractTest(unittest.TestCase):
         "operation",
         "receipt_type",
         "event",
+        "receipt_schema",
+        "artifact_kind",
     )
     #: The flow's own ``_TIER_FIELDS``: only these keys may assert a tier to it.
+    #: Nine at the landed ref; this mirror carried seven and was missing
+    #: ``epistemic_tier`` and ``claim_tier`` -- and this receipt STAMPS
+    #: ``epistemic_tier`` at the top level and again inside ``probably``, so the
+    #: two names the consumer reads on this row were the two not pinned here.
     CONSUMER_TIER_FIELDS: Tuple[str, ...] = (
         "tier",
         "scientific_tier",
+        "epistemic_tier",
+        "claim_tier",
         "claim",
         "verdict",
         "status",
         "evidence",
         "strength",
+    )
+    #: ``_NESTED_GRADE_BLOCKS``: the blocks whose tier fields the gate also reads.
+    NESTED_GRADE_BLOCKS: Tuple[str, ...] = ("probably", "z8_probably")
+    #: ``_DIGEST_FIELDS``: the names a row may carry its digest under. The gate
+    #: refuses a scientific receipt with none of these at its top level or in a
+    #: nested grade block (``no_digest_on_a_scientific_receipt``), which is how
+    #: this receipt arrived until 2026-11-26 -- its digest lived at
+    #: ``z8_meter.digest_sha256``, a block that reader never opens.
+    OWNER_DIGEST_FIELDS: Tuple[str, ...] = (
+        "receipt_sha256",
+        "replay_sha256",
+        "canonical_input_sha256",
+        "digest_sha256",
+        "payload_sha256",
+        "notary_digest",
     )
     #: ``closed_loop_research_weave.THEOREM_WORDS`` | {quantum.PROVABLY}.
     CONSUMER_PROOF_WORDS: Tuple[str, ...] = (
@@ -1181,6 +1403,21 @@ class WorldSenseConsumerContractTest(unittest.TestCase):
         "PROVED",
         "KERNEL_CLEAN",
         "PROVABLY",
+    )
+    #: The epistemic-tier spellings the owner recognises but does NOT treat as a
+    #: kernel claim (``_EPISTEMIC_TIER_VOCAB``). ``NUMERICAL_OBSERVATION`` is in
+    #: that set, which is why this receipt can state it without quarantining.
+    OWNER_EPISTEMIC_TIER_VOCAB: Tuple[str, ...] = (
+        "CONDITIONAL_THEOREM",
+        "CONJECTURE",
+        "EXPERIMENT",
+        "FORMAL_THEOREM",
+        "FRAMEWORK",
+        "NUMERICAL_OBSERVATION",
+        "RAW_MEASUREMENT",
+        "SORRY",
+        "SPECULATION",
+        "STATISTICAL_INFERENCE",
     )
 
     @classmethod
@@ -1192,34 +1429,127 @@ class WorldSenseConsumerContractTest(unittest.TestCase):
             str(self.payload.get(key, "")) for key in self.SCHEMA_FIELDS
         ).lower()
 
-    def test_receipt_is_attributed_to_the_navier_domain(self) -> None:
+    def _route1_domain(self) -> str:
+        """What ``classify_receipt`` route 1 answers for this row.
+
+        Route 1 is the row's own ``domain`` field, taken verbatim, and it runs
+        BEFORE the marker scan: the owner's docstring is explicit that "a
+        substring heuristic is a strictly worse witness than the answer".
+        """
+        declared = self.payload.get("domain")
+        return declared.strip() if isinstance(declared, str) else ""
+
+    def _route3_domain(self) -> Tuple[str, str]:
+        """The (marker, domain) the bare-row marker scan lands on, first hit wins."""
         text = self.schema_text()
-        self.assertTrue(text, "every field the reader concatenates is empty")
         for marker, domain in self.DOMAIN_MARKERS:
             if marker in text:
-                self.assertEqual(
-                    domain,
-                    "navier_ifrk4",
-                    f"the first marker to hit is {marker!r}, which files this elsewhere",
-                )
-                return
-        self.fail(f"classify_receipt would file this as unattributed; schema text {text[:160]!r}")
+                return marker, domain
+        return "", "unattributed"
+
+    def test_the_declared_domain_is_the_route_that_files_this_receipt(self) -> None:
+        """Route 1 fires for this row, and its answer is the producer's own word.
+
+        The owner kept ``("navier", "navier_ifrk4")`` in the marker table while
+        saying, in the comment above it, that "rows that carry the producer's
+        ``domain`` field still land in ``navier_stokes_3d`` — route 1 takes the
+        declaration; this leg is only for bare rows". Two buckets for one repo is
+        therefore the landed design, not a drift, and the honest pin names which
+        route this receipt actually takes. Before this file knew about route 1 it
+        asserted ``navier_ifrk4`` for a row the owner files under
+        ``navier_stokes_3d`` -- a green test about a bucket nothing lands in.
+        """
+        self.assertEqual(
+            self._route1_domain(),
+            "navier_stokes_3d",
+            "DOMAIN is what the consumer takes verbatim; changing it moves this "
+            "receipt's bucket in the estate census",
+        )
+        self.assertTrue(
+            self._route1_domain(),
+            "a row with no declared domain falls through to the marker scan, which "
+            "is a different (and weaker) attribution",
+        )
+
+    def test_a_bare_row_still_files_in_the_navier_bucket(self) -> None:
+        """Strip the declaration and the marker scan must still land on navier.
+
+        This is the leg the owner's comment refers to, and the one this file used
+        to present as the whole of attribution.
+        """
+        text = self.schema_text()
+        self.assertTrue(text, "every field the reader concatenates is empty")
+        marker, domain = self._route3_domain()
+        self.assertEqual(
+            domain,
+            "navier_ifrk4",
+            f"the first marker to hit is {marker!r}, which files a bare row elsewhere",
+        )
+        self.assertIn(marker, ("navier", "ifrk4"))
 
     def test_schema_text_avoids_the_preceding_markers(self) -> None:
-        """A marker ahead of ``navier`` in that table would steal the domain."""
-        text = self.schema_text()
-        ahead = [m for m, _ in self.DOMAIN_MARKERS[:6]]
-        for marker in ahead:
-            self.assertNotIn(marker, text, f"{marker!r} now precedes navier in the classifier")
+        """A marker ahead of ``navier`` in that table would steal the bare-row bucket.
 
-    def test_only_a_probably_tier_is_asserted_at_the_top_level(self) -> None:
-        words = [
-            self.payload[key].strip().upper()
-            for key in self.CONSUMER_TIER_FIELDS
-            if isinstance(self.payload.get(key), str)
+        ``[:6]`` here was the count of entries ahead of navier in the 16-pair
+        mirror. The landed table has 53 pairs and navier sits at the same index,
+        so the slice still happened to be right -- a coincidence held by a
+        literal. The bound is now derived from where ``navier`` actually is, so
+        inserting a marker ahead of it fails this leg instead of passing it.
+        """
+        text = self.schema_text()
+        navier_at = next(
+            i for i, (marker, _) in enumerate(self.DOMAIN_MARKERS) if marker == "navier"
+        )
+        for marker, domain in self.DOMAIN_MARKERS[:navier_at]:
+            self.assertNotIn(
+                marker,
+                text,
+                f"{marker!r} (files as {domain!r}) now precedes navier in the classifier",
+            )
+
+    def test_only_a_probably_tier_is_asserted_in_the_fields_the_owner_reads(self) -> None:
+        """Across all nine tier fields, top level and nested, no proof word appears.
+
+        Scanning seven names and only the top level was the mirror's own blind
+        spot: this receipt stamps ``epistemic_tier`` -- one of the two names that
+        were missing -- at both places.
+        """
+        sources: List[Tuple[str, Dict[str, Any]]] = [("receipt", self.payload)]
+        for block in self.NESTED_GRADE_BLOCKS:
+            value = self.payload.get(block)
+            if isinstance(value, dict):
+                sources.append((block, cast(Dict[str, Any], value)))
+        claimed: List[Tuple[str, str]] = []
+        for where, holder in sources:
+            for field in self.CONSUMER_TIER_FIELDS:
+                raw = holder.get(field)
+                if isinstance(raw, str):
+                    # The owner's own normalisation: ``_tier_key`` uppercases and
+                    # maps spaces to underscores, so "NUMERICAL OBSERVATION" and
+                    # "NUMERICAL_OBSERVATION" are one word to the gate. The path is
+                    # kept alongside the word so a refusal names WHICH field at
+                    # WHICH height inflated, not just that something did.
+                    claimed.append(
+                        (f"{where}.{field}", raw.strip().upper().replace(" ", "_"))
+                    )
+        words = {word for _, word in claimed}
+        self.assertIn("PROBABLY", words, "no tier field asserts PROBABLY at any height")
+        self.assertTrue(
+            any(not path.startswith("receipt.") for path, _ in claimed),
+            "only the top level carries a tier field, so the nested scan measured nothing",
+        )
+        proof = [f"{path}={word}" for path, word in claimed if word in self.CONSUMER_PROOF_WORDS]
+        self.assertEqual(proof, [], f"tier fields assert a proof word: {proof}")
+        unknown = [
+            f"{path}={word}"
+            for path, word in claimed
+            if word not in self.OWNER_EPISTEMIC_TIER_VOCAB
+            and word not in self.CONSUMER_PROOF_WORDS
+            and word != "PROBABLY"
         ]
-        self.assertEqual(words, ["PROBABLY"])
-        self.assertFalse([w for w in words if w in self.CONSUMER_PROOF_WORDS])
+        self.assertEqual(
+            unknown, [], f"tier words the owner would grade as unknown: {unknown}"
+        )
 
     def test_the_gate_mirrors_the_owner_vocabulary(self) -> None:
         self.assertTrue(
@@ -1227,55 +1557,216 @@ class WorldSenseConsumerContractTest(unittest.TestCase):
             "the consumer polices a word this gate does not",
         )
 
+    def test_this_gate_polices_every_field_the_owner_reads(self) -> None:
+        """The producer's own tier scan must be a SUPERSET of the consumer's.
+
+        A producer that checks fewer fields than its consumer reports green for a
+        reason it cannot see. ``claim_tier`` was the missing name on 2026-11-26:
+        this file's gate accepted a row the owner quarantines.
+        """
+        missing = [f for f in self.CONSUMER_TIER_FIELDS if f not in receipt.TIER_FIELDS]
+        self.assertEqual(
+            missing, [], f"the owner reads tier fields this gate does not police: {missing}"
+        )
+
     def test_no_kernel_attestation_channel_is_open(self) -> None:
         for key in ("axioms", "notary", "kernel_clean", "axiom_audit", "print_axioms"):
             self.assertNotIn(key, self.payload, f"{key!r} would attest a kernel audit")
             self.assertNotIn(key, self.payload["probably"])
 
+    def test_receipt_states_a_digest_the_owner_can_find(self) -> None:
+        """``verify_scientific_receipt_envelope`` requires a digest at the row's top level.
+
+        Measured at the landed ref against this payload: with the digest only at
+        ``z8_meter.digest_sha256`` the gate returned
+        ``ok=False, refusals=['no_digest_on_a_scientific_receipt']`` -- a
+        self-verifying receipt arriving unverified because the reader scans a
+        different height than the writer stamps.
+        """
+        stated = {
+            name: self.payload.get(name)
+            for name in self.OWNER_DIGEST_FIELDS
+            if name in self.payload
+        }
+        self.assertTrue(stated, "no top-level field carries a digest the owner scans")
+        values = [v for v in stated.values() if isinstance(v, str) and v]
+        self.assertTrue(values, "every digest field is present and empty (digest_field_null)")
+        for name, value in stated.items():
+            self.assertTrue(
+                isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None,
+                f"{name} is not 64 lowercase hex",
+            )
+        self.assertEqual(
+            self.payload["receipt_sha256"],
+            self.payload["z8_meter"]["digest_sha256"],
+            "the two spellings of the measurement digest disagree",
+        )
+        self.assertEqual(
+            self.payload["receipt_sha256"],
+            receipt.payload_sha256(self.payload),
+            "the stamped digest does not reproduce from this payload's stable view",
+        )
+
     def test_pinned_tables_match_the_owner_source_when_reachable(self) -> None:
-        root = self._kagami_packages()
-        if root is None:
-            self.skipTest("no kagami checkout reachable on this host")
+        source = self._owner_source()
+        if source is None:
+            self.skipTest("no landed kagami ref reachable on this host")
             return
-        flow = (root / "kagami" / "core" / "omni" / "worldsense_scientific_flow.py").read_text(
-            encoding="utf-8"
+        markers = self._extract_markers(source)
+        self.assertEqual(markers, list(self.DOMAIN_MARKERS), "_DOMAIN_MARKERS drifted")
+        self.assertEqual(
+            self._extract_tuple(source, "_TIER_FIELDS"),
+            list(self.CONSUMER_TIER_FIELDS),
+            "_TIER_FIELDS drifted",
         )
-        weave = (root / "kagami" / "core" / "omni" / "closed_loop_research_weave.py").read_text(
-            encoding="utf-8"
+        self.assertEqual(
+            self._extract_tuple(source, "_NESTED_GRADE_BLOCKS"),
+            list(self.NESTED_GRADE_BLOCKS),
+            "_NESTED_GRADE_BLOCKS drifted",
         )
-        start = flow.index("_DOMAIN_MARKERS")
-        stop = flow.index("def _receipt_schema_text", start)
-        live = [
-            (a, b)
-            for a, b in re.findall(r'\(\s*"([^"]+)",\s*"([^"]+)"\s*\)', flow[start:stop])
-        ]
-        self.assertEqual(live, list(self.DOMAIN_MARKERS), "_DOMAIN_MARKERS drifted")
+        self.assertEqual(
+            self._extract_tuple(source, "_DIGEST_FIELDS"),
+            list(self.OWNER_DIGEST_FIELDS),
+            "_DIGEST_FIELDS drifted",
+        )
+        self.assertEqual(
+            self._extract_schema_text_fields(source),
+            list(self.SCHEMA_FIELDS),
+            "the fields _receipt_schema_text concatenates drifted",
+        )
+        weave = self._owner_weave_source()
+        if weave is None:
+            return
         theorem = re.search(r"THEOREM_WORDS\s*=\s*frozenset\(\{([^}]*)\}\)", weave)
         assert theorem is not None
-        words = tuple(w.strip().strip('"').upper() for w in theorem.group(1).split(",") if w.strip())
-        self.assertTrue(set(words).issubset(set(receipt.PROOF_TIER_WORDS)), f"unpoliced {words}")
-        tier_fields = re.search(r"_TIER_FIELDS\s*=\s*\(([^)]*)\)", flow)
-        assert tier_fields is not None
-        found = tuple(
-            w.strip().strip('"') for w in tier_fields.group(1).split(",") if w.strip().strip('"')
+        words = tuple(
+            w.strip().strip('"').upper() for w in theorem.group(1).split(",") if w.strip()
         )
-        self.assertEqual(found, self.CONSUMER_TIER_FIELDS, "_TIER_FIELDS drifted")
+        self.assertTrue(
+            set(words).issubset(set(receipt.PROOF_TIER_WORDS)),
+            f"the owner quarantines words this gate does not: {words}",
+        )
+
+    def test_the_owner_probe_reads_a_landed_ref_not_a_lane_seat(self) -> None:
+        """The ratchet used to verify itself against a sibling lane's working tree.
+
+        ``_kagami_packages`` globbed ``~/seats/*/*/packages/...`` and returned the
+        first hit, so on 2026-11-26 this leg answered ``ok`` by comparing a 16-pair
+        mirror with a 16-pair mirror: seven kagami seats on this host carry the
+        pre-fold file, and the estate's canonical ``~/projects/kagami`` has no
+        ``packages/`` directory at all. A pin checked against an arbitrary lane's
+        uncommitted tree pins nothing -- the lane can be ahead, behind, or mid-edit,
+        and nothing in the verdict says which. The landed ref is the only answer
+        this repository is allowed to measure itself against.
+        """
+        resolver = inspect.getsource(WorldSenseConsumerContractTest._owner_source)
+        self.assertNotIn(
+            "seats/", resolver, "the owner probe is globbing lane seats again"
+        )
+        self.assertIn("origin/main", resolver, "the owner probe reads no landed ref")
+        source = self._owner_source()
+        if source is None:
+            self.skipTest("no landed kagami ref reachable on this host")
+            return
+        self.assertIn("_DOMAIN_MARKERS", source)
 
     @staticmethod
-    def _kagami_packages() -> Optional[Path]:
-        """Locate a checkout carrying the flow module, without scanning the volume."""
-        candidates: List[Path] = []
-        env = os.environ.get("KAGAMI_PACKAGES", "").strip()
-        if env:
-            candidates.append(Path(env))
-        candidates.append(Path.home() / "projects" / "kagami" / "packages")
+    def _kagami_repo() -> Optional[Path]:
+        """The kagami repository on this host, if one is present.
+
+        Deliberately does NOT search ``~/seats``: a lane seat is somebody's working
+        branch, and the fold this mirror is pinned against may not be in it.
+        """
+        configured = os.environ.get("KAGAMI_REPO", "").strip()
+        candidates = [Path(configured)] if configured else []
+        candidates.append(Path.home() / "projects" / "kagami")
+        candidates.append(REPO.parent / "kagami")
         for root in candidates:
-            probe = root / "kagami" / "core" / "omni" / "worldsense_scientific_flow.py"
-            if probe.is_file():
+            if (root / ".git").exists():
                 return root
-        for probe in sorted(Path.home().glob("seats/*/*/packages/kagami/core/omni/worldsense_scientific_flow.py")):
-            return probe.parents[3]
         return None
+
+    @classmethod
+    def _owner_source(cls) -> Optional[str]:
+        """The flow module's text AT ``origin/main``, via git.
+
+        ``git show`` reads the committed object, so a dirty working tree, a lane
+        branch, or an uncommitted edit in the primary checkout cannot answer for
+        the estate. Returns None when no landed object is reachable, which the
+        caller reports as UNMEASURED rather than as a pass.
+        """
+        root = cls._kagami_repo()
+        if root is None:
+            env = os.environ.get("KAGAMI_PACKAGES", "").strip()
+            if env:
+                probe = Path(env) / "kagami" / "core" / "omni" / "worldsense_scientific_flow.py"
+                if probe.is_file():
+                    return probe.read_text(encoding="utf-8")
+            return None
+        for ref in ("origin/main", "HEAD"):
+            probe = subprocess.run(
+                ["git", "-C", str(root), "show", f"{ref}:{cls.OWNER_MODULE}"],
+                capture_output=True,
+                text=True,
+            )
+            if probe.returncode == 0 and "_DOMAIN_MARKERS" in probe.stdout:
+                return probe.stdout
+        return None
+
+    @classmethod
+    def _owner_weave_source(cls) -> Optional[str]:
+        root = cls._kagami_repo()
+        if root is None:
+            return None
+        probe = subprocess.run(
+            [
+                "git", "-C", str(root), "show",
+                "origin/main:" + cls.OWNER_WEAVE_MODULE,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        return probe.stdout if probe.returncode == 0 else None
+
+    @staticmethod
+    def _extract_markers(source: str) -> List[Tuple[str, str]]:
+        """The ``_DOMAIN_MARKERS`` pairs, bounded by the literal's own closing paren.
+
+        The previous extraction ran from the table's name to ``def
+        _receipt_schema_text``, which on the landed file sweeps in
+        ``DEFAULT_ESTATE_PRODUCERS`` and :func:`_tier_key`'s replacement pairs --
+        five extra tuples that are not markers at all. Read against the landed ref
+        that over-run made the ratchet itself wrong before it made it red.
+        """
+        lines = source.splitlines()
+        start = next(i for i, line in enumerate(lines) if line.startswith("_DOMAIN_MARKERS"))
+        stop = next(i for i in range(start + 1, len(lines)) if lines[i].rstrip() == ")")
+        return [
+            (a, b)
+            for a, b in re.findall(r'\(\s*"([^"]+)",\s*"([^"]+)"\s*\)', "\n".join(lines[start:stop]))
+        ]
+
+    @staticmethod
+    def _extract_tuple(source: str, name: str) -> List[str]:
+        """One module-level ``NAME = ("a", "b", ...)`` as a list of its entries."""
+        match = re.search(rf"^{re.escape(name)}\s*=\s*\(([^)]*)\)", source, re.M)
+        assert match is not None, f"{name} is not a module-level tuple at the owner ref"
+        return [
+            item.strip().strip('"') for item in match.group(1).split(",") if item.strip().strip('"')
+        ]
+
+    @staticmethod
+    def _extract_schema_text_fields(source: str) -> List[str]:
+        """The key tuple inside :func:`_receipt_schema_text`'s generator."""
+        match = re.search(
+            r"def _receipt_schema_text.*?for key in \(\s*(.*?)\s*\)\s*\n\s*\)",
+            source,
+            re.S,
+        )
+        assert match is not None, "could not locate the schema-text field tuple"
+        return [
+            item.strip().strip('"') for item in match.group(1).split(",") if item.strip().strip('"')
+        ]
 
 
 class CliTest(unittest.TestCase):
@@ -1394,6 +1885,238 @@ class CliTest(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("ic=abc", proc.stdout)
+
+
+def _ci_job_window(text: str, job: str) -> Tuple[int, int]:
+    """``[start, end)`` line indices owned by ``jobs.<job>`` in a workflow.
+
+    Raises rather than returning an empty window: a renamed job is a missing
+    carrier, and a test that silently scans nothing is the defect this file is
+    here to close, not a pass to record.
+    """
+    lines = text.splitlines()
+    start = next(
+        (i for i, line in enumerate(lines) if re.match(rf"^  {re.escape(job)}:\s*$", line)),
+        None,
+    )
+    if start is None:
+        raise AssertionError(f"workflow has no `jobs.{job}`")
+    end = next(
+        (i for i in range(start + 1, len(lines)) if re.match(r"^  \S[^:]*:\s*(#.*)?$", lines[i])),
+        len(lines),
+    )
+    return start, end
+
+
+def _ci_step_run(text: str, job: str, name_fragment: str) -> str:
+    """The ``run: |`` body of a named step, dedented, or ``AssertionError``.
+
+    Parsed from the workflow's text rather than with PyYAML because this battery
+    runs on interpreters with no PyYAML (the module's own docstring says so), and
+    because the object under guard is the literal shell text CI will execute —
+    the thing returned here is fed to ``bash`` unchanged by
+    :meth:`CiWorldSenseEnrollmentTest.test_the_leg_executes_verbatim`, so a parse
+    that smoothed the text over would defeat the point.
+    """
+    start, stop = _ci_job_window(text, job)
+    lines = text.splitlines()
+    step_at = None
+    for i in range(start, stop):
+        if lines[i].strip().startswith("- name:") and name_fragment in lines[i]:
+            step_at = i
+            break
+    if step_at is None:
+        raise AssertionError(
+            f"workflow job `{job}` has no step naming {name_fragment!r} inside "
+            f"lines {start + 1}-{stop}; the WorldSense CLI leg is unenrolled"
+        )
+    run_at = None
+    for i in range(step_at + 1, stop):
+        if lines[i].strip() == "run: |":
+            run_at = i
+            break
+        if lines[i].strip().startswith("- name:"):
+            break
+    if run_at is None:
+        raise AssertionError(f"step {name_fragment!r} has no `run: |` block")
+    run_indent = len(lines[run_at]) - len(lines[run_at].lstrip())
+    body: List[str] = []
+    for i in range(run_at + 1, len(lines)):
+        line = lines[i]
+        if line.strip() and (len(line) - len(line.lstrip())) <= run_indent:
+            break
+        body.append(line)
+    assert body, f"step {name_fragment!r} has an empty run body"
+    return textwrap.dedent("\n".join(body)) + "\n"
+
+
+class CiWorldSenseEnrollmentTest(unittest.TestCase):
+    """The WorldSense producer's CLI leg is enrolled in CI, lake-free, and load-bearing.
+
+    What this closes. ``make test`` already collects this file (``scripts`` and
+    ``tests`` are both in ``Makefile:TEST_ROOTS`` and the python job calls
+    ``make test``), so the *import* surface of the receipt had a scheduled verdict.
+    The three paths a WorldSense consumer actually walks — ``--self-test``, the
+    ``--out`` → ``--check-file`` roundtrip, and two independent runs agreeing on
+    ``receipt_sha256`` — had none: measured at ``f277dce649850b0cfedf0e48f2ba2520d7010b0b``,
+    ``ci.yml`` mentioned ``navier_worldsense_receipt`` zero times. A digest that no
+    run recomputes is a digest that no run proves stable, and a refusal path no run
+    exercises rots the first time a field is renamed.
+
+    The guard is therefore executable, not textual. The last three legs take the
+    workflow's own shell text and hand it to ``bash`` with ``$PYTHON`` bound to the
+    interpreter running this test, so the step cannot describe a command that fails:
+    it is run verbatim, then run once with a deliberately broken flag to prove a
+    red leg is still possible — an always-zero leg would pass this too, and an
+    always-zero leg is decoration (``declared carrier is decoration``, 1126).
+    """
+
+    JOB = "python"
+    STEP = "Navier WorldSense"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.workflow = WORKFLOW.read_text(encoding="utf-8")
+        cls.leg = _ci_step_run(cls.workflow, cls.JOB, cls.STEP)
+
+    def test_the_leg_is_lake_free(self) -> None:
+        """No ``lake``/``lean`` in the step: the python job runs on a hosted runner.
+
+        The brief's constraint is stronger than "does not fail" — a lake build on
+        that runner is a multi-hour cold graph, which is the exact topology this
+        workflow was rewritten away from (see the header comment's 2026-09-22
+        measurement). The step must therefore be pure Python.
+        """
+        self.assertNotRegex(self.leg, r"\b(lake|lean)\b", f"the step is not lake-free: {self.leg!r}")
+        self.assertNotIn("Mathlib", self.leg)
+
+    def test_the_leg_names_all_three_consumer_paths(self) -> None:
+        flags = ("--self-test", "--out", "--check-file", "--json")
+        for flag in flags:
+            with self.subTest(flag=flag):
+                self.assertIn(
+                    flag,
+                    self.leg,
+                    f"the WorldSense step never invokes {flag}, so that consumer "
+                    "path has no scheduled verdict",
+                )
+        self.assertIn("receipt_sha256", self.leg, "the leg does not read the measurement digest")
+
+    def test_the_leg_compares_digests_and_fails_loudly(self) -> None:
+        """Determinism is asserted on the digest, twice, with a named refusal.
+
+        stdout of two runs differs by construction — ``generated_utc`` and
+        ``z8_meter.wall_ms`` are listed in the receipt's own
+        ``nondeterministic_fields`` — so a step that diffed the payloads would be
+        red for the wrong reason and would train its reader to ignore it.
+        """
+        self.assertGreaterEqual(
+            self.leg.count("measurement_digest"),
+            3,
+            "the leg does not run the digest twice through one definition",
+        )
+        self.assertRegex(self.leg, r"receipt_sha256", "the leg reads some other field")
+        self.assertRegex(
+            self.leg, r"::error::", "a digest divergence would exit nonzero with no message"
+        )
+
+    def test_the_leg_executes_verbatim(self) -> None:
+        """Run the workflow's own shell text here, on this interpreter."""
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self._run(self.leg, tmp)
+        self.assertEqual(proc.returncode, 0, msg=(proc.stdout + proc.stderr).strip())
+        self.assertIn("self-test OK", proc.stdout)
+        self.assertRegex(
+            proc.stdout, r"measurement digest stable across runs: [0-9a-f]{64}"
+        )
+        self.assertNotIn("Traceback", proc.stderr)
+
+    def test_a_broken_carrier_reddens_the_leg(self) -> None:
+        """The control: sabotage one flag and require the leg to notice.
+
+        Without this, a leg that echoes success regardless of what the script
+        printed passes every other assertion in this class.
+        """
+        self.assertIn("--check-file", self.leg)
+        broken = self.leg.replace("--check-file", "--check-file-renamed-away")
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self._run(broken, tmp)
+        self.assertNotEqual(
+            proc.returncode, 0, "the leg reports success against a flag that does not exist"
+        )
+        self.assertNotIn("measurement digest stable", proc.stdout)
+
+    def test_the_receipt_written_by_the_leg_is_the_one_check_file_accepts(self) -> None:
+        """The wrapper the step writes is the wrapper the step verifies.
+
+        Two digests live at two heights and CI reads both: ``payload_sha256`` is
+        the wrapper's SHA-256 over the canonical payload text (it is what catches
+        a post-write edit), ``receipt_sha256`` is the measurement digest over the
+        stable view. Asserting they are equal would be wrong; asserting the
+        report reproduces each from the file on disk is the actual contract.
+        """
+        out_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(out_dir.cleanup)
+        target = Path(out_dir.name) / "receipt.json"
+        write = self._invoke("--out", str(target))
+        self.assertEqual(write.returncode, 0, write.stderr)
+        check = self._invoke("--check-file", str(target))
+        self.assertEqual(check.returncode, 0, check.stderr)
+        report = json.loads(check.stdout)
+        wrapper = json.loads(target.read_text(encoding="utf-8"))
+        payload = wrapper["payload"]
+        body = receipt.canonical_json(payload)
+        self.assertEqual(report["payload_sha256"], hashlib.sha256(body.encode("utf-8")).hexdigest())
+        self.assertEqual(report["payload_sha256"], wrapper["payload_sha256"])
+        self.assertEqual(report["receipt_sha256"], payload["receipt_sha256"])
+        self.assertEqual(report["stable_view_digest"], report["receipt_sha256"])
+        self.assertEqual(report["tier"], receipt.TIER_PROBABLY)
+        self.assertEqual(report["domain"], receipt.DOMAIN)
+
+    def test_the_step_lives_where_the_battery_lives(self) -> None:
+        """Same job as ``make test``, after it: a leg in a droppable job enrolls nothing."""
+        start, stop = _ci_job_window(self.workflow, self.JOB)
+        lines = self.workflow.splitlines()
+        step_at = [
+            i for i in range(start, stop) if lines[i].strip().startswith("- name:")
+            and self.STEP in lines[i]
+        ]
+        self.assertTrue(step_at, "the WorldSense step is not inside the python job")
+        make_test = [i for i in range(start, stop) if re.match(r"^\s+make test\b", lines[i])]
+        self.assertTrue(make_test, "the python job no longer runs the Makefile battery")
+        self.assertGreater(
+            step_at[0],
+            make_test[0],
+            "the CLI leg runs before the battery, so a battery failure hides it",
+        )
+
+    # -- helpers ---------------------------------------------------------
+
+    def _env(self, tmp: str) -> Dict[str, str]:
+        env = dict(os.environ)
+        env["PYTHON"] = sys.executable
+        env["RUNNER_TEMP"] = tmp
+        env["PYTHONPATH"] = str(SCRIPTS) + os.pathsep + env.get("PYTHONPATH", "")
+        return env
+
+    def _run(self, script: str, tmp: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["bash", "-c", f"set -euo pipefail\n{script}"],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            env=self._env(tmp),
+            cwd=str(REPO),
+        )
+
+    def _invoke(self, *args: str) -> "subprocess.CompletedProcess[str]":
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS / "navier_worldsense_receipt.py"), *args],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            cwd=str(REPO),
+        )
 
 
 class InputGuardTest(unittest.TestCase):
