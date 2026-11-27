@@ -10,6 +10,7 @@ import Navier.Construction.SpatialBorelExtension
 import Navier.Construction.SlowExpansionResidual
 import Navier.Construction.PhysicalCoordinateBounds
 import Navier.Construction.ProfileHistories
+import Navier.Construction.PhysicalGraphBounds
 import Mathlib.Analysis.Calculus.ContDiff.Bounds
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 
@@ -650,22 +651,6 @@ theorem physicalChart_inner_mem {h lo hi : ℝ} (hh : 0 < h) (hh1 : h < 1 / 2)
     (by positivity : 0 < 2 * h) (by linarith : 2 * h < 1) hp
   exact ⟨hX, (abs_lt.mp he).1.le, (abs_lt.mp he).2.le⟩
 
-private theorem iteratedFDeriv_pair {E F G : Type*}
-    [NormedAddCommGroup E] [NormedSpace ℝ E]
-    [NormedAddCommGroup F] [NormedSpace ℝ F]
-    [NormedAddCommGroup G] [NormedSpace ℝ G]
-    {f : E → F} {g : E → G} {x : E} {k : ℕ}
-    (hf : ContDiffAt ℝ k f x) (hg : ContDiffAt ℝ k g x) :
-    iteratedFDeriv ℝ k (fun y => (f y, g y)) x =
-      (iteratedFDeriv ℝ k f x).prod (iteratedFDeriv ℝ k g x) := by
-  have h1 := (ContinuousLinearMap.fst ℝ F G).iteratedFDeriv_comp_left (hf.prodMk hg) le_rfl
-  have h2 := (ContinuousLinearMap.snd ℝ F G).iteratedFDeriv_comp_left (hf.prodMk hg) le_rfl
-  apply ContinuousMultilinearMap.ext
-  intro v
-  apply Prod.ext
-  · exact (congrArg (fun M => M v) h1).symm
-  · exact (congrArg (fun M => M v) h2).symm
-
 /-- The actual similarity-coordinate map loses at most one q-power per
 physical derivative, uniformly on a fixed bounded X range. -/
 theorem physicalChart_jet_bound {h : ℝ} (hh : 0 < h) (hh1 : h < 1 / 2)
@@ -689,7 +674,8 @@ theorem physicalChart_jet_bound {h : ℝ} (hh : 0 < h) (hh1 : h < 1 / 2)
     (PhysicalCoordinateBounds.physicalQ (2 * h) y,
       (PhysicalCoordinateBounds.physicalX (2 * h) y,
         PhysicalCoordinateBounds.physicalEta (2 * h) y))) p‖ ≤ _
-  rw [iteratedFDeriv_pair hq (hx.prodMk he), iteratedFDeriv_pair hx he,
+  rw [PhysicalGraphBounds.iteratedFDeriv_pair hq (hx.prodMk he),
+    PhysicalGraphBounds.iteratedFDeriv_pair hx he,
     ContinuousMultilinearMap.opNorm_prod, ContinuousMultilinearMap.opNorm_prod]
   exact max_le bq (max_le bx be)
 

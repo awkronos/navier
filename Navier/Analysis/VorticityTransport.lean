@@ -153,32 +153,6 @@ private theorem fderiv_fderiv_apply_eq (u : VelocityField) (y : Space)
   rw [hcomp]
   rfl
 
-/-- Chain-rule leaf (local copy of the `CurlIdentities` private lemma): the
-derivative of the `i`-th cross-product summand of `staticCurl` factors
-through the linear cross-product and the eval-CLM bridge. -/
-private theorem fderiv_cross_basisVector_apply
-    (u : VelocityField) (x h : Space) (i : Fin 3)
-    (hu : DifferentiableAt ℝ (fderiv ℝ u) x) :
-    fderiv ℝ (fun y => basisVector i ⨯₃ fderiv ℝ u y (basisVector i)) x h =
-      basisVector i ⨯₃ ((fderiv ℝ (fderiv ℝ u) x h) (basisVector i)) := by
-  let L : Space →ₗ[ℝ] Space := crossProduct (basisVector i)
-  have hg : fderiv ℝ (fun y => fderiv ℝ u y (basisVector i)) x h =
-      (fderiv ℝ (fderiv ℝ u) x h) (basisVector i) :=
-    fderiv_fderiv_apply_eq u x (basisVector i) h hu
-  have hdg : DifferentiableAt ℝ (fun y => fderiv ℝ u y (basisVector i)) x := by
-    have heq : (fun y => fderiv ℝ u y (basisVector i)) =
-      (ContinuousLinearMap.apply ℝ Space (basisVector i) ∘ fderiv ℝ u) := rfl
-    rw [heq]
-    exact (ContinuousLinearMap.apply ℝ Space (basisVector i)).differentiableAt.comp x hu
-  have hL : HasFDerivAt (fun w => L w) L.toContinuousLinearMap
-      (fderiv ℝ u x (basisVector i)) :=
-    L.toContinuousLinearMap.hasFDerivAt
-  have hcomp := (HasFDerivAt.comp x hL hdg.hasFDerivAt).fderiv
-  change (fderiv ℝ ((fun w => L w) ∘ (fun y => fderiv ℝ u y (basisVector i))) x) h = _
-  rw [hcomp]
-  change L ((fderiv ℝ (fun y => fderiv ℝ u y (basisVector i)) x) h) = _
-  rw [hg]
-
 /-- Each summand of `staticCurl u` is differentiable at `x` when `fderiv u`
 is (local copy of the `CurlIdentities` private lemma). -/
 private theorem differentiableAt_staticCurl_summand
@@ -287,7 +261,7 @@ theorem staticCurl_laplacian_comm (w : VelocityField) (x : Space)
         (fun z => basisVector j ⨯₃ fderiv ℝ w z (basisVector j)) y)
       (basisVector i)) = _
     exact Finset.sum_congr rfl (fun j _ =>
-      fderiv_cross_basisVector_apply w y (basisVector i) j (hwf y))
+      CurlIdentities.fderiv_cross_basisVector_apply w y (basisVector i) j (hwf y))
   have hE : ∀ i j : Fin 3, DifferentiableAt ℝ
       (fun y => fderiv ℝ (fun z => fderiv ℝ w z (basisVector j)) y
         (basisVector i)) x :=

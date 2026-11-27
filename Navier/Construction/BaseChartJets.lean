@@ -10,6 +10,7 @@ import Navier.Construction.SlowBorelBase
 import Navier.Construction.SimilarityHomogeneity
 import Navier.Construction.ConstructedSlowBase
 import Navier.Construction.PositiveRepresentatives
+import Navier.Construction.PhysicalGraphBounds
 
 /-!
 # Actual summed base fields in normalized band charts
@@ -263,21 +264,6 @@ structure GeometryBounds {ι : Type*} (D : Domain ι Slow)
 noncomputable def unitScale {ι E : Type*} [NormedAddCommGroup E] (D : Domain ι E) : Domain ι E :=
   oneDomain ι D.carrier D.isOpen
 
-private theorem iteratedFDeriv_pair {E F G : Type*}
-    [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
-    [NormedAddCommGroup G] [NormedSpace ℝ G]
-    {f : E → F} {g : E → G} {x : E} {j : ℕ}
-    (hf : ContDiffAt ℝ j f x) (hg : ContDiffAt ℝ j g x) :
-    iteratedFDeriv ℝ j (fun y => (f y, g y)) x =
-      (iteratedFDeriv ℝ j f x).prod (iteratedFDeriv ℝ j g x) := by
-  have h1 := (ContinuousLinearMap.fst ℝ F G).iteratedFDeriv_comp_left (hf.prodMk hg) le_rfl
-  have h2 := (ContinuousLinearMap.snd ℝ F G).iteratedFDeriv_comp_left (hf.prodMk hg) le_rfl
-  apply ContinuousMultilinearMap.ext
-  intro v
-  apply Prod.ext
-  · exact (congrArg (fun M => M v) h1).symm
-  · exact (congrArg (fun M => M v) h2).symm
-
 /-- The actual inverse coordinate jets are bounded for any fixed upper
 q bound.  The proof uses the normalized inverse-Jacobian expressions,
 which are regular at the limiting forward parameters. -/
@@ -301,7 +287,8 @@ theorem physicalChart_jet_bound {h : ℝ} (hh : 0 < h) (hh1 : h < 1 / 2)
   obtain ⟨bq, be, bx⟩ := hb p hp hq hX
   change ‖iteratedFDeriv ℝ j (fun y => (PhysicalCoordinateBounds.physicalQ (2 * h) y,
     (PhysicalCoordinateBounds.physicalX (2 * h) y, PhysicalCoordinateBounds.physicalEta (2 * h) y))) p‖ ≤ _
-  rw [iteratedFDeriv_pair hqj (hxj.prodMk hej), iteratedFDeriv_pair hxj hej,
+  rw [PhysicalGraphBounds.iteratedFDeriv_pair hqj (hxj.prodMk hej),
+    PhysicalGraphBounds.iteratedFDeriv_pair hxj hej,
     ContinuousMultilinearMap.opNorm_prod, ContinuousMultilinearMap.opNorm_prod]
   exact max_le bq (max_le bx be)
 

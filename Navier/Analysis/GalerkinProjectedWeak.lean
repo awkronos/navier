@@ -391,11 +391,6 @@ private theorem inner_sub_right (f g h : SchwartzVelocity) :
     schwartzL2Inner f (g - h) = schwartzL2Inner f g - schwartzL2Inner f h := by
   rw [sub_eq_add_neg, schwartzL2Inner_add_right, inner_neg_right, ← sub_eq_add_neg]
 
-private theorem bilin_add_left (u v z : SchwartzVelocity) :
-    convectionSchwartzBilin (u + v) z =
-      convectionSchwartzBilin u z + convectionSchwartzBilin v z := by
-  simp [convectionSchwartzBilin, componentSchwartz, Finset.sum_add_distrib]
-
 private theorem bilin_add_right (u v z : SchwartzVelocity) :
     convectionSchwartzBilin u (v + z) =
       convectionSchwartzBilin u v + convectionSchwartzBilin u z := by
@@ -444,20 +439,13 @@ private theorem bilin_sum_left {ι : Type*} [DecidableEq ι] (s : Finset ι)
       convectionSchwartzBilin (f i) v := by
   induction s using Finset.induction_on with
   | empty => simp [bilin_zero_left]
-  | insert a s ha ih => simp [bilin_add_left, *]
-
-private theorem bilin_sum_right {ι : Type*} [DecidableEq ι] (s : Finset ι)
-    (u : SchwartzVelocity) (f : ι → SchwartzVelocity) :
-    convectionSchwartzBilin u (∑ i ∈ s, f i) = ∑ i ∈ s,
-      convectionSchwartzBilin u (f i) := by
-  induction s using Finset.induction_on with
-  | empty => simp [bilin_zero_right]
-  | insert a s ha ih => simp [bilin_add_right, *]
+  | insert a s ha ih => simp [GalerkinBasis.convectionSchwartzBilin_add_left, *]
 
 private theorem bilin_sub_left (u v z : SchwartzVelocity) :
     convectionSchwartzBilin (u - v) z =
       convectionSchwartzBilin u z - convectionSchwartzBilin v z := by
-  rw [sub_eq_add_neg, bilin_add_left, bilin_neg_left, ← sub_eq_add_neg]
+  rw [sub_eq_add_neg, GalerkinBasis.convectionSchwartzBilin_add_left, bilin_neg_left,
+    ← sub_eq_add_neg]
 
 private theorem bilin_sub_right (u v z : SchwartzVelocity) :
     convectionSchwartzBilin u (v - z) =
@@ -919,7 +907,8 @@ private theorem convCommExpand (W : GalerkinBasisFamily) {m : ℕ}
     inner_sum_right, inner_smul_right]
   have hproj : W.proj m v = ∑ l ∈ Finset.range m, W.coeff v l • W.w l := rfl
   rw [hproj]
-  simp_rw [bilin_sub_right, bilin_sum_right, bilin_smul_right, inner_sub_right,
+  simp_rw [bilin_sub_right, GalerkinBasis.convectionSchwartzBilin_sum_right,
+    bilin_smul_right, inner_sub_right,
     inner_sum_right, inner_smul_right]
 
 /-- The provider's main integrand is continuous on `[0,∞)`: through

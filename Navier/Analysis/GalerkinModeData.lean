@@ -1,4 +1,5 @@
 import Navier.Analysis.ConvectionLadyzhenskaya
+import Navier.Analysis.GalerkinBasis
 
 /-!
 # Certified Galerkin support lemmas
@@ -308,12 +309,6 @@ private theorem schwartzL2Inner_neg_neg_local (f g : SchwartzVelocity) :
   rw [schwartzL2Inner_neg_left, schwartzL2Inner_neg_right_local]
   ring
 
-private theorem convectionSchwartzBilin_add_left_local
-    (u v z : SchwartzVelocity) :
-    convectionSchwartzBilin (u + v) z =
-      convectionSchwartzBilin u z + convectionSchwartzBilin v z := by
-  simp [convectionSchwartzBilin, componentSchwartz, Finset.sum_add_distrib]
-
 private theorem convectionSchwartzBilin_add_right_local
     (u v z : SchwartzVelocity) :
     convectionSchwartzBilin u (v + z) =
@@ -345,21 +340,7 @@ private theorem convectionSchwartzBilin_sum_left_local
       ∑ i ∈ s, convectionSchwartzBilin (u i) v := by
   induction s using Finset.induction_on with
   | empty => simp [convectionSchwartzBilin, componentSchwartz]
-  | insert i s hi => simp [convectionSchwartzBilin_add_left_local, *]
-
-private theorem convectionSchwartzBilin_sum_right_local
-    {ι : Type*} [DecidableEq ι] (s : Finset ι)
-    (u : SchwartzVelocity) (v : ι → SchwartzVelocity) :
-    convectionSchwartzBilin u (∑ i ∈ s, v i) =
-      ∑ i ∈ s, convectionSchwartzBilin u (v i) := by
-  induction s using Finset.induction_on with
-  | empty =>
-      have hderiv : ∀ i : Fin 3,
-          ∂_{basisVector i} (0 : SchwartzVelocity) = 0 := by
-        intro i
-        exact map_zero (LineDeriv.lineDerivOpCLM ℝ SchwartzVelocity (basisVector i))
-      simp [convectionSchwartzBilin, hderiv]
-  | insert i s hi => simp [convectionSchwartzBilin_add_right_local, *]
+  | insert i s hi => simp [GalerkinBasis.convectionSchwartzBilin_add_left, *]
 
 private theorem convectionSchwartz_coefficientField_local
     (W : GalerkinBasisFamily) (m : ℕ) (a : EuclideanSpace ℝ (Fin m)) :
@@ -372,7 +353,7 @@ private theorem convectionSchwartz_coefficientField_local
   apply Finset.sum_congr rfl
   intro j _
   rw [convectionSchwartzBilin_smul_left_local,
-    convectionSchwartzBilin_sum_right_local, Finset.smul_sum]
+    GalerkinBasis.convectionSchwartzBilin_sum_right, Finset.smul_sum]
   apply Finset.sum_congr rfl
   intro k _
   rw [convectionSchwartzBilin_smul_right_local, smul_smul]

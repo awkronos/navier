@@ -191,7 +191,7 @@ private lemma div_curl_symmetric_eq_zero
 
 /-- Chain-rule lemma: the derivative of the `i`-th cross-product summand of
 `staticCurl` factors through the linear cross-product and the eval-CLM bridge. -/
-private lemma fderiv_cross_basisVector_apply
+lemma fderiv_cross_basisVector_apply
     (u : VelocityField) (x h : Space) (i : Fin 3)
     (hu : DifferentiableAt ℝ (fderiv ℝ u) x) :
     fderiv ℝ (fun y => basisVector i ⨯₃ fderiv ℝ u y (basisVector i)) x h =

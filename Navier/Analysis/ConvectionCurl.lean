@@ -1,4 +1,5 @@
 import Navier.Analysis.VorticityTransport
+import Navier.Analysis.CurlIdentities
 
 /-!
 # The convection–curl identity: `curl((u·∇)u) = (u·∇)ω − (ω·∇)u`
@@ -90,18 +91,6 @@ theorem sum_cross_comp_self (A : Space →L[ℝ] Space) :
 ## Analytic bridges (local copies of the `CurlIdentities` private lemmas)
 -/
 
-/-- Eval-CLM bridge: the derivative of `y ↦ (Dw y) a` at `x` in direction `h`
-is the second Fréchet derivative applied to `h` then `a`. -/
-private theorem eval_deriv_bridge (w : VelocityField) (x : Space)
-    (a h : Space) (hw : DifferentiableAt ℝ (fderiv ℝ w) x) :
-    fderiv ℝ (fun y => fderiv ℝ w y a) x h =
-      (fderiv ℝ (fderiv ℝ w) x h) a := by
-  let T : (Space →L[ℝ] Space) →L[ℝ] Space := ContinuousLinearMap.apply ℝ Space a
-  have hcomp := (HasFDerivAt.comp x T.hasFDerivAt hw.hasFDerivAt).fderiv
-  change (fderiv ℝ (⇑T ∘ fderiv ℝ w) x) h = ((fderiv ℝ (fderiv ℝ w) x) h) a
-  rw [hcomp]
-  rfl
-
 /-- Each cross-product summand of `staticCurl w` is differentiable at `x`
 when `fderiv ℝ w` is. -/
 private theorem cross_summand_differentiable (w : VelocityField) (x : Space)
@@ -120,31 +109,6 @@ private theorem cross_summand_differentiable (w : VelocityField) (x : Space)
   rw [heq]
   exact L.toContinuousLinearMap.differentiableAt.comp x hdg
 
-/-- Chain-rule bridge: the derivative of the `i`-th cross-product summand of
-`staticCurl` in direction `h` factors through the second derivative. -/
-private theorem cross_summand_fderiv (w : VelocityField) (x h : Space)
-    (i : Fin 3) (hw : DifferentiableAt ℝ (fderiv ℝ w) x) :
-    fderiv ℝ (fun y => basisVector i ⨯₃ fderiv ℝ w y (basisVector i)) x h =
-      basisVector i ⨯₃ ((fderiv ℝ (fderiv ℝ w) x h) (basisVector i)) := by
-  let L : Space →ₗ[ℝ] Space := crossProduct (basisVector i)
-  have hg : fderiv ℝ (fun y => fderiv ℝ w y (basisVector i)) x h =
-      (fderiv ℝ (fderiv ℝ w) x h) (basisVector i) :=
-    eval_deriv_bridge w x (basisVector i) h hw
-  have hdg : DifferentiableAt ℝ (fun y => fderiv ℝ w y (basisVector i)) x := by
-    have heq : (fun y => fderiv ℝ w y (basisVector i)) =
-        (ContinuousLinearMap.apply ℝ Space (basisVector i) ∘ fderiv ℝ w) := rfl
-    rw [heq]
-    exact (ContinuousLinearMap.apply ℝ Space
-      (basisVector i)).differentiableAt.comp x hw
-  have hL : HasFDerivAt (fun v => L v) L.toContinuousLinearMap
-      (fderiv ℝ w x (basisVector i)) := L.toContinuousLinearMap.hasFDerivAt
-  have hcomp := (HasFDerivAt.comp x hL hdg.hasFDerivAt).fderiv
-  change (fderiv ℝ ((fun v => L v) ∘
-    (fun y => fderiv ℝ w y (basisVector i))) x) h = _
-  rw [hcomp]
-  change L ((fderiv ℝ (fun y => fderiv ℝ w y (basisVector i)) x) h) = _
-  rw [hg]
-
 /-- The derivative of the static curl in direction `h`, expanded through the
 second Fréchet derivative: `(D(curl w) x)(h) = ∑ i, eᵢ ⨯₃ (D²w x h)(eᵢ)`. -/
 theorem fderiv_staticCurl_apply (w : VelocityField) (x h : Space)
@@ -158,7 +122,8 @@ theorem fderiv_staticCurl_apply (w : VelocityField) (x h : Space)
     simp only [staticCurl, Finset.sum_apply]
   rw [hsum, fderiv_sum fun i _ => cross_summand_differentiable w x i hw]
   rw [sum_apply]
-  exact Finset.sum_congr rfl fun i _ => cross_summand_fderiv w x h i hw
+  exact Finset.sum_congr rfl fun i _ =>
+      CurlIdentities.fderiv_cross_basisVector_apply w x h i hw
 
 /-!
 ## The product rule for the convection slice

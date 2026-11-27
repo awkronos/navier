@@ -1426,7 +1426,7 @@ theorem convectionSchwartzBilin_apply (u v : SchwartzVelocity) (x : Space) :
   simp [convectionSchwartzBilin, SchwartzMap.lineDerivOp_apply_eq_fderiv,
     spatialDerivative]
 
-private theorem convectionSchwartzBilin_add_left (u v z : SchwartzVelocity) :
+theorem convectionSchwartzBilin_add_left (u v z : SchwartzVelocity) :
     convectionSchwartzBilin (u + v) z =
       convectionSchwartzBilin u z + convectionSchwartzBilin v z := by
   simp [convectionSchwartzBilin, componentSchwartz, Finset.sum_add_distrib]
@@ -1471,7 +1471,7 @@ private theorem convectionSchwartzBilin_sum_left {ι : Type*} [DecidableEq ι]
   | empty => simp [convectionSchwartzBilin_zero_left]
   | insert i s hi => simp [convectionSchwartzBilin_add_left, *]
 
-private theorem convectionSchwartzBilin_sum_right {ι : Type*} [DecidableEq ι]
+theorem convectionSchwartzBilin_sum_right {ι : Type*} [DecidableEq ι]
     (s : Finset ι) (u : SchwartzVelocity) (v : ι → SchwartzVelocity) :
     convectionSchwartzBilin u (∑ i ∈ s, v i) =
       ∑ i ∈ s, convectionSchwartzBilin u (v i) := by
